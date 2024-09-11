@@ -4,9 +4,8 @@ import {
   CustomizationContextMode,
   CustomizationProvider,
 } from '@/components/Customization/CustomizationProvider'
-import { CustomizationSidebar } from '@/components/Customization/CustomizationSidebar'
 import { useSearchParams } from 'next/navigation'
-import { CustomizationPreview } from './CustomizationPreview'
+import { PublicPageCustomization } from './PublicPage/PublicPageCustomization'
 
 export const CustomizationPage = () => {
   const search = useSearchParams()
@@ -17,10 +16,7 @@ export const CustomizationPage = () => {
         (search.get('mode') as CustomizationContextMode) ?? undefined
       }
     >
-      <div className="ml-4 flex h-full flex-grow flex-row gap-x-4">
-        <CustomizationPreview />
-        <CustomizationSidebar />
-      </div>
+      <PublicPageCustomization />
     </CustomizationProvider>
   )
 }

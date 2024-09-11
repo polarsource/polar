@@ -2,12 +2,14 @@ import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
 import { ErrorMessage } from '@hookform/error-message'
+import { AddPhotoAlternateOutlined } from '@mui/icons-material'
 import {
+  FileServiceTypes,
+  OrganizationAvatarFileRead,
   OrganizationUpdate,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -15,25 +17,19 @@ import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import {
-  PropsWithChildren,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from 'react'
+import { PropsWithChildren, useCallback, useContext, useState } from 'react'
+import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
-import { useCustomizationContext } from './CustomizationProvider'
+import { FileObject, useFileUpload } from '../../FileUpload'
 
-const SidebarContentWrapper = ({
+const PublicPageSidebarContentWrapper = ({
   title,
   enabled,
   onEnabledChange,
@@ -44,24 +40,111 @@ const SidebarContentWrapper = ({
   onEnabledChange: (enabled: boolean) => void
 }>) => {
   return (
-    <div className="flex h-full flex-col gap-y-8">
-      <div className="flex flex-row items-center justify-between">
-        <h2 className="text-lg">{title}</h2>
-        <Switch checked={enabled} onCheckedChange={onEnabledChange} />
+    <ShadowBox className="flex w-full max-w-96 flex-shrink-0 flex-col p-8">
+      <div className="flex h-full flex-col gap-y-8">
+        <div className="flex flex-row items-center justify-between">
+          <h2 className="text-lg">{title}</h2>
+          <Switch checked={enabled} onCheckedChange={onEnabledChange} />
+        </div>
+        <div className={twMerge('flex flex-col gap-y-8')}>{children}</div>
       </div>
-      <div className={twMerge('flex flex-col gap-y-8')}>{children}</div>
-    </div>
+    </ShadowBox>
   )
 }
 
 const PublicPageForm = () => {
+  const { organization } = useContext(MaintainerOrganizationContext)
+
   const {
     control,
     formState: { errors },
+    setValue,
+    setError,
+    watch,
   } = useFormContext<OrganizationUpdate>()
+
+  const avatarURL = watch('avatar_url')
+
+  const onFilesUpdated = useCallback(
+    (files: FileObject<OrganizationAvatarFileRead>[]) => {
+      if (files.length === 0) {
+        return
+      }
+      const lastFile = files[files.length - 1]
+      setValue('avatar_url', lastFile.public_url, { shouldDirty: true })
+    },
+    [setValue],
+  )
+  const onFilesRejected = useCallback(
+    (rejections: FileRejection[]) => {
+      rejections.forEach((rejection) => {
+        setError('avatar_url', { message: rejection.errors[0].message })
+      })
+    },
+    [setError],
+  )
+  const { getRootProps, getInputProps, isDragActive } = useFileUpload({
+    organization,
+    service: FileServiceTypes.ORGANIZATION_AVATAR,
+    accept: {
+      'image/jpeg': [],
+      'image/png': [],
+      'image/gif': [],
+      'image/webp': [],
+      'image/svg+xml': [],
+    },
+    maxSize: 1 * 1024 * 1024,
+    onFilesUpdated,
+    onFilesRejected,
+    initialFiles: [],
+  })
 
   return (
     <>
+      <FormField
+        control={control}
+        name="avatar_url"
+        render={({ field }) => (
+          <div className="flex flex-row items-center gap-4">
+            <div
+              {...getRootProps()}
+              className={twMerge(
+                'group relative',
+                isDragActive && 'opacity-50',
+              )}
+            >
+              <input {...getInputProps()} />
+              <Avatar
+                avatar_url={avatarURL ?? ''}
+                name={organization.name}
+                className={twMerge(
+                  'h-16 w-16 group-hover:opacity-50',
+                  isDragActive && 'opacity-50',
+                )}
+              />
+              <div
+                className={twMerge(
+                  'absolute left-0 top-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
+                  isDragActive ? 'flex' : 'hidden',
+                )}
+              >
+                <AddPhotoAlternateOutlined />
+              </div>
+            </div>
+            <FormItem className="grow">
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value || ''}
+                  placeholder="Logo URL"
+                />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          </div>
+        )}
+      />
       <FormField
         control={control}
         name="name"
@@ -116,18 +199,12 @@ const PublicPageForm = () => {
   )
 }
 
-const PublicPageCustomizationContent = () => {
+export const PublicPageSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
 
   const [isLoading, setLoading] = useState(false)
 
-  const form = useForm<OrganizationUpdate>({
-    defaultValues: {
-      ...organization,
-    },
-  })
-  const { handleSubmit, setError, formState } = form
-  // const updatedOrganization = watch()
+  const { handleSubmit, setError, formState } = useForm()
 
   const updateOrganization = useUpdateOrganization()
 
@@ -169,96 +246,22 @@ const PublicPageCustomizationContent = () => {
   )
 
   return (
-    <SidebarContentWrapper
+    <PublicPageSidebarContentWrapper
       title="Public Page"
       enabled={organization.profile_settings?.enabled ?? false}
       onEnabledChange={toggleProfilePage}
     >
-      <div className="flex flex-row items-center gap-x-4">
-        <Avatar
-          className="h-12 w-12"
-          avatar_url={organization.avatar_url}
-          name={organization.name}
-        />
-        <div className="flex flex-col gap-y-1">
-          <h3>{organization.name}</h3>
-          <Link
-            className="text-xs text-blue-500 dark:text-blue-400"
-            href={`/${organization.slug}`}
-            target="_blank"
-          >
-            View Public Page
-          </Link>
-        </div>
-      </div>
-
-      <Form {...form}>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-8"
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
+        <PublicPageForm />
+        <Button
+          className="self-start"
+          type="submit"
+          loading={isLoading}
+          disabled={!formState.isDirty}
         >
-          <PublicPageForm />
-          <Button
-            className="self-start"
-            type="submit"
-            loading={isLoading}
-            disabled={!formState.isDirty}
-          >
-            Save
-          </Button>
-        </form>
-      </Form>
-    </SidebarContentWrapper>
-  )
-}
-
-const CheckoutCustomizationContent = () => {
-  const { organization } = useContext(MaintainerOrganizationContext)
-  const [enabled, setEnabled] = useState(false)
-
-  return (
-    <SidebarContentWrapper
-      title="Checkout"
-      enabled={enabled}
-      onEnabledChange={setEnabled}
-    >
-      <Input placeholder="Organization Name" value={organization.name} />
-    </SidebarContentWrapper>
-  )
-}
-
-const ReceiptCustomizationContent = () => {
-  const { organization } = useContext(MaintainerOrganizationContext)
-  const [enabled, setEnabled] = useState(false)
-
-  return (
-    <SidebarContentWrapper
-      title="Receipt"
-      enabled={enabled}
-      onEnabledChange={setEnabled}
-    >
-      <Input placeholder="Organization Name" value={organization.name} />
-    </SidebarContentWrapper>
-  )
-}
-
-export const CustomizationSidebar = () => {
-  const { customizationMode } = useCustomizationContext()
-
-  const content = useMemo(() => {
-    switch (customizationMode) {
-      case 'public_page':
-        return <PublicPageCustomizationContent />
-      case 'checkout':
-        return <CheckoutCustomizationContent />
-      case 'receipt':
-        return <ReceiptCustomizationContent />
-    }
-  }, [customizationMode])
-
-  return (
-    <ShadowBox className="flex w-full max-w-96 flex-shrink-0 flex-col p-8">
-      {content}
-    </ShadowBox>
+          Save
+        </Button>
+      </form>
+    </PublicPageSidebarContentWrapper>
   )
 }

@@ -52,7 +52,7 @@ export const ProductCard = ({
             <span className="text-xs">{organization.name}</span>
           </div>
         )}
-        <h3 className="line-clamp-2 flex items-center justify-between gap-1 leading-snug text-gray-950 dark:text-white">
+        <h3 className="line-clamp-1 flex items-center justify-between gap-1 leading-snug text-gray-950 dark:text-white">
           {product.name}
           {product.type && (
             <SubscriptionGroupIcon type={product.type} className="text-xl" />

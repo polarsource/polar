@@ -44,7 +44,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
     root.style.setProperty('--gradient-color-1', '#121316')
     root.style.setProperty('--gradient-color-2', '#1C1C22')
     root.style.setProperty('--gradient-color-3', '#1E1F24')
-    root.style.setProperty('--gradient-color-4', '#353641')
+    // root.style.setProperty('--gradient-color-4', '#353641')
 
     /* @ts-ignore */
     gradient.initGradient('#gradient-canvas')
@@ -52,7 +52,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative h-64 w-full bg-gradient-to-tr from-white via-blue-50 to-white">
+      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative h-80 w-full bg-gradient-to-tr from-white via-blue-50 to-white">
         <canvas
           id="gradient-canvas"
           className="rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full"
@@ -83,7 +83,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
         <div className="flex flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(
-              'dark:text-polar-500 w-2/3 text-pretty break-words text-center text-lg leading-normal text-gray-500',
+              'dark:text-polar-500 flex w-2/3 flex-col items-center text-center text-lg leading-normal text-gray-500',
             )}
           >
             {organization.profile_settings?.description ??

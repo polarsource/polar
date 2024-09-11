@@ -11,16 +11,20 @@ import {
   ArticleVisibility,
   Organization,
   OrganizationCustomerType,
+  OrganizationUpdate,
 } from '@polar-sh/sdk'
-import React from 'react'
-import { PublicPage } from '../Profile/PublicPage'
-import { PublicPageHeader } from '../Profile/PublicPageHeader'
+import { useContext } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { PublicPage } from '../../Profile/PublicPage'
+import { PublicPageHeader } from '../../Profile/PublicPageHeader'
 
-interface PublicPagePreviewProps {
-  organization: Organization
-}
+export const PublicPagePreview = () => {
+  const { organization: org } = useContext(MaintainerOrganizationContext)
+  const { watch } = useFormContext<OrganizationUpdate>()
+  const organizationUpdate = watch()
 
-const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
+  const organization = { ...org, ...organizationUpdate }
+
   const donations =
     useSearchDonations({
       toOrganizationId: organization.id,
@@ -41,7 +45,7 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
 
   const issues =
     useSearchFunding({
-      organizationId: organization.id,
+      organizationId: org.id,
       limit: 10,
       page: 1,
       closed: false,
@@ -59,7 +63,7 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
   }
 
   const customers = useOrganizationCustomers({
-    id: organization.id,
+    id: org.id,
     customerTypes: new Set(
       subscriberSettings.count_free
         ? [
@@ -74,7 +78,7 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
   const userOrganizations = useListOrganizations({ isMember: true })
 
   return (
-    <div className="flex w-full max-w-7xl flex-col gap-y-8 overflow-y-auto px-8">
+    <div className="flex w-full max-w-7xl flex-col gap-y-12 overflow-y-auto px-8">
       {!organization.profile_settings?.enabled && (
         <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
           This public page is not enabled
@@ -85,14 +89,14 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
           organizationCustomers={
             subscriberSettings.show_count ? customers.data : undefined
           }
-          organization={organization}
+          organization={organization as Organization}
           userOrganizations={userOrganizations.data?.items ?? []}
           products={products}
         />
       </div>
-      <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16">
+      <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
         <PublicPage
-          organization={organization}
+          organization={organization as Organization}
           posts={posts}
           products={products}
           issues={issues}
@@ -101,10 +105,4 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
       </div>
     </div>
   )
-}
-
-export const CustomizationPreview = () => {
-  const { organization } = React.useContext(MaintainerOrganizationContext)
-
-  return <PublicPagePreview organization={organization} />
 }

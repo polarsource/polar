@@ -26,7 +26,10 @@ export const CustomizationProvider = ({
 
   return (
     <CustomizationContext.Provider
-      value={{ customizationMode, setCustomizationMode }}
+      value={{
+        customizationMode,
+        setCustomizationMode,
+      }}
     >
       {children}
     </CustomizationContext.Provider>

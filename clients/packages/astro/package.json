@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.5.4",
-    "@polar-sh/sdk": "^0.6.0",
+    "@polar-sh/sdk": "^0.7.0",
     "tsup": "^7.2.0",
     "typescript": "5.3.3"
   },

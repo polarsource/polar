@@ -13,6 +13,7 @@ import { useSelectedLayoutSegment } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import tinycolor from 'tinycolor2'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { externalURL } from '../Organization'
 import { Gradient } from './GradientMesh'
@@ -41,13 +42,27 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
   useEffect(() => {
     const root = document.documentElement
 
-    root.style.setProperty(
-      '--gradient-color-1',
-      organization.profile_settings?.accent_color ?? '#121316',
+    const accent = tinycolor(
+      organization.profile_settings?.accent_color ?? '#888888',
     )
-    root.style.setProperty('--gradient-color-2', '#1C1C22')
-    root.style.setProperty('--gradient-color-3', '#1E1F24')
-    // root.style.setProperty('--gradient-color-4', '#353641')
+
+    const { r, g, b } = accent.toRgb()
+
+    const mono = [r, g, b].every((value, index, array) => value === array[0])
+
+    if (mono) {
+      const [a, b, c] = accent.monochromatic()
+
+      root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
+      root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
+      root.style.setProperty('--gradient-color-3', `#${c.toHex()}`)
+    } else {
+      const [a, b, c] = accent.analogous(3, 10)
+
+      root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
+      root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
+      root.style.setProperty('--gradient-color-3', `#${c.toHex()}`)
+    }
 
     /* @ts-ignore */
     gradient.initGradient('#gradient-canvas')

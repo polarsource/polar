@@ -99,6 +99,7 @@
     "slugify": "^1.6.6",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-radix": "^2.9.0",
+    "tinycolor2": "^1.6.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
@@ -125,6 +126,7 @@
     "@types/react-is": "^18.2.4",
     "@types/react-timeago": "^4.1.3",
     "@types/rss": "^0.0.32",
+    "@types/tinycolor2": "^1.4.6",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",

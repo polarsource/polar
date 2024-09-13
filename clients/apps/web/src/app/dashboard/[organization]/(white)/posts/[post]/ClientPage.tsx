@@ -172,18 +172,20 @@ const ClientPage = () => {
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
             {isPublished ? 'Published' : 'Unpublished'}
           </span>
-          <Link
-            href={organizationPageLink(
-              post.data.organization,
-              `posts/${post.data.slug}`,
-            )}
-            target="_blank"
-          >
-            <Button variant="secondary">
-              <span>Read</span>
-              <ArrowUpRightIcon className="ml-2 h-3 w-3" />
-            </Button>
-          </Link>
+          {orgContext.organization.profile_settings?.enabled && (
+            <Link
+              href={organizationPageLink(
+                post.data.organization,
+                `posts/${post.data.slug}`,
+              )}
+              target="_blank"
+            >
+              <Button variant="secondary">
+                <span>Read</span>
+                <ArrowUpRightIcon className="ml-2 h-3 w-3" />
+              </Button>
+            </Link>
+          )}
           <Button
             disabled={!localHasDiff}
             onClick={() => handleSave()}

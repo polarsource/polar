@@ -381,18 +381,6 @@ const nextConfig = {
         permanent: false,
       },
 
-      {
-        source: '/posts',
-        destination: '/feed',
-        permanent: false,
-        has: [
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
-        ],
-      },
-
       // Access tokens redirect
       {
         source: '/settings/tokens',

@@ -2,8 +2,6 @@
 
 import {
   useListArticles,
-  useListOrganizations,
-  useOrganizationCustomers,
   useProducts,
   useSearchDonations,
   useSearchFunding,
@@ -12,7 +10,6 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import {
   ArticleVisibility,
   Organization,
-  OrganizationCustomerType,
   OrganizationUpdate,
 } from '@polar-sh/sdk'
 import { useContext } from 'react'
@@ -59,26 +56,6 @@ export const PublicPagePreview = () => {
       ],
     }).data?.items ?? []
 
-  const subscriberSettings = organization.profile_settings?.subscribe ?? {
-    show_count: true,
-    count_free: true,
-  }
-
-  const customers = useOrganizationCustomers({
-    id: org.id,
-    customerTypes: new Set(
-      subscriberSettings.count_free
-        ? [
-            OrganizationCustomerType.PAID_SUBSCRIPTION,
-            OrganizationCustomerType.FREE_SUBSCRIPTION,
-          ]
-        : [OrganizationCustomerType.PAID_SUBSCRIPTION],
-    ),
-    limit: 3,
-  })
-
-  const userOrganizations = useListOrganizations({ isMember: true })
-
   return (
     <div className="flex w-full max-w-7xl flex-col gap-y-12 overflow-y-auto px-8">
       {!organization.profile_settings?.enabled && (
@@ -87,14 +64,7 @@ export const PublicPagePreview = () => {
         </div>
       )}
       <div className="flex flex-grow flex-col items-center">
-        <PublicPageHeader
-          organizationCustomers={
-            subscriberSettings.show_count ? customers.data : undefined
-          }
-          organization={organization as Organization}
-          userOrganizations={userOrganizations.data?.items ?? []}
-          products={products}
-        />
+        <PublicPageHeader organization={organization as Organization} />
       </div>
       <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
         <PublicPage

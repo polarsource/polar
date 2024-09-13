@@ -35,7 +35,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
     const root = document.documentElement
 
     const [a, b] = computeComplementaryColor(
-      organization.profile_settings?.accent_color ?? '#888888',
+      organization.profile_settings?.accent_color ?? '#222222',
     )
 
     root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)

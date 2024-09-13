@@ -59,7 +59,7 @@ export const ProductCard = ({
           )}
         </h3>
         <div className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-sm text-gray-500">
-          <h3 className="text-lg leading-snug">
+          <h3 className="leading-snug">
             {price ? (
               <ProductPriceLabel price={price} />
             ) : (

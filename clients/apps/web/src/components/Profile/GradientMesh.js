@@ -525,7 +525,7 @@ export function normalizeColor(hexCode) {
         e(this, "geometry", void 0),
         e(this, "minigl", void 0),
         e(this, "scrollObserver", void 0),
-        e(this, "amp", 600),
+        e(this, "amp", 1600),
         e(this, "seed", 11),
         e(this, "freqX", 14e-5),
         e(this, "freqY", 12e-5),

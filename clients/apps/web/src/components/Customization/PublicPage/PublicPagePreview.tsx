@@ -57,23 +57,25 @@ export const PublicPagePreview = () => {
     }).data?.items ?? []
 
   return (
-    <div className="flex w-full max-w-7xl flex-col gap-y-12 overflow-y-auto px-8">
-      {!organization.profile_settings?.enabled && (
-        <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
-          This public page is not enabled
+    <div className="flex w-full flex-col items-center">
+      <div className="flex w-full max-w-7xl flex-col gap-y-12 overflow-y-auto py-8">
+        {!organization.profile_settings?.enabled && (
+          <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
+            This public page is not enabled
+          </div>
+        )}
+        <div className="flex flex-grow flex-col items-center">
+          <PublicPageHeader organization={organization as Organization} />
         </div>
-      )}
-      <div className="flex flex-grow flex-col items-center">
-        <PublicPageHeader organization={organization as Organization} />
-      </div>
-      <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
-        <PublicPage
-          organization={organization as Organization}
-          posts={posts}
-          products={products}
-          issues={issues}
-          donations={donations}
-        />
+        <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
+          <PublicPage
+            organization={organization as Organization}
+            posts={posts}
+            products={products}
+            issues={issues}
+            donations={donations}
+          />
+        </div>
       </div>
     </div>
   )

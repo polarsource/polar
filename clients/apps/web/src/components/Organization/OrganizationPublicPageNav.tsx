@@ -43,7 +43,7 @@ export const OrganizationPublicPageNav = ({
 
         {organization.feature_settings?.issue_funding_enabled && (
           <Link href={organizationPageLink(organization, 'issues')}>
-            <TabsTrigger value="issues">Issues</TabsTrigger>
+            <TabsTrigger value="issues">Issue Funding</TabsTrigger>
           </Link>
         )}
 

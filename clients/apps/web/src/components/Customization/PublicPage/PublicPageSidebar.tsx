@@ -33,7 +33,7 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
 
 const colorThemes = [
-  '#222222',
+  '#181818',
   '#0062FF',
   '#e64d4d',
   '#3fab44',

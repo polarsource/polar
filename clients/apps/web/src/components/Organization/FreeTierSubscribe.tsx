@@ -97,21 +97,12 @@ export const AuthenticatedFreeTierSubscribe = ({
 interface AnonymousFreeTierSubscribeProps {
   organization: Organization
   product: Product
-  upsellSubscriptions?: boolean
 }
 
 export const AnonymousFreeTierSubscribe = ({
   organization,
   product,
-  upsellSubscriptions,
 }: AnonymousFreeTierSubscribeProps) => {
-  const router = useRouter()
-
-  const orgProducts = useProducts(organization.id)
-  const hasHighlightedSubscriptions = orgProducts.data?.items.some(
-    (tier) => tier.is_highlighted,
-  )
-
   const [showModal, setShowModal] = useState(false)
   const [success, setSuccess] = useState(false)
   const form = useForm<{ customer_email: string }>()
@@ -131,28 +122,11 @@ export const AnonymousFreeTierSubscribe = ({
           customer_email: data.customer_email,
         })
 
-        // Redirect to /org/subscribe to upsell subscriptions
-        if (upsellSubscriptions && hasHighlightedSubscriptions) {
-          router.push(
-            organizationPageLink(
-              organization,
-              `subscribe?email=${data.customer_email}`,
-            ),
-          )
-        } else {
-          setShowModal(true)
-          setEmail(data.customer_email)
-          setSuccess(true)
-        }
+        setShowModal(true)
+        setEmail(data.customer_email)
+        setSuccess(true)
       },
-      [
-        createFreeSubscription,
-        product,
-        router,
-        organization,
-        upsellSubscriptions,
-        hasHighlightedSubscriptions,
-      ],
+      [createFreeSubscription, product],
     )
 
   const sendMagicLink = useSendMagicLink()
@@ -258,7 +232,6 @@ export const FreeTierSubscribe = ({
         <AnonymousFreeTierSubscribe
           product={product}
           organization={organization}
-          upsellSubscriptions={upsellSubscriptions}
         />
       )}
     </>

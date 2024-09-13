@@ -1,4 +1,3 @@
-import LogoIcon from '@/components/Brand/LogoIcon'
 import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -63,9 +62,6 @@ export default function LongformPost({
   return (
     <article className="w-full max-w-2xl">
       <header className="flex flex-col items-center gap-y-8 pb-4 md:pb-16 md:pt-4">
-        <div className="hidden md:flex">
-          <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
-        </div>
         <div>
           <time
             className="dark:text-polar-500 text-gray-500"

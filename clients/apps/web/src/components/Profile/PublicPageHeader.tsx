@@ -35,7 +35,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
     const root = document.documentElement
 
     const [a, b] = computeComplementaryColor(
-      organization.profile_settings?.accent_color ?? '#222222',
+      organization.profile_settings?.accent_color ?? '#181818',
     )
 
     root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
@@ -47,13 +47,13 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative aspect-[4/1] w-full bg-gradient-to-tr from-white via-blue-50 to-white">
+      <div className="md:rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative aspect-video w-full rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white md:aspect-[4/1]">
         <canvas
           id="gradient-canvas"
-          className="rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full"
+          className="md:rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl"
         />
         <Avatar
-          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-16 w-16 -translate-x-1/2 border-8 text-lg md:h-32 md:w-32 md:text-5xl"
+          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 text-lg md:text-5xl"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />
@@ -78,7 +78,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
         <div className="flex w-full flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(
-              'dark:text-polar-500 flex w-2/3 flex-col items-center text-center text-lg leading-normal text-gray-500',
+              'dark:text-polar-500 flex w-full flex-col items-center text-center text-lg leading-normal text-gray-500 md:w-2/3',
             )}
           >
             {organization.profile_settings?.description ??

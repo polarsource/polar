@@ -25,12 +25,12 @@ export const NewsletterFeed = ({
           <ArrowForward fontSize="inherit" />
         </Link>
       </div>
-      <div className="flex w-full flex-col">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {posts.map((post) => (
           <Link
             key={post.id}
             href={organizationPageLink(organization, `posts/${post.slug}`)}
-            className="flex w-full flex-col gap-1 py-6 transition-opacity hover:opacity-70"
+            className="flex h-full w-full flex-col gap-1 py-6 transition-opacity hover:opacity-70"
           >
             <Post article={post} highlightPinned />
           </Link>

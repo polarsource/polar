@@ -1,22 +1,15 @@
+import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import PublicLayout from '@/components/Layout/PublicLayout'
+import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { PublicPageHeader } from '@/components/Profile/PublicPageHeader'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getUserOrganizations } from '@/utils/user'
-import {
-  ListResourceOrganizationCustomer,
-  ListResourceProduct,
-  OrganizationCustomerType,
-} from '@polar-sh/sdk'
+import { Organization, UserRead } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import Button from 'polarkit/components/ui/atoms/button'
 import React from 'react'
-
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
 
 export default async function Layout({
   params,
@@ -27,9 +20,6 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
 
-  let organizationCustomers: ListResourceOrganizationCustomer | undefined
-  let products: ListResourceProduct | undefined
-
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
@@ -39,60 +29,52 @@ export default async function Layout({
     notFound()
   }
 
-  const userOrganizations = await getUserOrganizations(api)
+  let authenticatedUser: UserRead | undefined
+  let userOrganizations: Organization[] = []
 
   try {
-    const loadSubscriptionTiers = await api.products
-      .list(
-        {
-          organizationId: organization.id,
-          isRecurring: true,
-        },
-        cacheConfig,
-      )
-      .catch(() => {
-        // Handle unauthenticated
-        return undefined
-      })
-    products = loadSubscriptionTiers
-  } catch (e) {
-    notFound()
-  }
+    authenticatedUser = await api.users.getAuthenticated()
+    userOrganizations = (await api.organizations.list({ isMember: true })).items
+  } catch (e) {}
 
-  const subscriberSettings = organization.profile_settings?.subscribe ?? {
-    show_count: true,
-    count_free: true,
-  }
-  if (subscriberSettings.show_count) {
-    let customerTypes: OrganizationCustomerType[] = [
-      OrganizationCustomerType.PAID_SUBSCRIPTION,
-    ]
-    if (subscriberSettings.count_free) {
-      customerTypes.push(OrganizationCustomerType.FREE_SUBSCRIPTION)
-    }
-
-    organizationCustomers = await api.organizations.customers(
-      {
-        id: organization.id,
-        customerTypes: new Set(customerTypes),
-        limit: 3,
-      },
-      cacheConfig,
-    )
-  }
+  const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
+  const isOrgAdmin = userOrganizations.some((org) => org.id === organization.id)
+  const creatorPath = `/dashboard/${isOrgAdmin ? organization.slug : userOrganizations?.[0]?.slug}`
 
   return (
-    <PublicLayout wide>
-      <div className="flex flex-col gap-y-8 py-16">
+    <PublicLayout className="gap-y-0 py-12" wide>
+      <div className="relative flex flex-row items-center justify-end gap-x-6">
+        <BrandingMenu
+          className="absolute left-1/2 -translate-x-1/2"
+          size={50}
+        />
+
+        {authenticatedUser ? (
+          <>
+            {hasOrgs && (
+              <Link href={creatorPath}>
+                <Button>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <span className="whitespace-nowrap text-xs">Dashboard</span>
+                  </div>
+                </Button>
+              </Link>
+            )}
+            <PublicProfileDropdown
+              authenticatedUser={authenticatedUser}
+              className="flex-shrink-0"
+              showAllBackerRoutes
+            />
+          </>
+        ) : (
+          <Link href="/login">
+            <Button>Login</Button>
+          </Link>
+        )}
+      </div>
+      <div className="flex flex-col gap-y-8">
         <div className="flex flex-grow flex-col items-center">
-          <PublicPageHeader
-            organizationCustomers={
-              subscriberSettings.show_count ? organizationCustomers : undefined
-            }
-            organization={organization}
-            userOrganizations={userOrganizations ?? []}
-            products={products?.items ?? []}
-          />
+          <PublicPageHeader organization={organization} />
         </div>
         <div className="flex flex-col items-center">
           <OrganizationPublicPageNav organization={organization} />

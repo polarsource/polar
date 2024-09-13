@@ -2,27 +2,19 @@
 
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
-import {
-  ListResourceOrganizationCustomer,
-  Organization,
-  Platforms,
-  Product,
-} from '@polar-sh/sdk'
+import { Organization, Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import tinycolor from 'tinycolor2'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { externalURL } from '../Organization'
 import { Gradient } from './GradientMesh'
+import { computeComplementaryColor } from './utils'
 
 interface PublicPageHeaderProps {
   organization: Organization
-  organizationCustomers: ListResourceOrganizationCustomer | undefined
-  userOrganizations: Organization[]
-  products: Product[]
 }
 
 export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
@@ -42,27 +34,12 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
   useEffect(() => {
     const root = document.documentElement
 
-    const accent = tinycolor(
+    const [a, b] = computeComplementaryColor(
       organization.profile_settings?.accent_color ?? '#888888',
     )
 
-    const { r, g, b } = accent.toRgb()
-
-    const mono = [r, g, b].every((value, index, array) => value === array[0])
-
-    if (mono) {
-      const [a, b, c] = accent.monochromatic()
-
-      root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
-      root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
-      root.style.setProperty('--gradient-color-3', `#${c.toHex()}`)
-    } else {
-      const [a, b, c] = accent.analogous(3, 10)
-
-      root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
-      root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
-      root.style.setProperty('--gradient-color-3', `#${c.toHex()}`)
-    }
+    root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
+    root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
 
     /* @ts-ignore */
     gradient.initGradient('#gradient-canvas')
@@ -70,7 +47,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative h-80 w-full bg-gradient-to-tr from-white via-blue-50 to-white">
+      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative aspect-[4/1] w-full bg-gradient-to-tr from-white via-blue-50 to-white">
         <canvas
           id="gradient-canvas"
           className="rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full"
@@ -83,9 +60,9 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
       </div>
       <div className="mt-16 flex flex-grow flex-col items-center">
         <div className="flex flex-col items-center md:gap-y-1">
-          <h1 className="text-xl md:text-2xl">{organization.name}</h1>
+          <h1 className="text-xl md:text-3xl">{organization.name}</h1>
           <Link
-            className="dark:text-polar-500 text-sm text-gray-500"
+            className="dark:text-polar-500 text-gray-500"
             href={`/${organization.slug}`}
           >
             @{organization.slug}
@@ -94,11 +71,11 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
       </div>
       <div
         className={twMerge(
-          'flex flex-grow flex-col items-center',
+          'flex w-full flex-grow flex-col items-center',
           isPostView ? 'hidden  md:flex' : 'flex',
         )}
       >
-        <div className="flex flex-grow flex-col items-center gap-y-6">
+        <div className="flex w-full flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(
               'dark:text-polar-500 flex w-2/3 flex-col items-center text-center text-lg leading-normal text-gray-500',

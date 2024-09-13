@@ -8581,10 +8581,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
-                                "paid_subscription",
                                 "order",
-                                "donation"
+                                "donation",
+                                "free_subscription",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },

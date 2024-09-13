@@ -1,5 +1,6 @@
 'use client'
 
+import { computeComplementaryColor } from '@/components/Profile/utils'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -30,6 +31,17 @@ import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
+
+const colorThemes = [
+  '#888888',
+  '#0062FF',
+  '#e64d4d',
+  '#3fab44',
+  '#FFF0BE',
+  '#FFD700',
+  '#FF69B4',
+  '#9400D3',
+]
 
 const PublicPageSidebarContentWrapper = ({
   title,
@@ -189,6 +201,7 @@ const PublicPageForm = () => {
           </FormItem>
         )}
       />
+
       <FormField
         control={control}
         name="profile_settings.accent_color"
@@ -196,17 +209,29 @@ const PublicPageForm = () => {
         render={({ field }) => (
           <FormItem className="flex flex-col gap-y-1">
             <div className="flex flex-row items-center justify-between">
-              <FormLabel>Accent Color</FormLabel>
+              <FormLabel>Theme</FormLabel>
             </div>
             <FormControl>
-              <input
-                className={twMerge(
-                  'dark:border-polar-600 h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-gray-100 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
-                )}
-                type="color"
-                {...field}
-                value={field.value || ''}
-              />
+              <div className="flex flex-col gap-y-4">
+                <div className="flex flex-row justify-between gap-x-2">
+                  {colorThemes.map((color) => (
+                    <div
+                      key={color}
+                      className={twMerge(
+                        'aspect-square h-8 flex-shrink-0 cursor-pointer rounded-full',
+                        field.value === color &&
+                          'ring-2 ring-black/50 dark:ring-white',
+                      )}
+                      style={{
+                        background: `linear-gradient(45deg, ${color}, #${computeComplementaryColor(
+                          color,
+                        )[1].toHex()})`,
+                      }}
+                      onClick={() => field.onChange(color)}
+                    />
+                  ))}
+                </div>
+              </div>
             </FormControl>
             <FormMessage />
           </FormItem>

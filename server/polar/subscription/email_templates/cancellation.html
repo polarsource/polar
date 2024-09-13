@@ -2,7 +2,7 @@
 
 {% block body %}
 <h1>Your subscription has been canceled</h1>
-<p>We're sorry to see you go! Your subscription to <strong>{{ product.name }}</strong> will remain active until <strong>{{ subscription.current_period_end | date: "%B %d, %Y" }}</strong>, after which it will be canceled.</p>
+<p>We're sorry to see you go! Your subscription to <strong>{{ product.name }}</strong> will remain active until <strong>{{ subscription.current_period_end.strftime("%B %d, %Y") }}</strong>, after which it will be canceled.</p>
 <p>If you change your mind, you can renew your subscription anytime before the end date.</p>
 
 <p>Meanwhile, you will continue to have access to the following benefits:</p>

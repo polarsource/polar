@@ -42,6 +42,7 @@ def construct_stripe_subscription(
     price_id: str = "PRICE_ID",
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     latest_invoice: stripe_lib.Invoice | None = None,
+    cancel_at_period_end: bool = False,
     metadata: dict[str, str] = {},
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
@@ -65,7 +66,7 @@ def construct_stripe_subscription(
             },
             "current_period_start": now_timestamp,
             "current_period_end": now_timestamp + timedelta(days=30).seconds,
-            "cancel_at_period_end": False,
+            "cancel_at_period_end": cancel_at_period_end,
             "ended_at": None,
             "latest_invoice": latest_invoice,
             "metadata": {**base_metadata, **metadata},
@@ -398,6 +399,47 @@ class TestUpdateSubscriptionFromStripe:
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.started_at is not None
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
+    async def test_valid_cancel_at_period_end(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        user: User,
+    ) -> None:
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
+        price = product.prices[0]
+        stripe_subscription = construct_stripe_subscription(
+            status=SubscriptionStatus.active,
+            price_id=price.stripe_price_id,
+            cancel_at_period_end=True,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            user=user,
+            stripe_subscription_id=stripe_subscription.id,
+        )
+        assert subscription.started_at is None
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.cancel_at_period_end is True
 
         enqueue_benefits_grants_mock.assert_called_once()
 

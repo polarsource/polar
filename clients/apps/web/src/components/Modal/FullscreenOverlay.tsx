@@ -1,4 +1,3 @@
-import { CloseOutlined } from '@mui/icons-material'
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -58,7 +57,7 @@ export const FullscreenOverlay: FunctionComponent<FullscreenOverlayProps> = ({
           onKeyDown={onKeyDown}
         >
           <div
-            className="fixed inset-0 bg-black/50"
+            className="dark:bg-polar-950 fixed inset-0 bg-gray-100"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -66,7 +65,7 @@ export const FullscreenOverlay: FunctionComponent<FullscreenOverlayProps> = ({
             }}
           >
             <div
-              className={twMerge('fixed inset-0 z-10', className)}
+              className={twMerge('fixed inset-0 z-10 overflow-auto', className)}
               onClick={onInnerClick}
             >
               {modalContent}
@@ -78,41 +77,4 @@ export const FullscreenOverlay: FunctionComponent<FullscreenOverlayProps> = ({
   )
 
   return isShown ? ReactDOM.createPortal(modal, document.body) : null
-}
-
-export const OverlayHeader = (props: {
-  children: React.ReactElement
-  className?: string
-  hide: () => void
-}) => {
-  return (
-    <div
-      className={twMerge(
-        'flex w-full items-center justify-between px-8 py-6',
-        props.className,
-      )}
-    >
-      <div className="text-lg">{props.children}</div>
-      <CloseButton hide={props.hide} />
-    </div>
-  )
-}
-
-export const CloseButton = (props: {
-  className?: string
-  hide: () => void
-}) => {
-  return (
-    <button
-      type="button"
-      className={twMerge(
-        'dark:text-polar-100 dark:hover:text-polar-300 text-black hover:text-gray-800',
-        props.className,
-      )}
-      onClick={() => props.hide()}
-      tabIndex={-1}
-    >
-      <CloseOutlined />
-    </button>
-  )
 }

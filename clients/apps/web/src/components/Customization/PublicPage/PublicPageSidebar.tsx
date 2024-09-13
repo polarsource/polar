@@ -54,7 +54,7 @@ const PublicPageSidebarContentWrapper = ({
   onEnabledChange: (enabled: boolean) => void
 }>) => {
   return (
-    <ShadowBox className="flex w-full max-w-96 flex-shrink-0 flex-col p-8">
+    <ShadowBox className="sticky my-8 flex min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -294,7 +294,7 @@ export const PublicPageSidebar = () => {
 
       reset(org)
     },
-    [organization, updateOrganization],
+    [organization, updateOrganization, reset],
   )
 
   return (
@@ -310,6 +310,7 @@ export const PublicPageSidebar = () => {
           type="submit"
           loading={isLoading}
           disabled={!formState.isDirty}
+          size="lg"
         >
           Save
         </Button>

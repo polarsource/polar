@@ -15,7 +15,7 @@ export default function Layout({
   const router = useRouter()
 
   return (
-    <DashboardLayout className="flex h-full flex-grow">
+    <DashboardLayout className="flex h-full flex-grow md:p-0">
       <FullscreenOverlay
         isShown={true}
         modalContent={children}

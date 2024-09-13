@@ -41,6 +41,19 @@ import {
 } from 'polarkit/components/ui/popover'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { buttonVariants } from 'polarkit/components/ui/atoms/button'
+import { cn } from "polarkit/lib/utils"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from 'polarkit/components/ui/alert-dialog'
 
 const AccessToken = (
   props: PersonalAccessToken & { createdTokenJWT?: string },
@@ -72,14 +85,35 @@ const AccessToken = (
           </div>
         </div>{' '}
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-4 space-x-4 text-gray-500">
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              await deleteToken.mutateAsync({ id: props.id })
-            }}
-          >
-            <span>Revoke</span>
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                Revoke
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete your access token.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="cursor-pointer bg-destructive text-white hover:bg-destructive/90"
+                  asChild>
+                  <span
+                    onClick={async () => {
+                      await deleteToken.mutateAsync({ id: props.id })
+                    }}
+                  >
+                    Delete Personal Access Token
+                  </span>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       {props.createdTokenJWT && (

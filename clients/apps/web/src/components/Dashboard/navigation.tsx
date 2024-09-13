@@ -1,7 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
 import {
-  AllInclusiveOutlined,
   AttachMoneyOutlined,
   DataUsageOutlined,
   DiamondOutlined,
@@ -278,14 +277,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Purchases',
     link: `/purchases`,
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'posts',
-    title: 'Newsletters',
-    link: `/feed`,
-    icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,
   },

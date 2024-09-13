@@ -33,11 +33,11 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
 
 const colorThemes = [
-  '#888888',
+  '#222222',
   '#0062FF',
   '#e64d4d',
   '#3fab44',
-  '#FFF0BE',
+  '#3ceeb9',
   '#FFD700',
   '#FF69B4',
   '#9400D3',
@@ -253,7 +253,7 @@ export const PublicPageSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
   const [isLoading, setLoading] = useState(false)
 
-  const { handleSubmit, setError, formState } = useFormContext()
+  const { handleSubmit, setError, formState, reset } = useFormContext()
 
   const updateOrganization = useUpdateOrganization()
 
@@ -261,10 +261,11 @@ export const PublicPageSidebar = () => {
     async (organizationUpdate: OrganizationUpdate) => {
       try {
         setLoading(true)
-        await updateOrganization.mutateAsync({
+        const org = await updateOrganization.mutateAsync({
           id: organization.id,
           body: organizationUpdate,
         })
+        reset(org)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -277,12 +278,12 @@ export const PublicPageSidebar = () => {
         setLoading(false)
       }
     },
-    [organization, setError, updateOrganization],
+    [organization, setError, updateOrganization, reset],
   )
 
   const toggleProfilePage = useCallback(
     async (enabled: boolean) => {
-      await updateOrganization.mutateAsync({
+      const org = await updateOrganization.mutateAsync({
         id: organization.id,
         body: {
           profile_settings: {
@@ -290,6 +291,8 @@ export const PublicPageSidebar = () => {
           },
         },
       })
+
+      reset(org)
     },
     [organization, updateOrganization],
   )

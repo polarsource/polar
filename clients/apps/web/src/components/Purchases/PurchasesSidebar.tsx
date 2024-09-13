@@ -82,11 +82,6 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
             </span>
             <span>{subscriptions?.pagination.total_count || 0}</span>
           </PurchaseLink>
-          <PurchaseLink href="/feed">
-            <span className="flex flex-row items-center gap-x-2">
-              Newsletters
-            </span>
-          </PurchaseLink>
           <PurchaseLink href="/funding">
             <span className="flex flex-row items-center gap-x-2">
               Funded Issues

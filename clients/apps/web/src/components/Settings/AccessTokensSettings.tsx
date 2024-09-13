@@ -41,8 +41,6 @@ import {
 } from 'polarkit/components/ui/popover'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { buttonVariants } from 'polarkit/components/ui/atoms/button'
-import { cn } from "polarkit/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,

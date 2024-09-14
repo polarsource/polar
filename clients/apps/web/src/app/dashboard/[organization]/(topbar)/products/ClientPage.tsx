@@ -12,6 +12,9 @@ import Link from 'next/link'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import {
+  InsertPhotoOutlined,
+} from '@mui/icons-material'
 import { useContext } from 'react'
 
 export default function ClientPage() {
@@ -59,10 +62,12 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="h-7 w-8 rounded bg-blue-50 dark:bg-gray-900">
+    <div className="h-7 w-8 rounded bg-blue-50 dark:bg-gray-900 text-center">
       {coverUrl ? (
         <img src={coverUrl} alt={product.name} className="h-7 w-8 rounded" />
-      ) : null}
+      ) : (
+        <InsertPhotoOutlined className="text-blue-300 dark:text-blue-600 mt-0.5" />
+      )}
     </div>
   )
 }

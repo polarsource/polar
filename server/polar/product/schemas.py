@@ -40,7 +40,13 @@ MINIMUM_PRICE_AMOUNT = 50
 
 
 PriceAmount = Annotated[
-    int, Field(..., ge=MINIMUM_PRICE_AMOUNT, le=MAXIMUM_PRICE_AMOUNT, description="The price in cents.")
+    int,
+    Field(
+        ...,
+        ge=MINIMUM_PRICE_AMOUNT,
+        le=MAXIMUM_PRICE_AMOUNT,
+        description="The price in cents.",
+    ),
 ]
 PriceCurrency = Annotated[
     str,

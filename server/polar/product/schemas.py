@@ -36,10 +36,11 @@ ProductID = Annotated[
 
 # Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
 MAXIMUM_PRICE_AMOUNT = 99999999
+MINIMUM_PRICE_AMOUNT = 50
 
 
 PriceAmount = Annotated[
-    int, Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT, description="The price in cents.")
+    int, Field(..., ge=MINIMUM_PRICE_AMOUNT, le=MAXIMUM_PRICE_AMOUNT, description="The price in cents.")
 ]
 PriceCurrency = Annotated[
     str,

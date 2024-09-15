@@ -75,6 +75,9 @@ const MoneyInput = (props: Props) => {
       postSlot={postSlot}
       onBlur={onBlur}
       onFocus={onFocus}
+      onWheel={(e) => {
+        ;(e.target as HTMLInputElement).blur()
+      }}
     />
   )
 }

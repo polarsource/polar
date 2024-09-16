@@ -206,20 +206,3 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 }
 
 export default SubscriptionTierCard
-
-const Shine = ({ active = false }: { active: boolean }) => {
-  return (
-    <div
-      style={{
-        content: '',
-        top: `calc(var(--y, 0) * 1px - 400px)`,
-        left: `calc(var(--x, 0) * 1px - 400px)`,
-        background: `radial-gradient(var(--var-dark-glow-color), #ffffff00 70%)`,
-      }}
-      className={twMerge(
-        'pointer-events-none absolute h-[800px] w-[800px] opacity-0 transition-opacity duration-300',
-        active && 'dark:opacity-100',
-      )}
-    />
-  )
-}

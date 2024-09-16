@@ -48,7 +48,7 @@ export default function NewWebhookModal({
   )
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">New webhook</h2>

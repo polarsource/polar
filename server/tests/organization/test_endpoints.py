@@ -230,6 +230,8 @@ async def test_update_organization_profile_settings(
         "featured_organizations": None,
         "description": None,
         "links": None,
+        "enabled": None,
+        "accent_color": None,
         "subscribe": {
             "promote": True,
             "show_count": True,
@@ -420,6 +422,28 @@ async def test_update_organization_profile_settings_description(
 
     assert 422 == response.status_code
     assert response.json()["detail"][0]["type"] == "string_too_long"
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_update_organization_profile_settings_enabled(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+) -> None:
+    # then
+    session.expunge_all()
+
+    # set enabled
+    response = await client.patch(
+        f"/v1/organizations/{organization.id}",
+        json={"profile_settings": {"enabled": True}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["enabled"] is True
 
 
 @pytest.mark.asyncio

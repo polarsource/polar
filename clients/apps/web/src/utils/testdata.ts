@@ -53,7 +53,9 @@ export const org: Organization = {
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
   pledge_minimum_amount: 2000,
   pledge_badge_show_amount: true,
-  profile_settings: {},
+  profile_settings: {
+    enabled: false,
+  },
   donations_enabled: false,
   feature_settings: {},
   default_upfront_split_to_contributors: null,

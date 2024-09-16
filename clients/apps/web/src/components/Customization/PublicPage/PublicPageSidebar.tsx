@@ -13,6 +13,7 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -33,14 +34,13 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
 
 const colorThemes = [
-  '#181818',
+  '#121316',
   '#0062FF',
   '#e64d4d',
   '#3fab44',
   '#3ceeb9',
   '#FFD700',
   '#FF69B4',
-  '#9400D3',
 ]
 
 const PublicPageSidebarContentWrapper = ({
@@ -54,7 +54,7 @@ const PublicPageSidebarContentWrapper = ({
   onEnabledChange: (enabled: boolean) => void
 }>) => {
   return (
-    <ShadowBox className="sticky my-8 flex min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
+    <ShadowBox className="flex min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -213,23 +213,34 @@ const PublicPageForm = () => {
             </div>
             <FormControl>
               <div className="flex flex-col gap-y-4">
-                <div className="flex flex-row justify-between gap-x-2">
-                  {colorThemes.map((color) => (
-                    <div
-                      key={color}
-                      className={twMerge(
-                        'aspect-square h-8 flex-shrink-0 cursor-pointer rounded-full',
-                        field.value === color &&
-                          'ring-2 ring-black/50 dark:ring-white',
-                      )}
-                      style={{
-                        background: `linear-gradient(45deg, ${color}, #${computeComplementaryColor(
-                          color,
-                        )[1].toHex()})`,
-                      }}
-                      onClick={() => field.onChange(color)}
-                    />
-                  ))}
+                <div className="flex flex-row items-center gap-x-6">
+                  <input
+                    className={twMerge(
+                      'dark:border-polar-600 h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-100 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
+                    )}
+                    type="color"
+                    {...field}
+                    value={field.value || ''}
+                  />
+
+                  <div className="dark:bg-polar-950 flex flex-grow flex-row justify-between rounded-full bg-gray-100 p-2">
+                    {colorThemes.map((color) => (
+                      <div
+                        key={color}
+                        className={twMerge(
+                          'aspect-square h-4 flex-shrink-0 cursor-pointer rounded-full',
+                          field.value === color &&
+                            'ring-2 ring-black/50 dark:ring-white',
+                        )}
+                        style={{
+                          background: `linear-gradient(45deg, ${color}, #${computeComplementaryColor(
+                            color,
+                          )[1].toHex()})`,
+                        }}
+                        onClick={() => field.onChange(color)}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </FormControl>
@@ -305,15 +316,22 @@ export const PublicPageSidebar = () => {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
         <PublicPageForm />
-        <Button
-          className="self-start"
-          type="submit"
-          loading={isLoading}
-          disabled={!formState.isDirty}
-          size="lg"
-        >
-          Save
-        </Button>
+        <div className="flex flex-row items-center gap-x-6">
+          <Button
+            className="self-start"
+            type="submit"
+            loading={isLoading}
+            disabled={!formState.isDirty}
+            size="lg"
+          >
+            Save
+          </Button>
+          {organization.profile_settings?.enabled && (
+            <Link href={`/${organization.slug}`} className="text-sm">
+              <span>View Public Page</span>
+            </Link>
+          )}
+        </div>
       </form>
     </PublicPageSidebarContentWrapper>
   )

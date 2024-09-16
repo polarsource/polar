@@ -66,7 +66,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     default: {
       name: 'text-lg',
       card: 'p-8 min-h-[400px]',
-      priceLabel: 'text-5xl !font-[200]',
+      priceLabel: 'text-4xl !font-[200]',
       description: 'text-base',
       footer: 'mt-4',
     },

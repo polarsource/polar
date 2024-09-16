@@ -115,7 +115,7 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               >
                 Download Invoice
               </Button>
-              {organization && (
+              {organization && organization.profile_settings?.enabled && (
                 <Link
                   href={organizationPageLink(
                     organization,

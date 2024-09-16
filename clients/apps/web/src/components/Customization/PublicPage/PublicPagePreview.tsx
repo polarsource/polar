@@ -36,7 +36,7 @@ export const PublicPagePreview = () => {
       organizationId: organization.id,
       isPublished: true,
       visibility: ArticleVisibility.PUBLIC,
-      limit: 3,
+      limit: 4,
     }).data?.pages[0].items ?? []
 
   const products =
@@ -57,11 +57,11 @@ export const PublicPagePreview = () => {
     }).data?.items ?? []
 
   return (
-    <div className="flex w-full flex-col items-center">
-      <div className="flex w-full max-w-7xl flex-col gap-y-12 overflow-y-auto py-8">
+    <div className="flex h-full w-full flex-col items-center overflow-y-auto">
+      <div className="flex w-full max-w-7xl flex-col gap-y-12">
         {!organization.profile_settings?.enabled && (
           <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
-            This public page is not enabled
+            Public Page is not enabled
           </div>
         )}
         <div className="flex flex-grow flex-col items-center">

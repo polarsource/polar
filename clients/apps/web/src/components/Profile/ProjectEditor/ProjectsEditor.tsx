@@ -41,6 +41,7 @@ export const ProjectsEditor = ({
       id: organization.id,
       body: {
         profile_settings: {
+          enabled: null,
           featured_projects: newRepos.map((repo) => repo.id),
         },
       },

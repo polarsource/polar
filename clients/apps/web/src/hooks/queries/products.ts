@@ -12,7 +12,7 @@ import { defaultRetry } from './retry'
 
 export const useProducts = (
   organizationId?: OrganizationIDFilter,
-  parameters?: Omit<ProductsApiListRequest, 'organization_id' | 'limit'>,
+  parameters?: Omit<ProductsApiListRequest, 'organizationId' | 'limit'>,
   limit = 100,
 ) =>
   useQuery({

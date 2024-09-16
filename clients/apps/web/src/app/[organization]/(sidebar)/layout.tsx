@@ -42,7 +42,7 @@ export default async function Layout({
   const creatorPath = `/dashboard/${isOrgAdmin ? organization.slug : userOrganizations?.[0]?.slug}`
 
   return (
-    <PublicLayout className="gap-y-0 py-12" wide>
+    <PublicLayout className="gap-y-0 py-6 md:py-12" wide>
       <div className="relative flex flex-row items-center justify-end gap-x-6">
         <BrandingMenu
           className="absolute left-1/2 -translate-x-1/2"
@@ -52,7 +52,7 @@ export default async function Layout({
         {authenticatedUser ? (
           <>
             {hasOrgs && (
-              <Link href={creatorPath}>
+              <Link className="hidden md:block" href={creatorPath}>
                 <Button>
                   <div className="flex flex-row items-center gap-x-2">
                     <span className="whitespace-nowrap text-xs">Dashboard</span>
@@ -63,7 +63,6 @@ export default async function Layout({
             <PublicProfileDropdown
               authenticatedUser={authenticatedUser}
               className="flex-shrink-0"
-              showAllBackerRoutes
             />
           </>
         ) : (

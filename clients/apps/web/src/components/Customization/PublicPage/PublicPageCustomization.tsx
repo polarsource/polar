@@ -64,7 +64,6 @@ export const PublicPageCustomization = () => {
         <PublicProfileDropdown
           authenticatedUser={currentUser}
           className="flex-shrink-0"
-          showAllBackerRoutes
         />
       </div>
       <div className="flex min-h-0 flex-grow flex-row gap-x-8 pb-8">

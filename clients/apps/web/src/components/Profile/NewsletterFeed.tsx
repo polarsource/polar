@@ -16,7 +16,7 @@ export const NewsletterFeed = ({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h3 className="text-2xl font-medium">Newsletters</h3>
+        <h3 className="text-2xl font-medium">Newsletter</h3>
         <Link
           className="dark:text-polar-500 flex flex-row items-center gap-2 text-sm text-blue-500 transition-colors hover:text-blue-400 dark:hover:text-white"
           href={organizationPageLink(organization, 'posts')}

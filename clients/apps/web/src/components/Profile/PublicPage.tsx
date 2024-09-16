@@ -9,17 +9,11 @@ import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
-import {
-  Article,
-  IssueFunding,
-  Organization,
-  Product,
-  PublicDonation,
-} from '@polar-sh/sdk'
+import { AllInclusiveOutlined } from '@mui/icons-material'
+import { Article, IssueFunding, Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
-import { DonationsFeed } from './DonationsFeed'
 import { NewsletterFeed } from './NewsletterFeed'
 import { ProductsGrid } from './ProductsGrid'
 
@@ -28,13 +22,11 @@ export const PublicPage = ({
   posts,
   products,
   issues,
-  donations,
 }: {
   organization: Organization
   posts: Article[]
   products: Product[]
   issues: IssueFunding[]
-  donations: PublicDonation[]
 }) => {
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(products)
@@ -60,10 +52,14 @@ export const PublicPage = ({
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-24">
           {subscriptionProducts.length > 0 && (
-            <div className="dark:border-polar-700 rounded-4xl flex flex-col items-center border p-12">
-              <div className="flex flex-grow flex-col items-center gap-y-12">
-                <div className="flex flex-col items-center justify-between gap-y-4">
-                  <h2 className="text-center text-2xl font-medium">
+            <div className="dark:border-polar-700 rounded-4xl flex flex-col md:items-center md:border md:p-12">
+              <div className="flex flex-grow flex-col gap-y-6 md:items-center md:gap-y-12">
+                <div className="flex flex-col justify-between gap-y-4 md:items-center">
+                  <AllInclusiveOutlined
+                    fontSize="large"
+                    className="text-blue-500"
+                  />
+                  <h2 className="text-2xl font-medium md:text-center">
                     Subscriptions
                   </h2>
                   {hasBothIntervals &&
@@ -77,10 +73,10 @@ export const PublicPage = ({
                       </div>
                     )}
                 </div>
-                <div className="flex flex-shrink flex-row flex-wrap justify-center gap-10">
+                <div className="flex flex-row flex-nowrap justify-start gap-4 overflow-x-auto md:flex-shrink md:flex-wrap md:justify-center md:gap-8">
                   {subscriptionProducts.map((tier) => (
                     <SubscriptionTierCard
-                      className="w-[280px] self-stretch"
+                      className="w-[280px] flex-shrink-0 self-stretch"
                       key={tier.id}
                       subscriptionTier={tier}
                       recurringInterval={recurringInterval}
@@ -128,10 +124,6 @@ export const PublicPage = ({
             posts.length > 0 && (
               <NewsletterFeed organization={organization} posts={posts} />
             )}
-
-          {organization.donations_enabled && (
-            <DonationsFeed donations={donations} />
-          )}
 
           {organization.feature_settings?.issue_funding_enabled &&
           issues.length > 0 ? (

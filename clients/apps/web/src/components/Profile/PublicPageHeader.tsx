@@ -49,7 +49,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="md:rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative aspect-video w-full rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white md:aspect-[4/1]">
+      <div className="md:rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative aspect-[3/1] w-full rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white md:aspect-[4/1]">
         <canvas
           id="gradient-canvas"
           className="md:rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl"

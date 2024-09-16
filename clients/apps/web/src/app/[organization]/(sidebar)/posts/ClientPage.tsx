@@ -56,8 +56,8 @@ const ClientPage = ({
   }
 
   return (
-    <div className="flex w-full flex-col gap-y-6">
-      <div className="flex w-full flex-col gap-y-16">
+    <div className="flex w-full flex-col items-center gap-y-6">
+      <div className="flex w-full max-w-4xl flex-col gap-y-16">
         {(pinnedArticles.items.length ?? 0) > 0 ? (
           <div className="flex w-full flex-col gap-y-6">
             {pinnedArticles.items.map((post) => (

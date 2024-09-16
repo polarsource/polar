@@ -69,10 +69,7 @@ const Topbar = ({
           <Link href={creatorPath}>
             <Button>
               <div className="flex flex-row items-center gap-x-2">
-                <span className="whitespace-nowrap text-xs">
-                  Creator Dashboard
-                </span>
-                <ArrowForwardOutlined fontSize="inherit" />
+                <span className="whitespace-nowrap text-xs">Dashboard</span>
               </div>
             </Button>
           </Link>

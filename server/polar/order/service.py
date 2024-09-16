@@ -343,7 +343,7 @@ class OrderService(ResourceServiceReader[Order]):
                 payload=MaintainerNewProductSaleNotificationPayload(
                     customer_name=order.user.email,
                     product_name=product.name,
-                    product_price_amount=order.product_price.price_amount,
+                    product_price_amount=order.amount,
                     organization_name=organization.slug,
                 ),
             ),

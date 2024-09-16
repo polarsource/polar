@@ -9,16 +9,24 @@ from pytest_mock import MockerFixture
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject, Subject
 from polar.auth.scope import Scope
 from polar.authz.service import Authz
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, File, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
+from polar.models.product_price import (
+    ProductPriceFixed,
+    ProductPriceType,
+)
 from polar.postgres import AsyncSession
 from polar.product.schemas import (
     ExistingProductPrice,
+    ProductOneTimeCreate,
+    ProductPriceOneTimeCreateList,
+    ProductPriceOneTimeCustomCreate,
+    ProductPriceOneTimeFixedCreate,
     ProductPriceRecurringCreate,
     ProductRecurringCreate,
     ProductUpdate,
@@ -493,12 +501,12 @@ class TestList:
                         (
                             1000,
                             ProductPriceType.recurring,
-                            ProductPriceRecurringInterval.month,
+                            SubscriptionRecurringInterval.month,
                         ),
                         (
                             2000,
                             ProductPriceType.recurring,
-                            ProductPriceRecurringInterval.year,
+                            SubscriptionRecurringInterval.year,
                         ),
                     ],
                 )
@@ -515,12 +523,12 @@ class TestList:
                         (
                             1000,
                             ProductPriceType.recurring,
-                            ProductPriceRecurringInterval.month,
+                            SubscriptionRecurringInterval.month,
                         ),
                         (
                             2000,
                             ProductPriceType.recurring,
-                            ProductPriceRecurringInterval.year,
+                            SubscriptionRecurringInterval.year,
                         ),
                     ],
                 )
@@ -662,7 +670,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -689,7 +697,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -726,7 +734,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -778,7 +786,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -821,7 +829,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -848,7 +856,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -883,7 +891,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -917,7 +925,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -980,7 +988,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -1036,7 +1044,7 @@ class TestUserCreate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.month,
+                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -1049,6 +1057,64 @@ class TestUserCreate:
         )
 
         assert len(product.medias) == 1
+
+    @pytest.mark.parametrize(
+        "prices",
+        (
+            [
+                ProductPriceOneTimeFixedCreate(
+                    type=ProductPriceType.one_time,
+                    price_amount=1000,
+                    price_currency="usd",
+                ),
+            ],
+            [
+                ProductPriceOneTimeCustomCreate(
+                    type=ProductPriceType.one_time,
+                    minimum_amount=1000,
+                    maximum_amount=2000,
+                    preset_amount=1500,
+                    price_currency="usd",
+                ),
+            ],
+        ),
+    )
+    @pytest.mark.auth
+    async def test_valid_prices(
+        self,
+        prices: ProductPriceOneTimeCreateList,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        create_schema = ProductOneTimeCreate(
+            name="Product",
+            organization_id=organization.id,
+            prices=prices,
+        )
+
+        product = await product_service.user_create(
+            session, authz, create_schema, auth_subject
+        )
+        assert product.organization_id == organization.id
+
+        create_product_mock.assert_called_once()
+        create_price_for_product_mock.assert_called_once()
+        assert product.stripe_product_id == "PRODUCT_ID"
+
+        assert len(product.prices) == 1
+        assert product.prices[0].stripe_price_id == "PRICE_ID"
 
 
 @pytest.mark.asyncio
@@ -1241,7 +1307,7 @@ class TestUserUpdate:
                 ExistingProductPrice(id=product_organization_loaded.prices[0].id),
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.year,
+                    recurring_interval=SubscriptionRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
@@ -1260,9 +1326,11 @@ class TestUserUpdate:
         assert len(updated_product.prices) == 2
         assert updated_product.prices[0].id == product_organization_loaded.prices[0].id
 
-        assert updated_product.prices[1].recurring_interval == "year"
-        assert updated_product.prices[1].price_amount == 12000
-        assert updated_product.prices[1].stripe_price_id == "NEW_PRICE_ID"
+        new_price = updated_product.prices[1]
+        assert isinstance(new_price, ProductPriceFixed)
+        assert new_price.recurring_interval == "year"
+        assert new_price.price_amount == 12000
+        assert new_price.stripe_price_id == "NEW_PRICE_ID"
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1295,7 +1363,7 @@ class TestUserUpdate:
             prices=[
                 ProductPriceRecurringCreate(
                     type=ProductPriceType.recurring,
-                    recurring_interval=ProductPriceRecurringInterval.year,
+                    recurring_interval=SubscriptionRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
@@ -1313,9 +1381,12 @@ class TestUserUpdate:
         archive_price_mock.assert_called_once_with(deleted_price_id)
 
         assert len(updated_product.prices) == 1
-        assert updated_product.prices[0].recurring_interval == "year"
-        assert updated_product.prices[0].price_amount == 12000
-        assert updated_product.prices[0].stripe_price_id == "NEW_PRICE_ID"
+
+        new_price = updated_product.prices[0]
+        assert isinstance(new_price, ProductPriceFixed)
+        assert new_price.recurring_interval == "year"
+        assert new_price.price_amount == 12000
+        assert new_price.stripe_price_id == "NEW_PRICE_ID"
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

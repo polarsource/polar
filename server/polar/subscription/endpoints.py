@@ -251,8 +251,8 @@ async def export(
                     sub.created_at.isoformat(),
                     "true" if sub.active else "false",
                     sub.product.name,
-                    sub.price.price_amount / 100 if sub.price is not None else "",
-                    sub.price.price_currency if sub.price is not None else "",
+                    sub.amount / 100 if sub.amount is not None else "",
+                    sub.currency if sub.currency is not None else "",
                 )
             )
 

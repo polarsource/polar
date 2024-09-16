@@ -29,7 +29,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
-    create_product_price,
+    create_product_price_fixed,
     create_subscription,
 )
 
@@ -267,7 +267,7 @@ class TestUpdate:
         subscription: Subscription,
     ) -> None:
         product = await create_product(save_fixture, organization=organization)
-        price = await create_product_price(
+        price = await create_product_price_fixed(
             save_fixture, product=product, type=ProductPriceType.one_time
         )
         with pytest.raises(PolarRequestValidationError):

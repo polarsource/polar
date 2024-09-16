@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Literal, cast
 
 
 class Platforms(StrEnum):
@@ -21,6 +22,14 @@ class AccountType(StrEnum):
             AccountType.stripe: "Stripe",
             AccountType.open_collective: "Open Collective",
         }[v]
+
+
+class SubscriptionRecurringInterval(StrEnum):
+    month = "month"
+    year = "year"
+
+    def as_literal(self) -> Literal["month", "year"]:
+        return cast(Literal["month", "year"], self.value)
 
 
 class TokenType(StrEnum):

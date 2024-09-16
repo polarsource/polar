@@ -5,6 +5,7 @@ import pytest
 import pytest_asyncio
 
 from polar.auth.models import AuthSubject
+from polar.enums import SubscriptionRecurringInterval
 from polar.metrics.queries import Interval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
@@ -15,7 +16,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
+from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -28,7 +29,7 @@ from tests.fixtures.random_objects import (
 
 
 class ProductFixture(TypedDict):
-    prices: list[tuple[int, ProductPriceType, ProductPriceRecurringInterval | None]]
+    prices: list[tuple[int, ProductPriceType, SubscriptionRecurringInterval | None]]
 
 
 class SubscriptionFixture(TypedDict):
@@ -54,7 +55,7 @@ PRODUCTS: dict[str, ProductFixture] = {
     },
     "monthly_subscription": {
         "prices": [
-            (100_00, ProductPriceType.recurring, ProductPriceRecurringInterval.month)
+            (100_00, ProductPriceType.recurring, SubscriptionRecurringInterval.month)
         ],
     },
     "free_subscription_tier": {"prices": []},

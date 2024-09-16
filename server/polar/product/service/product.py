@@ -28,6 +28,7 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
+    ProductPriceFixed,
     User,
     UserOrganization,
 )
@@ -42,7 +43,6 @@ from polar.worker import enqueue_job
 from ..schemas import (
     ExistingProductPrice,
     ProductCreate,
-    ProductPriceRecurringCreate,
     ProductRecurringCreate,
     ProductUpdate,
 )
@@ -86,7 +86,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     ProductPrice.is_archived.is_(False),
                     ProductPrice.deleted_at.is_(None),
                 )
-                .order_by(ProductPrice.price_amount.asc())
+                .order_by(ProductPriceFixed.price_amount.asc())
                 .limit(1)
                 .scalar_subquery()
             ),
@@ -117,7 +117,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                 (Product.type == SubscriptionTierType.individual, 2),
                 (Product.type == SubscriptionTierType.business, 3),
             ),
-            ProductPrice.price_amount.asc(),
+            ProductPriceFixed.price_amount.asc(),
             Product.created_at,
         )
 
@@ -237,14 +237,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         for price_create in create_schema.prices:
             stripe_price = stripe_service.create_price_for_product(
-                stripe_product.id,
-                price_create.price_amount,
-                price_create.price_currency,
-                price_create.recurring_interval.as_literal()
-                if isinstance(price_create, ProductPriceRecurringCreate)
-                else None,
+                stripe_product.id, price_create.get_stripe_price_params()
             )
-            price = ProductPrice(
+            model_class = price_create.get_model_class()
+            price = model_class(
                 **price_create.model_dump(),
                 stripe_price_id=stripe_price.id,
                 product=product,
@@ -343,14 +339,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
                 assert product.stripe_product_id is not None
                 stripe_price = stripe_service.create_price_for_product(
-                    product.stripe_product_id,
-                    price_update.price_amount,
-                    price_update.price_currency,
-                    price_update.recurring_interval.as_literal()
-                    if isinstance(price_update, ProductPriceRecurringCreate)
-                    else None,
+                    product.stripe_product_id, price_update.get_stripe_price_params()
                 )
-                price = ProductPrice(
+                model_class = price_update.get_model_class()
+                price = model_class(
                     **price_update.model_dump(),
                     stripe_price_id=stripe_price.id,
                     product=product,

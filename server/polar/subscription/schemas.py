@@ -1,7 +1,9 @@
 from datetime import datetime
 
+from babel.numbers import format_currency
 from pydantic import UUID4, Field
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPrice
@@ -15,6 +17,9 @@ class SubscriptionUser(Schema):
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
+    amount: int | None
+    currency: str | None
+    recurring_interval: SubscriptionRecurringInterval
     status: SubscriptionStatus
     current_period_start: datetime
     current_period_end: datetime | None
@@ -25,6 +30,15 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     user_id: UUID4
     product_id: UUID4
     price_id: UUID4 | None
+
+    def get_amount_display(self) -> str:
+        if self.amount is None or self.currency is None:
+            return "Free"
+        return f"{format_currency(
+            self.amount / 100,
+            self.currency.upper(),
+            locale="en_US",
+        )}/{self.recurring_interval}"
 
 
 class Subscription(SubscriptionBase):

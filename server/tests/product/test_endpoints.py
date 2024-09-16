@@ -10,6 +10,7 @@ from polar.models import (
     Benefit,
     Organization,
     Product,
+    ProductPriceFixed,
     UserOrganization,
 )
 from polar.postgres import AsyncSession
@@ -407,7 +408,10 @@ class TestUpdateProduct:
         assert len(json["prices"]) == 1
         price = json["prices"][0]
         assert price["id"] == str(product_one_time.prices[0].id)
-        assert price["price_amount"] == product_one_time.prices[0].price_amount
+
+        product_price = product_one_time.prices[0]
+        assert isinstance(product_price, ProductPriceFixed)
+        assert price["price_amount"] == product_price.price_amount
 
 
 @pytest.mark.asyncio

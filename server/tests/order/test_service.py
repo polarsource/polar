@@ -482,3 +482,68 @@ class TestCreateOrderFromStripe:
             product_id=product_one_time.id,
             order_id=order.id,
         )
+
+    async def test_one_time_custom_price_product(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time_custom_price: Product,
+        organization_account: Account,
+        user: User,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            lines=[(product_one_time_custom_price.prices[0].stripe_price_id, False)],
+            subscription_id=None,
+            billing_reason="manual",
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice_total
+        assert order.user.id == user.id
+        assert order.product == product_one_time_custom_price
+        assert order.product_price == product_one_time_custom_price.prices[0]
+        assert order.subscription is None
+
+        enqueue_job_mock.assert_any_call(
+            "order.discord_notification",
+            order_id=order.id,
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            user_id=user.id,
+            product_id=product_one_time_custom_price.id,
+            order_id=order.id,
+        )

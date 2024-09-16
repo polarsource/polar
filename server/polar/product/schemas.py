@@ -1,15 +1,13 @@
+import builtins
 from typing import Annotated, Literal
 
-from babel.numbers import format_currency
-from pydantic import (
-    UUID4,
-    AfterValidator,
-    Discriminator,
-    Field,
-)
+import stripe as stripe_lib
+from pydantic import UUID4, AfterValidator, Discriminator, Field
 
 from polar.benefit.schemas import BenefitID, BenefitPublic
+from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
+from polar.kit.db.models import Model
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
@@ -20,7 +18,12 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceType,
+)
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
@@ -71,27 +74,94 @@ ProductDescription = Annotated[
 ]
 
 
-class ProductPriceRecurringCreate(Schema):
+class ProductPriceCreateBase(Schema):
+    type: ProductPriceType
+    price_currency: PriceCurrency
+
+    def get_model_class(self) -> builtins.type[Model]:
+        raise NotImplementedError()
+
+
+class ProductPriceFixedCreateBase(ProductPriceCreateBase):
+    price_amount: PriceAmount
+
+    def get_model_class(self) -> builtins.type[ProductPriceFixed]:
+        return ProductPriceFixed
+
+    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
+        return {
+            "unit_amount": self.price_amount,
+            "currency": self.price_currency,
+        }
+
+
+class ProductPriceCustomCreateBase(ProductPriceCreateBase):
+    minimum_amount: PriceAmount | None = Field(
+        default=None, description="The minimum amount the customer can pay."
+    )
+    maximum_amount: PriceAmount | None = Field(
+        default=None, description="The maximum amount the customer can pay."
+    )
+    preset_amount: PriceAmount | None = Field(
+        default=None,
+        description="The initial amount shown to the customer.",
+    )
+
+    def get_model_class(self) -> builtins.type[ProductPriceCustom]:
+        return ProductPriceCustom
+
+    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
+        custom_unit_amount_params: stripe_lib.Price.CreateParamsCustomUnitAmount = {
+            "enabled": True,
+        }
+        if self.minimum_amount is not None:
+            custom_unit_amount_params["minimum"] = self.minimum_amount
+        if self.maximum_amount is not None:
+            custom_unit_amount_params["maximum"] = self.maximum_amount
+        if self.preset_amount is not None:
+            custom_unit_amount_params["preset"] = self.preset_amount
+        return {
+            "currency": self.price_currency,
+            "custom_unit_amount": custom_unit_amount_params,
+        }
+
+
+class ProductPriceRecurringCreate(ProductPriceFixedCreateBase):
     """
     Schema to create a recurring product price, i.e. a subscription.
     """
 
     type: Literal[ProductPriceType.recurring]
-    recurring_interval: ProductPriceRecurringInterval = Field(
+    recurring_interval: SubscriptionRecurringInterval = Field(
         description="The recurring interval of the price."
     )
-    price_amount: PriceAmount
-    price_currency: PriceCurrency
+
+    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
+        return {
+            **super().get_stripe_price_params(),
+            "recurring": {"interval": self.recurring_interval.as_literal()},
+        }
 
 
-class ProductPriceOneTimeCreate(Schema):
+class ProductPriceOneTimeFixedCreate(ProductPriceFixedCreateBase):
     """
     Schema to create a one-time product price.
     """
 
     type: Literal[ProductPriceType.one_time]
-    price_amount: PriceAmount
-    price_currency: PriceCurrency
+
+
+class ProductPriceOneTimeCustomCreate(ProductPriceCustomCreateBase):
+    """
+    Schema to create a pay-what-you-want price for a one-time product.
+    """
+
+    type: Literal[ProductPriceType.one_time]
+
+
+ProductPriceOneTimeCreate = (
+    ProductPriceOneTimeFixedCreate | ProductPriceOneTimeCustomCreate
+)
 
 
 def _check_intervals(
@@ -251,14 +321,34 @@ class ProductBenefitsUpdate(Schema):
 
 class ProductPriceBase(TimestampedSchema):
     id: UUID4 = Field(description="The ID of the price.")
-    price_amount: int = Field(description="The price in cents.")
+    amount_type: ProductPriceAmountType = Field(
+        description="The type of amount, either fixed or custom."
+    )
     price_currency: str = Field(description="The currency.")
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."
     )
 
 
-class ProductPriceRecurring(ProductPriceBase):
+class ProductPriceFixedBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.fixed]
+    price_amount: int = Field(description="The price in cents.")
+
+
+class ProductPriceCustomBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.custom]
+    minimum_amount: int | None = Field(
+        description="The minimum amount the customer can pay."
+    )
+    maximum_amount: int | None = Field(
+        description="The maximum amount the customer can pay."
+    )
+    preset_amount: int | None = Field(
+        description="The initial amount shown to the customer."
+    )
+
+
+class ProductPriceRecurringFixed(ProductPriceFixedBase):
     """
     A recurring price for a product, i.e. a subscription.
     """
@@ -266,15 +356,25 @@ class ProductPriceRecurring(ProductPriceBase):
     type: Literal[ProductPriceType.recurring] = Field(
         description="The type of the price."
     )
-    recurring_interval: ProductPriceRecurringInterval | None = Field(
-        description="The recurring interval of the price, if type is `recurring`."
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description="The recurring interval of the price."
     )
 
-    def get_display_price(self) -> str:
-        return f"{format_currency(self.price_amount / 100, self.price_currency.upper(), locale="en_US")}/{self.recurring_interval}"
+
+class ProductPriceRecurringCustom(ProductPriceCustomBase):
+    """
+    A pay-what-you-want recurring price for a product, i.e. a subscription.
+    """
+
+    type: Literal[ProductPriceType.recurring] = Field(
+        description="The type of the price."
+    )
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description="The recurring interval of the price."
+    )
 
 
-class ProductPriceOneTime(ProductPriceBase):
+class ProductPriceOneTimeFixed(ProductPriceFixedBase):
     """
     A one-time price for a product.
     """
@@ -283,8 +383,29 @@ class ProductPriceOneTime(ProductPriceBase):
         description="The type of the price."
     )
 
-    def get_display_price(self) -> str:
-        return f"{format_currency(self.price_amount / 100, self.price_currency.upper(), locale="en_US")}"
+
+ProductPriceRecurring = Annotated[
+    ProductPriceRecurringFixed | ProductPriceRecurringCustom,
+    Discriminator("amount_type"),
+    SetSchemaReference("ProductPriceRecurring"),
+]
+
+
+class ProductPriceOneTimeCustom(ProductPriceCustomBase):
+    """
+    A pay-what-you-want price for a one-time product.
+    """
+
+    type: Literal[ProductPriceType.one_time] = Field(
+        description="The type of the price."
+    )
+
+
+ProductPriceOneTime = Annotated[
+    ProductPriceOneTimeFixed | ProductPriceOneTimeCustom,
+    Discriminator("amount_type"),
+    SetSchemaReference("ProductPriceOneTime"),
+]
 
 
 ProductPrice = Annotated[

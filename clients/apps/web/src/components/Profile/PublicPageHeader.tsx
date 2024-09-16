@@ -29,9 +29,16 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
 
   const isPostView = segment === 'posts'
 
-  const gradient = useMemo(() => new Gradient(), [])
+  const gradient = useMemo(
+    () => (typeof window !== 'undefined' ? new Gradient() : undefined),
+    [],
+  )
 
   useEffect(() => {
+    if (!gradient) {
+      return
+    }
+
     const root = document.documentElement
 
     const [a, b, c, d] = computeComplementaryColor(
@@ -49,13 +56,13 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="md:rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative aspect-[3/1] w-full rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white md:aspect-[4/1]">
+      <div className="md:rounded-4xl relative aspect-[3/1] w-full rounded-2xl bg-gray-100 md:aspect-[4/1] dark:bg-black">
         <canvas
           id="gradient-canvas"
           className="md:rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl"
         />
         <Avatar
-          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 border-gray-100 text-lg md:text-5xl"
+          className="dark:border-polar-950 border-gray-75 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 text-lg md:text-5xl"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />

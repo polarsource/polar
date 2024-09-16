@@ -28,7 +28,7 @@ const shouldUpsellCreateProduct = (
   org: Organization,
   products?: ListResourceProduct,
 ) => {
-  if (!org.feature_settings?.subscriptions_enabled) return false
+  if (!org.feature_settings?.subscriptions_enabled) return true
 
   const nonFreeProducts =
     products?.items.filter((tier) => tier.type !== 'free') ?? []
@@ -40,7 +40,7 @@ const shouldUpsellFirstOrder = (
   org: Organization,
   orders?: ListResourceOrder,
 ) => {
-  if (!org.feature_settings?.subscriptions_enabled) return false
+  if (!org.feature_settings?.subscriptions_enabled) return true
 
   return orders?.pagination.total_count === 0 ?? true
 }
@@ -49,7 +49,7 @@ const shouldUpsellFirstPost = (
   org: Organization,
   articles?: InfiniteData<ListResourceArticle, unknown>,
 ) => {
-  if (!org.feature_settings?.articles_enabled) return false
+  if (!org.feature_settings?.articles_enabled) return true
 
   return articles?.pages[0].pagination.total_count === 0 ?? true
 }
@@ -66,7 +66,7 @@ const shouldUpsellDonation = (
   org: Organization,
   donations?: ListResourceDonation,
 ) => {
-  if (!org.donations_enabled) return false
+  if (!org.donations_enabled) return true
 
   return donations?.pagination.total_count === 0 ?? true
 }

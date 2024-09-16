@@ -20,6 +20,9 @@ import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useCallback, useMemo, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 
+const buttonClasses =
+  'grow transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'
+
 interface AnonymousCheckoutButtonProps {
   price: ProductPrice
   checkoutPath: string
@@ -76,7 +79,12 @@ const AuthenticatedCheckoutButton: React.FC<
     </AuthenticatedRecurringCheckoutButton>
   ) : (
     <Link className="w-full" href={`${checkoutPath}?price=${price.id}`}>
-      <Button fullWidth variant={variant} size="lg">
+      <Button
+        className={variant === 'outline' ? buttonClasses : ''}
+        fullWidth
+        variant={variant}
+        size="lg"
+      >
         {children}
       </Button>
     </Link>

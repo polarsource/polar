@@ -67,7 +67,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       name: 'text-lg',
       card: 'p-8 min-h-[400px]',
       priceLabel: 'text-4xl !font-[200]',
-      description: 'text-base',
+      description: 'text-sm',
       footer: 'mt-4',
     },
     small: {
@@ -185,7 +185,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <span className="flex shrink-0 flex-row items-center justify-center rounded-full bg-[--var-border-color] text-2xl leading-none dark:bg-[--var-dark-border-color]">
               {resolveBenefitIcon(benefit, 'inherit')}
             </span>
-            <span className="ml-3 text-sm leading-none">
+            <span className="ml-3 text-sm leading-normal">
               {benefit.description}
             </span>
           </div>

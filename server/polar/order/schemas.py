@@ -1,3 +1,4 @@
+from babel.numbers import format_currency
 from pydantic import UUID4, Field
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
@@ -14,6 +15,13 @@ class OrderBase(IDSchema, TimestampedSchema):
     product_id: UUID4
     product_price_id: UUID4
     subscription_id: UUID4 | None
+
+    def get_amount_display(self) -> str:
+        return f"{format_currency(
+            self.amount / 100,
+            self.currency.upper(),
+            locale="en_US",
+        )}"
 
 
 class OrderUser(Schema):

@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Integer,
     String,
     Uuid,
     type_coerce,
@@ -15,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
@@ -34,6 +36,11 @@ class SubscriptionStatus(StrEnum):
 class Subscription(RecordModel):
     __tablename__ = "subscriptions"
 
+    amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
+        String, nullable=False, index=True
+    )
     stripe_subscription_id: Mapped[str] = mapped_column(
         String, nullable=True, index=True, default=None
     )

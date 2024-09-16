@@ -51,7 +51,7 @@ class AlreadyCanceledSubscription(UserSubscriptionError):
 
 class UserSubscriptionSortProperty(StrEnum):
     started_at = "started_at"
-    price_amount = "price_amount"
+    amount = "amount"
     status = "status"
     organization = "organization"
     product = "product"
@@ -118,9 +118,9 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             clause_function = desc if is_desc else asc
             if criterion == UserSubscriptionSortProperty.started_at:
                 order_by_clauses.append(clause_function(Subscription.started_at))
-            elif criterion == UserSubscriptionSortProperty.price_amount:
+            elif criterion == UserSubscriptionSortProperty.amount:
                 order_by_clauses.append(
-                    nulls_first(clause_function(SubscriptionProductPrice.price_amount))
+                    nulls_first(clause_function(Subscription.amount))
                 )
             elif criterion == UserSubscriptionSortProperty.status:
                 order_by_clauses.append(clause_function(Subscription.status))

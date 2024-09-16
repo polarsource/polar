@@ -155,12 +155,11 @@ class WebhookOrderCreatedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
 
-        price = self.data.product_price
-        price_display = price.get_display_price()
+        amount_display = self.data.get_amount_display()
 
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
-            {"name": "Price", "value": price_display},
+            {"name": "Amount", "value": amount_display},
             {"name": "Customer", "value": self.data.user.email},
         ]
         if self.data.subscription is not None:
@@ -185,12 +184,11 @@ class WebhookOrderCreatedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
-        price = self.data.product_price
-        price_display = price.get_display_price()
+        amount_display = self.data.get_amount_display()
 
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
-            {"type": "mrkdwn", "text": f"*Price*\n{price_display}"},
+            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
             {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
         ]
         if self.data.subscription is not None:
@@ -229,15 +227,11 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
 
-        price = self.data.price
-        if price is None:
-            price_display = "Free"
-        else:
-            price_display = price.get_display_price()
+        amount_display = self.data.get_amount_display()
 
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
-            {"name": "Price", "value": price_display},
+            {"name": "Amount", "value": amount_display},
             {"name": "Customer", "value": self.data.user.email},
         ]
         payload: DiscordPayload = {
@@ -259,15 +253,11 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
-        price = self.data.price
-        if price is None:
-            price_display = "Free"
-        else:
-            price_display = price.get_display_price()
+        amount_display = self.data.get_amount_display()
 
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
-            {"type": "mrkdwn", "text": f"*Price*\n{price_display}"},
+            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
             {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
         ]
         payload: SlackPayload = get_branded_slack_payload(
@@ -308,11 +298,7 @@ class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
         if not self.data.cancel_at_period_end and not self.data.ended_at:
             raise SkipEvent(self.type, WebhookFormat.discord)
 
-        price = self.data.price
-        if price is None:
-            price_display = "Free"
-        else:
-            price_display = price.get_display_price()
+        amount_display = self.data.get_amount_display()
 
         if self.data.cancel_at_period_end:
             ends_at = format_date(self.data.current_period_end, locale="en_US")
@@ -321,7 +307,7 @@ class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
 
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
-            {"name": "Price", "value": price_display},
+            {"name": "Amount", "value": amount_display},
             {"name": "Customer", "value": self.data.user.email},
             {"name": "Status", "value": self.data.status},
             {"name": "Ends At", "value": ends_at},
@@ -350,11 +336,7 @@ class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
         if not self.data.cancel_at_period_end and not self.data.ended_at:
             raise SkipEvent(self.type, WebhookFormat.slack)
 
-        price = self.data.price
-        if price is None:
-            price_display = "Free"
-        else:
-            price_display = price.get_display_price()
+        amount_display = self.data.get_amount_display()
 
         if self.data.cancel_at_period_end:
             ends_at = format_date(self.data.current_period_end, locale="en_US")
@@ -363,7 +345,7 @@ class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
 
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
-            {"type": "mrkdwn", "text": f"*Price*\n{price_display}"},
+            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
             {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
             {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
             {"type": "mrkdwn", "text": f"*Ends At*\n{ends_at}"},

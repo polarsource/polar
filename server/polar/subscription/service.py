@@ -1,3 +1,4 @@
+import typing
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
@@ -16,7 +17,7 @@ from polar.auth.models import (
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
-from polar.enums import UserSignupType
+from polar.enums import SubscriptionRecurringInterval, UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -32,12 +33,12 @@ from polar.models import (
     Organization,
     Product,
     ProductBenefit,
-    ProductPrice,
     Subscription,
     User,
     UserOrganization,
 )
 from polar.models.product import SubscriptionTierType
+from polar.models.product_price import ProductPriceCustom, ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -70,6 +71,14 @@ class AssociatedSubscriptionTierPriceDoesNotExist(SubscriptionError):
             f"with price {stripe_price_id}, "
             "but no associated SubscriptionTierPrice exists."
         )
+        super().__init__(message)
+
+
+class CustomPriceNotSupported(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
+        self.subscription_id = stripe_subscription_id
+        self.price_id = stripe_price_id
+        message = "Custom prices are not supported for subscriptions."
         super().__init__(message)
 
 
@@ -124,7 +133,7 @@ class SubscriptionSortProperty(StrEnum):
     status = "status"
     started_at = "started_at"
     current_period_end = "current_period_end"
-    price_amount = "price_amount"
+    amount = "amount"
     subscription_tier_type = "subscription_tier_type"
     product = "product"
 
@@ -227,9 +236,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 order_by_clauses.append(
                     clause_function(Subscription.current_period_end)
                 )
-            if criterion == SubscriptionSortProperty.price_amount:
+            if criterion == SubscriptionSortProperty.amount:
                 order_by_clauses.append(
-                    clause_function(ProductPrice.price_amount).nulls_last()
+                    clause_function(
+                        case(
+                            (
+                                Subscription.recurring_interval
+                                == SubscriptionRecurringInterval.year,
+                                Subscription.amount / 12,
+                            ),
+                            (
+                                Subscription.recurring_interval
+                                == SubscriptionRecurringInterval.month,
+                                Subscription.amount,
+                            ),
+                        )
+                    ).nulls_last()
                 )
             if criterion == SubscriptionSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(Product.type))
@@ -273,13 +295,45 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         return result.scalars().all()
 
+    @typing.overload
     async def create_arbitrary_subscription(
         self,
         session: AsyncSession,
         *,
         user: User,
         product: Product,
-        price: ProductPrice | None = None,
+        price: ProductPriceFixed,
+    ) -> Subscription: ...
+
+    @typing.overload
+    async def create_arbitrary_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        product: Product,
+        price: ProductPriceCustom,
+        amount: int,
+    ) -> Subscription: ...
+
+    @typing.overload
+    async def create_arbitrary_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        product: Product,
+        price: None = None,
+    ) -> Subscription: ...
+
+    async def create_arbitrary_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        product: Product,
+        price: ProductPriceFixed | ProductPriceCustom | None = None,
+        amount: int | None = None,
     ) -> Subscription:
         existing_subscriptions = await self.get_active_user_subscriptions(
             session, user, organization_id=product.organization_id
@@ -290,9 +344,20 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 organization_id=product.organization_id,
             )
 
+        subscription_amount: int | None = None
+        if isinstance(price, ProductPriceFixed):
+            subscription_amount = price.price_amount
+        elif isinstance(price, ProductPriceCustom):
+            subscription_amount = amount
+
         start = utc_now()
         subscription = Subscription(
             status=SubscriptionStatus.active,
+            amount=subscription_amount,
+            currency=price.price_currency if price is not None else None,
+            recurring_interval=price.recurring_interval
+            if price is not None
+            else SubscriptionRecurringInterval.month,
             current_period_start=start,
             cancel_at_period_end=False,
             started_at=start,
@@ -318,6 +383,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise AssociatedSubscriptionTierPriceDoesNotExist(
                 stripe_subscription.id, price_id
             )
+        if not isinstance(price, ProductPriceFixed):
+            raise CustomPriceNotSupported(stripe_subscription.id, price_id)
 
         subscription_tier = price.product
         subscription_tier_org = await organization_service.get(
@@ -353,6 +420,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         subscription.price = price
+        subscription.amount = price.price_amount
+        subscription.currency = price.price_currency
+        subscription.recurring_interval = price.recurring_interval
         subscription.product = subscription_tier
 
         subscription.set_started_at()
@@ -363,7 +433,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Take user from existing subscription, or get it from metadata
         user_id = stripe_subscription.metadata.get("user_id")
-        user: User | None = subscription.user
+        user = cast(User | None, subscription.user)
         if user is None:
             if user_id is not None:
                 user = await user_service.get(session, uuid.UUID(user_id))
@@ -398,7 +468,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 payload=MaintainerNewPaidSubscriptionNotificationPayload(
                     subscriber_name=customer_email,
                     tier_name=subscription_tier.name,
-                    tier_price_amount=price.price_amount,
+                    tier_price_amount=subscription.amount,
                     tier_price_recurring_interval=price.recurring_interval,
                     tier_organization_name=subscription_tier_org.slug,
                 ),

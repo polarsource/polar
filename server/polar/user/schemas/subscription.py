@@ -2,13 +2,13 @@ from datetime import datetime
 
 from pydantic import UUID4, Field
 
-from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
+from polar.kit.schemas import EmailStrDNS, Schema
 from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPrice
+from polar.subscription.schemas import SubscriptionBase
 
 
-class UserSubscriptionBase(TimestampedSchema):
-    id: UUID4
+class UserSubscriptionBase(SubscriptionBase):
     status: SubscriptionStatus
     current_period_start: datetime
     current_period_end: datetime | None

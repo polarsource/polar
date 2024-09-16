@@ -4,7 +4,7 @@ from typing import ClassVar, Protocol, cast
 
 from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, func
 
-from polar.models import Order, ProductPrice, Subscription
+from polar.models import Order, Subscription
 
 from .queries import Interval, MetricQuery
 
@@ -186,7 +186,7 @@ class MonthlyRecurringRevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: Interval
     ) -> ColumnElement[int]:
-        return func.coalesce(func.sum(ProductPrice.price_amount), 0)
+        return func.coalesce(func.sum(Subscription.amount), 0)
 
 
 METRICS: list[type[Metric]] = [

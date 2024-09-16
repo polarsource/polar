@@ -14,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
@@ -28,22 +29,21 @@ class ProductPriceType(StrEnum):
         return cast(Literal["one_time", "recurring"], self.value)
 
 
-class ProductPriceRecurringInterval(StrEnum):
-    month = "month"
-    year = "year"
-
-    def as_literal(self) -> Literal["month", "year"]:
-        return cast(Literal["month", "year"], self.value)
+class ProductPriceAmountType(StrEnum):
+    fixed = "fixed"
+    custom = "custom"
 
 
 class ProductPrice(RecordModel):
     __tablename__ = "product_prices"
 
     type: Mapped[ProductPriceType] = mapped_column(String, nullable=False, index=True)
-    recurring_interval: Mapped[ProductPriceRecurringInterval] = mapped_column(
+    recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         String, nullable=True, index=True
     )
-    price_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_type: Mapped[ProductPriceAmountType] = mapped_column(
+        String, nullable=False, index=True
+    )
     price_currency: Mapped[str] = mapped_column(String(3), nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
@@ -71,3 +71,39 @@ class ProductPrice(RecordModel):
     @classmethod
     def _is_recurring_expression(cls) -> ColumnElement[bool]:
         return type_coerce(cls.type == ProductPriceType.recurring, Boolean)
+
+    __mapper_args__ = {
+        "polymorphic_on": "amount_type",
+    }
+
+
+class ProductPriceFixed(ProductPrice):
+    price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
+    amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.fixed
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.fixed,
+        "polymorphic_load": "inline",
+    }
+
+
+class ProductPriceCustom(ProductPrice):
+    amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.custom
+    )
+    minimum_amount: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+    maximum_amount: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+    preset_amount: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.custom,
+        "polymorphic_load": "inline",
+    }

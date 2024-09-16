@@ -16,6 +16,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.product_price import ProductPriceCustom, ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
@@ -141,7 +142,7 @@ class TestCreateArbitrarySubscription:
                 product=subscription_tier_free,
             )
 
-    async def test_valid(
+    async def test_valid_free_tier(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -163,6 +164,66 @@ class TestCreateArbitrarySubscription:
 
         assert subscription.product_id == subscription_tier_free.id
         assert subscription.user_id == user.id
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
+    async def test_valid_fixed_price(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        product: Product,
+        user: User,
+    ) -> None:
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
+        # then
+        session.expunge_all()
+
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        subscription = await subscription_service.create_arbitrary_subscription(
+            session, user=user, product=product, price=price
+        )
+
+        assert subscription.product_id == product.id
+        assert subscription.user_id == user.id
+        assert subscription.amount == price.price_amount
+        assert subscription.currency == price.price_currency
+        assert subscription.recurring_interval == price.recurring_interval
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
+    async def test_valid_custom_price(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        product_recurring_custom_price: Product,
+        user: User,
+    ) -> None:
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
+        # then
+        session.expunge_all()
+
+        price = product_recurring_custom_price.prices[0]
+        assert isinstance(price, ProductPriceCustom)
+        subscription = await subscription_service.create_arbitrary_subscription(
+            session,
+            user=user,
+            product=product_recurring_custom_price,
+            price=price,
+            amount=2000,
+        )
+
+        assert subscription.product_id == product_recurring_custom_price.id
+        assert subscription.user_id == user.id
+        assert subscription.amount == 2000
+        assert subscription.currency == price.price_currency
+        assert subscription.recurring_interval == price.recurring_interval
 
         enqueue_benefits_grants_mock.assert_called_once()
 

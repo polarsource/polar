@@ -90,9 +90,9 @@ async def order_discord_notification(
             raise PriceDoesNotExist(order.product_price_id)
 
         if price.recurring_interval:
-            description = f"${get_cents_in_dollar_string(price.price_amount)}/{price.recurring_interval}"
+            description = f"${get_cents_in_dollar_string(order.amount)}/{price.recurring_interval}"
         else:
-            description = f"${get_cents_in_dollar_string(price.price_amount)}"
+            description = f"${get_cents_in_dollar_string(order.amount)}"
 
         embed = DiscordEmbed(
             title=product.name,

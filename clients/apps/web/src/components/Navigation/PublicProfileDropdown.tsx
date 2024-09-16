@@ -1,26 +1,30 @@
 'use client'
 
 import { useLogout } from '@/hooks'
+import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { LogoutOutlined } from '@mui/icons-material'
+import {
+  AttachMoneyOutlined,
+  Face,
+  LogoutOutlined,
+  ShoppingBagOutlined,
+  SpaceDashboardOutlined,
+} from '@mui/icons-material'
 import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useBackerRoutes } from '../Dashboard/navigation'
 import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 
 const PublicProfileDropdown = ({
   className,
   authenticatedUser,
-  showAllBackerRoutes = false,
 }: {
   className?: string
   authenticatedUser: UserRead | undefined
-  showAllBackerRoutes?: boolean
 }) => {
   const classNames = twMerge('relative', className)
   const logout = useLogout()
@@ -39,8 +43,7 @@ const PublicProfileDropdown = ({
 
   const loggedUser = authenticatedUser
 
-  const backerRoutes = useBackerRoutes()
-  const filteredBackerRoutes = showAllBackerRoutes ? backerRoutes : []
+  const organizations = useListOrganizations({ isMember: true })
 
   if (!loggedUser) {
     return <></>
@@ -82,15 +85,32 @@ const PublicProfileDropdown = ({
             </Link>
 
             <ul className="mt-2 flex w-full flex-col">
-              {filteredBackerRoutes.map((n) => (
+              {(organizations.data?.items.length ?? 0) > 0 && (
                 <LinkItem
-                  href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
-                  icon={n.icon}
-                  key={n.link}
+                  href={`${CONFIG.FRONTEND_BASE_URL}/dashboard`}
+                  icon={<SpaceDashboardOutlined fontSize="inherit" />}
                 >
-                  <span className="mx-2 text-sm">{n.title}</span>
+                  <span className="mx-2 text-sm">Dashboard</span>
                 </LinkItem>
-              ))}
+              )}
+              <LinkItem
+                href={`${CONFIG.FRONTEND_BASE_URL}/purchases`}
+                icon={<ShoppingBagOutlined fontSize="inherit" />}
+              >
+                <span className="mx-2 text-sm">Purchases</span>
+              </LinkItem>
+              <LinkItem
+                href={`${CONFIG.FRONTEND_BASE_URL}/finance`}
+                icon={<AttachMoneyOutlined fontSize="inherit" />}
+              >
+                <span className="mx-2 text-sm">Finance</span>
+              </LinkItem>
+              <LinkItem
+                href={`${CONFIG.FRONTEND_BASE_URL}/settings`}
+                icon={<Face fontSize="inherit" />}
+              >
+                <span className="mx-2 text-sm">Account</span>
+              </LinkItem>
 
               <Separator className="my-2" />
 

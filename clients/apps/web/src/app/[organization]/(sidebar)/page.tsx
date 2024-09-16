@@ -4,7 +4,6 @@ import {
   ListResourceArticle,
   ListResourceIssueFunding,
   ListResourceProduct,
-  ListResourcePublicDonation,
 } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -84,7 +83,6 @@ export default async function Page({
   let articles: ListResourceArticle | undefined
   let products: ListResourceProduct | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
-  let donations: ListResourcePublicDonation | undefined
 
   const organization = await getOrganizationBySlugOrNotFound(
     api,
@@ -92,7 +90,7 @@ export default async function Page({
   )
 
   try {
-    const [loadArticles, loadProducts, loadListIssueFunding, loadDonations] =
+    const [loadArticles, loadProducts, loadListIssueFunding] =
       await Promise.all([
         api.articles.list(
           {
@@ -143,25 +141,11 @@ export default async function Page({
             },
           },
         ),
-        api.donations.donationsPublicSearch(
-          {
-            organizationId: organization.id,
-            limit: 5,
-          },
-          {
-            ...cacheConfig,
-            next: {
-              ...cacheConfig.next,
-              tags: [`donations:${organization.id}`],
-            },
-          },
-        ),
       ])
 
     articles = loadArticles
     products = loadProducts
     listIssueFunding = loadListIssueFunding
-    donations = loadDonations
   } catch (e) {
     notFound()
   }
@@ -204,7 +188,6 @@ export default async function Page({
         posts={posts}
         products={products?.items ?? []}
         issues={listIssueFunding?.items ?? []}
-        donations={donations?.items ?? []}
       />
     </>
   )

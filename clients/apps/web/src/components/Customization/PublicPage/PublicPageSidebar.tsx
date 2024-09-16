@@ -35,6 +35,7 @@ import { FileObject, useFileUpload } from '../../FileUpload'
 
 const colorThemes = [
   '#121316',
+  '#aaaaaa',
   '#0062FF',
   '#e64d4d',
   '#3fab44',
@@ -223,7 +224,7 @@ const PublicPageForm = () => {
                     value={field.value || ''}
                   />
 
-                  <div className="dark:bg-polar-950 flex flex-grow flex-row justify-between rounded-full bg-gray-100 p-2">
+                  <div className="flex flex-grow flex-row justify-between">
                     {colorThemes.map((color) => (
                       <div
                         key={color}
@@ -316,20 +317,21 @@ export const PublicPageSidebar = () => {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
         <PublicPageForm />
-        <div className="flex flex-row items-center gap-x-6">
+        <div className="flex flex-row items-center gap-x-4">
           <Button
             className="self-start"
             type="submit"
             loading={isLoading}
             disabled={!formState.isDirty}
-            size="lg"
           >
             Save
           </Button>
           {organization.profile_settings?.enabled && (
-            <Link href={`/${organization.slug}`} className="text-sm">
-              <span>View Public Page</span>
-            </Link>
+            <Button variant="secondary" size="default">
+              <Link href={`/${organization.slug}`} target="_blank">
+                View Public Page
+              </Link>
+            </Button>
           )}
         </div>
       </form>

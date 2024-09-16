@@ -3,7 +3,6 @@
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useLoginLink } from '@/hooks/login'
 import { CONFIG } from '@/utils/config'
-import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -23,11 +22,13 @@ const PolarMenu = ({
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
   const organizationExistsInUserOrgs = userOrganizations.some(
-    (userOrg) => userOrg.id === organization?.id
+    (userOrg) => userOrg.id === organization?.id,
   )
 
   const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/dashboard/${
-    organizationExistsInUserOrgs ? organization?.slug : userOrganizations?.[0]?.slug
+    organizationExistsInUserOrgs
+      ? organization?.slug
+      : userOrganizations?.[0]?.slug
   }`
 
   return (
@@ -38,10 +39,7 @@ const PolarMenu = ({
             <Link href={creatorPath}>
               <Button>
                 <div className="flex flex-row items-center gap-x-2">
-                  <span className="whitespace-nowrap text-xs">
-                    Creator Dashboard
-                  </span>
-                  <ArrowForwardOutlined fontSize="inherit" />
+                  <span className="whitespace-nowrap text-xs">Dashboard</span>
                 </div>
               </Button>
             </Link>
@@ -49,7 +47,6 @@ const PolarMenu = ({
           <PublicProfileDropdown
             authenticatedUser={authenticatedUser}
             className="flex-shrink-0"
-            showAllBackerRoutes
           />
         </div>
       ) : (

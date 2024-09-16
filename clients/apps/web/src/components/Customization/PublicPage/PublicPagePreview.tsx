@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  useListArticles,
-  useProducts,
-  useSearchDonations,
-  useSearchFunding,
-} from '@/hooks/queries'
+import { useListArticles, useProducts, useSearchFunding } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   ArticleVisibility,
@@ -23,13 +18,6 @@ export const PublicPagePreview = () => {
   const organizationUpdate = watch()
 
   const organization = { ...org, ...organizationUpdate }
-
-  const donations =
-    useSearchDonations({
-      toOrganizationId: organization.id,
-      limit: 5,
-      page: 0,
-    }).data?.items ?? []
 
   const posts =
     useListArticles({
@@ -73,7 +61,6 @@ export const PublicPagePreview = () => {
             posts={posts}
             products={products}
             issues={issues}
-            donations={donations}
           />
         </div>
       </div>

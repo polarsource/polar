@@ -52,7 +52,7 @@ export const PublicPage = ({
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-24">
           {subscriptionProducts.length > 0 && (
-            <div className="dark:border-polar-700 rounded-4xl flex flex-col md:items-center md:border md:p-12">
+            <div className="dark:border-polar-700 rounded-4xl flex flex-col bg-gray-100 md:items-center md:p-12 dark:bg-transparent dark:md:border">
               <div className="flex flex-grow flex-col gap-y-6 md:items-center md:gap-y-12">
                 <div className="flex flex-col justify-between gap-y-4 md:items-center">
                   <AllInclusiveOutlined
@@ -93,6 +93,7 @@ export const PublicPage = ({
                             recurringInterval={recurringInterval}
                             product={tier}
                             checkoutPath="/api/checkout"
+                            variant="secondary"
                           >
                             Subscribe
                           </CheckoutButton>

@@ -1,19 +1,15 @@
 'use client'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { Issue, Organization, Product } from '@polar-sh/sdk'
+import { Issue, Organization } from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import Checkout from './Checkout'
 
 const ClientPage = ({
   organization,
-  userOrganizations,
-  products,
   defaultAmount,
   issue,
 }: {
   organization: Organization
-  userOrganizations: Organization[]
-  products: Product[]
   defaultAmount: number
   issue: Issue | undefined
 }) => {

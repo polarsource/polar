@@ -9198,6 +9198,12 @@ export const OAuthPlatform = {
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
 
 /**
+ * @type OneTimePriceInner
+ * @export
+ */
+export type OneTimePriceInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate;
+
+/**
  * 
  * @export
  * @interface Order
@@ -9420,6 +9426,24 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrderSubscription
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {SubscriptionRecurringInterval}
+     * @memberof OrderSubscription
+     */
+    recurring_interval: SubscriptionRecurringInterval;
     /**
      * 
      * @type {SubscriptionStatus}
@@ -10070,7 +10094,7 @@ export interface OrganizationProfileSettings {
      * @type {boolean}
      * @memberof OrganizationProfileSettings
      */
-    enabled: boolean | null;
+    enabled?: boolean | null;
     /**
      * 
      * @type {string}
@@ -11367,10 +11391,10 @@ export interface ProductOneTimeCreate {
     description?: string | null;
     /**
      * List of available prices for this product.
-     * @type {Array<ProductPriceOneTimeCreate>}
+     * @type {Array<OneTimePriceInner>}
      * @memberof ProductOneTimeCreate
      */
-    prices: Array<ProductPriceOneTimeCreate>;
+    prices: Array<OneTimePriceInner>;
     /**
      * 
      * @type {Array<string>}
@@ -11391,164 +11415,257 @@ export interface ProductOneTimeCreate {
  */
 export type ProductPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 /**
- * A one-time price for a product.
+ * @type ProductPriceOneTime
+ * 
  * @export
- * @interface ProductPriceOneTime
  */
-export interface ProductPriceOneTime {
+export type ProductPriceOneTime = { amount_type: 'custom' } & ProductPriceOneTimeCustom | { amount_type: 'fixed' } & ProductPriceOneTimeFixed;
+/**
+ * A pay-what-you-want price for a one-time product.
+ * @export
+ * @interface ProductPriceOneTimeCustom
+ */
+export interface ProductPriceOneTimeCustom {
     /**
      * Creation timestamp of the object.
      * @type {string}
-     * @memberof ProductPriceOneTime
+     * @memberof ProductPriceOneTimeCustom
      */
     created_at: string;
     /**
      * 
      * @type {string}
-     * @memberof ProductPriceOneTime
+     * @memberof ProductPriceOneTimeCustom
      */
     modified_at: string | null;
     /**
      * The ID of the price.
      * @type {string}
-     * @memberof ProductPriceOneTime
+     * @memberof ProductPriceOneTimeCustom
      */
     id: string;
     /**
-     * The price in cents.
-     * @type {number}
-     * @memberof ProductPriceOneTime
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeCustom
      */
-    price_amount: number;
+    amount_type: ProductPriceOneTimeCustomAmountTypeEnum;
     /**
      * The currency.
      * @type {string}
-     * @memberof ProductPriceOneTime
+     * @memberof ProductPriceOneTimeCustom
      */
     price_currency: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
-     * @memberof ProductPriceOneTime
+     * @memberof ProductPriceOneTimeCustom
      */
     is_archived: boolean;
     /**
+     * 
+     * @type {number}
+     * @memberof ProductPriceOneTimeCustom
+     */
+    minimum_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProductPriceOneTimeCustom
+     */
+    maximum_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProductPriceOneTimeCustom
+     */
+    preset_amount: number | null;
+    /**
      * The type of the price.
      * @type {string}
-     * @memberof ProductPriceOneTime
+     * @memberof ProductPriceOneTimeCustom
      */
-    type: ProductPriceOneTimeTypeEnum;
+    type: ProductPriceOneTimeCustomTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const ProductPriceOneTimeTypeEnum = {
+export const ProductPriceOneTimeCustomAmountTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type ProductPriceOneTimeCustomAmountTypeEnum = typeof ProductPriceOneTimeCustomAmountTypeEnum[keyof typeof ProductPriceOneTimeCustomAmountTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeCustomTypeEnum = {
     ONE_TIME: 'one_time'
 } as const;
-export type ProductPriceOneTimeTypeEnum = typeof ProductPriceOneTimeTypeEnum[keyof typeof ProductPriceOneTimeTypeEnum];
+export type ProductPriceOneTimeCustomTypeEnum = typeof ProductPriceOneTimeCustomTypeEnum[keyof typeof ProductPriceOneTimeCustomTypeEnum];
+
+/**
+ * Schema to create a pay-what-you-want price for a one-time product.
+ * @export
+ * @interface ProductPriceOneTimeCustomCreate
+ */
+export interface ProductPriceOneTimeCustomCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeCustomCreate
+     */
+    type: ProductPriceOneTimeCustomCreateTypeEnum;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof ProductPriceOneTimeCustomCreate
+     */
+    price_currency?: string;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceOneTimeCustomCreate
+     */
+    minimum_amount?: number | null;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceOneTimeCustomCreate
+     */
+    maximum_amount?: number | null;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceOneTimeCustomCreate
+     */
+    preset_amount?: number | null;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeCustomCreateTypeEnum = {
+    ONE_TIME: 'one_time'
+} as const;
+export type ProductPriceOneTimeCustomCreateTypeEnum = typeof ProductPriceOneTimeCustomCreateTypeEnum[keyof typeof ProductPriceOneTimeCustomCreateTypeEnum];
+
+/**
+ * A one-time price for a product.
+ * @export
+ * @interface ProductPriceOneTimeFixed
+ */
+export interface ProductPriceOneTimeFixed {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the price.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    amount_type: ProductPriceOneTimeFixedAmountTypeEnum;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    price_currency: string;
+    /**
+     * Whether the price is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    is_archived: boolean;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    price_amount: number;
+    /**
+     * The type of the price.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    type: ProductPriceOneTimeFixedTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeFixedAmountTypeEnum = {
+    FIXED: 'fixed'
+} as const;
+export type ProductPriceOneTimeFixedAmountTypeEnum = typeof ProductPriceOneTimeFixedAmountTypeEnum[keyof typeof ProductPriceOneTimeFixedAmountTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeFixedTypeEnum = {
+    ONE_TIME: 'one_time'
+} as const;
+export type ProductPriceOneTimeFixedTypeEnum = typeof ProductPriceOneTimeFixedTypeEnum[keyof typeof ProductPriceOneTimeFixedTypeEnum];
 
 /**
  * Schema to create a one-time product price.
  * @export
- * @interface ProductPriceOneTimeCreate
+ * @interface ProductPriceOneTimeFixedCreate
  */
-export interface ProductPriceOneTimeCreate {
+export interface ProductPriceOneTimeFixedCreate {
     /**
      * 
      * @type {string}
-     * @memberof ProductPriceOneTimeCreate
+     * @memberof ProductPriceOneTimeFixedCreate
      */
-    type: ProductPriceOneTimeCreateTypeEnum;
-    /**
-     * The price in cents.
-     * @type {number}
-     * @memberof ProductPriceOneTimeCreate
-     */
-    price_amount: number;
+    type: ProductPriceOneTimeFixedCreateTypeEnum;
     /**
      * The currency. Currently, only `usd` is supported.
      * @type {string}
-     * @memberof ProductPriceOneTimeCreate
+     * @memberof ProductPriceOneTimeFixedCreate
      */
     price_currency?: string;
-}
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeCreateTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeCreateTypeEnum = typeof ProductPriceOneTimeCreateTypeEnum[keyof typeof ProductPriceOneTimeCreateTypeEnum];
-
-/**
- * A recurring price for a product, i.e. a subscription.
- * @export
- * @interface ProductPriceRecurring
- */
-export interface ProductPriceRecurring {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof ProductPriceRecurring
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ProductPriceRecurring
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the price.
-     * @type {string}
-     * @memberof ProductPriceRecurring
-     */
-    id: string;
     /**
      * The price in cents.
      * @type {number}
-     * @memberof ProductPriceRecurring
+     * @memberof ProductPriceOneTimeFixedCreate
      */
     price_amount: number;
-    /**
-     * The currency.
-     * @type {string}
-     * @memberof ProductPriceRecurring
-     */
-    price_currency: string;
-    /**
-     * Whether the price is archived and no longer available.
-     * @type {boolean}
-     * @memberof ProductPriceRecurring
-     */
-    is_archived: boolean;
-    /**
-     * The type of the price.
-     * @type {string}
-     * @memberof ProductPriceRecurring
-     */
-    type: ProductPriceRecurringTypeEnum;
-    /**
-     * 
-     * @type {ProductPriceRecurringInterval}
-     * @memberof ProductPriceRecurring
-     */
-    recurring_interval: ProductPriceRecurringInterval | null;
 }
 
 
 /**
  * @export
  */
-export const ProductPriceRecurringTypeEnum = {
-    RECURRING: 'recurring'
+export const ProductPriceOneTimeFixedCreateTypeEnum = {
+    ONE_TIME: 'one_time'
 } as const;
-export type ProductPriceRecurringTypeEnum = typeof ProductPriceRecurringTypeEnum[keyof typeof ProductPriceRecurringTypeEnum];
+export type ProductPriceOneTimeFixedCreateTypeEnum = typeof ProductPriceOneTimeFixedCreateTypeEnum[keyof typeof ProductPriceOneTimeFixedCreateTypeEnum];
 
+/**
+ * @type ProductPriceRecurring
+ * 
+ * @export
+ */
+export type ProductPriceRecurring = { amount_type: 'custom' } & ProductPriceRecurringCustom | { amount_type: 'fixed' } & ProductPriceRecurringFixed;
 /**
  * Schema to create a recurring product price, i.e. a subscription.
  * @export
@@ -11562,11 +11679,11 @@ export interface ProductPriceRecurringCreate {
      */
     type: ProductPriceRecurringCreateTypeEnum;
     /**
-     * The recurring interval of the price.
-     * @type {ProductPriceRecurringInterval}
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
      * @memberof ProductPriceRecurringCreate
      */
-    recurring_interval: ProductPriceRecurringInterval;
+    price_currency?: string;
     /**
      * The price in cents.
      * @type {number}
@@ -11574,11 +11691,11 @@ export interface ProductPriceRecurringCreate {
      */
     price_amount: number;
     /**
-     * The currency. Currently, only `usd` is supported.
-     * @type {string}
+     * The recurring interval of the price.
+     * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringCreate
      */
-    price_currency?: string;
+    recurring_interval: SubscriptionRecurringInterval;
 }
 
 
@@ -11590,16 +11707,175 @@ export const ProductPriceRecurringCreateTypeEnum = {
 } as const;
 export type ProductPriceRecurringCreateTypeEnum = typeof ProductPriceRecurringCreateTypeEnum[keyof typeof ProductPriceRecurringCreateTypeEnum];
 
+/**
+ * A pay-what-you-want recurring price for a product, i.e. a subscription.
+ * @export
+ * @interface ProductPriceRecurringCustom
+ */
+export interface ProductPriceRecurringCustom {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    amount_type: ProductPriceRecurringCustomAmountTypeEnum;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    price_currency: string;
+    /**
+     * Whether the price is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductPriceRecurringCustom
+     */
+    is_archived: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProductPriceRecurringCustom
+     */
+    minimum_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProductPriceRecurringCustom
+     */
+    maximum_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProductPriceRecurringCustom
+     */
+    preset_amount: number | null;
+    /**
+     * The type of the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    type: ProductPriceRecurringCustomTypeEnum;
+    /**
+     * The recurring interval of the price.
+     * @type {SubscriptionRecurringInterval}
+     * @memberof ProductPriceRecurringCustom
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+}
+
 
 /**
- * 
  * @export
  */
-export const ProductPriceRecurringInterval = {
-    MONTH: 'month',
-    YEAR: 'year'
+export const ProductPriceRecurringCustomAmountTypeEnum = {
+    CUSTOM: 'custom'
 } as const;
-export type ProductPriceRecurringInterval = typeof ProductPriceRecurringInterval[keyof typeof ProductPriceRecurringInterval];
+export type ProductPriceRecurringCustomAmountTypeEnum = typeof ProductPriceRecurringCustomAmountTypeEnum[keyof typeof ProductPriceRecurringCustomAmountTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringCustomTypeEnum = {
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceRecurringCustomTypeEnum = typeof ProductPriceRecurringCustomTypeEnum[keyof typeof ProductPriceRecurringCustomTypeEnum];
+
+/**
+ * A recurring price for a product, i.e. a subscription.
+ * @export
+ * @interface ProductPriceRecurringFixed
+ */
+export interface ProductPriceRecurringFixed {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    amount_type: ProductPriceRecurringFixedAmountTypeEnum;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    price_currency: string;
+    /**
+     * Whether the price is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductPriceRecurringFixed
+     */
+    is_archived: boolean;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceRecurringFixed
+     */
+    price_amount: number;
+    /**
+     * The type of the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    type: ProductPriceRecurringFixedTypeEnum;
+    /**
+     * The recurring interval of the price.
+     * @type {SubscriptionRecurringInterval}
+     * @memberof ProductPriceRecurringFixed
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFixedAmountTypeEnum = {
+    FIXED: 'fixed'
+} as const;
+export type ProductPriceRecurringFixedAmountTypeEnum = typeof ProductPriceRecurringFixedAmountTypeEnum[keyof typeof ProductPriceRecurringFixedAmountTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFixedTypeEnum = {
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceRecurringFixedTypeEnum = typeof ProductPriceRecurringFixedTypeEnum[keyof typeof ProductPriceRecurringFixedTypeEnum];
 
 
 /**
@@ -11735,7 +12011,7 @@ export interface ProductUpdate {
  * @type ProductUpdatePricesInner
  * @export
  */
-export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTimeCreate | ProductPriceRecurringCreate;
+export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceRecurringCreate;
 
 /**
  * 
@@ -12806,6 +13082,24 @@ export interface Subscription {
     id: string;
     /**
      * 
+     * @type {number}
+     * @memberof Subscription
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {SubscriptionRecurringInterval}
+     * @memberof Subscription
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+    /**
+     * 
      * @type {SubscriptionStatus}
      * @memberof Subscription
      */
@@ -12910,6 +13204,17 @@ export type SubscriptionIDFilter = Array<string> | string;
  * 
  * @export
  */
+export const SubscriptionRecurringInterval = {
+    MONTH: 'month',
+    YEAR: 'year'
+} as const;
+export type SubscriptionRecurringInterval = typeof SubscriptionRecurringInterval[keyof typeof SubscriptionRecurringInterval];
+
+
+/**
+ * 
+ * @export
+ */
 export const SubscriptionSortProperty = {
     USER: 'user',
     USER2: '-user',
@@ -12919,8 +13224,8 @@ export const SubscriptionSortProperty = {
     STARTED_AT2: '-started_at',
     CURRENT_PERIOD_END: 'current_period_end',
     CURRENT_PERIOD_END2: '-current_period_end',
-    PRICE_AMOUNT: 'price_amount',
-    PRICE_AMOUNT2: '-price_amount',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
     SUBSCRIPTION_TIER_TYPE: 'subscription_tier_type',
     SUBSCRIPTION_TIER_TYPE2: '-subscription_tier_type',
     PRODUCT: 'product',
@@ -14783,6 +15088,24 @@ export interface UserOrderSubscription {
     id: string;
     /**
      * 
+     * @type {number}
+     * @memberof UserOrderSubscription
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {SubscriptionRecurringInterval}
+     * @memberof UserOrderSubscription
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+    /**
+     * 
      * @type {SubscriptionStatus}
      * @memberof UserOrderSubscription
      */
@@ -14969,11 +15292,29 @@ export interface UserSubscription {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof UserSubscription
      */
     id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof UserSubscription
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {SubscriptionRecurringInterval}
+     * @memberof UserSubscription
+     */
+    recurring_interval: SubscriptionRecurringInterval;
     /**
      * 
      * @type {SubscriptionStatus}
@@ -15138,8 +15479,8 @@ export interface UserSubscriptionProduct {
 export const UserSubscriptionSortProperty = {
     STARTED_AT: 'started_at',
     STARTED_AT2: '-started_at',
-    PRICE_AMOUNT: 'price_amount',
-    PRICE_AMOUNT2: '-price_amount',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
     STATUS: 'status',
     STATUS2: '-status',
     ORGANIZATION: 'organization',

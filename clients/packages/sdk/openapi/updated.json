@@ -8581,10 +8581,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
-                                "donation",
                                 "free_subscription",
-                                "paid_subscription"
+                                "order",
+                                "paid_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -26236,6 +26236,31 @@
                         "title": "Id",
                         "description": "The ID of the object."
                     },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Currency"
+                    },
+                    "recurring_interval": {
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
                     },
@@ -26312,6 +26337,9 @@
                     "created_at",
                     "modified_at",
                     "id",
+                    "amount",
+                    "currency",
+                    "recurring_interval",
                     "status",
                     "current_period_start",
                     "current_period_end",
@@ -26968,9 +26996,6 @@
                     }
                 },
                 "type": "object",
-                "required": [
-                    "enabled"
-                ],
                 "title": "OrganizationProfileSettings"
             },
             "OrganizationSetAccount": {
@@ -28007,7 +28032,14 @@
                     },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPriceOneTimeCreate"
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTimeFixedCreate"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTimeCustomCreate"
+                                }
+                            ]
                         },
                         "type": "array",
                         "maxItems": 1,
@@ -28060,6 +28092,23 @@
                 "description": "Schema to create a one-time product."
             },
             "ProductPriceOneTime": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTimeFixed"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTimeCustom"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "amount_type",
+                    "mapping": {
+                        "custom": "#/components/schemas/ProductPriceOneTimeCustom",
+                        "fixed": "#/components/schemas/ProductPriceOneTimeFixed"
+                    }
+                }
+            },
+            "ProductPriceOneTimeCustom": {
                 "properties": {
                     "created_at": {
                         "type": "string",
@@ -28086,10 +28135,13 @@
                         "title": "Id",
                         "description": "The ID of the price."
                     },
-                    "price_amount": {
-                        "type": "integer",
-                        "title": "Price Amount",
-                        "description": "The price in cents."
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "custom"
+                        ],
+                        "const": "custom",
+                        "title": "Amount Type"
                     },
                     "price_currency": {
                         "type": "string",
@@ -28100,6 +28152,42 @@
                         "type": "boolean",
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
+                    },
+                    "minimum_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Minimum Amount",
+                        "description": "The minimum amount the customer can pay."
+                    },
+                    "maximum_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Maximum Amount",
+                        "description": "The maximum amount the customer can pay."
+                    },
+                    "preset_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Preset Amount",
+                        "description": "The initial amount shown to the customer."
                     },
                     "type": {
                         "type": "string",
@@ -28116,15 +28204,18 @@
                     "created_at",
                     "modified_at",
                     "id",
-                    "price_amount",
+                    "amount_type",
                     "price_currency",
                     "is_archived",
+                    "minimum_amount",
+                    "maximum_amount",
+                    "preset_amount",
                     "type"
                 ],
-                "title": "ProductPriceOneTime",
-                "description": "A one-time price for a product."
+                "title": "ProductPriceOneTimeCustom",
+                "description": "A pay-what-you-want price for a one-time product."
             },
-            "ProductPriceOneTimeCreate": {
+            "ProductPriceOneTimeCustomCreate": {
                 "properties": {
                     "type": {
                         "type": "string",
@@ -28134,30 +28225,67 @@
                         "const": "one_time",
                         "title": "Type"
                     },
-                    "price_amount": {
-                        "type": "integer",
-                        "maximum": 99999999,
-                        "exclusiveMinimum": 0,
-                        "title": "Price Amount",
-                        "description": "The price in cents."
-                    },
                     "price_currency": {
                         "type": "string",
                         "pattern": "usd",
                         "title": "Price Currency",
                         "description": "The currency. Currently, only `usd` is supported.",
                         "default": "usd"
+                    },
+                    "minimum_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 99999999,
+                                "minimum": 50,
+                                "description": "The price in cents."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Minimum Amount",
+                        "description": "The minimum amount the customer can pay."
+                    },
+                    "maximum_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 99999999,
+                                "minimum": 50,
+                                "description": "The price in cents."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Maximum Amount",
+                        "description": "The maximum amount the customer can pay."
+                    },
+                    "preset_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 99999999,
+                                "minimum": 50,
+                                "description": "The price in cents."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Preset Amount",
+                        "description": "The initial amount shown to the customer."
                     }
                 },
                 "type": "object",
                 "required": [
-                    "type",
-                    "price_amount"
+                    "type"
                 ],
-                "title": "ProductPriceOneTimeCreate",
-                "description": "Schema to create a one-time product price."
+                "title": "ProductPriceOneTimeCustomCreate",
+                "description": "Schema to create a pay-what-you-want price for a one-time product."
             },
-            "ProductPriceRecurring": {
+            "ProductPriceOneTimeFixed": {
                 "properties": {
                     "created_at": {
                         "type": "string",
@@ -28184,10 +28312,13 @@
                         "title": "Id",
                         "description": "The ID of the price."
                     },
-                    "price_amount": {
-                        "type": "integer",
-                        "title": "Price Amount",
-                        "description": "The price in cents."
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "fixed"
+                        ],
+                        "const": "fixed",
+                        "title": "Amount Type"
                     },
                     "price_currency": {
                         "type": "string",
@@ -28199,25 +28330,19 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "price_amount": {
+                        "type": "integer",
+                        "title": "Price Amount",
+                        "description": "The price in cents."
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
-                            "recurring"
+                            "one_time"
                         ],
-                        "const": "recurring",
+                        "const": "one_time",
                         "title": "Type",
                         "description": "The type of the price."
-                    },
-                    "recurring_interval": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "The recurring interval of the price, if type is `recurring`."
                     }
                 },
                 "type": "object",
@@ -28225,14 +28350,47 @@
                     "created_at",
                     "modified_at",
                     "id",
-                    "price_amount",
+                    "amount_type",
                     "price_currency",
                     "is_archived",
-                    "type",
-                    "recurring_interval"
+                    "price_amount",
+                    "type"
                 ],
-                "title": "ProductPriceRecurring",
-                "description": "A recurring price for a product, i.e. a subscription."
+                "title": "ProductPriceOneTimeFixed",
+                "description": "A one-time price for a product."
+            },
+            "ProductPriceOneTimeFixedCreate": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "one_time"
+                        ],
+                        "const": "one_time",
+                        "title": "Type"
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "pattern": "usd",
+                        "title": "Price Currency",
+                        "description": "The currency. Currently, only `usd` is supported.",
+                        "default": "usd"
+                    },
+                    "price_amount": {
+                        "type": "integer",
+                        "maximum": 99999999,
+                        "minimum": 50,
+                        "title": "Price Amount",
+                        "description": "The price in cents."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "price_amount"
+                ],
+                "title": "ProductPriceOneTimeFixedCreate",
+                "description": "Schema to create a one-time product price."
             },
             "ProductPriceRecurringCreate": {
                 "properties": {
@@ -28244,45 +28402,236 @@
                         "const": "recurring",
                         "title": "Type"
                     },
-                    "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
-                            }
-                        ],
-                        "description": "The recurring interval of the price."
-                    },
-                    "price_amount": {
-                        "type": "integer",
-                        "maximum": 99999999,
-                        "exclusiveMinimum": 0,
-                        "title": "Price Amount",
-                        "description": "The price in cents."
-                    },
                     "price_currency": {
                         "type": "string",
                         "pattern": "usd",
                         "title": "Price Currency",
                         "description": "The currency. Currently, only `usd` is supported.",
                         "default": "usd"
+                    },
+                    "price_amount": {
+                        "type": "integer",
+                        "maximum": 99999999,
+                        "minimum": 50,
+                        "title": "Price Amount",
+                        "description": "The price in cents."
+                    },
+                    "recurring_interval": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                            }
+                        ],
+                        "description": "The recurring interval of the price."
                     }
                 },
                 "type": "object",
                 "required": [
                     "type",
-                    "recurring_interval",
-                    "price_amount"
+                    "price_amount",
+                    "recurring_interval"
                 ],
                 "title": "ProductPriceRecurringCreate",
                 "description": "Schema to create a recurring product price, i.e. a subscription."
             },
-            "ProductPriceRecurringInterval": {
-                "type": "string",
-                "enum": [
-                    "month",
-                    "year"
+            "ProductPriceRecurringCustom": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the price."
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "custom"
+                        ],
+                        "const": "custom",
+                        "title": "Amount Type"
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the price is archived and no longer available."
+                    },
+                    "minimum_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Minimum Amount",
+                        "description": "The minimum amount the customer can pay."
+                    },
+                    "maximum_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Maximum Amount",
+                        "description": "The maximum amount the customer can pay."
+                    },
+                    "preset_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Preset Amount",
+                        "description": "The initial amount shown to the customer."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "recurring"
+                        ],
+                        "const": "recurring",
+                        "title": "Type",
+                        "description": "The type of the price."
+                    },
+                    "recurring_interval": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                            }
+                        ],
+                        "description": "The recurring interval of the price."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount_type",
+                    "price_currency",
+                    "is_archived",
+                    "minimum_amount",
+                    "maximum_amount",
+                    "preset_amount",
+                    "type",
+                    "recurring_interval"
                 ],
-                "title": "ProductPriceRecurringInterval"
+                "title": "ProductPriceRecurringCustom",
+                "description": "A pay-what-you-want recurring price for a product, i.e. a subscription."
+            },
+            "ProductPriceRecurringFixed": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the price."
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "fixed"
+                        ],
+                        "const": "fixed",
+                        "title": "Amount Type"
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the price is archived and no longer available."
+                    },
+                    "price_amount": {
+                        "type": "integer",
+                        "title": "Price Amount",
+                        "description": "The price in cents."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "recurring"
+                        ],
+                        "const": "recurring",
+                        "title": "Type",
+                        "description": "The type of the price."
+                    },
+                    "recurring_interval": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                            }
+                        ],
+                        "description": "The recurring interval of the price."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount_type",
+                    "price_currency",
+                    "is_archived",
+                    "price_amount",
+                    "type",
+                    "recurring_interval"
+                ],
+                "title": "ProductPriceRecurringFixed",
+                "description": "A recurring price for a product, i.e. a subscription."
             },
             "ProductPriceType": {
                 "type": "string",
@@ -28447,7 +28796,10 @@
                                             "$ref": "#/components/schemas/ProductPriceRecurringCreate"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/ProductPriceOneTimeCreate"
+                                            "$ref": "#/components/schemas/ProductPriceOneTimeFixedCreate"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ProductPriceOneTimeCustomCreate"
                                         }
                                     ]
                                 },
@@ -29561,6 +29913,14 @@
                 "title": "SubscriptionCreateEmail",
                 "description": "Request schema for creating a subscription by email."
             },
+            "SubscriptionRecurringInterval": {
+                "type": "string",
+                "enum": [
+                    "month",
+                    "year"
+                ],
+                "title": "SubscriptionRecurringInterval"
+            },
             "SubscriptionSortProperty": {
                 "type": "string",
                 "enum": [
@@ -29572,8 +29932,8 @@
                     "-started_at",
                     "current_period_end",
                     "-current_period_end",
-                    "price_amount",
-                    "-price_amount",
+                    "amount",
+                    "-amount",
                     "subscription_tier_type",
                     "-subscription_tier_type",
                     "product",
@@ -31891,6 +32251,31 @@
                         "title": "Id",
                         "description": "The ID of the object."
                     },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Currency"
+                    },
+                    "recurring_interval": {
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
                     },
@@ -31967,6 +32352,9 @@
                     "created_at",
                     "modified_at",
                     "id",
+                    "amount",
+                    "currency",
+                    "recurring_interval",
                     "status",
                     "current_period_start",
                     "current_period_end",
@@ -32140,7 +32528,33 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Currency"
+                    },
+                    "recurring_interval": {
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval"
                     },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
@@ -32231,6 +32645,9 @@
                     "created_at",
                     "modified_at",
                     "id",
+                    "amount",
+                    "currency",
+                    "recurring_interval",
                     "status",
                     "current_period_start",
                     "current_period_end",
@@ -32383,8 +32800,8 @@
                 "enum": [
                     "started_at",
                     "-started_at",
-                    "price_amount",
-                    "-price_amount",
+                    "amount",
+                    "-amount",
                     "status",
                     "-status",
                     "organization",
@@ -34483,6 +34900,23 @@
                     }
                 }
             },
+            "ProductPriceRecurring": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringFixed"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringCustom"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "amount_type",
+                    "mapping": {
+                        "custom": "#/components/schemas/ProductPriceRecurringCustom",
+                        "fixed": "#/components/schemas/ProductPriceRecurringFixed"
+                    }
+                }
+            },
             "Repository": {
                 "properties": {
                     "id": {
@@ -34608,6 +35042,31 @@
                         "title": "Id",
                         "description": "The ID of the object."
                     },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Currency"
+                    },
+                    "recurring_interval": {
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
                     },
@@ -34700,6 +35159,9 @@
                     "created_at",
                     "modified_at",
                     "id",
+                    "amount",
+                    "currency",
+                    "recurring_interval",
                     "status",
                     "current_period_start",
                     "current_period_end",

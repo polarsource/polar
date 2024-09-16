@@ -18,6 +18,7 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useMemo } from 'react'
+import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { DonationsFeed } from './DonationsFeed'
 import { NewsletterFeed } from './NewsletterFeed'
 import { ProductsGrid } from './ProductsGrid'
@@ -59,39 +60,52 @@ export const PublicPage = ({
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-24">
           {subscriptionProducts.length > 0 && (
-            <ProductsGrid
-              title="Subscriptions"
-              organization={organization}
-              recurringInterval={recurringInterval}
-              hasBothIntervals={hasBothIntervals}
-              setRecurringInterval={setRecurringInterval}
-            >
-              {subscriptionProducts.map((tier) => (
-                <SubscriptionTierCard
-                  className="w-full self-stretch"
-                  key={tier.id}
-                  subscriptionTier={tier}
-                  recurringInterval={recurringInterval}
-                >
-                  {shouldRenderSubscribeButton &&
-                    (tier.type === 'free' ? (
-                      <FreeTierSubscribe
-                        product={tier}
-                        organization={organization}
-                      />
-                    ) : (
-                      <CheckoutButton
-                        organization={organization}
-                        recurringInterval={recurringInterval}
-                        product={tier}
-                        checkoutPath="/api/checkout"
-                      >
-                        Subscribe
-                      </CheckoutButton>
-                    ))}
-                </SubscriptionTierCard>
-              ))}
-            </ProductsGrid>
+            <div className="dark:border-polar-700 rounded-4xl flex flex-col items-center border p-12">
+              <div className="flex flex-grow flex-col items-center gap-y-12">
+                <div className="flex flex-col items-center justify-between gap-y-4">
+                  <h2 className="text-center text-2xl font-medium">
+                    Subscriptions
+                  </h2>
+                  {hasBothIntervals &&
+                    recurringInterval &&
+                    setRecurringInterval && (
+                      <div className="flex justify-center">
+                        <SubscriptionTierRecurringIntervalSwitch
+                          recurringInterval={recurringInterval}
+                          onChange={setRecurringInterval}
+                        />
+                      </div>
+                    )}
+                </div>
+                <div className="flex flex-shrink flex-row flex-wrap justify-center gap-10">
+                  {subscriptionProducts.map((tier) => (
+                    <SubscriptionTierCard
+                      className="w-[280px] self-stretch"
+                      key={tier.id}
+                      subscriptionTier={tier}
+                      recurringInterval={recurringInterval}
+                    >
+                      {shouldRenderSubscribeButton &&
+                        (tier.type === 'free' ? (
+                          <FreeTierSubscribe
+                            product={tier}
+                            organization={organization}
+                          />
+                        ) : (
+                          <CheckoutButton
+                            organization={organization}
+                            recurringInterval={recurringInterval}
+                            product={tier}
+                            checkoutPath="/api/checkout"
+                          >
+                            Subscribe
+                          </CheckoutButton>
+                        ))}
+                    </SubscriptionTierCard>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
           {oneTimeProducts.length > 0 && (

@@ -34,12 +34,14 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
   useEffect(() => {
     const root = document.documentElement
 
-    const [a, b] = computeComplementaryColor(
-      organization.profile_settings?.accent_color ?? '#181818',
+    const [a, b, c, d] = computeComplementaryColor(
+      organization.profile_settings?.accent_color ?? '#121316',
     )
 
     root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
     root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
+    root.style.setProperty('--gradient-color-3', `#${c.toHex()}`)
+    root.style.setProperty('--gradient-color-4', `#${d.toHex()}`)
 
     /* @ts-ignore */
     gradient.initGradient('#gradient-canvas')
@@ -53,7 +55,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
           className="md:rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl"
         />
         <Avatar
-          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 text-lg md:text-5xl"
+          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 border-gray-100 text-lg md:text-5xl"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />

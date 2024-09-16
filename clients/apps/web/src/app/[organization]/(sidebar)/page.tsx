@@ -99,7 +99,7 @@ export default async function Page({
             organizationId: organization.id,
             isPublished: true,
             visibility: ArticleVisibility.PUBLIC,
-            limit: 3,
+            limit: 4,
           },
           {
             ...cacheConfig,

@@ -70,17 +70,13 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
         name={props.article.byline.name}
       />
       <div className="flex flex-col gap-y-1 pt-1">
-        <div className="dark:text-polar-400 flex flex-row flex-nowrap items-center gap-x-2 text-gray-500 ">
-          <Link
-            className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
-            href={organizationPageLink(props.article.organization)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:dark:text-blue-500">
-              {props.article.organization.name}
-            </h3>
-          </Link>
-        </div>
+        <Link
+          className="flex min-w-0 flex-grow flex-row items-center gap-x-2 truncate"
+          href={organizationPageLink(props.article.organization)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3>{props.article.organization.name}</h3>
+        </Link>
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-2 text-gray-500">
           {props.article.published_at ? (
             <>

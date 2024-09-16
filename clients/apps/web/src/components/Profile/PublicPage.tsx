@@ -9,7 +9,6 @@ import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useAuth } from '@/hooks'
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
-import { AllInclusiveOutlined } from '@mui/icons-material'
 import { Article, IssueFunding, Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useMemo } from 'react'
@@ -55,10 +54,6 @@ export const PublicPage = ({
             <div className="dark:border-polar-700 rounded-4xl flex flex-col bg-gray-100 md:items-center md:p-12 dark:bg-transparent dark:md:border">
               <div className="flex flex-grow flex-col gap-y-6 md:items-center md:gap-y-12">
                 <div className="flex flex-col justify-between gap-y-4 md:items-center">
-                  <AllInclusiveOutlined
-                    fontSize="large"
-                    className="text-blue-500"
-                  />
                   <h2 className="text-2xl font-medium md:text-center">
                     Subscriptions
                   </h2>

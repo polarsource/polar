@@ -470,5 +470,7 @@ async def secret_scanning(
         payload, github_public_key_signature, github_public_key_identifier
     )
 
-    response_data = await secret_scanning_service.handle_alert(session, payload)
+    data = secret_scanning_service.validate_payload(payload)
+
+    response_data = await secret_scanning_service.handle_alert(session, data)
     return JSONResponse(content=response_data)

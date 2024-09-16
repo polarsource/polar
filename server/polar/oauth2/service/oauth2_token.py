@@ -75,6 +75,9 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         if oauth2_token is None:
             return False
 
+        if cast(bool, oauth2_token.is_revoked()):
+            return True
+
         # Revoke
         oauth2_token.access_token_revoked_at = int(time.time())  # pyright: ignore
         oauth2_token.refresh_token_revoked_at = int(time.time())  # pyright: ignore
@@ -95,26 +98,27 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         oauth2_client = await oauth2_client_service.get_by_client_id(
             session, cast(str, oauth2_token.client_id)
         )
-        assert oauth2_client is not None
-
-        subject, body = email_renderer.render_from_template(
-            "Security Notice - Your Polar Access Token has been leaked",
-            "oauth2/leaked_token.html",
-            {
-                "client_name": oauth2_client.client_name,
-                "notifier": notifier,
-                "url": url,
-                "current_year": datetime.datetime.now().year,
-            },
-        )
-
-        for recipient in recipients:
-            email_sender.send_to_user(
-                to_email_addr=recipient,
-                subject=subject,
-                html_content=body,
-                from_email_addr="noreply@notifications.polar.sh",
+        # The `if` statement handles the case where we might detect a leaked token
+        # of a deleted client
+        if oauth2_client is not None:
+            subject, body = email_renderer.render_from_template(
+                "Security Notice - Your Polar Access Token has been leaked",
+                "oauth2/leaked_token.html",
+                {
+                    "client_name": oauth2_client.client_name,
+                    "notifier": notifier,
+                    "url": url,
+                    "current_year": datetime.datetime.now().year,
+                },
             )
+
+            for recipient in recipients:
+                email_sender.send_to_user(
+                    to_email_addr=recipient,
+                    subject=subject,
+                    html_content=body,
+                    from_email_addr="noreply@notifications.polar.sh",
+                )
 
         log.info(
             "Revoke leaked access token and refresh token",

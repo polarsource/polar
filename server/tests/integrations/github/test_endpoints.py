@@ -1,4 +1,5 @@
 import pytest
+from fastapi.exceptions import RequestValidationError
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -42,6 +43,29 @@ class TestSecretScanning:
         )
 
         assert response.status_code == 403
+
+    async def test_invalid_payload(
+        self, client: AsyncClient, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.github.service.secret_scanning.secret_scanning.verify_signature",
+            return_value=True,
+        )
+        mocker.patch(
+            "polar.integrations.github.service.secret_scanning.secret_scanning.validate_payload",
+            side_effect=RequestValidationError([]),
+        )
+
+        response = await client.post(
+            "/v1/integrations/github/secret-scanning",
+            headers={
+                "Github-Public-Key-Identifier": "KEY_IDENTIFIER",
+                "Github-Public-Key-Signature": "SIGNATURE",
+            },
+            json=[],
+        )
+
+        assert response.status_code == 422
 
     async def test_valid(self, client: AsyncClient, mocker: MockerFixture) -> None:
         mocker.patch(

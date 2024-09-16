@@ -1,15 +1,17 @@
 import base64
 import binascii
-import json
 from typing import Literal, Protocol, TypedDict
 
 from cryptography.exceptions import InvalidSignature as CryptographyInvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from fastapi.exceptions import RequestValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from polar.enums import TokenType
 from polar.exceptions import PolarError
+from polar.kit.schemas import Schema
 from polar.oauth2.service.oauth2_authorization_code import (
     oauth2_authorization_code as oauth2_authorization_code_service,
 )
@@ -33,11 +35,14 @@ class GitHubSecretScanningPublicKeyList(TypedDict):
     public_keys: list[GitHubSecretScanningPublicKey]
 
 
-class GitHubSecretScanningToken(TypedDict):
+class GitHubSecretScanningToken(Schema):
     token: str
     type: TokenType
-    url: str | None
+    url: str | None = None
     source: str
+
+
+GitHubSecretScanningTokenListAdapter = TypeAdapter(list[GitHubSecretScanningToken])
 
 
 class GitHubSecretScanningTokenResult(TypedDict):
@@ -113,10 +118,15 @@ class GitHubSecretScanningService:
         except (binascii.Error, CryptographyInvalidSignature) as e:
             raise InvalidSignature(payload, signature, key_identifier) from e
 
+    def validate_payload(self, payload: str) -> list[GitHubSecretScanningToken]:
+        try:
+            return GitHubSecretScanningTokenListAdapter.validate_json(payload)
+        except ValidationError as e:
+            raise RequestValidationError(e.errors(), body=payload)
+
     async def handle_alert(
-        self, session: AsyncSession, payload: str
+        self, session: AsyncSession, data: list[GitHubSecretScanningToken]
     ) -> list[GitHubSecretScanningTokenResult]:
-        data: list[GitHubSecretScanningToken] = json.loads(payload)
         results = []
         for match in data:
             result = await self._check_token(session, match)
@@ -126,15 +136,15 @@ class GitHubSecretScanningService:
     async def _check_token(
         self, session: AsyncSession, match: GitHubSecretScanningToken
     ) -> GitHubSecretScanningTokenResult:
-        service = TOKEN_TYPE_SERVICE_MAP[match["type"]]
+        service = TOKEN_TYPE_SERVICE_MAP[match.type]
 
         leaked = await service.revoke_leaked(
-            session, match["token"], match["type"], notifier="github", url=match["url"]
+            session, match.token, match.type, notifier="github", url=match.url
         )
 
         return {
-            "token_raw": match["token"],
-            "token_type": match["type"],
+            "token_raw": match.token,
+            "token_type": match.type,
             "label": "true_positive" if leaked else "false_positive",
         }
 

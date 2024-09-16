@@ -131,3 +131,35 @@ class TestRevokeLeaked:
 
         send_to_user_mock: MagicMock = email_sender_mock.send_to_user
         send_to_user_mock.assert_called_once()
+
+    async def test_already_revoked(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        email_sender_mock = MagicMock()
+        mocker.patch(
+            "polar.oauth2.service.oauth2_token.get_email_sender",
+            return_value=email_sender_mock,
+        )
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_123",
+            refresh_token="polar_rt_u_123",
+            scopes=["openid"],
+            user=user,
+            access_token_revoked_at=1,
+            refresh_token_revoked_at=1,
+        )
+
+        result = await oauth2_token_service.revoke_leaked(
+            session, "polar_at_u_123", TokenType.access_token, notifier="github"
+        )
+        assert result is True
+
+        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
+        send_to_user_mock.assert_not_called()

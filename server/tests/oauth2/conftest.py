@@ -102,6 +102,8 @@ async def create_oauth2_token(
     scopes: list[str],
     user: User | None = None,
     organization: Organization | None = None,
+    access_token_revoked_at: int | None = None,
+    refresh_token_revoked_at: int | None = None,
 ) -> OAuth2Token:
     token = OAuth2Token(
         client_id=client.client_id,
@@ -109,6 +111,8 @@ async def create_oauth2_token(
         access_token=get_token_hash(access_token, secret=settings.SECRET),
         refresh_token=get_token_hash(refresh_token, secret=settings.SECRET),
         scope=" ".join(scopes),
+        access_token_revoked_at=access_token_revoked_at,
+        refresh_token_revoked_at=refresh_token_revoked_at,
     )
     if user is not None:
         token.user_id = user.id

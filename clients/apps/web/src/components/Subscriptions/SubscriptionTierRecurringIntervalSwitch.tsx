@@ -23,18 +23,19 @@ const SubscriptionTierRecurringIntervalSwitch: React.FC<
     <div className="flex flex-row gap-2">
       <label
         htmlFor="recurring-interval-switch"
-        className="text-muted-foreground select-none text-sm"
+        className="dark:text-polar-500 select-none text-sm text-gray-500"
       >
         Monthly
       </label>
       <Switch
         id="recurring-interval-switch"
+        className="dark:data-[state=unchecked]:bg-white/10"
         checked={checked}
         onCheckedChange={onCheckedChange}
       />
       <label
         htmlFor="recurring-interval-switch"
-        className="text-muted-foreground select-none text-sm"
+        className="dark:text-polar-500 select-none text-sm text-gray-500"
       >
         Yearly
       </label>

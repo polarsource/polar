@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getUserOrganizations } from '@/utils/user'
-import { Issue, ListResourceProduct } from '@polar-sh/sdk'
+import { Issue } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -67,35 +66,16 @@ export default async function Page({
     api,
     params.organization,
   )
-  const userOrganizations = await getUserOrganizations(api)
-
-  let products: ListResourceProduct | undefined
   let issue: Issue | undefined
 
   try {
-    const [loadSubscriptionTiers, loadIssue] = await Promise.all([
-      api.products.list(
-        {
-          organizationId: organization.id,
-          isArchived: false,
-          isRecurring: true,
-        },
-        {
-          ...cacheConfig,
-          next: {
-            ...cacheConfig.next,
-            tags: [`products:${organization.id}:recurring`],
-          },
-        },
-      ),
-
+    const [loadIssue] = await Promise.all([
       // Optional Issue Loading
       issue_id
         ? api.issues.get({ id: issue_id }, cacheConfig)
         : Promise.resolve(undefined),
     ])
 
-    products = loadSubscriptionTiers
     issue = loadIssue
   } catch (e) {
     notFound()
@@ -112,8 +92,6 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
-      userOrganizations={userOrganizations}
-      products={products?.items ?? []}
       defaultAmount={parseInt(amount ?? '2000')}
       issue={issue}
     />

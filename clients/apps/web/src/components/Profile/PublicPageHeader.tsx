@@ -73,6 +73,7 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
           <Link
             className="dark:text-polar-500 text-gray-500"
             href={`/${organization.slug}`}
+            tabIndex={-1}
           >
             @{organization.slug}
           </Link>

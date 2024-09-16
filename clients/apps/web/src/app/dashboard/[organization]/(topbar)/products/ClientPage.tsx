@@ -6,15 +6,12 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { AddOutlined } from '@mui/icons-material'
+import { AddOutlined, InsertPhotoOutlined } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import {
-  InsertPhotoOutlined,
-} from '@mui/icons-material'
 import { useContext } from 'react'
 
 export default function ClientPage() {
@@ -62,11 +59,18 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="h-7 w-8 rounded bg-blue-50 dark:bg-gray-900 text-center">
+    <div className="flex h-6 aspect-video flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
       {coverUrl ? (
-        <img src={coverUrl} alt={product.name} className="h-7 w-8 rounded" />
+        <img
+          src={coverUrl}
+          alt={product.name}
+          className="aspect-video h-6 rounded object-cover"
+        />
       ) : (
-        <InsertPhotoOutlined className="text-blue-300 dark:text-blue-600 mt-0.5" />
+        <InsertPhotoOutlined
+          fontSize="small"
+          className="dark:text-polar-500 text-gray-500"
+        />
       )}
     </div>
   )

@@ -1,7 +1,8 @@
 #! /usr/bin/env -S uv run
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.12"
 # dependencies = [
+#     "authlib",
 #     "httpx",
 #     "python-dotenv",
 #     "yaspin",
@@ -16,12 +17,12 @@ import pathlib
 import queue
 import random
 import string
-import subprocess
 import typing
 import urllib.parse
 import webbrowser
 
 import httpx
+from authlib.jose import JsonWebKey, KeySet
 from dotenv import dotenv_values
 from yaspin import yaspin
 from yaspin.spinners import Spinners
@@ -277,19 +278,12 @@ def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) ->
 
 
 def _generate_jwks() -> None:
-    env = {k: v for k, v in os.environ.copy().items() if k != "VIRTUAL_ENV"}
-    command = ["poetry", "run", "task", "generate_dev_jwks"]
-    process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        cwd=ROOT_PATH / "server",
-        env=env,
-    )
-    _, stderr = process.communicate()
-    if process.returncode != 0:
-        raise RuntimeError(stderr)
+    options = {"kid": "polar_dev", "use": "sig"}
+    key = JsonWebKey.generate_key("RSA", 2048, options, is_private=True)
+    keyset = KeySet(keys=[key])
+    json_keyset = keyset.as_json(is_private=True)
+    with open(ROOT_PATH / "server" / ".jwks.json", "w") as jwks_file:
+        jwks_file.write(json_keyset)
 
 
 def _get_options():

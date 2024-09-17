@@ -1,5 +1,5 @@
 import { SubscriptionRecurringInterval } from '@polar-sh/sdk'
-import Switch from 'polarkit/components/ui/atoms/switch'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import React from 'react'
 
 interface SubscriptionTierRecurringIntervalSwitchProps {
@@ -10,36 +10,21 @@ interface SubscriptionTierRecurringIntervalSwitchProps {
 const SubscriptionTierRecurringIntervalSwitch: React.FC<
   SubscriptionTierRecurringIntervalSwitchProps
 > = ({ recurringInterval, onChange }) => {
-  const checked = recurringInterval === SubscriptionRecurringInterval.YEAR
-  const onCheckedChange = (checked: boolean) => {
-    onChange(
-      checked
-        ? SubscriptionRecurringInterval.YEAR
-        : SubscriptionRecurringInterval.MONTH,
-    )
+  const onCheckedChange = (checked: string) => {
+    onChange(checked as SubscriptionRecurringInterval)
   }
 
   return (
-    <div className="flex flex-row gap-2">
-      <label
-        htmlFor="recurring-interval-switch"
-        className="dark:text-polar-500 select-none text-sm text-gray-500"
-      >
-        Monthly
-      </label>
-      <Switch
-        id="recurring-interval-switch"
-        className="dark:data-[state=unchecked]:bg-white/10"
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-      />
-      <label
-        htmlFor="recurring-interval-switch"
-        className="dark:text-polar-500 select-none text-sm text-gray-500"
-      >
-        Yearly
-      </label>
-    </div>
+    <Tabs onValueChange={onCheckedChange} value={recurringInterval}>
+      <TabsList>
+        <TabsTrigger value={SubscriptionRecurringInterval.MONTH} size="small">
+          Monthly Billing
+        </TabsTrigger>
+        <TabsTrigger value={SubscriptionRecurringInterval.YEAR} size="small">
+          Yearly Billing
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   )
 }
 

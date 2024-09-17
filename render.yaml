@@ -1,6 +1,10 @@
 version: "1"
 
 services:
+  ################
+  ## PRODUCTION ##
+  ################
+
   # API
   - type: web
     name: api
@@ -59,11 +63,11 @@ services:
           property: port
       - key: POLAR_REDIS_DB
         value: 0
-      - fromGroup: aws-s3
+      - fromGroup: aws-s3-production
       - fromGroup: google-production
       - fromGroup: github-production
-      - fromGroup: server-common
-      - fromGroup: server-stripe
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
       - fromGroup: logfire-server
 
   # Worker Default
@@ -115,8 +119,8 @@ services:
         value: 0
       - fromGroup: google-production
       - fromGroup: github-production
-      - fromGroup: server-common
-      - fromGroup: server-stripe
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
       - fromGroup: logfire-worker
 
   # Worker GitHub Sync
@@ -168,8 +172,8 @@ services:
         value: 0
       - fromGroup: google-production
       - fromGroup: github-production
-      - fromGroup: server-common
-      - fromGroup: server-stripe
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
 
   - type: redis
     name: redis
@@ -196,7 +200,7 @@ envVarGroups:
       - key: POLAR_GOOGLE_CLIENT_SECRET
         sync: false
 
-  - name: server-common
+  - name: backend-production
     envVars:
       - key: POLAR_AUTH_COOKIE_DOMAIN
         value: polar.sh
@@ -245,7 +249,7 @@ envVarGroups:
       - key: POLAR_TESTING
         value: 0
 
-  - name: aws-s3
+  - name: aws-s3-production
     envVars:
       - key: POLAR_AWS_ACCESS_KEY_ID
         sync: false
@@ -303,7 +307,7 @@ envVarGroups:
       - key: POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET
         sync: false
 
-  - name: server-stripe
+  - name: stripe-production
     envVars:
       - key: POLAR_STRIPE_CONNECT_WEBHOOK_SECRET
         sync: false

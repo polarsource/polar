@@ -20,7 +20,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
     )
   }
 
-  return <div>Pay what you want</div>
+  return <div className="text-[min(1em,24px)]">Pay what you want</div>
 }
 
 export default ProductPriceLabel

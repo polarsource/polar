@@ -2,16 +2,10 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
-import {
-  useCreateSubscription,
-  useProducts,
-  useUserSubscriptions,
-} from '@/hooks/queries'
-import { organizationPageLink } from '@/utils/nav'
+import { useCreateSubscription, useUserSubscriptions } from '@/hooks/queries'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, Product, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
@@ -25,13 +19,11 @@ interface AuthenticatedFreeTierSubscribeProps {
   organization: Organization
   product: Product
   user: UserRead
-  upsellSubscriptions?: boolean
 }
 
 export const AuthenticatedFreeTierSubscribe = ({
   product,
   organization,
-  upsellSubscriptions,
 }: AuthenticatedFreeTierSubscribeProps) => {
   const { data, isFetched } = useUserSubscriptions({
     organizationId: organization.id,
@@ -39,20 +31,11 @@ export const AuthenticatedFreeTierSubscribe = ({
   })
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
-  const router = useRouter()
-  const orgProducts = useProducts(organization.id)
-  const hasHighlightedSubscriptions = orgProducts.data?.items.some(
-    (tier) => tier.is_highlighted,
-  )
 
   const createFreeSubscription = useCreateSubscription()
 
   const onSubscribeFree = async () => {
     await createFreeSubscription.mutateAsync({ product_id: product.id })
-
-    if (upsellSubscriptions && hasHighlightedSubscriptions) {
-      router.push(organizationPageLink(organization, 'subscribe'))
-    }
   }
 
   return (
@@ -210,13 +193,11 @@ export const AnonymousFreeTierSubscribe = ({
 interface FreeTierSubscribeProps {
   product: Product
   organization: Organization
-  upsellSubscriptions?: boolean
 }
 
 export const FreeTierSubscribe = ({
   product: product,
   organization,
-  upsellSubscriptions,
 }: FreeTierSubscribeProps) => {
   const { currentUser } = useAuth()
   return (
@@ -226,7 +207,6 @@ export const FreeTierSubscribe = ({
           product={product}
           organization={organization}
           user={currentUser}
-          upsellSubscriptions={upsellSubscriptions}
         />
       ) : (
         <AnonymousFreeTierSubscribe

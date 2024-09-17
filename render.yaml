@@ -24,6 +24,8 @@ services:
       targetMemoryPercent: 75
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
+    domains:
+      - api.polar.sh
     envVars:
       - key: FORWARDED_ALLOW_IPS
         value: '*'
@@ -201,6 +203,8 @@ services:
     numInstances: 1
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
+    domains:
+      - sandbox-api.polar.sh
     envVars:
       - key: FORWARDED_ALLOW_IPS
         value: '*'

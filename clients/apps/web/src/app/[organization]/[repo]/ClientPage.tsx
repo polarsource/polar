@@ -2,7 +2,6 @@
 
 import revalidate from '@/app/actions'
 import { DonateWidget } from '@/components/Donations/DontateWidget'
-import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
@@ -248,19 +247,6 @@ const ClientPage = ({
                   )}
                 </div>
               </ShadowBoxOnMd>
-
-              {(organization.feature_settings?.subscriptions_enabled ||
-                organization.feature_settings?.articles_enabled) &&
-              freeSubscriptionTier &&
-              !isOrgMember ? (
-                <>
-                  <FreeTierSubscribe
-                    product={freeSubscriptionTier}
-                    organization={organization}
-                    upsellSubscriptions
-                  />
-                </>
-              ) : null}
             </div>
 
             {organization.donations_enabled ? (

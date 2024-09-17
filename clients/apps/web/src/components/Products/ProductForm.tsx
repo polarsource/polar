@@ -25,7 +25,6 @@ import {
 } from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -501,35 +500,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   <FormMessage />
                 </FormItem>
               )}
-            />
-          ) : (
-            <></>
-          )}
-          {!isFreeTier && pricingType === ProductPriceType.RECURRING ? (
-            <FormField
-              control={control}
-              name="is_highlighted"
-              render={({ field }) => {
-                return (
-                  <div className="flex flex-col gap-y-4">
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          defaultChecked={field.value || false}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm leading-none">
-                        Highlight this tier
-                      </FormLabel>
-                    </FormItem>
-                    <p className="dark:text-polar-500 text-sm text-gray-500">
-                      Highlighted tiers are shown on the public overview page.
-                      Only one tier can be highlighted per tier type.
-                    </p>
-                  </div>
-                )
-              }}
             />
           ) : (
             <></>

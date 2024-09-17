@@ -6,12 +6,22 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { AddOutlined, InsertPhotoOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  InsertPhotoOutlined,
+  MoreVertOutlined,
+} from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'polarkit/components/ui/dropdown-menu'
 import { useContext } from 'react'
 
 export default function ClientPage() {
@@ -59,7 +69,7 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="flex h-6 aspect-video flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
+    <div className="flex aspect-video h-6 flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
       {coverUrl ? (
         <img
           src={coverUrl}
@@ -82,18 +92,24 @@ interface ProductListItemProps {
 }
 
 const ProductListItem = ({ product, organization }: ProductListItemProps) => {
+  const handleContextMenuCallback = (
+    callback: (e: React.MouseEvent) => void,
+  ) => {
+    return (e: React.MouseEvent) => {
+      e.stopPropagation()
+      callback(e)
+    }
+  }
+
   return (
-    <Link
-      key={product.id}
-      href={`/dashboard/${organization.slug}/products/${product.id}`}
-    >
+    <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
       <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-white">
-        <div className="flex flex-row items-center gap-x-4">
+        <div className="flex flex-grow flex-row items-center gap-x-4">
           <ProductListCoverImage product={product} />
           <span>{product.name}</span>
         </div>
-        <div className="flex flex-row items-center gap-x-4">
-          <span className="leading-snug text-blue-500 dark:text-blue-400">
+        <div className="flex flex-row items-center gap-x-6">
+          <span className="text-sm leading-snug">
             {product.prices.length > 0 ? (
               product.prices.length < 2 ? (
                 <ProductPriceLabel price={product.prices[0]} />
@@ -104,16 +120,58 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
               'Free'
             )}
           </span>
-          {product.benefits.length > 0 && (
-            <Pill className="px-2.5 py-1" color="blue">
-              {product.benefits.length === 1
-                ? `${product.benefits.length} Benefit`
-                : `${product.benefits.length} Benefits`}
-            </Pill>
-          )}
-          <Pill className="px-2.5 py-1" color="gray">
-            {product.is_recurring ? 'Subscription' : 'Product'}
-          </Pill>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none" asChild>
+              <Button
+                className={
+                  'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                }
+                size="icon"
+                variant="secondary"
+              >
+                <MoreVertOutlined fontSize="inherit" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+            >
+              <DropdownMenuItem
+                onClick={handleContextMenuCallback(() => {
+                  if (typeof window !== 'undefined') {
+                    window.open(
+                      `/dashboard/${organization.slug}/products/${product.id}`,
+                      '_self',
+                    )
+                  }
+                })}
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+              <DropdownMenuItem
+                onClick={handleContextMenuCallback(() => {
+                  if (typeof navigator !== 'undefined') {
+                    navigator.clipboard.writeText(product.id)
+                  }
+                })}
+              >
+                Copy Product ID
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleContextMenuCallback(() => {
+                  if (typeof window !== 'undefined') {
+                    window.open(
+                      `/${organization.slug}/products/${product.id}`,
+                      '_blank',
+                    )
+                  }
+                })}
+              >
+                View Product Page
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </ListItem>
     </Link>

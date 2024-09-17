@@ -96,10 +96,6 @@ const ClientPage = ({
     updateProfile({ links: links.map((l) => l.url) })
   }
 
-  const freeSubscriptionTier = products.find(
-    (tier) => tier.type === SubscriptionTierType.FREE,
-  )
-
   return (
     <div className="flex w-full flex-col gap-y-12">
       <div className="flex w-full flex-col gap-16">

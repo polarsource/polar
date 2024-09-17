@@ -37,7 +37,9 @@ export default function ClientPage({
 
   const yearlyDiscount =
     yearlyPrice &&
+    yearlyPrice.amount_type === 'fixed' &&
     monthlyPrice &&
+    monthlyPrice.amount_type === 'fixed' &&
     (monthlyPrice.price_amount * 12 - yearlyPrice.price_amount) /
       (monthlyPrice.price_amount * 12)
 
@@ -120,7 +122,7 @@ export default function ClientPage({
                     checkoutPath="/api/checkout"
                     variant="default"
                   >
-                    {yearlyPrice
+                    {yearlyPrice && monthlyPrice.amount_type === 'fixed'
                       ? `Subscribe for ${formatCurrencyAndAmount(monthlyPrice.price_amount, monthlyPrice.price_currency, 0)} per month`
                       : 'Subscribe now'}
                   </CheckoutButton>
@@ -134,7 +136,7 @@ export default function ClientPage({
                       checkoutPath="/api/checkout"
                       variant="default"
                     >
-                      {monthlyPrice
+                      {monthlyPrice && yearlyPrice.amount_type === 'fixed'
                         ? `Subscribe for ${formatCurrencyAndAmount(yearlyPrice.price_amount, yearlyPrice.price_currency, 0)} per year`
                         : 'Subscribe now'}
                     </CheckoutButton>

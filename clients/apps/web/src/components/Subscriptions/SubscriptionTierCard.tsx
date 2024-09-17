@@ -10,7 +10,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
 import {
   Product,
-  ProductPriceRecurringInterval,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
@@ -34,7 +34,7 @@ export interface SubscriptionTierCardProps {
   className?: string
   variant?: 'default' | 'small'
   draggable?: ReturnType<typeof useSortable>
-  recurringInterval?: ProductPriceRecurringInterval
+  recurringInterval?: SubscriptionRecurringInterval
 }
 
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
@@ -43,7 +43,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   className,
   variant = 'default',
   draggable,
-  recurringInterval = ProductPriceRecurringInterval.MONTH,
+  recurringInterval = SubscriptionRecurringInterval.MONTH,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -136,14 +136,20 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           <div className={variantStyles[variant]['priceLabel']}>
             {price ? (
               <>
-                {formatCurrencyAndAmount(
-                  price.price_amount,
-                  price.price_currency,
-                  0,
+                {price.amount_type === 'fixed' ? (
+                  <>
+                    {formatCurrencyAndAmount(
+                      price.price_amount,
+                      price.price_currency,
+                      0,
+                    )}
+                    <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
+                      {recurringBillingLabel}
+                    </span>
+                  </>
+                ) : (
+                  'Pay what you want'
                 )}
-                <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
-                  {recurringBillingLabel}
-                </span>
               </>
             ) : (
               '$0'

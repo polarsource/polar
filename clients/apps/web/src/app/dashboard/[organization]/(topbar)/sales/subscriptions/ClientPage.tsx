@@ -3,7 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
+import AmountLabel from '@/components/Shared/AmountLabel'
 import AddSubscriberModal from '@/components/Subscriptions/AddSubscriberModal'
 import ImportSubscribersModal from '@/components/Subscriptions/ImportSubscribersModal'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
@@ -29,7 +29,6 @@ import {
 import {
   Organization,
   Product,
-  ProductPrice,
   Subscription,
   SubscriptionStatus,
   SubscriptionTierType,
@@ -261,20 +260,24 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
-      id: 'price_amount',
-      accessorKey: 'price',
+      id: 'amount',
+      accessorKey: 'amount',
       enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Price" />
+        <DataTableColumnHeader column={column} title="Amount" />
       ),
-      cell: (props) => {
-        const price = props.getValue() as ProductPrice | null
-
-        if (!price) {
+      cell: ({ row: { original: subscription } }) => {
+        if (!subscription.amount || !subscription.currency) {
           return '—'
         }
 
-        return <ProductPriceLabel price={props.getValue() as ProductPrice} />
+        return (
+          <AmountLabel
+            amount={subscription.amount}
+            currency={subscription.currency}
+            interval={subscription.recurring_interval}
+          />
+        )
       },
     },
   ]

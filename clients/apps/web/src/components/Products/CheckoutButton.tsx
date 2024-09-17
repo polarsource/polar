@@ -8,8 +8,8 @@ import {
   Product,
   ProductPrice,
   ProductPriceRecurring,
-  ProductPriceRecurringInterval,
   ProductPriceType,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
   UserRead,
 } from '@polar-sh/sdk'
@@ -138,6 +138,8 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
     () =>
       upgradableSubscription &&
       upgradableSubscription.price &&
+      upgradableSubscription.price.amount_type === 'fixed' &&
+      price.amount_type === 'fixed' &&
       price.price_amount < upgradableSubscription.price.price_amount,
     [upgradableSubscription, price],
   )
@@ -199,7 +201,7 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
                 Subscribed
               </Button>
             )}
-            {upgradableSubscription && (
+            {upgradableSubscription && price.amount_type === 'fixed' && (
               <>
                 <Button
                   className={variant === 'outline' ? buttonClasses : ''}
@@ -264,7 +266,7 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
 
 interface CheckoutButtonProps {
   product: Product
-  recurringInterval?: ProductPriceRecurringInterval
+  recurringInterval?: SubscriptionRecurringInterval
   organization: Organization
   checkoutPath: string
   variant?: ButtonProps['variant']

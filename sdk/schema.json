@@ -10774,7 +10774,7 @@
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.create(request={\n    \"name\": \"<value>\",\n    \"prices\": [\n        {\n            \"recurring_interval\": polar_sdk.ProductPriceRecurringInterval.MONTH,\n            \"price_amount\": 489382,\n        },\n    ],\n    \"type\": polar_sdk.ProductRecurringCreateType.INDIVIDUAL,\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.create(request={\n    \"name\": \"<value>\",\n    \"prices\": [\n        {\n            \"recurring_interval\": polar_sdk.SubscriptionRecurringInterval.MONTH,\n            \"price_amount\": 489382,\n        },\n    ],\n    \"type\": polar_sdk.ProductRecurringCreateType.INDIVIDUAL,\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -24222,7 +24222,7 @@
           "recurring_interval": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
+                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
               },
               {
                 "type": "null"
@@ -24258,7 +24258,7 @@
           "recurring_interval": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
+                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
               }
             ],
             "description": "The recurring interval of the price."
@@ -24287,13 +24287,13 @@
         "title": "ProductPriceRecurringCreate",
         "description": "Schema to create a recurring product price, i.e. a subscription."
       },
-      "ProductPriceRecurringInterval": {
+      "SubscriptionRecurringInterval": {
         "type": "string",
         "enum": [
           "month",
           "year"
         ],
-        "title": "ProductPriceRecurringInterval"
+        "title": "SubscriptionRecurringInterval"
       },
       "ProductPriceType": {
         "type": "string",

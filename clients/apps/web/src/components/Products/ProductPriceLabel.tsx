@@ -1,39 +1,26 @@
-import {
-  ProductPrice,
-  ProductPriceRecurringInterval,
-  ProductPriceType,
-} from '@polar-sh/sdk'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
-import { useMemo } from 'react'
+import { ProductPrice, ProductPriceType } from '@polar-sh/sdk'
+import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
   price: ProductPrice
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
-  const { price_amount, price_currency } = price
-  const intervalDisplay = useMemo(() => {
-    switch (price.type) {
-      case ProductPriceType.ONE_TIME:
-        return ''
-      case ProductPriceType.RECURRING:
-        switch (price.recurring_interval) {
-          case ProductPriceRecurringInterval.MONTH:
-            return ' / mo'
-          case ProductPriceRecurringInterval.YEAR:
-            return ' / yr'
-          default:
-            return ''
+  if (price.amount_type === 'fixed') {
+    return (
+      <AmountLabel
+        amount={price.price_amount}
+        currency={price.price_currency}
+        interval={
+          price.type === ProductPriceType.RECURRING
+            ? price.recurring_interval
+            : undefined
         }
-    }
-  }, [price])
+      />
+    )
+  }
 
-  return (
-    <div className="flex flex-row items-baseline">
-      <span>{formatCurrencyAndAmount(price_amount, price_currency, 0)}</span>
-      <span className="text-[.5em]">{intervalDisplay}</span>
-    </div>
-  )
+  return <div>Pay what you want</div>
 }
 
 export default ProductPriceLabel

@@ -1,8 +1,8 @@
 import {
   Product,
   ProductPriceRecurring,
-  ProductPriceRecurringInterval,
   ProductPriceType,
+  SubscriptionRecurringInterval,
   SubscriptionStatus,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
@@ -66,7 +66,7 @@ export const subscriptionStatusDisplayNames: {
 
 export const hasRecurringInterval =
   (
-    recurringInterval: ProductPriceRecurringInterval,
+    recurringInterval: SubscriptionRecurringInterval,
     hideFree: boolean = false,
   ) =>
   (
@@ -84,7 +84,7 @@ export const hasRecurringInterval =
 
 export const getRecurringProductPrice = (
   subscriptionTier: Partial<Product>,
-  recurringInterval: ProductPriceRecurringInterval,
+  recurringInterval: SubscriptionRecurringInterval,
 ): ProductPriceRecurring | undefined => {
   return subscriptionTier.prices?.find(
     (price) =>
@@ -94,12 +94,12 @@ export const getRecurringProductPrice = (
 }
 
 export const getRecurringBillingLabel = (
-  recurringInterval: ProductPriceRecurringInterval,
+  recurringInterval: SubscriptionRecurringInterval,
 ) => {
   switch (recurringInterval) {
-    case ProductPriceRecurringInterval.MONTH:
+    case SubscriptionRecurringInterval.MONTH:
       return '/mo'
-    case ProductPriceRecurringInterval.YEAR:
+    case SubscriptionRecurringInterval.YEAR:
       return '/year'
   }
 }

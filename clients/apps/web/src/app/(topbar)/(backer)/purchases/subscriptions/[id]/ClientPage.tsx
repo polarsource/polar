@@ -5,7 +5,7 @@ import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
-import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
+import AmountLabel from '@/components/Shared/AmountLabel'
 import {
   useCancelSubscription,
   useOrganization,
@@ -123,8 +123,12 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
             <h3 className="text-lg font-medium">{subscription.product.name}</h3>
             <div className="flex flex-col gap-4">
               <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
-                {subscription.price && (
-                  <ProductPriceLabel price={subscription.price} />
+                {subscription.amount && subscription.currency && (
+                  <AmountLabel
+                    amount={subscription.amount}
+                    currency={subscription.currency}
+                    interval={subscription.recurring_interval}
+                  />
                 )}
               </h1>
               {!isCanceled && subscription.started_at && (

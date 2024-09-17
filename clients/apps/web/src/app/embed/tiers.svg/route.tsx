@@ -5,7 +5,7 @@ import {
   ListResourceProduct,
   Organization,
   Product,
-  ProductPriceRecurringInterval,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
@@ -52,7 +52,7 @@ const getHighlightedSubscriptions = async (
 const renderBadge = async (
   label: string,
   products: (Product & { type: SubscriptionTierType })[],
-  recurringInterval: ProductPriceRecurringInterval,
+  recurringInterval: SubscriptionRecurringInterval,
   darkmode: boolean,
 ) => {
   const inter500 = await fetch(
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
     searchParams.get('label') ?? `Support ${org} with a subscription`
   const darkmode = searchParams.has('darkmode')
   const recurringInterval =
-    searchParams.get('interval') || ProductPriceRecurringInterval.MONTH
+    searchParams.get('interval') || SubscriptionRecurringInterval.MONTH
 
   if (!org) {
     return new Response('No org provided', { status: 400 })
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
     const svg = await renderBadge(
       label,
       highlightedTiers,
-      recurringInterval as ProductPriceRecurringInterval,
+      recurringInterval as SubscriptionRecurringInterval,
       darkmode,
     )
 

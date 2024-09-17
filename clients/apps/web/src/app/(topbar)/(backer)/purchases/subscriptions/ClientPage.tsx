@@ -1,9 +1,9 @@
 'use client'
 
 import Pagination from '@/components/Pagination/Pagination'
-import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
+import AmountLabel from '@/components/Shared/AmountLabel'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
 import { DiamondOutlined } from '@mui/icons-material'
@@ -143,8 +143,12 @@ const SubscriptionItem = ({
           {subscription.status}
         </span>
         <span>
-          {subscription.price ? (
-            <ProductPriceLabel price={subscription.price} />
+          {subscription.amount && subscription.currency ? (
+            <AmountLabel
+              amount={subscription.amount}
+              currency={subscription.currency}
+              interval={subscription.recurring_interval}
+            />
           ) : (
             'Free'
           )}

@@ -1,4 +1,4 @@
-import { Organization, ProductPriceRecurringInterval } from '@polar-sh/sdk'
+import { Organization, SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 
@@ -6,9 +6,9 @@ export interface ProductsGridProps extends React.PropsWithChildren {
   className?: string
   title?: string
   organization: Organization
-  recurringInterval?: ProductPriceRecurringInterval
+  recurringInterval?: SubscriptionRecurringInterval
   hasBothIntervals?: boolean
-  setRecurringInterval?: (interval: ProductPriceRecurringInterval) => void
+  setRecurringInterval?: (interval: SubscriptionRecurringInterval) => void
   gridClassName?: string
 }
 

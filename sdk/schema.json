@@ -22520,6 +22520,18 @@
       },
       "OrganizationProfileSettings": {
         "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled",
+            "description": "If this organization has a profile enabled"
+          },
           "description": {
             "anyOf": [
               {
@@ -22598,6 +22610,18 @@
               "show_count": true,
               "count_free": true
             }
+          },
+          "accent_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accent Color",
+            "description": "Accent color for the organization"
           }
         },
         "type": "object",
@@ -24124,7 +24148,7 @@
           "price_amount": {
             "type": "integer",
             "maximum": 99999999,
-            "exclusiveMinimum": 0,
+            "minimum": 50,
             "title": "Price Amount",
             "description": "The price in cents."
           },
@@ -24242,7 +24266,7 @@
           "price_amount": {
             "type": "integer",
             "maximum": 99999999,
-            "exclusiveMinimum": 0,
+            "minimum": 50,
             "title": "Price Amount",
             "description": "The price in cents."
           },

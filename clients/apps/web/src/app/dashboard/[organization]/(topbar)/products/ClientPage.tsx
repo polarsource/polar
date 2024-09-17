@@ -6,6 +6,8 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { CONFIG } from '@/utils/config'
+import { SubscriptionRecurringInterval, ProductPrice } from '@polar-sh/sdk'
 import {
   AddOutlined,
   InsertPhotoOutlined,
@@ -17,6 +19,7 @@ import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +117,32 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     }
   }
 
+  const generateCopyCheckoutLabel = (price: ProductPrice) => {
+    let suffix = ''
+    if (price.type === 'recurring') {
+      switch (price.recurring_interval) {
+        case SubscriptionRecurringInterval.MONTH:
+          suffix = ' / mo'
+          break
+        case SubscriptionRecurringInterval.YEAR:
+          suffix = ' / yr'
+          break
+      }
+      const amount = price.price_amount ?? 0
+      const amountFmt = formatCurrencyAndAmount(amount, price.price_currency, 0)
+      suffix = `(${amountFmt}${suffix})`
+    }
+
+    return `Copy Checkout URL ${suffix}`
+  }
+
+  const onGenerateCheckoutUrl = (price: ProductPrice) => {
+    const url = new URL(`${CONFIG.FRONTEND_BASE_URL}/api/checkout?price=${price.id}`)
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(url.toString())
+    }
+  }
+
   return (
     <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
       <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-white">
@@ -161,6 +190,21 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
               >
                 Edit
               </DropdownMenuItem>
+              {product.prices.length > 0 && (
+                <>
+                  <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                  {product.prices.map((price) => (
+                    <DropdownMenuItem
+                      key={price.id}
+                      onClick={handleContextMenuCallback(() => {
+                        onGenerateCheckoutUrl(price)
+                      })}
+                    >
+                      {generateCopyCheckoutLabel(price)}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
               <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
               <DropdownMenuItem
                 onClick={handleContextMenuCallback(() => {

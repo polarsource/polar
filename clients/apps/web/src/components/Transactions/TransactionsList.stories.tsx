@@ -146,6 +146,7 @@ const product_price: ProductPrice = {
   created_at: '',
   modified_at: null,
   id: '',
+  amount_type: 'fixed',
   type: 'recurring',
   recurring_interval: 'month',
   price_amount: 4000,

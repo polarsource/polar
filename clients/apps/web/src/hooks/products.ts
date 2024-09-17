@@ -6,8 +6,8 @@ import {
 import {
   Product,
   ProductPriceRecurring,
-  ProductPriceRecurringInterval,
   ProductPriceType,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
@@ -16,8 +16,8 @@ import { useProducts } from './queries'
 export const useRecurringInterval = (
   products: Product[],
 ): [
-  ProductPriceRecurringInterval,
-  Dispatch<SetStateAction<ProductPriceRecurringInterval>>,
+  SubscriptionRecurringInterval,
+  Dispatch<SetStateAction<SubscriptionRecurringInterval>>,
   boolean,
 ] => {
   const hasMonthInterval = useMemo(() => {
@@ -25,7 +25,7 @@ export const useRecurringInterval = (
       product.prices.some(
         (price) =>
           price.type === 'recurring' &&
-          price.recurring_interval === ProductPriceRecurringInterval.MONTH,
+          price.recurring_interval === SubscriptionRecurringInterval.MONTH,
       ),
     )
   }, [products])
@@ -34,7 +34,7 @@ export const useRecurringInterval = (
       product.prices.some(
         (price) =>
           price.type === 'recurring' &&
-          price.recurring_interval === ProductPriceRecurringInterval.YEAR,
+          price.recurring_interval === SubscriptionRecurringInterval.YEAR,
       ),
     )
   }, [products])
@@ -44,12 +44,12 @@ export const useRecurringInterval = (
   )
 
   const [recurringInterval, setRecurringInterval] =
-    useState<ProductPriceRecurringInterval>(
+    useState<SubscriptionRecurringInterval>(
       hasBothIntervals
-        ? ProductPriceRecurringInterval.MONTH
+        ? SubscriptionRecurringInterval.MONTH
         : hasYearInterval
-          ? ProductPriceRecurringInterval.YEAR
-          : ProductPriceRecurringInterval.MONTH,
+          ? SubscriptionRecurringInterval.YEAR
+          : SubscriptionRecurringInterval.MONTH,
     )
 
   return [recurringInterval, setRecurringInterval, hasBothIntervals]
@@ -57,7 +57,7 @@ export const useRecurringInterval = (
 
 export const useRecurringProductPrice = (
   product: Partial<Product>,
-  recurringInterval: ProductPriceRecurringInterval,
+  recurringInterval: SubscriptionRecurringInterval,
 ): ProductPriceRecurring | undefined => {
   return useMemo(
     () => getRecurringProductPrice(product, recurringInterval),
@@ -66,7 +66,7 @@ export const useRecurringProductPrice = (
 }
 
 export const useRecurringBillingLabel = (
-  recurringInterval: ProductPriceRecurringInterval | null,
+  recurringInterval: SubscriptionRecurringInterval | null,
 ) => {
   return useMemo(
     () =>

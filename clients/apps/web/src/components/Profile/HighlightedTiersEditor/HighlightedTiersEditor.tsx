@@ -259,6 +259,7 @@ const useCreateBaselineTier = (
           id: '1',
           created_at: new Date().toISOString(),
           modified_at: null,
+          amount_type: 'fixed',
           is_archived: false,
           price_amount: 500,
           price_currency: 'usd',

@@ -7,11 +7,12 @@ import {
   ProductCreate,
   ProductMediaFileRead,
   ProductPrice,
-  ProductPriceRecurringInterval,
   ProductPriceType,
   ProductUpdate,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
+import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -27,6 +28,7 @@ import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -90,7 +92,6 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
               <div className="flex gap-2">
                 <FormControl>
                   <MoneyInput
-                    id="monthly-price"
                     name={field.name}
                     value={field.value}
                     onChange={(v) => {
@@ -101,11 +102,11 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                     postSlot={
                       <>
                         {recurringInterval ===
-                          ProductPriceRecurringInterval.MONTH && (
+                          SubscriptionRecurringInterval.MONTH && (
                           <span className="text-sm">/month</span>
                         )}
                         {recurringInterval ===
-                          ProductPriceRecurringInterval.YEAR && (
+                          SubscriptionRecurringInterval.YEAR && (
                           <span className="text-sm">/year</span>
                         )}
                       </>
@@ -126,6 +127,81 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                   </Button>
                 )}
               </div>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </div>
+  )
+}
+
+interface ProductPriceCustomItemProps {
+  index: number
+}
+
+const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
+  index,
+}) => {
+  const { control, register, setValue } = useFormContext<ProductFormType>()
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="hidden"
+        {...register(`prices.${index}.recurring_interval`)}
+      />
+      <input type="hidden" {...register(`prices.${index}.id`)} />
+      <input type="hidden" {...register(`prices.${index}.type`)} />
+      <FormField
+        control={control}
+        name={`prices.${index}.minimum_amount`}
+        rules={{
+          min: { value: 50, message: 'Price must be greater than 0.5' },
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormLabel>Minimum amount</FormLabel>
+              <FormControl>
+                <MoneyInput
+                  name={field.name}
+                  value={field.value || undefined}
+                  onChange={(v) => {
+                    field.onChange(v)
+                    setValue(`prices.${index}.id`, '')
+                  }}
+                  placeholder={1000}
+                />
+              </FormControl>
+              <FormDescription>Optional</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+      <FormField
+        control={control}
+        name={`prices.${index}.preset_amount`}
+        rules={{
+          min: { value: 50, message: 'Price must be greater than 0.5' },
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormLabel>Suggested amount</FormLabel>
+              <FormControl>
+                <MoneyInput
+                  name={field.name}
+                  value={field.value || undefined}
+                  onChange={(v) => {
+                    field.onChange(v)
+                    setValue(`prices.${index}.id`, '')
+                  }}
+                  placeholder={5000}
+                />
+              </FormControl>
+              <FormDescription>Optional</FormDescription>
               <FormMessage />
             </FormItem>
           )
@@ -163,7 +239,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       (prices as ProductPrice[]).some(
         (price) =>
           price.type === 'recurring' &&
-          price.recurring_interval === ProductPriceRecurringInterval.MONTH,
+          price.recurring_interval === SubscriptionRecurringInterval.MONTH,
       ),
     [prices],
   )
@@ -172,7 +248,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       (prices as ProductPrice[]).some(
         (price) =>
           price.type === 'recurring' &&
-          price.recurring_interval === ProductPriceRecurringInterval.YEAR,
+          price.recurring_interval === SubscriptionRecurringInterval.YEAR,
       ),
     [prices],
   )
@@ -181,6 +257,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
     hasMonthlyPrice || hasYearlyPrice
       ? ProductPriceType.RECURRING
       : ProductPriceType.ONE_TIME,
+  )
+
+  const [amountType, setAmountType] = useState<'fixed' | 'custom'>(
+    prices.length > 0 && (prices as ProductPrice[])[0].amount_type
+      ? (prices as ProductPrice[])[0].amount_type
+      : 'fixed',
   )
 
   useEffect(() => {
@@ -198,11 +280,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       replace([
         {
           type: 'recurring',
-          recurring_interval: ProductPriceRecurringInterval.MONTH,
+          recurring_interval: SubscriptionRecurringInterval.MONTH,
           price_currency: 'usd',
           price_amount: 0,
         },
       ])
+      setAmountType('fixed')
     }
   }, [update, pricingType, replace])
 
@@ -300,14 +383,30 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </ToggleGroupItem>
               </ToggleGroup>
             )}
-            {prices.map((price, index) => (
-              <ProductPriceItem
-                key={price.id}
-                index={index}
-                fieldArray={pricesFieldArray}
-                deletable={pricingType === ProductPriceType.RECURRING}
-              />
-            ))}
+            {!update && pricingType === ProductPriceType.ONE_TIME && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="amountType"
+                  checked={amountType === 'custom'}
+                  onCheckedChange={(checked) =>
+                    setAmountType(checked ? 'custom' : 'fixed')
+                  }
+                />{' '}
+                <FormLabel htmlFor="amountType">Pay what you want</FormLabel>
+              </div>
+            )}
+            {prices.map((price, index) =>
+              amountType === 'fixed' ? (
+                <ProductPriceItem
+                  key={price.id}
+                  index={index}
+                  fieldArray={pricesFieldArray}
+                  deletable={pricingType === ProductPriceType.RECURRING}
+                />
+              ) : (
+                <ProductPriceCustomItem key={price.id} index={index} />
+              ),
+            )}
             {pricingType === ProductPriceType.RECURRING && (
               <div className="flex flex-row gap-2">
                 {!hasMonthlyPrice && (
@@ -319,7 +418,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     onClick={() => {
                       append({
                         type: 'recurring',
-                        recurring_interval: ProductPriceRecurringInterval.MONTH,
+                        recurring_interval: SubscriptionRecurringInterval.MONTH,
                         price_currency: 'usd',
                         price_amount: 0,
                       })
@@ -338,7 +437,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     onClick={() => {
                       append({
                         type: 'recurring',
-                        recurring_interval: ProductPriceRecurringInterval.YEAR,
+                        recurring_interval: SubscriptionRecurringInterval.YEAR,
                         price_currency: 'usd',
                         price_amount: 0,
                       })

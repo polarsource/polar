@@ -2,8 +2,8 @@
 
 import {
   ProductPrice,
-  ProductPriceRecurringInterval,
   ProductPriceType,
+  SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -25,12 +25,12 @@ const ProductPrices: React.FC<ProductPrices> = ({ prices }) => {
     const monthlyPrice = prices.find(
       (price) =>
         price.type === ProductPriceType.RECURRING &&
-        price.recurring_interval === ProductPriceRecurringInterval.MONTH,
+        price.recurring_interval === SubscriptionRecurringInterval.MONTH,
     )
     const yearlyPrice = prices.find(
       (price) =>
         price.type === ProductPriceType.RECURRING &&
-        price.recurring_interval === ProductPriceRecurringInterval.YEAR,
+        price.recurring_interval === SubscriptionRecurringInterval.YEAR,
     )
     return (
       <div className="flex gap-1">

@@ -4,9 +4,9 @@ import { twMerge } from 'tailwind-merge'
 import Input from './Input'
 
 interface Props {
-  id: string
   name: string
   placeholder: number
+  id?: string
   onChange?: (value: number) => void
   onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void

@@ -1,7 +1,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import {
   Product,
-  ProductPriceRecurringInterval,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
@@ -18,7 +18,7 @@ const HighlightedTier = ({
   darkmode,
 }: {
   tier: Product & { type: SubscriptionTierType }
-  recurringInterval: ProductPriceRecurringInterval
+  recurringInterval: SubscriptionRecurringInterval
   darkmode: boolean
 }) => {
   const audience = getSubscriptionTierAudience(tier.type)
@@ -80,7 +80,13 @@ const HighlightedTier = ({
             fontSize: 32,
           }}
         >
-          {formatCurrencyAndAmount(price.price_amount, price.price_currency, 0)}
+          {price.amount_type === 'fixed'
+            ? formatCurrencyAndAmount(
+                price.price_amount,
+                price.price_currency,
+                0,
+              )
+            : 'Pay what you want'}
           <div
             style={{
               fontSize: 14,
@@ -176,7 +182,7 @@ export const HighlightedTiers = ({
 }: {
   label: string
   tiers: (Product & { type: SubscriptionTierType })[]
-  recurringInterval: ProductPriceRecurringInterval
+  recurringInterval: SubscriptionRecurringInterval
   darkmode: boolean
 }) => {
   return (

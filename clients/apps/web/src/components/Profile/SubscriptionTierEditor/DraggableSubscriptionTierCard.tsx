@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import {
   Organization,
   Product,
-  ProductPriceRecurringInterval,
+  SubscriptionRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
@@ -13,7 +13,7 @@ import { twMerge } from 'tailwind-merge'
 export interface DraggableSubscriptionTierCardProps {
   organization: Organization
   subscriptionTier: Product & { type: SubscriptionTierType }
-  recurringInterval: ProductPriceRecurringInterval
+  recurringInterval: SubscriptionRecurringInterval
   subscribeButton: boolean
   disabled?: boolean
   className?: string

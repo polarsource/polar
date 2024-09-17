@@ -24,26 +24,21 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from 'polarkit/components/ui/toggle-group'
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   UseFieldArrayReturn,
   useFieldArray,
   useFormContext,
 } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import ProductMediasField from './ProductMediasField'
 
@@ -173,7 +168,6 @@ const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                   placeholder={1000}
                 />
               </FormControl>
-              <FormDescription>Optional</FormDescription>
               <FormMessage />
             </FormItem>
           )
@@ -200,7 +194,6 @@ const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                   placeholder={5000}
                 />
               </FormControl>
-              <FormDescription>Optional</FormDescription>
               <FormMessage />
             </FormItem>
           )
@@ -352,35 +345,29 @@ const ProductForm: React.FC<ProductFormProps> = ({
           <div className="flex flex-col gap-6">
             <FormLabel>Pricing</FormLabel>
             {!update && (
-              <ToggleGroup
-                className="gap-4"
-                type="single"
+              <Tabs
                 value={pricingType}
-                onValueChange={(value: ProductPriceType) =>
-                  setPricingType(value)
+                onValueChange={(value: string) =>
+                  setPricingType(value as ProductPriceType)
                 }
               >
-                <ToggleGroupItem
-                  value={ProductPriceType.ONE_TIME}
-                  className={twMerge(
-                    'dark:border-polar-700 w-full flex-col items-start gap-2 rounded-xl border p-4',
-                    pricingType === ProductPriceType.ONE_TIME &&
-                      'border-transparent',
-                  )}
-                >
-                  <div className="flex items-center gap-2">Pay Once</div>
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value={ProductPriceType.RECURRING}
-                  className={twMerge(
-                    'dark:border-polar-700 w-full flex-col items-start gap-2 rounded-xl border p-4',
-                    pricingType === ProductPriceType.RECURRING &&
-                      'border-transparent',
-                  )}
-                >
-                  <div className="flex items-center gap-2">Subscription</div>
-                </ToggleGroupItem>
-              </ToggleGroup>
+                <TabsList className="dark:bg-polar-950 w-full rounded-full bg-gray-100">
+                  <TabsTrigger
+                    className="flex-grow"
+                    value={ProductPriceType.ONE_TIME}
+                    size="small"
+                  >
+                    Pay Once
+                  </TabsTrigger>
+                  <TabsTrigger
+                    className="flex-grow"
+                    value={ProductPriceType.RECURRING}
+                    size="small"
+                  >
+                    Subscription
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             )}
             {!update && pricingType === ProductPriceType.ONE_TIME && (
               <div className="flex items-center gap-2">

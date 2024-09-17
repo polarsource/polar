@@ -10,10 +10,15 @@ services:
       creds:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
-    plan: pro
+    plan: standard
     preDeployCommand: "poetry run task pre_deploy"
     region: ohio
-    numInstances: 3
+    numInstances: 1
+    scaling:
+      maxInstances: 3
+      minInstances: 1
+      targetCPUPercent: 50
+      targetMemoryPercent: 75
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
     envVars:

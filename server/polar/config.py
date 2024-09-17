@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import timedelta
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, PostgresDsn
@@ -10,14 +10,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from polar.kit.jwk import JWKSFile
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     development = "development"
     testing = "testing"
     staging = "staging"
+    sandbox = "sandbox"
     production = "production"
 
 
-class EmailSender(str, Enum):
+class EmailSender(StrEnum):
     logger = "logger"
     resend = "resend"
 

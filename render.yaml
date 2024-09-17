@@ -1,187 +1,268 @@
+version: "1"
+
 services:
-  # FastAPI Backend (image)
+  # API
   - type: web
-    name: server-image
-    env: image
+    name: api
+    runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
       creds:
         fromRegistryCreds:
-          name: polarsource
+          name: Registry Credentials (by fvoron)
+    plan: pro
     preDeployCommand: "poetry run task pre_deploy"
     region: ohio
-    plan: standard
     numInstances: 1
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
-    # domains:
-    #   - api.polar.sh
     envVars:
-      # CORS
+      - key: FORWARDED_ALLOW_IPS
+        value: '*'
+      - key: POLAR_ALLOWED_HOSTS
+        value: '["polar.sh","docs.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://polar-polar-sh.vercel.app"]'
-
-      # PostgreSQL
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: polar
-          property: user
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: polar
-          property: password
+        value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://docs.polar.sh", "https://polar-polar-sh.vercel.app"]'
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
-          name: polar
+          name: db
           property: database
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: polar
-          property: port
       - key: POLAR_POSTGRES_HOST
         fromDatabase:
-          name: polar
+          name: db
           property: host
-
-      # Redis
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: db
+          property: port
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: db
+          property: password
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: db
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: polar-tasks
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: polar-tasks
+          name: redis
           property: port
-
+      - fromGroup: aws-s3
+      - fromGroup: google-production
       - fromGroup: github-production
       - fromGroup: server-common
       - fromGroup: server-stripe
+      - fromGroup: logfire-server
 
-  # Worker
+  # Worker Default
   - type: worker
     name: worker-default
-    env: image
+    runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
       creds:
         fromRegistryCreds:
-          name: polarsource
-    dockerCommand: "poetry run arq run_worker.WorkerSettings --custom-log-dict run_worker.silent_logger_config_dict"
-    region: ohio
+          name: Registry Credentials (by fvoron)
     plan: standard
+    dockerCommand: poetry run arq run_worker.WorkerSettings --custom-log-dict run_worker.silent_logger_config_dict
+    region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
     envVars:
-      # PostgreSQL
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: polar
-          property: user
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: polar
-          property: password
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
-          name: polar
+          name: db
           property: database
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: polar
-          property: port
       - key: POLAR_POSTGRES_HOST
         fromDatabase:
-          name: polar
+          name: db
           property: host
-
-      # Redis
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: db
+          property: port
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: db
+          property: password
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: db
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: polar-tasks
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: polar-tasks
+          name: redis
           property: port
-
+      - fromGroup: google-production
       - fromGroup: github-production
       - fromGroup: server-common
       - fromGroup: server-stripe
+      - fromGroup: logfire-worker
 
+  # Worker GitHub Sync
   - type: worker
     name: worker-github
-    env: image
+    runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
       creds:
         fromRegistryCreds:
-          name: polarsource
-    dockerCommand: "poetry run arq run_worker.WorkerSettingsGitHubCrawl --custom-log-dict run_worker.silent_logger_config_dict"
-    region: ohio
+          name: Registry Credentials (by fvoron)
     plan: standard
+    dockerCommand: poetry run arq run_worker.WorkerSettingsGitHubCrawl --custom-log-dict run_worker.silent_logger_config_dict
+    region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
     envVars:
-      # PostgreSQL
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: polar
-          property: user
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: polar
-          property: password
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
-          name: polar
+          name: db
           property: database
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: polar
-          property: port
       - key: POLAR_POSTGRES_HOST
         fromDatabase:
-          name: polar
+          name: db
           property: host
-
-      # Redis
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: db
+          property: port
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: db
+          property: password
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: db
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: polar-tasks
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: polar-tasks
+          name: redis
           property: port
-
+      - fromGroup: google-production
       - fromGroup: github-production
       - fromGroup: server-common
       - fromGroup: server-stripe
 
   - type: redis
-    name: polar-tasks
-    ipAllowList: [] # allow only internal connections
+    name: redis
     plan: standard
-    maxmemoryPolicy: noeviction # no-eviciton for our queue
+    region: ohio
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
 
 databases:
-  - name: polar
-    databaseName: polar
-    user: polar
-    ipAllowList:
-      - source: 34.90.244.142/32
-        description: mason_app_1
-      - source: 35.204.223.102/32
-        description: mason_app_2
+  - name: db
+    databaseName: polar_cpit
+    user: polar_cpit_user
     plan: standard
+    region: ohio
+    postgresMajorVersion: "15"
+    readReplicas:
+    - name: polar-replica
 
 envVarGroups:
+  - name: google-production
+    envVars:
+      - key: POLAR_GOOGLE_CLIENT_ID
+        sync: false
+      - key: POLAR_GOOGLE_CLIENT_SECRET
+        sync: false
+
+  - name: server-common
+    envVars:
+      - key: POLAR_AUTH_COOKIE_DOMAIN
+        value: polar.sh
+      - key: POLAR_AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID
+        sync: false
+      - key: POLAR_BASE_URL
+        value: https://api.polar.sh/v1
+      - key: POLAR_CURRENT_JWK_KID
+        sync: false
+      - key: POLAR_DEBUG
+        value: 0
+      - key: POLAR_DISCORD_BOT_TOKEN
+        sync: false
+      - key: POLAR_DISCORD_CLIENT_ID
+        sync: false
+      - key: POLAR_DISCORD_CLIENT_SECRET
+        sync: false
+      - key: POLAR_DISCORD_WEBHOOK_URL
+        sync: false
+      - key: POLAR_EMAIL_SENDER
+        value: resend
+      - key: POLAR_ENV
+        value: production
+      - key: POLAR_FRONTEND_BASE_URL
+        value: https://polar.sh
+      - key: POLAR_GITHUB_APP_NAMESPACE
+        value: polar-sh
+      - key: POLAR_GITHUB_BADGE_EMBED
+        value: 1
+      - key: POLAR_GITHUB_POLAR_USER_ACCESS_TOKEN
+        sync: false
+      - key: POLAR_JWKS
+        value: /etc/secrets/jwks.json
+      - key: POLAR_LOG_LEVEL
+        value: INFO
+      - key: POLAR_LOOPS_API_KEY
+        sync: false
+      - key: POLAR_POSTHOG_PROJECT_API_KEY
+        sync: false
+      - key: POLAR_RESEND_API_KEY
+        sync: false
+      - key: POLAR_SECRET
+        sync: false
+      - key: POLAR_SENTRY_DSN
+        sync: false
+      - key: POLAR_TESTING
+        value: 0
+
+  - name: aws-s3
+    envVars:
+      - key: POLAR_AWS_ACCESS_KEY_ID
+        sync: false
+      - key: POLAR_AWS_REGION
+        value: us-east-2
+      - key: POLAR_AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: POLAR_AWS_SIGNATURE_VERSION
+        value: v4
+      - key: POLAR_S3_FILES_BUCKET_NAME
+        value: polar-production-files
+      - key: POLAR_S3_FILES_DOWNLOAD_SALT
+        sync: false
+      - key: POLAR_S3_FILES_DOWNLOAD_SECRET
+        sync: false
+      - key: POLAR_S3_FILES_PRESIGN_TTL
+        value: 600
+      - key: POLAR_S3_FILES_PUBLIC_BUCKET_NAME
+        value: polar-public-files
+
+  - name: logfire-server
+    envVars:
+      - key: POLAR_LOGFIRE_PROJECT_NAME
+        sync: false
+      - key: POLAR_LOGFIRE_TOKEN
+        sync: false
+
   - name: github-production
     envVars:
       - key: POLAR_GITHUB_APP_IDENTIFIER
@@ -194,36 +275,21 @@ envVarGroups:
         sync: false
       - key: POLAR_GITHUB_CLIENT_SECRET
         sync: false
-
-  - name: server-common
-    envVars:
-      - key: POLAR_GITHUB_BADGE_EMBED
-        value: 1
-      - key: POLAR_ENV
-        value: production
-      - key: POLAR_LOG_LEVEL
-        value: INFO
-      - key: POLAR_TESTING
-        value: 0
-      - key: POLAR_DEBUG
-        value: 0
-      - key: POLAR_FRONTEND_BASE_URL
-        value: "https://polar.sh"
-      - key: POLAR_SENTRY_DSN
+      - key: POLAR_GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER
         sync: false
-      - key: POLAR_EMAIL_SENDER
-        value: "sendgrid"
-      - key: POLAR_SENDGRID_API_KEY
+      - key: POLAR_GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE
         sync: false
-      - key: POLAR_BASE_URL
-        value: "https://api.polar.sh/api/v1"
-      - key: POLAR_DISCORD_WEBHOOK_URL
+      - key: POLAR_GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY
         sync: false
-      - key: POLAR_POSTHOG_PROJECT_API_KEY
+      - key: POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_ID
+        sync: false
+      - key: POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET
         sync: false
 
   - name: server-stripe
     envVars:
+      - key: POLAR_STRIPE_CONNECT_WEBHOOK_SECRET
+        sync: false
       - key: POLAR_STRIPE_SECRET_KEY
         sync: false
       - key: POLAR_STRIPE_WEBHOOK_SECRET

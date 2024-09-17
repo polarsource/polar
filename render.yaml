@@ -263,6 +263,13 @@ envVarGroups:
       - key: POLAR_LOGFIRE_TOKEN
         sync: false
 
+  - name: logfire-worker
+    envVars:
+      - key: POLAR_LOGFIRE_PROJECT_NAME
+        sync: false
+      - key: POLAR_LOGFIRE_TOKEN
+        sync: false
+
   - name: github-production
     envVars:
       - key: POLAR_GITHUB_APP_IDENTIFIER

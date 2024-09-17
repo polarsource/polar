@@ -10,10 +10,12 @@ import {
   AddOutlined,
   InsertPhotoOutlined,
   MoreVertOutlined,
+  Search,
 } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import {
   DropdownMenu,
@@ -22,12 +24,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 
 export default function ClientPage() {
   const { organization: org } = useContext(MaintainerOrganizationContext)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const products = useProducts(org.id)
+
+  const filteredProducts = products.data?.items.filter((product) =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   if (org && !org.feature_settings?.subscriptions_enabled) {
     return <EnableProductsView organization={org} />
@@ -38,7 +45,13 @@ export default function ClientPage() {
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-lg font-medium">Overview</h1>
-          <div className="flex w-1/3 flex-row items-center justify-end gap-6 md:w-1/5">
+          <div className="flex flex-row items-center gap-6">
+            <Input
+              preSlot={<Search fontSize="small" />}
+              placeholder="Search Products"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
             <Link href={`/dashboard/${org.slug}/products/new`}>
               <Button size="icon" role="link">
                 <AddOutlined className="h-4 w-4" />
@@ -46,9 +59,9 @@ export default function ClientPage() {
             </Link>
           </div>
         </div>
-        {(products.data?.items.length ?? 0) > 0 && (
+        {(filteredProducts?.length ?? 0) > 0 && (
           <List size="small">
-            {products.data?.items.map((product) => (
+            {filteredProducts?.map((product) => (
               <ProductListItem
                 key={product.id}
                 organization={org}

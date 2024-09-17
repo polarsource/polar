@@ -1,30 +1,30 @@
 #! /usr/bin/env -S uv run
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.10"
 # dependencies = [
 #     "httpx",
 #     "python-dotenv",
 #     "yaspin",
 # ]
 # ///
-import os
-import http.server
-import typing
-import queue
-import json
-import webbrowser
-import urllib.parse
+import argparse
 import functools
-import httpx
+import http.server
+import json
+import os
 import pathlib
+import queue
 import random
 import string
 import subprocess
+import typing
+import urllib.parse
+import webbrowser
+
+import httpx
+from dotenv import dotenv_values
 from yaspin import yaspin
 from yaspin.spinners import Spinners
-from dotenv import dotenv_values
-import argparse
-
 
 ROOT_PATH = pathlib.Path(__file__).parent.parent
 IS_CODESPACES = os.getenv("CODESPACES", "false") == "true"
@@ -78,7 +78,10 @@ CALLBACK_SUCCESS_PAGE = """
 </html>
 """
 
-def _get_github_app_manifest(app_name: str, backend_external_url: str, setup_base_url: str) -> dict[str, typing.Any]:
+
+def _get_github_app_manifest(
+    app_name: str, backend_external_url: str, setup_base_url: str
+) -> dict[str, typing.Any]:
     return {
         "name": app_name[:32],
         "url": backend_external_url,
@@ -145,7 +148,7 @@ class SetupGitHubAppHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         elif parsed_url.path == "/callback":
             self.handle_callback(parsed_url, query_params)
         else:
-            output = "Not found".encode("utf-8")
+            output = b"Not found"
             self.send_response(http.HTTPStatus.NOT_FOUND)
             self.send_header("Content-type", "text/plain; charset=utf-8")
             self.send_header("Content-Length", str(len(output)))
@@ -215,7 +218,7 @@ def _write_env_file(
         for key, value in template_env.items():
             output_value = replacements.get(key, value)
             delimiter = "'" if '"' in str(output_value) else '"'
-            env_file.write(f'{key}={delimiter}{output_value}{delimiter}\n')
+            env_file.write(f"{key}={delimiter}{output_value}{delimiter}\n")
 
 
 def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> None:
@@ -225,13 +228,15 @@ def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> N
     if IS_CODESPACES:
         replacements = {
             **replacements,
-            "POLAR_ALLOWED_HOSTS": json.dumps([
-                f"{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
-                "localhost:3000",
-                "127.0.0.1:3000",
-            ]),
-            "POLAR_FRONTEND_BASE_URL": f"https://{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
-            "POLAR_AUTH_COOKIE_DOMAIN": f"{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
+            "POLAR_ALLOWED_HOSTS": json.dumps(
+                [
+                    f"{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
+                    "localhost:3000",
+                    "127.0.0.1:3000",
+                ]
+            ),
+            "POLAR_FRONTEND_BASE_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
+            "POLAR_AUTH_COOKIE_DOMAIN": f"{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
         }
     if github_app is not None:
         replacements = {
@@ -246,7 +251,9 @@ def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> N
             "POLAR_GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER": github_app["id"],
             "POLAR_GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY": github_app["pem"],
             "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_ID": github_app["client_id"],
-            "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET": github_app["client_secret"],
+            "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET": github_app[
+                "client_secret"
+            ],
         }
     _write_env_file(template_file_path, env_file_path, replacements)
 
@@ -258,8 +265,8 @@ def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) ->
     if IS_CODESPACES:
         replacements = {
             **replacements,
-            "NEXT_PUBLIC_API_URL": f"https://{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
-            "NEXT_PUBLIC_FRONTEND_BASE_URL": f"https://{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
+            "NEXT_PUBLIC_API_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
+            "NEXT_PUBLIC_FRONTEND_BASE_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
         }
     if github_app is not None:
         replacements = {
@@ -268,38 +275,78 @@ def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) ->
         }
     _write_env_file(template_file_path, env_file_path, replacements)
 
+
 def _generate_jwks() -> None:
     env = {k: v for k, v in os.environ.copy().items() if k != "VIRTUAL_ENV"}
     command = ["poetry", "run", "task", "generate_dev_jwks"]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=ROOT_PATH / "server", env=env)
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=ROOT_PATH / "server",
+        env=env,
+    )
     _, stderr = process.communicate()
     if process.returncode != 0:
         raise RuntimeError(stderr)
 
+
 def _get_options():
     if IS_CODESPACES:
-        default_backend_external_url = f"https://{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}"
-        default_github_app_name = f"polar-{os.environ["CODESPACE_NAME"]}"
-        default_github_setup_base_url = f"https://{os.environ["CODESPACE_NAME"]}-51562.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}"
+        default_backend_external_url = f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}"
+        default_github_app_name = f"polar-{os.environ['CODESPACE_NAME']}"
+        default_github_setup_base_url = f"https://{os.environ['CODESPACE_NAME']}-51562.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}"
     else:
         default_backend_external_url = None
-        default_github_app_name = f"polar-development-{"".join(random.choices(string.ascii_lowercase, k=8))}"
+        default_github_app_name = (
+            f"polar-development-{''.join(random.choices(string.ascii_lowercase, k=8))}"
+        )
         default_github_setup_base_url = "http://localhost:51562"
 
-
-    parser = argparse.ArgumentParser(description="Setup the environment files for Polar development")
-    parser.add_argument("--setup-github-app", action="store_true", help="Whether to setup the GitHub App")
-    parser.add_argument("--backend-external-url", type=str, help="The Polar backend base URL, available externally.", default=default_backend_external_url, required=False)
-    parser.add_argument("--github-app-name", type=str, help="The name of the Polar backend app", default=default_github_app_name)
-    parser.add_argument("--github-setup-port", type=int, help="The port on which to open the temporary webserver to create GitHub app", default=51562)
-    parser.add_argument("--github-setup-base-url", type=str, help="The base URL of the temporary webserver to create GitHub app", default=default_github_setup_base_url)
+    parser = argparse.ArgumentParser(
+        description="Setup the environment files for Polar development"
+    )
+    parser.add_argument(
+        "--setup-github-app",
+        action="store_true",
+        help="Whether to setup the GitHub App",
+    )
+    parser.add_argument(
+        "--backend-external-url",
+        type=str,
+        help="The Polar backend base URL, available externally.",
+        default=default_backend_external_url,
+        required=False,
+    )
+    parser.add_argument(
+        "--github-app-name",
+        type=str,
+        help="The name of the Polar backend app",
+        default=default_github_app_name,
+    )
+    parser.add_argument(
+        "--github-setup-port",
+        type=int,
+        help="The port on which to open the temporary webserver to create GitHub app",
+        default=51562,
+    )
+    parser.add_argument(
+        "--github-setup-base-url",
+        type=str,
+        help="The base URL of the temporary webserver to create GitHub app",
+        default=default_github_setup_base_url,
+    )
 
     args = parser.parse_args()
 
     if args.setup_github_app and args.backend_external_url is None:
-        parser.error("--backend-external-url is required when --setup-github-app is set")
+        parser.error(
+            "--backend-external-url is required when --setup-github-app is set"
+        )
 
     return args
+
 
 if __name__ == "__main__":
     options = _get_options()
@@ -309,8 +356,12 @@ if __name__ == "__main__":
     ) as spinner:
         github_app = None
         if options.setup_github_app:
-            manifest = _get_github_app_manifest(options.github_app_name, options.backend_external_url, options.github_setup_base_url)
-            spinner.text = f"Open {options.github_setup_base_url}/setup in your browser to setup the GitHub App",
+            manifest = _get_github_app_manifest(
+                options.github_app_name,
+                options.backend_external_url,
+                options.github_setup_base_url,
+            )
+            spinner.text = f"Open {options.github_setup_base_url}/setup in your browser to setup the GitHub App"
             webbrowser.open(f"{options.github_setup_base_url}/setup")
             code = _get_github_app_code(options.github_setup_port, manifest)
             spinner.text = "Registering the GitHub App..."

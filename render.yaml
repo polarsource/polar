@@ -13,7 +13,6 @@ services:
     plan: standard
     preDeployCommand: "poetry run task pre_deploy"
     region: ohio
-    numInstances: 1
     scaling:
       maxInstances: 3
       minInstances: 1

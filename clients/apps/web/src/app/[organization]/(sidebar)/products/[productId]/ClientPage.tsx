@@ -4,8 +4,13 @@ import {
 } from '@/components/Benefit/utils'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import CheckoutButton from '@/components/Products/CheckoutButton'
-import ProductPrices from '@/components/Products/ProductPrices'
+import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { Slideshow } from '@/components/Products/Slideshow'
+import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
+import {
+  useRecurringInterval,
+  useRecurringProductPrice,
+} from '@/hooks/products'
 import { Organization, Product } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import Markdown from 'markdown-to-jsx'
@@ -43,9 +48,14 @@ export default function ClientPage({
     (monthlyPrice.price_amount * 12 - yearlyPrice.price_amount) /
       (monthlyPrice.price_amount * 12)
 
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval([product])
+
+  const price = useRecurringProductPrice(product, recurringInterval)
+
   return (
-    <div className="flex flex-col items-start gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
-      <div className="flex flex-col gap-8 md:w-2/3">
+    <div className="flex flex-col items-start justify-between gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
+      <div className="flex w-full flex-col gap-8">
         {product.medias.length > 0 && (
           <Slideshow
             images={product.medias.map(({ public_url }) => public_url)}
@@ -74,12 +84,18 @@ export default function ClientPage({
           )}
         </ShadowBox>
       </div>
-      <div className="flex w-full flex-col gap-8 md:sticky md:top-16 md:w-1/3">
+      <div className="flex w-full flex-col gap-8 md:sticky md:top-16 md:max-w-xs">
+        {hasBothIntervals && (
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        )}
         <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
           <h3 className="text-lg font-medium">{product.name}</h3>
           <div className="flex flex-col gap-4">
-            <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
-              <ProductPrices prices={product.prices} />
+            <h1 className="text-5xl font-light">
+              {price && <ProductPriceLabel price={price} />}
             </h1>
             <p className="dark:text-polar-500 text-sm text-gray-400">
               Before VAT and taxes

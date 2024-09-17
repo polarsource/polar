@@ -122,7 +122,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
           <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
             <h3 className="text-lg font-medium">{subscription.product.name}</h3>
             <div className="flex flex-col gap-4">
-              <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
+              <h1 className="text-5xl font-light">
                 {subscription.amount && subscription.currency && (
                   <AmountLabel
                     amount={subscription.amount}
@@ -182,7 +182,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                 <Button
                   size="lg"
                   variant="ghost"
-                  className="text-red-500 dark:text-red-500"
+                  className="dark:text-polar-500 text-gray-500"
                   fullWidth
                   onClick={() => setShowCancelModal(true)}
                 >

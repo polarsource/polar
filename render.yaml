@@ -195,7 +195,7 @@ services:
       creds:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
-    plan: pro
+    plan: standard
     preDeployCommand: "poetry run task pre_deploy"
     region: ohio
     numInstances: 1

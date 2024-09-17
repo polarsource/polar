@@ -450,47 +450,43 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <></>
       )}
 
-      {pricingType === ProductPriceType.RECURRING && !isFreeTier && (
+      {pricingType === ProductPriceType.RECURRING && !isFreeTier && !update && (
         <ShadowBox className="flex flex-col gap-y-6">
-          {!update && pricingType === ProductPriceType.RECURRING ? (
-            <FormField
-              control={control}
-              name="type"
-              rules={{ required: 'This field is required' }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a tier type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.entries(subscriptionTierTypes).map(
-                        ([type, pretty]) => (
-                          <SelectItem key={type} value={type}>
-                            <div className="flex items-center gap-2">
-                              <SubscriptionGroupIcon
-                                type={type as SubscriptionTierType}
-                              />
-                              {pretty}
-                            </div>
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ) : (
-            <></>
-          )}
+          <FormField
+            control={control}
+            name="type"
+            rules={{ required: 'This field is required' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a tier type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.entries(subscriptionTierTypes).map(
+                      ([type, pretty]) => (
+                        <SelectItem key={type} value={type}>
+                          <div className="flex items-center gap-2">
+                            <SubscriptionGroupIcon
+                              type={type as SubscriptionTierType}
+                            />
+                            {pretty}
+                          </div>
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </ShadowBox>
       )}
 

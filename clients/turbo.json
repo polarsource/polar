@@ -32,7 +32,8 @@
     "VERCEL_GIT_COMMIT_SHA",
     "NEXT_PUBLIC_SENTRY_DSN",
     "SENTRY_PROJECT",
-    "SENTRY_ORG"
+    "SENTRY_ORG",
+    "POLAR_AUTH_COOKIE_KEY"
   ],
   "tasks": {
     "build": {

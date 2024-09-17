@@ -477,8 +477,10 @@ envVarGroups:
 
   - name: backend-sandbox
     envVars:
+      - key: POLAR_AUTH_COOKIE_KEY
+        value: polar_sandbox_session
       - key: POLAR_AUTH_COOKIE_DOMAIN
-        value: sandbox.polar.sh
+        value: polar.sh
       - key: POLAR_AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID
         sync: false
       - key: POLAR_BASE_URL

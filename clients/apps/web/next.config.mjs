@@ -9,7 +9,7 @@ import remarkFlexibleToc from 'remark-flexible-toc'
 import { bundledLanguages, createHighlighter } from 'shiki'
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 
-const POLAR_AUTH_COOKIE_KEY = 'polar_session'
+const POLAR_AUTH_COOKIE_KEY = process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
 const CODESPACES = process.env.CODESPACES === 'true'

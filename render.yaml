@@ -13,7 +13,7 @@ services:
     plan: pro
     preDeployCommand: "poetry run task pre_deploy"
     region: ohio
-    numInstances: 1
+    numInstances: 3
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
     envVars:

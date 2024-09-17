@@ -1,3 +1,5 @@
+'use client'
+
 import {
   resolveBenefitIcon,
   resolveBenefitTypeDisplayName,
@@ -12,16 +14,9 @@ import {
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { Organization, Product } from '@polar-sh/sdk'
-import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import Markdown from 'markdown-to-jsx'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-
-const percentageFormatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-})
 
 export default function ClientPage({
   organization,
@@ -31,27 +26,12 @@ export default function ClientPage({
   product: Product
 }) {
   const isRecurring = product.is_recurring
-  const monthlyPrice = product.prices.find(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'month',
-  )
-  const yearlyPrice = product.prices.find(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'year',
-  )
-
-  const yearlyDiscount =
-    yearlyPrice &&
-    yearlyPrice.amount_type === 'fixed' &&
-    monthlyPrice &&
-    monthlyPrice.amount_type === 'fixed' &&
-    (monthlyPrice.price_amount * 12 - yearlyPrice.price_amount) /
-      (monthlyPrice.price_amount * 12)
 
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval([product])
 
-  const price = useRecurringProductPrice(product, recurringInterval)
+  const recurringPrice = useRecurringProductPrice(product, recurringInterval)
+  const oneTimePrice = product.prices.find((price) => price.type === 'one_time')
 
   return (
     <div className="flex flex-col items-start justify-between gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
@@ -84,7 +64,7 @@ export default function ClientPage({
           )}
         </ShadowBox>
       </div>
-      <div className="flex w-full flex-col gap-8 md:sticky md:top-16 md:max-w-xs">
+      <div className="flex w-full flex-col items-center gap-8 md:sticky md:top-16 md:max-w-xs">
         {hasBothIntervals && (
           <SubscriptionTierRecurringIntervalSwitch
             recurringInterval={recurringInterval}
@@ -95,7 +75,11 @@ export default function ClientPage({
           <h3 className="text-lg font-medium">{product.name}</h3>
           <div className="flex flex-col gap-4">
             <h1 className="text-5xl font-light">
-              {price && <ProductPriceLabel price={price} />}
+              {recurringPrice ? (
+                <ProductPriceLabel price={recurringPrice} />
+              ) : (
+                oneTimePrice && <ProductPriceLabel price={oneTimePrice} />
+              )}
             </h1>
             <p className="dark:text-polar-500 text-sm text-gray-400">
               Before VAT and taxes
@@ -130,39 +114,17 @@ export default function ClientPage({
           <div className="flex flex-col gap-4">
             {isRecurring ? (
               <>
-                {monthlyPrice && (
+                {
                   <CheckoutButton
                     product={product}
-                    recurringInterval="month"
+                    recurringInterval={recurringInterval}
                     organization={organization}
                     checkoutPath="/api/checkout"
                     variant="default"
                   >
-                    {yearlyPrice && monthlyPrice.amount_type === 'fixed'
-                      ? `Subscribe for ${formatCurrencyAndAmount(monthlyPrice.price_amount, monthlyPrice.price_currency, 0)} per month`
-                      : 'Subscribe now'}
+                    Subscribe Now
                   </CheckoutButton>
-                )}
-                {yearlyPrice && (
-                  <div className="relative">
-                    <CheckoutButton
-                      product={product}
-                      recurringInterval="year"
-                      organization={organization}
-                      checkoutPath="/api/checkout"
-                      variant="default"
-                    >
-                      {monthlyPrice && yearlyPrice.amount_type === 'fixed'
-                        ? `Subscribe for ${formatCurrencyAndAmount(yearlyPrice.price_amount, yearlyPrice.price_currency, 0)} per year`
-                        : 'Subscribe now'}
-                    </CheckoutButton>
-                    {yearlyDiscount && yearlyDiscount > 0 && (
-                      <div className="text-xxs absolute -right-1 -top-2 rounded-full bg-green-100 bg-gradient-to-l px-2 py-0.5 text-green-400 dark:bg-green-950 dark:text-green-300">
-                        Save {percentageFormatter.format(yearlyDiscount)}
-                      </div>
-                    )}
-                  </div>
-                )}
+                }
               </>
             ) : (
               <CheckoutButton

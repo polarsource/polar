@@ -42,38 +42,43 @@ export const ProductCard = ({
         </div>
       )}
       <div className="flex flex-grow flex-col gap-y-2">
-        {organization && showOrganization && (
-          <div className="flex flex-row items-center gap-x-2">
-            <Avatar
-              className="h-6 w-6"
-              avatar_url={organization.avatar_url}
-              name={organization.name}
-            />
-            <span className="text-xs">{organization.name}</span>
-          </div>
-        )}
         <h3 className="line-clamp-1 flex items-center justify-between gap-1 leading-snug text-gray-950 dark:text-white">
           {product.name}
           {product.type && (
             <SubscriptionGroupIcon type={product.type} className="text-xl" />
           )}
         </h3>
-        <div className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-sm text-gray-500">
-          <h3 className="leading-snug">
-            {price ? (
-              <ProductPriceLabel price={price} />
-            ) : (
-              <ProductPrices prices={product.prices} />
-            )}
-          </h3>
-          ·
-          {product.benefits.length > 0 && (
-            <span>
-              {product.benefits.length === 1
-                ? `${product.benefits.length} Benefit`
-                : `${product.benefits.length} Benefits`}
-            </span>
+        <div className="flex flex-row items-center justify-between ">
+          {organization && showOrganization && (
+            <div className="flex flex-row items-center gap-x-2">
+              <Avatar
+                className="h-6 w-6"
+                avatar_url={organization.avatar_url}
+                name={organization.name}
+              />
+              <span className="text-xs">{organization.name}</span>
+            </div>
           )}
+
+          <span className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-sm text-gray-500">
+            <h3 className="leading-snug">
+              {price ? (
+                <ProductPriceLabel price={price} />
+              ) : (
+                <ProductPrices prices={product.prices} />
+              )}
+            </h3>
+            {product.benefits.length > 0 && (
+              <>
+                ·
+                <span>
+                  {product.benefits.length === 1
+                    ? `${product.benefits.length} Benefit`
+                    : `${product.benefits.length} Benefits`}
+                </span>
+              </>
+            )}
+          </span>
         </div>
       </div>
     </div>

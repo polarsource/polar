@@ -14,7 +14,6 @@ from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
-from polar.worker import enqueue_job
 
 from ..schemas.user import UserCreate, UserUpdate
 
@@ -110,8 +109,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         posthog.identify(user)
         posthog.user_event(user, "user", "signed_up", "done")
         log.info("user signed up by email", user_id=user.id, email=email)
-
-        enqueue_job("user.on_after_signup", user_id=user.id)
 
         return user
 

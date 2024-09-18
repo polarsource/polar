@@ -1,13 +1,13 @@
 import base64
 import binascii
-from typing import Literal, Protocol, TypedDict
+from typing import Annotated, Any, Literal, Protocol, TypedDict
 
 from cryptography.exceptions import InvalidSignature as CryptographyInvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from fastapi.exceptions import RequestValidationError
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BeforeValidator, TypeAdapter, ValidationError
 
 from polar.enums import TokenType
 from polar.exceptions import PolarError
@@ -35,9 +35,15 @@ class GitHubSecretScanningPublicKeyList(TypedDict):
     public_keys: list[GitHubSecretScanningPublicKey]
 
 
+def _normalize_token_type(value: Any | None) -> Any | None:
+    if isinstance(value, str):
+        return value.lower()
+    return value
+
+
 class GitHubSecretScanningToken(Schema):
     token: str
-    type: TokenType
+    type: Annotated[TokenType, BeforeValidator(_normalize_token_type)]
     url: str | None = None
     source: str
 

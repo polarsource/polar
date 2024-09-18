@@ -33,9 +33,9 @@ class SubscriptionRecurringInterval(StrEnum):
 
 
 class TokenType(StrEnum):
-    client_secret = "client_secret"
-    client_registration_token = "client_registration_token"
-    authorization_code = "authorization_code"
-    access_token = "access_token"
-    refresh_token = "refresh_token"
-    personal_access_token = "personal_access_token"
+    client_secret = "polar_client_secret"
+    client_registration_token = "polar_client_registration_token"
+    authorization_code = "polar_authorization_code"
+    access_token = "polar_access_token"
+    refresh_token = "polar_refresh_token"
+    personal_access_token = "polar_personal_access_token"

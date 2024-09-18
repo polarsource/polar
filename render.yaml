@@ -370,8 +370,6 @@ envVarGroups:
     envVars:
       - key: POLAR_AUTH_COOKIE_DOMAIN
         value: polar.sh
-      - key: POLAR_AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID
-        sync: false
       - key: POLAR_BASE_URL
         value: https://api.polar.sh/v1
       - key: POLAR_CURRENT_JWK_KID
@@ -481,8 +479,6 @@ envVarGroups:
         value: polar_sandbox_session
       - key: POLAR_AUTH_COOKIE_DOMAIN
         value: polar.sh
-      - key: POLAR_AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID
-        sync: false
       - key: POLAR_BASE_URL
         value: https://api.polar.sh/v1
       - key: POLAR_CURRENT_JWK_KID

@@ -1,0 +1,11 @@
+overlay: 1.0.0
+info:
+  title: Overlay to remove nested discriminator for ProductPrice schemas, which Speakeasy doesn't support
+  version: 0.0.1
+actions:
+  - target: "$.components.schemas['ProductPrice-Input'].discriminator"
+    remove: true
+  - target: "$.components.schemas['ProductPrice-Output'].discriminator"
+    remove: true
+  - target: "$.components.schemas['ProductPriceOneTime'].discriminator"
+    remove: true

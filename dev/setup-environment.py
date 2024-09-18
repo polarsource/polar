@@ -104,7 +104,7 @@ def _get_github_app_manifest(
             "organization_events": "read",
             "emails": "read",
             # GitHub Repository Benefit app
-            "administration": "read",
+            "administration": "write",
             "organization_plan": "read",
             "plan": "read",
         },

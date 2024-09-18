@@ -127,6 +127,7 @@ async def _webhook_event_send(
         webhook_event_id=webhook_event_id,
         webhook_endpoint_id=event.webhook_endpoint_id,
         http_code=r.status_code,
+        response=r.text,
         succeeded=succeeded,
     )
     session.add(delivery)

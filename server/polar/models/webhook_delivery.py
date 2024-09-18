@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Uuid
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -29,5 +29,7 @@ class WebhookDelivery(RecordModel):
         return relationship("WebhookEvent", lazy="raise")
 
     http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    response: Mapped[str | None] = mapped_column(String, nullable=True)
 
     succeeded: Mapped[bool] = mapped_column(Boolean, nullable=False)

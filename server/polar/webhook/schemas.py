@@ -111,6 +111,7 @@ class WebhookEvent(TimestampedSchema):
         ),
     )
     payload: str = Field(description="The payload of the webhook event.")
+    response: str = Field(description="The response of the webhook event.")
 
 
 class WebhookDelivery(TimestampedSchema):

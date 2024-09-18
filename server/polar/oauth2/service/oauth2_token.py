@@ -114,10 +114,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
             for recipient in recipients:
                 email_sender.send_to_user(
-                    to_email_addr=recipient,
-                    subject=subject,
-                    html_content=body,
-                    from_email_addr="noreply@notifications.polar.sh",
+                    to_email_addr=recipient, subject=subject, html_content=body
                 )
 
         log.info(

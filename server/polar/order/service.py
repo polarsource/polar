@@ -369,10 +369,7 @@ class OrderService(ResourceServiceReader[Order]):
         )
 
         email_sender.send_to_user(
-            to_email_addr=user.email,
-            subject=subject,
-            html_content=body,
-            from_email_addr="noreply@notifications.polar.sh",
+            to_email_addr=user.email, subject=subject, html_content=body
         )
 
     async def update_product_benefits_grants(

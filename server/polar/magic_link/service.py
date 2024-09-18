@@ -83,10 +83,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         )
 
         email_sender.send_to_user(
-            to_email_addr=magic_link.user_email,
-            subject=subject,
-            html_content=body,
-            from_email_addr="noreply@notifications.polar.sh",
+            to_email_addr=magic_link.user_email, subject=subject, html_content=body
         )
 
     async def authenticate(self, session: AsyncSession, token: str) -> User:

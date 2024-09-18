@@ -139,7 +139,6 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             to_email_addr=personal_access_token.user.email,
             subject=subject,
             html_content=body,
-            from_email_addr="noreply@notifications.polar.sh",
         )
 
         log.info(

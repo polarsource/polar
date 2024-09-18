@@ -4,15 +4,17 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
 import { DiamondOutlined } from '@mui/icons-material'
 import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
-import { useCallback, useContext } from 'react'
+import { Switch } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { PropsWithChildren, useCallback, useContext, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage() {
   const searchParams = useSearchParams()
@@ -41,8 +43,9 @@ export default function ClientPage() {
     <div className="flex h-full flex-col gap-12 md:flex-row">
       <div className="flex h-full w-full flex-shrink-0 flex-col gap-y-12 self-stretch md:sticky md:top-[3rem] md:max-w-xs">
         <PurchaseSidebar>
-          <div className="flex items-center space-x-2">
-            <Checkbox
+          <div className="flex flex-row items-center justify-between gap-x-2">
+            <span className="text-sm">Show cancelled</span>
+            <Switch
               id="inactive"
               checked={purchaseParameters.inactive}
               onCheckedChange={(e) => {
@@ -52,12 +55,6 @@ export default function ClientPage() {
                 }))
               }}
             />
-            <label
-              htmlFor="inactive"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Show cancelled
-            </label>
           </div>
         </PurchaseSidebar>
       </div>
@@ -75,20 +72,18 @@ export default function ClientPage() {
         </div>
       ) : (
         <div className="flex w-full flex-col gap-y-6">
-          <h3 className="text-lg">Subscriptions</h3>
-          <List className="w-full">
-            {subscriptions?.items.map((order) => (
-              <Link
-                key={order.id}
-                className="flex w-full flex-row items-center justify-between"
-                href={`/purchases/subscriptions/${order.id}`}
-              >
-                <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 w-full bg-white">
-                  <SubscriptionItem subscription={order} />
-                </ListItem>
-              </Link>
-            ))}
-          </List>
+          <div className="flex flex-row items-center justify-between">
+            <h3 className="text-lg">Subscriptions</h3>
+          </div>
+          {subscriptions?.items.map((order) => (
+            <Link
+              key={order.id}
+              className="flex w-full flex-row items-center justify-between"
+              href={`/purchases/subscriptions/${order.id}`}
+            >
+              <SubscriptionItem subscription={order} />
+            </Link>
+          ))}
           <Pagination
             currentPage={purchaseParameters.page}
             totalCount={subscriptions?.pagination.total_count || 0}
@@ -102,6 +97,18 @@ export default function ClientPage() {
   )
 }
 
+const StatusWrapper = ({
+  children,
+  color,
+}: PropsWithChildren<{ color: string }>) => {
+  return (
+    <div className="flex flex-row items-center gap-x-2">
+      <span className={twMerge('h-2 w-2 rounded-full', color)} />
+      <span>{children}</span>
+    </div>
+  )
+}
+
 const SubscriptionItem = ({
   subscription,
 }: {
@@ -111,38 +118,46 @@ const SubscriptionItem = ({
     subscription.product.organization_id,
   )
 
+  const status = useMemo(() => {
+    switch (subscription.status) {
+      case 'active':
+        return <StatusWrapper color="bg-green-400">Active</StatusWrapper>
+      default:
+        return (
+          <StatusWrapper color="bg-red-400 capitalize">
+            {subscription.status.split('_').join(' ')}
+          </StatusWrapper>
+        )
+    }
+  }, [subscription])
+
   if (!organization) {
     return null
   }
 
   return (
-    <div className="flex w-full flex-row items-center justify-between">
-      <div className="flex flex-row items-baseline gap-x-2">
-        <div className="flex flex-row items-center gap-4">
-          {subscription.product.type && (
-            <SubscriptionGroupIcon
-              className="text-xl"
-              type={subscription.product.type}
+    <ShadowBox className="flex w-full max-w-2xl flex-col gap-y-6">
+      <div className="flex flex-row items-start justify-between">
+        <div className="flex flex-col gap-y-4">
+          <h3 className="truncate text-2xl">{subscription.product.name}</h3>
+          <div className="flex flex-row items-center gap-x-3">
+            <Avatar
+              className="h-8 w-8"
+              avatar_url={organization.avatar_url}
+              name={organization.name}
             />
-          )}
-          <div className="flex flex-row items-baseline gap-3">
-            <h3>{subscription.product.name}</h3>
-            {organization && (
-              <>
-                <span className="dark:text-polar-500 text-gray-500">·</span>
-                <span className="dark:text-polar-500 text-gray-500">
-                  {organization.name}
-                </span>
-              </>
-            )}
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              {organization.name}
+            </p>
           </div>
         </div>
+        <Link href={`/purchases/subscriptions/${subscription.id}`}>
+          <Button size="sm">Manage Subscription</Button>
+        </Link>
       </div>
-      <div className="flex flex-row items-baseline gap-4 text-sm">
-        <span className="dark:text-polar-500 capitalize text-gray-500">
-          {subscription.status}
-        </span>
-        <span>
+      <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-100 text-sm">
+        <div className="flex flex-row items-center justify-between py-2">
+          <span>Amount</span>
           {subscription.amount && subscription.currency ? (
             <AmountLabel
               amount={subscription.amount}
@@ -152,8 +167,53 @@ const SubscriptionItem = ({
           ) : (
             'Free'
           )}
-        </span>
+        </div>
+        <div className="flex flex-row items-center justify-between py-3">
+          <span>Status</span>
+          {status}
+        </div>
+        {!subscription.ended_at && subscription.current_period_end && (
+          <div className="flex flex-row items-center justify-between py-3">
+            <span>
+              {subscription.cancel_at_period_end ? 'Expires' : 'Renews'}
+            </span>
+            <span>
+              {new Date(subscription.current_period_end).toLocaleDateString(
+                'en-US',
+                {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                },
+              )}
+            </span>
+          </div>
+        )}
+        {subscription.ended_at && (
+          <div className="flex flex-row items-center justify-between py-3">
+            <span>Expired</span>
+            <span>
+              {new Date(subscription.ended_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        )}
+        {subscription.product.benefits.length > 0 && (
+          <div className="flex flex-row items-center justify-between py-3">
+            <span>Benefits</span>
+            <span>
+              <Link href={`/purchases/subscriptions/${subscription.id}`}>
+                <Button size="sm" variant="secondary">
+                  View Benefits
+                </Button>
+              </Link>
+            </span>
+          </div>
+        )}
       </div>
-    </div>
+    </ShadowBox>
   )
 }

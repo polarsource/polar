@@ -85,8 +85,8 @@ export const CheckoutSuccess = (props: {
             </CardContent>
             <CardFooter className="flex justify-center">
               {currentUser && (
-                <Link className="grow" href={`/${organization.slug}`}>
-                  <Button className="w-full">Go to {organization.name}</Button>
+                <Link className="grow" href={`/purchases`}>
+                  <Button className="w-full">Go to purchases</Button>
                 </Link>
               )}
               {!currentUser && (

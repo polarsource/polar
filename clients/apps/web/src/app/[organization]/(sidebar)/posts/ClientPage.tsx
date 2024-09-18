@@ -12,9 +12,7 @@ import {
   ListResourceArticle,
   Organization,
 } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 
@@ -84,18 +82,11 @@ const ClientPage = ({
                   {isMember ? (
                     <>
                       <h3 className="p-2 text-lg font-medium">
-                        {organization.name} is typing...
+                        This looks empty...
                       </h3>
                       <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
-                        Start building a community & newsletter by writing your
-                        first post – your hello world on Polar
+                        You have no published posts
                       </p>
-                      <Link
-                        className="mt-6"
-                        href={`/dashboard/${organization.slug}/posts/new`}
-                      >
-                        <Button>Write a Post</Button>
-                      </Link>
                     </>
                   ) : (
                     <>
@@ -103,8 +94,7 @@ const ClientPage = ({
                         {organization.name} is typing...
                       </h3>
                       <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
-                        Subscribe to {organization.name} to get future posts
-                        fresh out of the press.
+                        {organization.name} has not published any posts yet
                       </p>
                     </>
                   )}

@@ -1,20 +1,23 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { EnableProductsView } from '@/components/Products/EnableProductsView'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
-import { SubscriptionRecurringInterval, ProductPrice } from '@polar-sh/sdk'
 import {
   AddOutlined,
   InsertPhotoOutlined,
   MoreVertOutlined,
   Search,
 } from '@mui/icons-material'
-import { Organization, Product } from '@polar-sh/sdk'
+import {
+  Organization,
+  Product,
+  ProductPrice,
+  SubscriptionRecurringInterval,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -37,10 +40,6 @@ export default function ClientPage() {
   const filteredProducts = products.data?.items.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
-
-  if (org && !org.feature_settings?.subscriptions_enabled) {
-    return <EnableProductsView organization={org} />
-  }
 
   return (
     <DashboardBody className="flex flex-col gap-16">
@@ -116,7 +115,10 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     }
   }
 
-  const generateCopyCheckoutLabel = (price: ProductPrice, amountOfPrices: number) => {
+  const generateCopyCheckoutLabel = (
+    price: ProductPrice,
+    amountOfPrices: number,
+  ) => {
     let suffix = ''
     // We only add the suffix in case we have more than 1 price point, i.e
     // monthly + annual subscription

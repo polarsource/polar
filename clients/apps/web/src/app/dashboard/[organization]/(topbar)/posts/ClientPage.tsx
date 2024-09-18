@@ -10,14 +10,11 @@ import {
   useListArticles,
   useTrafficStatistics,
   useTrafficTopReferrers,
-  useUpdateOrganization,
 } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import {
-  AddOutlined,
   ArrowForward,
   ArrowForwardOutlined,
   DraftsOutlined,
@@ -25,9 +22,7 @@ import {
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
 import { Card } from 'polarkit/components/ui/atoms/card'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -56,8 +51,6 @@ function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
 }
 
 const ClientPage = () => {
-  const updateOrganization = useUpdateOrganization()
-  const [enablingPosts, setEnablingPosts] = useState(false)
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const posts = useListArticles({
@@ -105,28 +98,6 @@ const ClientPage = () => {
     return { ...r, prettyURL: prettyReferrerURL(r) }
   })
 
-  const router = useRouter()
-
-  const enablePosts = async () => {
-    setEnablingPosts(true)
-
-    await updateOrganization
-      .mutateAsync({
-        id: org.id,
-        body: {
-          feature_settings: {
-            articles_enabled: true,
-          },
-        },
-      })
-      .then(() => {
-        router.refresh()
-      })
-      .catch(() => {
-        setEnablingPosts(false)
-      })
-  }
-
   if (!org.feature_settings?.articles_enabled) {
     return (
       <EmptyLayout>
@@ -142,9 +113,6 @@ const ClientPage = () => {
               Create and publish a newsletter to engage with your audience
             </h2>
           </div>
-          <Button loading={enablingPosts} onClick={enablePosts}>
-            Enable Newsletter
-          </Button>
         </div>
       </EmptyLayout>
     )
@@ -159,14 +127,6 @@ const ClientPage = () => {
               <h3 className="text-lg font-medium text-gray-950 dark:text-white">
                 Overview
               </h3>
-              <Link
-                href={`/dashboard/${org.slug}/posts/new`}
-                onClick={() => captureEvent('posts:overview_create_new:click')}
-              >
-                <Button className="h-8 w-8 rounded-full">
-                  <AddOutlined fontSize="inherit" />
-                </Button>
-              </Link>
             </div>
             <div className="flex flex-col gap-y-12">
               {showPosts ? (

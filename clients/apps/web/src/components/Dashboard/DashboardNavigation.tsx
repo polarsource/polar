@@ -1,7 +1,6 @@
 'use client'
 
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Face } from '@mui/icons-material'
 import { useContext } from 'react'
 import { NavigationContainer } from './NavigationContainer'
 import {
@@ -28,11 +27,7 @@ const MaintainerNavigation = () => {
     <div className="flex flex-col gap-y-10">
       <NavigationContainer routes={generalRoutesList} />
       <NavigationContainer title="Funding" routes={fundingRoutes} />
-      <NavigationContainer
-        title="Community"
-        routes={communityRoutes}
-        dummyRoutes={[{ title: 'Audience', icon: <Face fontSize="inherit" /> }]}
-      />
+      <NavigationContainer title="Community" routes={communityRoutes} />
       <NavigationContainer title="Organization" routes={organizationRoutes} />
     </div>
   )

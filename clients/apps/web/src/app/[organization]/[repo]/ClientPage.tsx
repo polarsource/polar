@@ -10,7 +10,6 @@ import {
   Link as LinkItem,
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
-import { SubscriptionTierEditor } from '@/components/Profile/SubscriptionTierEditor/SubscriptionTierEditor'
 import { useUpdateProject } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import { organizationPageLink } from '@/utils/nav'
@@ -122,15 +121,6 @@ const ClientPage = ({
               }
               disabled={!isOrgMember}
             />
-
-            {organization.feature_settings?.subscriptions_enabled && (
-              <SubscriptionTierEditor
-                organization={organization}
-                repository={repository}
-                subscriptionTiers={products}
-                disabled={!isOrgMember}
-              />
-            )}
 
             <CreatorsEditor
               organization={organization}

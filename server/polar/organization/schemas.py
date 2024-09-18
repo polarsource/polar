@@ -35,9 +35,6 @@ class OrganizationFeatureSettings(Schema):
     articles_enabled: bool = Field(
         False, description="If this organization has articles enabled"
     )
-    subscriptions_enabled: bool = Field(
-        False, description="If this organization has subscriptions enabled"
-    )
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
     )

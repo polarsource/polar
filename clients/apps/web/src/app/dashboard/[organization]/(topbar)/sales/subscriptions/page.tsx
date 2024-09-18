@@ -1,4 +1,3 @@
-import { EnableProductsView } from '@/components/Products/EnableProductsView'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -32,10 +31,6 @@ export default async function Page({
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'started_at', desc: true },
   ])
-
-  if (!organization.feature_settings?.subscriptions_enabled) {
-    return <EnableProductsView organization={organization} />
-  }
 
   return (
     <ClientPage

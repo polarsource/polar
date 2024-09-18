@@ -94,7 +94,6 @@ class TestCreate:
                 name="My New Organization",
                 slug="my-new-organization",
                 feature_settings=OrganizationFeatureSettings(
-                    subscriptions_enabled=True,
                     issue_funding_enabled=False,
                     articles_enabled=False,
                 ),
@@ -106,7 +105,6 @@ class TestCreate:
         assert organization.name == "My New Organization"
 
         assert organization.feature_settings == {
-            "subscriptions_enabled": True,
             "issue_funding_enabled": False,
             "articles_enabled": False,
         }

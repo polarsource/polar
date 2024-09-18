@@ -86,7 +86,7 @@ export const useUpsellSteps = () => {
     steps.push({
       title: 'Customize Organization',
       description: 'Upload an avatar for your Organization',
-      href: `/dashboard/${currentOrg.slug}/settings`,
+      href: `/dashboard/${currentOrg.slug}/customize`,
       done: !shouldUpsellCustomizeOrganization(currentOrg),
     })
 

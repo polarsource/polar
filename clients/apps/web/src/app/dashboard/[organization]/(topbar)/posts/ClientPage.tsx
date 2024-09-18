@@ -23,7 +23,9 @@ import {
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Card } from 'polarkit/components/ui/atoms/card'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useHoverDirty } from 'react-use'
@@ -129,6 +131,31 @@ const ClientPage = () => {
               </h3>
             </div>
             <div className="flex flex-col gap-y-12">
+              <ShadowBox className="flex flex-col gap-y-6">
+                <h1 className="text-xl">
+                  Newsletters & Posts on Polar will be discontinued
+                </h1>
+                <ol className="dark:text-polar-500 list-inside text-gray-500">
+                  <li>
+                    1. We&apos;ll turn it off for new signups and existing
+                    customers without any posts
+                  </li>
+                  <li>
+                    2. We&apos;ll reach out to customers with posts to offer
+                    exports and support migrating & redirecting them elsewhere
+                  </li>
+                  <li>
+                    3. We&apos;ll sunset it entirely once migrations are done
+                  </li>
+                </ol>
+                <Link
+                  href={`https://github.com/orgs/polarsource/discussions/3998`}
+                  target="_blank"
+                >
+                  <Button>Learn more</Button>
+                </Link>
+              </ShadowBox>
+
               {showPosts ? (
                 <StaggerReveal className="flex w-full flex-col gap-y-4">
                   {infinitePosts.map((post) => (

@@ -4,7 +4,7 @@ from typing import Any, NotRequired, TypedDict
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
-from polar.config import settings
+from polar.config import Environment, settings
 
 
 class OpenAPIExternalDoc(TypedDict):
@@ -77,8 +77,12 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
     "summary": "Polar HTTP and Webhooks API",
     "version": "0.1.0",
     "description": "Read the docs at https://docs.polar.sh/api",
-    "docs_url": None if settings.is_production() else "/docs",
-    "redoc_url": None if settings.is_production() else "/redoc",
+    "docs_url": None
+    if settings.is_environment({Environment.sandbox, Environment.production})
+    else "/docs",
+    "redoc_url": None
+    if settings.is_environment({Environment.sandbox, Environment.production})
+    else "/redoc",
     "openapi_tags": APITag.metadata(),  # type: ignore
     "servers": [
         {

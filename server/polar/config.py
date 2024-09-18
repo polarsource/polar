@@ -13,7 +13,6 @@ from polar.kit.jwk import JWKSFile
 class Environment(StrEnum):
     development = "development"
     testing = "testing"
-    staging = "staging"
     sandbox = "sandbox"
     production = "production"
 
@@ -228,20 +227,20 @@ class Settings(BaseSettings):
             )
         )
 
-    def is_environment(self, environment: Environment) -> bool:
-        return self.ENV == environment
+    def is_environment(self, environments: set[Environment]) -> bool:
+        return self.ENV in environments
 
     def is_development(self) -> bool:
-        return self.is_environment(Environment.development)
+        return self.is_environment({Environment.development})
 
     def is_testing(self) -> bool:
-        return self.is_environment(Environment.testing)
+        return self.is_environment({Environment.testing})
 
-    def is_staging(self) -> bool:
-        return self.is_environment(Environment.staging)
+    def is_sandbox(self) -> bool:
+        return self.is_environment({Environment.sandbox})
 
     def is_production(self) -> bool:
-        return self.is_environment(Environment.production)
+        return self.is_environment({Environment.production})
 
     def generate_external_url(self, path: str) -> str:
         return f"{self.BASE_URL}{path}"

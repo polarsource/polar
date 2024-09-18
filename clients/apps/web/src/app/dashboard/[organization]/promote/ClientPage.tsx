@@ -61,18 +61,6 @@ export default function ClientPage({
         />
       </picture>
     ),
-    Posts: (
-      <picture>
-        <source
-          media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/posts.svg?org=${organization.slug}&darkmode`}
-        />
-        <img
-          alt="Newsletter on Polar"
-          src={`/embed/posts.svg?org=${organization.slug}`}
-        />
-      </picture>
-    ),
     Subscribe: (
       <picture>
         <source
@@ -91,7 +79,6 @@ export default function ClientPage({
 
   const embedCodes: Record<string, string> = {
     Tiers: `<a href="https://polar.sh/${organization.slug}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${organization.slug}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${organization.slug}"></picture></a>`,
-    Posts: `<a href="https://polar.sh/${organization.slug}/posts"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/posts.svg?org=${organization.slug}&darkmode"><img alt="Posts on Polar" src="https://polar.sh/embed/posts.svg?org=${organization.slug}"></picture></a>`,
     Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${organization.slug}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${organization.slug}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
@@ -147,7 +134,7 @@ export default function ClientPage({
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <TabsList className="bg-transparent dark:bg-transparent">
-                      {['Tiers', 'Posts', 'Subscribe', 'Issues', 'Shield'].map(
+                      {['Tiers', 'Subscribe', 'Issues', 'Shield'].map(
                         (item) => (
                           <TabsTrigger key={item} value={item} size="small">
                             {item}

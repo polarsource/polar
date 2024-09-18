@@ -1,5 +1,4 @@
 import {
-  useListArticles,
   useOrganizationAccount,
   useProducts,
   useSearchDonations,
@@ -9,14 +8,12 @@ import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   Account,
-  ListResourceArticle,
   ListResourceDonation,
   ListResourceOrder,
   ListResourceProduct,
   ListResourceTransaction,
   Organization,
 } from '@polar-sh/sdk'
-import { InfiniteData } from '@tanstack/react-query'
 import { useContext, useMemo } from 'react'
 import { UpsellStepProps } from './CreatorUpsell'
 
@@ -24,34 +21,15 @@ const shouldUpsellCustomizeOrganization = (org: Organization) => {
   return typeof org.avatar_url !== 'string'
 }
 
-const shouldUpsellCreateProduct = (
-  org: Organization,
-  products?: ListResourceProduct,
-) => {
-  if (!org.feature_settings?.subscriptions_enabled) return true
-
+const shouldUpsellCreateProduct = (products?: ListResourceProduct) => {
   const nonFreeProducts =
     products?.items.filter((tier) => tier.type !== 'free') ?? []
 
   return nonFreeProducts.length === 0
 }
 
-const shouldUpsellFirstOrder = (
-  org: Organization,
-  orders?: ListResourceOrder,
-) => {
-  if (!org.feature_settings?.subscriptions_enabled) return true
-
+const shouldUpsellFirstOrder = (orders?: ListResourceOrder) => {
   return orders?.pagination.total_count === 0 ?? true
-}
-
-const shouldUpsellFirstPost = (
-  org: Organization,
-  articles?: InfiniteData<ListResourceArticle, unknown>,
-) => {
-  if (!org.feature_settings?.articles_enabled) return true
-
-  return articles?.pages[0].pagination.total_count === 0 ?? true
 }
 
 const shouldUpsellPayoutConnection = (account?: Account) => {
@@ -78,11 +56,6 @@ export const useUpsellSteps = () => {
 
   const { data: products, isLoading: tiersLoading } = useProducts(currentOrg.id)
   const { data: orders, isLoading: ordersLoading } = useOrders(currentOrg.id)
-  const { data: posts, isLoading: articlesLoading } = useListArticles({
-    organizationId: currentOrg.id,
-    isPublished: true,
-    limit: 1,
-  })
   const { data: payouts, isLoading: payoutsLoading } = useSearchTransactions({
     accountId: account?.id,
     type: 'payout',
@@ -96,7 +69,6 @@ export const useUpsellSteps = () => {
   const isLoading =
     ordersLoading ||
     tiersLoading ||
-    articlesLoading ||
     payoutsLoading ||
     donationsLoading ||
     orgAccountLoading
@@ -123,7 +95,7 @@ export const useUpsellSteps = () => {
       description:
         'Sell benefits like Digital downloads, Discord invites & Private GitHub repository access',
       href: `/dashboard/${currentOrg.slug}/products`,
-      done: !shouldUpsellCreateProduct(currentOrg, products),
+      done: !shouldUpsellCreateProduct(products),
     })
 
     steps.push({
@@ -131,7 +103,7 @@ export const useUpsellSteps = () => {
       description:
         'Sell a digital product or a subscription to your supporters',
       href: `/dashboard/${currentOrg.slug}/sales`,
-      done: !shouldUpsellFirstOrder(currentOrg, orders),
+      done: !shouldUpsellFirstOrder(orders),
     })
 
     steps.push({
@@ -151,13 +123,6 @@ export const useUpsellSteps = () => {
     })
 
     steps.push({
-      title: 'Publish your first newsletter post',
-      description: 'Start building a community & newsletter with a Hello World',
-      href: `/dashboard/${currentOrg.slug}/posts/new`,
-      done: !shouldUpsellFirstPost(currentOrg, posts),
-    })
-
-    steps.push({
       title: 'Receive your first donation',
       description:
         'Donations without any strings attached are worth celebrating',
@@ -166,7 +131,7 @@ export const useUpsellSteps = () => {
     })
 
     return steps
-  }, [currentOrg, posts, orders, products, account, payouts, donations])
+  }, [currentOrg, orders, products, account, payouts, donations])
 
   if (isLoading) {
     return []

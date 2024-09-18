@@ -86,17 +86,4 @@ const organizationSpecificCommands: Command[] = [
       }
     },
   },
-  {
-    id: 'write-new-post',
-    name: 'Write New Post',
-    description: 'Navigate to the post editor',
-    type: CommandType.Shortcut,
-    action: ({ hidePalette, router, organization }) => {
-      if (organization) {
-        hidePalette()
-
-        router.push(`/dashboard/${organization.slug}/posts/new`)
-      }
-    },
-  },
 ]

@@ -260,7 +260,7 @@ const communityRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/posts`)
     },
-    if: true,
+    if: !!org.feature_settings?.articles_enabled ?? false,
   },
 ]
 

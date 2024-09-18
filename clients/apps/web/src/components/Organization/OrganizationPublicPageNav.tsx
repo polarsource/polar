@@ -47,12 +47,6 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {hasLinkedExternalOrganizations && (
-          <Link href={organizationPageLink(organization, 'repositories')}>
-            <TabsTrigger value="repositories">Repositories</TabsTrigger>
-          </Link>
-        )}
-
         {organization.donations_enabled && (
           <Link href={organizationPageLink(organization, 'donate')}>
             <TabsTrigger value="donate">Donate</TabsTrigger>

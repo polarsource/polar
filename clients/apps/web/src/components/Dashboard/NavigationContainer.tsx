@@ -17,6 +17,10 @@ export const NavigationContainer = ({
   routes,
   dummyRoutes,
 }: NavigationContainerProps) => {
+  if (!routes.length) {
+    return null
+  }
+
   return (
     <div className="mx-8 flex flex-col gap-y-4">
       {title && (

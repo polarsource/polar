@@ -1,10 +1,8 @@
 import { useUpdateOrganization } from '@/hooks/queries'
-import { organizationPageLink } from '@/utils/nav'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { ArrowForwardOutlined, HiveOutlined } from '@mui/icons-material'
+import { HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { Modal } from '../../Modal'
 import { useModal } from '../../Modal/useModal'
 import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
@@ -97,15 +95,7 @@ export const ProjectsEditor = ({
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
             <h3 className="text-lg">Featured Projects</h3>
-            {disabled ? (
-              <Link
-                className="text-sm text-blue-500 dark:text-blue-400"
-                href={organizationPageLink(organization, 'repositories')}
-              >
-                <span>View all projects</span>
-                <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-              </Link>
-            ) : (
+            {!disabled && (
               <div
                 className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-blue-500 dark:text-blue-400"
                 onClick={show}

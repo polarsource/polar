@@ -1,6 +1,7 @@
 import '../styles/globals.scss'
 
 import { CookieConsent } from '@/components/Privacy/CookieConsent'
+import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
@@ -89,6 +90,7 @@ export default async function RootLayout({
               <PolarToploaderProvider>
                 <PolarQueryClientProvider>
                   <>
+                    <SandboxBanner />
                     {children}
                     <CookieConsent />
                   </>

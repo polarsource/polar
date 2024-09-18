@@ -504,7 +504,7 @@ envVarGroups:
       - key: POLAR_FRONTEND_BASE_URL
         value: https://sandbox.polar.sh
       - key: POLAR_GITHUB_APP_NAMESPACE
-        value: polar-sh
+        value: polar-sandbox
       - key: POLAR_GITHUB_BADGE_EMBED
         value: 1
       - key: POLAR_GITHUB_POLAR_USER_ACCESS_TOKEN

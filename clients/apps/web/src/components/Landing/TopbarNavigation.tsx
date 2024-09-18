@@ -65,11 +65,6 @@ const PlatformPopover = () => {
                 link="/docs/products"
               />
               <PopoverLinkItem
-                title="Newsletters"
-                description="Reach and engage with your free- or paid subscribers"
-                link="/docs/newsletters"
-              />
-              <PopoverLinkItem
                 title="Issue Funding & Rewards"
                 description="Crowdfunding for GitHub issues with contributor rewards"
                 link="/docs/issue-funding"

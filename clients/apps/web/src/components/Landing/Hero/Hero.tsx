@@ -13,7 +13,8 @@ export const Hero = () => {
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">
             <p className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
-              Get paid coding on your passion. Leave upsales, billing and international taxes to us.
+              Get paid coding on your passion. Leave upsales, billing and
+              international taxes to us.
             </p>
           </div>
         </div>
@@ -49,23 +50,6 @@ export const Hero = () => {
           playsInline
           muted
         />
-
-        <div className="mt-6 flex space-x-12 justify-center items-center">
-          <a
-            href="https://www.producthunt.com/posts/polar-5?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-polar&#0045;5"
-            target="_blank"
-          >
-            <img
-              src="/assets/landing/ph_pod.svg"
-              alt="Polar - An&#0032;open&#0032;source&#0032;monetization&#0032;platform&#0032;for&#0032;developers | Product Hunt"
-              style={{ height: '37px' }}
-              height="37"
-            />
-          </a>
-          <p className="text-lg leading-relaxed">
-            Trusted by thousands of developers shipping world-wide
-          </p>
-        </div>
       </div>
     </div>
   )

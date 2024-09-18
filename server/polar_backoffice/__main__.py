@@ -26,7 +26,11 @@ IGNORED_ENVIRONMENT_VARIABLES = {
 def _load_production_environment(
     render_api_key: str, render_service_id: str
 ) -> EnvVars:
-    ENVIRONMENT_GROUPS = {"github-production", "server-common", "server-stripe"}
+    ENVIRONMENT_GROUPS = {
+        "github-production",
+        "backend-production",
+        "stripe-production",
+    }
 
     environment_variables: EnvVars = {}
     with httpx.Client(

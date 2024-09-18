@@ -484,7 +484,7 @@ envVarGroups:
       - key: POLAR_AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID
         sync: false
       - key: POLAR_BASE_URL
-        value: https://api.polar.sh/v1
+        value: https://sandbox-api.polar.sh/v1
       - key: POLAR_CURRENT_JWK_KID
         sync: false
       - key: POLAR_DEBUG

@@ -117,20 +117,20 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     }
   }
 
-  const generateCopyCheckoutLabel = (price: ProductPrice) => {
+  const generateCopyCheckoutLabel = (price: ProductPrice, amountOfPrices: number) => {
     let suffix = ''
-    if (price.type === 'recurring') {
+    // We only add the suffix in case we have more than 1 price point, i.e
+    // monthly + annual subscription
+    if (amountOfPrices > 1 && price.type === 'recurring') {
       switch (price.recurring_interval) {
         case SubscriptionRecurringInterval.MONTH:
-          suffix = ' / mo'
+          suffix = 'Monthly'
           break
         case SubscriptionRecurringInterval.YEAR:
-          suffix = ' / yr'
+          suffix = 'Yearly'
           break
       }
-      const amount = price.price_amount ?? 0
-      const amountFmt = formatCurrencyAndAmount(amount, price.price_currency, 0)
-      suffix = `(${amountFmt}${suffix})`
+      suffix = `(${suffix})`
     }
 
     return `Copy Checkout URL ${suffix}`
@@ -200,7 +200,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                         onGenerateCheckoutUrl(price)
                       })}
                     >
-                      {generateCopyCheckoutLabel(price)}
+                      {generateCopyCheckoutLabel(price, product.prices.length)}
                     </DropdownMenuItem>
                   ))}
                 </>

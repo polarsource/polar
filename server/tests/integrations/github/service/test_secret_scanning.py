@@ -71,27 +71,46 @@ class TestValidatePayload:
         "payload",
         (
             [{"foo": "bar"}],
-            [{"token": "TOKEN", "type": "polar_access_token", "source": "github"}],
+            [{"token": "TOKEN", "type": "foobar", "source": "github"}],
+            [{"token": "TOKEN", "type": None, "source": "github"}],
         ),
     )
     async def test_invalid_payload(self, payload: list[dict[str, Any]]) -> None:
         with pytest.raises(RequestValidationError):
             secret_scanning_service.validate_payload(json.dumps(payload))
 
-    async def test_valid_payload(self) -> None:
-        payload = [
-            {
-                "token": "TOKEN",
-                "type": "personal_access_token",
-                "source": "github",
-            },
-            {
-                "token": "TOKEN",
-                "type": "client_secret",
-                "source": "github",
-                "url": "https://example.com",
-            },
-        ]
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            pytest.param(
+                [
+                    {
+                        "token": "TOKEN",
+                        "type": "polar_personal_access_token",
+                        "source": "github",
+                    },
+                    {
+                        "token": "TOKEN",
+                        "type": "polar_client_secret",
+                        "source": "github",
+                        "url": "https://example.com",
+                    },
+                ],
+                id="basic",
+            ),
+            pytest.param(
+                [
+                    {
+                        "token": "TOKEN",
+                        "type": "POLAR_PERSONAL_ACCESS_TOKEN",
+                        "source": "github",
+                    }
+                ],
+                id="uppercase_token_type",
+            ),
+        ),
+    )
+    async def test_valid_payload(self, payload: list[dict[str, Any]]) -> None:
         result = secret_scanning_service.validate_payload(json.dumps(payload))
 
-        assert len(result) == 2
+        assert len(result) == len(payload)

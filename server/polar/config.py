@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
 
+    # Emails
+    EMAIL_SENDER: EmailSender = EmailSender.logger
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM_NAME: str = "Polar"
+    EMAIL_FROM_EMAIL_ADDRESS: str = "noreply@notifications.polar.sh"
+
     # Github App
     GITHUB_APP_NAMESPACE: str = ""  # Unused
     GITHUB_APP_IDENTIFIER: str = ""
@@ -153,9 +159,6 @@ class Settings(BaseSettings):
 
     GITHUB_BADGE_EMBED: bool = False
     GITHUB_BADGE_EMBED_DEFAULT_LABEL: str = "Fund"
-
-    EMAIL_SENDER: EmailSender = EmailSender.logger
-    RESEND_API_KEY: str = ""
 
     ACCOUNT_PAYOUT_REVIEW_THRESHOLDS: list[int] = [0, 10000]
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(days=1)

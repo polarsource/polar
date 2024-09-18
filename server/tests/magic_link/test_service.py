@@ -108,10 +108,7 @@ async def test_send(
     assert send_to_user_mock.called
 
     send_to_user_mock.assert_called_once_with(
-        to_email_addr="user@example.com",
-        html_content=ANY,
-        subject="Sign in to Polar",
-        from_email_addr="noreply@notifications.polar.sh",
+        to_email_addr="user@example.com", html_content=ANY, subject="Sign in to Polar"
     )
 
     sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]
@@ -158,10 +155,7 @@ async def test_send_return_to(
     assert send_to_user_mock.called
 
     send_to_user_mock.assert_called_once_with(
-        to_email_addr="user@example.com",
-        html_content=ANY,
-        subject="Sign in to Polar",
-        from_email_addr="noreply@notifications.polar.sh",
+        to_email_addr="user@example.com", html_content=ANY, subject="Sign in to Polar"
     )
 
     sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]

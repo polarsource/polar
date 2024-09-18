@@ -386,6 +386,10 @@ envVarGroups:
         sync: false
       - key: POLAR_EMAIL_SENDER
         value: resend
+      - key: POLAR_EMAIL_FROM_NAME
+        value: Polar
+      - key: POLAR_EMAIL_FROM_EMAIL_ADDRESS
+        value: noreply@notifications.polar.sh
       - key: POLAR_ENV
         value: production
       - key: POLAR_FRONTEND_BASE_URL
@@ -495,6 +499,10 @@ envVarGroups:
         sync: false
       - key: POLAR_EMAIL_SENDER
         value: resend
+      - key: POLAR_EMAIL_FROM_NAME
+        value: "[SANDBOX] Polar"
+      - key: POLAR_EMAIL_FROM_EMAIL_ADDRESS
+        value: noreply@notifications.sandbox.polar.sh
       - key: POLAR_ENV
         value: sandbox
       - key: POLAR_FRONTEND_BASE_URL

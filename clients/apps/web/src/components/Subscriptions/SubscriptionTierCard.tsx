@@ -148,7 +148,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                     </span>
                   </>
                 ) : (
-                  'Pay what you want'
+                  <span className="text-[min(1em,32px)]">
+                    Pay what you want
+                  </span>
                 )}
               </>
             ) : (

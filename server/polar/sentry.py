@@ -116,7 +116,7 @@ def configure_sentry() -> None:
         profiles_sample_rate=0.1,
         release=os.environ.get("RELEASE_VERSION", "development"),
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
-        environment="production" if os.environ.get("RENDER", False) else "development",
+        environment=settings.ENV,
         integrations=[
             PostHogIntegration(posthog=posthog.client, organization="polar-sh"),
             FastApiIntegration(transaction_style="endpoint"),

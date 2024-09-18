@@ -1,8 +1,13 @@
 'use client'
 
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { AddOutlined, KeyboardArrowDownOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  BiotechOutlined,
+  KeyboardArrowDownOutlined,
+} from '@mui/icons-material'
 import Link from 'next/link'
 import { useContext, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -91,6 +96,22 @@ const DashboardProfileDropdown = ({ className = '' }) => {
                 Create organization
               </span>
             </LinkItem>
+
+            {!CONFIG.IS_SANDBOX && (
+              <LinkItem
+                href="https://sandbox.polar.sh/start"
+                icon={
+                  <BiotechOutlined
+                    fontSize="small"
+                    className="h-5 w-5 text-blue-500 dark:text-blue-400"
+                  />
+                }
+              >
+                <span className="mx-2 text-blue-500 dark:text-blue-400">
+                  Go to sandbox
+                </span>
+              </LinkItem>
+            )}
           </div>
         )}
       </div>

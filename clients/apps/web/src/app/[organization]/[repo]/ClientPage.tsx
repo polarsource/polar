@@ -21,10 +21,8 @@ import {
   Article,
   ListResourceIssueFunding,
   Organization,
-  Product,
   Repository,
   RepositoryProfileSettingsUpdate,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
@@ -38,7 +36,6 @@ const ClientPage = ({
   issuesFunding,
   featuredOrganizations,
   userOrganizations,
-  products,
   links,
   posts,
 }: {
@@ -47,7 +44,6 @@ const ClientPage = ({
   issuesFunding: ListResourceIssueFunding
   featuredOrganizations: Organization[]
   userOrganizations: Organization[]
-  products: (Product & { type: SubscriptionTierType })[]
   links: { opengraph: OgObject; url: string }[]
   posts: Article[]
 }) => {

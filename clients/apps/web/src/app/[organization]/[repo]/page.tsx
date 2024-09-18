@@ -13,10 +13,7 @@ import {
   ArticleVisibility,
   ListResourceArticle,
   ListResourceIssueFunding,
-  ListResourceProduct,
   Organization,
-  Product,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
@@ -121,11 +118,10 @@ export default async function Page({
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
   let issuesFunding: ListResourceIssueFunding | undefined
-  let products: ListResourceProduct | undefined
   let posts: ListResourceArticle | undefined
 
   try {
-    ;[issuesFunding, products, posts] = await Promise.all([
+    ;[issuesFunding, posts] = await Promise.all([
       api.funding.search(
         {
           organizationId: organization.id,
@@ -136,14 +132,6 @@ export default async function Page({
           limit: 20,
           closed: filters.closed,
           page: searchParams.page ? parseInt(searchParams.page) : 1,
-        },
-        cacheConfig,
-      ),
-      api.products.list(
-        {
-          organizationId: organization.id,
-          isArchived: false,
-          isRecurring: true,
         },
         cacheConfig,
       ),
@@ -198,9 +186,6 @@ export default async function Page({
       repository={repository}
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}
-      products={
-        (products?.items ?? []) as (Product & { type: SubscriptionTierType })[]
-      }
       userOrganizations={userOrganizations}
       links={links}
       posts={posts?.items ?? []}

@@ -5,13 +5,14 @@ import { PurchasesQueryParametersContext } from '@/components/Purchases/Purchase
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
-import { DiamondOutlined } from '@mui/icons-material'
+import { Search } from '@mui/icons-material'
 import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { PropsWithChildren, useCallback, useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -39,6 +40,16 @@ export default function ClientPage() {
     page: purchaseParameters.page,
   })
 
+  const handleSearch = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setPurchaseParameters((prev) => ({
+        ...prev,
+        query: e.target.value,
+      }))
+    },
+    [setPurchaseParameters],
+  )
+
   return (
     <div className="flex h-full flex-col gap-12 md:flex-row">
       <div className="flex h-full w-full flex-shrink-0 flex-col gap-y-12 self-stretch md:sticky md:top-[3rem] md:max-w-xs">
@@ -58,41 +69,51 @@ export default function ClientPage() {
           </div>
         </PurchaseSidebar>
       </div>
-      {subscriptions?.pagination.total_count === 0 ? (
-        <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
-          <DiamondOutlined fontSize="inherit" />
-          <div className="flex flex-col items-center gap-y-2">
-            <h3 className="p-2 text-xl font-medium">
-              You have no subscription
-            </h3>
-            <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
-              Subscribe to creators & unlock benefits as a bonus
-            </p>
+
+      <div className="flex w-full max-w-2xl flex-col gap-y-6">
+        <div className="flex flex-row items-center justify-between">
+          <h3 className="text-2xl">Subscriptions</h3>
+          <div className="w-full max-w-64">
+            <Input
+              preSlot={<Search fontSize="small" />}
+              placeholder="Search Subscriptions"
+              onChange={handleSearch}
+              value={purchaseParameters.query}
+            />
           </div>
         </div>
-      ) : (
-        <div className="flex w-full flex-col gap-y-6">
-          <div className="flex flex-row items-center justify-between">
-            <h3 className="text-lg">Subscriptions</h3>
+        {subscriptions?.pagination.total_count === 0 ? (
+          <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
+            <div className="flex flex-col items-center gap-y-2">
+              <h3 className="p-2 text-xl font-medium">
+                No subscriptions found
+              </h3>
+              <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
+                Subscribe to creators & you&apos;ll see them here
+              </p>
+            </div>
           </div>
-          {subscriptions?.items.map((order) => (
-            <Link
-              key={order.id}
-              className="flex w-full flex-row items-center justify-between"
-              href={`/purchases/subscriptions/${order.id}`}
-            >
-              <SubscriptionItem subscription={order} />
-            </Link>
-          ))}
-          <Pagination
-            currentPage={purchaseParameters.page}
-            totalCount={subscriptions?.pagination.total_count || 0}
-            pageSize={purchaseParameters.limit}
-            onPageChange={onPageChange}
-            currentURL={searchParams}
-          />
-        </div>
-      )}
+        ) : (
+          <>
+            {subscriptions?.items.map((order) => (
+              <Link
+                key={order.id}
+                className="flex w-full flex-row items-center justify-between"
+                href={`/purchases/subscriptions/${order.id}`}
+              >
+                <SubscriptionItem subscription={order} />
+              </Link>
+            ))}
+            <Pagination
+              currentPage={purchaseParameters.page}
+              totalCount={subscriptions?.pagination.total_count || 0}
+              pageSize={purchaseParameters.limit}
+              onPageChange={onPageChange}
+              currentURL={searchParams}
+            />
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -129,7 +150,7 @@ const SubscriptionItem = ({
                 : 'bg-green-500'
             }
           >
-            {subscription.cancel_at_period_end ? 'Canceled' : 'Active'}
+            {subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'}
           </StatusWrapper>
         )
       default:
@@ -146,7 +167,7 @@ const SubscriptionItem = ({
   }
 
   return (
-    <ShadowBox className="flex w-full max-w-2xl flex-col gap-y-6">
+    <ShadowBox className="flex w-full flex-col gap-y-6">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>
@@ -182,10 +203,24 @@ const SubscriptionItem = ({
           <span>Status</span>
           {status}
         </div>
+        {subscription.started_at && (
+          <div className="flex flex-row items-center justify-between py-3">
+            <span>Start Date</span>
+            <span>
+              {new Date(subscription.started_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        )}
         {!subscription.ended_at && subscription.current_period_end && (
           <div className="flex flex-row items-center justify-between py-3">
             <span>
-              {subscription.cancel_at_period_end ? 'Expires' : 'Renews'}
+              {subscription.cancel_at_period_end
+                ? 'Expiry Date'
+                : 'Renewal Date'}
             </span>
             <span>
               {new Date(subscription.current_period_end).toLocaleDateString(

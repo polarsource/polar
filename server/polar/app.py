@@ -9,7 +9,7 @@ from fastapi.routing import APIRoute
 
 from polar import receivers, worker  # noqa
 from polar.api import router
-from polar.config import Environment, settings
+from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
 from polar.kit.cors import CORSConfig, CORSMatcherMiddleware, Scope
@@ -137,7 +137,7 @@ def create_app() -> FastAPI:
         trusted_hosts=environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
     )
     app.add_middleware(LogCorrelationIdMiddleware)
-    if settings.ENV == Environment.sandbox:
+    if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
 
     add_exception_handlers(app)

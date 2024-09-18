@@ -137,7 +137,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
   }
 
   const onGenerateCheckoutUrl = (price: ProductPrice) => {
-    const url = new URL(`${CONFIG.FRONTEND_BASE_URL}/api/checkout?price=${price.id}`)
+    const url = new URL(`${CONFIG.PRODUCT_LINK_BASE_URL}${price.id}`)
     if (typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(url.toString())
     }

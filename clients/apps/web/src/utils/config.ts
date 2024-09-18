@@ -28,6 +28,8 @@ let defaults = {
     'development',
   FRONTEND_BASE_URL:
     process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
+  PRODUCT_LINK_BASE_URL:
+    process.env.NEXT_PUBLIC_PRODUCT_LINK_BASE_URL || 'http://127.0.0.1:3000/api/checkout?price=',
   BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
   LOGIN_PATH: process.env.NEXT_PUBLIC_LOGIN_PATH || '/login',
   GITHUB_APP_NAMESPACE:

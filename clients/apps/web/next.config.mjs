@@ -111,6 +111,20 @@ const nextConfig = {
         ],
         permanent: false,
       },
+      ...(ENVIRONMENT === 'production'
+        ? [
+          {
+            source: '/:id*',
+            destination: 'https://polar.sh/api/checkout?price=:id*',
+            has: [
+              {
+                type: 'host',
+                value: 'buy.polar.sh',
+              },
+            ],
+            permanent: false,
+          }
+          ] : []),
       {
         source: '/:path*',
         destination: 'https://polar.sh/:path*',

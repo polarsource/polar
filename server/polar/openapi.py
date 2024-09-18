@@ -80,7 +80,18 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
     "docs_url": None if settings.is_production() else "/docs",
     "redoc_url": None if settings.is_production() else "/redoc",
     "openapi_tags": APITag.metadata(),  # type: ignore
-    "servers": [{"url": "https://api.polar.sh"}],
+    "servers": [
+        {
+            "url": "https://api.polar.sh",
+            "description": "Production environment",
+            "x-speakeasy-server-id": "production",
+        },
+        {
+            "url": "https://sandbox-api.polar.sh",
+            "description": "Sandbox environment",
+            "x-speakeasy-server-id": "sandbox",
+        },
+    ],
 }
 
 IN_DEVELOPMENT_ONLY = settings.is_development()

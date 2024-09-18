@@ -23,6 +23,7 @@ const STRIPE_COUNTRIES =
 
 let defaults = {
   ENVIRONMENT:
+    process.env.NEXT_PUBLIC_ENVIRONMENT ||
     process.env.VERCEL_ENV ||
     process.env.NEXT_PUBLIC_VERCEL_ENV ||
     'development',

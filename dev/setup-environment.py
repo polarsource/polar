@@ -20,6 +20,7 @@ import string
 import typing
 import urllib.parse
 import webbrowser
+import sys
 
 import httpx
 from authlib.jose import JsonWebKey, KeySet
@@ -30,7 +31,7 @@ from yaspin.spinners import Spinners
 ROOT_PATH = pathlib.Path(__file__).parent.parent
 IS_CODESPACES = os.getenv("CODESPACES", "false") == "true"
 SETUP_PAGE = """
-<form id="setup-form" action="https://github.com/settings/apps/new" method="post">
+<form id="setup-form" action="https://github.com/organizations/polarsource/settings/apps/new" method="post">
  Register a GitHub App Manifest: <input type="text" name="manifest" id="manifest"><br>
  <input type="submit" value="Submit">
 </form>
@@ -360,6 +361,8 @@ if __name__ == "__main__":
             code = _get_github_app_code(options.github_setup_port, manifest)
             spinner.text = "Registering the GitHub App..."
             github_app = _register_github_app(code)
+        print(github_app)
+        sys.exit(0)
         spinner.text = "Writing environment files..."
         _write_server_env_file(github_app)
         _write_apps_web_env_file(github_app)

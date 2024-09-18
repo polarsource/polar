@@ -4,6 +4,7 @@ import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
 import { useCreateOrganization, useListOrganizations } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -150,7 +151,7 @@ export default function ClientPage({
 
             {(slug || editedSlug) && (
               <p className="dark:text-polar-400 w-full text-sm text-gray-600">
-                https://polar.sh/
+                {CONFIG.FRONTEND_BASE_URL}/
                 <FormField
                   control={control}
                   name="slug"

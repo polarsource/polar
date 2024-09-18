@@ -104,7 +104,7 @@ const StatusWrapper = ({
   return (
     <div className="flex flex-row items-center gap-x-2">
       <span className={twMerge('h-2 w-2 rounded-full', color)} />
-      <span>{children}</span>
+      <span className="capitalize">{children}</span>
     </div>
   )
 }
@@ -121,10 +121,20 @@ const SubscriptionItem = ({
   const status = useMemo(() => {
     switch (subscription.status) {
       case 'active':
-        return <StatusWrapper color="bg-green-400">Active</StatusWrapper>
+        return (
+          <StatusWrapper
+            color={
+              subscription.cancel_at_period_end
+                ? 'bg-yellow-500'
+                : 'bg-green-500'
+            }
+          >
+            {subscription.cancel_at_period_end ? 'Canceled' : 'Active'}
+          </StatusWrapper>
+        )
       default:
         return (
-          <StatusWrapper color="bg-red-400 capitalize">
+          <StatusWrapper color="bg-red-400">
             {subscription.status.split('_').join(' ')}
           </StatusWrapper>
         )

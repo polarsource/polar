@@ -1,6 +1,5 @@
 'use client'
 
-import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -19,9 +18,6 @@ export const OrganizationPublicPageNav = ({
 }: OrganizationPublicPageNavProps) => {
   const routeSegment = useSelectedLayoutSegment()
   const currentTab = routeSegment ?? 'overview'
-
-  const hasLinkedExternalOrganizations =
-    useHasLinkedExternalOrganizations(organization)
 
   return (
     <Tabs value={currentTab}>

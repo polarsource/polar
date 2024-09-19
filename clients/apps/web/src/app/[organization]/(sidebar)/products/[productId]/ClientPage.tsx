@@ -32,6 +32,9 @@ export default function ClientPage({
 
   const recurringPrice = useRecurringProductPrice(product, recurringInterval)
   const oneTimePrice = product.prices.find((price) => price.type === 'one_time')
+  const isFixedPrice = product.prices.every(
+    (price) => price.amount_type === 'fixed',
+  )
 
   return (
     <div className="flex flex-col items-start justify-between gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
@@ -81,9 +84,11 @@ export default function ClientPage({
                 oneTimePrice && <ProductPriceLabel price={oneTimePrice} />
               )}
             </h1>
-            <p className="dark:text-polar-500 text-sm text-gray-400">
-              Before VAT and taxes
-            </p>
+            {isFixedPrice && (
+              <p className="dark:text-polar-500 text-sm text-gray-400">
+                Before VAT and taxes
+              </p>
+            )}
           </div>
           {product.benefits.length > 0 ? (
             <div className="flex flex-col gap-4">

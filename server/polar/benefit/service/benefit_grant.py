@@ -1,9 +1,10 @@
 from collections.abc import Sequence
-from typing import Literal, Unpack
+from typing import Any, Literal, TypeVar, Unpack, overload
 from uuid import UUID
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from polar.benefit.benefits import BenefitPreconditionError, get_benefit_service
 from polar.benefit.schemas import BenefitGrantWebhook
@@ -31,7 +32,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, sql
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import (
@@ -42,6 +43,8 @@ from polar.worker import enqueue_job
 from .benefit_grant_scope import resolve_scope, scope_to_args
 
 log: Logger = structlog.get_logger()
+
+BG = TypeVar("BG", bound=BenefitGrant)
 
 
 class BenefitGrantError(PolarError): ...
@@ -54,6 +57,58 @@ class EmptyScopeError(BenefitGrantError):
 
 
 class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
+    @overload
+    async def get(
+        self,
+        session: AsyncSession,
+        id: UUID,
+        allow_deleted: bool = False,
+        loaded: bool = False,
+        *,
+        class_: None = None,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> BenefitGrant | None: ...
+
+    @overload
+    async def get(
+        self,
+        session: AsyncSession,
+        id: UUID,
+        allow_deleted: bool = False,
+        loaded: bool = False,
+        *,
+        class_: type[BG] | None = None,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> BG | None: ...
+
+    async def get(
+        self,
+        session: AsyncSession,
+        id: UUID,
+        allow_deleted: bool = False,
+        loaded: bool = False,
+        *,
+        class_: Any = None,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> Any | None:
+        if class_ is None:
+            class_ = BenefitGrant
+
+        query = select(class_).where(class_.id == id)
+        if not allow_deleted:
+            query = query.where(class_.deleted_at.is_(None))
+
+        if loaded:
+            query = query.options(
+                joinedload(class_.benefit),
+            )
+
+        if options is not None:
+            query = query.options(*options)
+
+        res = await session.execute(query)
+        return res.unique().scalar_one_or_none()
+
     async def list(
         self,
         session: AsyncSession,
@@ -142,7 +197,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
-        data = BenefitGrantWebhook.model_validate(grant)
+        loaded = await self.get(session, grant.id, loaded=True)
+        data = BenefitGrantWebhook.model_validate(loaded)
         data.previous_properties = previous_properties
         await webhook_service.send_payload(
             session,
@@ -210,7 +266,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
-        data = BenefitGrantWebhook.model_validate(grant)
+        loaded = await self.get(session, grant.id, loaded=True)
+        data = BenefitGrantWebhook.model_validate(loaded)
         data.previous_properties = previous_properties
         await webhook_service.send_payload(
             session,

@@ -30,6 +30,8 @@ from polar.models.benefit_grant import (
     BenefitGrantGitHubRepositoryProperties,
     BenefitGrantLicenseKeysProperties,
 )
+
+# BenefitGrantLicenseKeysProperties,
 from polar.organization.schemas import OrganizationID
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
@@ -585,7 +587,8 @@ class BenefitGrant(TimestampedSchema):
     )
 
 
-class BenefitGrantWebhook(BenefitGrant): ...
+class BenefitGrantWebhook(BenefitGrant):
+    previous_properties: BenefitGrantProperties | None = None
 
 
 # BenefitSubscriber

@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy import select
 
 from polar.benefit.benefits import BenefitPreconditionError, get_benefit_service
+from polar.benefit.schemas import BenefitGrantWebhook
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
@@ -33,6 +34,9 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
+from polar.webhook.webhooks import (
+    WebhookPayloadTypeAdapter,
+)
 from polar.worker import enqueue_job
 
 from .benefit_grant_scope import resolve_scope, scope_to_args
@@ -106,6 +110,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         elif grant.is_granted:
             return grant
 
+        previous_properties = grant.properties
         benefit_service = get_benefit_service(benefit.type, session)
         try:
             properties = await benefit_service.grant(
@@ -137,10 +142,17 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
-        await webhook_service.send(
+        data = BenefitGrantWebhook.model_validate(grant)
+        data.previous_properties = previous_properties
+        await webhook_service.send_payload(
             session,
             target=benefit.organization,
-            we=(WebhookEventType.benefit_granted, grant),
+            payload=WebhookPayloadTypeAdapter.validate_python(
+                dict(
+                    type=WebhookEventType.benefit_granted,
+                    data=data,
+                )
+            ),
         )
         return grant
 
@@ -162,6 +174,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             session.add(grant)
         elif grant.is_revoked:
             return grant
+
+        previous_properties = grant.properties
 
         # Check if the user has other grants (from other purchases) for this benefit
         # If yes, don't call the revoke logic, just mark the grant as revoked
@@ -196,10 +210,17 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
-        await webhook_service.send(
+        data = BenefitGrantWebhook.model_validate(grant)
+        data.previous_properties = previous_properties
+        await webhook_service.send_payload(
             session,
             target=benefit.organization,
-            we=(WebhookEventType.benefit_revoked, grant),
+            payload=WebhookPayloadTypeAdapter.validate_python(
+                dict(
+                    type=WebhookEventType.benefit_revoked,
+                    data=data,
+                )
+            ),
         )
         return grant
 

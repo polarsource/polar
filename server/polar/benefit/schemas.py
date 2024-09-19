@@ -539,14 +539,14 @@ class BenefitGrantAdsProperties(Schema):
 
 
 BenefitGrantProperties = Annotated[
-    BenefitGrantCustomProperties
-    | BenefitGrantArticlesProperties
-    | BenefitGrantAdsProperties
-    | BenefitGrantDiscordProperties
+    BenefitGrantDiscordProperties
     | BenefitGrantGitHubRepositoryProperties
     | BenefitGrantDownloadablesProperties
-    | BenefitGrantLicenseKeysProperties,
-    Field(union_mode="left_to_right", description="The properties of the grant."),
+    | BenefitGrantLicenseKeysProperties
+    | BenefitGrantAdsProperties
+    | BenefitGrantCustomProperties
+    | BenefitGrantArticlesProperties,
+    Field(description="The properties of the grant."),
 ]
 
 

@@ -122,7 +122,7 @@ class BenefitGrant(RecordModel):
     revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    properties: Mapped[dict[str, Any]] = mapped_column(
+    properties: Mapped[BenefitGrantProperties] = mapped_column(
         "properties", JSONB, nullable=False, default=dict
     )
 

@@ -12,8 +12,7 @@ from polar.checkout.schemas import Checkout, CheckoutCreate
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.models import Product, Subscription, User
-from polar.models.product import SubscriptionTierType
+from polar.models import Product, User
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
@@ -88,11 +87,7 @@ class CheckoutService:
         }
 
         if price.is_recurring:
-            free_subscription_upgrade = await self._check_existing_subscriptions(
-                session, auth_subject, product
-            )
-            if free_subscription_upgrade is not None:
-                metadata["subscription_id"] = str(free_subscription_upgrade.id)
+            await self._check_existing_subscriptions(session, auth_subject, product)
 
         customer_options: dict[str, str] = {}
         if is_direct_user(auth_subject):
@@ -172,10 +167,9 @@ class CheckoutService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Anonymous],
         product: Product,
-    ) -> Subscription | None:
+    ) -> None:
         """
-        Check that the user doesn't already have a subscription, unless it's on the
-        free tier.
+        Check that the user doesn't already have a subscription.
         """
         if is_direct_user(auth_subject):
             existing_subscriptions = (
@@ -185,24 +179,11 @@ class CheckoutService:
                     organization_id=product.organization_id,
                 )
             )
-            # Trying to upgrade from a Free subscription, set it in metadata for
-            # reconciliation when receiving Stripe Webhook
             if len(existing_subscriptions) > 0:
-                try:
-                    free_subscription_upgrade = next(
-                        subscription
-                        for subscription in existing_subscriptions
-                        if subscription.product.type == SubscriptionTierType.free
-                    )
-                except StopIteration as e:
-                    # Prevent authenticated user to subscribe to another plan
-                    # from the same organization
-                    raise AlreadySubscribed(
-                        user_id=auth_subject.subject.id,
-                        organization_id=product.organization_id,
-                    ) from e
-                else:
-                    return free_subscription_upgrade
+                raise AlreadySubscribed(
+                    user_id=auth_subject.subject.id,
+                    organization_id=product.organization_id,
+                )
         return None
 
 

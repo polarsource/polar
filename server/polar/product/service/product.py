@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
-from sqlalchemy import Select, and_, case, or_, select, update
+from sqlalchemy import Select, and_, or_, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -32,7 +32,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.product import SubscriptionTierType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
@@ -43,19 +42,11 @@ from polar.worker import enqueue_job
 from ..schemas import (
     ExistingProductPrice,
     ProductCreate,
-    ProductRecurringCreate,
     ProductUpdate,
 )
 
 
 class ProductError(PolarError): ...
-
-
-class FreeTierIsNotArchivable(ProductError):
-    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
-        self.subscription_tier_id = subscription_tier_id
-        message = "The Free Subscription Tier is not archivable"
-        super().__init__(message, 403)
 
 
 T = TypeVar("T", bound=tuple[Any])
@@ -71,7 +62,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
-        type: Sequence[SubscriptionTierType] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Product], int]:
         statement = self._get_readable_product_statement(auth_subject).join(
@@ -101,9 +91,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         if is_recurring is not None:
             statement = statement.where(Product.is_recurring.is_(is_recurring))
 
-        if type is not None:
-            statement = statement.where(Product.type.in_(type))
-
         if benefit_id is not None:
             statement = (
                 statement.join(Product.product_benefits)
@@ -112,11 +99,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             )
 
         statement = statement.order_by(
-            case(
-                (Product.type == SubscriptionTierType.free, 1),
-                (Product.type == SubscriptionTierType.individual, 2),
-                (Product.type == SubscriptionTierType.business, 3),
-            ),
             ProductPriceFixed.price_amount.asc(),
             Product.created_at,
         )
@@ -168,9 +150,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         *,
         organization: Organization,
     ) -> Product | None:
-        return await self.get_by(
-            session, type=SubscriptionTierType.free, organization_id=organization.id
-        )
+        return None
 
     async def user_create(
         self,
@@ -186,14 +166,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         )
         if not await authz.can(subject, AccessType.write, organization):
             raise NotPermitted()
-
-        if (
-            isinstance(create_schema, ProductRecurringCreate)
-            and create_schema.is_highlighted
-        ):
-            await self._disable_other_highlights(
-                session, type=create_schema.type, organization_id=organization.id
-            )
 
         product = Product(
             organization=organization,
@@ -268,21 +240,20 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         if not await authz.can(subject, AccessType.write, product):
             raise NotPermitted()
 
-        if product.type != SubscriptionTierType.free:
-            if update_schema.prices is not None and len(update_schema.prices) < 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "too_short",
-                            "loc": (
-                                "body",
-                                "prices",
-                            ),
-                            "msg": "At least one price is required.",
-                            "input": update_schema.prices,
-                        }
-                    ]
-                )
+        if update_schema.prices is not None and len(update_schema.prices) < 1:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "too_short",
+                        "loc": (
+                            "body",
+                            "prices",
+                        ),
+                        "msg": "At least one price is required.",
+                        "input": update_schema.prices,
+                    }
+                ]
+            )
 
         if update_schema.medias is not None:
             nested = await session.begin_nested()
@@ -326,10 +297,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
-        if (
-            product.type != SubscriptionTierType.free
-            and update_schema.prices is not None
-        ):
+        if update_schema.prices is not None:
             for price_update in update_schema.prices:
                 if isinstance(price_update, ExistingProductPrice):
                     existing_price = product.get_price(price_update.id)
@@ -364,13 +332,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     deleted_price.is_archived = True
                     session.add(deleted_price)
 
-        if update_schema.is_highlighted and product.type is not None:
-            await self._disable_other_highlights(
-                session,
-                type=product.type,
-                organization_id=product.organization_id,
-            )
-
         if update_schema.is_archived:
             product = await self._archive(product)
 
@@ -386,48 +347,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         await self._after_product_updated(session, product)
 
         return product
-
-    async def create_free_tier(
-        self,
-        session: AsyncSession,
-        benefits: List[Benefit],  # noqa: UP006
-        organization: Organization,
-    ) -> Product:
-        free_subscription_tier = await self.get_free(session, organization=organization)
-
-        # create if does not exist
-        if free_subscription_tier is None:
-            free_subscription_tier = Product(
-                type=SubscriptionTierType.free,
-                name="Free",
-                organization_id=organization.id,
-                prices=[],
-            )
-
-        existing_benefits = [
-            str(b.benefit_id) for b in free_subscription_tier.product_benefits
-        ]
-
-        for index, benefit in enumerate(benefits):
-            # this benefit is already attached to this tier
-            if str(benefit.id) in existing_benefits:
-                continue
-
-            free_subscription_tier.product_benefits.append(
-                ProductBenefit(benefit=benefit, order=index)
-            )
-
-        session.add(free_subscription_tier)
-        await session.flush()
-
-        enqueue_job(
-            "subscription.subscription.update_product_benefits_grants",
-            free_subscription_tier.id,
-        )
-
-        await self._after_product_created(session, free_subscription_tier)
-
-        return free_subscription_tier
 
     async def update_benefits(
         self,
@@ -521,9 +440,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         return product
 
     async def _archive(self, product: Product) -> Product:
-        if product.type == SubscriptionTierType.free:
-            raise FreeTierIsNotArchivable(product.id)
-
         if product.stripe_product_id is not None:
             stripe_service.archive_product(product.stripe_product_id)
 
@@ -582,24 +498,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             )
 
         return statement
-
-    async def _disable_other_highlights(
-        self,
-        session: AsyncSession,
-        *,
-        type: SubscriptionTierType,
-        organization_id: uuid.UUID,
-    ) -> None:
-        statement = (
-            update(Product)
-            .where(
-                Product.type == type,
-                Product.organization_id == organization_id,
-            )
-            .values(is_highlighted=False)
-        )
-
-        await session.execute(statement)
 
     async def _after_product_created(
         self, session: AsyncSession, product: Product

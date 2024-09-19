@@ -1,4 +1,3 @@
-from enum import StrEnum
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
@@ -7,7 +6,6 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
-    Index,
     String,
     Text,
     Uuid,
@@ -28,28 +26,12 @@ if TYPE_CHECKING:
     from polar.models.file import ProductMediaFile
 
 
-class SubscriptionTierType(StrEnum):
-    free = "free"
-    individual = "individual"
-    business = "business"
-
-
 class Product(RecordModel):
     __tablename__ = "products"
-
-    __table_args__ = (Index("idx_organization_id_type", "organization_id", "type"),)
 
     name: Mapped[str] = mapped_column(CIText(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
-    # Legacy fields for the old subscription tiers
-    type: Mapped[SubscriptionTierType | None] = mapped_column(
-        String, nullable=True, index=True
-    )
-    is_highlighted: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True, index=True
-    )
 
     stripe_product_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True

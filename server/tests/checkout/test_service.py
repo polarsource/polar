@@ -366,64 +366,6 @@ class TestCreate:
             },
         )
 
-    @pytest.mark.auth
-    async def test_valid_free_subscription_upgrade(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        subscription_tier_free: Product,
-        stripe_service_mock: MagicMock,
-        user: User,
-    ) -> None:
-        free_subscription = await create_active_subscription(
-            save_fixture,
-            product=subscription_tier_free,
-            user=user,
-        )
-
-        user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
-
-        create_checkout_session_mock: MagicMock = (
-            stripe_service_mock.create_checkout_session
-        )
-        create_checkout_session_mock.return_value = SimpleNamespace(
-            id="SESSION_ID",
-            url="STRIPE_URL",
-            customer_email=None,
-            customer_details={"name": "John", "email": "backer@example.com"},
-            metadata={},
-        )
-
-        price = product.prices[0]
-        create_schema = CheckoutCreate(
-            product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
-        )
-        await checkout_service.create(session, create_schema, auth_subject)
-
-        create_checkout_session_mock.assert_called_once_with(
-            price.stripe_price_id,
-            str(SUCCESS_URL),
-            is_subscription=True,
-            is_tax_applicable=False,
-            customer="STRIPE_CUSTOMER_ID",
-            metadata={
-                "type": ProductType.product,
-                "product_id": str(product.id),
-                "product_price_id": str(price.id),
-                "subscription_id": str(free_subscription.id),
-                "user_id": str(user.id),
-            },
-            subscription_metadata={
-                "type": ProductType.product,
-                "product_id": str(product.id),
-                "product_price_id": str(price.id),
-                "subscription_id": str(free_subscription.id),
-                "user_id": str(user.id),
-            },
-        )
-
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

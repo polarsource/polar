@@ -122,12 +122,12 @@ class TestCreateArbitrarySubscription:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier_free: Product,
+        product: Product,
         user: User,
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier_free,
+            product=product,
             user=user,
             stripe_subscription_id=None,
         )
@@ -139,33 +139,8 @@ class TestCreateArbitrarySubscription:
             await subscription_service.create_arbitrary_subscription(
                 session,
                 user=user,
-                product=subscription_tier_free,
+                product=product,
             )
-
-    async def test_valid_free_tier(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        # then
-        session.expunge_all()
-
-        subscription = await subscription_service.create_arbitrary_subscription(
-            session,
-            user=user,
-            product=subscription_tier_free,
-        )
-
-        assert subscription.product_id == subscription_tier_free.id
-        assert subscription.user_id == user.id
-
-        enqueue_benefits_grants_mock.assert_called_once()
 
     async def test_valid_fixed_price(
         self,
@@ -332,51 +307,6 @@ class TestCreateSubscriptionFromStripe:
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.started_at is not None
-
-        # load user
-        user_loaded = await user_service.get(session, user.id)
-        assert user_loaded
-
-        assert user_loaded.stripe_customer_id == stripe_subscription.customer
-
-    async def test_subscription_upgrade(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        subscription_tier_free: Product,
-        product: Product,
-        user: User,
-    ) -> None:
-        stripe_customer = construct_stripe_customer()
-        get_customer_mock = stripe_service_mock.get_customer
-        get_customer_mock.return_value = stripe_customer
-
-        existing_subscription = await create_active_subscription(
-            save_fixture,
-            product=subscription_tier_free,
-            user=user,
-        )
-
-        assert product.stripe_product_id is not None
-        stripe_subscription = construct_stripe_subscription(
-            user=user,
-            price_id=product.prices[0].stripe_price_id,
-            status=SubscriptionStatus.active,
-            metadata={"subscription_id": str(existing_subscription.id)},
-        )
-
-        # then
-        session.expunge_all()
-
-        subscription = await subscription_service.create_subscription_from_stripe(
-            session, stripe_subscription=stripe_subscription
-        )
-
-        assert subscription.status == SubscriptionStatus.active
-        assert subscription.id == existing_subscription.id
-        assert subscription.product_id == product.id
-        assert subscription.started_at == existing_subscription.started_at
 
         # load user
         user_loaded = await user_service.get(session, user.id)

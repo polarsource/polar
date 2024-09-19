@@ -18,7 +18,6 @@ from polar.kit.pagination import ListResource, PaginationParams, PaginationParam
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
-from polar.models.product import SubscriptionTierType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
@@ -58,12 +57,6 @@ async def list(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
-    type: MultipleQueryFilter[SubscriptionTierType] | None = Query(
-        None,
-        title="SubscriptionTierType Filter",
-        description="Filter by subscription tier type.",
-        deprecated=True,
-    ),
     active: bool | None = Query(
         None, description="Filter by active or inactive subscription."
     ),
@@ -73,7 +66,6 @@ async def list(
     results, count = await subscription_service.list(
         session,
         auth_subject,
-        type=type,
         organization_id=organization_id,
         product_id=product_id,
         active=active,
@@ -129,17 +121,16 @@ async def create(
             ]
         )
 
-    if product.type != SubscriptionTierType.free:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("body", "product_id"),
-                    "msg": "Product is not the free tier.",
-                    "type": "value_error",
-                    "input": subscription_create.product_id,
-                }
-            ]
-        )
+    raise PolarRequestValidationError(
+        [
+            {
+                "loc": ("body", "product_id"),
+                "msg": "This is disabled at the moment.",
+                "type": "value_error",
+                "input": subscription_create.product_id,
+            }
+        ]
+    )
 
     user = await user_service.get_by_email_or_signup(
         session, subscription_create.email, signup_type=UserSignupType.imported

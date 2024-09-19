@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.auth.models import Anonymous, AuthSubject
+from polar.auth.models import AuthSubject
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
@@ -13,14 +13,11 @@ from polar.models import Organization, Product, Subscription, User
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.subscription.service import AlreadySubscribed
 from polar.user.schemas.subscription import (
-    UserFreeSubscriptionCreate,
     UserSubscriptionUpdate,
 )
 from polar.user.service.subscription import (
     AlreadyCanceledSubscription,
-    FreeSubscriptionUpgrade,
 )
 from polar.user.service.subscription import (
     user_subscription as user_subscription_service,
@@ -53,7 +50,7 @@ class TestList:
         user: User,
         user_second: User,
         product: Product,
-        subscription_tier_free: Product,
+        product_second: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
@@ -64,7 +61,7 @@ class TestList:
         )
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier_free,
+            product=product_second,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -89,164 +86,7 @@ class TestList:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-class TestCreateFreeSubscription:
-    @pytest.mark.auth
-    async def test_not_existing_product(
-        self, auth_subject: AuthSubject[User], session: AsyncSession
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await user_subscription_service.create_free_subscription(
-                session,
-                subscription_create=UserFreeSubscriptionCreate(
-                    product_id=uuid.uuid4(), customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_not_free_tier(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        product: Product,
-        user: User,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await user_subscription_service.create_free_subscription(
-                session,
-                subscription_create=UserFreeSubscriptionCreate(
-                    product_id=product.id, customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    async def test_already_subscribed_email(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        await create_active_subscription(
-            save_fixture,
-            product=subscription_tier_free,
-            user=user,
-            stripe_subscription_id=None,
-        )
-
-        with pytest.raises(AlreadySubscribed):
-            await user_subscription_service.create_free_subscription(
-                session,
-                subscription_create=UserFreeSubscriptionCreate(
-                    product_id=subscription_tier_free.id,
-                    customer_email=user.email,
-                ),
-                auth_subject=auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_already_subscribed_user(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        await create_active_subscription(
-            save_fixture,
-            product=subscription_tier_free,
-            user=user,
-            stripe_subscription_id=None,
-        )
-
-        with pytest.raises(AlreadySubscribed):
-            await user_subscription_service.create_free_subscription(
-                session,
-                subscription_create=UserFreeSubscriptionCreate(
-                    product_id=subscription_tier_free.id, customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    async def test_new_user_no_customer_email(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        session: AsyncSession,
-        subscription_tier_free: Product,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await user_subscription_service.create_free_subscription(
-                session,
-                subscription_create=UserFreeSubscriptionCreate(
-                    product_id=subscription_tier_free.id, customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    async def test_new_user(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription_tier_free: Product,
-    ) -> None:
-        subscription = await user_subscription_service.create_free_subscription(
-            session,
-            subscription_create=UserFreeSubscriptionCreate(
-                product_id=subscription_tier_free.id,
-                customer_email="backer@example.com",
-            ),
-            auth_subject=auth_subject,
-        )
-
-        assert subscription.product == subscription_tier_free
-        assert subscription.user.email == "backer@example.com"
-
-    @pytest.mark.auth
-    async def test_authenticated_user(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        subscription = await user_subscription_service.create_free_subscription(
-            session,
-            subscription_create=UserFreeSubscriptionCreate(
-                product_id=subscription_tier_free.id, customer_email=None
-            ),
-            auth_subject=auth_subject,
-        )
-
-        assert subscription.product == subscription_tier_free
-        assert subscription.user == user
-
-
-@pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
-    async def test_free_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        subscription = await create_subscription(
-            save_fixture, product=subscription_tier_free, user=user
-        )
-
-        with pytest.raises(FreeSubscriptionUpgrade):
-            await user_subscription_service.update(
-                session,
-                subscription=subscription,
-                subscription_update=UserSubscriptionUpdate(
-                    product_price_id=uuid.uuid4()
-                ),
-            )
-
     async def test_not_existing_product(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:

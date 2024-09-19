@@ -9,10 +9,6 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import Benefit, Organization
 from polar.models.benefit import BenefitType
 from polar.organization.tasks import OrganizationDoesNotExist, organization_created
-from polar.product.service.product import ProductService
-from polar.product.service.product import (
-    product as product_service,
-)
 from polar.worker import JobContext, PolarWorkerContext
 
 
@@ -51,16 +47,9 @@ class TestOrganizationCreated:
             spec=BenefitService.get_or_create_articles_benefits,
         )
         get_or_create_articles_benefits_mock.return_value = (benefit, benefit)
-        create_free_mock = mocker.patch.object(
-            product_service,
-            "create_free_tier",
-            spec=ProductService.create_free_tier,
-        )
-
         # then
         session.expunge_all()
 
         await organization_created(job_context, organization.id, polar_worker_context)
 
         get_or_create_articles_benefits_mock.assert_called_once()
-        create_free_mock.assert_called_once()

@@ -17,7 +17,6 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.product import SubscriptionTierType
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceCustom,
@@ -230,11 +229,6 @@ class ProductRecurringCreate(ProductCreateBase):
     prices: ProductPriceRecurringCreateList = Field(
         ..., description="List of available prices for this product."
     )
-    type: Literal[
-        SubscriptionTierType.individual,
-        SubscriptionTierType.business,
-    ] = Field(deprecated=True)
-    is_highlighted: bool = Field(default=False, deprecated=True)
 
 
 class ProductOneTimeCreate(ProductCreateBase):
@@ -276,7 +270,6 @@ class ProductUpdate(Schema):
 
     name: ProductName | None = None
     description: ProductDescription = None
-    is_highlighted: bool | None = Field(default=None, deprecated=True)
     is_archived: bool | None = Field(
         default=None,
         description=(
@@ -426,9 +419,6 @@ class ProductBase(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(
         description="The ID of the organization owning the product."
     )
-
-    type: SubscriptionTierType | None = Field(deprecated=True)
-    is_highlighted: bool | None = Field(deprecated=True)
 
 
 class Product(ProductBase):

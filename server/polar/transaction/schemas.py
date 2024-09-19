@@ -1,9 +1,8 @@
-from pydantic import UUID4, Field
+from pydantic import UUID4
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
-from polar.models.product import SubscriptionTierType
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 from polar.product.schemas import ProductPrice
 
@@ -70,7 +69,6 @@ class TransactionProduct(TimestampedSchema):
     name: str
     organization_id: UUID4 | None
     organization: TransactionOrganization | None
-    type: SubscriptionTierType | None = Field(deprecated=True)
 
 
 TransactionProductPrice = ProductPrice

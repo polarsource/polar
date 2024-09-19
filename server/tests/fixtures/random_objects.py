@@ -35,7 +35,6 @@ from polar.models.benefit_grant import BenefitGrant, BenefitGrantScope
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
-from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceType
 from polar.models.pull_request import PullRequest
 from polar.models.subscription import SubscriptionStatus
@@ -520,10 +519,8 @@ async def open_collective_account(save_fixture: SaveFixture, user: User) -> Acco
 async def create_product(
     save_fixture: SaveFixture,
     *,
-    type: SubscriptionTierType = SubscriptionTierType.individual,
     organization: Organization,
     name: str = "Product",
-    is_highlighted: bool = False,
     is_archived: bool = False,
     prices: Sequence[
         tuple[int, ProductPriceType, SubscriptionRecurringInterval | None]
@@ -537,10 +534,8 @@ async def create_product(
     ] = [(1000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)],
 ) -> Product:
     product = Product(
-        type=type,
         name=name,
         description="Description",
-        is_highlighted=is_highlighted,
         is_archived=is_archived,
         organization_id=organization.id,
         stripe_product_id=rstr("PRODUCT_ID"),
@@ -762,18 +757,6 @@ async def create_active_subscription(
 
 
 @pytest_asyncio.fixture
-async def subscription_tier_free(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_product(
-        save_fixture,
-        type=SubscriptionTierType.free,
-        organization=organization,
-        prices=[],
-    )
-
-
-@pytest_asyncio.fixture
 async def product(save_fixture: SaveFixture, organization: Organization) -> Product:
     return await create_product(save_fixture, organization=organization)
 
@@ -835,17 +818,11 @@ async def product_organization_second(
 
 @pytest_asyncio.fixture
 async def products(
-    subscription_tier_free: Product,
     product: Product,
     product_second: Product,
     product_organization_second: Product,
 ) -> list[Product]:
-    return [
-        subscription_tier_free,
-        product,
-        product_second,
-        product_organization_second,
-    ]
+    return [product, product_second, product_organization_second]
 
 
 @pytest_asyncio.fixture

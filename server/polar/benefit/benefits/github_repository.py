@@ -18,6 +18,7 @@ from polar.models.benefit import (
     BenefitGitHubRepository,
     BenefitGitHubRepositoryProperties,
 )
+from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
 from polar.models.user import OAuthPlatform
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
@@ -70,17 +71,21 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 
 
 class BenefitGitHubRepositoryService(
-    BenefitServiceProtocol[BenefitGitHubRepository, BenefitGitHubRepositoryProperties]
+    BenefitServiceProtocol[
+        BenefitGitHubRepository,
+        BenefitGitHubRepositoryProperties,
+        BenefitGrantGitHubRepositoryProperties,
+    ]
 ):
     async def grant(
         self,
         benefit: BenefitGitHubRepository,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
         update: bool = False,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
             user_id=str(user.id),
@@ -120,13 +125,13 @@ class BenefitGitHubRepositoryService(
             )
             # The repository changed, or the invitation is still pending: revoke
             if (
-                repository_owner != grant_properties["repository_owner"]
-                or repository_name != grant_properties["repository_name"]
+                repository_owner != grant_properties.get("repository_owner")
+                or repository_name != grant_properties.get("repository_name")
                 or invitation is not None
             ):
                 await self.revoke(benefit, user, grant_properties, attempt=attempt)
             # The permission changed, and the invitation is already accepted
-            elif permission != grant_properties["permission"]:
+            elif permission != grant_properties.get("permission"):
                 # The permission change will be handled by the add_collaborator call
                 pass
 
@@ -155,10 +160,10 @@ class BenefitGitHubRepositoryService(
         self,
         benefit: BenefitGitHubRepository,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
             user_id=str(user.id),

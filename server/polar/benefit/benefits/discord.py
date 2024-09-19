@@ -11,6 +11,7 @@ from polar.integrations.discord.service import discord_user as discord_user_serv
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
+from polar.models.benefit_grant import BenefitGrantDiscordProperties
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
 )
@@ -62,17 +63,19 @@ https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
 
 
 class BenefitDiscordService(
-    BenefitServiceProtocol[BenefitDiscord, BenefitDiscordProperties]
+    BenefitServiceProtocol[
+        BenefitDiscord, BenefitDiscordProperties, BenefitGrantDiscordProperties
+    ]
 ):
     async def grant(
         self,
         benefit: BenefitDiscord,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantDiscordProperties,
         *,
         update: bool = False,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
             user_id=str(user.id),
@@ -85,8 +88,8 @@ class BenefitDiscordService(
         # If we already granted this benefit, make sure we revoke the previous config
         if update and grant_properties:
             bound_logger.debug("Grant benefit update")
-            previous_guild_id = grant_properties["guild_id"]
-            previous_role_id = grant_properties["role_id"]
+            previous_guild_id = grant_properties.get("guild_id")
+            previous_role_id = grant_properties.get("role_id")
             if previous_guild_id != guild_id or previous_role_id != role_id:
                 bound_logger.debug(
                     "Revoke before granting because guild or role have changed"
@@ -131,18 +134,21 @@ class BenefitDiscordService(
         self,
         benefit: BenefitDiscord,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantDiscordProperties,
         *,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
             user_id=str(user.id),
         )
 
-        guild_id = grant_properties["guild_id"]
-        role_id = grant_properties["role_id"]
-        account_id = grant_properties["account_id"]
+        guild_id = grant_properties.get("guild_id")
+        role_id = grant_properties.get("role_id")
+        account_id = grant_properties.get("account_id")
+
+        if not (guild_id and role_id and account_id):
+            return {}
 
         try:
             await discord_bot_service.remove_member_role(guild_id, role_id, account_id)

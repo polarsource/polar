@@ -70,9 +70,10 @@ class BenefitPreconditionError(BenefitServiceError):
 
 B = TypeVar("B", bound=Benefit, contravariant=True)
 BP = TypeVar("BP", bound=BenefitProperties)
+BGP = TypeVar("BGP", bound=BenefitProperties)
 
 
-class BenefitServiceProtocol(Protocol[B, BP]):
+class BenefitServiceProtocol(Protocol[B, BP, BGP]):
     """
     Protocol that should be implemented by each benefit type service.
 
@@ -88,11 +89,11 @@ class BenefitServiceProtocol(Protocol[B, BP]):
         self,
         benefit: B,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BGP,
         *,
         update: bool = False,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BGP:
         """
         Executes the logic to grant a benefit to a backer.
 
@@ -124,10 +125,10 @@ class BenefitServiceProtocol(Protocol[B, BP]):
         self,
         benefit: B,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BGP,
         *,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BGP:
         """
         Executes the logic to revoke a benefit from a backer.
 

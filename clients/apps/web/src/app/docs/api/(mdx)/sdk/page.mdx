@@ -15,25 +15,36 @@ npm add @polar-sh/sdk
 ```
 
 ```ts
-import { Polar } from "@polar-sh/sdk";
+import { Polar } from '@polar-sh/sdk'
 
 const polar = new Polar({
-    accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
-});
+  accessToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
+})
 
 async function run() {
-    const result = await polar.users.benefits.list({});
+  const result = await polar.users.benefits.list({})
 
-    for await (const page of result) {
-        // Handle the page
-        console.log(page);
-    }
+  for await (const page of result) {
+    // Handle the page
+    console.log(page)
+  }
 }
 
-run();
+run()
 ```
 
 [<p className="text-xl text-center">Read more</p>](https://github.com/polarsource/polar-js)
+
+### Sandbox environment
+
+You can configure the SDK so it hits the [sandbox environment](/docs/sandbox) instead of the production one. You just need to add the `server` property to the configuration object:
+
+```ts
+const polar = new Polar({
+  server: 'sandbox',
+  accessToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
+})
+```
 
 ## Python
 
@@ -68,3 +79,14 @@ if res is not None:
 ```
 
 [<p className="text-xl text-center">Read more</p>](https://github.com/polarsource/polar-python)
+
+### Sandbox environment
+
+You can configure the SDK so it hits the [sandbox environment](/docs/sandbox) instead of the production one. You just need to add the `server` argument when instantiating the client:
+
+```py
+s = Polar(
+    server="sandbox",
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+)
+```

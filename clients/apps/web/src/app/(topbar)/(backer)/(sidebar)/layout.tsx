@@ -20,7 +20,7 @@ export default function Layout({ children }: PropsWithChildren) {
     (products?.data?.items.filter((p) => p.type !== 'free').length ?? 0) < 1
 
   return (
-    <div className="flex h-full flex-col gap-12 md:flex-row">
+    <div className="flex h-full flex-col gap-24 md:flex-row">
       <div className="flex h-full w-full flex-shrink-0 flex-col gap-y-6 self-stretch md:sticky md:top-[3rem] md:max-w-xs">
         <PurchaseSidebar />
         {shouldShowMaintainerUpsell ? (
@@ -29,7 +29,7 @@ export default function Layout({ children }: PropsWithChildren) {
           <SetupProductsUpsell />
         ) : null}
       </div>
-      {children}
+      <div className="flex w-full flex-col">{children}</div>
     </div>
   )
 }

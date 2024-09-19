@@ -10,7 +10,6 @@ import { ImageOverlay } from '../Img/ImageOverlay'
 import Paywall from '../Paywall/Paywall'
 import BrowserPoll from '../Poll/BrowserPoll'
 import Poll from '../Poll/Poll'
-import SubscribeNow from '../SubscribeNow/SubscribeNow'
 import {
   RenderArticle,
   firstChild,
@@ -27,7 +26,7 @@ export const opts = {
     // browser overrides
     poll: (args: any) => <Poll {...args} renderer={BrowserPoll} />,
     Paywall: (args: any) => <Paywall {...args} />,
-    SubscribeNow: (args: any) => <SubscribeNow {...args} />,
+    SubscribeNow: () => null,
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
     img: (args: any) => <ImageOverlay {...args} />,

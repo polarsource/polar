@@ -1,6 +1,5 @@
 'use client'
 
-import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import CheckoutButton from '@/components/Products/CheckoutButton'
 import { ProductCard } from '@/components/Products/ProductCard'
@@ -38,7 +37,7 @@ export const Storefront = ({
   )
 
   const subscriptionProducts = useMemo(
-    () => products.filter(hasRecurringInterval(recurringInterval, true)),
+    () => products.filter(hasRecurringInterval(recurringInterval)),
     [products, recurringInterval],
   )
   const oneTimeProducts = useMemo(
@@ -76,23 +75,17 @@ export const Storefront = ({
                       subscriptionTier={tier}
                       recurringInterval={recurringInterval}
                     >
-                      {shouldRenderSubscribeButton &&
-                        (tier.type === 'free' ? (
-                          <FreeTierSubscribe
-                            product={tier}
-                            organization={organization}
-                          />
-                        ) : (
-                          <CheckoutButton
-                            organization={organization}
-                            recurringInterval={recurringInterval}
-                            product={tier}
-                            checkoutPath="/api/checkout"
-                            variant="secondary"
-                          >
-                            Subscribe
-                          </CheckoutButton>
-                        ))}
+                      {shouldRenderSubscribeButton && (
+                        <CheckoutButton
+                          organization={organization}
+                          recurringInterval={recurringInterval}
+                          product={tier}
+                          checkoutPath="/api/checkout"
+                          variant="secondary"
+                        >
+                          Subscribe
+                        </CheckoutButton>
+                      )}
                     </SubscriptionTierCard>
                   ))}
                 </div>

@@ -62,7 +62,6 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
     cancelSubscription.isSuccess ||
     subscription.ended_at ||
     subscription.cancel_at_period_end
-  const isFreeTier = subscription.product.type === 'free'
   const [showCancelModal, setShowCancelModal] = useState(false)
 
   return (
@@ -194,9 +193,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                 hide={() => setShowCancelModal(false)}
                 title={`Unsubscribe from ${subscription.product.name}?`}
                 description={
-                  isFreeTier
-                    ? `You won't have access to your benefits anymore.`
-                    : `At the end of your billing period, you won't have access to your benefits anymore.`
+                  "At the end of your billing period, you won't have access to your benefits anymore."
                 }
                 destructiveText="Unsubscribe"
                 onConfirm={() => cancelSubscription.mutateAsync()}

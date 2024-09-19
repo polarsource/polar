@@ -1,18 +1,13 @@
 'use client'
 
 import {
-  useProductAudience,
   useRecurringBillingLabel,
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
-import {
-  Product,
-  SubscriptionRecurringInterval,
-  SubscriptionTierType,
-} from '@polar-sh/sdk'
+import { Product, SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import {
   Card,
@@ -26,10 +21,9 @@ import { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import { markdownOpts } from '../Feed/Markdown/markdown'
-import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 
 export interface SubscriptionTierCardProps {
-  subscriptionTier: Partial<Product> & { type: SubscriptionTierType }
+  subscriptionTier: Partial<Product>
   children?: React.ReactNode
   className?: string
   variant?: 'default' | 'small'
@@ -47,7 +41,6 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  const audience = useProductAudience(subscriptionTier.type)
   const price = useRecurringProductPrice(subscriptionTier, recurringInterval)
   const recurringBillingLabel = useRecurringBillingLabel(
     price ? price.recurring_interval : null,
@@ -99,10 +92,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     >
       <CardHeader className="grow gap-y-6 p-0">
         <div className="flex flex-col gap-y-4">
-          <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-xs text-gray-500">
-              {audience}
-            </span>
+          <div className="flex flex-row items-center justify-end">
             {draggable && (
               <span
                 ref={draggable.setDraggableNodeRef}
@@ -126,10 +116,6 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             >
               {subscriptionTier.name}
             </h3>
-            <SubscriptionGroupIcon
-              className="h-8! w-8! ml-2 text-2xl"
-              type={subscriptionTier.type}
-            />
           </div>
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">

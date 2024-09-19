@@ -48,7 +48,6 @@ export const Default: Story = {
       product: {
         id: 'sub_tier_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
         name: 'Free',
-        type: 'free',
         benefits: [
           {
             id: 'benefit_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
@@ -79,7 +78,6 @@ export const Default: Story = {
         created_at: '2021-10-08T11:17:14.000Z',
         modified_at: null,
         is_archived: false,
-        is_highlighted: false,
         is_recurring: true,
         organization_id: '123',
       },

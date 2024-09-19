@@ -10,11 +10,9 @@ import {
   ProductPriceRecurring,
   ProductPriceType,
   SubscriptionRecurringInterval,
-  SubscriptionTierType,
   UserRead,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useCallback, useMemo, useState } from 'react'
@@ -110,8 +108,6 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
   variant = 'outline',
   children,
 }) => {
-  const router = useRouter()
-
   const {
     data: userSubscriptionsList,
     refetch: refetchUserSubscriptions,
@@ -152,38 +148,18 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
     if (!upgradableSubscription) {
       return
     }
-    if (
-      upgradableSubscription &&
-      upgradableSubscription.product.type === SubscriptionTierType.FREE
-    ) {
-      router.push(`${checkoutPath}?price=${price.id}`)
-    } else {
-      await api.usersSubscriptions.update({
-        id: upgradableSubscription.id,
-        body: {
-          product_price_id: price.id,
-        },
-      })
-      refetchUserSubscriptions()
-    }
-  }, [
-    upgradableSubscription,
-    price,
-    refetchUserSubscriptions,
-    router,
-    checkoutPath,
-  ])
+    await api.usersSubscriptions.update({
+      id: upgradableSubscription.id,
+      body: {
+        product_price_id: price.id,
+      },
+    })
+    refetchUserSubscriptions()
+  }, [upgradableSubscription, price, refetchUserSubscriptions])
 
   const onUpgrade = useCallback(() => {
-    if (
-      upgradableSubscription &&
-      upgradableSubscription.product.type === SubscriptionTierType.FREE
-    ) {
-      onUpgradeConfirm()
-    } else {
-      setShowConfirmModal(true)
-    }
-  }, [upgradableSubscription, onUpgradeConfirm])
+    setShowConfirmModal(true)
+  }, [])
 
   return (
     <div className="flex w-full items-center gap-2">

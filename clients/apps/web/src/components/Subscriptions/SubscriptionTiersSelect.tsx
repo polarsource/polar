@@ -1,58 +1,39 @@
-import { SubscriptionTierType } from '@polar-sh/sdk'
+import { Product } from '@polar-sh/sdk'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import React from 'react'
-import SubscriptionGroupIcon from './SubscriptionGroupIcon'
-import { SubscriptionTiersByType, tiersTypeDisplayNames } from './utils'
 
 interface SubscriptionTiersSelectProps {
-  tiersByType: SubscriptionTiersByType
+  products: Product[]
   value: string
   onChange: (value: string) => void
 }
 
 const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
-  tiersByType,
+  products,
   value,
   onChange,
 }) => {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a tier" />
+        <SelectValue placeholder="Select a plan" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">
-          <span className="whitespace-nowrap">All tiers</span>
+          <span className="whitespace-nowrap">All plans</span>
         </SelectItem>
         <SelectSeparator />
-        {Object.entries(tiersByType).map(([type, tiers], index) => (
-          <React.Fragment key={type}>
-            <SelectGroup>
-              <SelectItem value={type} className="font-medium">
-                <div className="flex items-center gap-2 whitespace-normal ">
-                  <SubscriptionGroupIcon type={type as SubscriptionTierType} />
-                  {tiersTypeDisplayNames[type as SubscriptionTierType]}
-                </div>
-              </SelectItem>
-              {type !== SubscriptionTierType.FREE &&
-                tiers.map((tier) => (
-                  <SelectItem key={tier.id} value={tier.id}>
-                    {tier.name}
-                  </SelectItem>
-                ))}
-            </SelectGroup>
-            {index < Object.entries(tiersByType).length - 1 && (
-              <SelectSeparator />
-            )}
-          </React.Fragment>
+        {products.map((product) => (
+          <SelectItem key={product.id} value={product.id}>
+            {product.name}
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>

@@ -10,19 +10,11 @@ import {
   ProductPriceType,
   ProductUpdate,
   SubscriptionRecurringInterval,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
@@ -39,7 +31,6 @@ import {
   useFieldArray,
   useFormContext,
 } from 'react-hook-form'
-import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import ProductMediasField from './ProductMediasField'
 
 export interface ProductFullMediasMixin {
@@ -206,14 +197,9 @@ const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 interface ProductFormProps {
   organization: Organization
   update?: boolean
-  isFreeTier?: boolean
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({
-  organization,
-  update,
-  isFreeTier,
-}) => {
+const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
   const {
     control,
     formState: { errors },
@@ -281,15 +267,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   }, [update, pricingType, replace])
 
-  const subscriptionTierTypes = useMemo(
-    () =>
-      ({
-        [SubscriptionTierType.INDIVIDUAL]: 'Individual',
-        [SubscriptionTierType.BUSINESS]: 'Business',
-      }) as const,
-    [],
-  )
-
   return (
     <>
       <ShadowBox className="flex flex-col gap-y-6">
@@ -336,155 +313,109 @@ const ProductForm: React.FC<ProductFormProps> = ({
           )}
         />
       </ShadowBox>
-      {!isFreeTier ? (
-        <ShadowBox>
-          <div className="flex flex-col gap-6">
-            <FormLabel>Pricing</FormLabel>
-            {!update && (
-              <Tabs
-                value={pricingType}
-                onValueChange={(value: string) =>
-                  setPricingType(value as ProductPriceType)
-                }
-              >
-                <TabsList className="dark:bg-polar-950 w-full rounded-full bg-gray-100">
-                  <TabsTrigger
-                    className="flex-grow"
-                    value={ProductPriceType.ONE_TIME}
-                    size="small"
-                  >
-                    Pay Once
-                  </TabsTrigger>
-                  <TabsTrigger
-                    className="flex-grow"
-                    value={ProductPriceType.RECURRING}
-                    size="small"
-                  >
-                    Subscription
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-            {!update && pricingType === ProductPriceType.ONE_TIME && (
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="amountType"
-                  checked={amountType === 'custom'}
-                  onCheckedChange={(checked) =>
-                    setAmountType(checked ? 'custom' : 'fixed')
-                  }
-                />{' '}
-                <FormLabel htmlFor="amountType">Pay what you want</FormLabel>
-              </div>
-            )}
-            {prices.map((price, index) =>
-              amountType === 'fixed' ? (
-                <ProductPriceItem
-                  key={price.id}
-                  index={index}
-                  fieldArray={pricesFieldArray}
-                  deletable={pricingType === ProductPriceType.RECURRING}
-                />
-              ) : (
-                <ProductPriceCustomItem key={price.id} index={index} />
-              ),
-            )}
-            {pricingType === ProductPriceType.RECURRING && (
-              <div className="flex flex-row gap-2">
-                {!hasMonthlyPrice && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="self-start"
-                    type="button"
-                    onClick={() => {
-                      append({
-                        type: 'recurring',
-                        recurring_interval: SubscriptionRecurringInterval.MONTH,
-                        price_currency: 'usd',
-                        price_amount: 0,
-                      })
-                      clearErrors('prices')
-                    }}
-                  >
-                    Add monthly pricing
-                  </Button>
-                )}
-                {!hasYearlyPrice && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="self-start"
-                    type="button"
-                    onClick={() => {
-                      append({
-                        type: 'recurring',
-                        recurring_interval: SubscriptionRecurringInterval.YEAR,
-                        price_currency: 'usd',
-                        price_amount: 0,
-                      })
-                      clearErrors('prices')
-                    }}
-                  >
-                    Add yearly pricing
-                  </Button>
-                )}
-              </div>
-            )}
-            <ErrorMessage
-              errors={errors}
-              name="prices"
-              render={({ message }) => (
-                <p className="text-destructive text-sm font-medium">
-                  {message}
-                </p>
-              )}
-            />
-          </div>
-        </ShadowBox>
-      ) : (
-        <></>
-      )}
-
-      {pricingType === ProductPriceType.RECURRING && !isFreeTier && !update && (
-        <ShadowBox className="flex flex-col gap-y-6">
-          <FormField
-            control={control}
-            name="type"
-            rules={{ required: 'This field is required' }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Type</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+      <ShadowBox>
+        <div className="flex flex-col gap-6">
+          <FormLabel>Pricing</FormLabel>
+          {!update && (
+            <Tabs
+              value={pricingType}
+              onValueChange={(value: string) =>
+                setPricingType(value as ProductPriceType)
+              }
+            >
+              <TabsList className="dark:bg-polar-950 w-full rounded-full bg-gray-100">
+                <TabsTrigger
+                  className="flex-grow"
+                  value={ProductPriceType.ONE_TIME}
+                  size="small"
                 >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a tier type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(subscriptionTierTypes).map(
-                      ([type, pretty]) => (
-                        <SelectItem key={type} value={type}>
-                          <div className="flex items-center gap-2">
-                            <SubscriptionGroupIcon
-                              type={type as SubscriptionTierType}
-                            />
-                            {pretty}
-                          </div>
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
+                  Pay Once
+                </TabsTrigger>
+                <TabsTrigger
+                  className="flex-grow"
+                  value={ProductPriceType.RECURRING}
+                  size="small"
+                >
+                  Subscription
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          {!update && pricingType === ProductPriceType.ONE_TIME && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="amountType"
+                checked={amountType === 'custom'}
+                onCheckedChange={(checked) =>
+                  setAmountType(checked ? 'custom' : 'fixed')
+                }
+              />{' '}
+              <FormLabel htmlFor="amountType">Pay what you want</FormLabel>
+            </div>
+          )}
+          {prices.map((price, index) =>
+            amountType === 'fixed' ? (
+              <ProductPriceItem
+                key={price.id}
+                index={index}
+                fieldArray={pricesFieldArray}
+                deletable={pricingType === ProductPriceType.RECURRING}
+              />
+            ) : (
+              <ProductPriceCustomItem key={price.id} index={index} />
+            ),
+          )}
+          {pricingType === ProductPriceType.RECURRING && (
+            <div className="flex flex-row gap-2">
+              {!hasMonthlyPrice && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="self-start"
+                  type="button"
+                  onClick={() => {
+                    append({
+                      type: 'recurring',
+                      recurring_interval: SubscriptionRecurringInterval.MONTH,
+                      price_currency: 'usd',
+                      price_amount: 0,
+                    })
+                    clearErrors('prices')
+                  }}
+                >
+                  Add monthly pricing
+                </Button>
+              )}
+              {!hasYearlyPrice && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="self-start"
+                  type="button"
+                  onClick={() => {
+                    append({
+                      type: 'recurring',
+                      recurring_interval: SubscriptionRecurringInterval.YEAR,
+                      price_currency: 'usd',
+                      price_amount: 0,
+                    })
+                    clearErrors('prices')
+                  }}
+                >
+                  Add yearly pricing
+                </Button>
+              )}
+            </div>
+          )}
+          <ErrorMessage
+            errors={errors}
+            name="prices"
+            render={({ message }) => (
+              <p className="text-destructive text-sm font-medium">{message}</p>
             )}
           />
-        </ShadowBox>
-      )}
+        </div>
+      </ShadowBox>
 
       <ShadowBox>
         <FormField

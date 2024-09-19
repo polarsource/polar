@@ -1,4 +1,3 @@
-import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { useSortable } from '@dnd-kit/sortable'
@@ -6,13 +5,12 @@ import {
   Organization,
   Product,
   SubscriptionRecurringInterval,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 
 export interface DraggableSubscriptionTierCardProps {
   organization: Organization
-  subscriptionTier: Product & { type: SubscriptionTierType }
+  subscriptionTier: Product
   recurringInterval: SubscriptionRecurringInterval
   subscribeButton: boolean
   disabled?: boolean
@@ -37,25 +35,16 @@ export const DraggableSubscriptionTierCard = ({
       variant="small"
       draggable={disabled ? undefined : draggable}
     >
-      {subscribeButton ? (
-        <>
-          {subscriptionTier.type === 'free' ? (
-            <FreeTierSubscribe
-              product={subscriptionTier}
-              organization={organization}
-            />
-          ) : (
-            <CheckoutButton
-              organization={organization}
-              product={subscriptionTier}
-              recurringInterval={recurringInterval}
-              checkoutPath="/api/checkout"
-            >
-              Subscribe
-            </CheckoutButton>
-          )}
-        </>
-      ) : null}
+      {subscribeButton && (
+        <CheckoutButton
+          organization={organization}
+          product={subscriptionTier}
+          recurringInterval={recurringInterval}
+          checkoutPath="/api/checkout"
+        >
+          Subscribe
+        </CheckoutButton>
+      )}
     </SubscriptionTierCard>
   )
 }

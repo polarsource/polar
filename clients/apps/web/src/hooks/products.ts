@@ -1,14 +1,12 @@
 import {
   getRecurringBillingLabel,
   getRecurringProductPrice,
-  getSubscriptionTierAudience,
 } from '@/components/Subscriptions/utils'
 import {
   Product,
   ProductPriceRecurring,
   ProductPriceType,
   SubscriptionRecurringInterval,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { useProducts } from './queries'
@@ -73,10 +71,6 @@ export const useRecurringBillingLabel = (
       recurringInterval ? getRecurringBillingLabel(recurringInterval) : '',
     [recurringInterval],
   )
-}
-
-export const useProductAudience = (type: SubscriptionTierType) => {
-  return useMemo(() => getSubscriptionTierAudience(type), [type])
 }
 
 export const useProductsByPriceType = (

@@ -4,15 +4,10 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import AddSubscriberModal from '@/components/Subscriptions/AddSubscriberModal'
 import ImportSubscribersModal from '@/components/Subscriptions/ImportSubscribersModal'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
-import {
-  getSubscriptionTiersByType,
-  subscriptionStatusDisplayNames,
-  tiersTypeDisplayNames,
-} from '@/components/Subscriptions/utils'
+import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import { useListSubscriptions, useProducts } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
@@ -21,17 +16,12 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import {
-  Add,
-  FileDownloadOutlined,
-  FileUploadOutlined,
-} from '@mui/icons-material'
+import { FileDownloadOutlined, FileUploadOutlined } from '@mui/icons-material'
 import {
   Organization,
   Product,
   Subscription,
   SubscriptionStatus,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -42,14 +32,13 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import React, { useCallback, useMemo } from 'react'
+import React from 'react'
 
 interface ClientPageProps {
   organization: Organization
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string
-  subscriptionTierType?: SubscriptionTierType
   subscriptionStatus?: Extract<SubscriptionStatus, 'active' | 'canceled'>
 }
 
@@ -58,16 +47,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
   pagination,
   sorting,
   productId,
-  subscriptionTierType,
   subscriptionStatus,
 }) => {
-  const subscriptionTiers = useProducts(organization.id)
-  const subscriptionTiersByType = useMemo(
-    () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
-    [subscriptionTiers.data],
-  )
+  const subscriptionTiers = useProducts(organization.id, { isRecurring: true })
 
-  const filter = subscriptionTierType || productId || 'all'
+  const filter = productId || 'all'
   const status = subscriptionStatus || 'active'
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -77,11 +61,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   ) => {
     const params = serializeSearchParams(pagination, sorting)
     if (filter !== 'all') {
-      if (Object.values(SubscriptionTierType).includes(filter as any)) {
-        params.append('type', filter)
-      } else {
-        params.append('product_id', filter)
-      }
+      params.append('product_id', filter)
     }
 
     params.append('status', status)
@@ -156,7 +136,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const subscriptionsHook = useListSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     ...(productId ? { productId } : {}),
-    ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
     ...{ active: status === 'active' },
   })
 
@@ -229,16 +208,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
-      accessorKey: 'product.type',
-      id: 'subscription_tier_type',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Tier group" />
-      ),
-      cell: (props) =>
-        tiersTypeDisplayNames[props.getValue() as SubscriptionTierType],
-    },
-    {
       accessorKey: 'product',
       id: 'product',
       enableSorting: true,
@@ -288,21 +257,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     show: showImportSubscribers,
   } = useModal()
 
-  const {
-    isShown: addSubscriberIsShown,
-    hide: hideAddSubscriber,
-    show: showAddSubscriber,
-  } = useModal()
-  const onHideAddSubscriber = useCallback(
-    (added: boolean) => {
-      if (added) {
-        subscriptionsHook.refetch()
-      }
-      hideAddSubscriber()
-    },
-    [subscriptionsHook, hideAddSubscriber],
-  )
-
   const onExport = () => {
     const url = new URL(
       `${getServerURL()}/v1/subscriptions/export?organization_id=${organization.id}`,
@@ -325,8 +279,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
             </div>
             <div className="w-full min-w-[180px]">
               <SubscriptionTiersSelect
-                tiersByType={subscriptionTiersByType}
-                value={subscriptionTierType || productId || 'all'}
+                products={subscriptionTiers.data?.items || []}
+                value={productId || 'all'}
                 onChange={setFilter}
               />
             </div>
@@ -346,14 +300,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )}
         <div className="flex items-center justify-end gap-2">
           <Button
-            onClick={showAddSubscriber}
-            className="flex items-center"
-            variant={'secondary'}
-          >
-            <Add className="mr-2" fontSize="small" />
-            <span>Add</span>
-          </Button>
-          <Button
             onClick={showImportSubscribers}
             className="flex items-center"
             variant={'secondary'}
@@ -372,17 +318,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </Button>
         </div>
       </div>
-
-      <Modal
-        isShown={addSubscriberIsShown}
-        hide={hideAddSubscriber}
-        modalContent={
-          <AddSubscriberModal
-            hide={onHideAddSubscriber}
-            organization={organization}
-          />
-        }
-      />
 
       <Modal
         isShown={importSubscribersIsShow}

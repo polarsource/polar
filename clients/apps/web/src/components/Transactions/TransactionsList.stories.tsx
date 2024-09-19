@@ -136,7 +136,6 @@ const product: TransactionProduct = {
   created_at: '',
   modified_at: null,
   id: '',
-  type: 'free',
   name: 'TierName',
   organization_id: organization.id,
   organization,

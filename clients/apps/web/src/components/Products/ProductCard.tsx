@@ -4,7 +4,6 @@ import { useOrganization } from '@/hooks/queries'
 import { Product, ProductPrice } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import LogoIcon from '../Brand/LogoIcon'
-import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import ProductPriceLabel from './ProductPriceLabel'
 import ProductPrices from './ProductPrices'
 
@@ -44,9 +43,6 @@ export const ProductCard = ({
       <div className="flex flex-grow flex-col gap-y-2">
         <h3 className="line-clamp-1 flex items-center justify-between gap-1 leading-snug text-gray-950 dark:text-white">
           {product.name}
-          {product.type && (
-            <SubscriptionGroupIcon type={product.type} className="text-xl" />
-          )}
         </h3>
         <div className="flex flex-row items-center justify-between ">
           {organization && showOrganization && (

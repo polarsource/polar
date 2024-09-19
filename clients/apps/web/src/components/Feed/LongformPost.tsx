@@ -4,7 +4,6 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SubscribeNowWithModal from '../Subscriptions/SubscribeNowWithModal'
 import { RenderArticle } from './Markdown/markdown'
 import PostPaywall from './PostPaywall'
 import Share from './Posts/Share'
@@ -109,10 +108,6 @@ export default function LongformPost({
           </div>
         )}
 
-        {showNonSubscriberUpsell ? (
-          <UpsellNonSubscriber article={article} />
-        ) : null}
-
         {showSubscriberUpsell ? (
           <UpsellFreeSubscriberToPaid article={article} />
         ) : null}
@@ -122,33 +117,6 @@ export default function LongformPost({
     </article>
   )
 }
-
-const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
-  <div className="flex flex-col gap-y-16">
-    <div className="dark:bg-polar-800 rounded-4xl flex flex-col items-center gap-y-6 bg-gray-100 p-8 py-12 md:px-16 ">
-      <Avatar
-        className="h-12 w-12"
-        avatar_url={article.organization.avatar_url}
-        name={article.organization.name}
-      />
-      <h2 className="text-center text-xl font-medium">
-        Subscribe to {article.organization.name}
-      </h2>
-      <p className="dark:text-polar-300 text-center text-gray-500">
-        {article.organization?.bio
-          ? article.organization?.bio
-          : `Support ${article.organization.name} by subscribing to their work and get access to exclusive content.`}
-      </p>
-
-      <SubscribeNowWithModal
-        organization={article.organization}
-        isSubscriber={false}
-      >
-        Subscribe
-      </SubscribeNowWithModal>
-    </div>
-  </div>
-)
 
 const UpsellFreeSubscriberToPaid = ({
   article,

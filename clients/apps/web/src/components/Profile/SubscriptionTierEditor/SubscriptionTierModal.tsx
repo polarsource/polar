@@ -1,18 +1,15 @@
-import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { CloseOutlined } from '@mui/icons-material'
-import { Product, SubscriptionTierType } from '@polar-sh/sdk'
+import { Product } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export interface SubscriptionTiersModalProps {
-  subscriptionTiers: (Product & { type: SubscriptionTierType })[]
-  selectedSubscriptionTiers: (Product & { type: SubscriptionTierType })[]
+  subscriptionTiers: Product[]
+  selectedSubscriptionTiers: Product[]
   hideModal: () => void
   setSubscriptionTiers: (
-    producer: (
-      subscriptionTiers: (Product & { type: SubscriptionTierType })[],
-    ) => (Product & { type: SubscriptionTierType })[],
+    producer: (subscriptionTiers: Product[]) => Product[],
   ) => void
 }
 
@@ -22,9 +19,7 @@ export const SubscriptionTiersModal = ({
   hideModal,
   setSubscriptionTiers,
 }: SubscriptionTiersModalProps) => {
-  const addSubscriptionTier = (
-    subscriptionTier: Product & { type: SubscriptionTierType },
-  ) => {
+  const addSubscriptionTier = (subscriptionTier: Product) => {
     setSubscriptionTiers((subscriptionTiers) =>
       [...subscriptionTiers, subscriptionTier].slice(-3),
     )
@@ -94,19 +89,14 @@ const SubscriptionTierRow = ({
   selectTier,
   deselectTier,
 }: {
-  subscriptionTier: Product & { type: SubscriptionTierType }
+  subscriptionTier: Product
   selected: boolean
-  selectTier: (
-    subscriptionTiers: Product & { type: SubscriptionTierType },
-  ) => void
-  deselectTier: (
-    subscriptionTier: Product & { type: SubscriptionTierType },
-  ) => void
+  selectTier: (subscriptionTiers: Product) => void
+  deselectTier: (subscriptionTier: Product) => void
 }) => {
   return (
     <div className="flex w-full flex-row items-center justify-between gap-x-2 text-sm">
       <div className="flex flex-row items-center gap-x-2">
-        <SubscriptionGroupIcon type={subscriptionTier.type} />
         <span>{subscriptionTier.name}</span>
       </div>
       <div className="flex flex-row items-center gap-x-4">

@@ -1,9 +1,8 @@
-import { Product, SubscriptionTierType } from '@polar-sh/sdk'
+import { Product } from '@polar-sh/sdk'
 
 export const MOCKED_PRODUCTS: Partial<Product>[] = [
   {
     name: 'Follower',
-    type: 'free',
     description: 'A simple way to follow my projects.',
     benefits: [
       {
@@ -21,7 +20,6 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
   },
   {
     name: 'Supporter',
-    type: 'individual',
     description:
       'Access to software releases, my private GitHub repository & support in my Discord server.',
     prices: [
@@ -73,7 +71,6 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
   },
   {
     name: 'Enterprise',
-    type: 'business',
     description:
       'Exclusive support, exposure in weekly newsletter & premium role on Discord.',
     prices: [
@@ -194,12 +191,9 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
   },
 ]
 
-export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
-  type: SubscriptionTierType
-})[] = [
+export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
   {
     name: 'Supporter',
-    type: 'individual',
     description:
       'Access to software releases, license keys, my private GitHub repository & support in my Discord server.',
     prices: [
@@ -261,7 +255,6 @@ export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
   },
   {
     name: 'Startup',
-    type: 'business',
     description:
       'Exclusive support, access to software releases & premium role on Discord.',
     prices: [
@@ -313,7 +306,6 @@ export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
   },
   {
     name: 'Enterprise',
-    type: 'business',
     description:
       'Exclusive support, exposure in weekly newsletter & premium role on Discord.',
     prices: [
@@ -365,11 +357,8 @@ export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
   },
 ]
 
-export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<Product> & {
-  type: SubscriptionTierType
-} = {
+export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<Product> = {
   name: 'Just an Example',
-  type: 'individual',
   description:
     'Polar has no monthly fees. This tier is only an example of what you could offer your audience in minutes using Polar.',
   prices: [

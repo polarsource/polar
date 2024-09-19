@@ -1,15 +1,9 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import {
-  Product,
-  SubscriptionRecurringInterval,
-  SubscriptionTierType,
-} from '@polar-sh/sdk'
+import { Product, SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import {
   getRecurringBillingLabel,
   getRecurringProductPrice,
-  getSubscriptionColorByType,
-  getSubscriptionTierAudience,
 } from '../Subscriptions/utils'
 
 const HighlightedTier = ({
@@ -17,11 +11,10 @@ const HighlightedTier = ({
   recurringInterval,
   darkmode,
 }: {
-  tier: Product & { type: SubscriptionTierType }
+  tier: Product
   recurringInterval: SubscriptionRecurringInterval
   darkmode: boolean
 }) => {
-  const audience = getSubscriptionTierAudience(tier.type)
   const price = getRecurringProductPrice(tier, recurringInterval)
   if (!price) {
     return null
@@ -52,17 +45,7 @@ const HighlightedTier = ({
           style={{
             display: 'flex',
             flexDirection: 'row',
-            fontSize: 12,
-            color: darkmode ? '#4C5069' : '#666',
-          }}
-        >
-          {audience}
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            color: getSubscriptionColorByType(tier.type),
+            color: '#3381FF',
             fontWeight: '600',
             fontSize: 20,
           }}
@@ -161,9 +144,9 @@ const HighlightedTier = ({
           alignItems: 'center',
           padding: '8px',
           width: '100%',
-          backgroundColor: `${getSubscriptionColorByType(tier.type)}22`,
+          backgroundColor: '#3381FF22',
           borderRadius: 32,
-          color: `${getSubscriptionColorByType(tier.type)}`,
+          color: '#3381FF',
           fontWeight: '600',
           fontSize: 13,
         }}
@@ -181,7 +164,7 @@ export const HighlightedTiers = ({
   darkmode,
 }: {
   label: string
-  tiers: (Product & { type: SubscriptionTierType })[]
+  tiers: Product[]
   recurringInterval: SubscriptionRecurringInterval
   darkmode: boolean
 }) => {

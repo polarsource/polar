@@ -3,7 +3,6 @@ import {
   PersonalAccessTokenCreate,
   UserAdvertisementCampaignCreate,
   UserAdvertisementCampaignUpdate,
-  UserFreeSubscriptionCreate,
   UsersAdvertisementsApiEnableRequest,
   UsersAdvertisementsApiListRequest,
   UsersBenefitsApiListRequest,
@@ -51,18 +50,6 @@ export const useUserSubscriptions = (
     queryKey: ['user', 'subscriptions', parameters],
     queryFn: () => api.usersSubscriptions.list(parameters),
     retry: defaultRetry,
-  })
-
-export const useCreateSubscription = () =>
-  useMutation({
-    mutationFn: (body: UserFreeSubscriptionCreate) => {
-      return api.usersSubscriptions.create({ body })
-    },
-    onSuccess: (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
-        queryKey: ['user', 'subscriptions'],
-      })
-    },
   })
 
 export const useUserOrders = (parameters: UsersOrdersApiListRequest = {}) =>

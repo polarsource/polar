@@ -5,7 +5,6 @@ import {
   ProductCreate,
   ProductUpdate,
   ProductsApiListRequest,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -56,20 +55,6 @@ export const useProduct = (id?: string) =>
     },
     retry: defaultRetry,
     enabled: !!id,
-  })
-
-export const useFreeTier = (organizationId?: string) =>
-  useQuery({
-    queryKey: ['products', 'freeTier', { organizationId }],
-    queryFn: () =>
-      api.products
-        .list({
-          organizationId: organizationId ?? '',
-          type: SubscriptionTierType.FREE,
-        })
-        .then((res) => res.items[0]),
-    retry: defaultRetry,
-    enabled: !!organizationId,
   })
 
 export const useCreateProduct = (organizationId?: string) =>

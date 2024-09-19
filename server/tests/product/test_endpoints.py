@@ -37,7 +37,7 @@ class TestListProducts:
         assert response.status_code == 200
 
         json = response.json()
-        assert json["pagination"]["total_count"] == 3
+        assert json["pagination"]["total_count"] == 2
 
     async def test_anonymous_without_organization_filter(
         self,

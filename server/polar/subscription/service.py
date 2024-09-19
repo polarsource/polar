@@ -37,7 +37,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceCustom, ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -134,7 +133,6 @@ class SubscriptionSortProperty(StrEnum):
     started_at = "started_at"
     current_period_end = "current_period_end"
     amount = "amount"
-    subscription_tier_type = "subscription_tier_type"
     product = "product"
 
 
@@ -170,7 +168,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        type: Sequence[SubscriptionTierType] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
@@ -188,9 +185,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
-
-        if type is not None:
-            statement = statement.where(Product.type.in_(type))
 
         if product_id is not None:
             statement = statement.where(Product.id.in_(product_id))
@@ -253,8 +247,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                         )
                     ).nulls_last()
                 )
-            if criterion == SubscriptionSortProperty.subscription_tier_type:
-                order_by_clauses.append(clause_function(Product.type))
             if criterion == SubscriptionSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
@@ -392,22 +384,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         assert subscription_tier_org is not None
 
-        subscription: Subscription | None = None
-
-        # Upgrade from free subscription tier sets the origin subscription in metadata
-        existing_subscription_id = stripe_subscription.metadata.get("subscription_id")
-        if existing_subscription_id is not None:
-            statement = (
-                select(Subscription)
-                .where(Subscription.id == uuid.UUID(existing_subscription_id))
-                .options(joinedload(Subscription.user))
-            )
-            result = await session.execute(statement)
-            subscription = result.unique().scalar_one_or_none()
-
-        # New subscription
-        if subscription is None:
-            subscription = Subscription(user=None)
+        subscription = Subscription(user=None)
 
         subscription.stripe_subscription_id = stripe_subscription.id
         subscription.status = SubscriptionStatus(stripe_subscription.status)

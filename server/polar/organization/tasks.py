@@ -6,9 +6,6 @@ from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.locker import Locker
-from polar.product.service.product import (
-    product as product_service,
-)
 from polar.redis import Redis
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
@@ -59,15 +56,8 @@ async def organization_created(
             if organization is None:
                 raise OrganizationDoesNotExist(organization_id)
 
-            (
-                public_articles,
-                _,
-            ) = await benefit_service.get_or_create_articles_benefits(
+            await benefit_service.get_or_create_articles_benefits(
                 session, organization=organization
-            )
-
-            await product_service.create_free_tier(
-                session, benefits=[public_articles], organization=organization
             )
 
 

@@ -15,7 +15,6 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, File, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes
-from polar.models.product import SubscriptionTierType
 from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceType,
@@ -31,7 +30,6 @@ from polar.product.schemas import (
     ProductRecurringCreate,
     ProductUpdate,
 )
-from polar.product.service.product import FreeTierIsNotArchivable
 from polar.product.service.product import product as product_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -81,13 +79,12 @@ class TestList:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 4
-        assert len(results) == 4
+        assert count == 3
+        assert len(results) == 3
 
         assert results[0].id == products[0].id
         assert results[1].id == products[1].id
         assert results[2].id == products[2].id
-        assert results[3].id == products[3].id
 
     @pytest.mark.auth
     async def test_user(
@@ -107,12 +104,11 @@ class TestList:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 4
-        assert len(results) == 4
+        assert count == 3
+        assert len(results) == 3
         assert results[0].id == products[0].id
         assert results[1].id == products[1].id
         assert results[2].id == products[2].id
-        assert results[3].id == products[3].id
 
     @pytest.mark.auth
     async def test_user_organization(
@@ -132,8 +128,8 @@ class TestList:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 4
-        assert len(results) == 4
+        assert count == 3
+        assert len(results) == 3
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
@@ -152,8 +148,8 @@ class TestList:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 2
+        assert len(results) == 2
 
     @pytest.mark.auth
     async def test_filter_is_recurring(
@@ -165,12 +161,10 @@ class TestList:
     ) -> None:
         recurring_product = await create_product(
             save_fixture,
-            type=SubscriptionTierType.individual,
             organization=organization,
         )
         one_time_product = await create_product(
             save_fixture,
-            type=SubscriptionTierType.individual,
             organization=organization,
             prices=[
                 (1000, ProductPriceType.one_time, None),
@@ -205,45 +199,12 @@ class TestList:
         assert results[0].id == one_time_product.id
 
     @pytest.mark.auth
-    async def test_filter_type(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        individual_product = await create_product(
-            save_fixture,
-            type=SubscriptionTierType.individual,
-            organization=organization,
-        )
-        await create_product(
-            save_fixture, type=SubscriptionTierType.business, organization=organization
-        )
-
-        # then
-        session.expunge_all()
-
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[organization.id],
-            type=[SubscriptionTierType.individual],
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert count == 1
-        assert len(results) == 1
-        assert results[0].id == individual_product.id
-
-    @pytest.mark.auth
     async def test_filter_organization(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         organization: Organization,
         products: list[Product],
-        subscription_tier_free: Product,
         product: Product,
         product_second: Product,
     ) -> None:
@@ -257,11 +218,10 @@ class TestList:
             pagination=PaginationParams(1, 10),
         )
 
-        assert count == 3
-        assert len(results) == 3
-        assert results[0].id == subscription_tier_free.id
-        assert results[1].id == product.id
-        assert results[2].id == product_second.id
+        assert count == 2
+        assert len(results) == 2
+        assert results[0].id == product.id
+        assert results[1].id == product_second.id
 
     async def test_filter_is_archived(
         self,
@@ -664,7 +624,6 @@ class TestUserCreate:
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=uuid.uuid4(),
             prices=[
@@ -691,7 +650,6 @@ class TestUserCreate:
         organization: Organization,
     ) -> None:
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
             prices=[
@@ -728,7 +686,6 @@ class TestUserCreate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
             prices=[
@@ -754,57 +711,6 @@ class TestUserCreate:
         assert product.prices[0].stripe_price_id == "PRICE_ID"
 
     @pytest.mark.auth
-    async def test_user_valid_highlighted(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        authz: Authz,
-        organization: Organization,
-        user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        highlighted_product = await create_product(
-            save_fixture, organization=organization, is_highlighted=True
-        )
-        await create_product(
-            save_fixture, organization=organization, is_highlighted=False
-        )
-
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
-        create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
-            name="Product",
-            organization_id=organization.id,
-            is_highlighted=True,
-            prices=[
-                ProductPriceRecurringCreate(
-                    type=ProductPriceType.recurring,
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    price_amount=1000,
-                    price_currency="usd",
-                )
-            ],
-        )
-
-        product = await product_service.user_create(
-            session, authz, create_schema, auth_subject
-        )
-        assert product.is_highlighted
-
-        updated_highlighted_product = await product_service.get(
-            session, highlighted_product.id
-        )
-        assert updated_highlighted_product is not None
-        assert not updated_highlighted_product.is_highlighted
-
-    @pytest.mark.auth
     async def test_user_empty_description(
         self,
         auth_subject: AuthSubject[User],
@@ -822,7 +728,6 @@ class TestUserCreate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             description="",
             organization_id=organization.id,
@@ -850,7 +755,6 @@ class TestUserCreate:
         organization: Organization,
     ) -> None:
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
             prices=[
@@ -886,7 +790,6 @@ class TestUserCreate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             prices=[
                 ProductPriceRecurringCreate(
@@ -919,7 +822,6 @@ class TestUserCreate:
         )
 
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
             prices=[
@@ -982,7 +884,6 @@ class TestUserCreate:
         )
 
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
             prices=[
@@ -1038,7 +939,6 @@ class TestUserCreate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = ProductRecurringCreate(
-            type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
             prices=[
@@ -1392,53 +1292,6 @@ class TestUserUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid_highlighted(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        product: Product,
-        user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        highlighted_product = await create_product(
-            save_fixture, organization=organization, is_highlighted=True
-        )
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
-
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
-        update_schema = ProductUpdate(is_highlighted=True)
-        updated_product = await product_service.user_update(
-            session,
-            authz,
-            product_organization_loaded,
-            update_schema,
-            auth_subject,
-        )
-
-        assert updated_product.is_highlighted
-
-        updated_highlighted_product = await product_service.get_loaded(
-            session, highlighted_product.id
-        )
-        assert updated_highlighted_product is not None
-        assert not updated_highlighted_product.is_highlighted
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_valid_archive(
         self,
         session: AsyncSession,
@@ -1468,35 +1321,6 @@ class TestUserUpdate:
         archive_product_mock.assert_called_once_with(product.stripe_product_id)
 
         assert updated_product.is_archived
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_archive_free_tier(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
-        subscription_tier_free: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        # load
-        subscription_tier_free_loaded = await product_service.get_loaded(
-            session, subscription_tier_free.id
-        )
-        assert subscription_tier_free_loaded
-
-        update_schema = ProductUpdate(is_archived=True)
-
-        with pytest.raises(FreeTierIsNotArchivable):
-            await product_service.user_update(
-                session,
-                authz,
-                subscription_tier_free_loaded,
-                update_schema,
-                auth_subject,
-            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1662,57 +1486,6 @@ class TestUserUpdate:
         )
 
         assert len(updated_product.medias) == 1
-
-
-@pytest.mark.asyncio
-class TestCreateFreeTier:
-    async def test_already_exists(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: AsyncMock,
-        organization: Organization,
-        subscription_tier_free: Product,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        subscription_tier = await product_service.create_free_tier(
-            session, benefits=[], organization=organization
-        )
-
-        assert subscription_tier.id == subscription_tier_free.id
-
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            subscription_tier.id,
-        )
-
-    async def test_create(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: AsyncMock,
-        benefit_organization: Benefit,
-        organization: Organization,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        free_subscription_tier = await product_service.create_free_tier(
-            session,
-            benefits=[benefit_organization],
-            organization=organization,
-        )
-
-        assert free_subscription_tier.type == SubscriptionTierType.free
-        assert free_subscription_tier.organization_id == organization.id
-        assert free_subscription_tier.prices == []
-        assert len(free_subscription_tier.benefits) == 1
-        assert free_subscription_tier.benefits[0].id == benefit_organization.id
-
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            free_subscription_tier.id,
-        )
 
 
 @pytest.mark.asyncio

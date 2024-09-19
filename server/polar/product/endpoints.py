@@ -6,7 +6,6 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Product
-from polar.models.product import SubscriptionTierType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -48,11 +47,6 @@ async def list(
         title="BenefitID Filter",
         description="Filter products granting specific benefit.",
     ),
-    type: MultipleQueryFilter[SubscriptionTierType] | None = Query(
-        None,
-        title="SubscriptionTierType Filter",
-        description="Filter by subscription tier type.",
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[ProductSchema]:
     """List products."""
@@ -63,7 +57,6 @@ async def list(
         is_archived=is_archived,
         is_recurring=is_recurring,
         benefit_id=benefit_id,
-        type=type,
         pagination=pagination,
     )
 

@@ -14,17 +14,14 @@ from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.service import AlreadySubscribed
 
 from .. import auth
 from ..schemas.subscription import (
-    UserFreeSubscriptionCreate,
     UserSubscription,
     UserSubscriptionUpdate,
 )
 from ..service.subscription import (
     AlreadyCanceledSubscription,
-    FreeSubscriptionUpgrade,
     UserSubscriptionSortProperty,
 )
 from ..service.subscription import user_subscription as user_subscription_service
@@ -106,49 +103,12 @@ async def get(
     return subscription
 
 
-@router.post(
-    "/",
-    summary="Create Free Subscription",
-    response_model=UserSubscription,
-    status_code=201,
-    responses={
-        201: {"description": "Subscription created."},
-        400: {
-            "description": (
-                "Already subscribed to one of the tier of this organization."
-            ),
-            "model": AlreadySubscribed.schema(),
-        },
-        404: SubscriptionNotFound,
-    },
-)
-async def create(
-    subscription_create: UserFreeSubscriptionCreate,
-    auth_subject: auth.UserSubscriptionsWriteOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-) -> Subscription:
-    """
-    Create a subscription on a **free** tier.
-
-    If you want to subscribe to a paid tier, you need to create a checkout session.
-    """
-    return await user_subscription_service.create_free_subscription(
-        session, subscription_create=subscription_create, auth_subject=auth_subject
-    )
-
-
 @router.patch(
     "/{id}",
     summary="Update Subscription",
     response_model=UserSubscription,
     responses={
         200: {"description": "Subscription updated."},
-        403: {
-            "description": (
-                "Can't upgrade from free to paid subscription tier to paid directly."
-            ),
-            "model": FreeSubscriptionUpgrade.schema(),
-        },
         404: SubscriptionNotFound,
     },
 )

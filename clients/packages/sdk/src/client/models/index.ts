@@ -247,35 +247,6 @@ export const AlreadyCanceledSubscriptionTypeEnum = {
 export type AlreadyCanceledSubscriptionTypeEnum = typeof AlreadyCanceledSubscriptionTypeEnum[keyof typeof AlreadyCanceledSubscriptionTypeEnum];
 
 /**
- * 
- * @export
- * @interface AlreadySubscribed
- */
-export interface AlreadySubscribed {
-    /**
-     * 
-     * @type {string}
-     * @memberof AlreadySubscribed
-     */
-    type: AlreadySubscribedTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof AlreadySubscribed
-     */
-    detail: string;
-}
-
-
-/**
- * @export
- */
-export const AlreadySubscribedTypeEnum = {
-    ALREADY_SUBSCRIBED: 'AlreadySubscribed'
-} as const;
-export type AlreadySubscribedTypeEnum = typeof AlreadySubscribedTypeEnum[keyof typeof AlreadySubscribedTypeEnum];
-
-/**
  * App Permissions
  * 
  * The permissions granted to the user access token.
@@ -5720,35 +5691,6 @@ export interface FileUploadCompleted {
 /**
  * 
  * @export
- * @interface FreeSubscriptionUpgrade
- */
-export interface FreeSubscriptionUpgrade {
-    /**
-     * 
-     * @type {string}
-     * @memberof FreeSubscriptionUpgrade
-     */
-    type: FreeSubscriptionUpgradeTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof FreeSubscriptionUpgrade
-     */
-    detail: string;
-}
-
-
-/**
- * @export
- */
-export const FreeSubscriptionUpgradeTypeEnum = {
-    FREE_SUBSCRIPTION_UPGRADE: 'FreeSubscriptionUpgrade'
-} as const;
-export type FreeSubscriptionUpgradeTypeEnum = typeof FreeSubscriptionUpgradeTypeEnum[keyof typeof FreeSubscriptionUpgradeTypeEnum];
-
-/**
- * 
- * @export
  * @interface Funding
  */
 export interface Funding {
@@ -9201,7 +9143,7 @@ export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
  * @type OneTimePriceInner
  * @export
  */
-export type OneTimePriceInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate;
+export type OneTimePriceInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
 
 /**
  * 
@@ -9368,21 +9310,7 @@ export interface OrderProduct {
      * @memberof OrderProduct
      */
     organization_id: string;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof OrderProduct
-     */
-    type: SubscriptionTierType | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrderProduct
-     */
-    is_highlighted: boolean | null;
 }
-
-
 
 /**
  * 
@@ -9497,7 +9425,7 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    price_id: string | null;
+    price_id: string;
 }
 
 
@@ -10024,12 +9952,6 @@ export interface OrganizationFeatureSettings {
      * @memberof OrganizationFeatureSettings
      */
     articles_enabled?: boolean;
-    /**
-     * If this organization has subscriptions enabled
-     * @type {boolean}
-     * @memberof OrganizationFeatureSettings
-     */
-    subscriptions_enabled?: boolean;
     /**
      * If this organization has issue funding enabled
      * @type {boolean}
@@ -11075,6 +10997,13 @@ export interface PostIssueComment {
     append_badge?: boolean;
 }
 /**
+ * @type Prices
+ * List of available prices for this product.
+ * @export
+ */
+export type Prices = Array<ProductPriceRecurringFixedCreate> | Array<ProductPriceRecurringFreeCreate>;
+
+/**
  * A product.
  * @export
  * @interface Product
@@ -11129,18 +11058,6 @@ export interface Product {
      */
     organization_id: string;
     /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof Product
-     */
-    type: SubscriptionTierType | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Product
-     */
-    is_highlighted: boolean | null;
-    /**
      * List of available prices for this product.
      * @type {Array<ProductPrice>}
      * @memberof Product
@@ -11159,8 +11076,6 @@ export interface Product {
      */
     medias: Array<ProductMediaFileRead>;
 }
-
-
 /**
  * Schema to update the benefits granted by a product.
  * @export
@@ -11419,7 +11334,7 @@ export type ProductPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 
  * 
  * @export
  */
-export type ProductPriceOneTime = { amount_type: 'custom' } & ProductPriceOneTimeCustom | { amount_type: 'fixed' } & ProductPriceOneTimeFixed;
+export type ProductPriceOneTime = { amount_type: 'custom' } & ProductPriceOneTimeCustom | { amount_type: 'fixed' } & ProductPriceOneTimeFixed | { amount_type: 'free' } & ProductPriceOneTimeFree;
 /**
  * A pay-what-you-want price for a one-time product.
  * @export
@@ -11451,17 +11366,17 @@ export interface ProductPriceOneTimeCustom {
      */
     amount_type: ProductPriceOneTimeCustomAmountTypeEnum;
     /**
-     * The currency.
-     * @type {string}
-     * @memberof ProductPriceOneTimeCustom
-     */
-    price_currency: string;
-    /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
      * @memberof ProductPriceOneTimeCustom
      */
     is_archived: boolean;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceOneTimeCustom
+     */
+    price_currency: string;
     /**
      * 
      * @type {number}
@@ -11518,6 +11433,12 @@ export interface ProductPriceOneTimeCustomCreate {
      */
     type: ProductPriceOneTimeCustomCreateTypeEnum;
     /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeCustomCreate
+     */
+    amount_type: ProductPriceOneTimeCustomCreateAmountTypeEnum;
+    /**
      * The currency. Currently, only `usd` is supported.
      * @type {string}
      * @memberof ProductPriceOneTimeCustomCreate
@@ -11553,6 +11474,14 @@ export const ProductPriceOneTimeCustomCreateTypeEnum = {
 export type ProductPriceOneTimeCustomCreateTypeEnum = typeof ProductPriceOneTimeCustomCreateTypeEnum[keyof typeof ProductPriceOneTimeCustomCreateTypeEnum];
 
 /**
+ * @export
+ */
+export const ProductPriceOneTimeCustomCreateAmountTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type ProductPriceOneTimeCustomCreateAmountTypeEnum = typeof ProductPriceOneTimeCustomCreateAmountTypeEnum[keyof typeof ProductPriceOneTimeCustomCreateAmountTypeEnum];
+
+/**
  * A one-time price for a product.
  * @export
  * @interface ProductPriceOneTimeFixed
@@ -11583,17 +11512,17 @@ export interface ProductPriceOneTimeFixed {
      */
     amount_type: ProductPriceOneTimeFixedAmountTypeEnum;
     /**
-     * The currency.
-     * @type {string}
-     * @memberof ProductPriceOneTimeFixed
-     */
-    price_currency: string;
-    /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
      * @memberof ProductPriceOneTimeFixed
      */
     is_archived: boolean;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    price_currency: string;
     /**
      * The price in cents.
      * @type {number}
@@ -11638,17 +11567,23 @@ export interface ProductPriceOneTimeFixedCreate {
      */
     type: ProductPriceOneTimeFixedCreateTypeEnum;
     /**
-     * The currency. Currently, only `usd` is supported.
+     * 
      * @type {string}
      * @memberof ProductPriceOneTimeFixedCreate
      */
-    price_currency?: string;
+    amount_type: ProductPriceOneTimeFixedCreateAmountTypeEnum;
     /**
      * The price in cents.
      * @type {number}
      * @memberof ProductPriceOneTimeFixedCreate
      */
     price_amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixedCreate
+     */
+    price_currency?: string;
 }
 
 
@@ -11661,52 +11596,117 @@ export const ProductPriceOneTimeFixedCreateTypeEnum = {
 export type ProductPriceOneTimeFixedCreateTypeEnum = typeof ProductPriceOneTimeFixedCreateTypeEnum[keyof typeof ProductPriceOneTimeFixedCreateTypeEnum];
 
 /**
- * @type ProductPriceRecurring
- * 
  * @export
  */
-export type ProductPriceRecurring = { amount_type: 'custom' } & ProductPriceRecurringCustom | { amount_type: 'fixed' } & ProductPriceRecurringFixed;
+export const ProductPriceOneTimeFixedCreateAmountTypeEnum = {
+    FIXED: 'fixed'
+} as const;
+export type ProductPriceOneTimeFixedCreateAmountTypeEnum = typeof ProductPriceOneTimeFixedCreateAmountTypeEnum[keyof typeof ProductPriceOneTimeFixedCreateAmountTypeEnum];
+
 /**
- * Schema to create a recurring product price, i.e. a subscription.
+ * A free one-time price for a product.
  * @export
- * @interface ProductPriceRecurringCreate
+ * @interface ProductPriceOneTimeFree
  */
-export interface ProductPriceRecurringCreate {
+export interface ProductPriceOneTimeFree {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFree
+     */
+    created_at: string;
     /**
      * 
      * @type {string}
-     * @memberof ProductPriceRecurringCreate
+     * @memberof ProductPriceOneTimeFree
      */
-    type: ProductPriceRecurringCreateTypeEnum;
+    modified_at: string | null;
     /**
-     * The currency. Currently, only `usd` is supported.
+     * The ID of the price.
      * @type {string}
-     * @memberof ProductPriceRecurringCreate
+     * @memberof ProductPriceOneTimeFree
      */
-    price_currency?: string;
+    id: string;
     /**
-     * The price in cents.
-     * @type {number}
-     * @memberof ProductPriceRecurringCreate
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeFree
      */
-    price_amount: number;
+    amount_type: ProductPriceOneTimeFreeAmountTypeEnum;
     /**
-     * The recurring interval of the price.
-     * @type {SubscriptionRecurringInterval}
-     * @memberof ProductPriceRecurringCreate
+     * Whether the price is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductPriceOneTimeFree
      */
-    recurring_interval: SubscriptionRecurringInterval;
+    is_archived: boolean;
+    /**
+     * The type of the price.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFree
+     */
+    type: ProductPriceOneTimeFreeTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const ProductPriceRecurringCreateTypeEnum = {
-    RECURRING: 'recurring'
+export const ProductPriceOneTimeFreeAmountTypeEnum = {
+    FREE: 'free'
 } as const;
-export type ProductPriceRecurringCreateTypeEnum = typeof ProductPriceRecurringCreateTypeEnum[keyof typeof ProductPriceRecurringCreateTypeEnum];
+export type ProductPriceOneTimeFreeAmountTypeEnum = typeof ProductPriceOneTimeFreeAmountTypeEnum[keyof typeof ProductPriceOneTimeFreeAmountTypeEnum];
 
+/**
+ * @export
+ */
+export const ProductPriceOneTimeFreeTypeEnum = {
+    ONE_TIME: 'one_time'
+} as const;
+export type ProductPriceOneTimeFreeTypeEnum = typeof ProductPriceOneTimeFreeTypeEnum[keyof typeof ProductPriceOneTimeFreeTypeEnum];
+
+/**
+ * Schema to create a free one-time product price.
+ * @export
+ * @interface ProductPriceOneTimeFreeCreate
+ */
+export interface ProductPriceOneTimeFreeCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeFreeCreate
+     */
+    type: ProductPriceOneTimeFreeCreateTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeFreeCreate
+     */
+    amount_type: ProductPriceOneTimeFreeCreateAmountTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeFreeCreateTypeEnum = {
+    ONE_TIME: 'one_time'
+} as const;
+export type ProductPriceOneTimeFreeCreateTypeEnum = typeof ProductPriceOneTimeFreeCreateTypeEnum[keyof typeof ProductPriceOneTimeFreeCreateTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeFreeCreateAmountTypeEnum = {
+    FREE: 'free'
+} as const;
+export type ProductPriceOneTimeFreeCreateAmountTypeEnum = typeof ProductPriceOneTimeFreeCreateAmountTypeEnum[keyof typeof ProductPriceOneTimeFreeCreateAmountTypeEnum];
+
+/**
+ * @type ProductPriceRecurring
+ * 
+ * @export
+ */
+export type ProductPriceRecurring = { amount_type: 'custom' } & ProductPriceRecurringCustom | { amount_type: 'fixed' } & ProductPriceRecurringFixed | { amount_type: 'free' } & ProductPriceRecurringFree;
 /**
  * A pay-what-you-want recurring price for a product, i.e. a subscription.
  * @export
@@ -11738,17 +11738,17 @@ export interface ProductPriceRecurringCustom {
      */
     amount_type: ProductPriceRecurringCustomAmountTypeEnum;
     /**
-     * The currency.
-     * @type {string}
-     * @memberof ProductPriceRecurringCustom
-     */
-    price_currency: string;
-    /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
      * @memberof ProductPriceRecurringCustom
      */
     is_archived: boolean;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    price_currency: string;
     /**
      * 
      * @type {number}
@@ -11829,17 +11829,17 @@ export interface ProductPriceRecurringFixed {
      */
     amount_type: ProductPriceRecurringFixedAmountTypeEnum;
     /**
-     * The currency.
-     * @type {string}
-     * @memberof ProductPriceRecurringFixed
-     */
-    price_currency: string;
-    /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
      * @memberof ProductPriceRecurringFixed
      */
     is_archived: boolean;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    price_currency: string;
     /**
      * The price in cents.
      * @type {number}
@@ -11876,6 +11876,171 @@ export const ProductPriceRecurringFixedTypeEnum = {
     RECURRING: 'recurring'
 } as const;
 export type ProductPriceRecurringFixedTypeEnum = typeof ProductPriceRecurringFixedTypeEnum[keyof typeof ProductPriceRecurringFixedTypeEnum];
+
+/**
+ * Schema to create a recurring product price, i.e. a subscription.
+ * @export
+ * @interface ProductPriceRecurringFixedCreate
+ */
+export interface ProductPriceRecurringFixedCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFixedCreate
+     */
+    type: ProductPriceRecurringFixedCreateTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFixedCreate
+     */
+    amount_type: ProductPriceRecurringFixedCreateAmountTypeEnum;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceRecurringFixedCreate
+     */
+    price_amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixedCreate
+     */
+    price_currency?: string;
+    /**
+     * The recurring interval of the price.
+     * @type {SubscriptionRecurringInterval}
+     * @memberof ProductPriceRecurringFixedCreate
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFixedCreateTypeEnum = {
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceRecurringFixedCreateTypeEnum = typeof ProductPriceRecurringFixedCreateTypeEnum[keyof typeof ProductPriceRecurringFixedCreateTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFixedCreateAmountTypeEnum = {
+    FIXED: 'fixed'
+} as const;
+export type ProductPriceRecurringFixedCreateAmountTypeEnum = typeof ProductPriceRecurringFixedCreateAmountTypeEnum[keyof typeof ProductPriceRecurringFixedCreateAmountTypeEnum];
+
+/**
+ * A free recurring price for a product, i.e. a subscription.
+ * @export
+ * @interface ProductPriceRecurringFree
+ */
+export interface ProductPriceRecurringFree {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductPriceRecurringFree
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFree
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringFree
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFree
+     */
+    amount_type: ProductPriceRecurringFreeAmountTypeEnum;
+    /**
+     * Whether the price is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductPriceRecurringFree
+     */
+    is_archived: boolean;
+    /**
+     * The type of the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringFree
+     */
+    type: ProductPriceRecurringFreeTypeEnum;
+    /**
+     * The recurring interval of the price.
+     * @type {SubscriptionRecurringInterval}
+     * @memberof ProductPriceRecurringFree
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFreeAmountTypeEnum = {
+    FREE: 'free'
+} as const;
+export type ProductPriceRecurringFreeAmountTypeEnum = typeof ProductPriceRecurringFreeAmountTypeEnum[keyof typeof ProductPriceRecurringFreeAmountTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFreeTypeEnum = {
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceRecurringFreeTypeEnum = typeof ProductPriceRecurringFreeTypeEnum[keyof typeof ProductPriceRecurringFreeTypeEnum];
+
+/**
+ * Schema to create a free recurring product price, i.e. a subscription.
+ * @export
+ * @interface ProductPriceRecurringFreeCreate
+ */
+export interface ProductPriceRecurringFreeCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFreeCreate
+     */
+    type: ProductPriceRecurringFreeCreateTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringFreeCreate
+     */
+    amount_type: ProductPriceRecurringFreeCreateAmountTypeEnum;
+    /**
+     * The recurring interval of the price.
+     * @type {SubscriptionRecurringInterval}
+     * @memberof ProductPriceRecurringFreeCreate
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFreeCreateTypeEnum = {
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceRecurringFreeCreateTypeEnum = typeof ProductPriceRecurringFreeCreateTypeEnum[keyof typeof ProductPriceRecurringFreeCreateTypeEnum];
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringFreeCreateAmountTypeEnum = {
+    FREE: 'free'
+} as const;
+export type ProductPriceRecurringFreeCreateAmountTypeEnum = typeof ProductPriceRecurringFreeCreateAmountTypeEnum[keyof typeof ProductPriceRecurringFreeCreateAmountTypeEnum];
 
 
 /**
@@ -11921,11 +12086,11 @@ export interface ProductRecurringCreate {
      */
     description?: string | null;
     /**
-     * List of available prices for this product.
-     * @type {Array<ProductPriceRecurringCreate>}
+     * 
+     * @type {Prices}
      * @memberof ProductRecurringCreate
      */
-    prices: Array<ProductPriceRecurringCreate>;
+    prices: Prices;
     /**
      * 
      * @type {Array<string>}
@@ -11938,32 +12103,7 @@ export interface ProductRecurringCreate {
      * @memberof ProductRecurringCreate
      */
     organization_id?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ProductRecurringCreate
-     * @deprecated
-     */
-    type: ProductRecurringCreateTypeEnum;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ProductRecurringCreate
-     * @deprecated
-     */
-    is_highlighted?: boolean;
 }
-
-
-/**
- * @export
- */
-export const ProductRecurringCreateTypeEnum = {
-    INDIVIDUAL: 'individual',
-    BUSINESS: 'business'
-} as const;
-export type ProductRecurringCreateTypeEnum = typeof ProductRecurringCreateTypeEnum[keyof typeof ProductRecurringCreateTypeEnum];
-
 /**
  * Schema to update a product.
  * @export
@@ -11987,12 +12127,6 @@ export interface ProductUpdate {
      * @type {boolean}
      * @memberof ProductUpdate
      */
-    is_highlighted?: boolean | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ProductUpdate
-     */
     is_archived?: boolean | null;
     /**
      * 
@@ -12011,7 +12145,7 @@ export interface ProductUpdate {
  * @type ProductUpdatePricesInner
  * @export
  */
-export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceRecurringCreate;
+export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate | ProductPriceRecurringFixedCreate | ProductPriceRecurringFreeCreate;
 
 /**
  * 
@@ -13151,7 +13285,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    price_id: string | null;
+    price_id: string;
     /**
      * 
      * @type {SubscriptionUser}
@@ -13169,29 +13303,10 @@ export interface Subscription {
      * @type {ProductPrice}
      * @memberof Subscription
      */
-    price: ProductPrice | null;
+    price: ProductPrice;
 }
 
 
-/**
- * Request schema for creating a subscription by email.
- * @export
- * @interface SubscriptionCreateEmail
- */
-export interface SubscriptionCreateEmail {
-    /**
-     * The email address of the user.
-     * @type {string}
-     * @memberof SubscriptionCreateEmail
-     */
-    email: string;
-    /**
-     * The ID of the product. **Must be the free subscription tier**.
-     * @type {string}
-     * @memberof SubscriptionCreateEmail
-     */
-    product_id: string;
-}
 /**
  * @type SubscriptionIDFilter
  * Filter by subscription ID.
@@ -13226,8 +13341,6 @@ export const SubscriptionSortProperty = {
     CURRENT_PERIOD_END2: '-current_period_end',
     AMOUNT: 'amount',
     AMOUNT2: '-amount',
-    SUBSCRIPTION_TIER_TYPE: 'subscription_tier_type',
-    SUBSCRIPTION_TIER_TYPE2: '-subscription_tier_type',
     PRODUCT: 'product',
     PRODUCT2: '-product'
 } as const;
@@ -13248,25 +13361,6 @@ export const SubscriptionStatus = {
     UNPAID: 'unpaid'
 } as const;
 export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
-
-
-/**
- * 
- * @export
- */
-export const SubscriptionTierType = {
-    FREE: 'free',
-    INDIVIDUAL: 'individual',
-    BUSINESS: 'business'
-} as const;
-export type SubscriptionTierType = typeof SubscriptionTierType[keyof typeof SubscriptionTierType];
-
-/**
- * @type SubscriptionTierTypeFilter
- * Filter by subscription tier type.
- * @export
- */
-export type SubscriptionTierTypeFilter = Array<SubscriptionTierType> | SubscriptionTierType;
 
 /**
  * 
@@ -13298,19 +13392,6 @@ export interface SubscriptionUser {
      * @memberof SubscriptionUser
      */
     avatar_url: string | null;
-}
-/**
- * Result of a subscription import operation.
- * @export
- * @interface SubscriptionsImported
- */
-export interface SubscriptionsImported {
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionsImported
-     */
-    count: number;
 }
 /**
  * 
@@ -14367,15 +14448,7 @@ export interface TransactionProduct {
      * @memberof TransactionProduct
      */
     organization: TransactionOrganization | null;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof TransactionProduct
-     */
-    type: SubscriptionTierType | null;
 }
-
-
 /**
  * 
  * @export
@@ -14783,25 +14856,6 @@ export const UserBenefitSortProperty = {
 export type UserBenefitSortProperty = typeof UserBenefitSortProperty[keyof typeof UserBenefitSortProperty];
 
 /**
- * 
- * @export
- * @interface UserFreeSubscriptionCreate
- */
-export interface UserFreeSubscriptionCreate {
-    /**
-     * ID of the free tier to subscribe to.
-     * @type {string}
-     * @memberof UserFreeSubscriptionCreate
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserFreeSubscriptionCreate
-     */
-    customer_email?: string | null;
-}
-/**
  * @type UserIDFilter
  * Filter by customer\'s user ID.
  * @export
@@ -15011,18 +15065,6 @@ export interface UserOrderProduct {
      */
     organization_id: string;
     /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof UserOrderProduct
-     */
-    type: SubscriptionTierType | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserOrderProduct
-     */
-    is_highlighted: boolean | null;
-    /**
      * List of available prices for this product.
      * @type {Array<ProductPrice>}
      * @memberof UserOrderProduct
@@ -15041,8 +15083,6 @@ export interface UserOrderProduct {
      */
     medias: Array<ProductMediaFileRead>;
 }
-
-
 
 /**
  * 
@@ -15157,7 +15197,7 @@ export interface UserOrderSubscription {
      * @type {string}
      * @memberof UserOrderSubscription
      */
-    price_id: string | null;
+    price_id: string;
 }
 
 
@@ -15368,7 +15408,7 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    price_id: string | null;
+    price_id: string;
     /**
      * 
      * @type {UserSubscriptionProduct}
@@ -15380,7 +15420,7 @@ export interface UserSubscription {
      * @type {ProductPrice}
      * @memberof UserSubscription
      */
-    price: ProductPrice | null;
+    price: ProductPrice;
 }
 
 
@@ -15439,18 +15479,6 @@ export interface UserSubscriptionProduct {
      */
     organization_id: string;
     /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof UserSubscriptionProduct
-     */
-    type: SubscriptionTierType | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserSubscriptionProduct
-     */
-    is_highlighted: boolean | null;
-    /**
      * List of available prices for this product.
      * @type {Array<ProductPrice>}
      * @memberof UserSubscriptionProduct
@@ -15469,8 +15497,6 @@ export interface UserSubscriptionProduct {
      */
     medias: Array<ProductMediaFileRead>;
 }
-
-
 
 /**
  * 

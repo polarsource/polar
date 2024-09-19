@@ -8,7 +8,14 @@
     },
     "servers": [
         {
-            "url": "https://api.polar.sh"
+            "url": "https://api.polar.sh",
+            "description": "Production environment",
+            "x-speakeasy-server-id": "production"
+        },
+        {
+            "url": "https://sandbox-api.polar.sh",
+            "description": "Sandbox environment",
+            "x-speakeasy-server-id": "sandbox"
         }
     ],
     "paths": {
@@ -1160,85 +1167,6 @@
                 },
                 "x-speakeasy-group": "users.subscriptions",
                 "x-speakeasy-name-override": "list"
-            },
-            "post": {
-                "tags": [
-                    "users",
-                    "subscriptions",
-                    "documented",
-                    "featured"
-                ],
-                "summary": "Create Free Subscription",
-                "description": "Create a subscription on a **free** tier.\n\nIf you want to subscribe to a paid tier, you need to create a checkout session.",
-                "operationId": "users:subscriptions:create",
-                "security": [
-                    {
-                        "oidc": [
-                            "user:subscriptions:write"
-                        ]
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UserFreeSubscriptionCreate"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Subscription created.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserSubscription"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Already subscribed to one of the tier of this organization.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AlreadySubscribed"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Subscription not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ResourceNotFound"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
-                ],
-                "x-speakeasy-group": "users.subscriptions",
-                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/users/subscriptions/{id}": {
@@ -1365,16 +1293,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/UserSubscription"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Can't upgrade from free to paid subscription tier to paid directly.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/FreeSubscriptionUpgrade"
                                 }
                             }
                         }
@@ -8662,8 +8580,8 @@
                             "default": [
                                 "paid_subscription",
                                 "free_subscription",
-                                "order",
-                                "donation"
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -9314,31 +9232,6 @@
                         "description": "Filter by product ID."
                     },
                     {
-                        "name": "type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/SubscriptionTierType"
-                                },
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/SubscriptionTierType"
-                                    }
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "SubscriptionTierType Filter",
-                            "description": "Filter by subscription tier type."
-                        },
-                        "description": "Filter by subscription tier type.",
-                        "deprecated": true
-                    },
-                    {
                         "name": "active",
                         "in": "query",
                         "required": false,
@@ -9454,122 +9347,6 @@
                 },
                 "x-speakeasy-group": "subscriptions",
                 "x-speakeasy-name-override": "list"
-            },
-            "post": {
-                "tags": [
-                    "subscriptions",
-                    "documented"
-                ],
-                "summary": "Create Free Subscription",
-                "description": "Create a subscription on the free tier for a given email.",
-                "operationId": "subscriptions:create",
-                "security": [
-                    {
-                        "oidc": [
-                            "subscriptions:write"
-                        ]
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SubscriptionCreateEmail"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Subscription-Output"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
-                ],
-                "x-speakeasy-group": "subscriptions",
-                "x-speakeasy-name-override": "create"
-            }
-        },
-        "/v1/subscriptions/import": {
-            "post": {
-                "tags": [
-                    "subscriptions",
-                    "documented"
-                ],
-                "summary": "Import Subscriptions",
-                "description": "Import subscriptions from a CSV file.",
-                "operationId": "subscriptions:import",
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Body_subscriptions_import"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SubscriptionsImported"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "oidc": [
-                            "subscriptions:write"
-                        ]
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
-                ],
-                "x-speakeasy-name-override": "import_subscriptions",
-                "x-speakeasy-group": "subscriptions"
             }
         },
         "/v1/subscriptions/export": {
@@ -14241,30 +14018,6 @@
                         "description": "Filter products granting specific benefit."
                     },
                     {
-                        "name": "type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/SubscriptionTierType"
-                                },
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/SubscriptionTierType"
-                                    }
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "SubscriptionTierType Filter",
-                            "description": "Filter by subscription tier type."
-                        },
-                        "description": "Filter by subscription tier type."
-                    },
-                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -17185,28 +16938,6 @@
                     "detail"
                 ],
                 "title": "AlreadyCanceledSubscription"
-            },
-            "AlreadySubscribed": {
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "AlreadySubscribed"
-                        ],
-                        "const": "AlreadySubscribed",
-                        "title": "Type"
-                    },
-                    "detail": {
-                        "type": "string",
-                        "title": "Detail"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "type",
-                    "detail"
-                ],
-                "title": "AlreadySubscribed"
             },
             "AppPermissionsType": {
                 "properties": {
@@ -21782,28 +21513,6 @@
                 ],
                 "title": "Body_oauth2:consent"
             },
-            "Body_subscriptions_import": {
-                "properties": {
-                    "file": {
-                        "type": "string",
-                        "format": "binary",
-                        "title": "File",
-                        "description": "CSV file with emails."
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id",
-                        "description": "The organization ID on which to import the subscriptions."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "file",
-                    "organization_id"
-                ],
-                "title": "Body_subscriptions:import"
-            },
             "BylineProfile": {
                 "properties": {
                     "name": {
@@ -23551,28 +23260,6 @@
                     "parts"
                 ],
                 "title": "FileUploadCompleted"
-            },
-            "FreeSubscriptionUpgrade": {
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "FreeSubscriptionUpgrade"
-                        ],
-                        "const": "FreeSubscriptionUpgrade",
-                        "title": "Type"
-                    },
-                    "detail": {
-                        "type": "string",
-                        "title": "Detail"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "type",
-                    "detail"
-                ],
-                "title": "FreeSubscriptionUpgrade"
             },
             "Funding": {
                 "properties": {
@@ -27856,29 +27543,6 @@
                         "format": "uuid4",
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
-                    },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
                     }
                 },
                 "type": "object",
@@ -27890,9 +27554,7 @@
                     "description",
                     "is_recurring",
                     "is_archived",
-                    "organization_id",
-                    "type",
-                    "is_highlighted"
+                    "organization_id"
                 ],
                 "title": "OrderProduct"
             },
@@ -28023,15 +27685,8 @@
                         "title": "Product Id"
                     },
                     "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
+                        "type": "string",
+                        "format": "uuid4",
                         "title": "Price Id"
                     }
                 },
@@ -28911,12 +28566,6 @@
                         "type": "boolean",
                         "title": "Articles Enabled",
                         "description": "If this organization has articles enabled",
-                        "default": false
-                    },
-                    "subscriptions_enabled": {
-                        "type": "boolean",
-                        "title": "Subscriptions Enabled",
-                        "description": "If this organization has subscriptions enabled",
                         "default": false
                     },
                     "issue_funding_enabled": {
@@ -30332,29 +29981,6 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
-                    },
                     "prices": {
                         "items": {
                             "$ref": "#/components/schemas/ProductPrice-Input"
@@ -30397,8 +30023,6 @@
                     "is_recurring",
                     "is_archived",
                     "organization_id",
-                    "type",
-                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"
@@ -30466,29 +30090,6 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
-                    },
                     "prices": {
                         "items": {
                             "$ref": "#/components/schemas/ProductPrice-Output"
@@ -30531,8 +30132,6 @@
                     "is_recurring",
                     "is_archived",
                     "organization_id",
-                    "type",
-                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"
@@ -30955,6 +30554,9 @@
                                 },
                                 {
                                     "$ref": "#/components/schemas/ProductPriceOneTimeCustomCreate"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTimeFreeCreate"
                                 }
                             ]
                         },
@@ -31049,13 +30651,17 @@
                     },
                     {
                         "$ref": "#/components/schemas/ProductPriceOneTimeCustom"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTimeFree"
                     }
                 ],
                 "discriminator": {
                     "propertyName": "amount_type",
                     "mapping": {
                         "custom": "#/components/schemas/ProductPriceOneTimeCustom",
-                        "fixed": "#/components/schemas/ProductPriceOneTimeFixed"
+                        "fixed": "#/components/schemas/ProductPriceOneTimeFixed",
+                        "free": "#/components/schemas/ProductPriceOneTimeFree"
                     }
                 }
             },
@@ -31094,15 +30700,15 @@
                         "const": "custom",
                         "title": "Amount Type"
                     },
-                    "price_currency": {
-                        "type": "string",
-                        "title": "Price Currency",
-                        "description": "The currency."
-                    },
                     "is_archived": {
                         "type": "boolean",
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
                     },
                     "minimum_amount": {
                         "anyOf": [
@@ -31156,8 +30762,8 @@
                     "modified_at",
                     "id",
                     "amount_type",
-                    "price_currency",
                     "is_archived",
+                    "price_currency",
                     "minimum_amount",
                     "maximum_amount",
                     "preset_amount",
@@ -31175,6 +30781,14 @@
                         ],
                         "const": "one_time",
                         "title": "Type"
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "custom"
+                        ],
+                        "const": "custom",
+                        "title": "Amount Type"
                     },
                     "price_currency": {
                         "type": "string",
@@ -31231,7 +30845,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "type"
+                    "type",
+                    "amount_type"
                 ],
                 "title": "ProductPriceOneTimeCustomCreate",
                 "description": "Schema to create a pay-what-you-want price for a one-time product."
@@ -31271,15 +30886,15 @@
                         "const": "fixed",
                         "title": "Amount Type"
                     },
-                    "price_currency": {
-                        "type": "string",
-                        "title": "Price Currency",
-                        "description": "The currency."
-                    },
                     "is_archived": {
                         "type": "boolean",
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
                     },
                     "price_amount": {
                         "type": "integer",
@@ -31302,8 +30917,8 @@
                     "modified_at",
                     "id",
                     "amount_type",
-                    "price_currency",
                     "is_archived",
+                    "price_currency",
                     "price_amount",
                     "type"
                 ],
@@ -31320,12 +30935,13 @@
                         "const": "one_time",
                         "title": "Type"
                     },
-                    "price_currency": {
+                    "amount_type": {
                         "type": "string",
-                        "pattern": "usd",
-                        "title": "Price Currency",
-                        "description": "The currency. Currently, only `usd` is supported.",
-                        "default": "usd"
+                        "enum": [
+                            "fixed"
+                        ],
+                        "const": "fixed",
+                        "title": "Amount Type"
                     },
                     "price_amount": {
                         "type": "integer",
@@ -31333,15 +30949,112 @@
                         "minimum": 50,
                         "title": "Price Amount",
                         "description": "The price in cents."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "pattern": "usd",
+                        "title": "Price Currency",
+                        "description": "The currency. Currently, only `usd` is supported.",
+                        "default": "usd"
                     }
                 },
                 "type": "object",
                 "required": [
                     "type",
+                    "amount_type",
                     "price_amount"
                 ],
                 "title": "ProductPriceOneTimeFixedCreate",
                 "description": "Schema to create a one-time product price."
+            },
+            "ProductPriceOneTimeFree": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the price."
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "free"
+                        ],
+                        "const": "free",
+                        "title": "Amount Type"
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the price is archived and no longer available."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "one_time"
+                        ],
+                        "const": "one_time",
+                        "title": "Type",
+                        "description": "The type of the price."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount_type",
+                    "is_archived",
+                    "type"
+                ],
+                "title": "ProductPriceOneTimeFree",
+                "description": "A free one-time price for a product."
+            },
+            "ProductPriceOneTimeFreeCreate": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "one_time"
+                        ],
+                        "const": "one_time",
+                        "title": "Type"
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "free"
+                        ],
+                        "const": "free",
+                        "title": "Amount Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "amount_type"
+                ],
+                "title": "ProductPriceOneTimeFreeCreate",
+                "description": "Schema to create a free one-time product price."
             },
             "ProductPriceRecurring-Input": {
                 "oneOf": [
@@ -31350,13 +31063,17 @@
                     },
                     {
                         "$ref": "#/components/schemas/ProductPriceRecurringCustom"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringFree"
                     }
                 ],
                 "discriminator": {
                     "propertyName": "amount_type",
                     "mapping": {
                         "custom": "#/components/schemas/ProductPriceRecurringCustom",
-                        "fixed": "#/components/schemas/ProductPriceRecurringFixed"
+                        "fixed": "#/components/schemas/ProductPriceRecurringFixed",
+                        "free": "#/components/schemas/ProductPriceRecurringFree"
                     }
                 }
             },
@@ -31367,57 +31084,19 @@
                     },
                     {
                         "$ref": "#/components/schemas/ProductPriceRecurringCustom"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringFree"
                     }
                 ],
                 "discriminator": {
                     "propertyName": "amount_type",
                     "mapping": {
                         "custom": "#/components/schemas/ProductPriceRecurringCustom",
-                        "fixed": "#/components/schemas/ProductPriceRecurringFixed"
+                        "fixed": "#/components/schemas/ProductPriceRecurringFixed",
+                        "free": "#/components/schemas/ProductPriceRecurringFree"
                     }
                 }
-            },
-            "ProductPriceRecurringCreate": {
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "recurring"
-                        ],
-                        "const": "recurring",
-                        "title": "Type"
-                    },
-                    "price_currency": {
-                        "type": "string",
-                        "pattern": "usd",
-                        "title": "Price Currency",
-                        "description": "The currency. Currently, only `usd` is supported.",
-                        "default": "usd"
-                    },
-                    "price_amount": {
-                        "type": "integer",
-                        "maximum": 99999999,
-                        "minimum": 50,
-                        "title": "Price Amount",
-                        "description": "The price in cents."
-                    },
-                    "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
-                        "description": "The recurring interval of the price."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "type",
-                    "price_amount",
-                    "recurring_interval"
-                ],
-                "title": "ProductPriceRecurringCreate",
-                "description": "Schema to create a recurring product price, i.e. a subscription."
             },
             "ProductPriceRecurringCustom": {
                 "properties": {
@@ -31454,15 +31133,15 @@
                         "const": "custom",
                         "title": "Amount Type"
                     },
-                    "price_currency": {
-                        "type": "string",
-                        "title": "Price Currency",
-                        "description": "The currency."
-                    },
                     "is_archived": {
                         "type": "boolean",
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
                     },
                     "minimum_amount": {
                         "anyOf": [
@@ -31524,8 +31203,8 @@
                     "modified_at",
                     "id",
                     "amount_type",
-                    "price_currency",
                     "is_archived",
+                    "price_currency",
                     "minimum_amount",
                     "maximum_amount",
                     "preset_amount",
@@ -31570,15 +31249,15 @@
                         "const": "fixed",
                         "title": "Amount Type"
                     },
-                    "price_currency": {
-                        "type": "string",
-                        "title": "Price Currency",
-                        "description": "The currency."
-                    },
                     "is_archived": {
                         "type": "boolean",
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
                     },
                     "price_amount": {
                         "type": "integer",
@@ -31609,14 +31288,172 @@
                     "modified_at",
                     "id",
                     "amount_type",
-                    "price_currency",
                     "is_archived",
+                    "price_currency",
                     "price_amount",
                     "type",
                     "recurring_interval"
                 ],
                 "title": "ProductPriceRecurringFixed",
                 "description": "A recurring price for a product, i.e. a subscription."
+            },
+            "ProductPriceRecurringFixedCreate": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "recurring"
+                        ],
+                        "const": "recurring",
+                        "title": "Type"
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "fixed"
+                        ],
+                        "const": "fixed",
+                        "title": "Amount Type"
+                    },
+                    "price_amount": {
+                        "type": "integer",
+                        "maximum": 99999999,
+                        "minimum": 50,
+                        "title": "Price Amount",
+                        "description": "The price in cents."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "pattern": "usd",
+                        "title": "Price Currency",
+                        "description": "The currency. Currently, only `usd` is supported.",
+                        "default": "usd"
+                    },
+                    "recurring_interval": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                            }
+                        ],
+                        "description": "The recurring interval of the price."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "amount_type",
+                    "price_amount",
+                    "recurring_interval"
+                ],
+                "title": "ProductPriceRecurringFixedCreate",
+                "description": "Schema to create a recurring product price, i.e. a subscription."
+            },
+            "ProductPriceRecurringFree": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the price."
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "free"
+                        ],
+                        "const": "free",
+                        "title": "Amount Type"
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the price is archived and no longer available."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "recurring"
+                        ],
+                        "const": "recurring",
+                        "title": "Type",
+                        "description": "The type of the price."
+                    },
+                    "recurring_interval": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                            }
+                        ],
+                        "description": "The recurring interval of the price."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount_type",
+                    "is_archived",
+                    "type",
+                    "recurring_interval"
+                ],
+                "title": "ProductPriceRecurringFree",
+                "description": "A free recurring price for a product, i.e. a subscription."
+            },
+            "ProductPriceRecurringFreeCreate": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "recurring"
+                        ],
+                        "const": "recurring",
+                        "title": "Type"
+                    },
+                    "amount_type": {
+                        "type": "string",
+                        "enum": [
+                            "free"
+                        ],
+                        "const": "free",
+                        "title": "Amount Type"
+                    },
+                    "recurring_interval": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                            }
+                        ],
+                        "description": "The recurring interval of the price."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "amount_type",
+                    "recurring_interval"
+                ],
+                "title": "ProductPriceRecurringFreeCreate",
+                "description": "Schema to create a free recurring product price, i.e. a subscription."
             },
             "ProductPriceType": {
                 "type": "string",
@@ -31648,13 +31485,29 @@
                         "description": "The description of the product."
                     },
                     "prices": {
-                        "items": {
-                            "$ref": "#/components/schemas/ProductPriceRecurringCreate"
-                        },
-                        "type": "array",
-                        "maxItems": 2,
-                        "minItems": 1,
-                        "title": "Recurring prices",
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/ProductPriceRecurringFixedCreate"
+                                },
+                                "type": "array",
+                                "maxItems": 2,
+                                "minItems": 1,
+                                "title": "Recurring prices",
+                                "description": "List of recurring prices. Only one price per interval (one monthly and one yearly) is allowed."
+                            },
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/ProductPriceRecurringFreeCreate"
+                                },
+                                "type": "array",
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "title": "Free recurring price",
+                                "description": "List with a single free recurring price."
+                            }
+                        ],
+                        "title": "Prices",
                         "description": "List of available prices for this product."
                     },
                     "medias": {
@@ -31691,28 +31544,12 @@
                         ],
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product. **Required unless you use an organization token.**"
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "individual",
-                            "business"
-                        ],
-                        "title": "Type",
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "type": "boolean",
-                        "title": "Is Highlighted",
-                        "default": false,
-                        "deprecated": true
                     }
                 },
                 "type": "object",
                 "required": [
                     "name",
-                    "prices",
-                    "type"
+                    "prices"
                 ],
                 "title": "ProductRecurringCreate",
                 "description": "Schema to create a recurring product, i.e. a subscription."
@@ -31745,18 +31582,6 @@
                         "title": "Description",
                         "description": "The description of the product."
                     },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
-                    },
                     "is_archived": {
                         "anyOf": [
                             {
@@ -31778,13 +31603,19 @@
                                             "$ref": "#/components/schemas/ExistingProductPrice"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/ProductPriceRecurringCreate"
+                                            "$ref": "#/components/schemas/ProductPriceRecurringFixedCreate"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ProductPriceRecurringFreeCreate"
                                         },
                                         {
                                             "$ref": "#/components/schemas/ProductPriceOneTimeFixedCreate"
                                         },
                                         {
                                             "$ref": "#/components/schemas/ProductPriceOneTimeCustomCreate"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ProductPriceOneTimeFreeCreate"
                                         }
                                     ]
                                 },
@@ -33182,15 +33013,8 @@
                         "title": "Product Id"
                     },
                     "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
+                        "type": "string",
+                        "format": "uuid4",
                         "title": "Price Id"
                     },
                     "user": {
@@ -33200,14 +33024,7 @@
                         "$ref": "#/components/schemas/Product-Input"
                     },
                     "price": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPrice-Input"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
+                        "$ref": "#/components/schemas/ProductPrice-Input"
                     }
                 },
                 "type": "object",
@@ -33344,15 +33161,8 @@
                         "title": "Product Id"
                     },
                     "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
+                        "type": "string",
+                        "format": "uuid4",
                         "title": "Price Id"
                     },
                     "user": {
@@ -33362,14 +33172,7 @@
                         "$ref": "#/components/schemas/Product-Output"
                     },
                     "price": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPrice-Output"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -33395,29 +33198,6 @@
                 ],
                 "title": "Subscription"
             },
-            "SubscriptionCreateEmail": {
-                "properties": {
-                    "email": {
-                        "type": "string",
-                        "format": "email",
-                        "title": "Email",
-                        "description": "The email address of the user."
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id",
-                        "description": "The ID of the product. **Must be the free subscription tier**."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "email",
-                    "product_id"
-                ],
-                "title": "SubscriptionCreateEmail",
-                "description": "Request schema for creating a subscription by email."
-            },
             "SubscriptionRecurringInterval": {
                 "type": "string",
                 "enum": [
@@ -33439,8 +33219,6 @@
                     "-current_period_end",
                     "amount",
                     "-amount",
-                    "subscription_tier_type",
-                    "-subscription_tier_type",
                     "product",
                     "-product"
                 ],
@@ -33458,15 +33236,6 @@
                     "unpaid"
                 ],
                 "title": "SubscriptionStatus"
-            },
-            "SubscriptionTierType": {
-                "type": "string",
-                "enum": [
-                    "free",
-                    "individual",
-                    "business"
-                ],
-                "title": "SubscriptionTierType"
             },
             "SubscriptionUser": {
                 "properties": {
@@ -33509,20 +33278,6 @@
                     "avatar_url"
                 ],
                 "title": "SubscriptionUser"
-            },
-            "SubscriptionsImported": {
-                "properties": {
-                    "count": {
-                        "type": "integer",
-                        "title": "Count"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "count"
-                ],
-                "title": "SubscriptionsImported",
-                "description": "Result of a subscription import operation."
             },
             "SummaryPledge": {
                 "properties": {
@@ -34862,17 +34617,6 @@
                                 "type": "null"
                             }
                         ]
-                    },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
                     }
                 },
                 "type": "object",
@@ -34882,8 +34626,7 @@
                     "id",
                     "name",
                     "organization_id",
-                    "organization",
-                    "type"
+                    "organization"
                 ],
                 "title": "TransactionProduct"
             },
@@ -35363,34 +35106,6 @@
                 ],
                 "title": "UserBenefitSortProperty"
             },
-            "UserFreeSubscriptionCreate": {
-                "properties": {
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id",
-                        "description": "ID of the free tier to subscribe to."
-                    },
-                    "customer_email": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "email"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Email",
-                        "description": "Email of the customer. This field is required if the API is called outside the Polar app."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "product_id"
-                ],
-                "title": "UserFreeSubscriptionCreate"
-            },
             "UserInfoOrganization": {
                 "properties": {
                     "sub": {
@@ -35640,29 +35355,6 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
-                    },
                     "prices": {
                         "items": {
                             "$ref": "#/components/schemas/ProductPrice-Output"
@@ -35705,8 +35397,6 @@
                     "is_recurring",
                     "is_archived",
                     "organization_id",
-                    "type",
-                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"
@@ -35840,15 +35530,8 @@
                         "title": "Product Id"
                     },
                     "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
+                        "type": "string",
+                        "format": "uuid4",
                         "title": "Price Id"
                     }
                 },
@@ -36120,29 +35803,15 @@
                         "title": "Product Id"
                     },
                     "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
+                        "type": "string",
+                        "format": "uuid4",
                         "title": "Price Id"
                     },
                     "product": {
                         "$ref": "#/components/schemas/UserSubscriptionProduct"
                     },
                     "price": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPrice-Output"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -36227,29 +35896,6 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
-                    },
                     "prices": {
                         "items": {
                             "$ref": "#/components/schemas/ProductPrice-Output"
@@ -36292,8 +35938,6 @@
                     "is_recurring",
                     "is_archived",
                     "organization_id",
-                    "type",
-                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"

@@ -25,7 +25,6 @@ import type {
   ProductCreate,
   ProductUpdate,
   ResourceNotFound,
-  SubscriptionTierTypeFilter,
 } from '../models/index';
 
 export interface ProductsApiCreateRequest {
@@ -41,7 +40,6 @@ export interface ProductsApiListRequest {
     isArchived?: boolean;
     isRecurring?: boolean;
     benefitId?: BenefitIDFilter1;
-    type?: SubscriptionTierTypeFilter;
     page?: number;
     limit?: number;
 }
@@ -178,10 +176,6 @@ export class ProductsApi extends runtime.BaseAPI {
 
         if (requestParameters['benefitId'] != null) {
             queryParameters['benefit_id'] = requestParameters['benefitId'];
-        }
-
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
         }
 
         if (requestParameters['page'] != null) {

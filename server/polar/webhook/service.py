@@ -26,6 +26,7 @@ from polar.webhook.schemas import (
 from polar.worker import enqueue_job
 
 from .webhooks import (
+    BaseWebhookPayload,
     SkipEvent,
     UnsupportedTarget,
     WebhookPayloadTypeAdapter,
@@ -229,8 +230,16 @@ class WebhookService:
         payload = WebhookPayloadTypeAdapter.validate_python(
             {"type": event, "data": data}
         )
+        await self.send_payload(session, target, payload)
+
+    async def send_payload(
+        self,
+        session: AsyncSession,
+        target: Organization | User,
+        payload: BaseWebhookPayload,
+    ) -> None:
         for e in await self._get_event_target_endpoints(
-            session, event=event, target=target
+            session, event=payload.type, target=target
         ):
             try:
                 payload_data = payload.get_payload(e.format, target)

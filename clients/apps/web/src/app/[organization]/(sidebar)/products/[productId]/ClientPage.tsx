@@ -93,7 +93,7 @@ export default function ClientPage({
           {product.benefits.length > 0 ? (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <h1 className="font-medium dark:text-white">You get</h1>
+                <h1 className="font-medium dark:text-white">Included</h1>
               </div>
               <List size="small">
                 {product.benefits.map((benefit) => (

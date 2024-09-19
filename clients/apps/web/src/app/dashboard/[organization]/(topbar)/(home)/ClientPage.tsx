@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { CreatorUpsell } from '@/components/Onboarding/Creator/CreatorUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
@@ -26,8 +25,6 @@ const OverviewPage: React.FC<OverviewPageProps> = ({}) => {
         <SubscribersWidget />
         <AccountWidget />
       </div>
-
-      <CreatorUpsell />
     </DashboardBody>
   )
 }

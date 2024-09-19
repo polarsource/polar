@@ -103,7 +103,7 @@ export default function ClientPage({
       await revalidate(`organizations:${organization.slug}`)
       await revalidate(`users:${currentUser?.id}:organizations`)
       setUserOrganizations((orgs) => [...orgs, organization])
-      router.push(`/dashboard/${organization.slug}`)
+      router.push(`/dashboard/${organization.slug}/onboarding`)
     } catch (e) {
       if (e instanceof ResponseError) {
         const body = await e.response.json()

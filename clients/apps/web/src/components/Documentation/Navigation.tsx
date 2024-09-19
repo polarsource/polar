@@ -236,6 +236,7 @@ export const MainNavigation = () => {
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
         <NavigationItem href="/docs/fees">Fees</NavigationItem>
+        <NavigationItem href="/docs/sandbox">Sandbox</NavigationItem>
       </div>
 
       <div>

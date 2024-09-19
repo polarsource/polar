@@ -122,7 +122,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           <div className={variantStyles[variant]['priceLabel']}>
             {price ? (
               <>
-                {price.amount_type === 'fixed' ? (
+                {price.amount_type === 'fixed' && (
                   <>
                     {formatCurrencyAndAmount(
                       price.price_amount,
@@ -133,10 +133,14 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                       {recurringBillingLabel}
                     </span>
                   </>
-                ) : (
+                )}
+                {price.amount_type === 'custom' && (
                   <span className="text-[min(1em,32px)]">
                     Pay what you want
                   </span>
+                )}
+                {price.amount_type === 'free' && (
+                  <span className="text-[min(1em,32px)]">Free</span>
                 )}
               </>
             ) : (

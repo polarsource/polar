@@ -11,10 +11,16 @@ import {
   ProductUpdate,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
-import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
@@ -64,6 +70,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       />
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <input type="hidden" {...register(`prices.${index}.type`)} />
+      <input type="hidden" {...register(`prices.${index}.amount_type`)} />
       <FormField
         control={control}
         name={`prices.${index}.price_amount`}
@@ -138,6 +145,7 @@ const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
       />
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <input type="hidden" {...register(`prices.${index}.type`)} />
+      <input type="hidden" {...register(`prices.${index}.amount_type`)} />
       <FormField
         control={control}
         name={`prices.${index}.minimum_amount`}
@@ -194,6 +202,28 @@ const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   )
 }
 
+interface ProductPriceFreeItemProps {
+  index: number
+}
+
+const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = ({
+  index,
+}) => {
+  const { register } = useFormContext<ProductFormType>()
+
+  return (
+    <>
+      <input
+        type="hidden"
+        {...register(`prices.${index}.recurring_interval`)}
+      />
+      <input type="hidden" {...register(`prices.${index}.id`)} />
+      <input type="hidden" {...register(`prices.${index}.type`)} />
+      <input type="hidden" {...register(`prices.${index}.amount_type`)} />
+    </>
+  )
+}
+
 interface ProductFormProps {
   organization: Organization
   update?: boolean
@@ -237,7 +267,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
       : ProductPriceType.ONE_TIME,
   )
 
-  const [amountType, setAmountType] = useState<'fixed' | 'custom'>(
+  const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
     prices.length > 0 && (prices as ProductPrice[])[0].amount_type
       ? (prices as ProductPrice[])[0].amount_type
       : 'fixed',
@@ -247,25 +277,55 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
     if (update) return
 
     if (pricingType === ProductPriceType.ONE_TIME) {
-      replace([
-        {
-          type: 'one_time',
-          price_currency: 'usd',
-          price_amount: 0,
-        },
-      ])
+      if (amountType === 'fixed') {
+        replace([
+          {
+            type: 'one_time',
+            amount_type: 'fixed',
+            price_currency: 'usd',
+            price_amount: 0,
+          },
+        ])
+      } else if (amountType === 'custom') {
+        replace([
+          {
+            type: 'one_time',
+            amount_type: 'custom',
+            price_currency: 'usd',
+          },
+        ])
+      } else {
+        replace([
+          {
+            type: 'one_time',
+            amount_type: 'free',
+          },
+        ])
+      }
     } else if (pricingType === ProductPriceType.RECURRING) {
-      replace([
-        {
-          type: 'recurring',
-          recurring_interval: SubscriptionRecurringInterval.MONTH,
-          price_currency: 'usd',
-          price_amount: 0,
-        },
-      ])
-      setAmountType('fixed')
+      if (amountType === 'fixed') {
+        replace([
+          {
+            type: 'recurring',
+            amount_type: 'fixed',
+            recurring_interval: SubscriptionRecurringInterval.MONTH,
+            price_currency: 'usd',
+            price_amount: 0,
+          },
+        ])
+      } else if (amountType === 'free') {
+        replace([
+          {
+            type: 'recurring',
+            amount_type: 'free',
+            recurring_interval: SubscriptionRecurringInterval.MONTH,
+          },
+        ])
+      } else {
+        setAmountType('fixed')
+      }
     }
-  }, [update, pricingType, replace])
+  }, [update, pricingType, replace, amountType])
 
   return (
     <>
@@ -341,72 +401,88 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
               </TabsList>
             </Tabs>
           )}
-          {!update && pricingType === ProductPriceType.ONE_TIME && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="amountType"
-                checked={amountType === 'custom'}
-                onCheckedChange={(checked) =>
-                  setAmountType(checked ? 'custom' : 'fixed')
-                }
-              />{' '}
-              <FormLabel htmlFor="amountType">Pay what you want</FormLabel>
-            </div>
+          {!update && (
+            <Select
+              value={amountType}
+              onValueChange={(value) =>
+                setAmountType(value as 'fixed' | 'custom' | 'free')
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a product" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fixed price</SelectItem>
+                {pricingType === ProductPriceType.ONE_TIME && (
+                  <SelectItem value="custom">Pay what you want</SelectItem>
+                )}
+                <SelectItem value="free">Free</SelectItem>
+              </SelectContent>
+            </Select>
           )}
-          {prices.map((price, index) =>
-            amountType === 'fixed' ? (
-              <ProductPriceItem
-                key={price.id}
-                index={index}
-                fieldArray={pricesFieldArray}
-                deletable={pricingType === ProductPriceType.RECURRING}
-              />
-            ) : (
-              <ProductPriceCustomItem key={price.id} index={index} />
-            ),
-          )}
-          {pricingType === ProductPriceType.RECURRING && (
-            <div className="flex flex-row gap-2">
-              {!hasMonthlyPrice && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  type="button"
-                  onClick={() => {
-                    append({
-                      type: 'recurring',
-                      recurring_interval: SubscriptionRecurringInterval.MONTH,
-                      price_currency: 'usd',
-                      price_amount: 0,
-                    })
-                    clearErrors('prices')
-                  }}
-                >
-                  Add monthly pricing
-                </Button>
+          {prices.map((price, index) => (
+            <>
+              {amountType === 'fixed' && (
+                <ProductPriceItem
+                  key={price.id}
+                  index={index}
+                  fieldArray={pricesFieldArray}
+                  deletable={pricingType === ProductPriceType.RECURRING}
+                />
               )}
-              {!hasYearlyPrice && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  type="button"
-                  onClick={() => {
-                    append({
-                      type: 'recurring',
-                      recurring_interval: SubscriptionRecurringInterval.YEAR,
-                      price_currency: 'usd',
-                      price_amount: 0,
-                    })
-                    clearErrors('prices')
-                  }}
-                >
-                  Add yearly pricing
-                </Button>
+              {amountType === 'custom' && (
+                <ProductPriceCustomItem key={price.id} index={index} />
               )}
-            </div>
-          )}
+              {amountType === 'free' && (
+                <ProductPriceFreeItem key={price.id} index={index} />
+              )}
+            </>
+          ))}
+          {amountType !== 'free' &&
+            pricingType === ProductPriceType.RECURRING && (
+              <div className="flex flex-row gap-2">
+                {!hasMonthlyPrice && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="self-start"
+                    type="button"
+                    onClick={() => {
+                      append({
+                        type: 'recurring',
+                        amount_type: 'fixed',
+                        recurring_interval: SubscriptionRecurringInterval.MONTH,
+                        price_currency: 'usd',
+                        price_amount: 0,
+                      })
+                      clearErrors('prices')
+                    }}
+                  >
+                    Add monthly pricing
+                  </Button>
+                )}
+                {!hasYearlyPrice && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="self-start"
+                    type="button"
+                    onClick={() => {
+                      append({
+                        type: 'recurring',
+                        amount_type: 'fixed',
+                        recurring_interval: SubscriptionRecurringInterval.YEAR,
+                        price_currency: 'usd',
+                        price_amount: 0,
+                      })
+                      clearErrors('prices')
+                    }}
+                  >
+                    Add yearly pricing
+                  </Button>
+                )}
+              </div>
+            )}
           <ErrorMessage
             errors={errors}
             name="prices"

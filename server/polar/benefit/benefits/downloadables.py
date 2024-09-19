@@ -10,6 +10,7 @@ from polar.benefit import schemas as benefit_schemas
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
+from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
 from polar.user.service.downloadables import downloadable as downloadable_service
 
 from .base import (
@@ -25,22 +26,26 @@ def get_active_file_ids(properties: BenefitDownloadablesProperties) -> list[UUID
 
 
 class BenefitDownloadablesService(
-    BenefitServiceProtocol[BenefitDownloadables, BenefitDownloadablesProperties]
+    BenefitServiceProtocol[
+        BenefitDownloadables,
+        BenefitDownloadablesProperties,
+        BenefitGrantDownloadablesProperties,
+    ]
 ):
     async def grant(
         self,
         benefit: BenefitDownloadables,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantDownloadablesProperties,
         *,
         update: bool = False,
         attempt: int = 1,
-    ) -> dict[str, Any]:
-        ret: dict[str, Any] = dict(files=[])
+    ) -> BenefitGrantDownloadablesProperties:
         file_ids = get_active_file_ids(benefit.properties)
         if not file_ids:
-            return ret
+            return {}
 
+        granted = []
         for file_id in file_ids:
             downloadable = await downloadable_service.grant_for_benefit_file(
                 self.session,
@@ -48,22 +53,21 @@ class BenefitDownloadablesService(
                 benefit_id=benefit.id,
                 file_id=file_id,
             )
+            if downloadable:
+                granted.append(str(downloadable.file_id))
 
-            if not downloadable:
-                continue
-
-            ret["files"].append(str(downloadable.file_id))
-
-        return ret
+        return {
+            "files": granted,
+        }
 
     async def revoke(
         self,
         benefit: BenefitDownloadables,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantDownloadablesProperties,
         *,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantDownloadablesProperties:
         await downloadable_service.revoke_for_benefit(
             self.session,
             user=user,

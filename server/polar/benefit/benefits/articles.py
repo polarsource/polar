@@ -9,23 +9,26 @@ from polar.auth.models import AuthSubject
 from polar.locker import Locker
 from polar.models import ArticlesSubscription, Benefit, BenefitGrant, Organization, User
 from polar.models.benefit import BenefitArticles, BenefitArticlesProperties, BenefitType
+from polar.models.benefit_grant import BenefitGrantArticlesProperties
 from polar.redis import redis
 
 from .base import BenefitServiceProtocol
 
 
 class BenefitArticlesService(
-    BenefitServiceProtocol[BenefitArticles, BenefitArticlesProperties]
+    BenefitServiceProtocol[
+        BenefitArticles, BenefitArticlesProperties, BenefitGrantArticlesProperties
+    ]
 ):
     async def grant(
         self,
         benefit: BenefitArticles,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantArticlesProperties,
         *,
         update: bool = False,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantArticlesProperties:
         async with self._acquire_lock(user):
             organization_id = benefit.organization_id
 
@@ -48,10 +51,10 @@ class BenefitArticlesService(
         self,
         benefit: BenefitArticles,
         user: User,
-        grant_properties: dict[str, Any],
+        grant_properties: BenefitGrantArticlesProperties,
         *,
         attempt: int = 1,
-    ) -> dict[str, Any]:
+    ) -> BenefitGrantArticlesProperties:
         async with self._acquire_lock(user):
             organization_id = benefit.organization_id
 

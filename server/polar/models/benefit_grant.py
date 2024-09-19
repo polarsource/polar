@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -66,6 +66,46 @@ class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScope
         for key, value in other.items():
             clauses.append(composite_columns[f"{key}_id"] == value.id)
         return and_(*clauses)
+
+
+class BenefitGrantProperties(TypedDict):
+    """Benefit grant properties."""
+
+
+class BenefitGrantCustomProperties(BenefitGrantProperties): ...
+
+
+class BenefitGrantArticlesProperties(BenefitGrantProperties): ...
+
+
+class BenefitGrantAdsProperties(BenefitGrantProperties):
+    advertisement_campaign_id: UUID
+
+
+class BenefitGrantDiscordProperties(BenefitGrantProperties, total=False):
+    guild_id: str
+    role_id: str
+    account_id: str
+
+
+class BenefitGrantGitHubRepositoryProperties(BenefitGrantProperties, total=False):
+    # repository_id was set previously (before 2024-13-15), for benefits using the "main"
+    # Polar GitHub App for granting benefits. Benefits created after this date are using
+    # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
+    # and repository_name fields.
+    repository_id: UUID | None
+    repository_owner: str
+    repository_name: str
+    permission: Literal["pull", "triage", "push", "maintain", "admin"]
+
+
+class BenefitGrantDownloadablesProperties(BenefitGrantProperties, total=False):
+    files: list[UUID]
+
+
+class BenefitGrantLicenseKeysProperties(BenefitGrantProperties):
+    license_key_id: str
+    display_key: str
 
 
 class BenefitGrant(RecordModel):

@@ -115,18 +115,20 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               >
                 Download Invoice
               </Button>
-              {organization && organization.profile_settings?.enabled && (
-                <Link
-                  href={organizationPageLink(
-                    organization,
-                    `products/${order.product.id}`,
-                  )}
-                >
-                  <Button size="lg" variant="ghost" fullWidth>
-                    Go to Product
-                  </Button>
-                </Link>
-              )}
+              {organization &&
+                organization.profile_settings?.enabled &&
+                !order.product.is_archived && (
+                  <Link
+                    href={organizationPageLink(
+                      organization,
+                      `products/${order.product.id}`,
+                    )}
+                  >
+                    <Button size="lg" variant="ghost" fullWidth>
+                      Go to Product
+                    </Button>
+                  </Link>
+                )}
             </div>
           </ShadowBox>
         </div>

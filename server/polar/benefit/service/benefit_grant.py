@@ -373,6 +373,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         user = await user_service.get(session, grant.user_id)
         assert user is not None
 
+        previous_properties = grant.properties
         benefit_service = get_benefit_service(benefit.type, session)
         properties = await benefit_service.revoke(
             benefit,
@@ -385,7 +386,13 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         grant.set_revoked()
 
         session.add(grant)
-
+        await self._send_webhook(
+            session,
+            benefit,
+            grant,
+            event_type=WebhookEventType.benefit_revoked,
+            previous_grant_properties=previous_properties,
+        )
         return grant
 
     async def handle_precondition_error(

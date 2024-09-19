@@ -6,11 +6,12 @@ import { PurchasesQueryParametersContext } from '@/components/Purchases/Purchase
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useOrganization, useUserOrders } from '@/hooks/queries'
-import { DiamondOutlined } from '@mui/icons-material'
+import { DiamondOutlined, Search } from '@mui/icons-material'
 import { ProductPriceType, UserOrder } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useContext } from 'react'
 
@@ -37,6 +38,16 @@ export default function ClientPage() {
     page: purchaseParameters.page,
   })
 
+  const handleSearch = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setPurchaseParameters((prev) => ({
+        ...prev,
+        query: e.target.value,
+      }))
+    },
+    [setPurchaseParameters],
+  )
+
   return (
     <div className="flex h-full flex-col gap-12 md:flex-row">
       <div className="flex h-full w-full flex-shrink-0 flex-col gap-y-12 self-stretch md:sticky md:top-[3rem] md:max-w-xs">
@@ -54,6 +65,18 @@ export default function ClientPage() {
         </div>
       ) : (
         <div className="flex w-full max-w-2xl flex-col gap-y-6">
+          <div className="flex flex-row items-center justify-between">
+            <h3 className="text-2xl">Products</h3>
+            <div className="w-full max-w-64">
+              <Input
+                preSlot={<Search fontSize="small" />}
+                placeholder="Search Products"
+                onChange={handleSearch}
+                value={purchaseParameters.query}
+              />
+            </div>
+          </div>
+
           {orders?.items.map((order) => (
             <Link
               key={order.id}
@@ -90,14 +113,14 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
           {order.product.medias.length > 0 ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              className="dark:bg-polar-950 aspect-square h-16 rounded-2xl bg-gray-100 object-cover"
+              className="dark:bg-polar-950 h-16 w-16 rounded-2xl bg-gray-100 object-cover"
               alt={order.product.medias[0].name}
               width={600}
               height={600}
               src={order.product.medias[0].public_url}
             />
           ) : (
-            <div className="dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 flex aspect-square h-16 flex-col items-center justify-center rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white">
+            <div className="dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white">
               <div className="flex flex-col items-center justify-center text-4xl text-blue-500 dark:text-white">
                 <LogoIcon className="dark:text-polar-600 h-12 w-12 text-white/50" />
               </div>

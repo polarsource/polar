@@ -19,7 +19,10 @@ from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 from polar.models.webhook_event import WebhookEvent
 from polar.organization.resolver import get_payload_organization
-from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
+from polar.webhook.schemas import (
+    WebhookEndpointCreate,
+    WebhookEndpointUpdate,
+)
 from polar.worker import enqueue_job
 
 from .webhooks import (
@@ -223,11 +226,9 @@ class WebhookService:
         self, session: AsyncSession, target: Organization | User, we: WebhookTypeObject
     ) -> None:
         event, data = we
-
         payload = WebhookPayloadTypeAdapter.validate_python(
             {"type": event, "data": data}
         )
-
         for e in await self._get_event_target_endpoints(
             session, event=event, target=target
         ):

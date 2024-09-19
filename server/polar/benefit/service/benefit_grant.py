@@ -22,6 +22,7 @@ from polar.models import (
 from polar.models.benefit import BenefitProperties, BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.user import OAuthPlatform
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationPayload,
     NotificationType,
@@ -31,6 +32,7 @@ from polar.notifications.service import notifications as notification_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user.service.user import user as user_service
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .benefit_grant_scope import resolve_scope, scope_to_args
@@ -135,6 +137,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
+        await webhook_service.send(
+            session,
+            target=benefit.organization,
+            we=(WebhookEventType.benefit_granted, grant),
+        )
         return grant
 
     async def revoke_benefit(
@@ -189,6 +196,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
+        await webhook_service.send(
+            session,
+            target=benefit.organization,
+            we=(WebhookEventType.benefit_revoked, grant),
+        )
         return grant
 
     async def enqueue_benefits_grants(

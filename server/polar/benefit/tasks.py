@@ -101,7 +101,7 @@ async def benefit_grant(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        benefit = await benefit_service.get(session, benefit_id)
+        benefit = await benefit_service.get(session, benefit_id, loaded=True)
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 
@@ -135,7 +135,7 @@ async def benefit_revoke(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        benefit = await benefit_service.get(session, benefit_id)
+        benefit = await benefit_service.get(session, benefit_id, loaded=True)
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 

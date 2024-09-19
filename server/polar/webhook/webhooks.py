@@ -10,11 +10,13 @@ from makefun import with_signature
 from pydantic import Discriminator, TypeAdapter
 
 from polar.benefit.schemas import Benefit as BenefitSchema
+from polar.benefit.schemas import BenefitGrantWebhook
 from polar.donation.schemas import Donation as DonationSchema
 from polar.exceptions import PolarError
 from polar.kit.schemas import IDSchema, Schema
 from polar.models import (
     Benefit,
+    BenefitGrant,
     Donation,
     Order,
     Organization,
@@ -45,6 +47,8 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.organization_updated], Organization]
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
+    | tuple[Literal[WebhookEventType.benefit_granted], BenefitGrant]
+    | tuple[Literal[WebhookEventType.benefit_revoked], BenefitGrant]
 )
 
 
@@ -568,6 +572,28 @@ class WebhookBenefitUpdatedPayload(BaseWebhookPayload):
     data: BenefitSchema
 
 
+class WebhookBenefitGrantedPayload(BaseWebhookPayload):
+    """
+    Sent when a new benefit is granted.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.benefit_granted]
+    data: BenefitGrantWebhook
+
+
+class WebhookBenefitRevokedPayload(BaseWebhookPayload):
+    """
+    Sent when a benefit is revoked.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.benefit_revoked]
+    data: BenefitGrantWebhook
+
+
 WebhookPayload = Annotated[
     WebhookOrderCreatedPayload
     | WebhookSubscriptionCreatedPayload
@@ -579,7 +605,9 @@ WebhookPayload = Annotated[
     | WebhookDonationCreatedPayload
     | WebhookOrganizationUpdatedPayload
     | WebhookBenefitCreatedPayload
-    | WebhookBenefitUpdatedPayload,
+    | WebhookBenefitUpdatedPayload
+    | WebhookBenefitGrantedPayload
+    | WebhookBenefitRevokedPayload,
     Discriminator(discriminator="type"),
 ]
 WebhookPayloadTypeAdapter: TypeAdapter[WebhookPayload] = TypeAdapter(WebhookPayload)

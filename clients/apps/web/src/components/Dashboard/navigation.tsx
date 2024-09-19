@@ -2,12 +2,13 @@ import { Organization } from '@polar-sh/sdk'
 
 import {
   AttachMoneyOutlined,
-  DataUsageOutlined,
   DiamondOutlined,
+  DonutLargeOutlined,
   DraftsOutlined,
   HiveOutlined,
   HowToVote,
   LooksOutlined,
+  ModeStandby,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
   SpokeOutlined,
@@ -204,13 +205,20 @@ const generalRoutesList = (org: Organization): Route[] => [
     link: `/dashboard/${org.slug}/analytics`,
     if: true,
   },
+  {
+    id: 'onboarding',
+    title: 'Onboarding',
+    icon: <DonutLargeOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/onboarding`,
+    if: true,
+  },
 ]
 
 const fundingRoutesList = (org: Organization): Route[] => [
   {
     id: 'org-issues',
     title: 'Issues',
-    icon: <DataUsageOutlined fontSize="inherit" />,
+    icon: <ModeStandby fontSize="inherit" />,
     link: `/dashboard/${org.slug}/issues/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/issues`)

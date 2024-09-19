@@ -21,6 +21,7 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceFree,
     ProductPriceType,
 )
 from polar.organization.schemas import OrganizationID
@@ -73,14 +74,16 @@ ProductDescription = Annotated[
 
 class ProductPriceCreateBase(Schema):
     type: ProductPriceType
-    price_currency: PriceCurrency
+    amount_type: ProductPriceAmountType
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()
 
 
 class ProductPriceFixedCreateBase(ProductPriceCreateBase):
+    amount_type: Literal[ProductPriceAmountType.fixed]
     price_amount: PriceAmount
+    price_currency: PriceCurrency
 
     def get_model_class(self) -> builtins.type[ProductPriceFixed]:
         return ProductPriceFixed
@@ -93,6 +96,8 @@ class ProductPriceFixedCreateBase(ProductPriceCreateBase):
 
 
 class ProductPriceCustomCreateBase(ProductPriceCreateBase):
+    amount_type: Literal[ProductPriceAmountType.custom]
+    price_currency: PriceCurrency
     minimum_amount: PriceAmount | None = Field(
         default=None, description="The minimum amount the customer can pay."
     )
@@ -123,7 +128,20 @@ class ProductPriceCustomCreateBase(ProductPriceCreateBase):
         }
 
 
-class ProductPriceRecurringCreate(ProductPriceFixedCreateBase):
+class ProductPriceFreeCreateBase(ProductPriceCreateBase):
+    amount_type: Literal[ProductPriceAmountType.free]
+
+    def get_model_class(self) -> builtins.type[ProductPriceFree]:
+        return ProductPriceFree
+
+    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
+        return {
+            "unit_amount": 0,
+            "currency": "usd",
+        }
+
+
+class ProductPriceRecurringFixedCreate(ProductPriceFixedCreateBase):
     """
     Schema to create a recurring product price, i.e. a subscription.
     """
@@ -138,6 +156,28 @@ class ProductPriceRecurringCreate(ProductPriceFixedCreateBase):
             **super().get_stripe_price_params(),
             "recurring": {"interval": self.recurring_interval.as_literal()},
         }
+
+
+class ProductPriceRecurringFreeCreate(ProductPriceFreeCreateBase):
+    """
+    Schema to create a free recurring product price, i.e. a subscription.
+    """
+
+    type: Literal[ProductPriceType.recurring]
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description="The recurring interval of the price."
+    )
+
+    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
+        return {
+            **super().get_stripe_price_params(),
+            "recurring": {"interval": self.recurring_interval.as_literal()},
+        }
+
+
+ProductPriceRecurringCreate = (
+    ProductPriceRecurringFixedCreate | ProductPriceRecurringFreeCreate
+)
 
 
 class ProductPriceOneTimeFixedCreate(ProductPriceFixedCreateBase):
@@ -156,8 +196,18 @@ class ProductPriceOneTimeCustomCreate(ProductPriceCustomCreateBase):
     type: Literal[ProductPriceType.one_time]
 
 
+class ProductPriceOneTimeFreeCreate(ProductPriceFreeCreateBase):
+    """
+    Schema to create a free one-time product price.
+    """
+
+    type: Literal[ProductPriceType.one_time]
+
+
 ProductPriceOneTimeCreate = (
-    ProductPriceOneTimeFixedCreate | ProductPriceOneTimeCustomCreate
+    ProductPriceOneTimeFixedCreate
+    | ProductPriceOneTimeCustomCreate
+    | ProductPriceOneTimeFreeCreate
 )
 
 
@@ -170,8 +220,8 @@ def _check_intervals(
     return value
 
 
-ProductPriceRecurringCreateList = Annotated[
-    list[ProductPriceRecurringCreate],
+ProductPriceRecurringFixedCreateList = Annotated[
+    list[ProductPriceRecurringFixedCreate],
     Field(min_length=1, max_length=2),
     AfterValidator(_check_intervals),
     MergeJSONSchema(
@@ -184,6 +234,21 @@ ProductPriceRecurringCreateList = Annotated[
         }
     ),
 ]
+
+ProductPriceRecurringFreeCreateList = Annotated[
+    list[ProductPriceRecurringFreeCreate],
+    Field(min_length=1, max_length=1),
+    MergeJSONSchema(
+        {
+            "title": "Free recurring price",
+            "description": "List with a single free recurring price.",
+        }
+    ),
+]
+
+ProductPriceRecurringCreateList = (
+    ProductPriceRecurringFixedCreateList | ProductPriceRecurringFreeCreateList
+)
 
 ProductPriceOneTimeCreateList = Annotated[
     list[ProductPriceOneTimeCreate],
@@ -315,7 +380,6 @@ class ProductPriceBase(TimestampedSchema):
     amount_type: ProductPriceAmountType = Field(
         description="The type of amount, either fixed or custom."
     )
-    price_currency: str = Field(description="The currency.")
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."
     )
@@ -323,11 +387,13 @@ class ProductPriceBase(TimestampedSchema):
 
 class ProductPriceFixedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.fixed]
+    price_currency: str = Field(description="The currency.")
     price_amount: int = Field(description="The price in cents.")
 
 
 class ProductPriceCustomBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.custom]
+    price_currency: str = Field(description="The currency.")
     minimum_amount: int | None = Field(
         description="The minimum amount the customer can pay."
     )
@@ -337,6 +403,10 @@ class ProductPriceCustomBase(ProductPriceBase):
     preset_amount: int | None = Field(
         description="The initial amount shown to the customer."
     )
+
+
+class ProductPriceFreeBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.free]
 
 
 class ProductPriceRecurringFixed(ProductPriceFixedBase):
@@ -365,6 +435,28 @@ class ProductPriceRecurringCustom(ProductPriceCustomBase):
     )
 
 
+class ProductPriceRecurringFree(ProductPriceFreeBase):
+    """
+    A free recurring price for a product, i.e. a subscription.
+    """
+
+    type: Literal[ProductPriceType.recurring] = Field(
+        description="The type of the price."
+    )
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description="The recurring interval of the price."
+    )
+
+
+ProductPriceRecurring = Annotated[
+    ProductPriceRecurringFixed
+    | ProductPriceRecurringCustom
+    | ProductPriceRecurringFree,
+    Discriminator("amount_type"),
+    SetSchemaReference("ProductPriceRecurring"),
+]
+
+
 class ProductPriceOneTimeFixed(ProductPriceFixedBase):
     """
     A one-time price for a product.
@@ -373,13 +465,6 @@ class ProductPriceOneTimeFixed(ProductPriceFixedBase):
     type: Literal[ProductPriceType.one_time] = Field(
         description="The type of the price."
     )
-
-
-ProductPriceRecurring = Annotated[
-    ProductPriceRecurringFixed | ProductPriceRecurringCustom,
-    Discriminator("amount_type"),
-    SetSchemaReference("ProductPriceRecurring"),
-]
 
 
 class ProductPriceOneTimeCustom(ProductPriceCustomBase):
@@ -392,8 +477,18 @@ class ProductPriceOneTimeCustom(ProductPriceCustomBase):
     )
 
 
+class ProductPriceOneTimeFree(ProductPriceFreeBase):
+    """
+    A free one-time price for a product.
+    """
+
+    type: Literal[ProductPriceType.one_time] = Field(
+        description="The type of the price."
+    )
+
+
 ProductPriceOneTime = Annotated[
-    ProductPriceOneTimeFixed | ProductPriceOneTimeCustom,
+    ProductPriceOneTimeFixed | ProductPriceOneTimeCustom | ProductPriceOneTimeFree,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPriceOneTime"),
 ]

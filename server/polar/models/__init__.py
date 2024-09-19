@@ -32,7 +32,12 @@ from .pledge_transaction import PledgeTransaction
 from .product import Product
 from .product_benefit import ProductBenefit
 from .product_media import ProductMedia
-from .product_price import ProductPrice, ProductPriceCustom, ProductPriceFixed
+from .product_price import (
+    ProductPrice,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceFree,
+)
 from .pull_request import PullRequest
 from .repository import Repository
 from .subscription import Subscription
@@ -84,6 +89,7 @@ __all__ = [
     "ProductPrice",
     "ProductPriceCustom",
     "ProductPriceFixed",
+    "ProductPriceFree",
     "PullRequest",
     "Repository",
     "Subscription",

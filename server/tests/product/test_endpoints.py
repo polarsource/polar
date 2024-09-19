@@ -220,7 +220,19 @@ class TestCreateProduct:
                 ]
             },
             # Two one-time prices
-            {"prices": [{"type": "one_time", "price_amount": 1000} for _ in range(2)]},
+            {
+                "prices": [
+                    {"type": "one_time", "amount_type": "fixed", "price_amount": 1000}
+                    for _ in range(2)
+                ]
+            },
+            # Two free prices
+            {
+                "prices": [
+                    {"type": "one_time", "amount_type": "free", "price_amount": 1000}
+                    for _ in range(2)
+                ]
+            },
         ],
     )
     @pytest.mark.auth
@@ -252,6 +264,7 @@ class TestCreateProduct:
                 "prices": [
                     {
                         "type": "recurring",
+                        "amount_type": "fixed",
                         "recurring_interval": "month",
                         "price_amount": 1000,
                         "price_currency": "usd",
@@ -270,13 +283,19 @@ class TestCreateProduct:
             [
                 {
                     "type": "recurring",
+                    "amount_type": "fixed",
                     "recurring_interval": "month",
                     "price_amount": 1000,
                     "price_currency": "usd",
                 }
             ],
             [
-                {"type": "one_time", "price_amount": 1000, "price_currency": "usd"},
+                {
+                    "type": "one_time",
+                    "amount_type": "fixed",
+                    "price_amount": 1000,
+                    "price_currency": "usd",
+                },
             ],
         ),
     )

@@ -16,17 +16,20 @@ from polar.models import Benefit, File, Organization, Product, User, UserOrganiz
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes
 from polar.models.product_price import (
+    ProductPriceAmountType,
     ProductPriceFixed,
     ProductPriceType,
 )
 from polar.postgres import AsyncSession
 from polar.product.schemas import (
     ExistingProductPrice,
+    ProductCreate,
     ProductOneTimeCreate,
-    ProductPriceOneTimeCreateList,
     ProductPriceOneTimeCustomCreate,
     ProductPriceOneTimeFixedCreate,
-    ProductPriceRecurringCreate,
+    ProductPriceOneTimeFreeCreate,
+    ProductPriceRecurringFixedCreate,
+    ProductPriceRecurringFreeCreate,
     ProductRecurringCreate,
     ProductUpdate,
 )
@@ -627,8 +630,9 @@ class TestUserCreate:
             name="Product",
             organization_id=uuid.uuid4(),
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -653,8 +657,9 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -689,8 +694,9 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -732,8 +738,9 @@ class TestUserCreate:
             description="",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -758,8 +765,9 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -792,8 +800,9 @@ class TestUserCreate:
         create_schema = ProductRecurringCreate(
             name="Product",
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -825,8 +834,9 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -887,8 +897,9 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -942,8 +953,9 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -959,30 +971,57 @@ class TestUserCreate:
         assert len(product.medias) == 1
 
     @pytest.mark.parametrize(
-        "prices",
+        "create_schema",
         (
-            [
-                ProductPriceOneTimeFixedCreate(
-                    type=ProductPriceType.one_time,
-                    price_amount=1000,
-                    price_currency="usd",
-                ),
-            ],
-            [
-                ProductPriceOneTimeCustomCreate(
-                    type=ProductPriceType.one_time,
-                    minimum_amount=1000,
-                    maximum_amount=2000,
-                    preset_amount=1500,
-                    price_currency="usd",
-                ),
-            ],
+            ProductOneTimeCreate(
+                name="Product",
+                prices=[
+                    ProductPriceOneTimeFixedCreate(
+                        type=ProductPriceType.one_time,
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency="usd",
+                    )
+                ],
+            ),
+            ProductOneTimeCreate(
+                name="Product",
+                prices=[
+                    ProductPriceOneTimeCustomCreate(
+                        type=ProductPriceType.one_time,
+                        amount_type=ProductPriceAmountType.custom,
+                        minimum_amount=1000,
+                        maximum_amount=2000,
+                        preset_amount=1500,
+                        price_currency="usd",
+                    ),
+                ],
+            ),
+            ProductOneTimeCreate(
+                name="Product",
+                prices=[
+                    ProductPriceOneTimeFreeCreate(
+                        type=ProductPriceType.one_time,
+                        amount_type=ProductPriceAmountType.free,
+                    ),
+                ],
+            ),
+            ProductRecurringCreate(
+                name="Product",
+                prices=[
+                    ProductPriceRecurringFreeCreate(
+                        type=ProductPriceType.recurring,
+                        amount_type=ProductPriceAmountType.free,
+                        recurring_interval=SubscriptionRecurringInterval.month,
+                    )
+                ],
+            ),
         ),
     )
     @pytest.mark.auth
     async def test_valid_prices(
         self,
-        prices: ProductPriceOneTimeCreateList,
+        create_schema: ProductCreate,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
@@ -998,12 +1037,7 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductOneTimeCreate(
-            name="Product",
-            organization_id=organization.id,
-            prices=prices,
-        )
-
+        create_schema.organization_id = organization.id
         product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
@@ -1205,8 +1239,9 @@ class TestUserUpdate:
         update_schema = ProductUpdate(
             prices=[
                 ExistingProductPrice(id=product_organization_loaded.prices[0].id),
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
@@ -1261,8 +1296,9 @@ class TestUserUpdate:
 
         update_schema = ProductUpdate(
             prices=[
-                ProductPriceRecurringCreate(
+                ProductPriceRecurringFixedCreate(
                     type=ProductPriceType.recurring,
+                    amount_type=ProductPriceAmountType.fixed,
                     recurring_interval=SubscriptionRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",

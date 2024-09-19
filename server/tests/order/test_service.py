@@ -42,7 +42,7 @@ def construct_stripe_invoice(
     id: str = "INVOICE_ID",
     total: int = 12000,
     tax: int = 2000,
-    charge_id: str = "CHARGE_ID",
+    charge_id: str | None = "CHARGE_ID",
     subscription_id: str | None = "SUBSCRIPTION_ID",
     subscription_details: dict[str, Any] | None = None,
     customer_id: str = "CUSTOMER_ID",
@@ -545,5 +545,47 @@ class TestCreateOrderFromStripe:
             task="grant",
             user_id=user.id,
             product_id=product_one_time_custom_price.id,
+            order_id=order.id,
+        )
+
+    async def test_one_time_free_product(
+        self,
+        enqueue_job_mock: AsyncMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time_free_price: Product,
+        organization_account: Account,
+        user: User,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            charge_id=None,
+            total=0,
+            tax=0,
+            lines=[(product_one_time_free_price.prices[0].stripe_price_id, False)],
+            subscription_id=None,
+            billing_reason="manual",
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice_total
+        assert order.user.id == user.id
+        assert order.product == product_one_time_free_price
+        assert order.product_price == product_one_time_free_price.prices[0]
+        assert order.subscription is None
+
+        enqueue_job_mock.assert_any_call(
+            "order.discord_notification", order_id=order.id
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            user_id=user.id,
+            product_id=product_one_time_free_price.id,
             order_id=order.id,
         )

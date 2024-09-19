@@ -213,8 +213,6 @@ class OrderService(ResourceServiceReader[Order]):
         }:
             raise NotAnOrderInvoice(invoice.id)
 
-        assert invoice.charge is not None
-
         # Get price and product
         stripe_price_ids = set[str]()
         for line in invoice.lines.data:
@@ -300,10 +298,14 @@ class OrderService(ResourceServiceReader[Order]):
             subscription=subscription,
         )
         session.add(order)
+        await session.flush()
 
-        await self._create_order_balance(
-            session, order, charge_id=get_expandable_id(invoice.charge)
-        )
+        # Free orders don't have a charge
+        if invoice.total > 0:
+            assert invoice.charge is not None
+            await self._create_order_balance(
+                session, order, charge_id=get_expandable_id(invoice.charge)
+            )
 
         if order.subscription is None:
             enqueue_job(

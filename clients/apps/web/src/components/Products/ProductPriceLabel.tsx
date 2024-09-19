@@ -18,9 +18,11 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
         }
       />
     )
+  } else if (price.amount_type === 'custom') {
+    return <div className="text-[min(1em,24px)]">Pay what you want</div>
+  } else {
+    return <div className="text-[min(1em,24px)]">Free</div>
   }
-
-  return <div className="text-[min(1em,24px)]">Pay what you want</div>
 }
 
 export default ProductPriceLabel

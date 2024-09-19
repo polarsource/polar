@@ -153,14 +153,10 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
         </div>
         <div className="flex flex-row items-center gap-x-6">
           <span className="text-sm leading-snug">
-            {product.prices.length > 0 ? (
-              product.prices.length < 2 ? (
-                <ProductPriceLabel price={product.prices[0]} />
-              ) : (
-                <ProductPrices prices={product.prices} />
-              )
+            {product.prices.length < 2 ? (
+              <ProductPriceLabel price={product.prices[0]} />
             ) : (
-              'Free'
+              <ProductPrices prices={product.prices} />
             )}
           </span>
           <DropdownMenu>

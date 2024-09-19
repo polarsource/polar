@@ -8579,9 +8579,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "donation",
-                                "free_subscription",
                                 "paid_subscription",
-                                "order"
+                                "order",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -16652,6 +16652,80 @@
                     }
                 }
             }
+        },
+        "benefit.granted": {
+            "post": {
+                "summary": "benefit.granted",
+                "description": "Sent when a new benefit is granted.\n\n**Discord & Slack support:** Basic",
+                "operationId": "_endpointbenefit_granted_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebhookBenefitGrantedPayload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "benefit.revoked": {
+            "post": {
+                "summary": "benefit.revoked",
+                "description": "Sent when a benefit is revoked.\n\n**Discord & Slack support:** Basic",
+                "operationId": "_endpointbenefit_revoked_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebhookBenefitRevokedPayload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -20541,11 +20615,30 @@
                         "description": "Whether the benefit is revoked."
                     },
                     "properties": {
-                        "allOf": [
+                        "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitGrantProperties"
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
                             }
                         ],
+                        "title": "Properties",
                         "description": "The properties of the grant."
                     },
                     "subscription_id": {
@@ -20742,6 +20835,85 @@
                 "type": "object",
                 "title": "BenefitGrantAdsProperties"
             },
+            "BenefitGrantArticlesProperties": {
+                "properties": {},
+                "type": "object",
+                "title": "BenefitGrantArticlesProperties"
+            },
+            "BenefitGrantCustomProperties": {
+                "properties": {},
+                "type": "object",
+                "title": "BenefitGrantCustomProperties"
+            },
+            "BenefitGrantDiscordProperties": {
+                "properties": {
+                    "guild_id": {
+                        "type": "string",
+                        "title": "Guild Id"
+                    },
+                    "role_id": {
+                        "type": "string",
+                        "title": "Role Id"
+                    },
+                    "account_id": {
+                        "type": "string",
+                        "title": "Account Id"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitGrantDiscordProperties"
+            },
+            "BenefitGrantDownloadablesProperties": {
+                "properties": {
+                    "files": {
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "type": "array",
+                        "title": "Files"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitGrantDownloadablesProperties"
+            },
+            "BenefitGrantGitHubRepositoryProperties": {
+                "properties": {
+                    "repository_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Repository Id"
+                    },
+                    "repository_owner": {
+                        "type": "string",
+                        "title": "Repository Owner"
+                    },
+                    "repository_name": {
+                        "type": "string",
+                        "title": "Repository Name"
+                    },
+                    "permission": {
+                        "type": "string",
+                        "enum": [
+                            "pull",
+                            "triage",
+                            "push",
+                            "maintain",
+                            "admin"
+                        ],
+                        "title": "Permission"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitGrantGitHubRepositoryProperties"
+            },
             "BenefitGrantLicenseKeys": {
                 "properties": {
                     "created_at": {
@@ -20866,7 +21038,6 @@
                 "properties": {
                     "license_key_id": {
                         "type": "string",
-                        "format": "uuid4",
                         "title": "License Key Id"
                     },
                     "display_key": {
@@ -20881,11 +21052,149 @@
                 ],
                 "title": "BenefitGrantLicenseKeysProperties"
             },
-            "BenefitGrantProperties": {
-                "properties": {},
+            "BenefitGrantWebhook": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the grant."
+                    },
+                    "granted_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Granted At",
+                        "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+                    },
+                    "is_granted": {
+                        "type": "boolean",
+                        "title": "Is Granted",
+                        "description": "Whether the benefit is granted."
+                    },
+                    "revoked_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Revoked At",
+                        "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+                    },
+                    "is_revoked": {
+                        "type": "boolean",
+                        "title": "Is Revoked",
+                        "description": "Whether the benefit is revoked."
+                    },
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            }
+                        ],
+                        "title": "Properties",
+                        "description": "The properties of the grant."
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "The ID of the subscription that granted this benefit."
+                    },
+                    "order_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order Id",
+                        "description": "The ID of the order that granted this benefit."
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id",
+                        "description": "The ID of the user concerned by this grant."
+                    },
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id",
+                        "description": "The ID of the benefit concerned by this grant."
+                    }
+                },
                 "type": "object",
-                "title": "BenefitGrantProperties",
-                "description": "Properties for a benefit grant."
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "is_granted",
+                    "is_revoked",
+                    "properties",
+                    "subscription_id",
+                    "order_id",
+                    "user_id",
+                    "benefit_id"
+                ],
+                "title": "BenefitGrantWebhook"
             },
             "BenefitLicenseKeyActivationProperties": {
                 "properties": {
@@ -36171,6 +36480,50 @@
                 "title": "WebhookBenefitCreatedPayload",
                 "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic"
             },
+            "WebhookBenefitGrantedPayload": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "benefit.granted"
+                        ],
+                        "const": "benefit.granted",
+                        "title": "Type"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/BenefitGrantWebhook"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "data"
+                ],
+                "title": "WebhookBenefitGrantedPayload",
+                "description": "Sent when a new benefit is granted.\n\n**Discord & Slack support:** Basic"
+            },
+            "WebhookBenefitRevokedPayload": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "benefit.revoked"
+                        ],
+                        "const": "benefit.revoked",
+                        "title": "Type"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/BenefitGrantWebhook"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "data"
+                ],
+                "title": "WebhookBenefitRevokedPayload",
+                "description": "Sent when a benefit is revoked.\n\n**Discord & Slack support:** Basic"
+            },
             "WebhookBenefitUpdatedPayload": {
                 "properties": {
                     "type": {
@@ -36606,6 +36959,8 @@
                     "product.updated",
                     "benefit.created",
                     "benefit.updated",
+                    "benefit.granted",
+                    "benefit.revoked",
                     "organization.updated",
                     "pledge.created",
                     "pledge.updated",

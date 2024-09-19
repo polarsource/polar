@@ -3596,11 +3596,11 @@ export interface BenefitGrant {
      */
     is_revoked: boolean;
     /**
-     * The properties of the grant.
-     * @type {object}
+     * 
+     * @type {Properties}
      * @memberof BenefitGrant
      */
-    properties: object;
+    properties: Properties;
     /**
      * 
      * @type {string}
@@ -3721,6 +3721,89 @@ export interface BenefitGrantAdsProperties {
 /**
  * 
  * @export
+ * @interface BenefitGrantDiscordProperties
+ */
+export interface BenefitGrantDiscordProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantDiscordProperties
+     */
+    guild_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantDiscordProperties
+     */
+    role_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantDiscordProperties
+     */
+    account_id?: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantDownloadablesProperties
+ */
+export interface BenefitGrantDownloadablesProperties {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof BenefitGrantDownloadablesProperties
+     */
+    files?: Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantGitHubRepositoryProperties
+ */
+export interface BenefitGrantGitHubRepositoryProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantGitHubRepositoryProperties
+     */
+    repository_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantGitHubRepositoryProperties
+     */
+    repository_owner?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantGitHubRepositoryProperties
+     */
+    repository_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantGitHubRepositoryProperties
+     */
+    permission?: BenefitGrantGitHubRepositoryPropertiesPermissionEnum;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitGrantGitHubRepositoryPropertiesPermissionEnum = {
+    PULL: 'pull',
+    TRIAGE: 'triage',
+    PUSH: 'push',
+    MAINTAIN: 'maintain',
+    ADMIN: 'admin'
+} as const;
+export type BenefitGrantGitHubRepositoryPropertiesPermissionEnum = typeof BenefitGrantGitHubRepositoryPropertiesPermissionEnum[keyof typeof BenefitGrantGitHubRepositoryPropertiesPermissionEnum];
+
+/**
+ * 
+ * @export
  * @interface BenefitGrantLicenseKeys
  */
 export interface BenefitGrantLicenseKeys {
@@ -3815,6 +3898,85 @@ export interface BenefitGrantLicenseKeysProperties {
      * @memberof BenefitGrantLicenseKeysProperties
      */
     display_key: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantWebhook
+ */
+export interface BenefitGrantWebhook {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the grant.
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    granted_at?: string | null;
+    /**
+     * Whether the benefit is granted.
+     * @type {boolean}
+     * @memberof BenefitGrantWebhook
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    revoked_at?: string | null;
+    /**
+     * Whether the benefit is revoked.
+     * @type {boolean}
+     * @memberof BenefitGrantWebhook
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {Properties}
+     * @memberof BenefitGrantWebhook
+     */
+    properties: Properties;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    order_id: string | null;
+    /**
+     * The ID of the user concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    user_id: string;
+    /**
+     * The ID of the benefit concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     */
+    benefit_id: string;
 }
 /**
  * @type BenefitIDFilter
@@ -12148,6 +12310,13 @@ export interface ProductUpdate {
 export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate | ProductPriceRecurringFixedCreate | ProductPriceRecurringFreeCreate;
 
 /**
+ * @type Properties
+ * The properties of the grant.
+ * @export
+ */
+export type Properties = BenefitGrantAdsProperties | BenefitGrantDiscordProperties | BenefitGrantDownloadablesProperties | BenefitGrantGitHubRepositoryProperties | BenefitGrantLicenseKeysProperties | object;
+
+/**
  * 
  * @export
  * @interface PublicDonation
@@ -15679,6 +15848,68 @@ export const WebhookBenefitCreatedPayloadTypeEnum = {
 export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedPayloadTypeEnum[keyof typeof WebhookBenefitCreatedPayloadTypeEnum];
 
 /**
+ * Sent when a new benefit is granted.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookBenefitGrantedPayload
+ */
+export interface WebhookBenefitGrantedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitGrantedPayload
+     */
+    type: WebhookBenefitGrantedPayloadTypeEnum;
+    /**
+     * 
+     * @type {BenefitGrantWebhook}
+     * @memberof WebhookBenefitGrantedPayload
+     */
+    data: BenefitGrantWebhook;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitGrantedPayloadTypeEnum = {
+    BENEFIT_GRANTED: 'benefit.granted'
+} as const;
+export type WebhookBenefitGrantedPayloadTypeEnum = typeof WebhookBenefitGrantedPayloadTypeEnum[keyof typeof WebhookBenefitGrantedPayloadTypeEnum];
+
+/**
+ * Sent when a benefit is revoked.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookBenefitRevokedPayload
+ */
+export interface WebhookBenefitRevokedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitRevokedPayload
+     */
+    type: WebhookBenefitRevokedPayloadTypeEnum;
+    /**
+     * 
+     * @type {BenefitGrantWebhook}
+     * @memberof WebhookBenefitRevokedPayload
+     */
+    data: BenefitGrantWebhook;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitRevokedPayloadTypeEnum = {
+    BENEFIT_REVOKED: 'benefit.revoked'
+} as const;
+export type WebhookBenefitRevokedPayloadTypeEnum = typeof WebhookBenefitRevokedPayloadTypeEnum[keyof typeof WebhookBenefitRevokedPayloadTypeEnum];
+
+/**
  * Sent when a benefit is updated.
  * 
  * **Discord & Slack support:** Basic
@@ -15974,6 +16205,8 @@ export const WebhookEventType = {
     PRODUCT_UPDATED: 'product.updated',
     BENEFIT_CREATED: 'benefit.created',
     BENEFIT_UPDATED: 'benefit.updated',
+    BENEFIT_GRANTED: 'benefit.granted',
+    BENEFIT_REVOKED: 'benefit.revoked',
     ORGANIZATION_UPDATED: 'organization.updated',
     PLEDGE_CREATED: 'pledge.created',
     PLEDGE_UPDATED: 'pledge.updated',

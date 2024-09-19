@@ -588,6 +588,7 @@ class BenefitGrant(TimestampedSchema):
 
 
 class BenefitGrantWebhook(BenefitGrant):
+    benefit: Benefit
     previous_properties: BenefitGrantProperties | None = None
 
 

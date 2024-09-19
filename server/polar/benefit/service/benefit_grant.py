@@ -22,7 +22,7 @@ from polar.models import (
     User,
 )
 from polar.models.benefit import BenefitProperties, BenefitType
-from polar.models.benefit_grant import BenefitGrantScope
+from polar.models.benefit_grant import BenefitGrantProperties, BenefitGrantScope
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -197,18 +197,12 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
-        loaded = await self.get(session, grant.id, loaded=True)
-        data = BenefitGrantWebhook.model_validate(loaded)
-        data.previous_properties = previous_properties
-        await webhook_service.send_payload(
+        await self._send_webhook(
             session,
-            target=benefit.organization,
-            payload=WebhookPayloadTypeAdapter.validate_python(
-                dict(
-                    type=WebhookEventType.benefit_granted,
-                    data=data,
-                )
-            ),
+            benefit,
+            grant,
+            event_type=WebhookEventType.benefit_granted,
+            previous_grant_properties=previous_properties,
         )
         return grant
 
@@ -266,18 +260,12 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant_id=str(grant.id),
         )
 
-        loaded = await self.get(session, grant.id, loaded=True)
-        data = BenefitGrantWebhook.model_validate(loaded)
-        data.previous_properties = previous_properties
-        await webhook_service.send_payload(
+        await self._send_webhook(
             session,
-            target=benefit.organization,
-            payload=WebhookPayloadTypeAdapter.validate_python(
-                dict(
-                    type=WebhookEventType.benefit_revoked,
-                    data=data,
-                )
-            ),
+            benefit,
+            grant,
+            event_type=WebhookEventType.benefit_revoked,
+            previous_grant_properties=previous_properties,
         )
         return grant
 
@@ -559,6 +547,31 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         result = await session.execute(statement)
         return result.scalars().all()
+
+    async def _send_webhook(
+        self,
+        session: AsyncSession,
+        benefit: Benefit,
+        grant: BenefitGrant,
+        event_type: (
+            Literal[WebhookEventType.benefit_granted]
+            | Literal[WebhookEventType.benefit_revoked]
+        ),
+        previous_grant_properties: BenefitGrantProperties,
+    ) -> None:
+        loaded = await self.get(session, grant.id, loaded=True)
+        data = BenefitGrantWebhook.model_validate(loaded)
+        data.previous_properties = previous_grant_properties
+        await webhook_service.send_payload(
+            session,
+            target=benefit.organization,
+            payload=WebhookPayloadTypeAdapter.validate_python(
+                dict(
+                    type=event_type,
+                    data=data,
+                )
+            ),
+        )
 
 
 benefit_grant = BenefitGrantService(BenefitGrant)

@@ -16,14 +16,11 @@
 import * as runtime from '../runtime';
 import type {
   AlreadyCanceledSubscription,
-  AlreadySubscribed,
-  FreeSubscriptionUpgrade,
   HTTPValidationError,
   ListResourceUserSubscription,
   OrganizationIDFilter,
   ProductIDFilter,
   ResourceNotFound,
-  UserFreeSubscriptionCreate,
   UserSubscription,
   UserSubscriptionSortProperty,
   UserSubscriptionUpdate,
@@ -31,10 +28,6 @@ import type {
 
 export interface UsersSubscriptionsApiCancelRequest {
     id: string;
-}
-
-export interface UsersSubscriptionsApiCreateRequest {
-    body: UserFreeSubscriptionCreate;
 }
 
 export interface UsersSubscriptionsApiGetRequest {
@@ -101,52 +94,6 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
      */
     async cancel(requestParameters: UsersSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.cancelRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Create a subscription on a **free** tier.  If you want to subscribe to a paid tier, you need to create a checkout session.
-     * Create Free Subscription
-     */
-    async createRaw(requestParameters: UsersSubscriptionsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling create().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("pat", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/users/subscriptions/`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['body'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Create a subscription on a **free** tier.  If you want to subscribe to a paid tier, you need to create a checkout session.
-     * Create Free Subscription
-     */
-    async create(requestParameters: UsersSubscriptionsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
-        const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

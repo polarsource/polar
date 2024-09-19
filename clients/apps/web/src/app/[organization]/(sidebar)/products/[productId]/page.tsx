@@ -86,5 +86,9 @@ export default async function Page({
     }
   }
 
+  if (product.is_archived) {
+    notFound()
+  }
+
   return <ClientPage organization={organization} product={product} />
 }

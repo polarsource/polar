@@ -8,7 +8,6 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
 from polar.checkout.schemas import CheckoutCreate
-from polar.checkout.service import AlreadySubscribed
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
@@ -19,7 +18,6 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_product_benefits,
-    create_active_subscription,
     create_benefit,
 )
 
@@ -77,24 +75,6 @@ class TestCreate:
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         with pytest.raises(PolarRequestValidationError):
-            await checkout_service.create(session, create_schema, auth_subject)
-
-    @pytest.mark.auth
-    async def test_already_subscribed(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        user: User,
-    ) -> None:
-        await create_active_subscription(save_fixture, product=product, user=user)
-
-        price = product.prices[0]
-        create_schema = CheckoutCreate(
-            product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
-        )
-        with pytest.raises(AlreadySubscribed):
             await checkout_service.create(session, create_schema, auth_subject)
 
     async def test_valid_anonymous(

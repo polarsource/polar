@@ -91,21 +91,6 @@ class SubscriptionDoesNotExist(SubscriptionError):
         super().__init__(message)
 
 
-class AlreadySubscribed(SubscriptionError):
-    def __init__(
-        self,
-        *,
-        user_id: uuid.UUID,
-        organization_id: uuid.UUID,
-    ) -> None:
-        self.user_id = user_id
-        self.organization_id = organization_id
-        message = (
-            "This user is already subscribed to one of the tier of this organization."
-        )
-        super().__init__(message, 400)
-
-
 class EndDateInTheFuture(SubscriptionError):
     def __init__(self, end_date: date) -> None:
         self.end_date = end_date
@@ -266,27 +251,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     ) -> Subscription | None:
         return await self.get_by(session, stripe_subscription_id=stripe_subscription_id)
 
-    async def get_active_user_subscriptions(
-        self,
-        session: AsyncSession,
-        user: User,
-        *,
-        organization_id: uuid.UUID | None = None,
-    ) -> Sequence[Subscription]:
-        statement = (
-            select(Subscription)
-            .join(Subscription.product)
-            .where(Subscription.user_id == user.id, Subscription.active.is_(True))
-            .options(contains_eager(Subscription.product))
-        )
-
-        if organization_id is not None:
-            statement = statement.where(Product.organization_id == organization_id)
-
-        result = await session.execute(statement)
-
-        return result.scalars().all()
-
     @typing.overload
     async def create_arbitrary_subscription(
         self,
@@ -327,15 +291,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         price: ProductPriceFixed | ProductPriceCustom | None = None,
         amount: int | None = None,
     ) -> Subscription:
-        existing_subscriptions = await self.get_active_user_subscriptions(
-            session, user, organization_id=product.organization_id
-        )
-        if len(existing_subscriptions) > 0:
-            raise AlreadySubscribed(
-                user_id=user.id,
-                organization_id=product.organization_id,
-            )
-
         subscription_amount: int | None = None
         if isinstance(price, ProductPriceFixed):
             subscription_amount = price.price_amount

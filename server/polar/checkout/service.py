@@ -3,11 +3,7 @@ from typing import cast
 
 import stripe as stripe_lib
 
-from polar.auth.models import (
-    Anonymous,
-    AuthSubject,
-    is_direct_user,
-)
+from polar.auth.models import Anonymous, AuthSubject, is_direct_user
 from polar.checkout.schemas import Checkout, CheckoutCreate
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
@@ -16,18 +12,9 @@ from polar.models import Product, User
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
-from polar.subscription.service import subscription as subscription_service
 
 
 class CheckoutError(PolarError): ...
-
-
-class AlreadySubscribed(CheckoutError):
-    def __init__(self, *, user_id: uuid.UUID, organization_id: uuid.UUID) -> None:
-        self.user_id = user_id
-        self.organization_id = organization_id
-        message = "You're already subscribed to one of the tier of this organization."
-        super().__init__(message, 403)
 
 
 class CheckoutService:
@@ -85,9 +72,6 @@ class CheckoutService:
             "product_id": str(product.id),
             "product_price_id": str(price.id),
         }
-
-        if price.is_recurring:
-            await self._check_existing_subscriptions(session, auth_subject, product)
 
         customer_options: dict[str, str] = {}
         if is_direct_user(auth_subject):
@@ -161,30 +145,6 @@ class CheckoutService:
             product=product,  # type: ignore
             product_price=product_price,  # type: ignore
         )
-
-    async def _check_existing_subscriptions(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Anonymous],
-        product: Product,
-    ) -> None:
-        """
-        Check that the user doesn't already have a subscription.
-        """
-        if is_direct_user(auth_subject):
-            existing_subscriptions = (
-                await subscription_service.get_active_user_subscriptions(
-                    session,
-                    auth_subject.subject,
-                    organization_id=product.organization_id,
-                )
-            )
-            if len(existing_subscriptions) > 0:
-                raise AlreadySubscribed(
-                    user_id=auth_subject.subject.id,
-                    organization_id=product.organization_id,
-                )
-        return None
 
 
 checkout = CheckoutService()

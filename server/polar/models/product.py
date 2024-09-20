@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from citext import CIText
@@ -16,7 +16,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.models.benefit import BenefitArticles, BenefitType
 from polar.models.product_price import ProductPriceType
 
 from .product_price import ProductPrice
@@ -102,12 +101,6 @@ class Product(RecordModel):
 
     def get_stripe_name(self) -> str:
         return f"{self.organization.slug} - {self.name}"
-
-    def get_articles_benefit(self) -> BenefitArticles | None:
-        for benefit in self.benefits:
-            if benefit.type == BenefitType.articles:
-                return cast(BenefitArticles, benefit)
-        return None
 
     def get_price(self, id: UUID) -> "ProductPrice | None":
         for price in self.prices:

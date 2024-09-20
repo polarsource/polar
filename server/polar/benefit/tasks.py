@@ -8,14 +8,12 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScopeArgs
-from polar.organization.service import organization as organization_service
 from polar.product.service.product import product as product_service
 from polar.user.service.user import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
-    enqueue_job,
     task,
 )
 
@@ -222,37 +220,4 @@ async def benefit_precondition_fulfilled(
 
         await benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
             session, user, benefit_type
-        )
-
-
-@task("benefit.force_free_articles")
-async def benefit_force_free_articles(
-    ctx: JobContext,
-    task: Literal["grant", "revoke"],
-    user_id: uuid.UUID,
-    organization_id: uuid.UUID,
-    polar_context: PolarWorkerContext,
-    **scope: Unpack[BenefitGrantScopeArgs],
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        user = await user_service.get(session, user_id)
-        if user is None:
-            raise UserDoesNotExist(user_id)
-
-        organization = await organization_service.get(session, organization_id)
-        if organization is None:
-            raise OrganizationDoesNotExist(organization_id)
-
-        await resolve_scope(session, scope)
-
-        (
-            free_articles_benefit,
-            _,
-        ) = await benefit_service.get_or_create_articles_benefits(session, organization)
-
-        enqueue_job(
-            f"benefit.{task}",
-            user_id=user_id,
-            benefit_id=free_articles_benefit.id,
-            **scope,
         )

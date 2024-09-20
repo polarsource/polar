@@ -1,12 +1,8 @@
 import uuid
-from typing import cast
 
 from polar.account.service import account as account_service
-from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.locker import Locker
-from polar.redis import Redis
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import organization as organization_service
@@ -43,22 +39,10 @@ class AccountDoesNotExist(OrganizationTaskError):
 async def organization_created(
     ctx: JobContext, organization_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
-    redis = cast(Redis, ctx["redis"])
     async with AsyncSessionMaker(ctx) as session:
-        # We experienced in prod `organization.created` triggered twice
-        # Adding a lock here to prevent a race condition
-        async with Locker(redis).lock(
-            f"organization.created:{organization_id}",
-            timeout=10,
-            blocking_timeout=10,
-        ):
-            organization = await organization_service.get(session, organization_id)
-            if organization is None:
-                raise OrganizationDoesNotExist(organization_id)
-
-            await benefit_service.get_or_create_articles_benefits(
-                session, organization=organization
-            )
+        organization = await organization_service.get(session, organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
 
 
 @task("organization.account_set")

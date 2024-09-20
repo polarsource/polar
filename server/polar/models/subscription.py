@@ -82,12 +82,12 @@ class Subscription(RecordModel):
     def product(cls) -> Mapped["Product"]:
         return relationship("Product", lazy="raise")
 
-    price_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("product_prices.id", ondelete="set null"),
+    price_id: Mapped[UUID] = mapped_column(
+        ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
     )
 
     @declared_attr
-    def price(cls) -> Mapped["ProductPrice | None"]:
+    def price(cls) -> Mapped["ProductPrice"]:
         return relationship(
             "ProductPrice", lazy="raise", back_populates="subscriptions"
         )

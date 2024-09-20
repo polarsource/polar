@@ -23,10 +23,12 @@ from polar.models import (
     Order,
     Organization,
     Product,
+    ProductPrice,
     Subscription,
     User,
     UserOrganization,
 )
+from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -349,15 +351,20 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         def append_subscription_clause(is_free: bool | None = None) -> None:
             SubscriptionProduct = aliased(Product)
+            SubscriptionProductPrice = aliased(ProductPrice)
             where = [
                 Subscription.deleted_at.is_(None),
                 SubscriptionProduct.organization_id == organization.id,
                 Subscription.active.is_(True),
             ]
             if is_free is True:
-                where.append(Subscription.price_id.is_(None))
+                where.append(
+                    SubscriptionProductPrice.amount_type == ProductPriceAmountType.free
+                )
             elif is_free is False:
-                where.append(Subscription.price_id.is_not(None))
+                where.append(
+                    SubscriptionProductPrice.amount_type != ProductPriceAmountType.free
+                )
 
             clauses.append(
                 User.id.in_(
@@ -366,6 +373,10 @@ class OrganizationService(ResourceServiceReader[Organization]):
                     .join(
                         SubscriptionProduct,
                         onclause=SubscriptionProduct.id == Subscription.product_id,
+                    )
+                    .join(
+                        SubscriptionProductPrice,
+                        onclause=SubscriptionProductPrice.id == Subscription.price_id,
                     )
                     .where(*where)
                 ),

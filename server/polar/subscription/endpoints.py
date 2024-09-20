@@ -30,7 +30,7 @@ from ..product.service.product import product as product_service
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import SubscriptionCreateEmail, SubscriptionsImported
-from .service import AlreadySubscribed, SubscriptionSortProperty
+from .service import SubscriptionSortProperty
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
@@ -202,8 +202,6 @@ async def subscriptions_import(
                 session, user=user, product=free_tier
             )
             count += 1
-        except AlreadySubscribed:
-            pass
         except Exception as e:
             log.error("subscriptions_import.failed", e=e)
 

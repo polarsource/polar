@@ -20,7 +20,6 @@ from polar.models.product_price import ProductPriceCustom, ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
-    AlreadySubscribed,
     AssociatedSubscriptionTierPriceDoesNotExist,
     SubscriptionDoesNotExist,
 )
@@ -118,30 +117,6 @@ def authz(session: AsyncSession) -> Authz:
 
 @pytest.mark.asyncio
 class TestCreateArbitrarySubscription:
-    async def test_already_subscribed(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        user: User,
-    ) -> None:
-        await create_active_subscription(
-            save_fixture,
-            product=product,
-            user=user,
-            stripe_subscription_id=None,
-        )
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(AlreadySubscribed):
-            await subscription_service.create_arbitrary_subscription(
-                session,
-                user=user,
-                product=product,
-            )
-
     async def test_valid_fixed_price(
         self,
         mocker: MockerFixture,

@@ -163,7 +163,9 @@ async def benefit_update(
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        benefit_grant = await benefit_grant_service.get(session, benefit_grant_id)
+        benefit_grant = await benefit_grant_service.get(
+            session, benefit_grant_id, loaded=True
+        )
         if benefit_grant is None:
             raise BenefitGrantDoesNotExist(benefit_grant_id)
 

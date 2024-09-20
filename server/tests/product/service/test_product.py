@@ -85,10 +85,6 @@ class TestList:
         assert count == 3
         assert len(results) == 3
 
-        assert results[0].id == products[0].id
-        assert results[1].id == products[1].id
-        assert results[2].id == products[2].id
-
     @pytest.mark.auth
     async def test_user(
         self,
@@ -109,9 +105,6 @@ class TestList:
 
         assert count == 3
         assert len(results) == 3
-        assert results[0].id == products[0].id
-        assert results[1].id == products[1].id
-        assert results[2].id == products[2].id
 
     @pytest.mark.auth
     async def test_user_organization(

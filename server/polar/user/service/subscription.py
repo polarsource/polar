@@ -14,7 +14,16 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.models import Organization, Product, ProductPrice, Subscription, User
+from polar.models import (
+    Organization,
+    Product,
+    ProductPrice,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceFree,
+    Subscription,
+    User,
+)
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.product.service.product_price import product_price as product_price_service
@@ -183,6 +192,21 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
                 ]
             )
 
+        if isinstance(price, ProductPriceCustom):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": (
+                            "Pay what you want price are not supported "
+                            "for subscriptions."
+                        ),
+                        "input": subscription_update.product_price_id,
+                    }
+                ]
+            )
+
         product = price.product
         if product.is_archived:
             raise PolarRequestValidationError(
@@ -222,6 +246,14 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
 
         subscription.product = product
         subscription.price = price
+        if isinstance(price, ProductPriceFixed):
+            subscription.amount = price.price_amount
+            subscription.currency = price.price_currency
+            subscription.recurring_interval = price.recurring_interval
+        if isinstance(price, ProductPriceFree):
+            subscription.amount = None
+            subscription.currency = None
+            subscription.recurring_interval = price.recurring_interval
         session.add(subscription)
 
         await subscription_service.after_subscription_updated(session, subscription)

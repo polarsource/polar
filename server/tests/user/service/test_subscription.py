@@ -9,7 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
-from polar.models import Organization, Product, Subscription, User
+from polar.models import Organization, Product, ProductPriceFixed, Subscription, User
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -140,6 +140,7 @@ class TestUpdate:
         product: Product,
         product_second: Product,
     ) -> None:
+        new_price = product_second.prices[0]
         updated_subscription = await user_subscription_service.update(
             session,
             subscription=subscription,
@@ -148,8 +149,11 @@ class TestUpdate:
             ),
         )
 
+        assert isinstance(new_price, ProductPriceFixed)
         assert updated_subscription.product_id == product_second.id
-        assert updated_subscription.price == product_second.prices[0]
+        assert updated_subscription.price == new_price
+        assert updated_subscription.amount == new_price.price_amount
+        assert updated_subscription.recurring_interval == new_price.recurring_interval
 
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,

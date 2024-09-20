@@ -3977,7 +3977,26 @@ export interface BenefitGrantWebhook {
      * @memberof BenefitGrantWebhook
      */
     benefit_id: string;
+    /**
+     * 
+     * @type {Benefit}
+     * @memberof BenefitGrantWebhook
+     */
+    benefit: Benefit;
+    /**
+     * 
+     * @type {BenefitGrantWebhookPreviousProperties}
+     * @memberof BenefitGrantWebhook
+     */
+    previous_properties?: BenefitGrantWebhookPreviousProperties | null;
 }
+/**
+ * @type BenefitGrantWebhookPreviousProperties
+ * The properties of the grant.
+ * @export
+ */
+export type BenefitGrantWebhookPreviousProperties = BenefitGrantAdsProperties | BenefitGrantDiscordProperties | BenefitGrantDownloadablesProperties | BenefitGrantGitHubRepositoryProperties | BenefitGrantLicenseKeysProperties | object;
+
 /**
  * @type BenefitIDFilter
  * Filter by given benefit ID. 
@@ -15848,23 +15867,23 @@ export const WebhookBenefitCreatedPayloadTypeEnum = {
 export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedPayloadTypeEnum[keyof typeof WebhookBenefitCreatedPayloadTypeEnum];
 
 /**
- * Sent when a new benefit is granted.
+ * Sent when a new benefit grant is created.
  * 
  * **Discord & Slack support:** Basic
  * @export
- * @interface WebhookBenefitGrantedPayload
+ * @interface WebhookBenefitGrantCreatedPayload
  */
-export interface WebhookBenefitGrantedPayload {
+export interface WebhookBenefitGrantCreatedPayload {
     /**
      * 
      * @type {string}
-     * @memberof WebhookBenefitGrantedPayload
+     * @memberof WebhookBenefitGrantCreatedPayload
      */
-    type: WebhookBenefitGrantedPayloadTypeEnum;
+    type: WebhookBenefitGrantCreatedPayloadTypeEnum;
     /**
      * 
      * @type {BenefitGrantWebhook}
-     * @memberof WebhookBenefitGrantedPayload
+     * @memberof WebhookBenefitGrantCreatedPayload
      */
     data: BenefitGrantWebhook;
 }
@@ -15873,29 +15892,29 @@ export interface WebhookBenefitGrantedPayload {
 /**
  * @export
  */
-export const WebhookBenefitGrantedPayloadTypeEnum = {
-    BENEFIT_GRANTED: 'benefit.granted'
+export const WebhookBenefitGrantCreatedPayloadTypeEnum = {
+    BENEFIT_GRANT_CREATED: 'benefit_grant.created'
 } as const;
-export type WebhookBenefitGrantedPayloadTypeEnum = typeof WebhookBenefitGrantedPayloadTypeEnum[keyof typeof WebhookBenefitGrantedPayloadTypeEnum];
+export type WebhookBenefitGrantCreatedPayloadTypeEnum = typeof WebhookBenefitGrantCreatedPayloadTypeEnum[keyof typeof WebhookBenefitGrantCreatedPayloadTypeEnum];
 
 /**
- * Sent when a benefit is revoked.
+ * Sent when a new benefit grant is revoked.
  * 
  * **Discord & Slack support:** Basic
  * @export
- * @interface WebhookBenefitRevokedPayload
+ * @interface WebhookBenefitGrantRevokedPayload
  */
-export interface WebhookBenefitRevokedPayload {
+export interface WebhookBenefitGrantRevokedPayload {
     /**
      * 
      * @type {string}
-     * @memberof WebhookBenefitRevokedPayload
+     * @memberof WebhookBenefitGrantRevokedPayload
      */
-    type: WebhookBenefitRevokedPayloadTypeEnum;
+    type: WebhookBenefitGrantRevokedPayloadTypeEnum;
     /**
      * 
      * @type {BenefitGrantWebhook}
-     * @memberof WebhookBenefitRevokedPayload
+     * @memberof WebhookBenefitGrantRevokedPayload
      */
     data: BenefitGrantWebhook;
 }
@@ -15904,10 +15923,41 @@ export interface WebhookBenefitRevokedPayload {
 /**
  * @export
  */
-export const WebhookBenefitRevokedPayloadTypeEnum = {
-    BENEFIT_REVOKED: 'benefit.revoked'
+export const WebhookBenefitGrantRevokedPayloadTypeEnum = {
+    BENEFIT_GRANT_REVOKED: 'benefit_grant.revoked'
 } as const;
-export type WebhookBenefitRevokedPayloadTypeEnum = typeof WebhookBenefitRevokedPayloadTypeEnum[keyof typeof WebhookBenefitRevokedPayloadTypeEnum];
+export type WebhookBenefitGrantRevokedPayloadTypeEnum = typeof WebhookBenefitGrantRevokedPayloadTypeEnum[keyof typeof WebhookBenefitGrantRevokedPayloadTypeEnum];
+
+/**
+ * Sent when a new benefit grant is updated.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookBenefitGrantUpdatedPayload
+ */
+export interface WebhookBenefitGrantUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitGrantUpdatedPayload
+     */
+    type: WebhookBenefitGrantUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {BenefitGrantWebhook}
+     * @memberof WebhookBenefitGrantUpdatedPayload
+     */
+    data: BenefitGrantWebhook;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitGrantUpdatedPayloadTypeEnum = {
+    BENEFIT_GRANT_UPDATED: 'benefit_grant.updated'
+} as const;
+export type WebhookBenefitGrantUpdatedPayloadTypeEnum = typeof WebhookBenefitGrantUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitGrantUpdatedPayloadTypeEnum];
 
 /**
  * Sent when a benefit is updated.
@@ -16205,8 +16255,9 @@ export const WebhookEventType = {
     PRODUCT_UPDATED: 'product.updated',
     BENEFIT_CREATED: 'benefit.created',
     BENEFIT_UPDATED: 'benefit.updated',
-    BENEFIT_GRANTED: 'benefit.granted',
-    BENEFIT_REVOKED: 'benefit.revoked',
+    BENEFIT_GRANT_CREATED: 'benefit_grant.created',
+    BENEFIT_GRANT_UPDATED: 'benefit_grant.updated',
+    BENEFIT_GRANT_REVOKED: 'benefit_grant.revoked',
     ORGANIZATION_UPDATED: 'organization.updated',
     PLEDGE_CREATED: 'pledge.created',
     PLEDGE_UPDATED: 'pledge.updated',

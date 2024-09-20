@@ -1,7 +1,7 @@
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import PublicLayout from '@/components/Layout/PublicLayout'
-import { OrganizationStorefrontNav } from '@/components/Organization/OrganizationStorefrontNav'
+import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -48,7 +48,7 @@ export default async function Layout({
           <StorefrontHeader organization={organization} />
         </div>
         <div className="flex flex-col items-center">
-          <OrganizationStorefrontNav organization={organization} />
+          <StorefrontNav organization={organization} />
         </div>
         <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
           {children}

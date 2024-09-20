@@ -9,10 +9,10 @@ import {
 } from '@polar-sh/sdk'
 import { useContext } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { PublicPage } from '../../Profile/PublicPage'
-import { PublicPageHeader } from '../../Profile/PublicPageHeader'
+import { Storefront } from '../../Profile/Storefront'
+import { StorefrontHeader } from '../../Profile/StorefrontHeader'
 
-export const PublicPagePreview = () => {
+export const StorefrontPreview = () => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
   const { watch } = useFormContext<OrganizationUpdate>()
   const organizationUpdate = watch()
@@ -49,14 +49,14 @@ export const PublicPagePreview = () => {
       <div className="flex w-full max-w-7xl flex-col gap-y-12">
         {!organization.profile_settings?.enabled && (
           <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
-            Public Page is not enabled
+            Storefront is not enabled
           </div>
         )}
         <div className="flex flex-grow flex-col items-center">
-          <PublicPageHeader organization={organization as Organization} />
+          <StorefrontHeader organization={organization as Organization} />
         </div>
         <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
-          <PublicPage
+          <Storefront
             organization={organization as Organization}
             posts={posts}
             products={products}

@@ -93,7 +93,7 @@ const ClientPage = () => {
           articleUpdate: localArticle,
         })
 
-        // Invalidate cache on public pages
+        // Invalidate cache on storefronts
         revalidate(`articles:${post.data.organization_id}:${post.data.slug}`)
 
         if (showBanner) {

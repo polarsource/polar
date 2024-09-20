@@ -10,10 +10,10 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useContext } from 'react'
 import { useForm } from 'react-hook-form'
-import { PublicPagePreview } from './PublicPagePreview'
-import { PublicPageSidebar } from './PublicPageSidebar'
+import { StorefrontPreview } from './StorefrontPreview'
+import { StorefrontSidebar } from './StorefrontSidebar'
 
-export const PublicPageCustomization = () => {
+export const StorefrontCustomization = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
 
   const router = useRouter()
@@ -50,8 +50,8 @@ export const PublicPageCustomization = () => {
           }}
         >
           <TabsList>
-            <TabsTrigger value="public_page" size="small">
-              Public Page
+            <TabsTrigger value="storefront" size="small">
+              Storefront
             </TabsTrigger>
             <TabsTrigger value="checkout" size="small" disabled>
               Checkout
@@ -68,8 +68,8 @@ export const PublicPageCustomization = () => {
       </div>
       <div className="flex min-h-0 flex-grow flex-row gap-x-8 pb-8">
         <Form {...form}>
-          <PublicPagePreview />
-          <PublicPageSidebar />
+          <StorefrontPreview />
+          <StorefrontSidebar />
         </Form>
       </div>
     </div>

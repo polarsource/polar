@@ -1,6 +1,6 @@
 'use client'
 
-import { PublicPage } from '@/components/Profile/PublicPage'
+import { Storefront } from '@/components/Profile/Storefront'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Article, IssueFunding, Organization, Product } from '@polar-sh/sdk'
 
@@ -18,7 +18,7 @@ const ClientPage = ({
   useTrafficRecordPageView({ organization })
 
   return (
-    <PublicPage
+    <Storefront
       organization={organization}
       posts={posts}
       products={products}

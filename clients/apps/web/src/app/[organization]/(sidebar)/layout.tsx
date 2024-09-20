@@ -1,8 +1,8 @@
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import PublicLayout from '@/components/Layout/PublicLayout'
-import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
-import { PublicPageHeader } from '@/components/Profile/PublicPageHeader'
+import { OrganizationStorefrontNav } from '@/components/Organization/OrganizationStorefrontNav'
+import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { UserRead } from '@polar-sh/sdk'
@@ -45,10 +45,10 @@ export default async function Layout({
       </div>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-grow flex-col items-center">
-          <PublicPageHeader organization={organization} />
+          <StorefrontHeader organization={organization} />
         </div>
         <div className="flex flex-col items-center">
-          <OrganizationPublicPageNav organization={organization} />
+          <OrganizationStorefrontNav organization={organization} />
         </div>
         <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
           {children}

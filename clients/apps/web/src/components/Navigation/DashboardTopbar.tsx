@@ -76,7 +76,7 @@ const DashboardTopbar = ({
                 <Button>
                   <div className="flex flex-row items-center gap-x-2">
                     <span className="whitespace-nowrap text-xs">
-                      Public Page
+                      Storefront
                     </span>
                   </div>
                 </Button>

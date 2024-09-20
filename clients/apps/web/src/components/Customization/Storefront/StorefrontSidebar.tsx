@@ -44,7 +44,7 @@ const colorThemes = [
   '#FF69B4',
 ]
 
-const PublicPageSidebarContentWrapper = ({
+const StorefrontSidebarContentWrapper = ({
   title,
   enabled,
   onEnabledChange,
@@ -67,7 +67,7 @@ const PublicPageSidebarContentWrapper = ({
   )
 }
 
-const PublicPageForm = () => {
+const StorefrontForm = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
 
   const {
@@ -261,7 +261,7 @@ const PublicPageForm = () => {
   )
 }
 
-export const PublicPageSidebar = () => {
+export const StorefrontSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
   const [isLoading, setLoading] = useState(false)
 
@@ -310,13 +310,13 @@ export const PublicPageSidebar = () => {
   )
 
   return (
-    <PublicPageSidebarContentWrapper
-      title="Public Page"
+    <StorefrontSidebarContentWrapper
+      title="Storefront"
       enabled={organization.profile_settings?.enabled ?? false}
       onEnabledChange={toggleProfilePage}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
-        <PublicPageForm />
+        <StorefrontForm />
         <div className="flex flex-row items-center gap-x-4">
           <Button
             className="self-start"
@@ -329,12 +329,12 @@ export const PublicPageSidebar = () => {
           {organization.profile_settings?.enabled && (
             <Button variant="secondary" size="default">
               <Link href={`/${organization.slug}`} target="_blank">
-                View Public Page
+                View Storefront
               </Link>
             </Button>
           )}
         </div>
       </form>
-    </PublicPageSidebarContentWrapper>
+    </StorefrontSidebarContentWrapper>
   )
 }

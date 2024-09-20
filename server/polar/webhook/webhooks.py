@@ -47,8 +47,8 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.organization_updated], Organization]
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
-    | tuple[Literal[WebhookEventType.benefit_granted], BenefitGrant]
-    | tuple[Literal[WebhookEventType.benefit_revoked], BenefitGrant]
+    | tuple[Literal[WebhookEventType.benefit_grant_created], BenefitGrant]
+    | tuple[Literal[WebhookEventType.benefit_grant_revoked], BenefitGrant]
 )
 
 
@@ -572,25 +572,25 @@ class WebhookBenefitUpdatedPayload(BaseWebhookPayload):
     data: BenefitSchema
 
 
-class WebhookBenefitGrantedPayload(BaseWebhookPayload):
+class WebhookBenefitGrantCreatedPayload(BaseWebhookPayload):
     """
-    Sent when a new benefit is granted.
+    Sent when a new benefit grant is created.
 
     **Discord & Slack support:** Basic
     """
 
-    type: Literal[WebhookEventType.benefit_granted]
+    type: Literal[WebhookEventType.benefit_grant_created]
     data: BenefitGrantWebhook
 
 
-class WebhookBenefitRevokedPayload(BaseWebhookPayload):
+class WebhookBenefitGrantRevokedPayload(BaseWebhookPayload):
     """
-    Sent when a benefit is revoked.
+    Sent when a new benefit grant is revoked.
 
     **Discord & Slack support:** Basic
     """
 
-    type: Literal[WebhookEventType.benefit_revoked]
+    type: Literal[WebhookEventType.benefit_grant_revoked]
     data: BenefitGrantWebhook
 
 
@@ -606,8 +606,8 @@ WebhookPayload = Annotated[
     | WebhookOrganizationUpdatedPayload
     | WebhookBenefitCreatedPayload
     | WebhookBenefitUpdatedPayload
-    | WebhookBenefitGrantedPayload
-    | WebhookBenefitRevokedPayload,
+    | WebhookBenefitGrantCreatedPayload
+    | WebhookBenefitGrantRevokedPayload,
     Discriminator(discriminator="type"),
 ]
 WebhookPayloadTypeAdapter: TypeAdapter[WebhookPayload] = TypeAdapter(WebhookPayload)

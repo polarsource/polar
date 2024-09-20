@@ -201,7 +201,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             session,
             benefit,
             grant,
-            event_type=WebhookEventType.benefit_granted,
+            event_type=WebhookEventType.benefit_grant_created,
             previous_grant_properties=previous_properties,
         )
         return grant
@@ -264,7 +264,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             session,
             benefit,
             grant,
-            event_type=WebhookEventType.benefit_revoked,
+            event_type=WebhookEventType.benefit_grant_revoked,
             previous_grant_properties=previous_properties,
         )
         return grant
@@ -390,7 +390,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             session,
             benefit,
             grant,
-            event_type=WebhookEventType.benefit_revoked,
+            event_type=WebhookEventType.benefit_grant_revoked,
             previous_grant_properties=previous_properties,
         )
         return grant
@@ -561,8 +561,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit: Benefit,
         grant: BenefitGrant,
         event_type: (
-            Literal[WebhookEventType.benefit_granted]
-            | Literal[WebhookEventType.benefit_revoked]
+            Literal[WebhookEventType.benefit_grant_created]
+            | Literal[WebhookEventType.benefit_grant_revoked]
         ),
         previous_grant_properties: BenefitGrantProperties,
     ) -> None:

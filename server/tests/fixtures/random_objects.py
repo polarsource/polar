@@ -860,7 +860,13 @@ async def product_recurring_free_price(
 async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
-    return await create_product(save_fixture, organization=organization)
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        prices=[
+            (2000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)
+        ],
+    )
 
 
 @pytest_asyncio.fixture

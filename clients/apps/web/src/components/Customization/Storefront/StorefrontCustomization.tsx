@@ -40,7 +40,7 @@ export const StorefrontCustomization = () => {
           >
             <ArrowBack fontSize="small" />
           </Button>
-          <h1 className="text-xl">Customize</h1>
+          <h1 className="text-xl">Storefront</h1>
         </div>
         {/* <Tabs
           className="absolute left-1/2 flex -translate-x-1/2 flex-row items-center"

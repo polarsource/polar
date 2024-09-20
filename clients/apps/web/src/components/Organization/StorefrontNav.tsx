@@ -7,15 +7,15 @@ import { useSelectedLayoutSegment } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { twMerge } from 'tailwind-merge'
 
-interface OrganizationPublicPageNavProps {
+interface OrganizationStorefrontNavProps {
   className?: string
   organization: Organization
 }
 
-export const OrganizationPublicPageNav = ({
+export const StorefrontNav = ({
   organization,
   className,
-}: OrganizationPublicPageNavProps) => {
+}: OrganizationStorefrontNavProps) => {
   const routeSegment = useSelectedLayoutSegment()
   const currentTab = routeSegment ?? 'overview'
 

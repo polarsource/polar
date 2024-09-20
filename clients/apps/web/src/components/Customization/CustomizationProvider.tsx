@@ -1,6 +1,6 @@
 import React, { PropsWithChildren } from 'react'
 
-export type CustomizationContextMode = 'public_page' | 'checkout' | 'receipt'
+export type CustomizationContextMode = 'storefront' | 'checkout' | 'receipt'
 
 export type CustomizationContextValue = {
   readonly customizationMode: CustomizationContextMode
@@ -8,7 +8,7 @@ export type CustomizationContextValue = {
 }
 
 const defaultCustomizationContext: CustomizationContextValue = {
-  customizationMode: 'public_page',
+  customizationMode: 'storefront',
   setCustomizationMode: () => {},
 }
 
@@ -17,7 +17,7 @@ export const CustomizationContext =
 
 export const CustomizationProvider = ({
   children,
-  initialCustomizationMode = 'public_page',
+  initialCustomizationMode = 'storefront',
 }: PropsWithChildren<{
   initialCustomizationMode?: CustomizationContextMode
 }>) => {

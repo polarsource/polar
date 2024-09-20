@@ -74,9 +74,9 @@ export const GLOBAL_COMMANDS = ({
 
 const organizationSpecificCommands: Command[] = [
   {
-    id: 'go-to-public-page',
-    name: 'Go to Public Page',
-    description: 'Navigate to the public page',
+    id: 'go-to-storefront',
+    name: 'Go to Storefront',
+    description: 'Navigate to the storefront',
     type: CommandType.Shortcut,
     action: ({ hidePalette, router, organization }) => {
       if (organization) {

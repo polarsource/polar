@@ -16,7 +16,7 @@ import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/Subscripti
 import { NewsletterFeed } from './NewsletterFeed'
 import { ProductsGrid } from './ProductsGrid'
 
-export const PublicPage = ({
+export const Storefront = ({
   organization,
   posts,
   products,

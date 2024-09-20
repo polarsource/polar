@@ -5,7 +5,7 @@ import {
   CustomizationProvider,
 } from '@/components/Customization/CustomizationProvider'
 import { useSearchParams } from 'next/navigation'
-import { PublicPageCustomization } from './PublicPage/PublicPageCustomization'
+import { StorefrontCustomization } from './Storefront/StorefrontCustomization'
 
 export const CustomizationPage = () => {
   const search = useSearchParams()
@@ -16,7 +16,7 @@ export const CustomizationPage = () => {
         (search.get('mode') as CustomizationContextMode) ?? undefined
       }
     >
-      <PublicPageCustomization />
+      <StorefrontCustomization />
     </CustomizationProvider>
   )
 }

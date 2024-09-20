@@ -13,11 +13,11 @@ import { externalURL } from '../Organization'
 import { Gradient } from './GradientMesh'
 import { computeComplementaryColor } from './utils'
 
-interface PublicPageHeaderProps {
+interface StorefrontHeaderProps {
   organization: Organization
 }
 
-export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
+export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
   const segment = useSelectedLayoutSegment()
 
   const externalGitHubOrganizations = useExternalOrganizations({

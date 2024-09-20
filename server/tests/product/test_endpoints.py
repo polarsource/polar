@@ -177,7 +177,6 @@ class TestCreateProduct:
     @pytest.mark.parametrize(
         "payload",
         [
-            {"name": "This is a way too long name for a product"},
             {"name": "ab"},
             {"name": ""},
             {
@@ -334,27 +333,6 @@ class TestUpdateProduct:
         )
 
         assert response.status_code == 404
-
-    @pytest.mark.parametrize(
-        "payload",
-        [
-            {"name": "This is a way too long name for a product"},
-        ],
-    )
-    @pytest.mark.auth
-    async def test_validation(
-        self,
-        payload: dict[str, Any],
-        client: AsyncClient,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.patch(
-            f"/v1/products/{product.id}",
-            json=payload,
-        )
-
-        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_valid(

@@ -1,10 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Modal } from '@/components/Modal'
-import { useModal } from '@/components/Modal/useModal'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import ImportSubscribersModal from '@/components/Subscriptions/ImportSubscribersModal'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
@@ -16,7 +13,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { FileDownloadOutlined, FileUploadOutlined } from '@mui/icons-material'
+import { FileDownloadOutlined } from '@mui/icons-material'
 import {
   Organization,
   Product,
@@ -251,12 +248,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     },
   ]
 
-  const {
-    isShown: importSubscribersIsShow,
-    hide: hideImportSubscribers,
-    show: showImportSubscribers,
-  } = useModal()
-
   const onExport = () => {
     const url = new URL(
       `${getServerURL()}/v1/subscriptions/export?organization_id=${organization.id}`,
@@ -300,15 +291,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )}
         <div className="flex items-center justify-end gap-2">
           <Button
-            onClick={showImportSubscribers}
-            className="flex items-center"
-            variant={'secondary'}
-          >
-            <FileUploadOutlined className="mr-2" fontSize="small" />
-            <span>Import</span>
-          </Button>
-
-          <Button
             onClick={onExport}
             className="flex flex-row items-center "
             variant={'secondary'}
@@ -318,17 +300,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </Button>
         </div>
       </div>
-
-      <Modal
-        isShown={importSubscribersIsShow}
-        hide={hideImportSubscribers}
-        modalContent={
-          <ImportSubscribersModal
-            hide={hideImportSubscribers}
-            organization={organization}
-          />
-        }
-      />
     </DashboardBody>
   )
 }

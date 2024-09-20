@@ -2,34 +2,23 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 import structlog
-from fastapi import Depends, File, Form, Query, Response, UploadFile
+from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
-from pydantic import UUID4
 
-from polar.authz.service import AccessType, Authz
-from polar.enums import UserSignupType
-from polar.exceptions import PolarRequestValidationError
 from polar.kit.csv import (
     IterableCSVWriter,
-    get_emails_from_csv,
-    get_iterable_from_binary_io,
 )
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Subscription
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.user.service.user import user as user_service
 
-from ..product.service.product import product as product_service
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionCreateEmail, SubscriptionsImported
 from .service import SubscriptionSortProperty
 from .service import subscription as subscription_service
 
@@ -80,134 +69,6 @@ async def list(
     )
 
 
-@router.post(
-    "/",
-    response_model=SubscriptionSchema,
-    status_code=201,
-    summary="Create Free Subscription",
-)
-async def create(
-    subscription_create: SubscriptionCreateEmail,
-    auth_subject: auth.SubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Subscription:
-    """Create a subscription on the free tier for a given email."""
-    product = await product_service.get(session, subscription_create.product_id)
-    if product is None:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("body", "product_id"),
-                    "msg": "Product does not exist.",
-                    "type": "value_error",
-                    "input": subscription_create.product_id,
-                }
-            ]
-        )
-
-    await session.refresh(product, {"organization"})
-    if not await authz.can(
-        auth_subject.subject, AccessType.write, product.organization
-    ):
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("body", "product_id"),
-                    "msg": "Product does not exist.",
-                    "type": "value_error",
-                    "input": subscription_create.product_id,
-                }
-            ]
-        )
-
-    raise PolarRequestValidationError(
-        [
-            {
-                "loc": ("body", "product_id"),
-                "msg": "This is disabled at the moment.",
-                "type": "value_error",
-                "input": subscription_create.product_id,
-            }
-        ]
-    )
-
-    user = await user_service.get_by_email_or_signup(
-        session, subscription_create.email, signup_type=UserSignupType.imported
-    )
-    subscription = await subscription_service.create_arbitrary_subscription(
-        session, user=user, product=product
-    )
-
-    return subscription
-
-
-@router.post(
-    "/import",
-    response_model=SubscriptionsImported,
-    summary="Import Subscriptions",
-    # Set operation ID manually because `import` is a reserved keyword.
-    operation_id="subscriptions:import",
-    openapi_extra={"x-speakeasy-name-override": "import_subscriptions"},
-)
-async def subscriptions_import(
-    auth_subject: auth.SubscriptionsWrite,
-    file: Annotated[UploadFile, File(description="CSV file with emails.")],
-    organization_id: Annotated[
-        UUID4,
-        Form(description="The organization ID on which to import the subscriptions."),
-    ],
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionsImported:
-    """Import subscriptions from a CSV file."""
-    organization = await organization_service.get(session, organization_id)
-    if organization is None or not await authz.can(
-        auth_subject.subject, AccessType.write, organization
-    ):
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("body", "organization_id"),
-                    "msg": "Organization does not exist.",
-                    "type": "value_error",
-                    "input": organization_id,
-                }
-            ]
-        )
-
-    free_tier = await product_service.get_free(session, organization=organization)
-    if free_tier is None:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("body", "organization_id"),
-                    "msg": "Organization does not have a free tier.",
-                    "type": "value_error",
-                    "input": organization_id,
-                }
-            ]
-        )
-
-    emails = get_emails_from_csv(get_iterable_from_binary_io(file.file))
-
-    count = 0
-
-    for email in emails:
-        try:
-            user = await user_service.get_by_email_or_signup(
-                session, email, signup_type=UserSignupType.imported
-            )
-            await subscription_service.create_arbitrary_subscription(
-                session, user=user, product=free_tier
-            )
-            count += 1
-        except Exception as e:
-            log.error("subscriptions_import.failed", e=e)
-
-    return SubscriptionsImported(count=count)
-
-
 @router.get("/export", summary="Export Subscriptions")
 async def export(
     auth_subject: auth.SubscriptionsRead,
@@ -222,7 +83,16 @@ async def export(
         csv_writer = IterableCSVWriter(dialect="excel")
         # CSV header
         yield csv_writer.getrow(
-            ("Email", "Name", "Created At", "Active", "Product", "Price", "Currency")
+            (
+                "Email",
+                "Name",
+                "Created At",
+                "Active",
+                "Product",
+                "Price",
+                "Currency",
+                "Interval",
+            )
         )
 
         (subscribers, _) = await subscription_service.list(
@@ -242,6 +112,7 @@ async def export(
                     sub.product.name,
                     sub.amount / 100 if sub.amount is not None else "",
                     sub.currency if sub.currency is not None else "",
+                    sub.recurring_interval,
                 )
             )
 

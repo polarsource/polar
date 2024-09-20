@@ -12,11 +12,13 @@ from polar.models import (
     Benefit,
     Organization,
     Product,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceFree,
     Subscription,
     User,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceCustom, ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
@@ -173,6 +175,37 @@ class TestCreateArbitrarySubscription:
         assert subscription.user_id == user.id
         assert subscription.amount == 2000
         assert subscription.currency == price.price_currency
+        assert subscription.recurring_interval == price.recurring_interval
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
+    async def test_valid_free_price(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        product_recurring_free_price: Product,
+        user: User,
+    ) -> None:
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
+        # then
+        session.expunge_all()
+
+        price = product_recurring_free_price.prices[0]
+        assert isinstance(price, ProductPriceFree)
+        subscription = await subscription_service.create_arbitrary_subscription(
+            session,
+            user=user,
+            product=product_recurring_free_price,
+            price=price,
+        )
+
+        assert subscription.product_id == product_recurring_free_price.id
+        assert subscription.user_id == user.id
+        assert subscription.amount is None
+        assert subscription.currency is None
         assert subscription.recurring_interval == price.recurring_interval
 
         enqueue_benefits_grants_mock.assert_called_once()

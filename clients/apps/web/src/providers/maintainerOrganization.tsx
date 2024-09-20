@@ -53,16 +53,15 @@ const useOnboardingState = (organization: Organization) => {
     useOrganizationAccount(organization.id)
   const { data: products, isLoading: productsLoading } = useProducts(
     organization.id,
+    { limit: 1 },
   )
 
   const isQueriesLoading = productsLoading || orgAccountLoading
 
-  const shouldUpsellCreateProduct = useMemo(() => {
-    const nonFreeProducts =
-      products?.items.filter((tier) => tier.type !== 'free') ?? []
-
-    return nonFreeProducts.length === 0
-  }, [products])
+  const shouldUpsellCreateProduct = useMemo(
+    () => products?.pagination.total_count === 0,
+    [products],
+  )
 
   const shouldUpsellPayoutConnection = useMemo(() => !account, [account])
 

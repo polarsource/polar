@@ -11,15 +11,13 @@ import { defaultRetry } from './retry'
 
 export const useProducts = (
   organizationId?: OrganizationIDFilter,
-  parameters?: Omit<ProductsApiListRequest, 'organizationId' | 'limit'>,
-  limit = 100,
+  parameters?: Omit<ProductsApiListRequest, 'organizationId'>,
 ) =>
   useQuery({
     queryKey: ['products', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       api.products.list({
         organizationId: organizationId ?? '',
-        limit,
         isArchived: false,
         ...(parameters || {}),
       }),

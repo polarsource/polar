@@ -6,6 +6,8 @@ Create Date: 2024-09-19 13:45:22.413448
 
 """
 
+from uuid import uuid4
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -54,6 +56,7 @@ def upgrade() -> None:
                 "unit_amount": 0,
             },
         )
+        price_id = uuid4()
         op.execute(
             sa.text("""
             INSERT INTO product_prices (
@@ -67,7 +70,7 @@ def upgrade() -> None:
                 product_id
             )
             VALUES (
-                uuid_generate_v4(),
+                :id,
                 NOW(),
                 'recurring',
                 'month',
@@ -77,19 +80,42 @@ def upgrade() -> None:
                 :product_id
             )
             """).bindparams(
+                id=price_id,
                 stripe_price_id=stripe_price.id,
                 product_id=id,
             )
         )
         op.execute(
-            sa.text("""
-            UPDATE products
-                    SET stripe_product_id = :stripe_product_id
-                    WHERE id = :product_id""").bindparams(
+            sa.text(
+                """
+                UPDATE products
+                SET stripe_product_id = :stripe_product_id
+                WHERE id = :product_id
+                """
+            ).bindparams(
                 stripe_product_id=stripe_product.id,
                 product_id=id,
             )
         )
+        op.execute(
+            sa.text(
+                """
+                UPDATE subscriptions
+                SET price_id = :price_id
+                WHERE product_id = :product_id
+                """
+            ).bindparams(
+                price_id=price_id,
+                product_id=id,
+            )
+        )
+
+    op.alter_column(
+        "subscriptions",
+        "price_id",
+        existing_nullable=True,
+        nullable=False,
+    )
 
     op.drop_index("idx_organization_id_type", table_name="products")
     op.drop_index("ix_products_is_highlighted", table_name="products")

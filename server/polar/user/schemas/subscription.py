@@ -18,7 +18,7 @@ class UserSubscriptionBase(SubscriptionBase):
 
     user_id: UUID4
     product_id: UUID4
-    price_id: UUID4 | None
+    price_id: UUID4
 
 
 class UserSubscriptionProduct(Product): ...
@@ -26,7 +26,7 @@ class UserSubscriptionProduct(Product): ...
 
 class UserSubscription(UserSubscriptionBase):
     product: UserSubscriptionProduct
-    price: ProductPrice | None
+    price: ProductPrice
 
 
 class UserFreeSubscriptionCreate(Schema):

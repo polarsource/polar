@@ -29,7 +29,10 @@ from tests.fixtures.random_objects import (
 
 
 class ProductFixture(TypedDict):
-    prices: list[tuple[int, ProductPriceType, SubscriptionRecurringInterval | None]]
+    prices: list[
+        tuple[int, ProductPriceType, SubscriptionRecurringInterval | None]
+        | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
+    ]
 
 
 class SubscriptionFixture(TypedDict):
@@ -58,7 +61,9 @@ PRODUCTS: dict[str, ProductFixture] = {
             (100_00, ProductPriceType.recurring, SubscriptionRecurringInterval.month)
         ],
     },
-    "free_subscription_tier": {"prices": []},
+    "free_subscription": {
+        "prices": [(ProductPriceType.recurring, SubscriptionRecurringInterval.month)]
+    },
 }
 
 SUBSCRIPTIONS: dict[str, SubscriptionFixture] = {
@@ -475,11 +480,11 @@ class TestGetMetrics:
             "subscription_1": {
                 "started_at": date(2024, 1, 1),
                 "ended_at": date(2024, 6, 15),
-                "product": "free_subscription_tier",
+                "product": "free_subscription",
             },
             "subscription_2": {
                 "started_at": date(2024, 6, 1),
-                "product": "free_subscription_tier",
+                "product": "free_subscription",
             },
         }
         await _create_fixtures(
@@ -572,7 +577,7 @@ class TestGetMetrics:
             "subscription_1": {
                 "started_at": date(2024, 1, 1),
                 "ended_at": date(2024, 1, 15),
-                "product": "free_subscription_tier",
+                "product": "free_subscription",
             }
         }
         await _create_fixtures(

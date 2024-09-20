@@ -29,7 +29,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
 
     user_id: UUID4
     product_id: UUID4
-    price_id: UUID4 | None
+    price_id: UUID4
 
     def get_amount_display(self) -> str:
         if self.amount is None or self.currency is None:
@@ -44,7 +44,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
     product: Product
-    price: ProductPrice | None
+    price: ProductPrice
 
 
 class SubscriptionCreateEmail(Schema):

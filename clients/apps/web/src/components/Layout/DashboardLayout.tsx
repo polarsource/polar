@@ -11,7 +11,6 @@ import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   PropsWithChildren,
-  Suspense,
   UIEventHandler,
   useCallback,
   useContext,
@@ -131,7 +130,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         >
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
           <main className="relative w-full md:overflow-auto">
-            <Suspense>{props.children}</Suspense>
+            {props.children}
           </main>
         </div>
       </div>

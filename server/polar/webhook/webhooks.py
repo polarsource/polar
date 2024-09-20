@@ -48,6 +48,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
     | tuple[Literal[WebhookEventType.benefit_grant_created], BenefitGrant]
+    | tuple[Literal[WebhookEventType.benefit_grant_updated], BenefitGrant]
     | tuple[Literal[WebhookEventType.benefit_grant_revoked], BenefitGrant]
 )
 
@@ -583,6 +584,17 @@ class WebhookBenefitGrantCreatedPayload(BaseWebhookPayload):
     data: BenefitGrantWebhook
 
 
+class WebhookBenefitGrantUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new benefit grant is updated.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.benefit_grant_updated]
+    data: BenefitGrantWebhook
+
+
 class WebhookBenefitGrantRevokedPayload(BaseWebhookPayload):
     """
     Sent when a new benefit grant is revoked.
@@ -607,6 +619,7 @@ WebhookPayload = Annotated[
     | WebhookBenefitCreatedPayload
     | WebhookBenefitUpdatedPayload
     | WebhookBenefitGrantCreatedPayload
+    | WebhookBenefitGrantUpdatedPayload
     | WebhookBenefitGrantRevokedPayload,
     Discriminator(discriminator="type"),
 ]

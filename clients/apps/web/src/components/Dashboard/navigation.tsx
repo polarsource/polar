@@ -1,5 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   AttachMoneyOutlined,
   DiamondOutlined,
@@ -18,7 +19,7 @@ import {
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
-import { useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 
 export type SubRoute = {
   readonly title: string
@@ -79,17 +80,18 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
 }
 
 const useResolveRoutes = (
-  routesResolver: (org: Organization) => Route[],
+  routesResolver: (org: Organization, onboardingCompleted: boolean) => Route[],
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
+  const { onboarding } = useContext(MaintainerOrganizationContext)
 
   return useMemo(() => {
-    return routesResolver(org)
+    return routesResolver(org, onboarding.completed)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
-  }, [org, path, allowAll, routesResolver])
+  }, [org, path, allowAll, routesResolver, onboarding])
 }
 
 export const useDashboardRoutes = (
@@ -141,7 +143,10 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (org: Organization): Route[] => [
+const generalRoutesList = (
+  org: Organization,
+  onboardingCompleted: boolean,
+): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -210,7 +215,7 @@ const generalRoutesList = (org: Organization): Route[] => [
     title: 'Onboarding',
     icon: <DonutLargeOutlined fontSize="inherit" />,
     link: `/dashboard/${org.slug}/onboarding`,
-    if: true,
+    if: !onboardingCompleted,
   },
 ]
 
@@ -272,8 +277,11 @@ const communityRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (org: Organization): Route[] => [
-  ...generalRoutesList(org),
+const dashboardRoutesList = (
+  org: Organization,
+  onboardingCompleted: boolean,
+): Route[] => [
+  ...generalRoutesList(org, onboardingCompleted),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...organizationRoutesList(org),

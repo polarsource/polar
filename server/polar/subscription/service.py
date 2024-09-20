@@ -33,11 +33,13 @@ from polar.models import (
     Organization,
     Product,
     ProductBenefit,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceFree,
     Subscription,
     User,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceCustom, ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -279,7 +281,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         *,
         user: User,
         product: Product,
-        price: None = None,
+        price: ProductPriceFree,
     ) -> Subscription: ...
 
     async def create_arbitrary_subscription(
@@ -288,20 +290,23 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         *,
         user: User,
         product: Product,
-        price: ProductPriceFixed | ProductPriceCustom | None = None,
+        price: ProductPriceFixed | ProductPriceCustom | ProductPriceFree,
         amount: int | None = None,
     ) -> Subscription:
         subscription_amount: int | None = None
+        subscription_currency: str | None = None
         if isinstance(price, ProductPriceFixed):
             subscription_amount = price.price_amount
+            subscription_currency = price.price_currency
         elif isinstance(price, ProductPriceCustom):
             subscription_amount = amount
+            subscription_currency = price.price_currency
 
         start = utc_now()
         subscription = Subscription(
             status=SubscriptionStatus.active,
             amount=subscription_amount,
-            currency=price.price_currency if price is not None else None,
+            currency=subscription_currency,
             recurring_interval=price.recurring_interval
             if price is not None
             else SubscriptionRecurringInterval.month,

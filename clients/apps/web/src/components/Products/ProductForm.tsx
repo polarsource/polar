@@ -299,16 +299,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
           rules={{
             required: 'This field is required',
             minLength: 3,
-            maxLength: 24,
           }}
           defaultValue=""
           render={({ field }) => (
             <FormItem>
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Name</FormLabel>
-                <span className="dark:text-polar-400 text-sm text-gray-400">
-                  {field.value?.length ?? 0} / 24
-                </span>
               </div>
               <FormControl>
                 <Input {...field} value={field.value || ''} />

@@ -27,7 +27,6 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
-PRODUCT_NAME_MAX_LENGTH = 24
 
 # Product
 
@@ -63,7 +62,6 @@ ProductName = Annotated[
     str,
     Field(
         min_length=PRODUCT_NAME_MIN_LENGTH,
-        max_length=PRODUCT_NAME_MAX_LENGTH,
         description="The name of the product.",
     ),
 ]

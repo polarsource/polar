@@ -328,6 +328,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         user = await user_service.get(session, grant.user_id)
         assert user is not None
 
+        previous_properties = grant.properties
         benefit_service = get_benefit_service(benefit.type, session)
         try:
             properties = await benefit_service.grant(
@@ -347,6 +348,13 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         session.add(grant)
 
+        await self._send_webhook(
+            session,
+            benefit,
+            grant,
+            event_type=WebhookEventType.benefit_grant_updated,
+            previous_grant_properties=previous_properties,
+        )
         return grant
 
     async def enqueue_benefit_grant_deletions(
@@ -562,6 +570,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         grant: BenefitGrant,
         event_type: (
             Literal[WebhookEventType.benefit_grant_created]
+            | Literal[WebhookEventType.benefit_grant_updated]
             | Literal[WebhookEventType.benefit_grant_revoked]
         ),
         previous_grant_properties: BenefitGrantProperties,

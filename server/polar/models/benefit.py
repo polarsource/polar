@@ -115,7 +115,10 @@ class Benefit(RecordModel):
     organization_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
-    organization: Mapped["Organization"] = relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     @declared_attr
     def grants(cls) -> Mapped["list[BenefitGrant]"]:

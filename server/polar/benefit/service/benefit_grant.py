@@ -100,7 +100,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if loaded:
             query = query.options(
-                joinedload(class_.benefit),
+                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization)
             )
 
         if options is not None:
@@ -322,7 +322,6 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if grant.is_revoked:
             return grant
 
-        await session.refresh(grant, {"benefit"})
         benefit = grant.benefit
 
         user = await user_service.get(session, grant.user_id)

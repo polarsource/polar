@@ -8,6 +8,7 @@ import {
   UsersBenefitsApiListRequest,
   UsersOrdersApiListRequest,
   UsersSubscriptionsApiListRequest,
+  UserSubscriptionUpdate,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -63,6 +64,21 @@ export const useUserOrderInvoice = () =>
   useMutation({
     mutationFn: (id: string) => {
       return api.usersOrders.invoice({ id })
+    },
+  })
+
+export const useUpdateSubscription = () =>
+  useMutation({
+    mutationFn: (variables: { id: string; body: UserSubscriptionUpdate }) => {
+      return api.usersSubscriptions.update({
+        id: variables.id,
+        body: variables.body,
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'subscriptions'],
+      })
     },
   })
 

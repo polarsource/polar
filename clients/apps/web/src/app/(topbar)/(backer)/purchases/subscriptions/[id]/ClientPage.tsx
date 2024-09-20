@@ -6,6 +6,7 @@ import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import AmountLabel from '@/components/Shared/AmountLabel'
+import ChangePlanModal from '@/components/Subscriptions/ChangePlanModal'
 import {
   useCancelSubscription,
   useOrganization,
@@ -13,7 +14,6 @@ import {
   useUserOrderInvoice,
   useUserOrders,
 } from '@/hooks/queries'
-import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined, ReceiptOutlined } from '@mui/icons-material'
 import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
@@ -25,7 +25,12 @@ import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useCallback, useState } from 'react'
 
-const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
+const ClientPage = ({
+  subscription: _subscription,
+}: {
+  subscription: UserSubscription
+}) => {
+  const [subscription, setSubscription] = useState(_subscription)
   const { data: organization } = useOrganization(
     subscription.product.organization_id,
   )
@@ -55,6 +60,8 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
   )
 
   const hasInvoices = orders?.items && orders.items.length > 0
+
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false)
 
   const cancelSubscription = useCancelSubscription(subscription.id)
   const isCanceled =
@@ -170,13 +177,13 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
               )}
             </div>
             <div className="flex flex-col gap-2">
-              {organization && (
-                <Link href={organizationPageLink(organization)}>
-                  <Button size="lg" fullWidth>
-                    Upgrade
-                  </Button>
-                </Link>
-              )}
+              <Button
+                size="lg"
+                fullWidth
+                onClick={() => setShowChangePlanModal(true)}
+              >
+                Change Plan
+              </Button>
               {!isCanceled && (
                 <Button
                   size="lg"
@@ -256,6 +263,20 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
           </div>
         }
       />
+      {organization && (
+        <InlineModal
+          isShown={showChangePlanModal}
+          hide={() => setShowChangePlanModal(false)}
+          modalContent={
+            <ChangePlanModal
+              organization={organization}
+              subscription={subscription}
+              hide={() => setShowChangePlanModal(false)}
+              onUserSubscriptionUpdate={setSubscription}
+            />
+          }
+        />
+      )}
     </div>
   )
 }

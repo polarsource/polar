@@ -581,18 +581,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription_id=subscription.id,
         )
 
-        # Special hard-coded logic to make sure
-        # we always at least subscribe to public articles
-        if product.get_articles_benefit() is None:
-            await session.refresh(product, {"organization"})
-            enqueue_job(
-                "benefit.force_free_articles",
-                task=task,
-                user_id=user_id,
-                organization_id=product.organization_id,
-                subscription_id=subscription.id,
-            )
-
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
     ) -> None:

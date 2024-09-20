@@ -21,7 +21,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.benefit import BenefitArticles, BenefitType
+from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import sql
@@ -268,51 +268,6 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             )
 
         return benefit
-
-    async def get_or_create_articles_benefits(
-        self,
-        session: AsyncSession,
-        organization: Organization | None = None,
-    ) -> tuple[BenefitArticles, BenefitArticles]:
-        statement = select(BenefitArticles)
-        if organization is not None:
-            statement = statement.where(
-                BenefitArticles.organization_id == organization.id
-            )
-
-        result = await session.execute(statement)
-
-        public_articles: BenefitArticles | None = None
-        premium_articles: BenefitArticles | None = None
-        for benefit in result.scalars().all():
-            if benefit.properties["paid_articles"]:
-                premium_articles = benefit
-            else:
-                public_articles = benefit
-
-        if public_articles is None:
-            public_articles = BenefitArticles(
-                description="Public posts",
-                is_tax_applicable=False,
-                selectable=False,
-                deletable=False,
-                properties={"paid_articles": False},
-                organization=organization,
-            )
-            session.add(public_articles)
-
-        if premium_articles is None:
-            premium_articles = BenefitArticles(
-                description="Premium posts",
-                is_tax_applicable=True,
-                selectable=True,
-                deletable=False,
-                properties={"paid_articles": True},
-                organization=organization,
-            )
-            session.add(premium_articles)
-
-        return (public_articles, premium_articles)
 
     async def _with_organization(
         self, session: AsyncSession, benefit: Benefit

@@ -8578,10 +8578,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "free_subscription",
                                 "donation",
                                 "paid_subscription",
-                                "order",
-                                "free_subscription"
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -16653,16 +16653,16 @@
                 }
             }
         },
-        "benefit.granted": {
+        "benefit_grant.created": {
             "post": {
-                "summary": "benefit.granted",
-                "description": "Sent when a new benefit is granted.\n\n**Discord & Slack support:** Basic",
-                "operationId": "_endpointbenefit_granted_post",
+                "summary": "benefit_grant.created",
+                "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic",
+                "operationId": "_endpointbenefit_grant_created_post",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/WebhookBenefitGrantedPayload"
+                                "$ref": "#/components/schemas/WebhookBenefitGrantCreatedPayload"
                             }
                         }
                     },
@@ -16690,16 +16690,53 @@
                 }
             }
         },
-        "benefit.revoked": {
+        "benefit_grant.updated": {
             "post": {
-                "summary": "benefit.revoked",
-                "description": "Sent when a benefit is revoked.\n\n**Discord & Slack support:** Basic",
-                "operationId": "_endpointbenefit_revoked_post",
+                "summary": "benefit_grant.updated",
+                "description": "Sent when a new benefit grant is updated.\n\n**Discord & Slack support:** Basic",
+                "operationId": "_endpointbenefit_grant_updated_post",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/WebhookBenefitRevokedPayload"
+                                "$ref": "#/components/schemas/WebhookBenefitGrantUpdatedPayload"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "benefit_grant.revoked": {
+            "post": {
+                "summary": "benefit_grant.revoked",
+                "description": "Sent when a new benefit grant is revoked.\n\n**Discord & Slack support:** Basic",
+                "operationId": "_endpointbenefit_grant_revoked_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebhookBenefitGrantRevokedPayload"
                             }
                         }
                     },
@@ -20617,15 +20654,6 @@
                     "properties": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                            },
-                            {
                                 "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
                             },
                             {
@@ -20636,6 +20664,15 @@
                             },
                             {
                                 "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
                             }
                         ],
                         "title": "Properties",
@@ -21118,15 +21155,6 @@
                     "properties": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                            },
-                            {
                                 "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
                             },
                             {
@@ -21137,6 +21165,15 @@
                             },
                             {
                                 "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
                             }
                         ],
                         "title": "Properties",
@@ -21179,6 +21216,66 @@
                         "format": "uuid4",
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
+                    },
+                    "benefit": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitArticles"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitAds"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitCustom"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitDiscord-Input"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGitHubRepository"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitDownloadables"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
+                            }
+                        ],
+                        "title": "Benefit"
+                    },
+                    "previous_properties": {
+                        "anyOf": [
+                            {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                                    }
+                                ],
+                                "description": "The properties of the grant."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Previous Properties"
                     }
                 },
                 "type": "object",
@@ -21192,7 +21289,8 @@
                     "subscription_id",
                     "order_id",
                     "user_id",
-                    "benefit_id"
+                    "benefit_id",
+                    "benefit"
                 ],
                 "title": "BenefitGrantWebhook"
             },
@@ -36480,14 +36578,14 @@
                 "title": "WebhookBenefitCreatedPayload",
                 "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic"
             },
-            "WebhookBenefitGrantedPayload": {
+            "WebhookBenefitGrantCreatedPayload": {
                 "properties": {
                     "type": {
                         "type": "string",
                         "enum": [
-                            "benefit.granted"
+                            "benefit_grant.created"
                         ],
-                        "const": "benefit.granted",
+                        "const": "benefit_grant.created",
                         "title": "Type"
                     },
                     "data": {
@@ -36499,17 +36597,17 @@
                     "type",
                     "data"
                 ],
-                "title": "WebhookBenefitGrantedPayload",
-                "description": "Sent when a new benefit is granted.\n\n**Discord & Slack support:** Basic"
+                "title": "WebhookBenefitGrantCreatedPayload",
+                "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic"
             },
-            "WebhookBenefitRevokedPayload": {
+            "WebhookBenefitGrantRevokedPayload": {
                 "properties": {
                     "type": {
                         "type": "string",
                         "enum": [
-                            "benefit.revoked"
+                            "benefit_grant.revoked"
                         ],
-                        "const": "benefit.revoked",
+                        "const": "benefit_grant.revoked",
                         "title": "Type"
                     },
                     "data": {
@@ -36521,8 +36619,30 @@
                     "type",
                     "data"
                 ],
-                "title": "WebhookBenefitRevokedPayload",
-                "description": "Sent when a benefit is revoked.\n\n**Discord & Slack support:** Basic"
+                "title": "WebhookBenefitGrantRevokedPayload",
+                "description": "Sent when a new benefit grant is revoked.\n\n**Discord & Slack support:** Basic"
+            },
+            "WebhookBenefitGrantUpdatedPayload": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "benefit_grant.updated"
+                        ],
+                        "const": "benefit_grant.updated",
+                        "title": "Type"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/BenefitGrantWebhook"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "data"
+                ],
+                "title": "WebhookBenefitGrantUpdatedPayload",
+                "description": "Sent when a new benefit grant is updated.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookBenefitUpdatedPayload": {
                 "properties": {
@@ -36959,8 +37079,9 @@
                     "product.updated",
                     "benefit.created",
                     "benefit.updated",
-                    "benefit.granted",
-                    "benefit.revoked",
+                    "benefit_grant.created",
+                    "benefit_grant.updated",
+                    "benefit_grant.revoked",
                     "organization.updated",
                     "pledge.created",
                     "pledge.updated",

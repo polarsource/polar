@@ -361,8 +361,6 @@ if __name__ == "__main__":
             code = _get_github_app_code(options.github_setup_port, manifest)
             spinner.text = "Registering the GitHub App..."
             github_app = _register_github_app(code)
-        print(github_app)
-        sys.exit(0)
         spinner.text = "Writing environment files..."
         _write_server_env_file(github_app)
         _write_apps_web_env_file(github_app)

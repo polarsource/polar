@@ -26,25 +26,6 @@ import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
-const ProductsUpsell = ({ organization }: { organization: Organization }) => {
-  return (
-    <div className="dark:from-polar-800 dark:to-polar-800 mx-6 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
-      <div className="flex w-full flex-col gap-y-6">
-        <h3 className="leading-normal [text-wrap:balance]">
-          Kickstart your business by selling products
-        </h3>
-        <Link href={`/dashboard/${organization.slug}/products/new`}>
-          <Button className="self-start" size="sm">
-            <div className="flex flex-row items-center gap-2">
-              <span>Create a product</span>
-            </div>
-          </Button>
-        </Link>
-      </div>
-    </div>
-  )
-}
-
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
@@ -94,9 +75,6 @@ const DashboardSidebar = () => {
         >
           <div className="flex flex-col gap-y-12">
             <MaintainerNavigation />
-            {currentOrg && (nonFreeProducts?.length ?? 0) < 1 && (
-              <ProductsUpsell organization={currentOrg} />
-            )}
           </div>
           <div className="flex flex-col">
             <div className="flex px-8">

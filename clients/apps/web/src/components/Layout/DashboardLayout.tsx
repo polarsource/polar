@@ -2,13 +2,10 @@
 
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
-import { useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
-import Link from 'next/link'
+import { Repository } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
 import {
   PropsWithChildren,
   UIEventHandler,
@@ -30,8 +27,6 @@ const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
 
-  const orgContext = useContext(MaintainerOrganizationContext)
-  const currentOrg = orgContext.organization
   const { showCommandPalette } = useDashboard()
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
@@ -43,11 +38,6 @@ const DashboardSidebar = () => {
   const upperScrollClassName = shouldRenderUpperBorder
     ? 'border-b dark:border-b-polar-700 border-b-gray-200'
     : ''
-
-  const products = useProducts(currentOrg.id)
-  const nonFreeProducts = products.data?.items.filter(
-    (product) => product.type !== 'free',
-  )
 
   if (!currentUser) {
     return <></>

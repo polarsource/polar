@@ -34,7 +34,9 @@ const DropzoneView = ({
           <p className="dark:text-polar-200 text-xs font-medium text-gray-700">
             {isDragActive ? "Drop it like it's hot" : 'Add product media'}
           </p>
-          <p className="mt-2 text-xs">Up to 10MB each.</p>
+          <p className="mt-2 text-xs">
+            Up to 10MB each. 16:9 ratio recommended for optimal display.
+          </p>
         </div>
         {children}
       </div>

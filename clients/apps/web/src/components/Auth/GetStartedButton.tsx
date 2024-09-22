@@ -19,7 +19,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
 }) => {
   const text = _text || 'Get started'
 
-  const signupPath = `${CONFIG.FRONTEND_BASE_URL}/signup?return_to/dashboard`
+  const signupPath = `${CONFIG.FRONTEND_BASE_URL}/signup?return_to=/dashboard`
   const href = _href ? _href : signupPath
 
   return (

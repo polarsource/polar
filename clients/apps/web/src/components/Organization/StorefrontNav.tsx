@@ -17,7 +17,7 @@ export const StorefrontNav = ({
   className,
 }: OrganizationStorefrontNavProps) => {
   const routeSegment = useSelectedLayoutSegment()
-  const currentTab = routeSegment ?? 'overview'
+  const currentTab = routeSegment ?? 'products'
 
   return (
     <Tabs value={currentTab}>
@@ -28,7 +28,7 @@ export const StorefrontNav = ({
         )}
       >
         <Link href={organizationPageLink(organization)}>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
         </Link>
 
         {organization.feature_settings?.articles_enabled && (

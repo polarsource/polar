@@ -40,7 +40,6 @@ const Button = React.forwardRef<
     loading?: boolean
     fullWidth?: boolean
     wrapperClassNames?: string
-    accent?: string | null
   }
 >(
   (
@@ -52,7 +51,6 @@ const Button = React.forwardRef<
       loading,
       fullWidth,
       disabled,
-      accent,
       children,
       ...props
     },
@@ -66,9 +64,6 @@ const Button = React.forwardRef<
         )}
         ref={ref}
         disabled={disabled || loading}
-        style={{
-          backgroundColor: accent ? accent : undefined,
-        }}
         {...props}
       >
         {loading ? (

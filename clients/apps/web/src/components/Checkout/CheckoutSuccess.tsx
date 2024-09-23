@@ -5,26 +5,20 @@ import { useSendMagicLink } from '@/hooks/magicLink'
 import { Checkout, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from 'polarkit/components/ui/atoms/card'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useState } from 'react'
-import { resolveBenefitIcon } from '../Benefit/utils'
-import CheckoutCelebration from './CheckoutCelebration'
+import LogoType from '../Brand/LogoType'
+import { CheckoutCard } from './CheckoutCard'
 
-export const CheckoutSuccess = (props: {
+export const CheckoutSuccess = ({
+  checkout: { customer_email: email, product, ...checkout },
+  organization,
+}: {
   checkout: Checkout
   organization: Organization
 }) => {
-  const {
-    checkout: { customer_email: email, product },
-    organization,
-  } = props
   const router = useRouter()
   const { currentUser } = useAuth()
 
@@ -48,68 +42,51 @@ export const CheckoutSuccess = (props: {
   }, [email, router, organization, sendMagicLink])
 
   return (
-    <>
-      <div className="mx-auto flex flex-col gap-16 p-4 md:mt-8 md:w-[768px] md:p-0">
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <CheckoutCelebration />
-          <p className="text-muted-foreground">Thank you!</p>
-          <h1 className="text-3xl">
-            Your purchase of {product.name} is complete
-          </h1>
-        </div>
+    <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
+      <div className="flex w-full max-w-sm flex-col gap-y-8">
+        <Avatar
+          className="h-24 w-24"
+          avatar_url={organization.avatar_url}
+          name={organization.name}
+        />
 
-        <div className="flex justify-center">
-          <Card className="w-full md:w-1/2">
-            <CardHeader>
-              <CardTitle className="text-xl font-medium">
-                Thank you for supporting {organization.name}!
-              </CardTitle>
-              <p className="text-muted-foreground text-sm">
-                You&apos;re now eligible for the benefits of {product.name}.
-              </p>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-y-1">
-              {product.benefits.map((benefit) => (
-                <div
-                  key={benefit.id}
-                  className="flex flex-row items-start text-blue-500 dark:text-blue-400"
-                >
-                  <span className="flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
-                    {resolveBenefitIcon(benefit, 'inherit')}
-                  </span>
-                  <span className="ml-2 text-sm leading-relaxed">
-                    {benefit.description}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-            <CardFooter className="flex justify-center">
-              {currentUser && (
-                <Link className="grow" href={`/purchases`}>
-                  <Button className="w-full">Go to purchases</Button>
-                </Link>
-              )}
-              {!currentUser && (
-                <div className="flex flex-col gap-4">
-                  <p className="text-muted-foreground text-sm">
-                    You now have an account with Polar! Sign in now to manage
-                    your purchases and benefits.
-                  </p>
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={onEmailSignin}
-                    loading={emailSigninLoading}
-                  >
-                    Verify Email
-                  </Button>
-                </div>
-              )}
-            </CardFooter>
-          </Card>
-        </div>
+        <h1 className="text-2xl font-medium">Your order was successful!</h1>
+        <p className="dark:text-polar-500 text-gray-500">
+          You&apos;re now eligible for the benefits of {product.name}.
+        </p>
+        <CheckoutCard organization={organization} product={product} />
+        {currentUser ? (
+          <Link className="grow" href={`/purchases`}>
+            <Button className="w-full" size="lg">
+              Access your purchase
+            </Button>
+          </Link>
+        ) : (
+          <div className="flex flex-col gap-y-6">
+            <p className="dark:text-polar-500 text-gray-500">
+              You now have an account with Polar! Sign in now to manage your
+              purchases and benefits.
+            </p>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={onEmailSignin}
+              loading={emailSigninLoading}
+            >
+              Verify Email
+            </Button>
+          </div>
+        )}
+        <p className="dark:text-polar-600 text-center text-xs text-gray-400">
+          This order was processed by our online reseller & Merchant of Record,
+          Polar, who also handles order-related inquiries and returns.
+        </p>
       </div>
-    </>
+      <div className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400">
+        <span>Powered by</span>
+        <LogoType className="h-5" />
+      </div>
+    </ShadowBox>
   )
 }
 

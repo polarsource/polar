@@ -81,8 +81,12 @@ export const CheckoutPreview = () => {
   return (
     <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto">
       <div className="flex w-full max-w-7xl flex-col items-center gap-y-12">
-        <StorefrontHeader organization={org} />
-        <StorefrontNav organization={org} />
+        {org.profile_settings?.enabled && (
+          <>
+            <StorefrontHeader organization={org} />
+            <StorefrontNav organization={org} />
+          </>
+        )}
         <Checkout organization={org} product={PRODUCT_PREVIEW} disabled />
       </div>
     </ShadowBox>

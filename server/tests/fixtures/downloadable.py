@@ -1,19 +1,13 @@
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import cast
 
 from sqlalchemy.orm import contains_eager
 
 from polar.benefit.benefits.downloadables import BenefitDownloadablesService
 from polar.benefit.schemas import BenefitDownloadablesCreateProperties
-from polar.models import (
-    Benefit,
-    Downloadable,
-    File,
-    Organization,
-    Product,
-    User,
-)
+from polar.models import Benefit, Downloadable, File, Organization, Product, User
 from polar.models.benefit import BenefitDownloadables, BenefitType
+from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, sql
 from tests.fixtures.database import SaveFixture
@@ -34,7 +28,7 @@ class TestDownloadable:
         organization: Organization,
         product: Product,
         properties: BenefitDownloadablesCreateProperties,
-    ) -> tuple[BenefitDownloadables, dict[str, Any]]:
+    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         benefit = await create_benefit(
             save_fixture,
             type=BenefitType.downloadables,
@@ -57,7 +51,7 @@ class TestDownloadable:
         benefit: BenefitDownloadables,
         user: User,
         product: Product,
-    ) -> tuple[BenefitDownloadables, dict[str, Any]]:
+    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         subscription = await create_subscription(
             save_fixture,
             product=product,
@@ -75,7 +69,7 @@ class TestDownloadable:
     @classmethod
     async def run_grant_task(
         cls, session: AsyncSession, benefit: BenefitDownloadables, user: User
-    ) -> tuple[BenefitDownloadables, dict[str, Any]]:
+    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session)
         granted = await service.grant(benefit, user, {})
         return benefit, granted
@@ -83,7 +77,7 @@ class TestDownloadable:
     @classmethod
     async def run_revoke_task(
         cls, session: AsyncSession, benefit: BenefitDownloadables, user: User
-    ) -> tuple[BenefitDownloadables, dict[str, Any]]:
+    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session)
         revoked = await service.revoke(benefit, user, {})
         return benefit, revoked

@@ -22,7 +22,7 @@ from polar.models import (
     User,
 )
 from polar.models.benefit import BenefitProperties, BenefitType
-from polar.models.benefit_grant import BenefitGrantProperties, BenefitGrantScope
+from polar.models.benefit_grant import BenefitGrantPropertiesBase, BenefitGrantScope
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -572,7 +572,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             | Literal[WebhookEventType.benefit_grant_updated]
             | Literal[WebhookEventType.benefit_grant_revoked]
         ),
-        previous_grant_properties: BenefitGrantProperties,
+        previous_grant_properties: BenefitGrantPropertiesBase,
     ) -> None:
         loaded = await self.get(session, grant.id, loaded=True)
         data = BenefitGrantWebhook.model_validate(loaded)

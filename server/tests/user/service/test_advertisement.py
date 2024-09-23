@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 from pydantic_core import Url
 
@@ -8,6 +10,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Organization, User
 from polar.models.benefit import BenefitType
+from polar.models.benefit_grant import BenefitGrantAdsProperties
 from polar.user.schemas.advertisement import (
     UserAdvertisementCampaignCreate,
     UserAdvertisementCampaignEnable,
@@ -270,7 +273,8 @@ class TestEnable:
         assert user_grant1 in grants
         assert user_grant2 in grants
         for grant in grants:
-            assert grant.properties["advertisement_campaign_id"] == str(
+            properties = cast(BenefitGrantAdsProperties, grant.properties)
+            assert properties["advertisement_campaign_id"] == str(
                 advertisement_campaign.id
             )
 

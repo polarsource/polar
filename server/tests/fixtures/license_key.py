@@ -1,18 +1,11 @@
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import cast
 
 from polar.benefit.benefits.license_keys import BenefitLicenseKeysService
-from polar.benefit.schemas import (
-    BenefitLicenseKeysCreateProperties,
-)
-from polar.models import (
-    Benefit,
-    LicenseKey,
-    Organization,
-    Product,
-    User,
-)
+from polar.benefit.schemas import BenefitLicenseKeysCreateProperties
+from polar.models import Benefit, LicenseKey, Organization, Product, User
 from polar.models.benefit import BenefitLicenseKeys, BenefitType
+from polar.models.benefit_grant import BenefitGrantLicenseKeysProperties
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, sql
 from tests.fixtures.database import SaveFixture
@@ -33,7 +26,7 @@ class TestLicenseKey:
         organization: Organization,
         product: Product,
         properties: BenefitLicenseKeysCreateProperties,
-    ) -> tuple[BenefitLicenseKeys, dict[str, Any]]:
+    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         benefit = await create_benefit(
             save_fixture,
             type=BenefitType.license_keys,
@@ -56,7 +49,7 @@ class TestLicenseKey:
         benefit: BenefitLicenseKeys,
         user: User,
         product: Product,
-    ) -> tuple[BenefitLicenseKeys, dict[str, Any]]:
+    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         subscription = await create_subscription(
             save_fixture,
             product=product,
@@ -74,7 +67,7 @@ class TestLicenseKey:
     @classmethod
     async def run_grant_task(
         cls, session: AsyncSession, benefit: BenefitLicenseKeys, user: User
-    ) -> tuple[BenefitLicenseKeys, dict[str, Any]]:
+    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         service = BenefitLicenseKeysService(session)
         granted = await service.grant(benefit, user, {})
         return benefit, granted
@@ -82,7 +75,7 @@ class TestLicenseKey:
     @classmethod
     async def run_revoke_task(
         cls, session: AsyncSession, benefit: BenefitLicenseKeys, user: User
-    ) -> tuple[BenefitLicenseKeys, dict[str, Any]]:
+    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         service = BenefitLicenseKeysService(session)
         revoked = await service.revoke(benefit, user, {})
         return benefit, revoked

@@ -36,7 +36,7 @@ class BenefitLicenseKeysService(
         attempt: int = 1,
     ) -> BenefitGrantLicenseKeysProperties:
         current_lk_id = None
-        if update:
+        if update and "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
         key = await license_key_service.user_grant(

@@ -52,7 +52,7 @@ const UpdateBenefitModalContent = ({
   return (
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
-        <h2 className="text-lg">Update Subscription Benefit</h2>
+        <h2 className="text-lg">Update Benefit</h2>
         <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
           Tax applicability and Benefit type cannot be updated
         </p>

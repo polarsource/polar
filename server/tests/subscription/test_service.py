@@ -349,6 +349,51 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.amount is None
         assert subscription.currency is None
 
+    async def test_subscription_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        product_recurring_free_price: Product,
+        product: Product,
+        user: User,
+    ) -> None:
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
+        existing_subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            user=user,
+        )
+
+        assert product.stripe_product_id is not None
+        stripe_subscription = construct_stripe_subscription(
+            user=user,
+            price_id=product.prices[0].stripe_price_id,
+            status=SubscriptionStatus.active,
+            metadata={"subscription_id": str(existing_subscription.id)},
+        )
+
+        # then
+        session.expunge_all()
+
+        subscription = await subscription_service.create_subscription_from_stripe(
+            session, stripe_subscription=stripe_subscription
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.id == existing_subscription.id
+        assert subscription.product_id == product.id
+        assert subscription.started_at == existing_subscription.started_at
+
+        # load user
+        user_loaded = await user_service.get(session, user.id)
+        assert user_loaded
+
+        assert user_loaded.stripe_customer_id == stripe_subscription.customer
+
 
 @pytest.mark.asyncio
 class TestUpdateSubscriptionFromStripe:

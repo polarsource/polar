@@ -24,6 +24,13 @@ class CheckoutCreate(Schema):
             "It'll be pre-filled on the checkout page."
         ),
     )
+    subscription_id: UUID4 | None = Field(
+        None,
+        description=(
+            "ID of the subscription to update. "
+            "If not provided, a new subscription will be created."
+        ),
+    )
 
 
 class Checkout(Schema):

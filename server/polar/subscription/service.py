@@ -344,7 +344,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         assert subscription_tier_org is not None
 
-        subscription = Subscription(user=None)
+        subscription: Subscription | None = None
+
+        # Upgrade from a subscription set in metadata
+        existing_subscription_id = stripe_subscription.metadata.get("subscription_id")
+        if existing_subscription_id is not None:
+            statement = (
+                select(Subscription)
+                .where(Subscription.id == uuid.UUID(existing_subscription_id))
+                .options(joinedload(Subscription.user))
+            )
+            result = await session.execute(statement)
+            subscription = result.unique().scalar_one_or_none()
+
+        # New subscription
+        if subscription is None:
+            subscription = Subscription(user=None)
 
         subscription.stripe_subscription_id = stripe_subscription.id
         subscription.status = SubscriptionStatus(stripe_subscription.status)

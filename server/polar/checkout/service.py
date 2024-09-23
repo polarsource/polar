@@ -3,7 +3,7 @@ from typing import cast
 
 import stripe as stripe_lib
 
-from polar.auth.models import Anonymous, AuthSubject, is_direct_user
+from polar.auth.models import Anonymous, AuthSubject, is_direct_user, is_user
 from polar.checkout.schemas import Checkout, CheckoutCreate
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
@@ -12,6 +12,7 @@ from polar.models import Product, User
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
+from polar.subscription.service import subscription as subscription_service
 
 
 class CheckoutError(PolarError): ...
@@ -72,6 +73,16 @@ class CheckoutService:
             "product_id": str(product.id),
             "product_price_id": str(price.id),
         }
+
+        if is_user(auth_subject) and create_schema.subscription_id is not None:
+            subscription = await subscription_service.get(
+                session, create_schema.subscription_id
+            )
+            if (
+                subscription is not None
+                and subscription.user_id == auth_subject.subject.id
+            ):
+                metadata["subscription_id"] = str(subscription.id)
 
         customer_options: dict[str, str] = {}
         if is_direct_user(auth_subject):

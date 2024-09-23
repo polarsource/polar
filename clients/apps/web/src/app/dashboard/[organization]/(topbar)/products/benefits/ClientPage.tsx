@@ -1,10 +1,8 @@
 'use client'
 
-import CreateBenefitModalContent, {
-  CreateBenefitModalParams,
-} from '@/components/Benefit/CreateBenefitModalContent'
+import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
-import { DiscordIcon, resolveBenefitIcon } from '@/components/Benefit/utils'
+import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
@@ -15,8 +13,8 @@ import {
   useBenefits,
   useDeleteBenefit,
 } from '@/hooks/queries'
-import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
-import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
+import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
+import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -37,10 +35,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<
     BenefitPublicInner | undefined
   >()
-  const { data: benefits, isFetched: benefitsIsFetched } = useBenefits(
-    organization.id,
-    100,
-  )
+  const { data: benefits } = useBenefits(organization.id, 100)
   const { data: benefitProducts } = useBenefitProducts(
     organization.id,
     selectedBenefit?.id,
@@ -48,15 +43,9 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   )
   const searchParams = useSearchParams()
 
-  const {
-    isShown,
-    toggle,
-    hide,
-    show: openCreateBenefitModal,
-  } = useModal(searchParams?.get('create_benefit') === 'true')
-
-  const [createModalDefaultValues, setCreateModalDefaultValues] =
-    useState<CreateBenefitModalParams>()
+  const { isShown, toggle, hide } = useModal(
+    searchParams?.get('create_benefit') === 'true',
+  )
 
   useEffect(() => {
     setSelectedBenefit(benefits?.items[0])
@@ -72,30 +61,25 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               <AddOutlined fontSize="inherit" />
             </Button>
           </div>
-          <List>
-            {benefits?.items.map((benefit) => (
-              <ListItem
-                key={benefit.id}
-                className={twMerge(
-                  'dark:hover:bg-polar-800',
-                  selectedBenefit?.id === benefit.id
-                    ? 'dark:bg-polar-800 bg-gray-50'
-                    : 'dark:bg-polar-900 bg-white',
-                )}
-                selected={selectedBenefit?.id === benefit.id}
-                onSelect={() => setSelectedBenefit(benefit)}
-              >
-                <BenefitRow organization={organization} benefit={benefit} />
-              </ListItem>
-            ))}
-          </List>
-          {benefitsIsFetched ? (
-            <RecommendedBenefits
-              existingBenefits={benefits?.items ?? []}
-              openCreateBenefitModal={openCreateBenefitModal}
-              setCreateModalDefaultValues={setCreateModalDefaultValues}
-            />
-          ) : null}
+          {(benefits?.items.length ?? 0) > 0 && (
+            <List>
+              {benefits?.items.map((benefit) => (
+                <ListItem
+                  key={benefit.id}
+                  className={twMerge(
+                    'dark:hover:bg-polar-800',
+                    selectedBenefit?.id === benefit.id
+                      ? 'dark:bg-polar-800 bg-gray-50'
+                      : 'dark:bg-polar-900 bg-white',
+                  )}
+                  selected={selectedBenefit?.id === benefit.id}
+                  onSelect={() => setSelectedBenefit(benefit)}
+                >
+                  <BenefitRow organization={organization} benefit={benefit} />
+                </ListItem>
+              ))}
+            </List>
+          )}
         </div>
         {selectedBenefit && (
           <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-8">
@@ -150,7 +134,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
           modalContent={
             <CreateBenefitModalContent
               organization={organization}
-              defaultValues={createModalDefaultValues}
               hideModal={hide}
               onSelectBenefit={hide}
             />
@@ -330,81 +313,5 @@ ${formattedDisplays}
         />
       </div>
     </>
-  )
-}
-
-const RecommendedBenefits = ({
-  existingBenefits,
-  openCreateBenefitModal,
-  setCreateModalDefaultValues,
-}: {
-  existingBenefits: BenefitPublicInner[]
-  openCreateBenefitModal: () => void
-  setCreateModalDefaultValues: (v: CreateBenefitModalParams) => void
-}) => {
-  const hasDiscord = existingBenefits.find((b) => b.type === 'discord')
-  const hasAds = existingBenefits.find((b) => b.type === 'ads')
-
-  // No remaining recommendations
-  if (hasDiscord && hasAds) {
-    return <></>
-  }
-
-  return (
-    <div className="flex flex-col gap-y-4">
-      <h2 className="text-md font-medium">Recommended benefits</h2>
-      <List>
-        {!hasDiscord && (
-          <ListItem
-            className="dark:hover:bg-polar-800 dark:bg-polar-900 bg-white"
-            onSelect={() => {
-              setCreateModalDefaultValues({
-                description: 'Invite to community Discord server',
-                type: BenefitType.DISCORD,
-              })
-              openCreateBenefitModal()
-            }}
-          >
-            <BenefitSuggestionRow icon={<DiscordIcon />}>
-              Invite to community Discord server
-            </BenefitSuggestionRow>
-          </ListItem>
-        )}
-
-        {!hasAds && (
-          <ListItem
-            className="dark:hover:bg-polar-800 dark:bg-polar-900 bg-white"
-            onSelect={() => {
-              setCreateModalDefaultValues({
-                description: 'Logo in README',
-                type: BenefitType.ADS,
-              })
-              openCreateBenefitModal()
-            }}
-          >
-            <BenefitSuggestionRow
-              icon={<WebOutlined className="h-4 w-4" fontSize="inherit" />}
-            >
-              Logo in README
-            </BenefitSuggestionRow>
-          </ListItem>
-        )}
-      </List>
-    </div>
-  )
-}
-
-const BenefitSuggestionRow = ({
-  icon,
-  children,
-}: {
-  children: React.ReactNode
-  icon: React.ReactNode
-}) => {
-  return (
-    <div className="flex w-full flex-row items-center gap-x-3">
-      {icon}
-      <span className="text-sm">{children}</span>
-    </div>
   )
 }

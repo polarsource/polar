@@ -34,6 +34,7 @@ export const CheckoutCard = ({ organization, product }: CheckoutCardProps) => {
         />
       )}
       <ShadowBox className="dark:bg-polar-950 flex flex-col gap-8 bg-gray-100 md:ring-gray-100">
+        <h2 className="text-xl">{product.name}</h2>
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-light">
             {recurringPrice ? (

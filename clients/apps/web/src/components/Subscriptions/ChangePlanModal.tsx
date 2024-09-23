@@ -6,6 +6,7 @@ import {
   ProductPrice,
   ProductPriceRecurringFixed,
   ProductPriceRecurringFree,
+  ResponseError,
   SubscriptionRecurringInterval,
   UserSubscription,
 } from '@polar-sh/sdk'
@@ -18,6 +19,7 @@ import {
   ReceiptOutlined,
 } from '@mui/icons-material'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
+import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { useCallback, useMemo, useState } from 'react'
@@ -57,6 +59,7 @@ const ChangePlanModal = ({
   hide: () => void
   onUserSubscriptionUpdate: (subscription: UserSubscription) => void
 }) => {
+  const router = useRouter()
   const products = useProducts(organization.id, { isRecurring: true })
   const currentPrice = subscription.price as
     | ProductPriceRecurringFixed
@@ -120,13 +123,26 @@ const ChangePlanModal = ({
       })
       onUserSubscriptionUpdate(updatedUserSubscription)
       hide()
-    } catch (err) {}
+    } catch (err) {
+      if (err instanceof ResponseError) {
+        const status = err.response.status
+        if (status === 400) {
+          const body = await err.response.json()
+          if (body.error === 'SubscriptionNotActiveOnStripe') {
+            router.push(
+              `/api/checkout?price=${selectedPrice.id}&subscription=${subscription.id}`,
+            )
+          }
+        }
+      }
+    }
   }, [
     updateSubscription,
     selectedPrice,
     subscription,
     onUserSubscriptionUpdate,
     hide,
+    router,
   ])
 
   return (

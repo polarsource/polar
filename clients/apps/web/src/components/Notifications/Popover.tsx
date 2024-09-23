@@ -642,8 +642,12 @@ const MaintainerNewPaidSubscription = ({
             >
               <>{payload.tier_name}</>
             </InternalLink>{' '}
-            (${getCentsInDollarString(payload.tier_price_amount)}/
-            {payload.tier_price_recurring_interval})
+            {payload.tier_price_amount !== null && (
+              <>
+                (${getCentsInDollarString(payload.tier_price_amount)}/
+                {payload.tier_price_recurring_interval})
+              </>
+            )}
           </>
         ),
         icon: <DollarSignIcon />,

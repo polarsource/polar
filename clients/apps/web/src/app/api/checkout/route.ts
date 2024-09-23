@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams
   const priceId = searchParams.get('price') as string
+  const subscriptionId = searchParams.get('subscription') as string | null
 
   const requestURL = new URL(request.url)
   const successURL = `${requestURL.protocol}//${requestURL.host}/checkout/success?session_id={CHECKOUT_SESSION_ID}`
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
       body: {
         product_price_id: priceId,
         success_url: successURL,
+        subscription_id: subscriptionId,
       },
     })
     return new NextResponse(undefined, {

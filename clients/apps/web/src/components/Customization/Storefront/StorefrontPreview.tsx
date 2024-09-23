@@ -7,6 +7,7 @@ import {
   Organization,
   OrganizationUpdate,
 } from '@polar-sh/sdk'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Storefront } from '../../Profile/Storefront'
@@ -45,7 +46,7 @@ export const StorefrontPreview = () => {
     }).data?.items ?? []
 
   return (
-    <div className="flex h-full w-full flex-col items-center overflow-y-auto">
+    <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto">
       <div className="flex w-full max-w-7xl flex-col gap-y-12">
         {!organization.profile_settings?.enabled && (
           <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
@@ -64,6 +65,6 @@ export const StorefrontPreview = () => {
           />
         </div>
       </div>
-    </div>
+    </ShadowBox>
   )
 }

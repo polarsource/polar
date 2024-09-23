@@ -29,9 +29,14 @@ import ProductPriceLabel from '../Products/ProductPriceLabel'
 export interface CheckoutFormProps {
   organization: Organization
   product: Product
+  disabled?: boolean
 }
 
-export const CheckoutForm = ({ organization, product }: CheckoutFormProps) => {
+export const CheckoutForm = ({
+  organization,
+  product,
+  disabled,
+}: CheckoutFormProps) => {
   const form = useForm<{
     email: string
     cardholder: string
@@ -217,7 +222,12 @@ export const CheckoutForm = ({ organization, product }: CheckoutFormProps) => {
                 <ProductPriceLabel price={product.prices[0]} />
               </DetailRow>
             </div>
-            <Button type="submit" size="lg" wrapperClassNames="text-base">
+            <Button
+              type="submit"
+              size="lg"
+              wrapperClassNames="text-base"
+              disabled={disabled}
+            >
               Pay $1599
             </Button>
           </form>

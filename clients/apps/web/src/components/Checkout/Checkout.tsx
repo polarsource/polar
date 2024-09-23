@@ -6,6 +6,7 @@ import { CheckoutInfo } from './CheckoutInfo'
 export interface CheckoutProps {
   organization: Organization
   product: Product
+  disabled?: boolean
 }
 
 export const Checkout = (props: CheckoutProps) => {

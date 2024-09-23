@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pytest
 from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
@@ -52,7 +54,7 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -83,7 +85,7 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -117,7 +119,7 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -216,7 +218,7 @@ class TestLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 

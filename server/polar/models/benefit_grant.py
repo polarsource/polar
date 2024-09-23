@@ -79,7 +79,7 @@ class BenefitGrantArticlesProperties(BenefitGrantPropertiesBase): ...
 
 
 class BenefitGrantAdsProperties(BenefitGrantPropertiesBase):
-    advertisement_campaign_id: UUID
+    advertisement_campaign_id: str
 
 
 class BenefitGrantDiscordProperties(BenefitGrantPropertiesBase, total=False):
@@ -93,14 +93,14 @@ class BenefitGrantGitHubRepositoryProperties(BenefitGrantPropertiesBase, total=F
     # Polar GitHub App for granting benefits. Benefits created after this date are using
     # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
     # and repository_name fields.
-    repository_id: UUID | None
+    repository_id: str | None
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
 
 
 class BenefitGrantDownloadablesProperties(BenefitGrantPropertiesBase, total=False):
-    files: list[UUID]
+    files: list[str]
 
 
 class BenefitGrantLicenseKeysProperties(BenefitGrantPropertiesBase, total=False):

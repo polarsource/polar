@@ -1,11 +1,18 @@
-import { CheckOutlined } from '@mui/icons-material'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { CheckOutlined, ChevronRight } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useUpsellSteps } from './useUpsellSteps'
 
 export const CreatorUpsell = () => {
+  const { organization } = useContext(MaintainerOrganizationContext)
   const steps = useUpsellSteps()
 
   return (
@@ -16,10 +23,51 @@ export const CreatorUpsell = () => {
           Let&apos;s get up to speed by completing a few simple steps
         </p>
       </div>
-      <div className="flex w-full max-w-3xl flex-col gap-y-4">
-        {steps.map((card, i) => (
-          <UpsellStep key={card.title} {...card} index={i + 1} />
-        ))}
+      <div className="flex w-full max-w-3xl flex-col gap-y-12">
+        <div className="flex flex-col gap-y-4">
+          {steps.map((card, i) => (
+            <UpsellStep key={card.title} {...card} index={i + 1} />
+          ))}
+        </div>
+        <ShadowBox className="flex flex-col gap-y-8 p-10">
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-xl">Build with the Polar API</h3>
+            <p className="dark:text-polar-400 text-gray-500">
+              Integrate Polar products with your own platform using our API
+            </p>
+          </div>
+          <div className="flex flex-col">
+            <pre className="dark:border-polar-700 dark:bg-polar-950 rounded-3xl border p-4 text-sm">
+              <SyntaxHighlighterProvider>
+                <SyntaxHighlighterClient
+                  lang="javascript"
+                  code={`import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+(async () => {
+  const result = await polar.products.list({
+    organizationId: "${organization.id}",
+  });
+  
+  for await (const page of result) {
+    // Handle the page
+    console.log(page);
+  }
+})();`}
+                />
+              </SyntaxHighlighterProvider>
+            </pre>
+          </div>
+          <Link href={`/docs/api`} target="_blank">
+            <Button wrapperClassNames="flex flex-row items-center gap-x-2">
+              <span>API Documentation</span>
+              <ChevronRight className="text-sm" fontSize="inherit" />
+            </Button>
+          </Link>
+        </ShadowBox>
       </div>
     </div>
   )

@@ -335,7 +335,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise AssociatedSubscriptionTierPriceDoesNotExist(
                 stripe_subscription.id, price_id
             )
-        if not isinstance(price, ProductPriceFixed):
+        if isinstance(price, ProductPriceCustom):
             raise CustomPriceNotSupported(stripe_subscription.id, price_id)
 
         subscription_tier = price.product
@@ -357,9 +357,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         subscription.price = price
-        subscription.amount = price.price_amount
-        subscription.currency = price.price_currency
         subscription.recurring_interval = price.recurring_interval
+        if isinstance(price, ProductPriceFixed):
+            subscription.amount = price.price_amount
+            subscription.currency = price.price_currency
+        else:
+            subscription.amount = None
+            subscription.currency = None
         subscription.product = subscription_tier
 
         subscription.set_started_at()

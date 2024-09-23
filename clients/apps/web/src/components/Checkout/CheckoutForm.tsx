@@ -217,12 +217,8 @@ export const CheckoutForm = ({ organization, product }: CheckoutFormProps) => {
                 <ProductPriceLabel price={product.prices[0]} />
               </DetailRow>
             </div>
-            <Button
-              type="submit"
-              size="lg"
-              accent={organization.profile_settings?.accent_color}
-            >
-              Pay
+            <Button type="submit" size="lg" wrapperClassNames="text-base">
+              Pay $1599
             </Button>
           </form>
         </Form>

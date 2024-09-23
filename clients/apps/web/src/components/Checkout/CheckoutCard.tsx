@@ -8,7 +8,6 @@ import {
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { Organization, Product } from '@polar-sh/sdk'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 export interface CheckoutCardProps {
@@ -54,18 +53,17 @@ export const CheckoutCard = ({ organization, product }: CheckoutCardProps) => {
             <div className="flex flex-col gap-2">
               <h1 className="font-medium dark:text-white">Included</h1>
             </div>
-            <List size="small">
+            <div className="flex flex-col gap-y-2">
               {product.benefits.map((benefit) => (
-                <ListItem
+                <div
                   key={benefit.id}
-                  className="justify-start gap-x-3"
-                  size="small"
+                  className="flex flex-row items-center gap-x-2"
                 >
                   {resolveBenefitIcon(benefit, 'small', 'h-4 w-4')}
                   <span className="text-sm">{benefit.description}</span>
-                </ListItem>
+                </div>
               ))}
-            </List>
+            </div>
           </div>
         ) : (
           <></>

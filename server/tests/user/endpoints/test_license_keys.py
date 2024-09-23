@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pytest
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
@@ -38,7 +40,7 @@ class TestUserLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -110,7 +112,7 @@ class TestUserLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -143,7 +145,7 @@ class TestUserLicenseKeyEndpoints:
                 expires=BenefitLicenseKeyExpirationProperties(ttl=1, timeframe="day"),
             ),
         )
-        day_id = granted_with_ttl_day["license_key_id"]
+        day_id = UUID(granted_with_ttl_day["license_key_id"])
         day_lk = await license_key_service.get(session, day_id)
         assert day_lk
 
@@ -176,7 +178,7 @@ class TestUserLicenseKeyEndpoints:
                 expires=BenefitLicenseKeyExpirationProperties(ttl=1, timeframe="month"),
             ),
         )
-        month_id = granted_with_ttl_month["license_key_id"]
+        month_id = UUID(granted_with_ttl_month["license_key_id"])
         month_lk = await license_key_service.get(session, month_id)
         assert month_lk
 
@@ -228,7 +230,7 @@ class TestUserLicenseKeyEndpoints:
                 prefix="testing", limit_usage=10
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -294,7 +296,7 @@ class TestUserLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -356,7 +358,7 @@ class TestUserLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -421,7 +423,7 @@ class TestUserLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -461,7 +463,7 @@ class TestUserLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -498,7 +500,7 @@ class TestUserLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 
@@ -549,7 +551,7 @@ class TestUserLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = granted["license_key_id"]
+        id = UUID(granted["license_key_id"])
         lk = await license_key_service.get(session, id)
         assert lk
 

@@ -8,9 +8,9 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { CONFIG } from '@/utils/config'
 import {
   AddOutlined,
-  InsertPhotoOutlined,
   MoreVertOutlined,
   Search,
+  TextureOutlined,
 } from '@mui/icons-material'
 import {
   Organization,
@@ -83,15 +83,15 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="flex aspect-video h-6 flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
+    <div className="flex aspect-square h-8 flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
       {coverUrl ? (
         <img
           src={coverUrl}
           alt={product.name}
-          className="aspect-video h-6 rounded object-cover"
+          className="aspect-square h-8 rounded object-cover"
         />
       ) : (
-        <InsertPhotoOutlined
+        <TextureOutlined
           fontSize="small"
           className="dark:text-polar-500 text-gray-500"
         />

@@ -8578,9 +8578,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
-                                "free_subscription",
                                 "donation",
+                                "free_subscription",
+                                "paid_subscription",
                                 "order"
                             ],
                             "title": "Customer Types"
@@ -30529,7 +30529,6 @@
                 "properties": {
                     "name": {
                         "type": "string",
-                        "maxLength": 24,
                         "minLength": 3,
                         "title": "Name",
                         "description": "The name of the product."
@@ -31467,7 +31466,6 @@
                 "properties": {
                     "name": {
                         "type": "string",
-                        "maxLength": 24,
                         "minLength": 3,
                         "title": "Name",
                         "description": "The name of the product."
@@ -31560,7 +31558,6 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "maxLength": 24,
                                 "minLength": 3,
                                 "description": "The name of the product."
                             },

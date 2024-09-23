@@ -329,7 +329,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             return
 
         log.info(
-            "Precondition error while granting subscription benefit. User was informed.",
+            "Precondition error while granting benefit. User was informed.",
             benefit_id=str(benefit.id),
             user_id=str(user.id),
         )
@@ -370,7 +370,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit_type: BenefitType,
     ) -> None:
         log.info(
-            "Enqueueing subscription benefit grants after precondition fulfilled",
+            "Enqueueing benefit grants after precondition fulfilled",
             user_id=str(user.id),
             benefit_type=benefit_type,
         )

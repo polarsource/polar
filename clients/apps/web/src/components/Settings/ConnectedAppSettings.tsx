@@ -88,7 +88,7 @@ const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
       subtitle={
         oauthAccount
           ? 'Your Discord account is connected.'
-          : 'Sign in with your Discord account to enable your subscription benefits like access to private Discord servers.'
+          : 'Sign in with your Discord account to enable your benefits, like access to private Discord servers.'
       }
       action={
         <>

@@ -270,7 +270,7 @@ const Sidebar = () => {
                         href={`/dashboard/${org.slug}/products/benefits`}
                         className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
                       >
-                        subscription benefit
+                        benefit
                       </Link>{' '}
                       to enable ads.
                     </p>

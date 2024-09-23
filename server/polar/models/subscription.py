@@ -41,7 +41,7 @@ class Subscription(RecordModel):
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         String, nullable=False, index=True
     )
-    stripe_subscription_id: Mapped[str] = mapped_column(
+    stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None
     )
 

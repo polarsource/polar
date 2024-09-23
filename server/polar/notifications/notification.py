@@ -420,17 +420,19 @@ class MaintainerAccountReviewedNotification(NotificationBase):
 class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     subscriber_name: str
     tier_name: str
-    tier_price_amount: int
+    tier_price_amount: int | None
     tier_price_recurring_interval: str
     tier_organization_name: str
 
     def subject(self) -> str:
-        return f"Congrats! You have a new subscriber (${get_cents_in_dollar_string(self.tier_price_amount)}/{self.tier_price_recurring_interval})!"
+        if self.tier_price_amount is None:
+            return "Congrats! You have a new free subscriber!"
+        return f"Congrats! You have a new subscriber on {self.tier_name} (${get_cents_in_dollar_string(self.tier_price_amount)}/{self.tier_price_recurring_interval})!"
 
     def body(self) -> str:
         return f"""Congratulations!<br><br>
 
-{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount)}/{self.tier_price_recurring_interval}.<br><br>
+{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount) if self.tier_price_amount is not None else 'free'}/{self.tier_price_recurring_interval}.<br><br>
 """  # noqa: E501
 
 

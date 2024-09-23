@@ -18,6 +18,7 @@ from polar.user.schemas.subscription import (
 )
 from polar.user.service.subscription import (
     AlreadyCanceledSubscription,
+    SubscriptionNotActiveOnStripe,
 )
 from polar.user.service.subscription import (
     user_subscription as user_subscription_service,
@@ -129,6 +130,19 @@ class TestUpdate:
                 subscription=subscription,
                 subscription_update=UserSubscriptionUpdate(
                     product_price_id=product_organization_second.all_prices[0].id
+                ),
+            )
+
+    async def test_not_existing_stripe_subscription(
+        self, session: AsyncSession, subscription: Subscription, product_second: Product
+    ) -> None:
+        subscription.stripe_subscription_id = None
+        with pytest.raises(SubscriptionNotActiveOnStripe):
+            await user_subscription_service.update(
+                session,
+                subscription=subscription,
+                subscription_update=UserSubscriptionUpdate(
+                    product_price_id=product_second.prices[0].id
                 ),
             )
 

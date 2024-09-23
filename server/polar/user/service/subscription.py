@@ -44,6 +44,13 @@ class AlreadyCanceledSubscription(UserSubscriptionError):
         super().__init__(message, 403)
 
 
+class SubscriptionNotActiveOnStripe(UserSubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not active on Stripe."
+        super().__init__(message, 400)
+
+
 class UserSubscriptionSortProperty(StrEnum):
     started_at = "started_at"
     amount = "amount"
@@ -236,6 +243,9 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
                     }
                 ]
             )
+
+        if subscription.stripe_subscription_id is None:
+            raise SubscriptionNotActiveOnStripe(subscription)
 
         assert subscription.price is not None
         stripe_service.update_subscription_price(

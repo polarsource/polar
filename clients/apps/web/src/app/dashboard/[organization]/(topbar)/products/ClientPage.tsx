@@ -212,18 +212,20 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
               >
                 Copy Product ID
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleContextMenuCallback(() => {
-                  if (typeof window !== 'undefined') {
-                    window.open(
-                      `/${organization.slug}/products/${product.id}`,
-                      '_blank',
-                    )
-                  }
-                })}
-              >
-                View Product Page
-              </DropdownMenuItem>
+              {organization.profile_settings?.enabled && (
+                <DropdownMenuItem
+                  onClick={handleContextMenuCallback(() => {
+                    if (typeof window !== 'undefined') {
+                      window.open(
+                        `/${organization.slug}/products/${product.id}`,
+                        '_blank',
+                      )
+                    }
+                  })}
+                >
+                  View Product Page
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

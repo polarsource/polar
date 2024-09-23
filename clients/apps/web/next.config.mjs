@@ -124,7 +124,7 @@ const nextConfig = {
             ],
             permanent: false,
           }
-          ] : []),
+        ] : []),
       {
         source: '/:path*',
         destination: 'https://polar.sh/:path*',

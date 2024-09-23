@@ -10,10 +10,10 @@ Sentry.init({
   environment: CONFIG.ENVIRONMENT,
 
   // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+  integrations: [Sentry.httpClientIntegration(), Sentry.replayIntegration()],
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
+  tracesSampleRate: 0.1,
 
   // Define how likely Replay events are sampled.
   // This sets the sample rate to be 10%. You may want this to be 100% while
@@ -26,16 +26,5 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  beforeSend(event, hint) {
-    const error = hint.originalException as any
-    /** Filter an error caused by Darkreader on Firefox */
-    if (
-      error &&
-      error.message &&
-      error.message.match(/WeakMap key undefined/i)
-    ) {
-      return null
-    }
-    return event
-  },
+  ignoreErrors: [/WeakMap key undefined/i],
 })

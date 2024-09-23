@@ -5,6 +5,7 @@ import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
+import { Slideshow } from '@/components/Products/Slideshow'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import ChangePlanModal from '@/components/Subscriptions/ChangePlanModal'
 import {
@@ -82,10 +83,15 @@ const ClientPage = ({
       </Link>
       <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
         <div className="flex w-full flex-col gap-8 md:w-2/3">
-          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-            <h1 className="text-2xl font-medium">
-              {subscription.product.name}
-            </h1>
+          <ShadowBox className="flex flex-col gap-6 p-12 ring-gray-100">
+            <h1 className="text-3xl">{subscription.product.name}</h1>
+            {subscription.product.medias.length > 0 && (
+              <Slideshow
+                images={subscription.product.medias.map(
+                  ({ public_url }) => public_url,
+                )}
+              />
+            )}
             {subscription.product.description ? (
               <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
                 <Markdown
@@ -128,7 +134,7 @@ const ClientPage = ({
           <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
             <h3 className="text-lg font-medium">{subscription.product.name}</h3>
             <div className="flex flex-col gap-4">
-              <h1 className="text-5xl font-light">
+              <h1 className="text-4xl font-light">
                 {subscription.amount && subscription.currency && (
                   <AmountLabel
                     amount={subscription.amount}

@@ -141,13 +141,13 @@ export const CustomBenefitForm = ({
           return (
             <FormItem>
               <div className="flex flex-row items-center justify-between">
-                <FormLabel>Private note to subscribers</FormLabel>
+                <FormLabel>Private note</FormLabel>
               </div>
               <FormControl>
                 <TextArea
                   {...field}
                   value={field.value || ''}
-                  placeholder="Write a secret note to subscribers here. Like your private email address for premium support, Cal.com link to book consultation, etc."
+                  placeholder="Write a secret note here. Like your private email address for premium support, Cal.com link to book consultation, etc."
                 />
               </FormControl>
               <FormMessage />

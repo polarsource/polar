@@ -68,27 +68,27 @@ class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScope
         return and_(*clauses)
 
 
-class BenefitGrantProperties(TypedDict):
+class BenefitGrantPropertiesBase(TypedDict):
     """Benefit grant properties."""
 
 
-class BenefitGrantCustomProperties(BenefitGrantProperties): ...
+class BenefitGrantCustomProperties(BenefitGrantPropertiesBase): ...
 
 
-class BenefitGrantArticlesProperties(BenefitGrantProperties): ...
+class BenefitGrantArticlesProperties(BenefitGrantPropertiesBase): ...
 
 
-class BenefitGrantAdsProperties(BenefitGrantProperties):
+class BenefitGrantAdsProperties(BenefitGrantPropertiesBase):
     advertisement_campaign_id: UUID
 
 
-class BenefitGrantDiscordProperties(BenefitGrantProperties, total=False):
+class BenefitGrantDiscordProperties(BenefitGrantPropertiesBase, total=False):
     guild_id: str
     role_id: str
     account_id: str
 
 
-class BenefitGrantGitHubRepositoryProperties(BenefitGrantProperties, total=False):
+class BenefitGrantGitHubRepositoryProperties(BenefitGrantPropertiesBase, total=False):
     # repository_id was set previously (before 2024-13-15), for benefits using the "main"
     # Polar GitHub App for granting benefits. Benefits created after this date are using
     # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
@@ -99,13 +99,24 @@ class BenefitGrantGitHubRepositoryProperties(BenefitGrantProperties, total=False
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
 
 
-class BenefitGrantDownloadablesProperties(BenefitGrantProperties, total=False):
+class BenefitGrantDownloadablesProperties(BenefitGrantPropertiesBase, total=False):
     files: list[UUID]
 
 
-class BenefitGrantLicenseKeysProperties(BenefitGrantProperties):
+class BenefitGrantLicenseKeysProperties(BenefitGrantPropertiesBase, total=False):
     license_key_id: str
     display_key: str
+
+
+BenefitGrantProperties = (
+    BenefitGrantDiscordProperties
+    | BenefitGrantGitHubRepositoryProperties
+    | BenefitGrantDownloadablesProperties
+    | BenefitGrantLicenseKeysProperties
+    | BenefitGrantAdsProperties
+    | BenefitGrantCustomProperties
+    | BenefitGrantArticlesProperties
+)
 
 
 class BenefitGrant(RecordModel):

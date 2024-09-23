@@ -5,7 +5,7 @@ from polar.models.benefit import (
     BenefitProperties,
     BenefitType,
 )
-from polar.models.benefit_grant import BenefitGrantProperties
+from polar.models.benefit_grant import BenefitGrantPropertiesBase
 from polar.postgres import AsyncSession
 
 from .ads import BenefitAdsService
@@ -39,7 +39,7 @@ _SERVICE_CLASS_MAP: dict[
 
 def get_benefit_service(
     type: BenefitType, session: AsyncSession
-) -> BenefitServiceProtocol[Benefit, BenefitProperties, BenefitGrantProperties]:
+) -> BenefitServiceProtocol[Benefit, BenefitProperties, BenefitGrantPropertiesBase]:
     return _SERVICE_CLASS_MAP[type](session)
 
 

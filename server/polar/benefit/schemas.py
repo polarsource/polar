@@ -23,15 +23,9 @@ from polar.kit.schemas import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
-    BenefitGrantArticlesProperties,
-    BenefitGrantCustomProperties,
-    BenefitGrantDiscordProperties,
-    BenefitGrantDownloadablesProperties,
-    BenefitGrantGitHubRepositoryProperties,
     BenefitGrantLicenseKeysProperties,
+    BenefitGrantProperties,
 )
-
-# BenefitGrantLicenseKeysProperties,
 from polar.organization.schemas import OrganizationID
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
@@ -533,26 +527,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
 }
 
 
-class BenefitGrantAdsProperties(Schema):
-    advertisement_campaign_id: UUID4 | None = Field(
-        None,
-        description="The ID of the enabled advertisement campaign for this benefit grant.",
-    )
-
-
-BenefitGrantProperties = Annotated[
-    BenefitGrantDiscordProperties
-    | BenefitGrantGitHubRepositoryProperties
-    | BenefitGrantDownloadablesProperties
-    | BenefitGrantLicenseKeysProperties
-    | BenefitGrantAdsProperties
-    | BenefitGrantCustomProperties
-    | BenefitGrantArticlesProperties,
-    Field(description="The properties of the grant."),
-]
-
-
-class BenefitGrant(TimestampedSchema):
+class BenefitGrantBase(IDSchema, TimestampedSchema):
     """
     A grant of a benefit to a user.
     """
@@ -574,7 +549,6 @@ class BenefitGrant(TimestampedSchema):
         ),
     )
     is_revoked: bool = Field(description="Whether the benefit is revoked.")
-    properties: BenefitGrantProperties
     subscription_id: UUID4 | None = Field(
         description="The ID of the subscription that granted this benefit.",
     )
@@ -587,6 +561,10 @@ class BenefitGrant(TimestampedSchema):
     )
 
 
+class BenefitGrant(BenefitGrantBase):
+    properties: BenefitGrantProperties
+
+
 class BenefitGrantWebhook(BenefitGrant):
     benefit: Benefit
     previous_properties: BenefitGrantProperties | None = None
@@ -595,8 +573,11 @@ class BenefitGrantWebhook(BenefitGrant):
 # BenefitSubscriber
 
 
+class BenefitGrantSubscriber(BenefitGrantBase): ...
+
+
 class BenefitSubscriberBase(BenefitBase):
-    grants: list[BenefitGrant]
+    grants: list[BenefitGrantSubscriber]
 
 
 class BenefitCustomSubscriber(BenefitSubscriberBase):
@@ -609,8 +590,15 @@ class BenefitArticlesSubscriber(BenefitBase):
     properties: BenefitArticlesSubscriberProperties
 
 
-class BenefitGrantAds(BenefitGrant):
-    properties: BenefitGrantAdsProperties
+class BenefitGrantAdsSubscriberProperties(Schema):
+    advertisement_campaign_id: UUID4 | None = Field(
+        None,
+        description="The ID of the enabled advertisement campaign for this benefit grant.",
+    )
+
+
+class BenefitGrantAds(BenefitGrantSubscriber):
+    properties: BenefitGrantAdsSubscriberProperties
 
 
 class BenefitAdsSubscriber(BenefitBase):
@@ -634,7 +622,7 @@ class BenefitDownloadablesSubscriber(BenefitBase):
     properties: BenefitDownloadablesSubscriberProperties
 
 
-class BenefitGrantLicenseKeys(BenefitGrant):
+class BenefitGrantLicenseKeys(BenefitGrantSubscriber):
     properties: BenefitGrantLicenseKeysProperties
 
 

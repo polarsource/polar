@@ -8,6 +8,7 @@ from polar.models.benefit import (
     BenefitAds,
     BenefitType,
 )
+from polar.models.benefit_grant import BenefitGrantAdsProperties
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
@@ -30,9 +31,12 @@ async def test_grant(
             properties={"image_height": 100, "image_width": 100},
         ),
     )
-    grant = BenefitGrant(user=user, benefit=benefit, properties={})
+    properties: BenefitGrantAdsProperties = {"advertisement_campaign_id": "CAMPAIGN_ID"}
+    grant = BenefitGrant(user=user, benefit=benefit, properties=properties)
 
     benefit_ads_service = BenefitAdsService(session)
-    grant_properties = await benefit_ads_service.grant(benefit, user, grant.properties)
+    updated_properties = await benefit_ads_service.grant(
+        benefit, user, cast(BenefitGrantAdsProperties, grant.properties)
+    )
 
-    assert grant_properties == {}
+    assert updated_properties == properties

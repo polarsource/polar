@@ -30,7 +30,11 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import BenefitGrant, BenefitGrantScope
+from polar.models.benefit_grant import (
+    BenefitGrant,
+    BenefitGrantProperties,
+    BenefitGrantScope,
+)
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -968,7 +972,7 @@ async def create_benefit_grant(
     user: User,
     benefit: Benefit,
     granted: bool | None = None,
-    properties: dict[str, Any] | None = None,
+    properties: BenefitGrantProperties | None = None,
     **scope: Unpack[BenefitGrantScope],
 ) -> BenefitGrant:
     grant = BenefitGrant(benefit=benefit, user=user, **scope)

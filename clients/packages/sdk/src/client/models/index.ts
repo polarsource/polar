@@ -4589,6 +4589,12 @@ export interface CheckoutCreate {
      * @memberof CheckoutCreate
      */
     customer_email?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutCreate
+     */
+    subscription_id?: string | null;
 }
 /**
  * 
@@ -7850,7 +7856,7 @@ export interface MaintainerNewPaidSubscriptionNotificationPayload {
      * @type {number}
      * @memberof MaintainerNewPaidSubscriptionNotificationPayload
      */
-    tier_price_amount: number;
+    tier_price_amount: number | null;
     /**
      * 
      * @type {string}

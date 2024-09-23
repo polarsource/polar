@@ -41,7 +41,7 @@
     "@react-email/components": "0.0.14",
     "@react-email/render": "^0.0.12",
     "@react-email/tailwind": "0.0.14",
-    "@sentry/nextjs": "^8.28.0",
+    "@sentry/nextjs": "^8.31.0",
     "@shikijs/rehype": "^1.16.2",
     "@stripe/react-stripe-js": "^2.8.0",
     "@stripe/stripe-js": "^2.1.8",

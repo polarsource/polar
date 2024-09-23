@@ -42,10 +42,10 @@ export default function Page() {
     account === undefined
 
   return (
-    <>
+    <div className="flex w-full flex-col">
       {showPendingRewardsBanner && (
         <Banner color="blue">
-          <div className="flex w-full items-center justify-between">
+          <div className="flex w-full items-center justify-between gap-1.5">
             <span>
               Great news! You have pending rewards and payouts. Setup a Stripe
               account to get paid.
@@ -85,6 +85,6 @@ export default function Page() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -8502,8 +8502,8 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
                                 "free_subscription",
+                                "donation",
                                 "paid_subscription",
                                 "order"
                             ],
@@ -20714,6 +20714,19 @@
                         ],
                         "title": "Customer Email",
                         "description": "If you already know the email of your customer, you can set it. It'll be pre-filled on the checkout page."
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "ID of the subscription to update. If not provided, a new subscription will be created."
                     }
                 },
                 "type": "object",
@@ -24156,7 +24169,14 @@
                         "title": "Tier Name"
                     },
                     "tier_price_amount": {
-                        "type": "integer",
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Tier Price Amount"
                     },
                     "tier_price_recurring_interval": {

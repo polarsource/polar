@@ -687,7 +687,7 @@ async def create_benefit(
     organization: Organization,
     type: BenefitType = BenefitType.custom,
     is_tax_applicable: bool | None = None,
-    description: str = "Subscription Benefit",
+    description: str = "Benefit",
     selectable: bool = True,
     deletable: bool = True,
     properties: dict[str, Any] = {"note": None},

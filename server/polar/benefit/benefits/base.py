@@ -183,7 +183,7 @@ class BenefitServiceProtocol(Protocol[B, BP]):
             It can be different from the input if needed.
 
         Raises:
-            BenefitPropertiesValidationError: The subscription benefit
+            BenefitPropertiesValidationError: The benefit
             properties are invalid.
         """
         ...

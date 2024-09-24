@@ -60,7 +60,7 @@ export const Confirmation = ({
         </p>
         <CheckoutCard organization={organization} product={product} />
         {currentUser ? (
-          <Link className="grow" href={`/purchases`}>
+          <Link className="grow" href={disabled ? '#' : `/purchases`}>
             <Button className="w-full" size="lg" disabled={disabled}>
               Access your purchase
             </Button>

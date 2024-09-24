@@ -1,6 +1,4 @@
-'use client'
-
-import { Checkout } from '@/components/Checkout/Checkout'
+import { CustomerPortal } from '@/components/CustomerPortal/CustomerPortal'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontNav } from '@/components/Organization/StorefrontNav'
@@ -9,11 +7,10 @@ import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
-import { PRODUCT_PREVIEW } from '../utils'
+import { ORDER_PREVIEW } from '../utils'
 
-export const CheckoutPreview = () => {
+export const PortalPreview = () => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
-
   const { currentUser } = useAuth()
 
   return (
@@ -33,7 +30,7 @@ export const CheckoutPreview = () => {
             <StorefrontNav organization={org} />
           </>
         )}
-        <Checkout organization={org} product={PRODUCT_PREVIEW} disabled />
+        <CustomerPortal organization={org} orders={[ORDER_PREVIEW]} />
       </div>
     </ShadowBox>
   )

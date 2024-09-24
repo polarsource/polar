@@ -194,15 +194,6 @@ const nextConfig = {
         permanent: true,
       },
 
-      // Redirect /:slug/subscriptions to /:slug
-      // Now we surface subscriptions on landing page vs. below subpage
-      {
-        source: '/:slug/subscriptions',
-        destination: '/:slug',
-        permanent: true,
-      },
-
-
       // Redirect /docs/overview/:path to /docs/:path
       {
         source: '/docs/overview/:path*',

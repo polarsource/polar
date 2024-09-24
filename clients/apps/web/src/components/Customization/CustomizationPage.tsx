@@ -81,7 +81,12 @@ const Customization = () => {
             <TabsTrigger value="storefront">Storefront</TabsTrigger>
             <TabsTrigger value="checkout">Checkout</TabsTrigger>
             <TabsTrigger value="confirmation">Confirmation</TabsTrigger>
-            <TabsTrigger value="portal">Portal</TabsTrigger>
+            <TabsTrigger
+              value="portal"
+              disabled={!organization.profile_settings?.enabled}
+            >
+              Portal
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         <PublicProfileDropdown

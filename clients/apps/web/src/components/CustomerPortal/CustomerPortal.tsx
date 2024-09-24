@@ -35,7 +35,7 @@ export const CustomerPortal = ({
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-y-12">
-        {organization && (
+        {organization && !organization.profile_settings?.enabled && (
           <div className="flex flex-row items-center gap-x-4">
             <Avatar
               className="h-12 w-12"

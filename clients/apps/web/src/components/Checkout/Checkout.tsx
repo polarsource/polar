@@ -11,7 +11,7 @@ export interface CheckoutProps {
 
 export const Checkout = (props: CheckoutProps) => {
   return (
-    <ShadowBox className="dark:border-polar-700 flex w-full max-w-7xl flex-row items-stretch divide-x border p-0">
+    <ShadowBox className="dark:border-polar-700 dark:divide-polar-700 flex w-full max-w-7xl flex-row items-stretch divide-x divide-gray-100 border border-gray-100 p-0">
       <CheckoutInfo {...props} />
       <CheckoutForm {...props} />
     </ShadowBox>

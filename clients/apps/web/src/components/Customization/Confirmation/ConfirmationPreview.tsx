@@ -1,14 +1,12 @@
-'use client'
-
-import { Checkout } from '@/components/Checkout/Checkout'
+import { Confirmation } from '@/components/Checkout/Confirmation'
 import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
-import { PRODUCT_PREVIEW } from '../utils'
+import { CHECKOUT_PREVIEW } from '../utils'
 
-export const CheckoutPreview = () => {
+export const ConfirmationPreview = () => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
   return (
@@ -20,7 +18,7 @@ export const CheckoutPreview = () => {
             <StorefrontNav organization={org} />
           </>
         )}
-        <Checkout organization={org} product={PRODUCT_PREVIEW} disabled />
+        <Confirmation organization={org} checkout={CHECKOUT_PREVIEW} disabled />
       </div>
     </ShadowBox>
   )

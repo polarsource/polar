@@ -1,11 +1,11 @@
 import { PolarQueryClientProvider } from '@/app/providers'
-import CheckoutSuccess from '@/components/Checkout/CheckoutSuccess'
+import { Confirmation } from '@/components/Checkout/Confirmation'
 import { UserContextProvider } from '@/providers/auth'
 import { org } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-const meta: Meta<typeof CheckoutSuccess> = {
-  title: 'Organisms/CheckoutSuccess',
-  component: CheckoutSuccess,
+const meta: Meta<typeof Confirmation> = {
+  title: 'Organisms/Confirmation',
+  component: Confirmation,
   tags: ['autodocs'],
   parameters: {
     nextjs: {
@@ -16,7 +16,7 @@ const meta: Meta<typeof CheckoutSuccess> = {
     return (
       <UserContextProvider user={undefined} userOrganizations={[]}>
         <PolarQueryClientProvider>
-          <CheckoutSuccess {...args} />
+          <Confirmation {...args} />
         </PolarQueryClientProvider>
       </UserContextProvider>
     )
@@ -25,7 +25,7 @@ const meta: Meta<typeof CheckoutSuccess> = {
 
 export default meta
 
-type Story = StoryObj<typeof CheckoutSuccess>
+type Story = StoryObj<typeof Confirmation>
 
 export const Default: Story = {
   args: {

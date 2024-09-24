@@ -12,13 +12,17 @@ import { useCallback, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { CheckoutCard } from './CheckoutCard'
 
-export const CheckoutSuccess = ({
-  checkout: { customer_email: email, product, ...checkout },
-  organization,
-}: {
+export interface ConfirmationProps {
   checkout: Checkout
   organization: Organization
-}) => {
+  disabled?: boolean
+}
+
+export const Confirmation = ({
+  checkout: { customer_email: email, product, ...checkout },
+  organization,
+  disabled,
+}: ConfirmationProps) => {
   const router = useRouter()
   const { currentUser } = useAuth()
 
@@ -57,7 +61,7 @@ export const CheckoutSuccess = ({
         <CheckoutCard organization={organization} product={product} />
         {currentUser ? (
           <Link className="grow" href={`/purchases`}>
-            <Button className="w-full" size="lg">
+            <Button className="w-full" size="lg" disabled={disabled}>
               Access your purchase
             </Button>
           </Link>
@@ -72,6 +76,7 @@ export const CheckoutSuccess = ({
               size="lg"
               onClick={onEmailSignin}
               loading={emailSigninLoading}
+              disabled={disabled}
             >
               Verify Email
             </Button>
@@ -89,5 +94,3 @@ export const CheckoutSuccess = ({
     </ShadowBox>
   )
 }
-
-export default CheckoutSuccess

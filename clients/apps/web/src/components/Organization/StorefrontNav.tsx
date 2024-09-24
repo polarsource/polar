@@ -48,6 +48,10 @@ export const StorefrontNav = ({
             <TabsTrigger value="donate">Donate</TabsTrigger>
           </Link>
         )}
+
+        <Link href={organizationPageLink(organization, 'portal')}>
+          <TabsTrigger value="portal">Customer Portal</TabsTrigger>
+        </Link>
       </TabsList>
     </Tabs>
   )

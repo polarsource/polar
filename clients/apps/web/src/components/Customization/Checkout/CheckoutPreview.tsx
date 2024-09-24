@@ -3,7 +3,6 @@
 import { Checkout } from '@/components/Checkout/Checkout'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
-import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -28,10 +27,7 @@ export const CheckoutPreview = () => {
           <TopbarRight authenticatedUser={currentUser} />
         </div>
         {org.profile_settings?.enabled && (
-          <>
-            <StorefrontHeader organization={org} />
-            <StorefrontNav organization={org} />
-          </>
+          <StorefrontHeader organization={org} />
         )}
         <Checkout organization={org} product={PRODUCT_PREVIEW} disabled />
       </div>

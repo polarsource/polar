@@ -1,4 +1,4 @@
-import { Checkout, Product, UserOrder } from '@polar-sh/sdk'
+import { Checkout, Product, UserOrder, UserSubscription } from '@polar-sh/sdk'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
 ## Clipeo mentiris arquato obliqua lacerta
@@ -148,36 +148,34 @@ export const ORDER_PREVIEW: UserOrder = {
   modified_at: new Date().toDateString(),
 }
 
-export const SUBSCRIPTION_ORDER_PREVIEW: UserOrder = {
+export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
+  created_at: new Date().toDateString(),
+  modified_at: new Date().toDateString(),
   id: '123',
   amount: 10000,
   currency: 'usd',
-  tax_amount: 1200,
+  recurring_interval: 'month',
+  status: 'active',
+  current_period_start: new Date().toDateString(),
+  current_period_end: new Date(
+    new Date().setMonth(new Date().getMonth() + 1),
+  ).toDateString(),
+  cancel_at_period_end: false,
+  started_at: new Date().toDateString(),
+  ended_at: null,
   user_id: '123',
   product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
-  product_price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
-  product_price: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0],
-  subscription_id: '123',
-  subscription: {
+  price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
+  product: SUBSCRIPTION_PRODUCT_PREVIEW,
+  price: {
+    id: '123',
+    amount_type: 'fixed',
+    price_amount: 10000,
+    type: 'recurring',
+    recurring_interval: 'month',
+    price_currency: 'usd',
+    is_archived: false,
     created_at: new Date().toDateString(),
     modified_at: new Date().toDateString(),
-    id: '123',
-    amount: 10000,
-    currency: 'usd',
-    recurring_interval: 'month',
-    status: 'active',
-    current_period_start: new Date().toDateString(),
-    current_period_end: new Date(
-      new Date().setMonth(new Date().getMonth() + 1),
-    ).toDateString(),
-    cancel_at_period_end: false,
-    started_at: new Date().toDateString(),
-    ended_at: null,
-    user_id: '123',
-    product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
-    price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
   },
-  product: SUBSCRIPTION_PRODUCT_PREVIEW,
-  created_at: new Date().toDateString(),
-  modified_at: new Date().toDateString(),
 }

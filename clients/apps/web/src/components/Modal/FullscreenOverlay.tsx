@@ -57,7 +57,7 @@ export const FullscreenOverlay: FunctionComponent<FullscreenOverlayProps> = ({
           onKeyDown={onKeyDown}
         >
           <div
-            className="bg-gray-75 fixed inset-0 dark:bg-black"
+            className="fixed inset-0 bg-gray-100 dark:bg-black"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()

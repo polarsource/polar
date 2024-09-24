@@ -13,11 +13,13 @@ export interface CheckoutInfoProps {
 export const CheckoutInfo = ({ organization, product }: CheckoutInfoProps) => {
   return (
     <div className="flex w-1/2 flex-col gap-y-12 p-20">
-      <Avatar
-        className="md:h-16 md:w-16"
-        avatar_url={organization.avatar_url}
-        name={organization.name}
-      />
+      {!organization.profile_settings?.enabled && (
+        <Avatar
+          className="md:h-16 md:w-16"
+          avatar_url={organization.avatar_url}
+          name={organization.name}
+        />
+      )}
       <h1 className="text-3xl">{product.name}</h1>
       {product.medias.length > 0 && (
         <Slideshow

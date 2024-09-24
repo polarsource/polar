@@ -48,11 +48,13 @@ export const Confirmation = ({
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-sm flex-col gap-y-8">
-        <Avatar
-          className="h-24 w-24"
-          avatar_url={organization.avatar_url}
-          name={organization.name}
-        />
+        {!organization.profile_settings?.enabled && (
+          <Avatar
+            className="h-24 w-24"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
+        )}
 
         <h1 className="text-2xl font-medium">Your order was successful!</h1>
         <p className="dark:text-polar-500 text-gray-500">

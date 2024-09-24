@@ -50,7 +50,7 @@ export const StorefrontNav = ({
         )}
 
         <Link href={organizationPageLink(organization, 'portal')}>
-          <TabsTrigger value="portal">Customer Portal</TabsTrigger>
+          <TabsTrigger value="portal">My Orders</TabsTrigger>
         </Link>
       </TabsList>
     </Tabs>

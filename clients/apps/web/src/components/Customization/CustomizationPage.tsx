@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { useContext, useMemo } from 'react'
 import { CheckoutCustomization } from './Checkout/CheckoutCustomization'
 import { ConfirmationCustomization } from './Confirmation/ConfirmationCustomization'
+import { PortalCustomization } from './Portal/PortalCustomization'
 import { StorefrontCustomization } from './Storefront/StorefrontCustomization'
 
 export const CustomizationPage = () => {
@@ -44,6 +45,8 @@ const Customization = () => {
         return <CheckoutCustomization />
       case 'confirmation':
         return <ConfirmationCustomization />
+      case 'portal':
+        return <PortalCustomization />
       case 'storefront':
       default:
         return <StorefrontCustomization />
@@ -78,6 +81,7 @@ const Customization = () => {
             <TabsTrigger value="storefront">Storefront</TabsTrigger>
             <TabsTrigger value="checkout">Checkout</TabsTrigger>
             <TabsTrigger value="confirmation">Confirmation</TabsTrigger>
+            <TabsTrigger value="portal">Portal</TabsTrigger>
           </TabsList>
         </Tabs>
         <PublicProfileDropdown

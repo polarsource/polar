@@ -1,4 +1,4 @@
-import { Checkout, Product } from '@polar-sh/sdk'
+import { Checkout, Product, UserOrder } from '@polar-sh/sdk'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
 ## Clipeo mentiris arquato obliqua lacerta
@@ -73,4 +73,20 @@ export const CHECKOUT_PREVIEW: Checkout = {
   customer_name: 'Jane Doe',
   product: PRODUCT_PREVIEW,
   product_price: PRODUCT_PREVIEW.prices[0],
+}
+
+export const ORDER_PREVIEW: UserOrder = {
+  id: '123',
+  amount: 10000,
+  currency: 'usd',
+  tax_amount: 1200,
+  user_id: '123',
+  product_id: PRODUCT_PREVIEW.id,
+  product_price_id: PRODUCT_PREVIEW.prices[0].id,
+  product_price: PRODUCT_PREVIEW.prices[0],
+  subscription_id: null,
+  subscription: null,
+  product: PRODUCT_PREVIEW,
+  created_at: new Date().toDateString(),
+  modified_at: new Date().toDateString(),
 }

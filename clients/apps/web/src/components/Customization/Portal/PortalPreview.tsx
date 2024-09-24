@@ -1,7 +1,6 @@
 import { CustomerPortal } from '@/components/CustomerPortal/CustomerPortal'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
-import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -25,10 +24,7 @@ export const PortalPreview = () => {
           <TopbarRight authenticatedUser={currentUser} />
         </div>
         {org.profile_settings?.enabled && (
-          <>
-            <StorefrontHeader organization={org} />
-            <StorefrontNav organization={org} />
-          </>
+          <StorefrontHeader organization={org} />
         )}
         <CustomerPortal
           organization={org}

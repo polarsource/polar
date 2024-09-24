@@ -3,7 +3,7 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useOrganization } from '@/hooks/queries'
 import { MoreVertOutlined } from '@mui/icons-material'
-import { Organization, UserOrder } from '@polar-sh/sdk'
+import { Organization, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -23,7 +23,7 @@ import { twMerge } from 'tailwind-merge'
 
 export interface CustomerPortalProps {
   organization?: Organization
-  subscriptions: UserOrder[]
+  subscriptions: UserSubscription[]
   orders: UserOrder[]
 }
 
@@ -50,13 +50,13 @@ export const CustomerPortal = ({
         </div>
 
         <div className="flex flex-col gap-y-8">
-          {subscriptions.map((subscriptionOrder) => (
+          {subscriptions.map((s) => (
             <Link
-              key={subscriptionOrder.id}
+              key={s.id}
               className="flex w-full flex-row items-center justify-between"
-              href={`/purchases/subscriptions/${subscriptionOrder.id}`}
+              href={`/purchases/subscriptions/${s.id}`}
             >
-              <SubscriptionItem order={subscriptionOrder} />
+              <SubscriptionItem subscription={s} />
             </Link>
           ))}
         </div>
@@ -181,39 +181,43 @@ const StatusWrapper = ({
   )
 }
 
-const SubscriptionItem = ({ order }: { order: UserOrder }) => {
-  const { data: organization } = useOrganization(order.product.organization_id)
+const SubscriptionItem = ({
+  subscription,
+}: {
+  subscription: UserSubscription
+}) => {
+  const { data: organization } = useOrganization(
+    subscription.product.organization_id,
+  )
 
   const status = useMemo(() => {
-    switch (order.subscription?.status) {
+    switch (subscription?.status) {
       case 'active':
         return (
           <StatusWrapper
             color={
-              order.subscription.cancel_at_period_end
+              subscription.cancel_at_period_end
                 ? 'bg-yellow-500'
                 : 'bg-green-500'
             }
           >
-            {order.subscription.cancel_at_period_end
-              ? 'To be cancelled'
-              : 'Active'}
+            {subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'}
           </StatusWrapper>
         )
       default:
         return (
           <StatusWrapper color="bg-red-400">
-            {order.subscription?.status.split('_').join(' ')}
+            {subscription?.status.split('_').join(' ')}
           </StatusWrapper>
         )
     }
-  }, [order])
+  }, [subscription])
 
   return (
     <ShadowBox className="dark:bg-polar-950 bg-gray-75 flex w-full flex-col gap-y-6">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
-          <h3 className="truncate text-2xl">{order.product.name}</h3>
+          <h3 className="truncate text-2xl">{subscription.product.name}</h3>
           {organization && (
             <div className="flex flex-row items-center gap-x-3">
               <Avatar
@@ -227,18 +231,18 @@ const SubscriptionItem = ({ order }: { order: UserOrder }) => {
             </div>
           )}
         </div>
-        <Link href={`/purchases/subscriptions/${order.id}`}>
+        <Link href={`/purchases/subscriptions/${subscription.id}`}>
           <Button size="sm">Manage Subscription</Button>
         </Link>
       </div>
       <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-100 text-sm">
         <div className="flex flex-row items-center justify-between py-2">
           <span>Amount</span>
-          {order.amount && order.currency ? (
+          {subscription.amount && subscription.currency ? (
             <AmountLabel
-              amount={order.amount}
-              currency={order.currency}
-              interval={order.subscription?.recurring_interval}
+              amount={subscription.amount}
+              currency={subscription.currency}
+              interval={subscription?.recurring_interval}
             />
           ) : (
             'Free'
@@ -248,11 +252,27 @@ const SubscriptionItem = ({ order }: { order: UserOrder }) => {
           <span>Status</span>
           {status}
         </div>
-        {order.subscription?.started_at && (
+        {subscription?.started_at && (
           <div className="flex flex-row items-center justify-between py-3">
             <span>Start Date</span>
             <span>
-              {new Date(order.subscription.started_at).toLocaleDateString(
+              {new Date(subscription.started_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        )}
+        {!subscription?.ended_at && subscription?.current_period_end && (
+          <div className="flex flex-row items-center justify-between py-3">
+            <span>
+              {subscription.cancel_at_period_end
+                ? 'Expiry Date'
+                : 'Renewal Date'}
+            </span>
+            <span>
+              {new Date(subscription.current_period_end).toLocaleDateString(
                 'en-US',
                 {
                   year: 'numeric',
@@ -263,45 +283,23 @@ const SubscriptionItem = ({ order }: { order: UserOrder }) => {
             </span>
           </div>
         )}
-        {!order.subscription?.ended_at &&
-          order.subscription?.current_period_end && (
-            <div className="flex flex-row items-center justify-between py-3">
-              <span>
-                {order.subscription.cancel_at_period_end
-                  ? 'Expiry Date'
-                  : 'Renewal Date'}
-              </span>
-              <span>
-                {new Date(
-                  order.subscription.current_period_end,
-                ).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
-            </div>
-          )}
-        {order.subscription?.ended_at && (
+        {subscription?.ended_at && (
           <div className="flex flex-row items-center justify-between py-3">
             <span>Expired</span>
             <span>
-              {new Date(order.subscription.ended_at).toLocaleDateString(
-                'en-US',
-                {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                },
-              )}
+              {new Date(subscription.ended_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </span>
           </div>
         )}
-        {order.product.benefits.length > 0 && (
+        {subscription.product.benefits.length > 0 && (
           <div className="flex flex-row items-center justify-between py-3">
             <span>Benefits</span>
             <span>
-              <Link href={`/purchases/subscriptions/${order.id}`}>
+              <Link href={`/purchases/subscriptions/${subscription.id}`}>
                 <Button size="sm" variant="secondary">
                   View Benefits
                 </Button>

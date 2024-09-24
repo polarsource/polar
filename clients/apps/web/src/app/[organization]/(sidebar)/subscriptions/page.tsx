@@ -5,5 +5,5 @@ export default async function Page({
 }: {
   params: { organization: string; }
 }) {
-  redirect(`/organizations/${params.organization}`)
+  redirect(`/${params.organization}`)
 }

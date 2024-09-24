@@ -5,7 +5,7 @@ import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const CheckoutSidebarContentWrapper = ({
+const ConfirmationSidebarContentWrapper = ({
   title,
   children,
 }: PropsWithChildren<{
@@ -23,21 +23,21 @@ const CheckoutSidebarContentWrapper = ({
   )
 }
 
-const CheckoutForm = () => {
+const ConfirmationForm = () => {
   return <></>
 }
 
-export const CheckoutSidebar = () => {
+export const ConfirmationSidebar = () => {
   return (
-    <CheckoutSidebarContentWrapper title="Checkout">
+    <ConfirmationSidebarContentWrapper title="Confirmation">
       <form onSubmit={() => {}} className="flex flex-col gap-y-8">
-        <CheckoutForm />
+        <ConfirmationForm />
         <div className="flex flex-row items-center gap-x-4">
           <Button className="self-start" type="submit">
             Save
           </Button>
         </div>
       </form>
-    </CheckoutSidebarContentWrapper>
+    </ConfirmationSidebarContentWrapper>
   )
 }

@@ -1,6 +1,9 @@
 import React, { PropsWithChildren } from 'react'
 
-export type CustomizationContextMode = 'storefront' | 'checkout' | 'receipt'
+export type CustomizationContextMode =
+  | 'storefront'
+  | 'checkout'
+  | 'confirmation'
 
 export type CustomizationContextValue = {
   readonly customizationMode: CustomizationContextMode

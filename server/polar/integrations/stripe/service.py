@@ -551,5 +551,86 @@ class StripeService:
             metadata=metadata or {},
         )
 
+    def create_setup_intent(
+        self, **params: Unpack[stripe_lib.SetupIntent.CreateParams]
+    ) -> stripe_lib.SetupIntent:
+        return stripe_lib.SetupIntent.create(**params)
+
+    def create_customer(
+        self, **params: Unpack[stripe_lib.Customer.CreateParams]
+    ) -> stripe_lib.Customer:
+        return stripe_lib.Customer.create(**params)
+
+    def create_subscription(
+        self,
+        *,
+        customer: str,
+        currency: str,
+        default_payment_method: str,
+        price: str,
+        metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Subscription:
+        return stripe_lib.Subscription.create(
+            customer=customer,
+            currency=currency,
+            default_payment_method=default_payment_method,
+            items=[{"price": price, "quantity": 1}],
+            metadata=metadata or {},
+            automatic_tax={"enabled": True},
+            idempotency_key=idempotency_key,
+        )
+
+    def create_invoice(
+        self,
+        *,
+        customer: str,
+        currency: str,
+        default_payment_method: str,
+        price: str,
+        metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
+        pay_immediately: bool = True,
+    ) -> stripe_lib.Invoice:
+        invoice = stripe_lib.Invoice.create(
+            auto_advance=True,
+            collection_method="charge_automatically",
+            customer=customer,
+            metadata=metadata or {},
+            automatic_tax={"enabled": True},
+            currency=currency,
+            default_payment_method=default_payment_method,
+            idempotency_key=f"{idempotency_key}_invoice" if idempotency_key else None,
+        )
+        assert invoice.id is not None
+
+        stripe_lib.InvoiceItem.create(
+            customer=customer,
+            currency=currency,
+            price=price,
+            invoice=invoice.id,
+            quantity=1,
+            idempotency_key=f"{idempotency_key}_invoice_item"
+            if idempotency_key
+            else None,
+        )
+
+        stripe_lib.Invoice.finalize_invoice(
+            invoice.id,
+            idempotency_key=f"{idempotency_key}_finalize_invoice"
+            if idempotency_key
+            else None,
+        )
+
+        if pay_immediately:
+            stripe_lib.Invoice.pay(
+                invoice.id,
+                idempotency_key=f"{idempotency_key}_pay_invoice"
+                if idempotency_key
+                else None,
+            )
+
+        return invoice
+
 
 stripe = StripeService()

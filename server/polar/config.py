@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
+    # Checkout
+    CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
+
     # Database
     POSTGRES_USER: str = "polar"
     POSTGRES_PWD: str = "polar"

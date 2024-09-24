@@ -17,6 +17,9 @@ class Scope(StrEnum):
     organizations_read = "organizations:read"
     organizations_write = "organizations:write"
 
+    checkouts_read = "checkouts:read"
+    checkouts_write = "checkouts:write"
+
     products_read = "products:read"
     products_write = "products:write"
 

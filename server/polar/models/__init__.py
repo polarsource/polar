@@ -6,6 +6,7 @@ from .article import Article
 from .articles_subscription import ArticlesSubscription
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
+from .checkout import Checkout
 from .donation import Donation
 from .downloadable import Downloadable
 from .external_organization import ExternalOrganization
@@ -59,6 +60,7 @@ __all__ = [
     "ArticlesSubscription",
     "Benefit",
     "BenefitGrant",
+    "Checkout",
     "Donation",
     "Downloadable",
     "ExternalOrganization",

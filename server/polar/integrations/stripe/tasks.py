@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 import stripe
@@ -5,6 +6,7 @@ import structlog
 from arq import Retry
 
 from polar.account.service import account as account_service
+from polar.checkout.service import checkout as checkout_service
 from polar.donation.service import donation_service
 from polar.exceptions import PolarTaskError
 from polar.integrations.stripe.schemas import (
@@ -319,4 +321,23 @@ async def payout_paid(
             payout = event["data"]["object"]
             await payout_transaction_service.create_payout_from_stripe(
                 session, payout=payout, stripe_account_id=event.account
+            )
+
+
+@task("stripe.webhook.setup_intent.succeeded")
+async def setup_intent_succeeded(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            setup_intent = stripe.SetupIntent.construct_from(
+                event["data"]["object"], None
+            )
+            metadata = setup_intent.metadata
+
+            if metadata is None or (checkout_id := metadata.get("checkout_id")) is None:
+                return
+
+            await checkout_service.handle_stripe_success(
+                session, uuid.UUID(checkout_id), setup_intent
             )

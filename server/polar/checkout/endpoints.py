@@ -1,11 +1,27 @@
-from fastapi import Depends
+from typing import Annotated
 
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
+
+from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
+from polar.models import Checkout
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
+from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
-from . import auth
-from .schemas import Checkout, CheckoutCreate
+from . import auth, sorting
+from .schemas import Checkout as CheckoutSchema
+from .schemas import (
+    CheckoutConfirm,
+    CheckoutCreate,
+    CheckoutPublic,
+    CheckoutUpdate,
+    CheckoutUpdatePublic,
+)
 from .service import checkout as checkout_service
 
 router = APIRouter(
@@ -13,17 +29,172 @@ router = APIRouter(
 )
 
 
-@router.post("/", summary="Create Checkout", response_model=Checkout, status_code=201)
+CheckoutID = Annotated[UUID4, Path(description="The checkout session ID.")]
+CheckoutClientSecret = Annotated[
+    str, Path(description="The checkout session client secret.")
+]
+CheckoutNotFound = {
+    "description": "Checkout session not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+
+@router.get(
+    "/", summary="List Checkout Sessions", response_model=ListResource[CheckoutSchema]
+)
+async def list(
+    auth_subject: auth.CheckoutRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[CheckoutSchema]:
+    """List checkout sessions."""
+    results, count = await checkout_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [CheckoutSchema.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/{id}",
+    summary="Get Checkout Session",
+    response_model=CheckoutSchema,
+    responses={404: CheckoutNotFound},
+)
+async def get(
+    id: CheckoutID,
+    auth_subject: auth.CheckoutRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Get a checkout session by ID."""
+    checkout = await checkout_service.get_by_id(session, auth_subject, id)
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    return checkout
+
+
+@router.post(
+    "/",
+    response_model=CheckoutSchema,
+    status_code=201,
+    summary="Create Checkout Session",
+    responses={201: {"description": "Checkout session created."}},
+)
 async def create(
     checkout_create: CheckoutCreate,
-    auth_subject: auth.Checkout,
+    auth_subject: auth.CheckoutWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Create a checkout session."""
     return await checkout_service.create(session, checkout_create, auth_subject)
 
 
-@router.get("/{id}", summary="Get Checkout", response_model=Checkout)
-async def get(id: str, session: AsyncSession = Depends(get_db_session)) -> Checkout:
-    """Get an active checkout session by ID."""
-    return await checkout_service.get_by_id(session, id)
+@router.patch(
+    "/{id}",
+    response_model=CheckoutSchema,
+    summary="Update Checkout Session",
+    responses={
+        200: {"description": "Checkout session updated."},
+        404: CheckoutNotFound,
+    },
+)
+async def update(
+    id: CheckoutID,
+    checkout_update: CheckoutUpdate,
+    auth_subject: auth.CheckoutWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Update a checkout session."""
+    checkout = await checkout_service.get_by_id(session, auth_subject, id)
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    return await checkout_service.update(session, checkout, checkout_update)
+
+
+@router.get(
+    "/client/{client_secret}",
+    summary="Get Checkout Session from Client",
+    response_model=CheckoutPublic,
+    responses={404: CheckoutNotFound},
+)
+async def client_get(
+    client_secret: CheckoutClientSecret,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Get a checkout session by client secret."""
+    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    return checkout
+
+
+@router.patch(
+    "/client/{client_secret}",
+    response_model=CheckoutPublic,
+    summary="Update Checkout Session from Client",
+    responses={
+        200: {"description": "Checkout session updated."},
+        404: CheckoutNotFound,
+    },
+)
+async def client_update(
+    client_secret: CheckoutClientSecret,
+    checkout_update: CheckoutUpdatePublic,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Update a checkout session by client secret."""
+    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    return await checkout_service.update(session, checkout, checkout_update)
+
+
+@router.post(
+    "/client/{client_secret}/confirm",
+    response_model=CheckoutPublic,
+    summary="Confirm Checkout Session from Client",
+    responses={
+        200: {"description": "Checkout session confirmed."},
+        404: CheckoutNotFound,
+    },
+)
+async def client_confirm(
+    client_secret: CheckoutClientSecret,
+    checkout_confirm: CheckoutConfirm,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Confirm a checkout session by client secret.
+
+    Orders and subscriptions will be processed.
+    """
+    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    return await checkout_service.confirm(session, checkout, checkout_confirm)

@@ -51,6 +51,8 @@ boto3 = "^1.35.15"
 itsdangerous = "^2.2.0"
 cryptography = "^43.0.1"
 babel = "^2.16.0"
+pycountry = "^24.6.1"
+python-stdnum = "^1.20"
 
 [tool.poetry.group.backoffice]
 optional = true

@@ -1,16 +1,27 @@
 'use client'
 
-import { useListPaymentMethods } from '@/hooks/queries'
-import { Organization, PaymentMethod, Product } from '@polar-sh/sdk'
+import { api } from '@/utils/api'
+import { setValidationErrors } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
+import {
+  Address,
+  CheckoutPublic,
+  ResponseError,
+  SubscriptionRecurringInterval,
+  ValidationError,
+} from '@polar-sh/sdk'
+import { formatCurrencyAndAmount } from '@polarkit/lib/money'
+import {
+  AddressElement,
+  Elements,
+  ElementsConsumer,
+  PaymentElement,
+} from '@stripe/react-stripe-js'
+import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js'
+import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'polarkit/components/ui/atoms/select'
 import {
   Form,
   FormControl,
@@ -19,48 +30,60 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { PropsWithChildren } from 'react'
-import { useForm } from 'react-hook-form'
+import { PropsWithChildren, useCallback, useState } from 'react'
+import { FormProvider, useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
-import { prettyCardName } from '../Pledge/payment'
-import ProductPriceLabel from '../Products/ProductPriceLabel'
+import AmountLabel from '../Shared/AmountLabel'
 
-export interface CheckoutFormProps {
-  organization: Organization
-  product: Product
-  disabled?: boolean
+const DetailRow = ({
+  title,
+  emphasis,
+  children,
+}: PropsWithChildren<{ title: string; emphasis?: boolean }>) => {
+  return (
+    <div
+      className={twMerge(
+        'flex flex-row items-center justify-between gap-x-8',
+        emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500',
+      )}
+    >
+      <span>{title}</span>
+      {children}
+    </div>
+  )
 }
 
-export const CheckoutForm = ({
-  organization,
-  product,
-  disabled,
-}: CheckoutFormProps) => {
-  const form = useForm<{
-    email: string
-    cardholder: string
-    payment_method: PaymentMethod
-    discount?: string
-    tax_id?: string
-  }>({
-    defaultValues: { email: '', cardholder: '' },
-  })
+interface BaseCheckoutFormProps {
+  onSubmit: (value: any) => Promise<void>
+  amount: number | null
+  tax_amount: number | null
+  currency: string | null
+  interval?: SubscriptionRecurringInterval
+  disabled?: boolean
+  loading?: boolean
+}
 
+interface CheckoutFormData {
+  customer_email: string
+}
+
+const BaseCheckoutForm = ({
+  onSubmit,
+  amount,
+  tax_amount,
+  currency,
+  interval,
+  disabled,
+  loading,
+  children,
+}: React.PropsWithChildren<BaseCheckoutFormProps>) => {
+  const form = useFormContext<CheckoutFormData>()
   const {
     control,
     handleSubmit,
-    watch,
     formState: { errors },
   } = form
-
-  const discountCode = watch('discount')
-
-  const onSubmit = async ({ cardholder }: { cardholder: string }) => {
-    console.log(cardholder)
-  }
-
-  const savedPaymentMethods = useListPaymentMethods()
 
   return (
     <div className="flex w-1/2 flex-col justify-between gap-y-24 p-20">
@@ -74,7 +97,7 @@ export const CheckoutForm = ({
             <div className="flex flex-col gap-y-6">
               <FormField
                 control={control}
-                name="email"
+                name="customer_email"
                 rules={{
                   required: 'This field is required',
                 }}
@@ -88,84 +111,9 @@ export const CheckoutForm = ({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={control}
-                name="cardholder"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cardholder Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              {savedPaymentMethods.data?.items &&
-                savedPaymentMethods.data?.items.length > 0 && (
-                  <FormField
-                    control={control}
-                    name="payment_method"
-                    rules={{
-                      required: 'This field is required',
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Payment Method</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={(event) => {
-                              const paymentMethod =
-                                savedPaymentMethods.data.items.find(
-                                  (pm) => pm.stripe_payment_method_id === event,
-                                )
-
-                              field.onChange(paymentMethod)
-                            }}
-                            name="payment_method"
-                          >
-                            <SelectTrigger className="mt-2 w-full">
-                              {field.value ? (
-                                <SelectValue
-                                  placeholder={`${prettyCardName(field.value.brand)} (****${
-                                    field.value.last4
-                                  })
-                      ${field.value.exp_month.toString().padStart(2, '0')}/${
-                        field.value.exp_year
-                      }`}
-                                />
-                              ) : (
-                                <SelectValue placeholder="new" />
-                              )}
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              {savedPaymentMethods.data.items.map((pm) => (
-                                <SelectItem
-                                  value={pm.stripe_payment_method_id}
-                                  key={pm.stripe_payment_method_id}
-                                >
-                                  {prettyCardName(pm.brand)} (****{pm.last4}){' '}
-                                  {pm.exp_month.toString().padStart(2, '0')}/
-                                  {pm.exp_year}
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="new">
-                                + New payment method
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
+              {children}
+              {/*
               <FormField
                 control={control}
                 name="tax_id"
@@ -201,35 +149,52 @@ export const CheckoutForm = ({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
-              {errors.root && (
-                <p className="text-destructive-foreground text-sm">
-                  {errors.root.message}
-                </p>
-              )}
+              /> */}
             </div>
             <div className="flex flex-col gap-y-2">
-              <DetailRow title="Subtotal">
-                <ProductPriceLabel price={product.prices[0]} />
-              </DetailRow>
-              <DetailRow title="VAT / Sales Tax">$25</DetailRow>
-              {discountCode && (
+              {amount && currency ? (
+                <>
+                  <DetailRow title="Subtotal">
+                    <AmountLabel
+                      amount={amount}
+                      currency={currency}
+                      interval={interval}
+                    />
+                  </DetailRow>
+                  <DetailRow title="VAT / Sales Tax">
+                    {formatCurrencyAndAmount(tax_amount || 0, currency)}
+                  </DetailRow>
+                  {/* {discountCode && (
                 <DetailRow title={`Discount Code (${discountCode})`}>
                   <span>$19</span>
                 </DetailRow>
+              )} */}
+                  <DetailRow title="Total" emphasis>
+                    <AmountLabel
+                      amount={amount + (tax_amount || 0)}
+                      currency={currency}
+                      interval={interval}
+                    />
+                  </DetailRow>
+                </>
+              ) : (
+                <span>Free</span>
               )}
-              <DetailRow title="Total" emphasis>
-                <ProductPriceLabel price={product.prices[0]} />
-              </DetailRow>
             </div>
             <Button
               type="submit"
               size="lg"
               wrapperClassNames="text-base"
               disabled={disabled}
+              loading={loading}
             >
-              Pay $1599
+              {interval ? 'Subscribe' : 'Pay'}
             </Button>
+            {errors.root && (
+              <p className="text-destructive-foreground text-sm">
+                {errors.root.message}
+              </p>
+            )}
           </form>
         </Form>
         <p className="dark:text-polar-500 text-center text-xs text-gray-500">
@@ -245,20 +210,226 @@ export const CheckoutForm = ({
   )
 }
 
-const DetailRow = ({
-  title,
-  emphasis,
-  children,
-}: PropsWithChildren<{ title: string; emphasis?: boolean }>) => {
+interface CheckoutFormProps {
+  checkout?: CheckoutPublic
+}
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+
+const StripeCheckoutForm = (
+  props: CheckoutFormProps & {
+    checkout: CheckoutPublic & { payment_processor_client_secret: string }
+  },
+) => {
+  const router = useRouter()
+  const { setError } = useFormContext<CheckoutFormData>()
+  const { checkout } = props
+  const { resolvedTheme } = useTheme()
+  const [loading, setLoading] = useState(false)
+
+  const onBillingAddressChange = useCallback(
+    async (name: string, address: Address): Promise<void> => {
+      await api.checkouts.clientUpdate({
+        clientSecret: checkout.client_secret,
+        body: {
+          customer_name: name,
+          customer_billing_address: address,
+        },
+      })
+    },
+    [checkout],
+  )
+
+  const onSubmit = async (
+    data: CheckoutFormData,
+    stripe: Stripe | null,
+    elements: StripeElements | null,
+  ) => {
+    if (!stripe || !elements) {
+      return
+    }
+
+    setLoading(true)
+
+    const { error: submitError } = await elements.submit()
+    if (submitError) {
+      // Don't show validation errors, as they are already shown in their form
+      if (submitError.type !== 'validation_error') {
+        setError('root', { message: submitError.message })
+      }
+      setLoading(false)
+      return
+    }
+
+    const { confirmationToken, error } = await stripe.createConfirmationToken({
+      elements,
+      params: {
+        return_url: `${CONFIG.FRONTEND_BASE_URL}/checkout/${checkout.client_secret}/success`,
+      },
+    })
+
+    if (!confirmationToken || error) {
+      setError('root', {
+        message:
+          error?.message ||
+          'Failed to create confirmation token, please try again later.',
+      })
+      setLoading(false)
+      return
+    }
+
+    let updatedCheckout: CheckoutPublic
+    try {
+      updatedCheckout = await api.checkouts.clientConfirm({
+        clientSecret: checkout.client_secret,
+        body: {
+          ...data,
+          confirmation_token_id: confirmationToken.id,
+        },
+      })
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        const body = await e.response.json()
+        if (e.response.status === 422) {
+          const validationErrors = body['detail'] as ValidationError[]
+          setValidationErrors(validationErrors, setError)
+        } else {
+          setError('root', { message: e.message })
+        }
+      }
+      setLoading(false)
+      return
+    }
+
+    const { setup_intent_status, setup_intent_client_secret } =
+      updatedCheckout.payment_processor_metadata as Record<string, string>
+
+    if (setup_intent_status === 'requires_action') {
+      const { error } = await stripe.handleNextAction({
+        clientSecret: setup_intent_client_secret,
+      })
+      if (error) {
+        setError('root', { message: error.message })
+        setLoading(false)
+        return
+      }
+    }
+
+    await router.push(`/checkout/${checkout.client_secret}/success`)
+    setLoading(false)
+  }
+
   return (
-    <div
-      className={twMerge(
-        'flex flex-row items-center justify-between gap-x-8',
-        emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500',
-      )}
+    <Elements
+      stripe={stripePromise}
+      options={{
+        mode: 'setup',
+        currency: checkout.currency || 'usd',
+        appearance: {
+          rules: {
+            '.Label': {
+              color: resolvedTheme === 'dark' ? 'white' : 'black',
+              fontWeight: '500',
+              fontSize: '14px',
+              marginBottom: '8px',
+            },
+            '.Input': {
+              padding: '12px',
+              backgroundColor:
+                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              border: '0px',
+              color: resolvedTheme === 'dark' ? '#E5E5E1' : '#181A1F',
+              borderRadius: '9999px',
+            },
+            '.Input:focus': {
+              borderColor: resolvedTheme === 'dark' ? '#4667CA' : '#A5C2EB',
+            },
+            '.Tab': {
+              backgroundColor: 'transparent',
+            },
+          },
+          variables: {
+            borderRadius: '8px',
+            fontFamily: '"Inter var", Inter, sans-serif',
+            fontSizeBase: '0.875rem',
+            spacingGridRow: '18px',
+            colorDanger: resolvedTheme === 'dark' ? '#F17878' : '#E64D4D',
+          },
+        },
+        fonts: [
+          {
+            cssSrc:
+              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500',
+          },
+        ],
+      }}
     >
-      <span>{title}</span>
-      {children}
-    </div>
+      <ElementsConsumer>
+        {({ stripe, elements }) => (
+          <BaseCheckoutForm
+            {...props}
+            amount={checkout.amount}
+            tax_amount={checkout.tax_amount}
+            currency={checkout.currency}
+            interval={
+              checkout.product_price.type === 'recurring'
+                ? checkout.product_price.recurring_interval
+                : undefined
+            }
+            onSubmit={(data) => onSubmit(data, stripe, elements)}
+            loading={loading}
+          >
+            <AddressElement
+              options={{ mode: 'billing' }}
+              onChange={(event) =>
+                onBillingAddressChange(event.value.name, event.value.address)
+              }
+            />
+            <PaymentElement />
+          </BaseCheckoutForm>
+        )}
+      </ElementsConsumer>
+    </Elements>
+  )
+}
+
+const DummyCheckoutForm = (props: CheckoutFormProps) => {
+  const onSubmit = async () => {
+    return
+  }
+  return (
+    <BaseCheckoutForm
+      {...props}
+      amount={5000}
+      tax_amount={1000}
+      currency="usd"
+      onSubmit={onSubmit}
+      disabled={true}
+    />
+  )
+}
+
+export const CheckoutForm = (props: CheckoutFormProps) => {
+  const { checkout } = props
+  const form = useForm<CheckoutFormData>()
+
+  if (checkout) {
+    return (
+      <FormProvider {...form}>
+        <StripeCheckoutForm
+          {...props}
+          checkout={
+            checkout as CheckoutPublic & {
+              payment_processor_client_secret: string
+            }
+          }
+        />
+      </FormProvider>
+    )
+  }
+  return (
+    <FormProvider {...form}>
+      <DummyCheckoutForm {...props} />
+    </FormProvider>
   )
 }

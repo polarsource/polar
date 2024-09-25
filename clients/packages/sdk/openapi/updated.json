@@ -8502,10 +8502,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
                                 "donation",
-                                "paid_subscription",
-                                "order"
+                                "free_subscription",
+                                "order",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -14691,26 +14691,230 @@
             }
         },
         "/v1/checkouts/": {
+            "get": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "List Checkout Sessions",
+                "description": "List checkout sessions.",
+                "operationId": "list",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkouts:read",
+                            "checkouts:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
+                        },
+                        "description": "Filter by product ID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CheckoutSortProperty"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_Checkout_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "list"
+            },
             "post": {
                 "tags": [
                     "checkouts"
                 ],
-                "summary": "Create Checkout",
+                "summary": "Create Checkout Session",
                 "description": "Create a checkout session.",
                 "operationId": "create",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkouts:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/CheckoutCreate"
                             }
                         }
-                    },
-                    "required": true
+                    }
                 },
                 "responses": {
                     "201": {
-                        "description": "Successful Response",
+                        "description": "Checkout session created.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -14730,16 +14934,8 @@
                         }
                     }
                 },
-                "security": [
-                    {
-                        "oidc": []
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "Organization",
                     "User"
                 ],
                 "x-speakeasy-group": "checkouts",
@@ -14751,9 +14947,20 @@
                 "tags": [
                     "checkouts"
                 ],
-                "summary": "Get Checkout",
-                "description": "Get an active checkout session by ID.",
+                "summary": "Get Checkout Session",
+                "description": "Get a checkout session by ID.",
                 "operationId": "get",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkouts:read",
+                            "checkouts:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "id",
@@ -14761,8 +14968,11 @@
                         "required": true,
                         "schema": {
                             "type": "string",
+                            "format": "uuid4",
+                            "description": "The checkout session ID.",
                             "title": "Id"
-                        }
+                        },
+                        "description": "The checkout session ID."
                     }
                 ],
                 "responses": {
@@ -14776,6 +14986,157 @@
                             }
                         }
                     },
+                    "404": {
+                        "description": "Checkout session not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "get"
+            },
+            "patch": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "Update Checkout Session",
+                "description": "Update a checkout session.",
+                "operationId": "update",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkouts:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The checkout session ID.",
+                            "title": "Id"
+                        },
+                        "description": "The checkout session ID."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout session updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Checkout"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Checkout session not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "update"
+            }
+        },
+        "/v1/checkouts/client/{client_secret}": {
+            "get": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "Get Checkout Session from Client",
+                "description": "Get a checkout session by client secret.",
+                "operationId": "client_get",
+                "parameters": [
+                    {
+                        "name": "client_secret",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "The checkout session client secret.",
+                            "title": "Client Secret"
+                        },
+                        "description": "The checkout session client secret."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutPublic"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Checkout session not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -14788,7 +15149,139 @@
                     }
                 },
                 "x-speakeasy-group": "checkouts",
-                "x-speakeasy-name-override": "get"
+                "x-speakeasy-name-override": "client_get"
+            },
+            "patch": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "Update Checkout Session from Client",
+                "description": "Update a checkout session by client secret.",
+                "operationId": "client_update",
+                "parameters": [
+                    {
+                        "name": "client_secret",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "The checkout session client secret.",
+                            "title": "Client Secret"
+                        },
+                        "description": "The checkout session client secret."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutUpdatePublic"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout session updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutPublic"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Checkout session not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "client_update"
+            }
+        },
+        "/v1/checkouts/client/{client_secret}/confirm": {
+            "post": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "Confirm Checkout Session from Client",
+                "description": "Confirm a checkout session by client secret.\n\nOrders and subscriptions will be processed.",
+                "operationId": "client_confirm",
+                "parameters": [
+                    {
+                        "name": "client_secret",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "The checkout session client secret.",
+                            "title": "Client Secret"
+                        },
+                        "description": "The checkout session client secret."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutConfirmStripe"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout session confirmed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutPublic"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Checkout session not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "client_confirm"
             }
         },
         "/v1/files/": {
@@ -16229,6 +16722,75 @@
                 ],
                 "title": "AccountType"
             },
+            "Address": {
+                "properties": {
+                    "line1": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Line1"
+                    },
+                    "line2": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Line2"
+                    },
+                    "postal_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Postal Code"
+                    },
+                    "city": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "City"
+                    },
+                    "state": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "State"
+                    },
+                    "country": {
+                        "type": "string",
+                        "pattern": "^\\w{2}$",
+                        "title": "Country"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "country"
+                ],
+                "title": "Address"
+            },
             "AdvertisementCampaign": {
                 "properties": {
                     "created_at": {
@@ -17558,6 +18120,8 @@
                     "user:read",
                     "organizations:read",
                     "organizations:write",
+                    "checkouts:read",
+                    "checkouts:write",
                     "products:read",
                     "products:write",
                     "benefits:read",
@@ -18737,7 +19301,7 @@
                     },
                     "grants": {
                         "items": {
-                            "$ref": "#/components/schemas/BenefitGrant"
+                            "$ref": "#/components/schemas/BenefitGrantSubscriber"
                         },
                         "type": "array",
                         "title": "Grants"
@@ -19778,33 +20342,6 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
-                    "properties": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                            }
-                        ],
-                        "title": "Properties",
-                        "description": "The properties of the grant."
-                    },
                     "subscription_id": {
                         "anyOf": [
                             {
@@ -19842,6 +20379,32 @@
                         "format": "uuid4",
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
+                    },
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                            }
+                        ],
+                        "title": "Properties"
                     }
                 },
                 "type": "object",
@@ -19851,14 +20414,13 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
-                    "benefit_id"
+                    "benefit_id",
+                    "properties"
                 ],
-                "title": "BenefitGrant",
-                "description": "A grant of a benefit to a user."
+                "title": "BenefitGrant"
             },
             "BenefitGrantAds": {
                 "properties": {
@@ -19923,9 +20485,6 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
-                    "properties": {
-                        "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                    },
                     "subscription_id": {
                         "anyOf": [
                             {
@@ -19963,6 +20522,9 @@
                         "format": "uuid4",
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitGrantAdsSubscriberProperties"
                     }
                 },
                 "type": "object",
@@ -19972,15 +20534,28 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
-                    "benefit_id"
+                    "benefit_id",
+                    "properties"
                 ],
                 "title": "BenefitGrantAds"
             },
             "BenefitGrantAdsProperties": {
+                "properties": {
+                    "advertisement_campaign_id": {
+                        "type": "string",
+                        "title": "Advertisement Campaign Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "advertisement_campaign_id"
+                ],
+                "title": "BenefitGrantAdsProperties"
+            },
+            "BenefitGrantAdsSubscriberProperties": {
                 "properties": {
                     "advertisement_campaign_id": {
                         "anyOf": [
@@ -19997,7 +20572,7 @@
                     }
                 },
                 "type": "object",
-                "title": "BenefitGrantAdsProperties"
+                "title": "BenefitGrantAdsSubscriberProperties"
             },
             "BenefitGrantArticlesProperties": {
                 "properties": {},
@@ -20031,8 +20606,7 @@
                 "properties": {
                     "files": {
                         "items": {
-                            "type": "string",
-                            "format": "uuid"
+                            "type": "string"
                         },
                         "type": "array",
                         "title": "Files"
@@ -20046,8 +20620,7 @@
                     "repository_id": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "format": "uuid"
+                                "type": "string"
                             },
                             {
                                 "type": "null"
@@ -20141,8 +20714,139 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "The ID of the subscription that granted this benefit."
+                    },
+                    "order_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order Id",
+                        "description": "The ID of the order that granted this benefit."
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id",
+                        "description": "The ID of the user concerned by this grant."
+                    },
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id",
+                        "description": "The ID of the benefit concerned by this grant."
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "is_granted",
+                    "is_revoked",
+                    "subscription_id",
+                    "order_id",
+                    "user_id",
+                    "benefit_id",
+                    "properties"
+                ],
+                "title": "BenefitGrantLicenseKeys"
+            },
+            "BenefitGrantLicenseKeysProperties": {
+                "properties": {
+                    "license_key_id": {
+                        "type": "string",
+                        "title": "License Key Id"
+                    },
+                    "display_key": {
+                        "type": "string",
+                        "title": "Display Key"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitGrantLicenseKeysProperties"
+            },
+            "BenefitGrantSubscriber": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the grant."
+                    },
+                    "granted_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Granted At",
+                        "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+                    },
+                    "is_granted": {
+                        "type": "boolean",
+                        "title": "Is Granted",
+                        "description": "Whether the benefit is granted."
+                    },
+                    "revoked_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Revoked At",
+                        "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+                    },
+                    "is_revoked": {
+                        "type": "boolean",
+                        "title": "Is Revoked",
+                        "description": "Whether the benefit is revoked."
                     },
                     "subscription_id": {
                         "anyOf": [
@@ -20190,31 +20894,12 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
                     "benefit_id"
                 ],
-                "title": "BenefitGrantLicenseKeys"
-            },
-            "BenefitGrantLicenseKeysProperties": {
-                "properties": {
-                    "license_key_id": {
-                        "type": "string",
-                        "title": "License Key Id"
-                    },
-                    "display_key": {
-                        "type": "string",
-                        "title": "Display Key"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "license_key_id",
-                    "display_key"
-                ],
-                "title": "BenefitGrantLicenseKeysProperties"
+                "title": "BenefitGrantSubscriber"
             },
             "BenefitGrantWebhook": {
                 "properties": {
@@ -20279,33 +20964,6 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
-                    "properties": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                            }
-                        ],
-                        "title": "Properties",
-                        "description": "The properties of the grant."
-                    },
                     "subscription_id": {
                         "anyOf": [
                             {
@@ -20344,6 +21002,32 @@
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
                     },
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                            }
+                        ],
+                        "title": "Properties"
+                    },
                     "benefit": {
                         "anyOf": [
                             {
@@ -20373,30 +21057,25 @@
                     "previous_properties": {
                         "anyOf": [
                             {
-                                "anyOf": [
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                                    }
-                                ],
-                                "description": "The properties of the grant."
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
                             },
                             {
                                 "type": "null"
@@ -20412,11 +21091,11 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
                     "benefit_id",
+                    "properties",
                     "benefit"
                 ],
                 "title": "BenefitGrantWebhook"
@@ -20926,12 +21605,83 @@
             },
             "Checkout": {
                 "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
                     "id": {
                         "type": "string",
+                        "format": "uuid4",
                         "title": "Id",
-                        "description": "The ID of the checkout."
+                        "description": "The ID of the object."
                     },
-                    "url": {
+                    "payment_processor": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
+                            }
+                        ],
+                        "description": "Payment processor used."
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CheckoutStatus"
+                            }
+                        ],
+                        "description": "Status of the checkout session."
+                    },
+                    "client_secret": {
+                        "type": "string",
+                        "title": "Client Secret",
+                        "description": "Client secret used to update and complete the checkout session from the client."
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At",
+                        "description": "Expiration date and time of the checkout session."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "tax_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tax Amount",
+                        "description": "Computed tax amount to pay in cents."
+                    },
+                    "currency": {
                         "anyOf": [
                             {
                                 "type": "string"
@@ -20940,13 +21690,39 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Url",
-                        "description": "URL the customer should be redirected to complete the purchase."
+                        "title": "Currency",
+                        "description": "Currency code of the checkout session."
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "ID of the product to checkout."
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout."
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Name of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Name"
                     },
                     "customer_email": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
                             },
                             {
                                 "type": "null"
@@ -20954,7 +21730,342 @@
                         ],
                         "title": "Customer Email"
                     },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
+                    },
+                    "customer_billing_address": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                ],
+                                "description": "Billing address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "payment_processor_metadata": {
+                        "type": "object",
+                        "title": "Payment Processor Metadata"
+                    },
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Metadata",
+                        "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "payment_processor",
+                    "status",
+                    "client_secret",
+                    "expires_at",
+                    "amount",
+                    "tax_amount",
+                    "currency",
+                    "product_id",
+                    "product_price_id",
+                    "customer_name",
+                    "customer_email",
+                    "customer_ip_address",
+                    "customer_billing_address",
+                    "payment_processor_metadata",
+                    "metadata"
+                ],
+                "title": "Checkout",
+                "description": "Checkout session data retrieved using an access token."
+            },
+            "CheckoutConfirmStripe": {
+                "properties": {
+                    "product_price_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout. Must correspond to a price linked to the same product."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
                     "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Name of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Name"
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
+                    },
+                    "customer_billing_address": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                ],
+                                "description": "Billing address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "confirmation_token_id": {
+                        "type": "string",
+                        "title": "Confirmation Token Id",
+                        "description": "ID of the Stripe confirmation token."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "confirmation_token_id"
+                ],
+                "title": "CheckoutConfirmStripe",
+                "description": "Confirm a checkout session using a Stripe confirmation token."
+            },
+            "CheckoutCreate": {
+                "properties": {
+                    "payment_processor": {
+                        "type": "string",
+                        "enum": [
+                            "stripe"
+                        ],
+                        "const": "stripe",
+                        "title": "Payment Processor",
+                        "description": "Payment processor to use. Currently only Stripe is supported."
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Name of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Name"
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
+                    },
+                    "customer_billing_address": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                ],
+                                "description": "Billing address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "user_metadata": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "User Metadata",
+                        "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "payment_processor",
+                    "product_price_id"
+                ],
+                "title": "CheckoutCreate",
+                "description": "Create a new checkout session."
+            },
+            "CheckoutPublic": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "payment_processor": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
+                            }
+                        ],
+                        "description": "Payment processor used."
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CheckoutStatus"
+                            }
+                        ],
+                        "description": "Status of the checkout session."
+                    },
+                    "client_secret": {
+                        "type": "string",
+                        "title": "Client Secret",
+                        "description": "Client secret used to update and complete the checkout session from the client."
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At",
+                        "description": "Expiration date and time of the checkout session."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "tax_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tax Amount",
+                        "description": "Computed tax amount to pay in cents."
+                    },
+                    "currency": {
                         "anyOf": [
                             {
                                 "type": "string"
@@ -20963,7 +22074,77 @@
                                 "type": "null"
                             }
                         ],
+                        "title": "Currency",
+                        "description": "Currency code of the checkout session."
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "ID of the product to checkout."
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout."
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Name of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Customer Name"
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
+                    },
+                    "customer_billing_address": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                ],
+                                "description": "Billing address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "payment_processor_metadata": {
+                        "type": "object",
+                        "title": "Payment Processor Metadata"
                     },
                     "product": {
                         "$ref": "#/components/schemas/Product"
@@ -20974,44 +22155,53 @@
                 },
                 "type": "object",
                 "required": [
+                    "created_at",
+                    "modified_at",
                     "id",
-                    "customer_email",
+                    "payment_processor",
+                    "status",
+                    "client_secret",
+                    "expires_at",
+                    "amount",
+                    "tax_amount",
+                    "currency",
+                    "product_id",
+                    "product_price_id",
                     "customer_name",
+                    "customer_email",
+                    "customer_ip_address",
+                    "customer_billing_address",
+                    "payment_processor_metadata",
                     "product",
                     "product_price"
                 ],
-                "title": "Checkout",
-                "description": "A checkout session."
+                "title": "CheckoutPublic",
+                "description": "Checkout session data retrieved using the client secret."
             },
-            "CheckoutCreate": {
+            "CheckoutSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "expires_at",
+                    "-expires_at"
+                ],
+                "title": "CheckoutSortProperty"
+            },
+            "CheckoutStatus": {
+                "type": "string",
+                "enum": [
+                    "open",
+                    "expired",
+                    "confirmed",
+                    "succeeded",
+                    "failed"
+                ],
+                "title": "CheckoutStatus"
+            },
+            "CheckoutUpdate": {
                 "properties": {
                     "product_price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Price Id",
-                        "description": "ID of the product price to subscribe to."
-                    },
-                    "success_url": {
-                        "type": "string",
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Success Url",
-                        "description": "URL where the customer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the checkout session id."
-                    },
-                    "customer_email": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "email"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Email",
-                        "description": "If you already know the email of your customer, you can set it. It'll be pre-filled on the checkout page."
-                    },
-                    "subscription_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -21021,16 +22211,178 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Subscription Id",
-                        "description": "ID of the subscription to update. If not provided, a new subscription will be created."
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout. Must correspond to a price linked to the same product."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Name of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Name"
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
+                    },
+                    "customer_billing_address": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                ],
+                                "description": "Billing address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object",
+                                "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata"
                     }
                 },
                 "type": "object",
-                "required": [
-                    "product_price_id",
-                    "success_url"
-                ],
-                "title": "CheckoutCreate"
+                "title": "CheckoutUpdate",
+                "description": "Update an existing checkout session using an access token."
+            },
+            "CheckoutUpdatePublic": {
+                "properties": {
+                    "product_price_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout. Must correspond to a price linked to the same product."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "description": "Name of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Name"
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
+                    },
+                    "customer_billing_address": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                ],
+                                "description": "Billing address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "title": "CheckoutUpdatePublic",
+                "description": "Update an existing checkout session using the client secret."
             },
             "ConfirmIssue": {
                 "properties": {
@@ -23549,6 +24901,26 @@
                 ],
                 "title": "ListResource[Benefit]"
             },
+            "ListResource_Checkout_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/Checkout"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "ListResource[Checkout]"
+            },
             "ListResource_Donation_": {
                 "properties": {
                     "items": {
@@ -25573,7 +26945,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -25735,7 +27107,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -25856,7 +27228,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -27248,15 +28620,6 @@
                     "exp_year"
                 ],
                 "title": "PaymentMethod"
-            },
-            "PaymentProcessor": {
-                "type": "string",
-                "enum": [
-                    "stripe",
-                    "open_collective"
-                ],
-                "title": "PaymentProcessor",
-                "description": "Supported payment processors."
             },
             "PayoutCreate": {
                 "properties": {
@@ -29990,6 +31353,8 @@
                     "web_default",
                     "organizations:read",
                     "organizations:write",
+                    "checkouts:read",
+                    "checkouts:write",
                     "products:read",
                     "products:write",
                     "benefits:read",
@@ -30491,7 +31856,7 @@
                     "processor": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/PaymentProcessor"
+                                "$ref": "#/components/schemas/polar__models__transaction__PaymentProcessor"
                             },
                             {
                                 "type": "null"
@@ -30717,7 +32082,7 @@
                     "processor": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/PaymentProcessor"
+                                "$ref": "#/components/schemas/polar__models__transaction__PaymentProcessor"
                             },
                             {
                                 "type": "null"
@@ -30997,7 +32362,7 @@
                     "processor": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/PaymentProcessor"
+                                "$ref": "#/components/schemas/polar__models__transaction__PaymentProcessor"
                             },
                             {
                                 "type": "null"
@@ -33800,6 +35165,23 @@
                     "token"
                 ],
                 "title": "Body_magic_link:magic_link.authenticate"
+            },
+            "polar__enums__PaymentProcessor": {
+                "type": "string",
+                "enum": [
+                    "stripe"
+                ],
+                "const": "stripe",
+                "title": "PaymentProcessor"
+            },
+            "polar__models__transaction__PaymentProcessor": {
+                "type": "string",
+                "enum": [
+                    "stripe",
+                    "open_collective"
+                ],
+                "title": "PaymentProcessor",
+                "description": "Supported payment processors."
             },
             "BenefitDiscord": {
                 "properties": {

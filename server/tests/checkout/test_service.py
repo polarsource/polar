@@ -664,3 +664,32 @@ class TestHandleStripeSuccess:
         assert checkout.status == CheckoutStatus.succeeded
         stripe_service_mock.create_subscription.assert_called_once()
         stripe_service_mock.create_invoice.assert_not_called()
+
+    async def test_valid_one_time_custom(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        checkout_one_time_custom.status = CheckoutStatus.confirmed
+        checkout_one_time_custom.amount = 4242
+        await save_fixture(checkout_one_time_custom)
+
+        stripe_service_mock.create_price_for_product.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOM_PRICE_ID"
+        )
+
+        checkout = await checkout_service.handle_stripe_success(
+            session, checkout_one_time_custom.id, build_stripe_setup_intent()
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        stripe_service_mock.create_price_for_product.assert_called_once()
+        stripe_service_mock.create_subscription.assert_not_called()
+
+        stripe_service_mock.create_invoice.assert_called_once()
+        assert (
+            stripe_service_mock.create_invoice.call_args[1]["price"]
+            == "STRIPE_CUSTOM_PRICE_ID"
+        )

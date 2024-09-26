@@ -350,11 +350,20 @@ class StripeService:
         params: stripe_lib.Price.CreateParams,
         *,
         set_default: bool = False,
+        idempotency_key: str | None = None,
     ) -> stripe_lib.Price:
         params = {**params, "product": product}
+        if idempotency_key is not None:
+            params["idempotency_key"] = idempotency_key
         price = stripe_lib.Price.create(**params)
         if set_default:
-            stripe_lib.Product.modify(product, default_price=price.id)
+            stripe_lib.Product.modify(
+                product,
+                default_price=price.id,
+                idempotency_key=f"{idempotency_key}_set_default"
+                if idempotency_key is not None
+                else None,
+            )
         return price
 
     def update_product(

@@ -214,22 +214,29 @@ class OrderService(ResourceServiceReader[Order]):
             raise NotAnOrderInvoice(invoice.id)
 
         # Get price and product
-        stripe_price_ids = set[str]()
+        stripe_prices: list[stripe_lib.Price] = []
         for line in invoice.lines.data:
             if not line.proration and line.price is not None:
-                stripe_price_ids.add(line.price.id)
+                stripe_prices.append(line.price)
 
         product_price: ProductPrice | None = None
         # For invoices with only one line item, get the price from the line item
-        if len(stripe_price_ids) == 1:
-            stripe_price_id = stripe_price_ids.pop()
-            product_price = await product_price_service.get_by_stripe_price_id(
-                session, stripe_price_id
-            )
+        if len(stripe_prices) == 1:
+            stripe_price = stripe_prices.pop()
+            # For custom prices, we create ad-hoc prices on Stripe,
+            # but set the "father" price ID as metadata
+            if stripe_price.metadata and stripe_price.metadata.get("product_price_id"):
+                product_price = await product_price_service.get_by_id(
+                    session, uuid.UUID(stripe_price.metadata["product_price_id"])
+                )
+            else:
+                product_price = await product_price_service.get_by_stripe_price_id(
+                    session, stripe_price.id
+                )
             if product_price is None:
-                raise ProductPriceDoesNotExist(invoice.id, stripe_price_id)
+                raise ProductPriceDoesNotExist(invoice.id, stripe_price.id)
         # For invoices with only prorations, try to get the price from the subscription metadata
-        elif len(stripe_price_ids) == 0:
+        elif len(stripe_prices) == 0:
             if (
                 invoice.subscription_details is None
                 or invoice.subscription_details.metadata is None

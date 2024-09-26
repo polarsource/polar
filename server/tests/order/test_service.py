@@ -46,7 +46,7 @@ def construct_stripe_invoice(
     subscription_id: str | None = "SUBSCRIPTION_ID",
     subscription_details: dict[str, Any] | None = None,
     customer_id: str = "CUSTOMER_ID",
-    lines: list[tuple[str, bool]] = [("PRICE_ID", False)],
+    lines: list[tuple[str, bool, dict[str, str] | None]] = [("PRICE_ID", False, None)],
     metadata: dict[str, str] = {},
     billing_reason: str = "subscription_create",
 ) -> stripe_lib.Invoice:
@@ -62,8 +62,11 @@ def construct_stripe_invoice(
             "customer": customer_id,
             "lines": {
                 "data": [
-                    {"price": {"id": price_id}, "proration": proration}
-                    for price_id, proration in lines
+                    {
+                        "price": {"id": price_id, "metadata": metadata or {}},
+                        "proration": proration,
+                    }
+                    for price_id, proration, metadata in lines
                 ]
             },
             "metadata": metadata,
@@ -214,11 +217,13 @@ class TestCreateOrderFromStripe:
         "lines",
         (
             [],
-            [("PRICE_1", False), ("PRICE_2", False)],
+            [("PRICE_1", False, None), ("PRICE_2", False, None)],
         ),
     )
     async def test_invalid_lines(
-        self, lines: list[tuple[str, bool]], session: AsyncSession
+        self,
+        lines: list[tuple[str, bool, dict[str, str] | None]],
+        session: AsyncSession,
     ) -> None:
         invoice = construct_stripe_invoice(lines=lines)
         with pytest.raises(CantDetermineInvoicePrice):
@@ -239,7 +244,7 @@ class TestCreateOrderFromStripe:
     ) -> None:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
-            lines=[(product.prices[0].stripe_price_id, False)],
+            lines=[(product.prices[0].stripe_price_id, False, None)],
         )
 
         payment_transaction = await create_transaction(
@@ -284,9 +289,9 @@ class TestCreateOrderFromStripe:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[
-                ("PRICE_1", True),
-                ("PRICE_2", True),
-                (product.prices[0].stripe_price_id, False),
+                ("PRICE_1", True, None),
+                ("PRICE_2", True, None),
+                (product.prices[0].stripe_price_id, False, None),
             ],
         )
 
@@ -315,8 +320,8 @@ class TestCreateOrderFromStripe:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[
-                ("PRICE_1", True),
-                ("PRICE_2", True),
+                ("PRICE_1", True, None),
+                ("PRICE_2", True, None),
             ],
             subscription_details={
                 "metadata": {"product_price_id": str(product.prices[0].id)}
@@ -350,7 +355,7 @@ class TestCreateOrderFromStripe:
     ) -> None:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
-            lines=[(product.prices[0].stripe_price_id, False)],
+            lines=[(product.prices[0].stripe_price_id, False, None)],
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -429,7 +434,7 @@ class TestCreateOrderFromStripe:
         user: User,
     ) -> None:
         invoice = construct_stripe_invoice(
-            lines=[(product_one_time.prices[0].stripe_price_id, False)],
+            lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
             subscription_id=None,
             billing_reason="manual",
         )
@@ -494,7 +499,17 @@ class TestCreateOrderFromStripe:
         user: User,
     ) -> None:
         invoice = construct_stripe_invoice(
-            lines=[(product_one_time_custom_price.prices[0].stripe_price_id, False)],
+            lines=[
+                (
+                    "CUSTOM_STRIPE_PRICE_ID",
+                    False,
+                    {
+                        "product_price_id": str(
+                            product_one_time_custom_price.prices[0].id
+                        )
+                    },
+                )
+            ],
             subscription_id=None,
             billing_reason="manual",
         )
@@ -561,7 +576,9 @@ class TestCreateOrderFromStripe:
             charge_id=None,
             total=0,
             tax=0,
-            lines=[(product_one_time_free_price.prices[0].stripe_price_id, False)],
+            lines=[
+                (product_one_time_free_price.prices[0].stripe_price_id, False, None)
+            ],
             subscription_id=None,
             billing_reason="manual",
         )

@@ -501,12 +501,36 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         }
         idempotency_key = f"checkout_{checkout.id}"
 
+        stripe_price_id = product_price.stripe_price_id
+        # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
+        if isinstance(product_price, ProductPriceCustom):
+            assert checkout.amount is not None
+            assert checkout.currency is not None
+            assert checkout.product.stripe_product_id is not None
+            price_params: stripe_lib.Price.CreateParams = {
+                "unit_amount": checkout.amount,
+                "currency": checkout.currency,
+                "metadata": {
+                    "product_price_id": str(checkout.product_price_id),
+                },
+            }
+            if product_price.is_recurring:
+                price_params["recurring"] = {
+                    "interval": product_price.recurring_interval.as_literal(),
+                }
+            stripe_custom_price = stripe_service.create_price_for_product(
+                checkout.product.stripe_product_id,
+                price_params,
+                idempotency_key=f"{idempotency_key}_price",
+            )
+            stripe_price_id = stripe_custom_price.id
+
         if product_price.is_recurring:
             stripe_service.create_subscription(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 default_payment_method=stripe_payment_method_id,
-                price=product_price.stripe_price_id,
+                price=stripe_price_id,
                 metadata=metadata,
                 idempotency_key=idempotency_key,
             )
@@ -515,7 +539,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 default_payment_method=stripe_payment_method_id,
-                price=product_price.stripe_price_id,
+                price=stripe_price_id,
                 metadata=metadata,
                 idempotency_key=idempotency_key,
             )

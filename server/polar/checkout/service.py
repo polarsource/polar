@@ -195,20 +195,48 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        if (
-            not isinstance(price, ProductPriceCustom)
-            and checkout_create.amount is not None
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "amount"),
-                        "msg": "Amount can only be set on custom prices.",
-                        "input": checkout_create.amount,
-                    }
-                ]
-            )
+        if checkout_create.amount is not None:
+            if not isinstance(price, ProductPriceCustom):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "amount"),
+                            "msg": "Amount can only be set on custom prices.",
+                            "input": checkout_create.amount,
+                        }
+                    ]
+                )
+            elif (
+                price.minimum_amount is not None
+                and checkout_create.amount < price.minimum_amount
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "greater_than_equal",
+                            "loc": ("body", "amount"),
+                            "msg": "Amount is below minimum.",
+                            "input": checkout_create.amount,
+                            "ctx": {"ge": price.minimum_amount},
+                        }
+                    ]
+                )
+            elif (
+                price.maximum_amount is not None
+                and checkout_create.amount > price.maximum_amount
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "less_than_equal",
+                            "loc": ("body", "amount"),
+                            "msg": "Amount is above maximum.",
+                            "input": checkout_create.amount,
+                            "ctx": {"le": price.maximum_amount},
+                        }
+                    ]
+                )
 
         product = cast(Product, await product_service.get_loaded(session, product.id))
 
@@ -219,6 +247,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency = price.price_currency
         elif isinstance(price, ProductPriceCustom):
             currency = price.price_currency
+            if amount is None:
+                amount = price.preset_amount
 
         checkout = Checkout(
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
@@ -304,7 +334,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 checkout.currency = None
 
         if checkout_update.amount is not None:
-            if not isinstance(checkout.product_price, ProductPriceCustom):
+            price = checkout.product_price
+            if not isinstance(price, ProductPriceCustom):
                 raise PolarRequestValidationError(
                     [
                         {
@@ -312,6 +343,36 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                             "loc": ("body", "amount"),
                             "msg": "Amount can only be set on custom prices.",
                             "input": checkout_update.amount,
+                        }
+                    ]
+                )
+            elif (
+                price.minimum_amount is not None
+                and checkout_update.amount < price.minimum_amount
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "greater_than_equal",
+                            "loc": ("body", "amount"),
+                            "msg": "Amount is below minimum.",
+                            "input": checkout_update.amount,
+                            "ctx": {"ge": price.minimum_amount},
+                        }
+                    ]
+                )
+            elif (
+                price.maximum_amount is not None
+                and checkout_update.amount > price.maximum_amount
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "less_than_equal",
+                            "loc": ("body", "amount"),
+                            "msg": "Amount is above maximum.",
+                            "input": checkout_update.amount,
+                            "ctx": {"le": price.maximum_amount},
                         }
                     ]
                 )

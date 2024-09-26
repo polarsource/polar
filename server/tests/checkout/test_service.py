@@ -219,6 +219,37 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    @pytest.mark.parametrize("amount", [500, 10000])
+    async def test_amount_invalid_limits(
+        self,
+        amount: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time_custom_price: Product,
+    ) -> None:
+        price = product_one_time_custom_price.prices[0]
+        assert isinstance(price, ProductPriceCustom)
+        price.minimum_amount = 1000
+        price.maximum_amount = 5000
+        await save_fixture(price)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=product_one_time_custom_price.prices[0].id,
+                    amount=amount,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid_fixed_price(
         self,
         session: AsyncSession,
@@ -277,6 +308,7 @@ class TestCreate:
     async def test_valid_custom_price(
         self,
         amount: int | None,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
@@ -284,6 +316,8 @@ class TestCreate:
     ) -> None:
         price = product_one_time_custom_price.prices[0]
         assert isinstance(price, ProductPriceCustom)
+        price.preset_amount = 4242
+
         checkout = await checkout_service.create(
             session,
             CheckoutCreate(
@@ -296,7 +330,10 @@ class TestCreate:
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time_custom_price
-        assert checkout.amount == amount
+        if amount is None:
+            assert checkout.amount == price.preset_amount
+        else:
+            assert checkout.amount == amount
         assert checkout.currency == price.price_currency
 
 
@@ -368,6 +405,30 @@ class TestUpdate:
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     amount=1000,
+                ),
+            )
+
+    @pytest.mark.parametrize("amount", [500, 10000])
+    async def test_amount_update_invalid_limits(
+        self,
+        amount: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        price = checkout_one_time_custom.product.prices[0]
+        assert isinstance(price, ProductPriceCustom)
+        price.minimum_amount = 1000
+        price.maximum_amount = 5000
+        await save_fixture(price)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_custom,
+                CheckoutUpdate(
+                    amount=amount,
                 ),
             )
 

@@ -2593,13 +2593,13 @@ semver = ["semver (>=3.0.2)"]
 
 [[package]]
 name = "pydantic-settings"
-version = "2.4.0"
+version = "2.5.2"
 description = "Settings management using Pydantic"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pydantic_settings-2.4.0-py3-none-any.whl", hash = "sha256:bb6849dc067f1687574c12a639e231f3a6feeed0a12d710c1382045c5db1c315"},
-    {file = "pydantic_settings-2.4.0.tar.gz", hash = "sha256:ed81c3a0f46392b4d7c0a565c05884e6e54b3456e6f0fe4d8814981172dc9a88"},
+    {file = "pydantic_settings-2.5.2-py3-none-any.whl", hash = "sha256:2c912e55fd5794a59bf8c832b9de832dcfdf4778d79ff79b708744eed499a907"},
+    {file = "pydantic_settings-2.5.2.tar.gz", hash = "sha256:f90b139682bee4d2065273d5185d71d37ea46cfe57e1b5ae184fc6a0b2484ca0"},
 ]
 
 [package.dependencies]
@@ -4100,4 +4100,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "20f6080ef5b63b1a3be6b0d68b052fe37775467e40b78ebe98b207f3843998b2"
+content-hash = "aefbc8850fc0b02c12a28864ca2c49fff3529325d0d7b183160da0e82a97b244"

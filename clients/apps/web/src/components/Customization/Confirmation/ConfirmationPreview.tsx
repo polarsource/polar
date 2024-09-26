@@ -1,9 +1,10 @@
-import { Confirmation } from '@/components/Checkout/Confirmation'
+import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { CheckoutStatus } from '@polar-sh/sdk'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
 import { CHECKOUT_PREVIEW } from '../utils'
@@ -27,7 +28,11 @@ export const ConfirmationPreview = () => {
         {org.profile_settings?.enabled && (
           <StorefrontHeader organization={org} />
         )}
-        <Confirmation organization={org} checkout={CHECKOUT_PREVIEW} disabled />
+        <CheckoutConfirmation
+          organization={org}
+          checkout={{ ...CHECKOUT_PREVIEW, status: CheckoutStatus.SUCCEEDED }}
+          disabled
+        />
       </div>
     </ShadowBox>
   )

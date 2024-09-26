@@ -50,7 +50,7 @@ export const CheckoutConfirmation = ({
   }, [email, router, organization, sendMagicLink])
 
   useEffect(() => {
-    if (disabled) {
+    if (disabled || status !== CheckoutStatus.CONFIRMED) {
       return
     }
     let interval = window.setInterval(async () => {
@@ -60,7 +60,7 @@ export const CheckoutConfirmation = ({
       setCheckout(updatedCheckout)
     }, 1000)
     return () => clearInterval(interval)
-  }, [checkout, disabled])
+  }, [checkout, status, disabled])
 
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">

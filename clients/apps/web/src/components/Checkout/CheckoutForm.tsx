@@ -1,11 +1,12 @@
 'use client'
 
-import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import {
   Address,
+  CheckoutConfirmStripe,
   CheckoutPublic,
+  CheckoutUpdatePublic,
   ResponseError,
   SubscriptionRecurringInterval,
   ValidationError,
@@ -211,33 +212,28 @@ const BaseCheckoutForm = ({
 }
 
 interface CheckoutFormProps {
-  checkout?: CheckoutPublic
+  checkout: CheckoutPublic
+  onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  onCheckoutConfirm?: (body: CheckoutConfirmStripe) => Promise<CheckoutPublic>
 }
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
-const StripeCheckoutForm = (
-  props: CheckoutFormProps & {
-    checkout: CheckoutPublic & { payment_processor_client_secret: string }
-  },
-) => {
+const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const router = useRouter()
   const { setError } = useFormContext<CheckoutFormData>()
-  const { checkout } = props
+  const { checkout, onCheckoutUpdate, onCheckoutConfirm } = props
   const { resolvedTheme } = useTheme()
   const [loading, setLoading] = useState(false)
 
   const onBillingAddressChange = useCallback(
     async (name: string, address: Address): Promise<void> => {
-      await api.checkouts.clientUpdate({
-        clientSecret: checkout.client_secret,
-        body: {
-          customer_name: name,
-          customer_billing_address: address,
-        },
+      onCheckoutUpdate?.({
+        customer_name: name,
+        customer_billing_address: address,
       })
     },
-    [checkout],
+    [onCheckoutUpdate],
   )
 
   const onSubmit = async (
@@ -245,7 +241,7 @@ const StripeCheckoutForm = (
     stripe: Stripe | null,
     elements: StripeElements | null,
   ) => {
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !onCheckoutConfirm) {
       return
     }
 
@@ -280,12 +276,9 @@ const StripeCheckoutForm = (
 
     let updatedCheckout: CheckoutPublic
     try {
-      updatedCheckout = await api.checkouts.clientConfirm({
-        clientSecret: checkout.client_secret,
-        body: {
-          ...data,
-          confirmation_token_id: confirmationToken.id,
-        },
+      updatedCheckout = await onCheckoutConfirm({
+        ...data,
+        confirmation_token_id: confirmationToken.id,
       })
     } catch (e) {
       if (e instanceof ResponseError) {
@@ -316,7 +309,6 @@ const StripeCheckoutForm = (
     }
 
     await router.push(`/checkout/${checkout.client_secret}/success`)
-    setLoading(false)
   }
 
   return (
@@ -393,37 +385,28 @@ const StripeCheckoutForm = (
   )
 }
 
-const DummyCheckoutForm = (props: CheckoutFormProps) => {
-  const onSubmit = async () => {
-    return
-  }
+const DummyCheckoutForm = ({ checkout }: CheckoutFormProps) => {
   return (
     <BaseCheckoutForm
-      {...props}
-      amount={5000}
-      tax_amount={1000}
-      currency="usd"
-      onSubmit={onSubmit}
+      amount={checkout.amount}
+      tax_amount={checkout.tax_amount}
+      currency={checkout.currency}
+      onSubmit={async () => {}}
       disabled={true}
     />
   )
 }
 
 export const CheckoutForm = (props: CheckoutFormProps) => {
-  const { checkout } = props
+  const {
+    checkout: { payment_processor },
+  } = props
   const form = useForm<CheckoutFormData>()
 
-  if (checkout) {
+  if (payment_processor === 'stripe') {
     return (
       <FormProvider {...form}>
-        <StripeCheckoutForm
-          {...props}
-          checkout={
-            checkout as CheckoutPublic & {
-              payment_processor_client_secret: string
-            }
-          }
-        />
+        <StripeCheckoutForm {...props} />
       </FormProvider>
     )
   }

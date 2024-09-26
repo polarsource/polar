@@ -1,16 +1,26 @@
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { Slideshow } from '@/components/Products/Slideshow'
-import { Organization, Product } from '@polar-sh/sdk'
+import {
+  CheckoutPublic,
+  CheckoutUpdatePublic,
+  Organization,
+} from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { CheckoutCard } from './CheckoutCard'
 
 export interface CheckoutInfoProps {
   organization: Organization
-  product: Product
+  checkout: CheckoutPublic
+  onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
 }
 
-export const CheckoutInfo = ({ organization, product }: CheckoutInfoProps) => {
+export const CheckoutInfo = ({
+  organization,
+  checkout,
+  onCheckoutUpdate,
+}: CheckoutInfoProps) => {
+  const { product } = checkout
   return (
     <div className="flex w-1/2 flex-col gap-y-12 p-20">
       {!organization.profile_settings?.enabled && (
@@ -45,7 +55,7 @@ export const CheckoutInfo = ({ organization, product }: CheckoutInfoProps) => {
       ) : (
         <></>
       )}
-      <CheckoutCard organization={organization} product={product} />
+      <CheckoutCard checkout={checkout} onCheckoutUpdate={onCheckoutUpdate} />
     </div>
   )
 }

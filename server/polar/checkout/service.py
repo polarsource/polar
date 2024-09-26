@@ -55,6 +55,14 @@ class CheckoutDoesNotExist(CheckoutError):
         super().__init__(message)
 
 
+class NotOpenCheckout(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        self.status = checkout.status
+        message = f"Checkout {checkout.id} is not open: {checkout.status}"
+        super().__init__(message, 403)
+
+
 class NotConfirmedCheckout(CheckoutError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
@@ -239,6 +247,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
     ) -> Checkout:
+        if checkout.status != CheckoutStatus.open:
+            raise NotOpenCheckout(checkout)
+
         if checkout_update.product_price_id is not None:
             price = await product_price_service.get_by_id(
                 session, checkout_update.product_price_id

@@ -18,6 +18,7 @@ from polar.checkout.service import (
     NoCustomerOnSetupIntent,
     NoPaymentMethodOnSetupIntent,
     NotConfirmedCheckout,
+    NotOpenCheckout,
     SetupIntentNotSucceeded,
 )
 from polar.checkout.service import checkout as checkout_service
@@ -370,6 +371,21 @@ class TestUpdate:
                 ),
             )
 
+    async def test_not_open(
+        self,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        checkout_confirmed_one_time: Checkout,
+    ) -> None:
+        with pytest.raises(NotOpenCheckout):
+            await checkout_service.update(
+                session,
+                checkout_confirmed_one_time,
+                CheckoutUpdate(
+                    customer_email="customer@example.com",
+                ),
+            )
+
     async def test_valid_price_fixed_change(
         self,
         save_fixture: SaveFixture,
@@ -440,6 +456,18 @@ class TestConfirm:
             await checkout_service.confirm(
                 session,
                 checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
+                ),
+            )
+
+    async def test_not_open(
+        self, session: AsyncSession, checkout_confirmed_one_time: Checkout
+    ) -> None:
+        with pytest.raises(NotOpenCheckout):
+            await checkout_service.confirm(
+                session,
+                checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
                     {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
                 ),

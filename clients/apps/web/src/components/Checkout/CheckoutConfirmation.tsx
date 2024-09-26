@@ -88,7 +88,7 @@ export const CheckoutConfirmation = ({
           {status === CheckoutStatus.FAILED &&
             'Please try again or contact support.'}
         </p>
-        <CheckoutCard organization={organization} product={product} />
+        <CheckoutCard checkout={checkout} disabled />
         {status === CheckoutStatus.CONFIRMED && (
           <div className="flex items-center justify-center">
             <SpinnerNoMargin className="h-8 w-8" />

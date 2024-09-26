@@ -3,51 +3,65 @@
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
+import { useRecurringInterval } from '@/hooks/products'
 import {
-  useRecurringInterval,
-  useRecurringProductPrice,
-} from '@/hooks/products'
-import { Organization, Product } from '@polar-sh/sdk'
+  CheckoutPublic,
+  CheckoutUpdatePublic,
+  SubscriptionRecurringInterval,
+} from '@polar-sh/sdk'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { useCallback } from 'react'
 
 export interface CheckoutCardProps {
-  organization: Organization
-  product: Product
+  checkout: CheckoutPublic
+  onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  disabled?: boolean
 }
 
-export const CheckoutCard = ({ organization, product }: CheckoutCardProps) => {
-  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
-    useRecurringInterval([product])
+export const CheckoutCard = ({
+  checkout,
+  onCheckoutUpdate,
+  disabled,
+}: CheckoutCardProps) => {
+  const { product, product_price } = checkout
+  const [, , hasBothIntervals] = useRecurringInterval([product])
 
-  const recurringPrice = useRecurringProductPrice(product, recurringInterval)
-  const oneTimePrice = product.prices.find((price) => price.type === 'one_time')
-  const isFixedPrice = product.prices.every(
-    (price) => price.amount_type === 'fixed',
+  const onRecurringIntervalChange = useCallback(
+    async (recurringInterval: SubscriptionRecurringInterval) => {
+      for (const price of product.prices) {
+        if (
+          price.type === 'recurring' &&
+          price.recurring_interval === recurringInterval
+        ) {
+          await onCheckoutUpdate?.({ product_price_id: price.id })
+          return
+        }
+      }
+    },
+    [product, onCheckoutUpdate],
   )
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
-      {hasBothIntervals && (
+      {!disabled && hasBothIntervals && (
         <SubscriptionTierRecurringIntervalSwitch
-          recurringInterval={recurringInterval}
-          onChange={setRecurringInterval}
+          recurringInterval={
+            product_price.type === 'recurring'
+              ? product_price.recurring_interval
+              : SubscriptionRecurringInterval.MONTH
+          }
+          onChange={onRecurringIntervalChange}
         />
       )}
       <ShadowBox className="dark:bg-polar-950 flex flex-col gap-8 bg-gray-100 md:ring-gray-100">
         <h2 className="text-xl">{product.name}</h2>
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-light">
-            {recurringPrice ? (
-              <ProductPriceLabel price={recurringPrice} />
-            ) : (
-              oneTimePrice && <ProductPriceLabel price={oneTimePrice} />
-            )}
+            <ProductPriceLabel price={product_price} />
           </h1>
-          {isFixedPrice && (
-            <p className="dark:text-polar-500 text-sm text-gray-400">
-              Before VAT and taxes
-            </p>
-          )}
+          <p className="dark:text-polar-500 text-sm text-gray-400">
+            Before VAT and taxes
+          </p>
         </div>
         {product.benefits.length > 0 ? (
           <div className="flex flex-col gap-4">

@@ -9,8 +9,18 @@ import {
   CheckoutUpdatePublic,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
+import { formatCurrencyAndAmount } from '@polarkit/lib/money'
+import Button from 'polarkit/components/ui/atoms/button'
+import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { useCallback } from 'react'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormMessage,
+} from 'polarkit/components/ui/form'
+import { useCallback, useState } from 'react'
+import { SubmitHandler, useForm } from 'react-hook-form'
 
 export interface CheckoutCardProps {
   checkout: CheckoutPublic
@@ -41,6 +51,18 @@ export const CheckoutCard = ({
     [product, onCheckoutUpdate],
   )
 
+  const form = useForm<{ amount: number }>({
+    defaultValues: { amount: checkout.amount || 0 },
+  })
+  const { control, handleSubmit } = form
+  const [updatingAmount, setUpdatingAmount] = useState(false)
+  const onAmountChangeSubmit: SubmitHandler<{ amount: number }> = useCallback(
+    async ({ amount }) => {
+      onCheckoutUpdate?.({ amount })
+      setUpdatingAmount(false)
+    },
+    [onCheckoutUpdate],
+  )
   return (
     <div className="flex w-full flex-col items-center gap-8">
       {!disabled && hasBothIntervals && (
@@ -57,7 +79,79 @@ export const CheckoutCard = ({
         <h2 className="text-xl">{product.name}</h2>
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-light">
-            <ProductPriceLabel price={product_price} />
+            {product_price.amount_type !== 'custom' && (
+              <ProductPriceLabel price={product_price} />
+            )}
+            {product_price.amount_type === 'custom' && (
+              <>
+                {disabled ? (
+                  formatCurrencyAndAmount(
+                    checkout.amount || 0,
+                    checkout.currency || 'usd',
+                  )
+                ) : (
+                  <Form {...form}>
+                    <form
+                      className="flex flex-row items-start gap-2"
+                      onSubmit={handleSubmit(onAmountChangeSubmit)}
+                    >
+                      <FormField
+                        control={control}
+                        disabled={!updatingAmount}
+                        name="amount"
+                        rules={{
+                          min: {
+                            value: product_price.minimum_amount || 50,
+                            message: `Price must be greater than ${(product_price.minimum_amount || 50) / 100}`,
+                          },
+                          ...(product_price.maximum_amount
+                            ? {
+                                max: {
+                                  value: product_price.maximum_amount,
+                                  message: `Price must be less than ${product_price.maximum_amount / 100}`,
+                                },
+                              }
+                            : {}),
+                        }}
+                        render={({ field }) => {
+                          return (
+                            <FormItem>
+                              <MoneyInput
+                                className="rounded-lg p-8 text-4xl font-light"
+                                name={field.name}
+                                value={field.value || undefined}
+                                onChange={field.onChange}
+                                placeholder={0}
+                                preSlot={<span className="text-2xl">$</span>}
+                                disabled={field.disabled}
+                              />
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
+                      />
+                      {!updatingAmount && (
+                        <Button
+                          type="button"
+                          onClick={() => setUpdatingAmount(true)}
+                          className="rounded-lg p-8 text-lg"
+                        >
+                          Change
+                        </Button>
+                      )}
+                      {updatingAmount && (
+                        <Button
+                          type="submit"
+                          className="rounded-lg p-8 text-lg"
+                        >
+                          Submit
+                        </Button>
+                      )}
+                    </form>
+                  </Form>
+                )}
+              </>
+            )}
           </h1>
           <p className="dark:text-polar-500 text-sm text-gray-400">
             Before VAT and taxes

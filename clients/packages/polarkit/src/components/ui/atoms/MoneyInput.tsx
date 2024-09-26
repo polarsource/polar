@@ -12,6 +12,8 @@ interface Props {
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void
   value?: number
   className?: string
+  disabled?: boolean
+  preSlot?: React.ReactNode
   postSlot?: React.ReactNode
 }
 
@@ -30,10 +32,12 @@ const MoneyInput = (props: Props) => {
     name,
     value,
     placeholder,
+    preSlot,
     postSlot,
     onChange: _onChange,
     onBlur,
     onFocus,
+    disabled,
   } = props
   const [internalValue, setInternalValue] = useState<string | undefined>(
     value ? (value / 100).toFixed(2) : undefined,
@@ -71,13 +75,20 @@ const MoneyInput = (props: Props) => {
       onChange={onChange}
       onInput={onInput}
       placeholder={placeholder ? `${placeholder / 100}` : undefined}
-      preSlot={<AttachMoneyOutlined className="text-lg" fontSize="inherit" />}
+      preSlot={
+        preSlot ? (
+          preSlot
+        ) : (
+          <AttachMoneyOutlined className="text-lg" fontSize="inherit" />
+        )
+      }
       postSlot={postSlot}
       onBlur={onBlur}
       onFocus={onFocus}
       onWheel={(e) => {
         ;(e.target as HTMLInputElement).blur()
       }}
+      disabled={disabled}
     />
   )
 }

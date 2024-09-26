@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
-import { PRODUCT_PREVIEW } from '../utils'
+import { CHECKOUT_PREVIEW } from '../utils'
 
 export const CheckoutPreview = () => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
@@ -29,7 +29,7 @@ export const CheckoutPreview = () => {
         {org.profile_settings?.enabled && (
           <StorefrontHeader organization={org} />
         )}
-        <Checkout organization={org} product={PRODUCT_PREVIEW} disabled />
+        <Checkout organization={org} checkout={CHECKOUT_PREVIEW} />
       </div>
     </ShadowBox>
   )

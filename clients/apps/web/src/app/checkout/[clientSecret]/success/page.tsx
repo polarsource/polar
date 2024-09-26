@@ -1,6 +1,8 @@
+import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getCheckoutByClientSecret } from '@/utils/checkout'
 import { getOrganizationById } from '@/utils/organization'
+import { redirect } from 'next/navigation'
 
 export default async function Page({
   params: { clientSecret },
@@ -10,9 +12,16 @@ export default async function Page({
   const api = getServerSideAPI()
 
   const checkout = await getCheckoutByClientSecret(api, clientSecret)
+
+  if (checkout.status === 'open') {
+    redirect(`/checkout/${clientSecret}`)
+  }
+
   const organization = await getOrganizationById(
     api,
     checkout.product.organization_id,
   )
-  return <div>{checkout.amount}</div>
+  return (
+    <CheckoutConfirmation checkout={checkout} organization={organization} />
+  )
 }

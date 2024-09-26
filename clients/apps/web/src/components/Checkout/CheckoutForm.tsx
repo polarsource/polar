@@ -260,7 +260,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     const { confirmationToken, error } = await stripe.createConfirmationToken({
       elements,
       params: {
-        return_url: `${CONFIG.FRONTEND_BASE_URL}/checkout/${checkout.client_secret}/success`,
+        return_url: `${CONFIG.FRONTEND_BASE_URL}/checkout/${checkout.client_secret}/confirmation`,
       },
     })
 
@@ -308,7 +308,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       }
     }
 
-    await router.push(`/checkout/${checkout.client_secret}/success`)
+    await router.push(`/checkout/${checkout.client_secret}/confirmation`)
   }
 
   return (

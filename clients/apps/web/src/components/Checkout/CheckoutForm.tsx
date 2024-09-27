@@ -1,7 +1,6 @@
 'use client'
 
 import { setValidationErrors } from '@/utils/api/errors'
-import { CONFIG } from '@/utils/config'
 import {
   Address,
   CheckoutConfirmStripe,
@@ -235,7 +234,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     },
     [onCheckoutUpdate],
   )
-
   const onSubmit = async (
     data: CheckoutFormData,
     stripe: Stripe | null,
@@ -259,9 +257,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
 
     const { confirmationToken, error } = await stripe.createConfirmationToken({
       elements,
-      params: {
-        return_url: `${CONFIG.FRONTEND_BASE_URL}/checkout/${checkout.client_secret}/confirmation`,
-      },
     })
 
     if (!confirmationToken || error) {
@@ -283,7 +278,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     } catch (e) {
       if (e instanceof ResponseError) {
         const body = await e.response.json()
-        if (e.response.status === 422) {
+        if (body.error === 'PaymentError') {
+          setError('root', { message: body['detail'] })
+        } else if (e.response.status === 422) {
           const validationErrors = body['detail'] as ValidationError[]
           setValidationErrors(validationErrors, setError)
         } else {
@@ -294,16 +291,16 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       return
     }
 
-    const { setup_intent_status, setup_intent_client_secret } =
+    const { payment_intent_status, payment_intent_client_secret } =
       updatedCheckout.payment_processor_metadata as Record<string, string>
 
-    if (setup_intent_status === 'requires_action') {
+    if (payment_intent_status === 'requires_action') {
       const { error } = await stripe.handleNextAction({
-        clientSecret: setup_intent_client_secret,
+        clientSecret: payment_intent_client_secret,
       })
       if (error) {
-        setError('root', { message: error.message })
         setLoading(false)
+        setError('root', { message: error.message })
         return
       }
     }
@@ -315,7 +312,13 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     <Elements
       stripe={stripePromise}
       options={{
-        mode: 'setup',
+        mode: 'payment',
+        setupFutureUsage:
+          checkout.product_price.type === 'recurring'
+            ? 'off_session'
+            : undefined,
+        paymentMethodCreation: 'manual',
+        amount: checkout.amount || 0,
         currency: checkout.currency || 'usd',
         appearance: {
           rules: {

@@ -2,8 +2,11 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
+import { useCheckoutClientSSE } from '@/hooks/sse'
 import { api } from '@/utils/api'
 import { CheckoutPublic, CheckoutStatus, Organization } from '@polar-sh/sdk'
+import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
+import { loadStripe, Stripe } from '@stripe/stripe-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -13,6 +16,66 @@ import { useCallback, useEffect, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
 import { CheckoutCard } from './CheckoutCard'
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+
+const StripeRequiresAction = ({
+  checkout,
+  updateCheckout,
+}: {
+  checkout: CheckoutPublic
+  updateCheckout: () => Promise<void>
+}) => {
+  const [pendingHandling, setPendingHandling] = useState(false)
+  const { payment_intent_status, payment_intent_client_secret } =
+    checkout.payment_processor_metadata as Record<string, string>
+  const handleNextAction = useCallback(
+    async (stripe: Stripe): Promise<void> => {
+      setPendingHandling(true)
+      if (payment_intent_status === 'requires_action') {
+        try {
+          await stripe.handleNextAction({
+            clientSecret: payment_intent_client_secret,
+          })
+        } catch {
+        } finally {
+          await updateCheckout()
+          setPendingHandling(false)
+        }
+      }
+    },
+    [],
+  )
+  return (
+    <Elements stripe={stripePromise}>
+      <ElementsConsumer>
+        {({ stripe }) => {
+          useEffect(() => {
+            if (stripe) {
+              handleNextAction(stripe)
+            }
+          }, [stripe])
+
+          if (!stripe) {
+            return
+          }
+
+          return payment_intent_status === 'requires_action' ? (
+            <Button
+              type="button"
+              onClick={() => handleNextAction(stripe)}
+              loading={pendingHandling}
+            >
+              Confirm payment
+            </Button>
+          ) : (
+            <SpinnerNoMargin className="h-8 w-8" />
+          )
+        }}
+      </ElementsConsumer>
+    </Elements>
+  )
+}
 
 export interface CheckoutConfirmationProps {
   checkout: CheckoutPublic
@@ -29,6 +92,24 @@ export const CheckoutConfirmation = ({
   const { currentUser } = useAuth()
   const [checkout, setCheckout] = useState(_checkout)
   const { customer_email: email, product, status } = checkout
+
+  const updateCheckout = useCallback(async () => {
+    const updatedCheckout = await api.checkouts.clientGet({
+      clientSecret: checkout.client_secret,
+    })
+    setCheckout(updatedCheckout)
+  }, [checkout])
+
+  const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)
+  useEffect(() => {
+    if (disabled || status !== CheckoutStatus.CONFIRMED) {
+      return
+    }
+    checkoutEvents.on('checkout.updated', updateCheckout)
+    return () => {
+      checkoutEvents.off('checkout.updated', updateCheckout)
+    }
+  }, [disabled, checkout, status, checkoutEvents, updateCheckout])
 
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
   const sendMagicLink = useSendMagicLink()
@@ -48,19 +129,6 @@ export const CheckoutConfirmation = ({
       setEmailSigninLoading(false)
     }
   }, [email, router, organization, sendMagicLink])
-
-  useEffect(() => {
-    if (disabled || status !== CheckoutStatus.CONFIRMED) {
-      return
-    }
-    let interval = window.setInterval(async () => {
-      const updatedCheckout = await api.checkouts.clientGet({
-        clientSecret: checkout.client_secret,
-      })
-      setCheckout(updatedCheckout)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [checkout, status, disabled])
 
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
@@ -91,7 +159,14 @@ export const CheckoutConfirmation = ({
         <CheckoutCard checkout={checkout} disabled />
         {status === CheckoutStatus.CONFIRMED && (
           <div className="flex items-center justify-center">
-            <SpinnerNoMargin className="h-8 w-8" />
+            {checkout.payment_processor === 'stripe' ? (
+              <StripeRequiresAction
+                checkout={checkout}
+                updateCheckout={updateCheckout}
+              />
+            ) : (
+              <SpinnerNoMargin className="h-8 w-8" />
+            )}
           </div>
         )}
         {status === CheckoutStatus.SUCCEEDED && (

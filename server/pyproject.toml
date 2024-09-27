@@ -14,7 +14,7 @@ alembic = "^1.9.2"
 sqlalchemy = { extras = ["asyncio"], version = "^2.0.34" }
 greenlet = "^3.1.1"
 structlog = "^24.4.0"
-githubkit = "0.11.4"
+githubkit = "0.11.10"
 redis = "^5.0.4"
 sse-starlette = "^2.0.0"
 arq = "^0.25.0"

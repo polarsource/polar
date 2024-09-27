@@ -13,6 +13,7 @@ from polar.checkout.schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
+from polar.checkout.tax import to_stripe_tax_id
 from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish
@@ -469,6 +470,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 name=checkout.customer_name,
                 email=checkout.customer_email,
                 address=checkout.customer_billing_address.to_stripe_dict(),
+                tax_id_data=[]
+                if checkout.customer_tax_id is None
+                else [to_stripe_tax_id(checkout.customer_tax_id)],
             )
             payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
                 "amount": checkout.amount or 0,

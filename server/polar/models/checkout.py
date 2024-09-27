@@ -7,6 +7,7 @@ from sqlalchemy import TIMESTAMP, Connection, ForeignKey, Integer, String, Uuid,
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship
 
+from polar.checkout.tax import TaxID, TaxIDType
 from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressType
@@ -95,6 +96,9 @@ class Checkout(RecordModel):
     )
     customer_billing_address: Mapped[Address | None] = mapped_column(
         AddressType, nullable=True, default=None
+    )
+    customer_tax_id: Mapped[TaxID | None] = mapped_column(
+        TaxIDType, nullable=True, default=None
     )
 
 

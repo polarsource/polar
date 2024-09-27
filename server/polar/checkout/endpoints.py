@@ -1,8 +1,11 @@
 from typing import Annotated
 
-from fastapi import Depends, Path, Query
+from fastapi import Depends, Path, Query, Request
 from pydantic import UUID4
+from sse_starlette.sse import EventSourceResponse
 
+from polar.eventstream.endpoints import subscribe
+from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -11,6 +14,7 @@ from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -198,3 +202,19 @@ async def client_confirm(
         raise ResourceNotFound()
 
     return await checkout_service.confirm(session, checkout, checkout_confirm)
+
+
+@router.get("/client/{client_secret}/stream", include_in_schema=False)
+async def client_stream(
+    request: Request,
+    client_secret: CheckoutClientSecret,
+    session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
+) -> EventSourceResponse:
+    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    receivers = Receivers(checkout_client_secret=checkout.client_secret)
+    return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

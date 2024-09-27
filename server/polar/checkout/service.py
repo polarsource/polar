@@ -15,6 +15,7 @@ from polar.checkout.schemas import (
 )
 from polar.config import settings
 from polar.enums import PaymentProcessor
+from polar.eventstream.service import publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -591,6 +592,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
+
+        await publish(
+            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
+        )
+
         return checkout
 
     async def handle_stripe_failure(
@@ -612,6 +618,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         checkout.status = CheckoutStatus.failed
         session.add(checkout)
+
+        await publish(
+            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
+        )
+
         return checkout
 
     async def get_by_client_secret(

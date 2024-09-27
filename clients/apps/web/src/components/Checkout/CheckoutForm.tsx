@@ -312,7 +312,10 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     <Elements
       stripe={stripePromise}
       options={{
-        mode: 'payment',
+        mode:
+          checkout.product_price.type === 'recurring'
+            ? 'subscription'
+            : 'payment',
         setupFutureUsage:
           checkout.product_price.type === 'recurring'
             ? 'off_session'

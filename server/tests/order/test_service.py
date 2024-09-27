@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
+from polar.integrations.stripe.service import StripeService
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -22,6 +23,7 @@ from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.order.service import (
     CantDetermineInvoicePrice,
+    InvoiceWithoutCharge,
     NotAnOrderInvoice,
     ProductPriceDoesNotExist,
 )
@@ -232,6 +234,17 @@ class TestCreateOrderFromStripe:
     async def test_not_existing_product_price(self, session: AsyncSession) -> None:
         invoice = construct_stripe_invoice()
         with pytest.raises(ProductPriceDoesNotExist):
+            await order_service.create_order_from_stripe(session, invoice=invoice)
+
+    async def test_no_charge(
+        self, session: AsyncSession, product: Product, subscription: Subscription
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            charge_id=None,
+            lines=[(product.prices[0].stripe_price_id, False, None)],
+            metadata={},
+        )
+        with pytest.raises(InvoiceWithoutCharge):
             await order_service.create_order_from_stripe(session, invoice=invoice)
 
     async def test_subscription_no_account(
@@ -604,5 +617,77 @@ class TestCreateOrderFromStripe:
             task="grant",
             user_id=user.id,
             product_id=product_one_time_free_price.id,
+            order_id=order.id,
+        )
+
+    async def test_charge_from_metadata(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time: Product,
+        organization_account: Account,
+        user: User,
+    ) -> None:
+        mock = MagicMock(spec=StripeService)
+        mocker.patch("polar.order.service.stripe_service", new=mock)
+        mock.get_payment_intent.return_value = stripe_lib.PaymentIntent.construct_from(
+            {"latest_charge": "CHARGE_ID"}, key=None
+        )
+        invoice = construct_stripe_invoice(
+            charge_id=None,
+            metadata={"payment_intent_id": "PAYMENT_INTENT_ID"},
+            lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
+            subscription_id=None,
+            billing_reason="manual",
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice_total
+        assert order.user.id == user.id
+        assert order.product == product_one_time
+        assert order.product_price == product_one_time.prices[0]
+        assert order.subscription is None
+
+        enqueue_job_mock.assert_any_call(
+            "order.discord_notification",
+            order_id=order.id,
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            user_id=user.id,
+            product_id=product_one_time.id,
             order_id=order.id,
         )

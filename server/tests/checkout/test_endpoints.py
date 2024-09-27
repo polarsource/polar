@@ -210,7 +210,7 @@ class TestClientConfirm:
         client: AsyncClient,
         checkout_open: Checkout,
     ) -> None:
-        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             client_secret="CLIENT_SECRET", status="succeeded"
         )
         response = await client.post(

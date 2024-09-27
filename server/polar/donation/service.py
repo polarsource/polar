@@ -169,7 +169,7 @@ class DonationService:
         elif by_user:
             customer = by_user
 
-        return await stripe_service.create_payment_intent(
+        return await stripe_service.create_pledge_payment_intent(
             session=session,
             amount=amount,
             currency=currency,

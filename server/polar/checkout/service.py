@@ -13,6 +13,7 @@ from polar.checkout.schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
+from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.stripe.schemas import ProductType
@@ -45,12 +46,12 @@ class CheckoutError(PolarError): ...
 
 
 class CheckoutDoesNotExist(CheckoutError):
-    def __init__(self, checkout_id: uuid.UUID, setup_intent_id: str) -> None:
+    def __init__(self, checkout_id: uuid.UUID, payment_intent_id: str) -> None:
         self.checkout_id = checkout_id
-        self.setup_intent_id = setup_intent_id
+        self.payment_intent_id = payment_intent_id
         message = (
             f"Checkout {checkout_id} from "
-            f"setup intent {setup_intent_id} does not exist."
+            f"payment intent {payment_intent_id} does not exist."
         )
         super().__init__(message)
 
@@ -71,31 +72,33 @@ class NotConfirmedCheckout(CheckoutError):
         super().__init__(message)
 
 
-class SetupIntentNotSucceeded(CheckoutError):
-    def __init__(self, checkout: Checkout, setup_intent_id: str) -> None:
+class PaymentIntentNotSucceeded(CheckoutError):
+    def __init__(self, checkout: Checkout, payment_intent_id: str) -> None:
         self.checkout = checkout
-        self.setup_intent_id = setup_intent_id
-        message = f"Setup intent {setup_intent_id} for {checkout.id} is not successful."
+        self.payment_intent_id = payment_intent_id
+        message = (
+            f"Payment intent {payment_intent_id} for {checkout.id} is not successful."
+        )
         super().__init__(message)
 
 
-class NoCustomerOnSetupIntent(CheckoutError):
-    def __init__(self, checkout: Checkout, setup_intent_id: str) -> None:
+class NoCustomerOnPaymentIntent(CheckoutError):
+    def __init__(self, checkout: Checkout, payment_intent_id: str) -> None:
         self.checkout = checkout
-        self.setup_intent_id = setup_intent_id
+        self.payment_intent_id = payment_intent_id
         message = (
-            f"Setup intent {setup_intent_id} "
+            f"Payment intent {payment_intent_id} "
             f"for {checkout.id} has no customer associated."
         )
         super().__init__(message)
 
 
-class NoPaymentMethodOnSetupIntent(CheckoutError):
-    def __init__(self, checkout: Checkout, setup_intent_id: str) -> None:
+class NoPaymentMethodOnPaymentIntent(CheckoutError):
+    def __init__(self, checkout: Checkout, payment_intent_id: str) -> None:
         self.checkout = checkout
-        self.setup_intent_id = setup_intent_id
+        self.payment_intent_id = payment_intent_id
         message = (
-            f"Setup intent {setup_intent_id} "
+            f"Payment intent {payment_intent_id} "
             f"for {checkout.id} has no payment method associated."
         )
         super().__init__(message)
@@ -451,17 +454,32 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 name=checkout.customer_name,
                 email=checkout.customer_email,
                 address=checkout.customer_billing_address.to_stripe_dict(),
+                idempotency_key=f"checkout_{checkout.id}_customer",
             )
-            setup_intent = stripe_service.create_setup_intent(
-                confirm=True,
-                automatic_payment_methods={"enabled": True},
-                confirmation_token=checkout_confirm.confirmation_token_id,
-                customer=stripe_customer.id,
-                metadata={"checkout_id": str(checkout.id)},
+            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                "amount": checkout.amount or 0,
+                "currency": checkout.currency or "usd",
+                "automatic_payment_methods": {"enabled": True},
+                "confirm": True,
+                "confirmation_token": checkout_confirm.confirmation_token_id,
+                "customer": stripe_customer.id,
+                "metadata": {
+                    "checkout_id": str(checkout.id),
+                    "type": ProductType.product,
+                },
+                "return_url": settings.generate_frontend_url(
+                    f"/checkout/{checkout.client_secret}/confirmation"
+                ),
+                "idempotency_key": f"checkout_{checkout.id}_payment_intent",
+            }
+            if checkout.product_price.is_recurring:
+                payment_intent_params["setup_future_usage"] = "off_session"
+            payment_intent = stripe_service.create_payment_intent(
+                **payment_intent_params
             )
             checkout.payment_processor_metadata = {
-                "setup_intent_client_secret": setup_intent.client_secret,
-                "setup_intent_status": setup_intent.status,
+                "payment_intent_client_secret": payment_intent.client_secret,
+                "payment_intent_status": payment_intent.status,
             }
 
         checkout.status = CheckoutStatus.confirmed
@@ -472,29 +490,29 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self,
         session: AsyncSession,
         checkout_id: uuid.UUID,
-        setup_intent: stripe_lib.SetupIntent,
+        payment_intent: stripe_lib.PaymentIntent,
     ) -> Checkout:
         checkout = await self.get(session, checkout_id)
 
         if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id, setup_intent.id)
+            raise CheckoutDoesNotExist(checkout_id, payment_intent.id)
 
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
-        if setup_intent.status != "succeeded":
-            raise SetupIntentNotSucceeded(checkout, setup_intent.id)
+        if payment_intent.status != "succeeded":
+            raise PaymentIntentNotSucceeded(checkout, payment_intent.id)
 
-        if setup_intent.customer is None:
-            raise NoCustomerOnSetupIntent(checkout, setup_intent.id)
+        if payment_intent.customer is None:
+            raise NoCustomerOnPaymentIntent(checkout, payment_intent.id)
 
-        if setup_intent.payment_method is None:
-            raise NoPaymentMethodOnSetupIntent(checkout, setup_intent.id)
+        if payment_intent.payment_method is None:
+            raise NoPaymentMethodOnPaymentIntent(checkout, payment_intent.id)
 
-        stripe_customer_id = get_expandable_id(setup_intent.customer)
-        stripe_payment_method_id = get_expandable_id(setup_intent.payment_method)
+        stripe_customer_id = get_expandable_id(payment_intent.customer)
+        stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
         product_price = checkout.product_price
-        metadata: dict[str, str] = {
+        metadata = {
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
             "product_price_id": str(checkout.product_price_id),
@@ -526,21 +544,28 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             stripe_price_id = stripe_custom_price.id
 
         if product_price.is_recurring:
-            stripe_service.create_subscription(
+            stripe_subscription = stripe_service.create_out_of_band_subscription(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
-                default_payment_method=stripe_payment_method_id,
                 price=stripe_price_id,
                 metadata=metadata,
+                invoice_metadata={"payment_intent_id": payment_intent.id},
                 idempotency_key=idempotency_key,
             )
+            stripe_service.set_automatically_charged_subscription(
+                stripe_subscription.id,
+                stripe_payment_method_id,
+                idempotency_key=f"{idempotency_key}_subscription_auto_charge",
+            )
         else:
-            stripe_service.create_invoice(
+            stripe_service.create_out_of_band_invoice(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
-                default_payment_method=stripe_payment_method_id,
                 price=stripe_price_id,
-                metadata=metadata,
+                metadata={
+                    **metadata,
+                    "payment_intent_id": payment_intent.id,
+                },
                 idempotency_key=idempotency_key,
             )
 

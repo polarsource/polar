@@ -105,6 +105,13 @@ class SubscriptionDoesNotExist(OrderError):
         super().__init__(message)
 
 
+class InvoiceWithoutCharge(OrderError):
+    def __init__(self, invoice_id: str) -> None:
+        self.invoice_id = invoice_id
+        message = f"Received invoice {invoice_id} from Stripe, but it has no charge."
+        super().__init__(message)
+
+
 class InvoiceNotAvailable(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -307,11 +314,24 @@ class OrderService(ResourceServiceReader[Order]):
         session.add(order)
         await session.flush()
 
-        # Free orders don't have a charge
+        # Create the transactions balances for the order, if not a free order
         if invoice.total > 0:
-            assert invoice.charge is not None
+            charge_id = get_expandable_id(invoice.charge) if invoice.charge else None
+            # With Polar Checkout, we mark the order paid out-of-band,
+            # so we need to retrieve the charge manually from metadata
+            if charge_id is None:
+                invoice_metadata = invoice.metadata or {}
+                payment_intent_id = invoice_metadata.get("payment_intent_id")
+                if payment_intent_id is None:
+                    raise InvoiceWithoutCharge(invoice.id)
+
+                payment_intent = stripe_service.get_payment_intent(payment_intent_id)
+                if payment_intent.latest_charge is None:
+                    raise InvoiceWithoutCharge(invoice.id)
+                charge_id = get_expandable_id(payment_intent.latest_charge)
+
             await self._create_order_balance(
-                session, order, charge_id=get_expandable_id(invoice.charge)
+                session, order, charge_id=get_expandable_id(charge_id)
             )
 
         if order.subscription is None:

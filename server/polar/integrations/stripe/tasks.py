@@ -91,7 +91,17 @@ async def payment_intent_succeeded(
             payload = PaymentIntentSuccessWebhook.model_validate(payment_intent)
             metadata = payment_intent.get("metadata", {})
 
-            # Check if there is a Checkout Session related,
+            # Payment for Polar Checkout Session
+            if (
+                metadata.get("type") == ProductType.product
+                and (checkout_id := metadata.get("checkout_id")) is not None
+            ):
+                await checkout_service.handle_stripe_success(
+                    session, uuid.UUID(checkout_id), payment_intent
+                )
+                return
+
+            # Check if there is a Stripe Checkout Session related,
             # meaning it's a product or subscription purchase
             checkout_session = stripe_service.get_checkout_session_by_payment_intent(
                 payload.id
@@ -321,23 +331,4 @@ async def payout_paid(
             payout = event["data"]["object"]
             await payout_transaction_service.create_payout_from_stripe(
                 session, payout=payout, stripe_account_id=event.account
-            )
-
-
-@task("stripe.webhook.setup_intent.succeeded")
-async def setup_intent_succeeded(
-    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
-) -> None:
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            setup_intent = stripe.SetupIntent.construct_from(
-                event["data"]["object"], None
-            )
-            metadata = setup_intent.metadata
-
-            if metadata is None or (checkout_id := metadata.get("checkout_id")) is None:
-                return
-
-            await checkout_service.handle_stripe_success(
-                session, uuid.UUID(checkout_id), setup_intent
             )

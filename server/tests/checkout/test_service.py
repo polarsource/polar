@@ -15,15 +15,16 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     CheckoutDoesNotExist,
-    NoCustomerOnSetupIntent,
-    NoPaymentMethodOnSetupIntent,
+    NoCustomerOnPaymentIntent,
+    NoPaymentMethodOnPaymentIntent,
     NotConfirmedCheckout,
     NotOpenCheckout,
-    SetupIntentNotSucceeded,
+    PaymentIntentNotSucceeded,
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Checkout, Organization, Product, User, UserOrganization
 from polar.models.checkout import CheckoutStatus
@@ -540,7 +541,7 @@ class TestConfirm:
         session: AsyncSession,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             client_secret="CLIENT_SECRET", status="succeeded"
         )
         checkout = await checkout_service.confirm(
@@ -558,26 +559,27 @@ class TestConfirm:
 
         assert checkout.status == checkout.status.confirmed
         assert checkout.payment_processor_metadata == {
-            "setup_intent_client_secret": "CLIENT_SECRET",
-            "setup_intent_status": "succeeded",
+            "payment_intent_client_secret": "CLIENT_SECRET",
+            "payment_intent_status": "succeeded",
         }
 
         stripe_service_mock.create_customer.assert_called_once()
-        stripe_service_mock.create_setup_intent.assert_called_once()
-        assert stripe_service_mock.create_setup_intent.call_args[1]["metadata"] == {
-            "checkout_id": str(checkout.id)
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
+            "checkout_id": str(checkout.id),
+            "type": ProductType.product,
         }
 
 
-def build_stripe_setup_intent(
+def build_stripe_payment_intent(
     *,
     status: str = "succeeded",
     customer: str | None = "CUSTOMER_ID",
     payment_method: str | None = "PAYMENT_METHOD_ID",
-) -> stripe_lib.SetupIntent:
-    return stripe_lib.SetupIntent.construct_from(
+) -> stripe_lib.PaymentIntent:
+    return stripe_lib.PaymentIntent.construct_from(
         {
-            "id": "STRIPE_SETUP_INTENT_ID",
+            "id": "STRIPE_PAYMENT_INTENT_ID",
             "status": status,
             "customer": customer,
             "payment_method": payment_method,
@@ -594,7 +596,7 @@ class TestHandleStripeSuccess:
             await checkout_service.handle_stripe_success(
                 session,
                 uuid.uuid4(),
-                build_stripe_setup_intent(),
+                build_stripe_payment_intent(),
             )
 
     async def test_not_confirmed_checkout(
@@ -604,37 +606,37 @@ class TestHandleStripeSuccess:
             await checkout_service.handle_stripe_success(
                 session,
                 checkout_one_time_fixed.id,
-                build_stripe_setup_intent(),
+                build_stripe_payment_intent(),
             )
 
-    async def test_not_succeeded_setup_intent(
+    async def test_not_succeeded_payment_intent(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
-        with pytest.raises(SetupIntentNotSucceeded):
+        with pytest.raises(PaymentIntentNotSucceeded):
             await checkout_service.handle_stripe_success(
                 session,
                 checkout_confirmed_one_time.id,
-                build_stripe_setup_intent(status="canceled"),
+                build_stripe_payment_intent(status="canceled"),
             )
 
-    async def test_no_customer_on_setup_intent(
+    async def test_no_customer_on_payment_intent(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
-        with pytest.raises(NoCustomerOnSetupIntent):
+        with pytest.raises(NoCustomerOnPaymentIntent):
             await checkout_service.handle_stripe_success(
                 session,
                 checkout_confirmed_one_time.id,
-                build_stripe_setup_intent(customer=None),
+                build_stripe_payment_intent(customer=None),
             )
 
-    async def test_no_payment_method_on_setup_intent(
+    async def test_no_payment_method_on_payment_intent(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
-        with pytest.raises(NoPaymentMethodOnSetupIntent):
+        with pytest.raises(NoPaymentMethodOnPaymentIntent):
             await checkout_service.handle_stripe_success(
                 session,
                 checkout_confirmed_one_time.id,
-                build_stripe_setup_intent(payment_method=None),
+                build_stripe_payment_intent(payment_method=None),
             )
 
     async def test_valid_one_time(
@@ -644,12 +646,12 @@ class TestHandleStripeSuccess:
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         checkout = await checkout_service.handle_stripe_success(
-            session, checkout_confirmed_one_time.id, build_stripe_setup_intent()
+            session, checkout_confirmed_one_time.id, build_stripe_payment_intent()
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_invoice.assert_called_once()
-        stripe_service_mock.create_subscription.assert_not_called()
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
 
     async def test_valid_recurring(
         self,
@@ -658,12 +660,13 @@ class TestHandleStripeSuccess:
         checkout_confirmed_recurring: Checkout,
     ) -> None:
         checkout = await checkout_service.handle_stripe_success(
-            session, checkout_confirmed_recurring.id, build_stripe_setup_intent()
+            session, checkout_confirmed_recurring.id, build_stripe_payment_intent()
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_subscription.assert_called_once()
-        stripe_service_mock.create_invoice.assert_not_called()
+        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
 
     async def test_valid_one_time_custom(
         self,
@@ -681,15 +684,15 @@ class TestHandleStripeSuccess:
         )
 
         checkout = await checkout_service.handle_stripe_success(
-            session, checkout_one_time_custom.id, build_stripe_setup_intent()
+            session, checkout_one_time_custom.id, build_stripe_payment_intent()
         )
 
         assert checkout.status == CheckoutStatus.succeeded
         stripe_service_mock.create_price_for_product.assert_called_once()
-        stripe_service_mock.create_subscription.assert_not_called()
+        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
 
-        stripe_service_mock.create_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
         assert (
-            stripe_service_mock.create_invoice.call_args[1]["price"]
+            stripe_service_mock.create_out_of_band_invoice.call_args[1]["price"]
             == "STRIPE_CUSTOM_PRICE_ID"
         )

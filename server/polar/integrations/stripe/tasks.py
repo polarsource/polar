@@ -150,6 +150,27 @@ async def payment_intent_succeeded(
             )
 
 
+@task("stripe.webhook.payment_intent.payment_failed")
+async def payment_intent_payment_failed(
+    ctx: JobContext,
+    event: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            payment_intent = event["data"]["object"]
+            metadata = payment_intent.metadata or {}
+
+            # Payment for Polar Checkout Session
+            if (
+                metadata.get("type") == ProductType.product
+                and (checkout_id := metadata.get("checkout_id")) is not None
+            ):
+                await checkout_service.handle_stripe_failure(
+                    session, uuid.UUID(checkout_id), payment_intent
+                )
+
+
 @task("stripe.webhook.charge.succeeded")
 async def charge_succeeded(
     ctx: JobContext,

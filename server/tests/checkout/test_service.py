@@ -696,3 +696,37 @@ class TestHandleStripeSuccess:
             stripe_service_mock.create_out_of_band_invoice.call_args[1]["price"]
             == "STRIPE_CUSTOM_PRICE_ID"
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestHandleStripeFailure:
+    async def test_not_existing_checkout(self, session: AsyncSession) -> None:
+        with pytest.raises(CheckoutDoesNotExist):
+            await checkout_service.handle_stripe_failure(
+                session,
+                uuid.uuid4(),
+                build_stripe_payment_intent(),
+            )
+
+    async def test_not_confirmed_checkout(
+        self, session: AsyncSession, checkout_one_time_fixed: Checkout
+    ) -> None:
+        checkout = await checkout_service.handle_stripe_failure(
+            session,
+            checkout_one_time_fixed.id,
+            build_stripe_payment_intent(),
+        )
+
+        assert checkout.status == CheckoutStatus.open
+
+    async def test_valid(
+        self, session: AsyncSession, checkout_confirmed_one_time: Checkout
+    ) -> None:
+        checkout = await checkout_service.handle_stripe_failure(
+            session,
+            checkout_confirmed_one_time.id,
+            build_stripe_payment_intent(),
+        )
+
+        assert checkout.status == CheckoutStatus.failed

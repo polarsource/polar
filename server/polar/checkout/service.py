@@ -45,6 +45,20 @@ from .sorting import CheckoutSortProperty
 class CheckoutError(PolarError): ...
 
 
+class PaymentError(CheckoutError):
+    def __init__(
+        self, checkout: Checkout, error_type: str | None, error: str | None
+    ) -> None:
+        self.checkout = checkout
+        self.error_type = error_type
+        self.error = error
+        message = (
+            f"The payment failed{f': {error}' if error else '.'} "
+            "Please try again with a different payment method."
+        )
+        super().__init__(message, 400)
+
+
 class CheckoutDoesNotExist(CheckoutError):
     def __init__(self, checkout_id: uuid.UUID, payment_intent_id: str) -> None:
         self.checkout_id = checkout_id
@@ -454,7 +468,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 name=checkout.customer_name,
                 email=checkout.customer_email,
                 address=checkout.customer_billing_address.to_stripe_dict(),
-                idempotency_key=f"checkout_{checkout.id}_customer",
             )
             payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
                 "amount": checkout.amount or 0,
@@ -470,13 +483,20 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 "return_url": settings.generate_frontend_url(
                     f"/checkout/{checkout.client_secret}/confirmation"
                 ),
-                "idempotency_key": f"checkout_{checkout.id}_payment_intent",
             }
             if checkout.product_price.is_recurring:
                 payment_intent_params["setup_future_usage"] = "off_session"
-            payment_intent = stripe_service.create_payment_intent(
-                **payment_intent_params
-            )
+
+            try:
+                payment_intent = stripe_service.create_payment_intent(
+                    **payment_intent_params
+                )
+            except stripe_lib.StripeError as e:
+                error = e.error
+                error_type = error.type if error is not None else None
+                error_message = error.message if error is not None else None
+                raise PaymentError(checkout, error_type, error_message)
+
             checkout.payment_processor_metadata = {
                 "payment_intent_client_secret": payment_intent.client_secret,
                 "payment_intent_status": payment_intent.status,
@@ -570,6 +590,27 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         checkout.status = CheckoutStatus.succeeded
+        session.add(checkout)
+        return checkout
+
+    async def handle_stripe_failure(
+        self,
+        session: AsyncSession,
+        checkout_id: uuid.UUID,
+        payment_intent: stripe_lib.PaymentIntent,
+    ) -> Checkout:
+        checkout = await self.get(session, checkout_id)
+
+        if checkout is None:
+            raise CheckoutDoesNotExist(checkout_id, payment_intent.id)
+
+        # Checkout is not confirmed: do nothing
+        # This is the case of an immediate failure, e.g. card declined
+        # In this case, the checkout is still open and the user can retry
+        if checkout.status != CheckoutStatus.confirmed:
+            return checkout
+
+        checkout.status = CheckoutStatus.failed
         session.add(checkout)
         return checkout
 

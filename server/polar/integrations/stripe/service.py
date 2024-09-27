@@ -606,6 +606,13 @@ class StripeService:
             raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
 
         latest_invoice_id = get_expandable_id(subscription.latest_invoice)
+        stripe_lib.Invoice.modify(
+            latest_invoice_id,
+            metadata=invoice_metadata or {},
+            idempotency_key=f"{idempotency_key}_update_invoice"
+            if idempotency_key is not None
+            else None,
+        )
         stripe_lib.Invoice.finalize_invoice(
             latest_invoice_id,
             idempotency_key=f"{idempotency_key}_finalize_invoice"
@@ -616,13 +623,6 @@ class StripeService:
             latest_invoice_id,
             paid_out_of_band=True,
             idempotency_key=f"{idempotency_key}_pay_invoice"
-            if idempotency_key is not None
-            else None,
-        )
-        stripe_lib.Invoice.modify(
-            latest_invoice_id,
-            metadata=invoice_metadata or {},
-            idempotency_key=f"{idempotency_key}_update_invoice"
             if idempotency_key is not None
             else None,
         )

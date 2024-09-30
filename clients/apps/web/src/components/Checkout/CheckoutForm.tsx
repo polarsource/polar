@@ -1,14 +1,11 @@
 'use client'
 
-import { setValidationErrors } from '@/utils/api/errors'
 import {
   Address,
   CheckoutConfirmStripe,
   CheckoutPublic,
   CheckoutUpdatePublic,
-  ResponseError,
   SubscriptionRecurringInterval,
-  ValidationError,
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import {
@@ -30,8 +27,8 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { PropsWithChildren, useCallback, useState } from 'react'
-import { FormProvider, useForm, useFormContext } from 'react-hook-form'
+import { PropsWithChildren, useCallback, useEffect, useState } from 'react'
+import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
 import AmountLabel from '../Shared/AmountLabel'
@@ -56,6 +53,7 @@ const DetailRow = ({
 
 interface BaseCheckoutFormProps {
   onSubmit: (value: any) => Promise<void>
+  onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   amount: number | null
   tax_amount: number | null
   currency: string | null
@@ -64,12 +62,9 @@ interface BaseCheckoutFormProps {
   loading?: boolean
 }
 
-interface CheckoutFormData {
-  customer_email: string
-}
-
 const BaseCheckoutForm = ({
   onSubmit,
+  onCheckoutUpdate,
   amount,
   tax_amount,
   currency,
@@ -78,12 +73,24 @@ const BaseCheckoutForm = ({
   loading,
   children,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
-  const form = useFormContext<CheckoutFormData>()
+  const form = useFormContext<CheckoutUpdatePublic>()
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors },
   } = form
+
+  useEffect(() => {
+    const subscription = watch(async (value, { name, type }) => {
+      if (name === 'customer_tax_id' && type === 'change') {
+        try {
+          await onCheckoutUpdate?.({ customer_tax_id: value.customer_tax_id })
+        } catch {}
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, onCheckoutUpdate])
 
   return (
     <div className="flex w-1/2 flex-col justify-between gap-y-24 p-20">
@@ -105,7 +112,7 @@ const BaseCheckoutForm = ({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -113,10 +120,10 @@ const BaseCheckoutForm = ({
               />
 
               {children}
-              {/*
+
               <FormField
                 control={control}
-                name="tax_id"
+                name="customer_tax_id"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex flex-row items-center justify-between">
@@ -126,12 +133,13 @@ const BaseCheckoutForm = ({
                       </span>
                     </div>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {/*
               <FormField
                 control={control}
                 name="discount"
@@ -220,22 +228,29 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const router = useRouter()
-  const { setError } = useFormContext<CheckoutFormData>()
+  const { setError, setValue } = useFormContext<CheckoutUpdatePublic>()
   const { checkout, onCheckoutUpdate, onCheckoutConfirm } = props
   const { resolvedTheme } = useTheme()
   const [loading, setLoading] = useState(false)
 
   const onBillingAddressChange = useCallback(
     async (name: string, address: Address): Promise<void> => {
-      onCheckoutUpdate?.({
-        customer_name: name,
-        customer_billing_address: address,
-      })
+      try {
+        await onCheckoutUpdate?.({
+          customer_name: name,
+          customer_billing_address: address,
+          customer_tax_id:
+            address.country !== checkout.customer_billing_address?.country
+              ? null
+              : undefined,
+        })
+        setValue('customer_tax_id', null)
+      } catch {}
     },
-    [onCheckoutUpdate],
+    [onCheckoutUpdate, checkout],
   )
   const onSubmit = async (
-    data: CheckoutFormData,
+    data: CheckoutUpdatePublic,
     stripe: Stripe | null,
     elements: StripeElements | null,
   ) => {
@@ -276,17 +291,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         confirmation_token_id: confirmationToken.id,
       })
     } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (body.error === 'PaymentError') {
-          setError('root', { message: body['detail'] })
-        } else if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(validationErrors, setError)
-        } else {
-          setError('root', { message: e.message })
-        }
-      }
       setLoading(false)
       return
     }
@@ -375,6 +379,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                 : undefined
             }
             onSubmit={(data) => onSubmit(data, stripe, elements)}
+            onCheckoutUpdate={onCheckoutUpdate}
             loading={loading}
           >
             <AddressElement
@@ -398,6 +403,7 @@ const DummyCheckoutForm = ({ checkout }: CheckoutFormProps) => {
       tax_amount={checkout.tax_amount}
       currency={checkout.currency}
       onSubmit={async () => {}}
+      onCheckoutUpdate={async () => checkout}
       disabled={true}
     />
   )
@@ -407,18 +413,9 @@ export const CheckoutForm = (props: CheckoutFormProps) => {
   const {
     checkout: { payment_processor },
   } = props
-  const form = useForm<CheckoutFormData>()
 
   if (payment_processor === 'stripe') {
-    return (
-      <FormProvider {...form}>
-        <StripeCheckoutForm {...props} />
-      </FormProvider>
-    )
+    return <StripeCheckoutForm {...props} />
   }
-  return (
-    <FormProvider {...form}>
-      <DummyCheckoutForm {...props} />
-    </FormProvider>
-  )
+  return <DummyCheckoutForm {...props} />
 }

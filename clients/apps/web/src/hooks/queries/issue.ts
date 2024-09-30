@@ -179,26 +179,6 @@ const updateIssuesCache = (result: Issue) => {
 
   queryClient.setQueriesData<ListResourceIssue>(
     {
-      queryKey: ['issues'],
-    },
-    (data) => {
-      if (!data) {
-        return data
-      }
-      return {
-        ...data,
-        items: data.items.map((i) => {
-          if (i.id === result.id) {
-            return result
-          }
-          return { ...i }
-        }),
-      }
-    },
-  )
-
-  queryClient.setQueriesData<ListResourceIssue>(
-    {
       queryKey: ['issuesForYou'],
     },
     (data) => {

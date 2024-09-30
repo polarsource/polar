@@ -4750,6 +4750,12 @@ export interface Checkout {
     customer_billing_address: Address | null;
     /**
      * 
+     * @type {string}
+     * @memberof Checkout
+     */
+    customer_tax_id: string | null;
+    /**
+     * 
      * @type {object}
      * @memberof Checkout
      */
@@ -4806,6 +4812,12 @@ export interface CheckoutConfirmStripe {
      */
     customer_billing_address?: Address | null;
     /**
+     * 
+     * @type {string}
+     * @memberof CheckoutConfirmStripe
+     */
+    customer_tax_id?: string | null;
+    /**
      * ID of the Stripe confirmation token.
      * @type {string}
      * @memberof CheckoutConfirmStripe
@@ -4860,6 +4872,12 @@ export interface CheckoutCreate {
      * @memberof CheckoutCreate
      */
     customer_billing_address?: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutCreate
+     */
+    customer_tax_id?: string | null;
     /**
      * Metadata to store with the checkout. Useful to store additional information about the checkout.
      * @type {{ [key: string]: string; }}
@@ -4981,6 +4999,12 @@ export interface CheckoutPublic {
     customer_billing_address: Address | null;
     /**
      * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    customer_tax_id: string | null;
+    /**
+     * 
      * @type {object}
      * @memberof CheckoutPublic
      */
@@ -5070,6 +5094,12 @@ export interface CheckoutUpdate {
      */
     customer_billing_address?: Address | null;
     /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    customer_tax_id?: string | null;
+    /**
      * Metadata to store with the checkout. Useful to store additional information about the checkout.
      * @type {{ [key: string]: string; }}
      * @memberof CheckoutUpdate
@@ -5118,6 +5148,12 @@ export interface CheckoutUpdatePublic {
      * @memberof CheckoutUpdatePublic
      */
     customer_billing_address?: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdatePublic
+     */
+    customer_tax_id?: string | null;
 }
 /**
  * 

@@ -8502,10 +8502,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
-                                "donation",
                                 "order",
-                                "free_subscription"
+                                "paid_subscription",
+                                "free_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -21758,6 +21758,17 @@
                             }
                         ]
                     },
+                    "customer_tax_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Tax Id"
+                    },
                     "payment_processor_metadata": {
                         "type": "object",
                         "title": "Payment Processor Metadata"
@@ -21789,6 +21800,7 @@
                     "customer_email",
                     "customer_ip_address",
                     "customer_billing_address",
+                    "customer_tax_id",
                     "payment_processor_metadata",
                     "metadata"
                 ],
@@ -21874,6 +21886,17 @@
                                 "type": "null"
                             }
                         ]
+                    },
+                    "customer_tax_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Tax Id"
                     },
                     "confirmation_token_id": {
                         "type": "string",
@@ -21969,6 +21992,17 @@
                                 "type": "null"
                             }
                         ]
+                    },
+                    "customer_tax_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Tax Id"
                     },
                     "user_metadata": {
                         "additionalProperties": {
@@ -22142,6 +22176,17 @@
                             }
                         ]
                     },
+                    "customer_tax_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Tax Id"
+                    },
                     "payment_processor_metadata": {
                         "type": "object",
                         "title": "Payment Processor Metadata"
@@ -22171,6 +22216,7 @@
                     "customer_email",
                     "customer_ip_address",
                     "customer_billing_address",
+                    "customer_tax_id",
                     "payment_processor_metadata",
                     "product",
                     "product_price"
@@ -22279,6 +22325,17 @@
                             }
                         ]
                     },
+                    "customer_tax_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Tax Id"
+                    },
                     "metadata": {
                         "anyOf": [
                             {
@@ -22378,6 +22435,17 @@
                                 "type": "null"
                             }
                         ]
+                    },
+                    "customer_tax_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Tax Id"
                     }
                 },
                 "type": "object",

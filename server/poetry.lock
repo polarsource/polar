@@ -1665,13 +1665,13 @@ system-metrics = ["opentelemetry-instrumentation-system-metrics (>=0.42b0)"]
 
 [[package]]
 name = "makefun"
-version = "1.15.4"
+version = "1.15.6"
 description = "Small library to dynamically create python functions."
 optional = false
 python-versions = "*"
 files = [
-    {file = "makefun-1.15.4-py2.py3-none-any.whl", hash = "sha256:945d078a7e01a903f2cbef738b33e0ebc52b8d35fb7e20c528ed87b5c80db5b7"},
-    {file = "makefun-1.15.4.tar.gz", hash = "sha256:9f9b9904e7c397759374a88f4c57781fbab2a458dec78df4b3ee6272cd9fb010"},
+    {file = "makefun-1.15.6-py2.py3-none-any.whl", hash = "sha256:e69b870f0bb60304765b1e3db576aaecf2f9b3e5105afe8cfeff8f2afe6ad067"},
+    {file = "makefun-1.15.6.tar.gz", hash = "sha256:26bc63442a6182fb75efed8b51741dd2d1db2f176bec8c64e20a586256b8f149"},
 ]
 
 [[package]]
@@ -4097,4 +4097,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "a601822486be33dc47c0ef6f49e190ef8e9310c1057e4593bfa4fdc5b0ccf5ac"
+content-hash = "45a3ecda16239a1502120c0ed0e1789d83be5f3a077fc201e9a6492f7823a2bd"

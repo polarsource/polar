@@ -9,8 +9,6 @@ from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
 from polar.models.checkout import CheckoutStatus
 from polar.product.schemas import Product, ProductPrice
 
-from .tax import TaxID
-
 Amount = Annotated[
     int,
     Field(
@@ -63,7 +61,7 @@ class CheckoutCreate(Schema):
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
-    customer_tax_id: TaxID | None = None
+    customer_tax_id: str | None = None
     metadata: Metadata = Field(default_factory=dict)
 
 
@@ -80,7 +78,7 @@ class CheckoutUpdateBase(Schema):
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
-    customer_tax_id: TaxID | None = None
+    customer_tax_id: str | None = None
 
 
 class CheckoutUpdate(CheckoutUpdateBase):
@@ -129,7 +127,7 @@ class CheckoutBase(IDSchema, TimestampedSchema):
     customer_email: CustomerEmail | None
     customer_ip_address: CustomerIPAddress | None
     customer_billing_address: CustomerBillingAddress | None
-    customer_tax_id: TaxID | None
+    customer_tax_id: str | None = Field(validation_alias="customer_tax_id_number")
 
     payment_processor_metadata: dict[str, Any]
 

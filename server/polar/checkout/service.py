@@ -13,7 +13,7 @@ from polar.checkout.schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
-from polar.checkout.tax import to_stripe_tax_id
+from polar.checkout.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish
@@ -257,6 +257,36 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     ]
                 )
 
+        customer_tax_id: TaxID | None = None
+        if checkout_create.customer_tax_id is not None:
+            if checkout_create.customer_billing_address is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "customer_billing_address"),
+                            "msg": "Country is required to validate tax ID.",
+                            "input": None,
+                        }
+                    ]
+                )
+            try:
+                customer_tax_id = validate_tax_id(
+                    checkout_create.customer_tax_id,
+                    checkout_create.customer_billing_address.country,
+                )
+            except ValueError as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "customer_tax_id"),
+                            "msg": "Invalid tax ID.",
+                            "input": checkout_create.customer_tax_id,
+                        }
+                    ]
+                ) from e
+
         product = cast(Product, await product_service.get_loaded(session, product.id))
 
         amount = checkout_create.amount
@@ -277,11 +307,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             product=product,
             product_price=price,
             customer_billing_address=checkout_create.customer_billing_address,
+            customer_tax_id=customer_tax_id,
             **checkout_create.model_dump(
                 exclude={
                     "product_price_id",
                     "amount",
                     "customer_billing_address",
+                    "customer_tax_id",
                     "metadata",
                 }
             ),
@@ -402,6 +434,47 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             checkout.customer_billing_address = checkout_update.customer_billing_address
 
         if (
+            checkout_update.customer_tax_id is None
+            and "customer_tax_id" in checkout_update.model_fields_set
+        ):
+            checkout.customer_tax_id = None
+        else:
+            customer_tax_id_number = (
+                checkout_update.customer_tax_id or checkout.customer_tax_id_number
+            )
+            if customer_tax_id_number is not None:
+                customer_billing_address = (
+                    checkout_update.customer_billing_address
+                    or checkout.customer_billing_address
+                )
+                if customer_billing_address is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "missing",
+                                "loc": ("body", "customer_billing_address"),
+                                "msg": "Country is required to validate tax ID.",
+                                "input": None,
+                            }
+                        ]
+                    )
+                try:
+                    checkout.customer_tax_id = validate_tax_id(
+                        customer_tax_id_number, customer_billing_address.country
+                    )
+                except ValueError as e:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "customer_tax_id"),
+                                "msg": "Invalid tax ID.",
+                                "input": customer_tax_id_number,
+                            }
+                        ]
+                    ) from e
+
+        if (
             isinstance(checkout_update, CheckoutUpdate)
             and checkout_update.metadata is not None
         ):
@@ -413,6 +486,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 "product_price_id",
                 "amount",
                 "customer_billing_address",
+                "customer_tax_id",
                 "metadata",
             },
         ).items():

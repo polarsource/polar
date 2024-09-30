@@ -1,5 +1,6 @@
 import uuid
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,10 +23,12 @@ from polar.checkout.service import (
     PaymentIntentNotSucceeded,
 )
 from polar.checkout.service import checkout as checkout_service
+from polar.checkout.tax import TaxIDFormat
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
+from polar.kit.address import Address
 from polar.models import Checkout, Organization, Product, User, UserOrganization
 from polar.models.checkout import CheckoutStatus
 from polar.models.product_price import (
@@ -251,6 +254,41 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            {"customer_tax_id": "123"},
+            {"customer_billing_address": {"country": "FR"}, "customer_tax_id": "123"},
+        ),
+    )
+    async def test_invalid_tax_id(
+        self,
+        payload: dict[str, Any],
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutCreate.model_validate(
+                    {
+                        "payment_processor": PaymentProcessor.stripe,
+                        "product_price_id": price.id,
+                        **payload,
+                    }
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid_fixed_price(
         self,
         session: AsyncSession,
@@ -336,6 +374,33 @@ class TestCreate:
         else:
             assert checkout.amount == amount
         assert checkout.currency == price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_tax_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_tax_id="FR61954506077",
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer_tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+        assert checkout.customer_tax_id_number == "FR61954506077"
 
 
 @pytest.mark.asyncio
@@ -448,6 +513,47 @@ class TestUpdate:
                 ),
             )
 
+    @pytest.mark.parametrize(
+        "initial_values,updated_values",
+        [
+            ({"customer_billing_address": None}, {"customer_tax_id": "FR61954506077"}),
+            (
+                {
+                    "customer_tax_id": ("FR61954506077", TaxIDFormat.eu_vat),
+                    "customer_billing_address": {"country": "FR"},
+                },
+                {"customer_billing_address": {"country": "US"}},
+            ),
+            (
+                {},
+                {
+                    "customer_tax_id": "123",
+                    "customer_billing_address": {"country": "FR"},
+                },
+            ),
+        ],
+    )
+    async def test_invalid_tax_id(
+        self,
+        initial_values: dict[str, Any],
+        updated_values: dict[str, Any],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        product: Product,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        for key, value in initial_values.items():
+            setattr(checkout_recurring_fixed, key, value)
+        await save_fixture(checkout_recurring_fixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_recurring_fixed,
+                CheckoutUpdate.model_validate(updated_values),
+            )
+
     async def test_valid_price_fixed_change(
         self,
         save_fixture: SaveFixture,
@@ -486,6 +592,48 @@ class TestUpdate:
             ),
         )
         assert checkout.amount == 4242
+
+    async def test_valid_tax_id(
+        self,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_custom,
+            CheckoutUpdate(
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_tax_id="FR61954506077",
+            ),
+        )
+
+        assert checkout.customer_tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
+        assert checkout.customer_tax_id_number == "FR61954506077"
+
+    async def test_valid_unset_tax_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        checkout_one_time_custom.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
+        await save_fixture(checkout_one_time_custom)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_custom,
+            CheckoutUpdate(
+                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_tax_id=None,
+            ),
+        )
+
+        assert checkout.customer_tax_id is None
+        assert checkout.customer_tax_id_number is None
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "US"
 
 
 @pytest.mark.asyncio

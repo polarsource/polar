@@ -1,19 +1,20 @@
 import json
+from collections.abc import Sequence
 from enum import StrEnum
-from typing import Annotated, Any
+from typing import Any
 
 import stdnum.exceptions
 import stripe as stripe_lib
-from pydantic import AfterValidator, Field
+from pydantic_extra_types.country import CountryAlpha2
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 from stdnum import get_cc_module
 
 
-class TaxIdType(StrEnum):
+class TaxIDFormat(StrEnum):
     """
-    List of supported tax ID types.
+    List of supported tax ID formats.
 
     Ref: https://docs.stripe.com/billing/customer/tax-ids#supported-tax-id
     """
@@ -94,40 +95,126 @@ class TaxIdType(StrEnum):
     za_vat = "za_vat"
 
 
-def validate_tax_id(value: tuple[str, TaxIdType]) -> tuple[str, TaxIdType]:
+COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
+    "AD": (TaxIDFormat.ad_nrt,),
+    "AE": (TaxIDFormat.ae_trn,),
+    "AR": (TaxIDFormat.ar_cuit,),
+    "AT": (TaxIDFormat.eu_vat,),
+    "AU": (TaxIDFormat.au_abn, TaxIDFormat.au_arn),
+    "BE": (TaxIDFormat.eu_vat,),
+    "BG": (TaxIDFormat.bg_uic, TaxIDFormat.eu_vat),
+    "BH": (TaxIDFormat.bh_vat,),
+    "BO": (TaxIDFormat.bo_tin,),
+    "BR": (TaxIDFormat.br_cnpj, TaxIDFormat.br_cpf),
+    "CA": (
+        TaxIDFormat.ca_bn,
+        TaxIDFormat.ca_gst_hst,
+        TaxIDFormat.ca_pst_bc,
+        TaxIDFormat.ca_pst_mb,
+        TaxIDFormat.ca_pst_sk,
+        TaxIDFormat.ca_qst,
+    ),
+    "CH": (TaxIDFormat.ch_uid, TaxIDFormat.ch_vat),
+    "CL": (TaxIDFormat.cl_tin,),
+    "CN": (TaxIDFormat.cn_tin,),
+    "CO": (TaxIDFormat.co_nit,),
+    "CR": (TaxIDFormat.cr_tin,),
+    "CY": (TaxIDFormat.eu_vat,),
+    "CZ": (TaxIDFormat.eu_vat,),
+    "DE": (TaxIDFormat.de_stn, TaxIDFormat.eu_vat),
+    "DK": (TaxIDFormat.eu_vat,),
+    "DO": (TaxIDFormat.do_rcn,),
+    "EC": (TaxIDFormat.ec_ruc,),
+    "EE": (TaxIDFormat.eu_vat,),
+    "EG": (TaxIDFormat.eg_tin,),
+    "ES": (TaxIDFormat.es_cif, TaxIDFormat.eu_vat),
+    "FI": (TaxIDFormat.eu_vat,),
+    "FR": (TaxIDFormat.eu_vat,),
+    "GB": (TaxIDFormat.gb_vat,),
+    "GE": (TaxIDFormat.ge_vat,),
+    "GR": (TaxIDFormat.eu_vat,),
+    "HK": (TaxIDFormat.hk_br,),
+    "HR": (TaxIDFormat.hr_oib, TaxIDFormat.eu_vat),
+    "HU": (TaxIDFormat.hu_tin, TaxIDFormat.eu_vat),
+    "ID": (TaxIDFormat.id_npwp,),
+    "IE": (TaxIDFormat.eu_vat,),
+    "IL": (TaxIDFormat.il_vat,),
+    "IN": (TaxIDFormat.in_gst,),
+    "IS": (TaxIDFormat.is_vat,),
+    "IT": (TaxIDFormat.eu_vat,),
+    "JP": (TaxIDFormat.jp_cn, TaxIDFormat.jp_rn, TaxIDFormat.jp_trn),
+    "KE": (TaxIDFormat.ke_pin,),
+    "KR": (TaxIDFormat.kr_brn,),
+    "KZ": (TaxIDFormat.kz_bin,),
+    "LI": (TaxIDFormat.li_uid,),
+    "LT": (TaxIDFormat.eu_vat,),
+    "LU": (TaxIDFormat.eu_vat,),
+    "LV": (TaxIDFormat.eu_vat,),
+    "MT": (TaxIDFormat.eu_vat,),
+    "MX": (TaxIDFormat.mx_rfc,),
+    "MY": (TaxIDFormat.my_frp, TaxIDFormat.my_itn, TaxIDFormat.my_sst),
+    "NG": (TaxIDFormat.ng_tin,),
+    "NL": (TaxIDFormat.eu_vat,),
+    "NO": (TaxIDFormat.no_vat, TaxIDFormat.no_voec),
+    "NZ": (TaxIDFormat.nz_gst,),
+    "OM": (TaxIDFormat.om_vat,),
+    "PE": (TaxIDFormat.pe_ruc,),
+    "PH": (TaxIDFormat.ph_tin,),
+    "PL": (TaxIDFormat.eu_vat,),
+    "PT": (TaxIDFormat.eu_vat,),
+    "RO": (TaxIDFormat.ro_tin, TaxIDFormat.eu_vat),
+    "RS": (TaxIDFormat.rs_pib,),
+    "RU": (TaxIDFormat.ru_inn, TaxIDFormat.ru_kpp),
+    "SA": (TaxIDFormat.sa_vat,),
+    "SE": (TaxIDFormat.eu_vat,),
+    "SG": (TaxIDFormat.sg_gst, TaxIDFormat.sg_uen),
+    "SI": (TaxIDFormat.si_tin, TaxIDFormat.eu_vat),
+    "SK": (TaxIDFormat.eu_vat,),
+    "SV": (TaxIDFormat.sv_nit,),
+    "TH": (TaxIDFormat.th_vat,),
+    "TR": (TaxIDFormat.tr_tin,),
+    "TW": (TaxIDFormat.tw_vat,),
+    "UA": (TaxIDFormat.ua_vat,),
+    "US": (TaxIDFormat.us_ein,),
+    "UY": (TaxIDFormat.uy_ruc,),
+    "VE": (TaxIDFormat.ve_rif,),
+    "VN": (TaxIDFormat.vn_tin,),
+    "ZA": (TaxIDFormat.za_vat,),
+}
+
+TaxID = tuple[str, TaxIDFormat]
+
+
+def validate_tax_id(number: str, country: CountryAlpha2) -> TaxID:
     """
-    Validate a tax ID.
+    Validate a tax ID for a given country.
 
     Args:
-        value: A tuple containing the tax ID and the tax ID type.
+        number: The tax ID to validate.
+        country: The country of the tax ID.
 
     Returns:
-        The validated tax ID and the tax ID type as tuple
+        The validated tax ID and the tax ID format as tuple
 
     Raises:
         ValueError: The tax ID is invalid or unsupported.
     """
-    tax_id, tax_id_type = value
-    country, format = tax_id_type.split("_", 1)
-    validation_module = get_cc_module(country, format)
-    if validation_module is None:
-        raise ValueError("Unsupported tax type.")
     try:
-        validated_value = validation_module.validate(tax_id)
-        return validated_value, tax_id_type
-    except stdnum.exceptions.ValidationError as e:
-        raise ValueError("Invalid tax ID.") from e
-
-
-TaxID = Annotated[
-    tuple[str, TaxIdType],
-    AfterValidator(validate_tax_id),
-    Field(
-        description=(
-            "Tax ID of the customer, in the form of a couple (tax_id, tax_id_type)."
-        )
-    ),
-]
+        tax_id_types = COUNTRY_TAX_ID_MAP[country]
+    except KeyError as e:
+        raise ValueError("Unsupported country.") from e
+    else:
+        for tax_id_type in tax_id_types:
+            tax_id_country, tax_id_format = tax_id_type.split("_", 1)
+            validation_module = get_cc_module(tax_id_country, tax_id_format)
+            if validation_module is None:
+                continue
+            try:
+                validated_value = validation_module.validate(number)
+                return validated_value, tax_id_type
+            except stdnum.exceptions.ValidationError:
+                continue
+    raise ValueError("Invalid tax ID.")
 
 
 def to_stripe_tax_id(value: TaxID) -> stripe_lib.Customer.CreateParamsTaxIdDatum:

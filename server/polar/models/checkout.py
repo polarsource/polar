@@ -101,6 +101,10 @@ class Checkout(RecordModel):
         TaxIDType, nullable=True, default=None
     )
 
+    @property
+    def customer_tax_id_number(self) -> str | None:
+        return self.customer_tax_id[0] if self.customer_tax_id is not None else None
+
 
 @event.listens_for(Checkout, "before_update")
 def check_expiration(

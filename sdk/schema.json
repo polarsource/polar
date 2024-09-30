@@ -256,7 +256,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -377,7 +377,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -654,7 +654,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -740,7 +740,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -826,7 +826,7 @@
           {
             "lang": "typescript",
             "label": "invoice",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.invoice({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1071,7 +1071,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1157,7 +1157,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1251,7 +1251,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.update({\n    id: \"<value>\",\n    userSubscriptionUpdate: {\n      productPriceId: \"<value>\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.update({\n    id: \"<value>\",\n    userSubscriptionUpdate: {\n      productPriceId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1345,7 +1345,7 @@
           {
             "lang": "typescript",
             "label": "cancel",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.cancel({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.cancel({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1477,7 +1477,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1546,7 +1546,7 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.create({\n    imageUrl: \"https://probable-heating.com/\",\n    text: \"<value>\",\n    linkUrl: \"https://standard-utilization.com/\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.create({\n    imageUrl: \"https://probable-heating.com/\",\n    text: \"<value>\",\n    linkUrl: \"https://standard-utilization.com/\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1631,7 +1631,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1724,7 +1724,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.update({\n    id: \"<value>\",\n    userAdvertisementCampaignUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.update({\n    id: \"<value>\",\n    userAdvertisementCampaignUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1808,7 +1808,7 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.delete({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.delete({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -1896,7 +1896,7 @@
           {
             "lang": "typescript",
             "label": "enable",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.advertisements.enable({\n    id: \"<value>\",\n    userAdvertisementCampaignEnable: {\n      benefitId: \"<value>\",\n    },\n  });\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.advertisements.enable({\n    id: \"<value>\",\n    userAdvertisementCampaignEnable: {\n      benefitId: \"<value>\",\n    },\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2080,7 +2080,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2162,7 +2162,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.get({\n    token: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.get({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2353,7 +2353,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2447,7 +2447,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2516,7 +2516,7 @@
           {
             "lang": "typescript",
             "label": "validate",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2595,7 +2595,7 @@
           {
             "lang": "typescript",
             "label": "activate",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -2657,7 +2657,7 @@
           {
             "lang": "typescript",
             "label": "deactivate",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -3131,7 +3131,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.externalOrganizations.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.externalOrganizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -3394,7 +3394,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -3486,7 +3486,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -3594,7 +3594,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.update({\n    id: \"<value>\",\n    repositoryUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.update({\n    id: \"<value>\",\n    repositoryUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -5308,7 +5308,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -5377,7 +5377,7 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.create({\n    name: \"<value>\",\n    slug: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.create({\n    name: \"<value>\",\n    slug: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -5468,7 +5468,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -5576,7 +5576,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.update({\n    id: \"<value>\",\n    organizationUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.update({\n    id: \"<value>\",\n    organizationUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -5803,7 +5803,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -5903,7 +5903,7 @@
           {
             "lang": "typescript",
             "label": "export",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.export({});\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.export({});\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6147,7 +6147,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6217,7 +6217,7 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.create({\n    title: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.create({\n    title: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6308,7 +6308,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6416,7 +6416,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.update({\n    id: \"<value>\",\n    articleUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.update({\n    id: \"<value>\",\n    articleUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6507,7 +6507,7 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.articles.delete({\n    id: \"<value>\",\n  });\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.articles.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6587,7 +6587,7 @@
           {
             "lang": "typescript",
             "label": "receivers",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.receivers({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.receivers({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6695,7 +6695,7 @@
           {
             "lang": "typescript",
             "label": "preview",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.preview({\n    id: \"<value>\",\n    articlePreview: {\n      email: \"Carmine84@yahoo.com\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.preview({\n    id: \"<value>\",\n    articlePreview: {\n      email: \"Carmine84@yahoo.com\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -6796,7 +6796,7 @@
           {
             "lang": "typescript",
             "label": "send",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.send({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.send({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -7402,7 +7402,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -7473,7 +7473,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -8040,7 +8040,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -8107,7 +8107,7 @@
           {
             "lang": "typescript",
             "label": "create_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"https://inferior-chainstay.com\",\n    ],\n    clientName: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"https://inferior-chainstay.com\",\n    ],\n    clientName: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -8176,12 +8176,12 @@
           {
             "lang": "typescript",
             "label": "get_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.get({\n    clientId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.get({\n    clientId: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.get(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.get(client_id=\"<id>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -8253,12 +8253,12 @@
           {
             "lang": "typescript",
             "label": "update_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<value>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<value>\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<id>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.update(client_id=\"<value>\", o_auth2_client_configuration_update={\n    \"redirect_uris\": [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n    ],\n    \"client_name\": \"<value>\",\n    \"client_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.update(client_id=\"<id>\", o_auth2_client_configuration_update={\n    \"redirect_uris\": [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n    ],\n    \"client_name\": \"<value>\",\n    \"client_id\": \"<id>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -8320,12 +8320,12 @@
           {
             "lang": "typescript",
             "label": "delete_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.delete({\n    clientId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.delete({\n    clientId: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "delete_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.delete(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.delete(client_id=\"<id>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8507,12 +8507,12 @@
           {
             "lang": "typescript",
             "label": "request_token",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "request_token",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.token(request={\n    \"grant_type\": polar_sdk.GrantType.AUTHORIZATION_CODE,\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n    \"code\": \"<value>\",\n    \"redirect_uri\": \"https://old-fort.name\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.token(request={\n    \"grant_type\": polar_sdk.GrantType.AUTHORIZATION_CODE,\n    \"client_id\": \"<id>\",\n    \"client_secret\": \"<value>\",\n    \"code\": \"<value>\",\n    \"redirect_uri\": \"https://old-fort.name\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8590,12 +8590,12 @@
           {
             "lang": "typescript",
             "label": "revoke_token",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "revoke_token",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.revoke(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.revoke(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<id>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8673,12 +8673,12 @@
           {
             "lang": "typescript",
             "label": "introspect_token",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "introspect_token",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.introspect(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.introspect(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<id>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8724,7 +8724,7 @@
           {
             "lang": "typescript",
             "label": "userinfo",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.userinfo();\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.userinfo();\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -8895,7 +8895,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -9018,12 +9018,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"Proactive full-range artificial intelligence\",\n    properties: {\n      guildToken: \"<value>\",\n      roleId: \"<value>\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"delightfully fumigate convection though zowie up bulky electronics\",\n    properties: {\n      guildToken: \"<value>\",\n      roleId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.create(request={\n    \"type\": polar_sdk.BenefitDiscordCreateType.DISCORD,\n    \"description\": \"Proactive full-range artificial intelligence\",\n    \"properties\": {\n        \"guild_token\": \"<value>\",\n        \"role_id\": \"<value>\",\n    },\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.create(request={\n    \"type\": polar_sdk.BenefitDiscordCreateType.DISCORD,\n    \"description\": \"delightfully fumigate convection though zowie up bulky electronics\",\n    \"properties\": {\n        \"guild_token\": \"<value>\",\n        \"role_id\": \"<id>\",\n    },\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -9131,7 +9131,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -9284,7 +9284,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -9374,7 +9374,7 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.benefits.delete({\n    id: \"<value>\",\n  });\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.benefits.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -9564,7 +9564,7 @@
           {
             "lang": "typescript",
             "label": "grants",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.grants({\n    id: \"<value>\",\n  });\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.grants({\n    id: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -10408,7 +10408,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: [\n      \"<value>\",\n      \"<value>\",\n    ],\n  });\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: [\n      \"<value>\",\n      \"<value>\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -10486,7 +10486,7 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        recurringInterval: \"month\",\n      },\n    ],\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        recurringInterval: \"month\",\n      },\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -10578,7 +10578,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -10686,7 +10686,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.update({\n    id: \"<value>\",\n    productUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.update({\n    id: \"<value>\",\n    productUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -10796,7 +10796,7 @@
           {
             "lang": "typescript",
             "label": "update_benefits",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value>\",\n      ],\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11054,7 +11054,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11139,7 +11139,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11224,7 +11224,7 @@
           {
             "lang": "typescript",
             "label": "invoice",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.invoice({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11294,7 +11294,7 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    productPriceId: \"<value>\",\n    successUrl: \"https://probable-heating.com/\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    productPriceId: \"<value>\",\n    successUrl: \"https://probable-heating.com/\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11353,7 +11353,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.get({\n    id: \"<id>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.get({\n    id: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11506,7 +11506,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11594,7 +11594,7 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 638424,\n    upload: {\n      parts: [\n        {\n          number: 417458,\n          chunkStart: 134365,\n          chunkEnd: 69025,\n        },\n      ],\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 638424,\n    upload: {\n      parts: [\n        {\n          number: 417458,\n          chunkStart: 134365,\n          chunkEnd: 69025,\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11698,7 +11698,7 @@
           {
             "lang": "typescript",
             "label": "uploaded",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 173116,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 894030,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 673715,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 173116,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 894030,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 673715,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11802,7 +11802,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.update({\n    id: \"<value>\",\n    filePatch: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.update({\n    id: \"<value>\",\n    filePatch: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -11886,7 +11886,7 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.files.delete({\n    id: \"<value>\",\n  });\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.files.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -12089,7 +12089,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2023-09-05\"),\n    interval: \"week\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2023-09-05\"),\n    interval: \"week\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -12140,7 +12140,7 @@
           {
             "lang": "typescript",
             "label": "limits",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.limits();\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.limits();\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -12308,7 +12308,7 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -12403,7 +12403,7 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -12505,7 +12505,7 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.update({\n    id: \"<value>\",\n    licenseKeyUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.update({\n    id: \"<value>\",\n    licenseKeyUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -12610,7 +12610,7 @@
           {
             "lang": "typescript",
             "label": "get_activation",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.getActivation({\n    id: \"<value>\",\n    activationId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.getActivation({\n    id: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
@@ -13002,6 +13002,117 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebhookBenefitUpdatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "benefit_grant.created": {
+      "post": {
+        "summary": "benefit_grant.created",
+        "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointbenefit_grant_created_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookBenefitGrantCreatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "benefit_grant.updated": {
+      "post": {
+        "summary": "benefit_grant.updated",
+        "description": "Sent when a new benefit grant is updated.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointbenefit_grant_updated_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookBenefitGrantUpdatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "benefit_grant.revoked": {
+      "post": {
+        "summary": "benefit_grant.revoked",
+        "description": "Sent when a new benefit grant is revoked.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointbenefit_grant_revoked_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookBenefitGrantRevokedPayload"
               }
             }
           },
@@ -14863,7 +14974,7 @@
           },
           "grants": {
             "items": {
-              "$ref": "#/components/schemas/BenefitGrant"
+              "$ref": "#/components/schemas/BenefitGrantSubscriber"
             },
             "type": "array",
             "title": "Grants"
@@ -16102,14 +16213,6 @@
             "title": "Is Revoked",
             "description": "Whether the benefit is revoked."
           },
-          "properties": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/BenefitGrantProperties"
-              }
-            ],
-            "description": "The properties of the grant."
-          },
           "subscription_id": {
             "anyOf": [
               {
@@ -16147,6 +16250,32 @@
             "format": "uuid4",
             "title": "Benefit Id",
             "description": "The ID of the benefit concerned by this grant."
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+              }
+            ],
+            "title": "Properties"
           }
         },
         "type": "object",
@@ -16156,14 +16285,13 @@
           "id",
           "is_granted",
           "is_revoked",
-          "properties",
           "subscription_id",
           "order_id",
           "user_id",
-          "benefit_id"
+          "benefit_id",
+          "properties"
         ],
-        "title": "BenefitGrant",
-        "description": "A grant of a benefit to a user."
+        "title": "BenefitGrant"
       },
       "BenefitGrantAds": {
         "properties": {
@@ -16228,9 +16356,6 @@
             "title": "Is Revoked",
             "description": "Whether the benefit is revoked."
           },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-          },
           "subscription_id": {
             "anyOf": [
               {
@@ -16268,6 +16393,9 @@
             "format": "uuid4",
             "title": "Benefit Id",
             "description": "The ID of the benefit concerned by this grant."
+          },
+          "properties": {
+            "$ref": "#/components/schemas/BenefitGrantAdsSubscriberProperties"
           }
         },
         "type": "object",
@@ -16277,15 +16405,28 @@
           "id",
           "is_granted",
           "is_revoked",
-          "properties",
           "subscription_id",
           "order_id",
           "user_id",
-          "benefit_id"
+          "benefit_id",
+          "properties"
         ],
         "title": "BenefitGrantAds"
       },
       "BenefitGrantAdsProperties": {
+        "properties": {
+          "advertisement_campaign_id": {
+            "type": "string",
+            "title": "Advertisement Campaign Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "advertisement_campaign_id"
+        ],
+        "title": "BenefitGrantAdsProperties"
+      },
+      "BenefitGrantAdsSubscriberProperties": {
         "properties": {
           "advertisement_campaign_id": {
             "anyOf": [
@@ -16302,7 +16443,84 @@
           }
         },
         "type": "object",
-        "title": "BenefitGrantAdsProperties"
+        "title": "BenefitGrantAdsSubscriberProperties"
+      },
+      "BenefitGrantArticlesProperties": {
+        "properties": {},
+        "type": "object",
+        "title": "BenefitGrantArticlesProperties"
+      },
+      "BenefitGrantCustomProperties": {
+        "properties": {},
+        "type": "object",
+        "title": "BenefitGrantCustomProperties"
+      },
+      "BenefitGrantDiscordProperties": {
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "title": "Guild Id"
+          },
+          "role_id": {
+            "type": "string",
+            "title": "Role Id"
+          },
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          }
+        },
+        "type": "object",
+        "title": "BenefitGrantDiscordProperties"
+      },
+      "BenefitGrantDownloadablesProperties": {
+        "properties": {
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Files"
+          }
+        },
+        "type": "object",
+        "title": "BenefitGrantDownloadablesProperties"
+      },
+      "BenefitGrantGitHubRepositoryProperties": {
+        "properties": {
+          "repository_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Id"
+          },
+          "repository_owner": {
+            "type": "string",
+            "title": "Repository Owner"
+          },
+          "repository_name": {
+            "type": "string",
+            "title": "Repository Name"
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "pull",
+              "triage",
+              "push",
+              "maintain",
+              "admin"
+            ],
+            "title": "Permission"
+          }
+        },
+        "type": "object",
+        "title": "BenefitGrantGitHubRepositoryProperties"
       },
       "BenefitGrantLicenseKeys": {
         "properties": {
@@ -16367,8 +16585,139 @@
             "title": "Is Revoked",
             "description": "Whether the benefit is revoked."
           },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The ID of the subscription that granted this benefit."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the order that granted this benefit."
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "User Id",
+            "description": "The ID of the user concerned by this grant."
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The ID of the benefit concerned by this grant."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "is_granted",
+          "is_revoked",
+          "subscription_id",
+          "order_id",
+          "user_id",
+          "benefit_id",
+          "properties"
+        ],
+        "title": "BenefitGrantLicenseKeys"
+      },
+      "BenefitGrantLicenseKeysProperties": {
+        "properties": {
+          "license_key_id": {
+            "type": "string",
+            "title": "License Key Id"
+          },
+          "display_key": {
+            "type": "string",
+            "title": "Display Key"
+          }
+        },
+        "type": "object",
+        "title": "BenefitGrantLicenseKeysProperties"
+      },
+      "BenefitGrantSubscriber": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the grant."
+          },
+          "granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Granted At",
+            "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+          },
+          "is_granted": {
+            "type": "boolean",
+            "title": "Is Granted",
+            "description": "Whether the benefit is granted."
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At",
+            "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+          },
+          "is_revoked": {
+            "type": "boolean",
+            "title": "Is Revoked",
+            "description": "Whether the benefit is revoked."
           },
           "subscription_id": {
             "anyOf": [
@@ -16416,38 +16765,211 @@
           "id",
           "is_granted",
           "is_revoked",
-          "properties",
           "subscription_id",
           "order_id",
           "user_id",
           "benefit_id"
         ],
-        "title": "BenefitGrantLicenseKeys"
+        "title": "BenefitGrantSubscriber"
       },
-      "BenefitGrantLicenseKeysProperties": {
+      "BenefitGrantWebhook": {
         "properties": {
-          "license_key_id": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "License Key Id"
+            "title": "Id",
+            "description": "The ID of the grant."
           },
-          "display_key": {
+          "granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Granted At",
+            "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+          },
+          "is_granted": {
+            "type": "boolean",
+            "title": "Is Granted",
+            "description": "Whether the benefit is granted."
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At",
+            "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+          },
+          "is_revoked": {
+            "type": "boolean",
+            "title": "Is Revoked",
+            "description": "Whether the benefit is revoked."
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "The ID of the subscription that granted this benefit."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the order that granted this benefit."
+          },
+          "user_id": {
             "type": "string",
-            "title": "Display Key"
+            "format": "uuid4",
+            "title": "User Id",
+            "description": "The ID of the user concerned by this grant."
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The ID of the benefit concerned by this grant."
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+              }
+            ],
+            "title": "Properties"
+          },
+          "benefit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitArticles"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitAds"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitCustom"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitDiscord-Input"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGitHubRepository"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitDownloadables"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
+              }
+            ],
+            "title": "Benefit"
+          },
+          "previous_properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Properties"
           }
         },
         "type": "object",
         "required": [
-          "license_key_id",
-          "display_key"
+          "created_at",
+          "modified_at",
+          "id",
+          "is_granted",
+          "is_revoked",
+          "subscription_id",
+          "order_id",
+          "user_id",
+          "benefit_id",
+          "properties",
+          "benefit"
         ],
-        "title": "BenefitGrantLicenseKeysProperties"
-      },
-      "BenefitGrantProperties": {
-        "properties": {},
-        "type": "object",
-        "title": "BenefitGrantProperties",
-        "description": "Properties for a benefit grant."
+        "title": "BenefitGrantWebhook"
       },
       "BenefitLicenseKeyActivationProperties": {
         "properties": {
@@ -17093,6 +17615,19 @@
             ],
             "title": "Customer Email",
             "description": "If you already know the email of your customer, you can set it. It'll be pre-filled on the checkout page."
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "ID of the subscription to update. If not provided, a new subscription will be created."
           }
         },
         "type": "object",
@@ -28574,6 +29109,72 @@
         "title": "WebhookBenefitCreatedPayload",
         "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic"
       },
+      "WebhookBenefitGrantCreatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "benefit_grant.created"
+            ],
+            "const": "benefit_grant.created",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BenefitGrantWebhook"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookBenefitGrantCreatedPayload",
+        "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookBenefitGrantRevokedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "benefit_grant.revoked"
+            ],
+            "const": "benefit_grant.revoked",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BenefitGrantWebhook"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookBenefitGrantRevokedPayload",
+        "description": "Sent when a new benefit grant is revoked.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookBenefitGrantUpdatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "benefit_grant.updated"
+            ],
+            "const": "benefit_grant.updated",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BenefitGrantWebhook"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookBenefitGrantUpdatedPayload",
+        "description": "Sent when a new benefit grant is updated.\n\n**Discord & Slack support:** Basic"
+      },
       "WebhookBenefitUpdatedPayload": {
         "properties": {
           "type": {
@@ -29009,6 +29610,9 @@
           "product.updated",
           "benefit.created",
           "benefit.updated",
+          "benefit_grant.created",
+          "benefit_grant.updated",
+          "benefit_grant.revoked",
           "organization.updated",
           "pledge.created",
           "pledge.updated",

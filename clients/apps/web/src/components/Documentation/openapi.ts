@@ -491,7 +491,7 @@ class CURLCommandBuilder extends ManualCommandBuilder {
     ]
 
     return `curl -X ${method.toUpperCase()} \\
-    ${this.getURL(url, operation, params)}${queryParameters ? '?' + queryParameters : ''} \\
+    '${this.getURL(url, operation, params)}${queryParameters ? '?' + queryParameters : ''}' \\
     ${headers.join(' \\\n    ')} \\
     ${bodyString}`
   }

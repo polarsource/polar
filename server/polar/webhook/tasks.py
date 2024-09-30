@@ -109,39 +109,36 @@ async def _webhook_event_send(
         "webhook-signature": signature,
     }
 
-    r = httpx.post(
-        event.webhook_endpoint.url,
-        content=event.payload,
-        headers=headers,
-        timeout=20.0,
-    )
-
-    succeeded = r.is_success
-
-    if succeeded:
-        event.succeeded = True
-
-    event.last_http_code = r.status_code
-
     delivery = WebhookDelivery(
-        webhook_event_id=webhook_event_id,
-        webhook_endpoint_id=event.webhook_endpoint_id,
-        http_code=r.status_code,
-        succeeded=succeeded,
+        webhook_event_id=webhook_event_id, webhook_endpoint_id=event.webhook_endpoint_id
     )
-    session.add(delivery)
 
-    # save delivery even if job fails
-    await session.commit()
-
-    if not succeeded and ctx["job_try"] >= MAX_RETRIES:
+    try:
+        response = httpx.post(
+            event.webhook_endpoint.url,
+            content=event.payload,
+            headers=headers,
+            timeout=20.0,
+        )
+        delivery.http_code = response.status_code
+        event.last_http_code = response.status_code
+        response.raise_for_status()
+    # Error
+    except httpx.HTTPError as e:
+        delivery.succeeded = False
         # Permanent failure
-        event.succeeded = False
+        if ctx["job_try"] >= MAX_RETRIES:
+            event.succeeded = False
+        # Retry
+        else:
+            raise Retry(DELAY ** ctx["job_try"]) from e
+    # Success
+    else:
+        delivery.succeeded = True
+        event.succeeded = True
+    # Either way, save the delivery
+    finally:
+        assert delivery.succeeded is not None
+        session.add(delivery)
         session.add(event)
-        return
-
-    # Retry
-    if not succeeded:
-        raise Retry(DELAY ** ctx["job_try"])
-
-    # Successful
+        await session.commit()

@@ -1,8 +1,8 @@
-import base64
+from typing import cast
 
 import httpx
 import pytest
-import standardwebhooks
+import respx
 from arq import Retry
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
@@ -114,16 +114,11 @@ async def test_webhook_send_not_subscribed_to_event(
 async def test_webhook_delivery(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    respx_mock: respx.MockRouter,
     organization: Organization,
     job_context: JobContext,
 ) -> None:
-    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
-        return httpx.Response(
-            status_code=200,
-        )
-
-    mocker.patch("httpx.post", new=httpx_post)
+    respx_mock.post("https://example.com/hook").mock(return_value=httpx.Response(200))
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
@@ -151,16 +146,57 @@ async def test_webhook_delivery(
 async def test_webhook_delivery_500(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    respx_mock: respx.MockRouter,
     organization: Organization,
     job_context: JobContext,
 ) -> None:
-    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
-        return httpx.Response(
-            status_code=500,
-        )
+    respx_mock.post("https://example.com/hook").mock(return_value=httpx.Response(500))
 
-    mocker.patch("httpx.post", new=httpx_post)
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+    )
+    await save_fixture(endpoint)
+
+    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    await save_fixture(event)
+
+    # then
+    session.expunge_all()
+
+    # fails 4 times
+    for job_try in range(5):
+        with pytest.raises(Retry):
+            job_context["job_try"] = job_try
+            await _webhook_event_send(
+                session=session,
+                ctx=job_context,
+                webhook_event_id=event.id,
+            )
+
+    # does not raise on the 5th attempt
+    job_context["job_try"] = 5
+    await _webhook_event_send(
+        session=session,
+        ctx=job_context,
+        webhook_event_id=event.id,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+async def test_webhook_delivery_http_error(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+    job_context: JobContext,
+) -> None:
+    respx_mock.post("https://example.com/hook").mock(
+        side_effect=httpx.HTTPError("ERROR")
+    )
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
@@ -200,30 +236,20 @@ async def test_webhook_delivery_500(
 async def test_webhook_standard_webhooks_compatible(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    respx_mock: respx.MockRouter,
     organization: Organization,
     job_context: JobContext,
 ) -> None:
-    called = True
-
-    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
-        nonlocal called
-        called = True
-
-        w = StandardWebhook(btoa("mysecret"))
-        w.verify(kwargs["content"], kwargs["headers"])
-
-        return httpx.Response(
-            status_code=200,
-        )
-
-    mocker.patch("httpx.post", new=httpx_post)
+    secret = "mysecret"
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        secret=secret,
     )
     await save_fixture(endpoint)
 
@@ -239,59 +265,10 @@ async def test_webhook_standard_webhooks_compatible(
         webhook_event_id=event.id,
     )
 
-    assert called
-
-
-@pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-async def test_webhook_standard_webhooks_fails_unexpected_secret(
-    session: AsyncSession,
-    save_fixture: SaveFixture,
-    mocker: MockerFixture,
-    organization: Organization,
-    job_context: JobContext,
-) -> None:
-    called = True
-
-    def httpx_post(*args, **kwargs) -> httpx.Response:  # type: ignore  # noqa: E501
-        nonlocal called
-        called = True
-
-        w = StandardWebhook(btoa("mysecret"))
-        w.verify(kwargs["content"], kwargs["headers"])
-
-        return httpx.Response(
-            status_code=200,
-        )
-
-    mocker.patch("httpx.post", new=httpx_post)
-
-    endpoint = WebhookEndpoint(
-        url="https://example.com/hook",
-        format=WebhookFormat.raw,
-        organization_id=organization.id,
-        secret="not-mysecret",
-    )
-    await save_fixture(endpoint)
-
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
-    await save_fixture(event)
-
-    # then
-    session.expunge_all()
-
-    with pytest.raises(standardwebhooks.webhooks.WebhookVerificationError):
-        await _webhook_event_send(
-            session=session,
-            ctx=job_context,
-            webhook_event_id=event.id,
-        )
-
-    assert called
-
-
-def btoa(a: str) -> str:
-    return base64.b64encode(a.encode("utf-8")).decode("utf-8")
+    # Check that the generated signature is correct
+    request = route_mock.calls.last.request
+    w = StandardWebhook(secret.encode("utf-8"))
+    assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 
 
 @pytest.mark.asyncio

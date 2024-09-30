@@ -18,7 +18,7 @@ githubkit = "0.11.4"
 redis = "^5.0.4"
 sse-starlette = "^2.0.0"
 arq = "^0.25.0"
-stripe = "^10.4.0"
+stripe = "^10.12.0"
 pyjwt = "^2.6.0"
 pydantic = { version = "^2.7.0b1", allow-prereleases = true}
 jinja2 = "^3.1.2"

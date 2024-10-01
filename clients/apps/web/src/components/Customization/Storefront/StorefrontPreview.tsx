@@ -1,12 +1,8 @@
 'use client'
 
-import { useListArticles, useProducts, useSearchFunding } from '@/hooks/queries'
+import { useProducts, useSearchFunding } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  ArticleVisibility,
-  Organization,
-  OrganizationUpdate,
-} from '@polar-sh/sdk'
+import { Organization, OrganizationUpdate } from '@polar-sh/sdk'
 import { useContext } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Storefront } from '../../Profile/Storefront'
@@ -18,14 +14,6 @@ export const StorefrontPreview = () => {
   const organizationUpdate = watch()
 
   const organization = { ...org, ...organizationUpdate }
-
-  const posts =
-    useListArticles({
-      organizationId: organization.id,
-      isPublished: true,
-      visibility: ArticleVisibility.PUBLIC,
-      limit: 4,
-    }).data?.pages[0].items ?? []
 
   const products =
     useProducts(organization.id, { isArchived: false }).data?.items ?? []
@@ -58,7 +46,6 @@ export const StorefrontPreview = () => {
         <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
           <Storefront
             organization={organization as Organization}
-            posts={posts}
             products={products}
             issues={issues}
           />

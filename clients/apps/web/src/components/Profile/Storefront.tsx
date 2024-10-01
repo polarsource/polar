@@ -6,19 +6,17 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
-import { Article, IssueFunding, Organization, Product } from '@polar-sh/sdk'
+import { IssueFunding, Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { ProductsGrid } from './ProductsGrid'
 
 export const Storefront = ({
   organization,
-  posts,
   products,
   issues,
 }: {
   organization: Organization
-  posts: Article[]
   products: Product[]
   issues: IssueFunding[]
 }) => {

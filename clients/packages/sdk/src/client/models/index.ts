@@ -2603,10 +2603,10 @@ export interface BenefitCustomSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {Array<BenefitGrant>}
+     * @type {Array<BenefitGrantSubscriber>}
      * @memberof BenefitCustomSubscriber
      */
-    grants: Array<BenefitGrant>;
+    grants: Array<BenefitGrantSubscriber>;
     /**
      * 
      * @type {BenefitCustomSubscriberProperties}
@@ -3548,7 +3548,7 @@ export const BenefitGitHubRepositoryUpdateTypeEnum = {
 export type BenefitGitHubRepositoryUpdateTypeEnum = typeof BenefitGitHubRepositoryUpdateTypeEnum[keyof typeof BenefitGitHubRepositoryUpdateTypeEnum];
 
 /**
- * A grant of a benefit to a user.
+ * 
  * @export
  * @interface BenefitGrant
  */
@@ -3597,12 +3597,6 @@ export interface BenefitGrant {
     is_revoked: boolean;
     /**
      * 
-     * @type {Properties}
-     * @memberof BenefitGrant
-     */
-    properties: Properties;
-    /**
-     * 
      * @type {string}
      * @memberof BenefitGrant
      */
@@ -3625,6 +3619,12 @@ export interface BenefitGrant {
      * @memberof BenefitGrant
      */
     benefit_id: string;
+    /**
+     * 
+     * @type {Properties}
+     * @memberof BenefitGrant
+     */
+    properties: Properties;
 }
 /**
  * 
@@ -3676,12 +3676,6 @@ export interface BenefitGrantAds {
     is_revoked: boolean;
     /**
      * 
-     * @type {BenefitGrantAdsProperties}
-     * @memberof BenefitGrantAds
-     */
-    properties: BenefitGrantAdsProperties;
-    /**
-     * 
      * @type {string}
      * @memberof BenefitGrantAds
      */
@@ -3704,6 +3698,12 @@ export interface BenefitGrantAds {
      * @memberof BenefitGrantAds
      */
     benefit_id: string;
+    /**
+     * 
+     * @type {BenefitGrantAdsSubscriberProperties}
+     * @memberof BenefitGrantAds
+     */
+    properties: BenefitGrantAdsSubscriberProperties;
 }
 /**
  * 
@@ -3715,6 +3715,19 @@ export interface BenefitGrantAdsProperties {
      * 
      * @type {string}
      * @memberof BenefitGrantAdsProperties
+     */
+    advertisement_campaign_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantAdsSubscriberProperties
+ */
+export interface BenefitGrantAdsSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAdsSubscriberProperties
      */
     advertisement_campaign_id?: string | null;
 }
@@ -3851,12 +3864,6 @@ export interface BenefitGrantLicenseKeys {
     is_revoked: boolean;
     /**
      * 
-     * @type {BenefitGrantLicenseKeysProperties}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    properties: BenefitGrantLicenseKeysProperties;
-    /**
-     * 
      * @type {string}
      * @memberof BenefitGrantLicenseKeys
      */
@@ -3879,6 +3886,12 @@ export interface BenefitGrantLicenseKeys {
      * @memberof BenefitGrantLicenseKeys
      */
     benefit_id: string;
+    /**
+     * 
+     * @type {BenefitGrantLicenseKeysProperties}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    properties: BenefitGrantLicenseKeysProperties;
 }
 /**
  * 
@@ -3891,13 +3904,86 @@ export interface BenefitGrantLicenseKeysProperties {
      * @type {string}
      * @memberof BenefitGrantLicenseKeysProperties
      */
-    license_key_id: string;
+    license_key_id?: string;
     /**
      * 
      * @type {string}
      * @memberof BenefitGrantLicenseKeysProperties
      */
-    display_key: string;
+    display_key?: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantSubscriber
+ */
+export interface BenefitGrantSubscriber {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the grant.
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    granted_at?: string | null;
+    /**
+     * Whether the benefit is granted.
+     * @type {boolean}
+     * @memberof BenefitGrantSubscriber
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    revoked_at?: string | null;
+    /**
+     * Whether the benefit is revoked.
+     * @type {boolean}
+     * @memberof BenefitGrantSubscriber
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    order_id: string | null;
+    /**
+     * The ID of the user concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    user_id: string;
+    /**
+     * The ID of the benefit concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantSubscriber
+     */
+    benefit_id: string;
 }
 /**
  * 
@@ -3949,12 +4035,6 @@ export interface BenefitGrantWebhook {
     is_revoked: boolean;
     /**
      * 
-     * @type {Properties}
-     * @memberof BenefitGrantWebhook
-     */
-    properties: Properties;
-    /**
-     * 
      * @type {string}
      * @memberof BenefitGrantWebhook
      */
@@ -3979,24 +4059,23 @@ export interface BenefitGrantWebhook {
     benefit_id: string;
     /**
      * 
+     * @type {Properties}
+     * @memberof BenefitGrantWebhook
+     */
+    properties: Properties;
+    /**
+     * 
      * @type {Benefit}
      * @memberof BenefitGrantWebhook
      */
     benefit: Benefit;
     /**
      * 
-     * @type {BenefitGrantWebhookPreviousProperties}
+     * @type {PreviousProperties}
      * @memberof BenefitGrantWebhook
      */
-    previous_properties?: BenefitGrantWebhookPreviousProperties | null;
+    previous_properties?: PreviousProperties | null;
 }
-/**
- * @type BenefitGrantWebhookPreviousProperties
- * The properties of the grant.
- * @export
- */
-export type BenefitGrantWebhookPreviousProperties = BenefitGrantAdsProperties | BenefitGrantDiscordProperties | BenefitGrantDownloadablesProperties | BenefitGrantGitHubRepositoryProperties | BenefitGrantLicenseKeysProperties | object;
-
 /**
  * @type BenefitIDFilter
  * Filter by given benefit ID. 
@@ -11184,6 +11263,12 @@ export interface PostIssueComment {
     append_badge?: boolean;
 }
 /**
+ * @type PreviousProperties
+ * @export
+ */
+export type PreviousProperties = BenefitGrantAdsProperties | BenefitGrantDiscordProperties | BenefitGrantDownloadablesProperties | BenefitGrantGitHubRepositoryProperties | BenefitGrantLicenseKeysProperties | object;
+
+/**
  * @type Prices
  * List of available prices for this product.
  * @export
@@ -12336,7 +12421,6 @@ export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTim
 
 /**
  * @type Properties
- * The properties of the grant.
  * @export
  */
 export type Properties = BenefitGrantAdsProperties | BenefitGrantDiscordProperties | BenefitGrantDownloadablesProperties | BenefitGrantGitHubRepositoryProperties | BenefitGrantLicenseKeysProperties | object;
@@ -15073,7 +15157,7 @@ export interface UserInfoOrganization {
      * @type {string}
      * @memberof UserInfoOrganization
      */
-    name: string | null;
+    name?: string | null;
 }
 /**
  * 
@@ -15092,19 +15176,19 @@ export interface UserInfoUser {
      * @type {string}
      * @memberof UserInfoUser
      */
-    name: string | null;
+    name?: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserInfoUser
      */
-    email: string | null;
+    email?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof UserInfoUser
      */
-    email_verified: boolean | null;
+    email_verified?: boolean | null;
 }
 /**
  * 

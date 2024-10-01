@@ -8580,8 +8580,8 @@
                             "default": [
                                 "free_subscription",
                                 "donation",
-                                "paid_subscription",
-                                "order"
+                                "order",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -19412,7 +19412,7 @@
                     },
                     "grants": {
                         "items": {
-                            "$ref": "#/components/schemas/BenefitGrant"
+                            "$ref": "#/components/schemas/BenefitGrantSubscriber"
                         },
                         "type": "array",
                         "title": "Grants"
@@ -20651,33 +20651,6 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
-                    "properties": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                            }
-                        ],
-                        "title": "Properties",
-                        "description": "The properties of the grant."
-                    },
                     "subscription_id": {
                         "anyOf": [
                             {
@@ -20715,6 +20688,32 @@
                         "format": "uuid4",
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
+                    },
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                            }
+                        ],
+                        "title": "Properties"
                     }
                 },
                 "type": "object",
@@ -20724,14 +20723,13 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
-                    "benefit_id"
+                    "benefit_id",
+                    "properties"
                 ],
-                "title": "BenefitGrant",
-                "description": "A grant of a benefit to a user."
+                "title": "BenefitGrant"
             },
             "BenefitGrantAds": {
                 "properties": {
@@ -20796,9 +20794,6 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
-                    "properties": {
-                        "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                    },
                     "subscription_id": {
                         "anyOf": [
                             {
@@ -20836,6 +20831,9 @@
                         "format": "uuid4",
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitGrantAdsSubscriberProperties"
                     }
                 },
                 "type": "object",
@@ -20845,15 +20843,28 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
-                    "benefit_id"
+                    "benefit_id",
+                    "properties"
                 ],
                 "title": "BenefitGrantAds"
             },
             "BenefitGrantAdsProperties": {
+                "properties": {
+                    "advertisement_campaign_id": {
+                        "type": "string",
+                        "title": "Advertisement Campaign Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "advertisement_campaign_id"
+                ],
+                "title": "BenefitGrantAdsProperties"
+            },
+            "BenefitGrantAdsSubscriberProperties": {
                 "properties": {
                     "advertisement_campaign_id": {
                         "anyOf": [
@@ -20870,7 +20881,7 @@
                     }
                 },
                 "type": "object",
-                "title": "BenefitGrantAdsProperties"
+                "title": "BenefitGrantAdsSubscriberProperties"
             },
             "BenefitGrantArticlesProperties": {
                 "properties": {},
@@ -20904,8 +20915,7 @@
                 "properties": {
                     "files": {
                         "items": {
-                            "type": "string",
-                            "format": "uuid"
+                            "type": "string"
                         },
                         "type": "array",
                         "title": "Files"
@@ -20919,8 +20929,7 @@
                     "repository_id": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "format": "uuid"
+                                "type": "string"
                             },
                             {
                                 "type": "null"
@@ -21014,8 +21023,139 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "The ID of the subscription that granted this benefit."
+                    },
+                    "order_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order Id",
+                        "description": "The ID of the order that granted this benefit."
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id",
+                        "description": "The ID of the user concerned by this grant."
+                    },
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id",
+                        "description": "The ID of the benefit concerned by this grant."
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "is_granted",
+                    "is_revoked",
+                    "subscription_id",
+                    "order_id",
+                    "user_id",
+                    "benefit_id",
+                    "properties"
+                ],
+                "title": "BenefitGrantLicenseKeys"
+            },
+            "BenefitGrantLicenseKeysProperties": {
+                "properties": {
+                    "license_key_id": {
+                        "type": "string",
+                        "title": "License Key Id"
+                    },
+                    "display_key": {
+                        "type": "string",
+                        "title": "Display Key"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitGrantLicenseKeysProperties"
+            },
+            "BenefitGrantSubscriber": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the grant."
+                    },
+                    "granted_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Granted At",
+                        "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+                    },
+                    "is_granted": {
+                        "type": "boolean",
+                        "title": "Is Granted",
+                        "description": "Whether the benefit is granted."
+                    },
+                    "revoked_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Revoked At",
+                        "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+                    },
+                    "is_revoked": {
+                        "type": "boolean",
+                        "title": "Is Revoked",
+                        "description": "Whether the benefit is revoked."
                     },
                     "subscription_id": {
                         "anyOf": [
@@ -21063,31 +21203,12 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
                     "benefit_id"
                 ],
-                "title": "BenefitGrantLicenseKeys"
-            },
-            "BenefitGrantLicenseKeysProperties": {
-                "properties": {
-                    "license_key_id": {
-                        "type": "string",
-                        "title": "License Key Id"
-                    },
-                    "display_key": {
-                        "type": "string",
-                        "title": "Display Key"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "license_key_id",
-                    "display_key"
-                ],
-                "title": "BenefitGrantLicenseKeysProperties"
+                "title": "BenefitGrantSubscriber"
             },
             "BenefitGrantWebhook": {
                 "properties": {
@@ -21152,33 +21273,6 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
-                    "properties": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                            }
-                        ],
-                        "title": "Properties",
-                        "description": "The properties of the grant."
-                    },
                     "subscription_id": {
                         "anyOf": [
                             {
@@ -21217,6 +21311,32 @@
                         "title": "Benefit Id",
                         "description": "The ID of the benefit concerned by this grant."
                     },
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
+                            }
+                        ],
+                        "title": "Properties"
+                    },
                     "benefit": {
                         "anyOf": [
                             {
@@ -21246,30 +21366,25 @@
                     "previous_properties": {
                         "anyOf": [
                             {
-                                "anyOf": [
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
-                                    }
-                                ],
-                                "description": "The properties of the grant."
+                                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantArticlesProperties"
                             },
                             {
                                 "type": "null"
@@ -21285,11 +21400,11 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "properties",
                     "subscription_id",
                     "order_id",
                     "user_id",
                     "benefit_id",
+                    "properties",
                     "benefit"
                 ],
                 "title": "BenefitGrantWebhook"
@@ -35550,8 +35665,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "sub",
-                    "name"
+                    "sub"
                 ],
                 "title": "UserInfoOrganization"
             },
@@ -35597,10 +35711,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "sub",
-                    "name",
-                    "email",
-                    "email_verified"
+                    "sub"
                 ],
                 "title": "UserInfoUser"
             },

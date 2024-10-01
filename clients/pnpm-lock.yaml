@@ -585,6 +585,9 @@ importers:
       cmdk:
         specifier: ^0.2.0
         version: 0.2.1(@types/react@18.2.65)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      countries-list:
+        specifier: ^3.1.1
+        version: 3.1.1
       lucide-react:
         specifier: ^0.272.0
         version: 0.272.0(react@18.2.0)
@@ -5504,6 +5507,9 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  countries-list@3.1.1:
+    resolution: {integrity: sha512-nPklKJ5qtmY5MdBKw1NiBAoyx5Sa7p2yPpljZyQ7gyCN1m+eMFs9I6CT37Mxt8zvR5L3VzD3DJBE4WQzX3WF4A==}
 
   create-ecdh@4.0.4:
     resolution: {integrity: sha512-mf+TCx8wWc9VpuxfP2ht0iSISLZnt0JgWlrOKZiNqyUZWnjIaCIVNQArMHnCZKfEYRg6IM7A+NeJoN8gf/Ws0A==}
@@ -17336,6 +17342,8 @@ snapshots:
       path-type: 4.0.0
     optionalDependencies:
       typescript: 5.3.3
+
+  countries-list@3.1.1: {}
 
   create-ecdh@4.0.4:
     dependencies:

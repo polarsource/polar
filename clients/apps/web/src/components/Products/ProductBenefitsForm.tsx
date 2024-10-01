@@ -1,9 +1,5 @@
 import { useDeleteBenefit } from '@/hooks/queries'
-import {
-  CheckOutlined,
-  LoyaltyOutlined,
-  MoreVertOutlined,
-} from '@mui/icons-material'
+import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -20,10 +16,10 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
+import { resolveBenefitIcon } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
-import { resolveBenefitIcon } from '../Benefit/utils'
 
 interface BenefitRowProps {
   organization: Organization

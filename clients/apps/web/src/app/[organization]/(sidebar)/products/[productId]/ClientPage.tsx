@@ -44,6 +44,8 @@ export default function ClientPage({
     (sub) => sub.product_id === product.id,
   )
 
+  const currentSubscriptionEnded = Boolean(currentSubscription?.ended_at)
+
   return (
     <div className="flex flex-col items-start justify-between gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
       <div className="flex w-full flex-col gap-8">
@@ -121,7 +123,7 @@ export default function ClientPage({
           <div className="flex flex-col gap-4">
             {isRecurring ? (
               <>
-                {currentSubscription ? (
+                {currentSubscription && !currentSubscriptionEnded ? (
                   <Link
                     className="w-full"
                     href={`/purchases/subscriptions/${currentSubscription.id}`}

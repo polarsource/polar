@@ -177,13 +177,15 @@ const ClientPage = ({
               )}
             </div>
             <div className="flex flex-col gap-2">
-              <Button
-                size="lg"
-                fullWidth
-                onClick={() => setShowChangePlanModal(true)}
-              >
-                Change Plan
-              </Button>
+              {!isCanceled && (
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={() => setShowChangePlanModal(true)}
+                >
+                  Change Plan
+                </Button>
+              )}
               {!isCanceled && (
                 <Button
                   size="lg"

@@ -21,7 +21,7 @@ const DropzoneView = ({
     <>
       <div
         className={twMerge(
-          'flex aspect-square w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent px-4 py-8',
+          'flex aspect-video w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent px-4',
           isDragActive
             ? 'dark:border-polar-700 dark:bg-polar-950 border-blue-100 bg-blue-50'
             : 'dark:border-polar-700 bg-gray-100 dark:bg-transparent',
@@ -88,7 +88,7 @@ const ProductMediasField = ({
   })
   return (
     <>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>div>*]:aspect-video">
         <FileList files={files} setFiles={setFiles} removeFile={removeFile} />
         <div {...getRootProps()}>
           <DropzoneView isDragActive={isDragActive}>

@@ -68,18 +68,16 @@ export const CheckoutSuccess = (props: {
                 You&apos;re now eligible for the benefits of {product.name}.
               </p>
             </CardHeader>
-            <CardContent className="flex flex-col gap-y-1">
+            <CardContent className="flex flex-col gap-y-2">
               {product.benefits.map((benefit) => (
                 <div
                   key={benefit.id}
-                  className="flex flex-row items-start text-blue-500 dark:text-blue-400"
+                  className="flex flex-row items-start gap-x-3 align-middle"
                 >
-                  <span className="flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-[14px] dark:bg-blue-950">
-                    {resolveBenefitIcon(benefit, 'inherit')}
+                  <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+                    {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
                   </span>
-                  <span className="ml-2 text-sm leading-relaxed">
-                    {benefit.description}
-                  </span>
+                  <span className="text-sm">{benefit.description}</span>
                 </div>
               ))}
             </CardContent>

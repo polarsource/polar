@@ -3,7 +3,7 @@ import {
   FileDownloadOutlined,
   GitHub,
   KeyOutlined,
-  StickyNote2Outlined,
+  StickyNote2,
   WebOutlined,
 } from '@mui/icons-material'
 import { BenefitArticles, BenefitPublicInner, BenefitType } from '@polar-sh/sdk'
@@ -19,7 +19,7 @@ export const resolveBenefitIcon = (
   const cn = twMerge('h-4 w-4', className)
   switch (benefit?.type) {
     case BenefitType.ARTICLES:
-      return <StickyNote2Outlined className={cn} fontSize={fontSize} />
+      return <StickyNote2 className={cn} fontSize={fontSize} />
     case BenefitType.ADS:
       return <WebOutlined className={cn} fontSize={fontSize} />
     case BenefitType.DISCORD:

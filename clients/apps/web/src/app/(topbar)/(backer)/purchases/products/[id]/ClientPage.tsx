@@ -71,11 +71,11 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               <></>
             )}
           </ShadowBox>
-          {benefits?.items && (
+          {(benefits?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
               <h3 className="text-lg font-medium">Benefits</h3>
               <List>
-                {benefits.items.map((benefit) => (
+                {benefits?.items.map((benefit) => (
                   <ListItem
                     key={benefit.id}
                     selected={benefit.id === selectedBenefit?.id}

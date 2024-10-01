@@ -13,16 +13,12 @@ import {
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useProducts, useUpdateSubscription } from '@/hooks/queries'
-import {
-  CheckOutlined,
-  ClearOutlined,
-  ReceiptOutlined,
-} from '@mui/icons-material'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { useCallback, useMemo, useState } from 'react'
+import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 
 const ProductPriceListItem = ({
@@ -39,10 +35,11 @@ const ProductPriceListItem = ({
   return (
     <ListItem
       selected={selected}
-      className="flex justify-between"
+      className="flex flex-row items-center justify-between text-sm"
       onSelect={onSelect}
+      size="small"
     >
-      <div>{product.name}</div>
+      <h3 className="font-medium">{product.name}</h3>
       <ProductPriceLabel price={price} />
     </ListItem>
   )
@@ -153,16 +150,16 @@ const ChangePlanModal = ({
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
-        <h3 className="font-bold">Current Plan</h3>
-        <List>
+        <h3 className="font-medium">Current Plan</h3>
+        <List size="small">
           <ProductPriceListItem
             product={subscription.product}
             price={currentPrice}
             selected
           />
         </List>
-        <h3 className="font-bold">Available Plans</h3>
-        <List>
+        <h3 className="font-medium">Available Plans</h3>
+        <List size="small">
           {products.data?.items.map((product) => (
             <>
               {product.prices
@@ -186,60 +183,66 @@ const ChangePlanModal = ({
             </>
           ))}
         </List>
-        <ul className=" space-y-2 text-sm [&>li]:flex [&>li]:space-x-2 [&li]:items-center">
+        <div className="flex flex-col gap-y-6">
           {addedBenefits.length > 0 && (
-            <li>
-              <div>
-                <CheckOutlined className="text-sm" />
+            <div className="flex flex-col gap-y-4">
+              <h3 className="text-sm font-medium text-green-400">
+                You&apos;ll get access to the following benefits
+              </h3>
+              <div className="flex flex-col gap-y-2">
+                {addedBenefits.map((benefit) => (
+                  <div key={benefit.id} className="flex flex-row align-middle">
+                    <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+                      {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+                    </span>
+                    <span className="ml-2 text-sm">{benefit.description}</span>
+                  </div>
+                ))}
               </div>
-              <div>
-                You&apos;ll get access to the following benefits:{' '}
-                {addedBenefits.map(({ description }) => description).join(', ')}
-              </div>
-            </li>
+            </div>
           )}
           {removedBenefits.length > 0 && (
-            <li>
-              <div>
-                <ClearOutlined className="text-sm" />
+            <div className="flex flex-col gap-y-4">
+              <h3 className="text-sm font-medium text-red-400">
+                You&apos;ll will loose access to the following benefits
+              </h3>
+              <div className="flex flex-col gap-y-2">
+                {removedBenefits.map((benefit) => (
+                  <div key={benefit.id} className="flex flex-row align-middle">
+                    <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+                      {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+                    </span>
+                    <span className="ml-2 text-sm">{benefit.description}</span>
+                  </div>
+                ))}
               </div>
-              <div>
-                You&apos;ll lose access to the following benefits:{' '}
-                {removedBenefits
-                  .map(({ description }) => description)
-                  .join(', ')}
-              </div>
-            </li>
+            </div>
           )}
           {selectedPrice && (
-            <li>
-              <div>
-                <ReceiptOutlined className="text-sm" />
-              </div>
-              <div>
-                {isDowngrade
-                  ? selectedPrice.amount_type === 'free'
-                    ? `We'll issue a credit invoice for the unused time this month.`
-                    : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
-                        selectedPrice.price_amount,
-                        selectedPrice.price_currency,
-                        0,
-                      )}, minus a credit of what we already billed for the current month.`
-                  : selectedPrice.amount_type === 'free'
-                    ? ''
-                    : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
-                        selectedPrice.price_amount,
-                        selectedPrice.price_currency,
-                        0,
-                      )}, plus a proration for the current month.`}
-              </div>
-            </li>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              {isDowngrade
+                ? selectedPrice.amount_type === 'free'
+                  ? `We'll issue a credit invoice for the unused time this month.`
+                  : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
+                      selectedPrice.price_amount,
+                      selectedPrice.price_currency,
+                      0,
+                    )}, minus a credit of what we already billed for the current month.`
+                : selectedPrice.amount_type === 'free'
+                  ? ''
+                  : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
+                      selectedPrice.price_amount,
+                      selectedPrice.price_currency,
+                      0,
+                    )}, plus a proration for the current month.`}
+            </p>
           )}
-        </ul>
+        </div>
         <Button
           disabled={!selectedPrice}
           loading={updateSubscription.isPending}
           onClick={onConfirm}
+          size="lg"
         >
           Change Plan
         </Button>

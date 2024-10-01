@@ -1,5 +1,9 @@
 import { useDeleteBenefit } from '@/hooks/queries'
-import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
+import {
+  CheckOutlined,
+  LoyaltyOutlined,
+  MoreVertOutlined,
+} from '@mui/icons-material'
 import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -16,10 +20,10 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
-import { resolveBenefitIcon } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import { resolveBenefitIcon } from '../Benefit/utils'
 
 interface BenefitRowProps {
   organization: Organization
@@ -55,8 +59,10 @@ const BenefitRow = ({
     <div
       className={twMerge('flex w-full flex-row items-center justify-between')}
     >
-      <div className={twMerge('flex flex-row items-center gap-x-3')}>
-        {resolveBenefitIcon(benefit)}
+      <div className="flex flex-row items-start gap-x-3 align-middle">
+        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+          {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+        </span>
         <span className="text-sm">{benefit.description}</span>
       </div>
       <div className="flex flex-row items-center gap-x-2 text-[14px]">

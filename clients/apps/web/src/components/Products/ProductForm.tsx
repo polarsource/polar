@@ -360,6 +360,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
             <FormItem className="flex flex-col gap-2">
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Description</FormLabel>
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  Markdown format
+                </p>
               </div>
               <FormControl>
                 <TextArea

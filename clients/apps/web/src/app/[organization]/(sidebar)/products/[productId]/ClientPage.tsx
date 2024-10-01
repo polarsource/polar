@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  resolveBenefitIcon,
-  resolveBenefitTypeDisplayName,
-} from '@/components/Benefit/utils'
+import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import CheckoutButton from '@/components/Products/CheckoutButton'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
@@ -13,9 +10,12 @@ import {
   useRecurringInterval,
   useRecurringProductPrice,
 } from '@/hooks/products'
+import { useUserSubscriptions } from '@/hooks/queries'
+import { CheckOutlined } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import Link from 'next/link'
+import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
@@ -34,6 +34,15 @@ export default function ClientPage({
   const oneTimePrice = product.prices.find((price) => price.type === 'one_time')
   const isFixedPrice = product.prices.every(
     (price) => price.amount_type === 'fixed',
+  )
+
+  const subscriptions = useUserSubscriptions({
+    limit: 100,
+    organizationId: organization.id,
+  })
+
+  const currentSubscription = subscriptions.data?.items.find(
+    (sub) => sub.product_id === product.id,
   )
 
   return (
@@ -95,23 +104,17 @@ export default function ClientPage({
               <div className="flex flex-col gap-2">
                 <h1 className="font-medium dark:text-white">Included</h1>
               </div>
-              <List size="small">
-                {product.benefits.map((benefit) => (
-                  <ListItem
-                    key={benefit.id}
-                    className="justify-start gap-x-4"
-                    size="small"
-                  >
-                    {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
-                    <div className="flex flex-col">
-                      <span className="text-sm">{benefit.description}</span>
-                      <span className="dark:text-polar-500 text-xs text-gray-500">
-                        {resolveBenefitTypeDisplayName(benefit.type)}
-                      </span>
-                    </div>
-                  </ListItem>
-                ))}
-              </List>
+              {product.benefits.map((benefit) => (
+                <div
+                  key={benefit.id}
+                  className="flex flex-row items-start gap-x-3 align-middle"
+                >
+                  <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+                  {resolveBenefitIcon(benefit, 'small', 'h-3 w-3')}
+                  </span>
+                  <span className="text-sm">{benefit.description}</span>
+                </div>
+              ))}
             </div>
           ) : (
             <></>
@@ -119,7 +122,16 @@ export default function ClientPage({
           <div className="flex flex-col gap-4">
             {isRecurring ? (
               <>
-                {
+                {currentSubscription ? (
+                  <Link
+                    className="w-full"
+                    href={`/purchases/subscriptions/${currentSubscription.id}`}
+                  >
+                    <Button size="lg" fullWidth>
+                      View Subscription
+                    </Button>
+                  </Link>
+                ) : (
                   <CheckoutButton
                     product={product}
                     recurringInterval={recurringInterval}
@@ -129,7 +141,7 @@ export default function ClientPage({
                   >
                     Subscribe Now
                   </CheckoutButton>
-                }
+                )}
               </>
             ) : (
               <CheckoutButton

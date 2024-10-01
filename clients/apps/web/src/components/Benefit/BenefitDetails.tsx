@@ -1,6 +1,5 @@
 'use client'
 
-import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { useOrganization } from '@/hooks/queries'
 import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
@@ -9,6 +8,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import DownloadablesSubscriberWidget from './Downloadables/SubscriberWidget'
 import { LicenseKeysSubscriberWidget } from './LicenseKeys/SubscriberWidget'
 import ConfigureAdCampaigns from './ads/ConfigureAdCampaigns'
+import { resolveBenefitIcon } from './utils'
 
 const GitHubRepoWidget = ({ benefit }: BenefitDetailsProps) => {
   if (benefit.type !== 'github_repository') {
@@ -50,13 +50,11 @@ const BenefitDetails = ({
 
   return (
     <div className="flex flex-col gap-y-6">
-      <div className="flex flex-row items-center gap-x-2">
-        <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400">
-          <span className="flex h-6 w-6 flex-row items-center justify-center rounded-full bg-blue-50 text-sm dark:bg-blue-950">
-            {resolveBenefitIcon(benefit, 'inherit')}
-          </span>
-        </div>
-        <h2 className="font-medium capitalize">{benefit.description}</h2>
+      <div className="flex flex-row items-start gap-x-3 align-middle">
+        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+          {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+        </span>
+        <span className="text-sm">{benefit.description}</span>
       </div>
       {benefit.type === 'custom' && benefit.properties.note && (
         <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm dark:bg-blue-950">

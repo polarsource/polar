@@ -106,11 +106,11 @@ const ClientPage = ({
               <></>
             )}
           </ShadowBox>
-          {benefits?.items && (
+          {(benefits?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
               <h3 className="text-lg font-medium">Benefits</h3>
               <List>
-                {benefits.items.map((benefit) => (
+                {benefits?.items.map((benefit) => (
                   <ListItem
                     key={benefit.id}
                     selected={benefit.id === selectedBenefit?.id}
@@ -211,11 +211,12 @@ const ClientPage = ({
           {hasInvoices && (
             <div className="flex flex-col gap-y-4">
               <h3 className="font-medium">Invoices</h3>
-              <List>
+              <List size="small">
                 {orders.items?.map((order) => (
                   <ListItem
                     key={order.id}
                     className="flex flex-row items-center justify-between"
+                    size="small"
                   >
                     <div className="flex flex-col">
                       <span className="text-sm">

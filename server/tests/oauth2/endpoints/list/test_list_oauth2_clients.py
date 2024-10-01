@@ -3,10 +3,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
-from polar.models import (
-    OAuth2Client,
-    User,
-)
+from polar.models import OAuth2Client, User
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 

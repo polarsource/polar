@@ -9,7 +9,6 @@ import { organizationPageLink } from '@/utils/nav'
 import { Article, IssueFunding, Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { NewsletterFeed } from './NewsletterFeed'
 import { ProductsGrid } from './ProductsGrid'
 
 export const Storefront = ({
@@ -79,11 +78,6 @@ export const Storefront = ({
               ))}
             </ProductsGrid>
           )}
-
-          {organization.feature_settings?.articles_enabled &&
-            posts.length > 0 && (
-              <NewsletterFeed organization={organization} posts={posts} />
-            )}
 
           {organization.feature_settings?.issue_funding_enabled &&
           issues.length > 0 ? (

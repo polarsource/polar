@@ -1,10 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import {
-  ArticleVisibility,
-  ListResourceArticle,
-  ListResourceIssueFunding,
-  ListResourceProduct,
-} from '@polar-sh/sdk'
+import { ListResourceIssueFunding, ListResourceProduct } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -80,7 +75,6 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  let articles: ListResourceArticle | undefined
   let products: ListResourceProduct | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
 
@@ -90,67 +84,48 @@ export default async function Page({
   )
 
   try {
-    const [loadArticles, loadProducts, loadListIssueFunding] =
-      await Promise.all([
-        api.articles.list(
-          {
-            organizationId: organization.id,
-            isPublished: true,
-            visibility: ArticleVisibility.PUBLIC,
-            limit: 4,
+    const [loadProducts, loadListIssueFunding] = await Promise.all([
+      api.products.list(
+        {
+          organizationId: organization.id,
+          isArchived: false,
+        },
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`products:${organization.id}`],
           },
-          {
-            ...cacheConfig,
-            next: {
-              ...cacheConfig.next,
-              tags: [`articles:${organization.id}`],
-            },
+        },
+      ),
+      api.funding.search(
+        {
+          organizationId: organization.id,
+          limit: 10,
+          page: 1,
+          closed: false,
+          sorting: [
+            'most_funded',
+            'most_recently_funded',
+            'most_engagement',
+            'newest',
+          ],
+        },
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`funding:${organization.id}`],
           },
-        ),
-        api.products.list(
-          {
-            organizationId: organization.id,
-            isArchived: false,
-          },
-          {
-            ...cacheConfig,
-            next: {
-              ...cacheConfig.next,
-              tags: [`products:${organization.id}`],
-            },
-          },
-        ),
-        api.funding.search(
-          {
-            organizationId: organization.id,
-            limit: 10,
-            page: 1,
-            closed: false,
-            sorting: [
-              'most_funded',
-              'most_recently_funded',
-              'most_engagement',
-              'newest',
-            ],
-          },
-          {
-            ...cacheConfig,
-            next: {
-              ...cacheConfig.next,
-              tags: [`funding:${organization.id}`],
-            },
-          },
-        ),
-      ])
+        },
+      ),
+    ])
 
-    articles = loadArticles
     products = loadProducts
     listIssueFunding = loadListIssueFunding
   } catch (e) {
     notFound()
   }
-
-  const posts = articles?.items ?? []
 
   // Build JSON-LD for this page
   let jsonLd: WithContext<JSONLDProfilePage> | undefined
@@ -185,7 +160,6 @@ export default async function Page({
       />
       <ClientPage
         organization={organization}
-        posts={posts}
         products={products?.items ?? []}
         issues={listIssueFunding?.items ?? []}
       />

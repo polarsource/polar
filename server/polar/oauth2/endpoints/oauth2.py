@@ -291,6 +291,7 @@ async def introspect(
     name="oauth2:userinfo",
     operation_id="oauth2:userinfo",
     response_model=UserInfoSchema,
+    response_model_exclude_unset=True,
     tags=[APITag.featured, APITag.documented],
     openapi_extra={"x-speakeasy-name-override": "userinfo"},
 )
@@ -305,6 +306,7 @@ async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     "/userinfo",
     summary="Get User Info",
     response_model=UserInfoSchema,
+    response_model_exclude_unset=True,
     include_in_schema=False,
 )
 async def userinfo_post(token: OAuth2Token = Depends(get_token)) -> UserInfo:

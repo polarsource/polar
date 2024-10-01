@@ -181,14 +181,14 @@ class IntrospectTokenResponse(Schema):
 
 class UserInfoUser(Schema):
     sub: str
-    name: str | None
-    email: str | None
-    email_verified: bool | None
+    name: str | None = None
+    email: str | None = None
+    email_verified: bool | None = None
 
 
 class UserInfoOrganization(Schema):
     sub: str
-    name: str | None
+    name: str | None = None
 
 
 UserInfo = UserInfoUser | UserInfoOrganization

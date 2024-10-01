@@ -19,6 +19,7 @@ import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
@@ -83,7 +84,20 @@ const ClientPage = ({
       <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
         <div className="flex w-full flex-col gap-8 md:w-2/3">
           <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-            <h1 className="text-2xl font-medium">
+            {organization && (
+              <Link
+                className="flex flex-row items-center gap-x-4"
+                href={`/${organization.slug}`}
+              >
+                <Avatar
+                  className="h-12 w-12"
+                  avatar_url={organization.avatar_url}
+                  name={organization.name}
+                />
+                <h3 className="text-lg">{organization.name}</h3>
+              </Link>
+            )}
+            <h1 className="text-3xl font-medium">
               {subscription.product.name}
             </h1>
             {subscription.product.description ? (

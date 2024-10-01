@@ -11,7 +11,6 @@ import {
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { useUserSubscriptions } from '@/hooks/queries'
-import { CheckOutlined } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
@@ -110,7 +109,7 @@ export default function ClientPage({
                   className="flex flex-row items-start gap-x-3 align-middle"
                 >
                   <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                  {resolveBenefitIcon(benefit, 'small', 'h-3 w-3')}
+                    {resolveBenefitIcon(benefit, 'small', 'h-3 w-3')}
                   </span>
                   <span className="text-sm">{benefit.description}</span>
                 </div>

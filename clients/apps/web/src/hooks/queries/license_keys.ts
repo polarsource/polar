@@ -4,7 +4,7 @@ import { api } from '@/utils/api'
 import { defaultRetry } from './retry'
 
 interface GetLicenseKeysRequest {
-  licenseKeyId: string
+  licenseKeyId?: string
 }
 
 export const useLicenseKey = ({ licenseKeyId }: GetLicenseKeysRequest) =>
@@ -12,7 +12,8 @@ export const useLicenseKey = ({ licenseKeyId }: GetLicenseKeysRequest) =>
     queryKey: ['user', 'license_key', licenseKeyId],
     queryFn: () =>
       api.usersLicenseKeys.get({
-        id: licenseKeyId,
+        id: licenseKeyId ?? '',
       }),
     retry: defaultRetry,
+    enabled: !!licenseKeyId,
   })

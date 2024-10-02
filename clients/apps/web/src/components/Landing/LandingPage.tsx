@@ -23,8 +23,8 @@ export const PageContent = () => {
         <Hero />
         <Benefits />
         <Separator />
-        <Monetization />
         <MerchantOfRecord />
+        <Monetization />
       </Section>
 
       <Pricing />

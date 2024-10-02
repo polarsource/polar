@@ -9,12 +9,12 @@ export const Hero = () => {
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
         <div className="z-20 flex flex-col items-center gap-y-8">
           <h1 className="text-balance text-5xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
-            The best monetization platform for developers
+            Launch SaaS, Products & Memberships in minutes
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">
-            <p className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
-              Get paid coding on your passion. Leave upsales, billing and
-              international taxes to us.
+            <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
+              Merchant of Record - Leave upsales, billing and international
+              taxes to us.
             </p>
           </div>
         </div>

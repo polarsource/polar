@@ -76,7 +76,13 @@ class PaymentTransactionService(BaseTransactionService):
         tax_country = None
         tax_state = None
         pledge_invoice = False
-        if charge.invoice:
+        # Polar Custom Checkout sets tax info in metadata
+        if "tax_amount" in charge.metadata:
+            tax_amount = int(charge.metadata["tax_amount"])
+            tax_country = charge.metadata["tax_country"]
+            tax_state = charge.metadata.get("tax_state")
+        # Stripe Checkout sets tax info in invoice
+        elif charge.invoice:
             stripe_invoice = stripe_service.get_invoice(
                 get_expandable_id(charge.invoice)
             )

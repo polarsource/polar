@@ -1,6 +1,5 @@
-from typing import Any, cast
+from typing import Any, NotRequired, TypedDict, cast
 
-import stripe as stripe_lib
 from pydantic import BaseModel
 from pydantic_extra_types.country import CountryAlpha2
 from sqlalchemy.dialects.postgresql import JSONB
@@ -8,6 +7,15 @@ from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 
 from polar.kit.schemas import EmptyStrToNone
+
+
+class AddressDict(TypedDict):
+    line1: NotRequired[str]
+    line2: NotRequired[str]
+    postal_code: NotRequired[str]
+    city: NotRequired[str]
+    state: NotRequired[str]
+    country: str
 
 
 class Address(BaseModel):
@@ -18,10 +26,15 @@ class Address(BaseModel):
     state: EmptyStrToNone | None = None
     country: CountryAlpha2
 
-    def to_stripe_dict(self) -> stripe_lib.Customer.CreateParamsAddress:
-        return cast(
-            stripe_lib.Customer.CreateParamsAddress, self.model_dump(exclude_none=True)
-        )
+    def to_dict(self) -> AddressDict:
+        return cast(AddressDict, self.model_dump(exclude_none=True))
+
+    def get_unprefixed_state(self) -> str | None:
+        if self.state is None:
+            return None
+        if self.country in {"US", "CA"}:
+            return self.state.split("-")[1]
+        return self.state
 
 
 class AddressType(TypeDecorator[Any]):

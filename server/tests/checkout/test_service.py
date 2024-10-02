@@ -1,7 +1,7 @@
 import uuid
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
@@ -23,7 +23,7 @@ from polar.checkout.service import (
     PaymentIntentNotSucceeded,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.checkout.tax import TaxIDFormat
+from polar.checkout.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
@@ -47,6 +47,14 @@ from tests.fixtures.random_objects import create_checkout, create_product_price_
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock(spec=calculate_tax)
+    mocker.patch("polar.checkout.service.calculate_tax", new=mock)
+    mock.return_value = 0
     return mock
 
 
@@ -402,6 +410,62 @@ class TestCreate:
         assert checkout.customer_tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
         assert checkout.customer_tax_id_number == "FR61954506077"
 
+    async def test_silent_calculate_tax_error(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        calculate_tax_mock: AsyncMock,
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        calculate_tax_mock.side_effect = IncompleteTaxLocation(
+            stripe_lib.InvalidRequestError("ERROR", "ERROR")
+        )
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                customer_billing_address=Address.model_validate({"country": "US"}),
+            ),
+            auth_subject,
+        )
+
+        assert checkout.tax_amount is None
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "US"
+
+    async def test_valid_calculate_tax(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        calculate_tax_mock: AsyncMock,
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        calculate_tax_mock.return_value = 100
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+            ),
+            auth_subject,
+        )
+
+        assert checkout.tax_amount == 100
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -635,6 +699,50 @@ class TestUpdate:
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "US"
 
+    async def test_silent_calculate_tax_error(
+        self,
+        session: AsyncSession,
+        calculate_tax_mock: AsyncMock,
+        user_organization: UserOrganization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        calculate_tax_mock.side_effect = IncompleteTaxLocation(
+            stripe_lib.InvalidRequestError("ERROR", "ERROR")
+        )
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdate(
+                customer_billing_address=Address.model_validate({"country": "US"}),
+            ),
+        )
+
+        assert checkout.tax_amount is None
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "US"
+
+    async def test_valid_calculate_tax(
+        self,
+        session: AsyncSession,
+        calculate_tax_mock: AsyncMock,
+        user_organization: UserOrganization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        calculate_tax_mock.return_value = 100
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdate(
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+            ),
+        )
+
+        assert checkout.tax_amount == 100
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -683,8 +791,44 @@ class TestConfirm:
                 ),
             )
 
+    async def test_calculate_tax_error(
+        self,
+        calculate_tax_mock: AsyncMock,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        calculate_tax_mock.side_effect = IncompleteTaxLocation(
+            stripe_lib.InvalidRequestError("ERROR", "ERROR")
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.confirm(
+                session,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "US"},
+                    }
+                ),
+            )
+
+    @pytest.mark.parametrize(
+        "customer_billing_address,expected_tax_metadata",
+        [
+            ({"country": "FR"}, {"tax_country": "FR"}),
+            (
+                {"country": "CA", "state": "CA-QC"},
+                {"tax_country": "CA", "tax_state": "QC"},
+            ),
+        ],
+    )
     async def test_valid_stripe(
         self,
+        customer_billing_address: dict[str, str],
+        expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         checkout_one_time_fixed: Checkout,
@@ -700,7 +844,7 @@ class TestConfirm:
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
                     "customer_name": "Customer Name",
                     "customer_email": "customer@example.com",
-                    "customer_billing_address": {"country": "FR"},
+                    "customer_billing_address": customer_billing_address,
                 }
             ),
         )
@@ -716,11 +860,14 @@ class TestConfirm:
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
             "type": ProductType.product,
+            "tax_amount": "0",
+            **expected_tax_metadata,
         }
 
 
 def build_stripe_payment_intent(
     *,
+    amount: int = 0,
     status: str = "succeeded",
     customer: str | None = "CUSTOMER_ID",
     payment_method: str | None = "PAYMENT_METHOD_ID",
@@ -728,6 +875,7 @@ def build_stripe_payment_intent(
     return stripe_lib.PaymentIntent.construct_from(
         {
             "id": "STRIPE_PAYMENT_INTENT_ID",
+            "amount": amount,
             "status": status,
             "customer": customer,
             "payment_method": payment_method,
@@ -793,8 +941,16 @@ class TestHandleStripeSuccess:
         session: AsyncSession,
         checkout_confirmed_one_time: Checkout,
     ) -> None:
+        stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
+            id="STRIPE_INVOICE_ID", total=checkout_confirmed_one_time.total_amount
+        )
+
         checkout = await checkout_service.handle_stripe_success(
-            session, checkout_confirmed_one_time.id, build_stripe_payment_intent()
+            session,
+            checkout_confirmed_one_time.id,
+            build_stripe_payment_intent(
+                amount=checkout_confirmed_one_time.total_amount or 0
+            ),
         )
 
         assert checkout.status == CheckoutStatus.succeeded
@@ -807,8 +963,19 @@ class TestHandleStripeSuccess:
         session: AsyncSession,
         checkout_confirmed_recurring: Checkout,
     ) -> None:
+        stripe_service_mock.create_out_of_band_subscription.return_value = (
+            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
+            SimpleNamespace(
+                id="STRIPE_INVOICE_ID", total=checkout_confirmed_recurring.total_amount
+            ),
+        )
+
         checkout = await checkout_service.handle_stripe_success(
-            session, checkout_confirmed_recurring.id, build_stripe_payment_intent()
+            session,
+            checkout_confirmed_recurring.id,
+            build_stripe_payment_intent(
+                amount=checkout_confirmed_recurring.total_amount or 0
+            ),
         )
 
         assert checkout.status == CheckoutStatus.succeeded
@@ -830,9 +997,13 @@ class TestHandleStripeSuccess:
         stripe_service_mock.create_price_for_product.return_value = SimpleNamespace(
             id="STRIPE_CUSTOM_PRICE_ID"
         )
-
+        stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
+            id="STRIPE_INVOICE_ID", total=4242
+        )
         checkout = await checkout_service.handle_stripe_success(
-            session, checkout_one_time_custom.id, build_stripe_payment_intent()
+            session,
+            checkout_one_time_custom.id,
+            build_stripe_payment_intent(amount=4242),
         )
 
         assert checkout.status == CheckoutStatus.succeeded

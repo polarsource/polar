@@ -105,6 +105,12 @@ class Checkout(RecordModel):
     def customer_tax_id_number(self) -> str | None:
         return self.customer_tax_id[0] if self.customer_tax_id is not None else None
 
+    @property
+    def total_amount(self) -> int | None:
+        if self.amount is None:
+            return None
+        return self.amount + (self.tax_amount or 0)
+
 
 @event.listens_for(Checkout, "before_update")
 def check_expiration(

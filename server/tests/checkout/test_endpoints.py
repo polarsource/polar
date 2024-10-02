@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.checkout.service import checkout as checkout_service
+from polar.checkout.tax import calculate_tax
 from polar.integrations.stripe.service import StripeService
 from polar.models import Checkout, Product, UserOrganization
 from polar.postgres import AsyncSession
@@ -20,6 +21,14 @@ from tests.fixtures.random_objects import create_checkout
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock(spec=calculate_tax)
+    mocker.patch("polar.checkout.service.calculate_tax", new=mock)
+    mock.return_value = 0
     return mock
 
 

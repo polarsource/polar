@@ -120,6 +120,7 @@ class CheckoutBase(IDSchema, TimestampedSchema):
     amount: Amount | None
     tax_amount: int | None = Field(description="Computed tax amount to pay in cents.")
     currency: str | None = Field(description="Currency code of the checkout session.")
+    total_amount: int | None = Field(description="Total amount to pay in cents.")
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
 

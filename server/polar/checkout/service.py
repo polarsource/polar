@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Any, cast
 
 import stripe as stripe_lib
+import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
@@ -26,6 +27,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import (
     Checkout,
     Organization,
@@ -42,6 +44,9 @@ from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 
 from .sorting import CheckoutSortProperty
+from .tax import TaxCalculationError, calculate_tax
+
+log: Logger = structlog.get_logger()
 
 
 class CheckoutError(PolarError): ...
@@ -320,9 +325,289 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
         session.add(checkout)
 
+        try:
+            checkout = await self._update_checkout_tax(session, checkout)
+        # Swallow incomplete tax calculation error: require it only on confirm
+        except TaxCalculationError:
+            pass
+
         return checkout
 
     async def update(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
+    ) -> Checkout:
+        checkout = await self._update_checkout(session, checkout, checkout_update)
+        try:
+            checkout = await self._update_checkout_tax(session, checkout)
+        # Swallow incomplete tax calculation error: require it only on confirm
+        except TaxCalculationError:
+            pass
+        return checkout
+
+    async def confirm(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        checkout_confirm: CheckoutConfirm,
+    ) -> Checkout:
+        checkout = await self._update_checkout(session, checkout, checkout_confirm)
+
+        errors: list[ValidationError] = []
+        try:
+            checkout = await self._update_checkout_tax(session, checkout)
+        except TaxCalculationError as e:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "customer_billing_address"),
+                    "msg": e.message,
+                    "input": None,
+                }
+            )
+
+        if checkout.amount is None and isinstance(
+            checkout.product_price, ProductPriceCustom
+        ):
+            errors.append(
+                {
+                    "type": "missing",
+                    "loc": ("body", "amount"),
+                    "msg": "Amount is required for custom prices.",
+                    "input": None,
+                }
+            )
+
+        for required_field in [
+            "customer_name",
+            "customer_email",
+            "customer_billing_address",
+        ]:
+            if getattr(checkout, required_field) is None:
+                errors.append(
+                    {
+                        "type": "missing",
+                        "loc": ("body", required_field),
+                        "msg": "Field is required.",
+                        "input": None,
+                    }
+                )
+
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        assert checkout.customer_name is not None
+        assert checkout.customer_email is not None
+        assert checkout.customer_billing_address is not None
+        assert checkout.tax_amount is not None
+
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            stripe_customer = stripe_service.create_customer(
+                name=checkout.customer_name,
+                email=checkout.customer_email,
+                address=checkout.customer_billing_address.to_dict(),  # type: ignore
+                tax_id_data=[]
+                if checkout.customer_tax_id is None
+                else [to_stripe_tax_id(checkout.customer_tax_id)],
+            )
+            payment_intent_metadata: dict[str, str] = {
+                "checkout_id": str(checkout.id),
+                "type": ProductType.product,
+                "tax_amount": str(checkout.tax_amount),
+                "tax_country": checkout.customer_billing_address.country,
+            }
+            if (
+                state := checkout.customer_billing_address.get_unprefixed_state()
+            ) is not None:
+                payment_intent_metadata["tax_state"] = state
+            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                "amount": checkout.total_amount or 0,
+                "currency": checkout.currency or "usd",
+                "automatic_payment_methods": {"enabled": True},
+                "confirm": True,
+                "confirmation_token": checkout_confirm.confirmation_token_id,
+                "customer": stripe_customer.id,
+                "metadata": payment_intent_metadata,
+                "return_url": settings.generate_frontend_url(
+                    f"/checkout/{checkout.client_secret}/confirmation"
+                ),
+            }
+            if checkout.product_price.is_recurring:
+                payment_intent_params["setup_future_usage"] = "off_session"
+
+            try:
+                payment_intent = stripe_service.create_payment_intent(
+                    **payment_intent_params
+                )
+            except stripe_lib.StripeError as e:
+                error = e.error
+                error_type = error.type if error is not None else None
+                error_message = error.message if error is not None else None
+                raise PaymentError(checkout, error_type, error_message)
+
+            checkout.payment_processor_metadata = {
+                **checkout.payment_processor_metadata,
+                "payment_intent_client_secret": payment_intent.client_secret,
+                "payment_intent_status": payment_intent.status,
+            }
+
+        checkout.status = CheckoutStatus.confirmed
+        session.add(checkout)
+        return checkout
+
+    async def handle_stripe_success(
+        self,
+        session: AsyncSession,
+        checkout_id: uuid.UUID,
+        payment_intent: stripe_lib.PaymentIntent,
+    ) -> Checkout:
+        checkout = await self.get(session, checkout_id)
+
+        if checkout is None:
+            raise CheckoutDoesNotExist(checkout_id, payment_intent.id)
+
+        if checkout.status != CheckoutStatus.confirmed:
+            raise NotConfirmedCheckout(checkout)
+
+        if payment_intent.status != "succeeded":
+            raise PaymentIntentNotSucceeded(checkout, payment_intent.id)
+
+        if payment_intent.customer is None:
+            raise NoCustomerOnPaymentIntent(checkout, payment_intent.id)
+
+        if payment_intent.payment_method is None:
+            raise NoPaymentMethodOnPaymentIntent(checkout, payment_intent.id)
+
+        stripe_customer_id = get_expandable_id(payment_intent.customer)
+        stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
+        product_price = checkout.product_price
+        metadata = {
+            "type": ProductType.product,
+            "product_id": str(checkout.product_id),
+            "product_price_id": str(checkout.product_price_id),
+        }
+        idempotency_key = f"checkout_{checkout.id}"
+
+        stripe_price_id = product_price.stripe_price_id
+        # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
+        if isinstance(product_price, ProductPriceCustom):
+            assert checkout.amount is not None
+            assert checkout.currency is not None
+            assert checkout.product.stripe_product_id is not None
+            price_params: stripe_lib.Price.CreateParams = {
+                "unit_amount": checkout.amount,
+                "currency": checkout.currency,
+                "metadata": {
+                    "product_price_id": str(checkout.product_price_id),
+                },
+            }
+            if product_price.is_recurring:
+                price_params["recurring"] = {
+                    "interval": product_price.recurring_interval.as_literal(),
+                }
+            stripe_custom_price = stripe_service.create_price_for_product(
+                checkout.product.stripe_product_id,
+                price_params,
+                idempotency_key=f"{idempotency_key}_price",
+            )
+            stripe_price_id = stripe_custom_price.id
+
+        if product_price.is_recurring:
+            stripe_subscription, stripe_invoice = (
+                stripe_service.create_out_of_band_subscription(
+                    customer=stripe_customer_id,
+                    currency=checkout.currency or "usd",
+                    price=stripe_price_id,
+                    metadata=metadata,
+                    invoice_metadata={"payment_intent_id": payment_intent.id},
+                    idempotency_key=idempotency_key,
+                )
+            )
+            stripe_service.set_automatically_charged_subscription(
+                stripe_subscription.id,
+                stripe_payment_method_id,
+                idempotency_key=f"{idempotency_key}_subscription_auto_charge",
+            )
+        else:
+            stripe_invoice = stripe_service.create_out_of_band_invoice(
+                customer=stripe_customer_id,
+                currency=checkout.currency or "usd",
+                price=stripe_price_id,
+                metadata={
+                    **metadata,
+                    "payment_intent_id": payment_intent.id,
+                },
+                idempotency_key=idempotency_key,
+            )
+
+        # Sanity check to make sure we didn't mess up the amount.
+        # Don't raise an error so the order can be successfully completed nonetheless.
+        if stripe_invoice.total != payment_intent.amount:
+            log.error(
+                "Mismatch between payment intent and invoice amount",
+                checkout=checkout.id,
+                payment_intent=payment_intent.id,
+                invoice=stripe_invoice.id,
+            )
+
+        checkout.status = CheckoutStatus.succeeded
+        session.add(checkout)
+
+        await publish(
+            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
+        )
+
+        return checkout
+
+    async def handle_stripe_failure(
+        self,
+        session: AsyncSession,
+        checkout_id: uuid.UUID,
+        payment_intent: stripe_lib.PaymentIntent,
+    ) -> Checkout:
+        checkout = await self.get(session, checkout_id)
+
+        if checkout is None:
+            raise CheckoutDoesNotExist(checkout_id, payment_intent.id)
+
+        # Checkout is not confirmed: do nothing
+        # This is the case of an immediate failure, e.g. card declined
+        # In this case, the checkout is still open and the user can retry
+        if checkout.status != CheckoutStatus.confirmed:
+            return checkout
+
+        checkout.status = CheckoutStatus.failed
+        session.add(checkout)
+
+        await publish(
+            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
+        )
+
+        return checkout
+
+    async def get_by_client_secret(
+        self, session: AsyncSession, client_secret: str
+    ) -> Checkout | None:
+        statement = (
+            select(Checkout)
+            .where(
+                Checkout.deleted_at.is_(None),
+                Checkout.expires_at > utc_now(),
+                Checkout.client_secret == client_secret,
+            )
+            .join(Checkout.product)
+            .options(
+                contains_eager(Checkout.product).options(
+                    joinedload(Product.organization), joinedload(Product.product_medias)
+                )
+            )
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
+
+    async def _update_checkout(
         self,
         session: AsyncSession,
         checkout: Checkout,
@@ -495,233 +780,34 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session.add(checkout)
         return checkout
 
-    async def confirm(
-        self,
-        session: AsyncSession,
-        checkout: Checkout,
-        checkout_confirm: CheckoutConfirm,
+    async def _update_checkout_tax(
+        self, session: AsyncSession, checkout: Checkout
     ) -> Checkout:
-        checkout = await self.update(session, checkout, checkout_confirm)
-
-        errors: list[ValidationError] = []
-
-        if checkout.amount is None and isinstance(
-            checkout.product_price, ProductPriceCustom
+        if (
+            checkout.currency is not None
+            and checkout.amount is not None
+            and checkout.customer_billing_address is not None
+            and checkout.product.stripe_product_id is not None
         ):
-            errors.append(
-                {
-                    "type": "missing",
-                    "loc": ("body", "amount"),
-                    "msg": "Amount is required for custom prices.",
-                    "input": None,
-                }
-            )
-
-        for required_field in [
-            "customer_name",
-            "customer_email",
-            "customer_billing_address",
-        ]:
-            if getattr(checkout, required_field) is None:
-                errors.append(
-                    {
-                        "type": "missing",
-                        "loc": ("body", required_field),
-                        "msg": "Field is required.",
-                        "input": None,
-                    }
-                )
-
-        if len(errors) > 0:
-            raise PolarRequestValidationError(errors)
-
-        assert checkout.customer_name is not None
-        assert checkout.customer_email is not None
-        assert checkout.customer_billing_address is not None
-
-        if checkout.payment_processor == PaymentProcessor.stripe:
-            stripe_customer = stripe_service.create_customer(
-                name=checkout.customer_name,
-                email=checkout.customer_email,
-                address=checkout.customer_billing_address.to_stripe_dict(),
-                tax_id_data=[]
-                if checkout.customer_tax_id is None
-                else [to_stripe_tax_id(checkout.customer_tax_id)],
-            )
-            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
-                "amount": checkout.amount or 0,
-                "currency": checkout.currency or "usd",
-                "automatic_payment_methods": {"enabled": True},
-                "confirm": True,
-                "confirmation_token": checkout_confirm.confirmation_token_id,
-                "customer": stripe_customer.id,
-                "metadata": {
-                    "checkout_id": str(checkout.id),
-                    "type": ProductType.product,
-                },
-                "return_url": settings.generate_frontend_url(
-                    f"/checkout/{checkout.client_secret}/confirmation"
-                ),
-            }
-            if checkout.product_price.is_recurring:
-                payment_intent_params["setup_future_usage"] = "off_session"
-
             try:
-                payment_intent = stripe_service.create_payment_intent(
-                    **payment_intent_params
+                tax_amount = await calculate_tax(
+                    checkout.currency,
+                    checkout.amount,
+                    str(checkout.id),
+                    checkout.product.stripe_product_id,
+                    checkout.customer_billing_address,
+                    [checkout.customer_tax_id]
+                    if checkout.customer_tax_id is not None
+                    else [],
                 )
-            except stripe_lib.StripeError as e:
-                error = e.error
-                error_type = error.type if error is not None else None
-                error_message = error.message if error is not None else None
-                raise PaymentError(checkout, error_type, error_message)
-
-            checkout.payment_processor_metadata = {
-                "payment_intent_client_secret": payment_intent.client_secret,
-                "payment_intent_status": payment_intent.status,
-            }
-
-        checkout.status = CheckoutStatus.confirmed
-        session.add(checkout)
-        return checkout
-
-    async def handle_stripe_success(
-        self,
-        session: AsyncSession,
-        checkout_id: uuid.UUID,
-        payment_intent: stripe_lib.PaymentIntent,
-    ) -> Checkout:
-        checkout = await self.get(session, checkout_id)
-
-        if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id, payment_intent.id)
-
-        if checkout.status != CheckoutStatus.confirmed:
-            raise NotConfirmedCheckout(checkout)
-
-        if payment_intent.status != "succeeded":
-            raise PaymentIntentNotSucceeded(checkout, payment_intent.id)
-
-        if payment_intent.customer is None:
-            raise NoCustomerOnPaymentIntent(checkout, payment_intent.id)
-
-        if payment_intent.payment_method is None:
-            raise NoPaymentMethodOnPaymentIntent(checkout, payment_intent.id)
-
-        stripe_customer_id = get_expandable_id(payment_intent.customer)
-        stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
-        product_price = checkout.product_price
-        metadata = {
-            "type": ProductType.product,
-            "product_id": str(checkout.product_id),
-            "product_price_id": str(checkout.product_price_id),
-        }
-        idempotency_key = f"checkout_{checkout.id}"
-
-        stripe_price_id = product_price.stripe_price_id
-        # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-        if isinstance(product_price, ProductPriceCustom):
-            assert checkout.amount is not None
-            assert checkout.currency is not None
-            assert checkout.product.stripe_product_id is not None
-            price_params: stripe_lib.Price.CreateParams = {
-                "unit_amount": checkout.amount,
-                "currency": checkout.currency,
-                "metadata": {
-                    "product_price_id": str(checkout.product_price_id),
-                },
-            }
-            if product_price.is_recurring:
-                price_params["recurring"] = {
-                    "interval": product_price.recurring_interval.as_literal(),
-                }
-            stripe_custom_price = stripe_service.create_price_for_product(
-                checkout.product.stripe_product_id,
-                price_params,
-                idempotency_key=f"{idempotency_key}_price",
-            )
-            stripe_price_id = stripe_custom_price.id
-
-        if product_price.is_recurring:
-            stripe_subscription = stripe_service.create_out_of_band_subscription(
-                customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
-                price=stripe_price_id,
-                metadata=metadata,
-                invoice_metadata={"payment_intent_id": payment_intent.id},
-                idempotency_key=idempotency_key,
-            )
-            stripe_service.set_automatically_charged_subscription(
-                stripe_subscription.id,
-                stripe_payment_method_id,
-                idempotency_key=f"{idempotency_key}_subscription_auto_charge",
-            )
-        else:
-            stripe_service.create_out_of_band_invoice(
-                customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
-                price=stripe_price_id,
-                metadata={
-                    **metadata,
-                    "payment_intent_id": payment_intent.id,
-                },
-                idempotency_key=idempotency_key,
-            )
-
-        checkout.status = CheckoutStatus.succeeded
-        session.add(checkout)
-
-        await publish(
-            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
-        )
+                checkout.tax_amount = tax_amount
+            except TaxCalculationError:
+                checkout.tax_amount = None
+                raise
+            finally:
+                session.add(checkout)
 
         return checkout
-
-    async def handle_stripe_failure(
-        self,
-        session: AsyncSession,
-        checkout_id: uuid.UUID,
-        payment_intent: stripe_lib.PaymentIntent,
-    ) -> Checkout:
-        checkout = await self.get(session, checkout_id)
-
-        if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id, payment_intent.id)
-
-        # Checkout is not confirmed: do nothing
-        # This is the case of an immediate failure, e.g. card declined
-        # In this case, the checkout is still open and the user can retry
-        if checkout.status != CheckoutStatus.confirmed:
-            return checkout
-
-        checkout.status = CheckoutStatus.failed
-        session.add(checkout)
-
-        await publish(
-            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
-        )
-
-        return checkout
-
-    async def get_by_client_secret(
-        self, session: AsyncSession, client_secret: str
-    ) -> Checkout | None:
-        statement = (
-            select(Checkout)
-            .where(
-                Checkout.deleted_at.is_(None),
-                Checkout.expires_at > utc_now(),
-                Checkout.client_secret == client_secret,
-            )
-            .join(Checkout.product)
-            .options(
-                contains_eager(Checkout.product).options(
-                    joinedload(Product.organization), joinedload(Product.product_medias)
-                )
-            )
-        )
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
 
     def _get_readable_checkout_statement(
         self, auth_subject: AuthSubject[User | Organization]

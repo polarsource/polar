@@ -590,7 +590,7 @@ class StripeService:
         metadata: dict[str, str] | None = None,
         invoice_metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
-    ) -> stripe_lib.Subscription:
+    ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
         subscription = stripe_lib.Subscription.create(
             customer=customer,
             currency=currency,
@@ -599,6 +599,7 @@ class StripeService:
             items=[{"price": price, "quantity": 1}],
             metadata=metadata or {},
             automatic_tax={"enabled": True},
+            expand=["latest_invoice"],
             idempotency_key=idempotency_key,
         )
 
@@ -627,7 +628,7 @@ class StripeService:
             else None,
         )
 
-        return subscription
+        return subscription, cast(stripe_lib.Invoice, subscription.latest_invoice)
 
     def set_automatically_charged_subscription(
         self,
@@ -691,6 +692,12 @@ class StripeService:
         )
 
         return invoice
+
+    def create_tax_calculation(
+        self,
+        **params: Unpack[stripe_lib.tax.Calculation.CreateParams],
+    ) -> stripe_lib.tax.Calculation:
+        return stripe_lib.tax.Calculation.create(**params)
 
 
 stripe = StripeService()

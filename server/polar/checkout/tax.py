@@ -1,15 +1,18 @@
 import json
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, LiteralString
 
 import stdnum.exceptions
 import stripe as stripe_lib
-from pydantic_extra_types.country import CountryAlpha2
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 from stdnum import get_cc_module
+
+from polar.exceptions import PolarError
+from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.address import Address
 
 
 class TaxIDFormat(StrEnum):
@@ -185,7 +188,7 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
 TaxID = tuple[str, TaxIDFormat]
 
 
-def validate_tax_id(number: str, country: CountryAlpha2) -> TaxID:
+def validate_tax_id(number: str, country: str) -> TaxID:
     """
     Validate a tax ID for a given country.
 
@@ -249,3 +252,73 @@ class TaxIDType(TypeDecorator[Any]):
         if value is not None:
             return json.loads(value)
         return value
+
+
+class TaxCalculationError(PolarError):
+    message: LiteralString
+
+    def __init__(
+        self,
+        stripe_error: stripe_lib.StripeError,
+        message: LiteralString = "An error occurred while calculating tax.",
+    ) -> None:
+        self.stripe_error = stripe_error
+        self.message = message
+        super().__init__(message)
+
+
+class IncompleteTaxLocation(TaxCalculationError):
+    def __init__(self, stripe_error: stripe_lib.InvalidRequestError) -> None:
+        super().__init__(stripe_error, "Required tax location information is missing.")
+
+
+class InvalidTaxLocation(TaxCalculationError):
+    def __init__(self, stripe_error: stripe_lib.StripeError) -> None:
+        super().__init__(
+            stripe_error,
+            (
+                "We could not determine the customer's tax location "
+                "based on the provided customer address."
+            ),
+        )
+
+
+async def calculate_tax(
+    currency: str,
+    amount: int,
+    reference: str,
+    stripe_product_id: str,
+    address: Address,
+    tax_ids: list[TaxID],
+) -> int:
+    try:
+        calculation = stripe_service.create_tax_calculation(
+            currency=currency,
+            line_items=[
+                {
+                    "amount": amount,
+                    "product": stripe_product_id,
+                    "quantity": 1,
+                    "reference": reference,
+                }
+            ],
+            customer_details={
+                "address": address.to_dict(),
+                "address_source": "billing",
+                "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
+            },
+        )
+    except stripe_lib.InvalidRequestError as e:
+        if (
+            e.error is not None
+            and e.error.param is not None
+            and e.error.param.startswith("customer_details[address]")
+        ):
+            raise IncompleteTaxLocation(e) from e
+        raise
+    except stripe_lib.StripeError as e:
+        if e.error is None or e.error.code != "customer_tax_location_invalid":
+            raise
+        raise InvalidTaxLocation(e) from e
+    else:
+        return calculation.tax_amount_exclusive

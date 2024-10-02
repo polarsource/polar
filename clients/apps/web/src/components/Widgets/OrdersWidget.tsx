@@ -79,7 +79,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
 
   return (
     <Link
-      className={twMerge('h-80', className)}
+      className={twMerge('hidden h-80 md:block', className)}
       href={`/dashboard/${org.slug}/sales`}
     >
       {(orders.data?.items.length ?? 0) > 0 ? (

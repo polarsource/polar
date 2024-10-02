@@ -29,6 +29,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import React from 'react'
 
 interface ClientPageProps {
@@ -258,8 +259,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-end gap-2">
+      <ShadowBoxOnMd className="flex flex-col gap-8">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-lg font-medium">Overview</h1>
           <div className="flex items-center gap-2">
             <div className="w-full min-w-[180px]">
               <SubscriptionStatusSelect
@@ -299,7 +301,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <span>Export</span>
           </Button>
         </div>
-      </div>
+      </ShadowBoxOnMd>
     </DashboardBody>
   )
 }

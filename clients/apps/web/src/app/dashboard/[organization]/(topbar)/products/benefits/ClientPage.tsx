@@ -54,7 +54,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   return (
     <DashboardBody className="flex flex-col gap-y-8">
       <div className="flex flex-row items-start gap-x-8">
-        <div className="flex w-2/3 flex-col gap-y-8">
+        <ShadowBoxOnMd className="flex w-2/3 flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between">
             <h2 className="text-lg font-medium">Benefits</h2>
             <Button className="h-8 w-8 rounded-full" onClick={toggle}>
@@ -80,7 +80,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               ))}
             </List>
           )}
-        </div>
+        </ShadowBoxOnMd>
         {selectedBenefit && (
           <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-8">
             <div className="flex flex-row items-start gap-x-3 align-middle">

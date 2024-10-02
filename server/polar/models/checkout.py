@@ -15,7 +15,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.utils import utc_now
 
 from .product import Product
-from .product_price import ProductPrice
+from .product_price import ProductPrice, ProductPriceFree
 from .user import User
 
 
@@ -110,6 +110,10 @@ class Checkout(RecordModel):
         if self.amount is None:
             return None
         return self.amount + (self.tax_amount or 0)
+
+    @property
+    def is_payment_required(self) -> bool:
+        return not isinstance(self.product_price, ProductPriceFree)
 
 
 @event.listens_for(Checkout, "before_update")

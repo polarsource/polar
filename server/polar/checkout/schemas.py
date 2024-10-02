@@ -103,8 +103,12 @@ class CheckoutConfirmBase(CheckoutUpdatePublic): ...
 class CheckoutConfirmStripe(CheckoutConfirmBase):
     """Confirm a checkout session using a Stripe confirmation token."""
 
-    confirmation_token_id: str = Field(
-        description="ID of the Stripe confirmation token."
+    confirmation_token_id: str | None = Field(
+        None,
+        description=(
+            "ID of the Stripe confirmation token. "
+            "Required for fixed prices and custom prices."
+        ),
     )
 
 
@@ -129,6 +133,11 @@ class CheckoutBase(IDSchema, TimestampedSchema):
     total_amount: int | None = Field(description="Total amount to pay in cents.")
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    is_payment_required: bool = Field(
+        description=(
+            "Whether the checkout requires payment. " "Useful to detect free products."
+        )
+    )
 
     customer_name: CustomerName | None
     customer_email: CustomerEmail | None

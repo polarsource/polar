@@ -1,6 +1,7 @@
 from polar.account import tasks as account
 from polar.article import tasks as article
 from polar.benefit import tasks as benefit
+from polar.checkout import tasks as checkout
 from polar.integrations.github import tasks as github
 from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
@@ -18,6 +19,7 @@ __all__ = [
     "account",
     "article",
     "benefit",
+    "checkout",
     "github",
     "loops",
     "stripe",

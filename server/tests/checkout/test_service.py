@@ -16,8 +16,10 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     CheckoutDoesNotExist,
+    NoCustomerOnCheckout,
     NoCustomerOnPaymentIntent,
     NoPaymentMethodOnPaymentIntent,
+    NotAFreePrice,
     NotConfirmedCheckout,
     NotOpenCheckout,
     PaymentIntentNotSucceeded,
@@ -767,16 +769,24 @@ class TestConfirm:
                 ),
             )
 
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {},
+            {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
+        ],
+    )
     async def test_missing_required_field(
-        self, session: AsyncSession, checkout_one_time_fixed: Checkout
+        self,
+        payload: dict[str, str],
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
                 checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
-                    {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
-                ),
+                CheckoutConfirmStripe.model_validate(payload),
             )
 
     async def test_not_open(
@@ -833,6 +843,9 @@ class TestConfirm:
         session: AsyncSession,
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             client_secret="CLIENT_SECRET", status="succeeded"
         )
@@ -849,10 +862,11 @@ class TestConfirm:
             ),
         )
 
-        assert checkout.status == checkout.status.confirmed
+        assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata == {
             "payment_intent_client_secret": "CLIENT_SECRET",
             "payment_intent_status": "succeeded",
+            "customer_id": "STRIPE_CUSTOMER_ID",
         }
 
         stripe_service_mock.create_customer.assert_called_once()
@@ -863,6 +877,42 @@ class TestConfirm:
             "tax_amount": "0",
             **expected_tax_metadata,
         }
+
+    async def test_valid_stripe_free(
+        self,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            checkout_one_time_free,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.payment_processor_metadata == {
+            "customer_id": "STRIPE_CUSTOMER_ID"
+        }
+
+        stripe_service_mock.create_customer.assert_called_once()
+        stripe_service_mock.create_payment_intent.assert_not_called()
+
+        enqueue_job_mock.assert_called_once_with(
+            "checkout.handle_free_success", checkout_id=checkout.id
+        )
 
 
 def build_stripe_payment_intent(
@@ -1049,3 +1099,97 @@ class TestHandleStripeFailure:
         )
 
         assert checkout.status == CheckoutStatus.failed
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestHandleFreeSuccess:
+    async def test_not_existing_checkout(self, session: AsyncSession) -> None:
+        with pytest.raises(CheckoutDoesNotExist):
+            await checkout_service.handle_free_success(session, uuid.uuid4())
+
+    async def test_not_confirmed_checkout(
+        self, session: AsyncSession, checkout_one_time_free: Checkout
+    ) -> None:
+        with pytest.raises(NotConfirmedCheckout):
+            await checkout_service.handle_free_success(
+                session, checkout_one_time_free.id
+            )
+
+    async def test_no_customer_on_checkout(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout_one_time_free.status = CheckoutStatus.confirmed
+        await save_fixture(checkout_one_time_free)
+
+        with pytest.raises(NoCustomerOnCheckout):
+            await checkout_service.handle_free_success(
+                session, checkout_one_time_free.id
+            )
+
+    async def test_not_a_free_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_confirmed_one_time: Checkout,
+    ) -> None:
+        checkout_confirmed_one_time.payment_processor_metadata = {
+            "customer_id": "STRIPE_CUSTOMER_ID"
+        }
+        await save_fixture(checkout_confirmed_one_time)
+
+        with pytest.raises(NotAFreePrice):
+            await checkout_service.handle_free_success(
+                session, checkout_confirmed_one_time.id
+            )
+
+    async def test_valid_one_time(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout_one_time_free.status = CheckoutStatus.confirmed
+        checkout_one_time_free.payment_processor_metadata = {
+            "customer_id": "STRIPE_CUSTOMER_ID"
+        }
+        await save_fixture(checkout_one_time_free)
+
+        checkout = await checkout_service.handle_free_success(
+            session, checkout_one_time_free.id
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
+
+    async def test_valid_recurring(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_recurring_free: Checkout,
+    ) -> None:
+        checkout_recurring_free.status = CheckoutStatus.confirmed
+        checkout_recurring_free.payment_processor_metadata = {
+            "customer_id": "STRIPE_CUSTOMER_ID"
+        }
+        await save_fixture(checkout_recurring_free)
+
+        stripe_service_mock.create_out_of_band_subscription.return_value = (
+            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
+            SimpleNamespace(id="STRIPE_INVOICE_ID"),
+        )
+
+        checkout = await checkout_service.handle_free_success(
+            session, checkout_recurring_free.id
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_not_called()

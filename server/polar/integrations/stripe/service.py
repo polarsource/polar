@@ -633,16 +633,17 @@ class StripeService:
     def set_automatically_charged_subscription(
         self,
         subscription_id: str,
-        payment_method: str,
+        payment_method: str | None,
         *,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Subscription:
-        return stripe_lib.Subscription.modify(
-            subscription_id,
-            collection_method="charge_automatically",
-            default_payment_method=payment_method,
-            idempotency_key=idempotency_key,
-        )
+        params: stripe_lib.Subscription.ModifyParams = {
+            "collection_method": "charge_automatically",
+            "idempotency_key": idempotency_key,
+        }
+        if payment_method is not None:
+            params["default_payment_method"] = payment_method
+        return stripe_lib.Subscription.modify(subscription_id, **params)
 
     def create_out_of_band_invoice(
         self,

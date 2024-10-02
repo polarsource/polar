@@ -32,7 +32,7 @@ export const StorefrontCustomization = () => {
           <Button
             size="icon"
             variant="ghost"
-            className="h-12 w-12 text-black dark:text-white"
+            className="h-10 w-10 text-black dark:text-white"
             onClick={() => {
               router.push(`/dashboard/${organization.slug}`)
             }}

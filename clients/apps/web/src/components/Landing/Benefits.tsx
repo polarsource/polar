@@ -64,15 +64,15 @@ export const Benefits = () => {
       <div className="flex w-full flex-col gap-x-24 gap-y-16 md:flex-row">
         <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
           <h2 className="text-3xl !leading-tight md:text-5xl">
-            Launch Memberships, Products & SaaS in minutes
+            Automated benefits like never before
           </h2>
           <p className="dark:text-polar-400 text-lg text-gray-600">
-            Using our built-in benefits designed for developers.
+            Sell access to your premium apps, services or APIs with ease.
           </p>
           <div className="flex flex-row items-center justify-start gap-x-4">
             <GetStartedButton text="Get Started" />
             <Link href={`/docs/benefits`}>
-              <Button variant="ghost">More Benefits</Button>
+              <Button variant="ghost">See all Benefits</Button>
             </Link>
           </div>
         </div>

@@ -28,7 +28,12 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
   })
 
   return (
-    <Card className={twMerge('flex h-80 flex-col justify-between', className)}>
+    <Card
+      className={twMerge(
+        'hidden h-80 flex-col justify-between md:flex',
+        className,
+      )}
+    >
       <CardHeader>
         <h2 className="dark:text-polar-500 text-gray-400">
           {new Date().toLocaleDateString('en-US', {

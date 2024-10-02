@@ -83,7 +83,7 @@ export const Monetization = () => {
                       texts={[
                         'polar.checkouts.create({...});',
                         'polar.products.list({...});',
-                        'polar.licenseKeys.activate({...});',
+                        'polar.benefits.get({...});',
                       ]}
                     />
                   </code>

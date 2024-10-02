@@ -4713,6 +4713,12 @@ export interface Checkout {
      */
     currency: string | null;
     /**
+     * 
+     * @type {number}
+     * @memberof Checkout
+     */
+    total_amount: number | null;
+    /**
      * ID of the product to checkout.
      * @type {string}
      * @memberof Checkout
@@ -4961,6 +4967,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     currency: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublic
+     */
+    total_amount: number | null;
     /**
      * ID of the product to checkout.
      * @type {string}
@@ -15668,7 +15680,7 @@ export interface UserInfoOrganization {
      * @type {string}
      * @memberof UserInfoOrganization
      */
-    name: string | null;
+    name?: string | null;
 }
 /**
  * 
@@ -15687,19 +15699,19 @@ export interface UserInfoUser {
      * @type {string}
      * @memberof UserInfoUser
      */
-    name: string | null;
+    name?: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserInfoUser
      */
-    email: string | null;
+    email?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof UserInfoUser
      */
-    email_verified: boolean | null;
+    email_verified?: boolean | null;
 }
 /**
  * 

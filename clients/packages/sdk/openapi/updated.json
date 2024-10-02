@@ -8502,10 +8502,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "paid_subscription",
-                                "free_subscription",
-                                "donation"
+                                "donation",
+                                "order",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -21693,6 +21693,18 @@
                         "title": "Currency",
                         "description": "Currency code of the checkout session."
                     },
+                    "total_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Total Amount",
+                        "description": "Total amount to pay in cents."
+                    },
                     "product_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -21794,6 +21806,7 @@
                     "amount",
                     "tax_amount",
                     "currency",
+                    "total_amount",
                     "product_id",
                     "product_price_id",
                     "customer_name",
@@ -22111,6 +22124,18 @@
                         "title": "Currency",
                         "description": "Currency code of the checkout session."
                     },
+                    "total_amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Total Amount",
+                        "description": "Total amount to pay in cents."
+                    },
                     "product_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -22210,6 +22235,7 @@
                     "amount",
                     "tax_amount",
                     "currency",
+                    "total_amount",
                     "product_id",
                     "product_price_id",
                     "customer_name",
@@ -33442,8 +33468,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "sub",
-                    "name"
+                    "sub"
                 ],
                 "title": "UserInfoOrganization"
             },
@@ -33489,10 +33514,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "sub",
-                    "name",
-                    "email",
-                    "email_verified"
+                    "sub"
                 ],
                 "title": "UserInfoUser"
             },

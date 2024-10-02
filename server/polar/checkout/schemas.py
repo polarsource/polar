@@ -5,7 +5,13 @@ from pydantic import UUID4, Field, IPvAnyAddress
 
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
-from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    EmailStrDNS,
+    EmptyStrToNoneValidator,
+    IDSchema,
+    Schema,
+    TimestampedSchema,
+)
 from polar.models.checkout import CheckoutStatus
 from polar.product.schemas import Product, ProductPrice
 
@@ -57,11 +63,11 @@ class CheckoutCreate(Schema):
     )
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     amount: Amount | None = None
-    customer_name: CustomerName | None = None
+    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
-    customer_tax_id: str | None = None
+    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     metadata: Metadata = Field(default_factory=dict)
 
 
@@ -74,11 +80,11 @@ class CheckoutUpdateBase(Schema):
         ),
     )
     amount: Amount | None = None
-    customer_name: CustomerName | None = None
+    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
-    customer_tax_id: str | None = None
+    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
 class CheckoutUpdate(CheckoutUpdateBase):

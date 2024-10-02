@@ -15,9 +15,9 @@ const buttonVariants = cva(
         outline:
           'text-blue-500 dark:text-polar-200 hover:bg-blue-50 dark:bg-transparent dark:hover:bg-polar-700 border-transparent hover:border-blue-100 border dark:border-polar-700 bg-transparent border-blue-100',
         secondary:
-          'text-blue-500 dark:text-polar-200 hover:bg-blue-100 dark:bg-polar-700 dark:hover:bg-polar-600 bg-blue-50 border-transparent',
+          'text-black dark:text-polar-200 hover:bg-gray-200 dark:bg-polar-700 dark:hover:bg-polar-600 bg-gray-100 border-transparent',
         ghost:
-          'text-blue-500 dark:text-blue-400 bg-transparent hover:bg-transparent dark:hover:bg-transparent',
+          'text-black dark:text-white bg-transparent hover:bg-gray-200 dark:hover:bg-polar-700',
         link: 'text-blue-400 underline-offset-4 hover:underline bg-transparent hover:bg-transparent',
       },
       size: {

@@ -28198,8 +28198,7 @@
         },
         "type": "object",
         "required": [
-          "sub",
-          "name"
+          "sub"
         ],
         "title": "UserInfoOrganization"
       },
@@ -28245,10 +28244,7 @@
         },
         "type": "object",
         "required": [
-          "sub",
-          "name",
-          "email",
-          "email_verified"
+          "sub"
         ],
         "title": "UserInfoUser"
       },

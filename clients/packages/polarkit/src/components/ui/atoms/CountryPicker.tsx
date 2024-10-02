@@ -23,12 +23,14 @@ const availableCountries = countryWhiteList.map((countryCode) => ({
 const CountryPicker = ({
   value,
   onChange,
+  autoComplete,
 }: {
   value?: string
   onChange: (value: string) => void
+  autoComplete?: string
 }) => {
   return (
-    <Select onValueChange={onChange} value={value}>
+    <Select onValueChange={onChange} value={value} autoComplete={autoComplete}>
       <SelectTrigger>
         <SelectValue placeholder="Country" />
       </SelectTrigger>

@@ -11,6 +11,7 @@
     "./components/ui/atoms/card": "./src/components/ui/atoms/Card.tsx",
     "./components/ui/atoms/copytoclipboardinput": "./src/components/ui/atoms/CopyToClipboardInput.tsx",
     "./components/ui/atoms/countrypicker": "./src/components/ui/atoms/CountryPicker.tsx",
+    "./components/ui/atoms/countrystatepicker": "./src/components/ui/atoms/CountryStatePicker.tsx",
     "./components/ui/atoms/datatable": "./src/components/ui/atoms/datatable/index.ts",
     "./components/ui/atoms/input": "./src/components/ui/atoms/Input.tsx",
     "./components/ui/atoms/list": "./src/components/ui/atoms/List.tsx",

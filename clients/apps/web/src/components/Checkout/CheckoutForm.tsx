@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  Address,
   CheckoutConfirmStripe,
   CheckoutPublic,
   CheckoutUpdatePublic,
@@ -9,15 +8,23 @@ import {
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import {
-  AddressElement,
   Elements,
   ElementsConsumer,
   PaymentElement,
 } from '@stripe/react-stripe-js'
-import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js'
+import {
+  ConfirmationToken,
+  loadStripe,
+  Stripe,
+  StripeElements,
+  StripeError,
+} from '@stripe/stripe-js'
+import debounce from 'lodash.debounce'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import CountryPicker from 'polarkit/components/ui/atoms/countrypicker'
+import CountryStatePicker from 'polarkit/components/ui/atoms/countrystatepicker'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Form,
@@ -28,7 +35,7 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { PropsWithChildren, useCallback, useEffect, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, WatchObserver } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
 import AmountLabel from '../Shared/AmountLabel'
@@ -78,19 +85,69 @@ const BaseCheckoutForm = ({
     control,
     handleSubmit,
     watch,
+    clearErrors,
+    resetField,
     formState: { errors },
   } = form
 
-  useEffect(() => {
-    const subscription = watch(async (value, { name, type }) => {
-      if (name === 'customer_tax_id' && type === 'change') {
-        try {
-          await onCheckoutUpdate?.({ customer_tax_id: value.customer_tax_id })
-        } catch {}
+  const country = watch('customer_billing_address.country')
+  const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
+    async (value, { name, type }) => {
+      console.log('watch', value, name, type)
+      if (type !== 'change' || !name || !onCheckoutUpdate) {
+        return
       }
-    })
+
+      let payload: CheckoutUpdatePublic = {}
+      // Update Tax ID
+      if (name === 'customer_tax_id') {
+        payload = { ...payload, customer_tax_id: value.customer_tax_id }
+        clearErrors('customer_tax_id')
+        // Update country, make sure to reset other address fields
+      } else if (name === 'customer_billing_address.country') {
+        const { customer_billing_address } = value
+        if (customer_billing_address && customer_billing_address.country) {
+          payload = {
+            ...payload,
+            customer_billing_address: {
+              country: customer_billing_address.country,
+            },
+          }
+          resetField('customer_billing_address', {
+            defaultValue: { country: customer_billing_address.country },
+          })
+        }
+        // Update other address fields
+      } else if (name.startsWith('customer_billing_address')) {
+        const { customer_billing_address } = value
+        if (customer_billing_address && customer_billing_address.country) {
+          payload = {
+            ...payload,
+            customer_billing_address: {
+              ...customer_billing_address,
+              country: customer_billing_address.country,
+            },
+          }
+          clearErrors('customer_billing_address')
+        }
+      }
+
+      if (Object.keys(payload).length === 0) {
+        return
+      }
+
+      try {
+        await onCheckoutUpdate(payload)
+      } catch {}
+    },
+    [clearErrors, resetField, onCheckoutUpdate],
+  )
+  const debouncedWatcher = useCallback(debounce(watcher, 500), [watcher])
+
+  useEffect(() => {
+    const subscription = watch(debouncedWatcher)
     return () => subscription.unsubscribe()
-  }, [watch, onCheckoutUpdate])
+  }, [watch, clearErrors, resetField, onCheckoutUpdate])
 
   return (
     <div className="flex w-1/2 flex-col justify-between gap-y-24 p-20">
@@ -112,7 +169,12 @@ const BaseCheckoutForm = ({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input
+                        type="email"
+                        autoComplete="email"
+                        {...field}
+                        value={field.value || ''}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,6 +182,165 @@ const BaseCheckoutForm = ({
               />
 
               {children}
+
+              <FormField
+                control={control}
+                name="customer_name"
+                rules={{
+                  required: 'This field is required',
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cardholder name</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        autoComplete="name"
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormItem>
+                <FormLabel>Billing address</FormLabel>
+                <FormControl>
+                  <FormField
+                    control={control}
+                    name="customer_billing_address.country"
+                    rules={{
+                      required: 'This field is required',
+                    }}
+                    render={({ field }) => (
+                      <>
+                        <CountryPicker
+                          autoComplete="billing country"
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                        />
+                        <FormMessage />
+                      </>
+                    )}
+                  />
+                </FormControl>
+                {(country === 'US' || country === 'CA') && (
+                  <FormControl>
+                    <FormField
+                      control={control}
+                      name="customer_billing_address.state"
+                      rules={{
+                        required: 'This field is required',
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <CountryStatePicker
+                            autoComplete="billing address-level1"
+                            country={country}
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                          />
+                          <FormMessage />
+                        </>
+                      )}
+                    />
+                  </FormControl>
+                )}
+                {country === 'US' && (
+                  <>
+                    <FormControl>
+                      <FormField
+                        control={control}
+                        name="customer_billing_address.line1"
+                        rules={{
+                          required: 'This field is required',
+                        }}
+                        render={({ field }) => (
+                          <>
+                            <Input
+                              type="text"
+                              autoComplete="billing address-line1"
+                              placeholder="Line 1"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                            <FormMessage />
+                          </>
+                        )}
+                      />
+                    </FormControl>
+                    <FormControl>
+                      <FormField
+                        control={control}
+                        name="customer_billing_address.line2"
+                        render={({ field }) => (
+                          <>
+                            <Input
+                              type="text"
+                              autoComplete="billing address-line2"
+                              placeholder="Line 2"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                            <FormMessage />
+                          </>
+                        )}
+                      />
+                    </FormControl>
+                    <div className="grid grid-cols-2 gap-x-2">
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customer_billing_address.postal_code"
+                          rules={{
+                            required: 'This field is required',
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <Input
+                                type="text"
+                                autoComplete="billing postal-code"
+                                placeholder="Postal code"
+                                {...field}
+                                value={field.value || ''}
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customer_billing_address.city"
+                          rules={{
+                            required: 'This field is required',
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <Input
+                                type="text"
+                                autoComplete="billing address-level2"
+                                placeholder="City"
+                                {...field}
+                                value={field.value || ''}
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    </div>
+                  </>
+                )}
+                {errors.customer_billing_address?.message && (
+                  <p className="text-destructive-foreground text-sm">
+                    {errors.customer_billing_address.message}
+                  </p>
+                )}
+              </FormItem>
 
               <FormField
                 control={control}
@@ -133,7 +354,12 @@ const BaseCheckoutForm = ({
                       </span>
                     </div>
                     <FormControl>
-                      <Input {...field} value={field.value || ''} />
+                      <Input
+                        type="text"
+                        autoComplete="off"
+                        {...field}
+                        value={field.value || ''}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -169,9 +395,11 @@ const BaseCheckoutForm = ({
                       interval={interval}
                     />
                   </DetailRow>
-                  <DetailRow title="VAT / Sales Tax">
-                    {formatCurrencyAndAmount(tax_amount || 0, currency)}
-                  </DetailRow>
+                  {tax_amount !== null && (
+                    <DetailRow title="VAT / Sales Tax">
+                      {formatCurrencyAndAmount(tax_amount, currency)}
+                    </DetailRow>
+                  )}
                   {/* {discountCode && (
                 <DetailRow title={`Discount Code (${discountCode})`}>
                   <span>$19</span>
@@ -228,27 +456,11 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const router = useRouter()
-  const { setError, setValue } = useFormContext<CheckoutUpdatePublic>()
+  const { setError } = useFormContext<CheckoutUpdatePublic>()
   const { checkout, onCheckoutUpdate, onCheckoutConfirm } = props
   const { resolvedTheme } = useTheme()
   const [loading, setLoading] = useState(false)
 
-  const onBillingAddressChange = useCallback(
-    async (name: string, address: Address): Promise<void> => {
-      try {
-        await onCheckoutUpdate?.({
-          customer_name: name,
-          customer_billing_address: address,
-          customer_tax_id:
-            address.country !== checkout.customer_billing_address?.country
-              ? null
-              : undefined,
-        })
-        setValue('customer_tax_id', null)
-      } catch {}
-    },
-    [onCheckoutUpdate, checkout],
-  )
   const onSubmit = async (
     data: CheckoutUpdatePublic,
     stripe: Stripe | null,
@@ -270,9 +482,36 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       return
     }
 
-    const { confirmationToken, error } = await stripe.createConfirmationToken({
-      elements,
-    })
+    let confirmationToken: ConfirmationToken | undefined
+    let error: StripeError | undefined
+    try {
+      const confirmationTokenResponse = await stripe.createConfirmationToken({
+        elements,
+        params: {
+          payment_method_data: {
+            // Stripe requires fields to be explicitly set to null if they are not provided
+            billing_details: {
+              name: data.customer_name,
+              email: data.customer_email,
+              address: {
+                line1: data.customer_billing_address?.line1 || null,
+                line2: data.customer_billing_address?.line2 || null,
+                postal_code: data.customer_billing_address?.postal_code || null,
+                city: data.customer_billing_address?.city || null,
+                state: data.customer_billing_address?.state || null,
+                country: data.customer_billing_address?.country || null,
+              },
+              phone: null,
+            },
+          },
+        },
+      })
+      confirmationToken = confirmationTokenResponse.confirmationToken
+      error = confirmationTokenResponse.error
+    } catch (err) {
+      setLoading(false)
+      throw err
+    }
 
     if (!confirmationToken || error) {
       setError('root', {
@@ -382,13 +621,18 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             onCheckoutUpdate={onCheckoutUpdate}
             loading={loading}
           >
-            <AddressElement
-              options={{ mode: 'billing' }}
-              onChange={(event) =>
-                onBillingAddressChange(event.value.name, event.value.address)
-              }
+            <PaymentElement
+              options={{
+                fields: {
+                  billingDetails: {
+                    name: 'never',
+                    email: 'never',
+                    phone: 'never',
+                    address: 'never',
+                  },
+                },
+              }}
             />
-            <PaymentElement />
           </BaseCheckoutForm>
         )}
       </ElementsConsumer>

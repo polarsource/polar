@@ -4731,6 +4731,12 @@ export interface Checkout {
      */
     product_price_id: string;
     /**
+     * Whether the checkout requires payment. Useful to detect free products.
+     * @type {boolean}
+     * @memberof Checkout
+     */
+    is_payment_required: boolean;
+    /**
      * Name of the customer.
      * @type {string}
      * @memberof Checkout
@@ -4824,11 +4830,11 @@ export interface CheckoutConfirmStripe {
      */
     customer_tax_id?: string | null;
     /**
-     * ID of the Stripe confirmation token.
+     * 
      * @type {string}
      * @memberof CheckoutConfirmStripe
      */
-    confirmation_token_id: string;
+    confirmation_token_id?: string | null;
 }
 /**
  * Create a new checkout session.
@@ -4985,6 +4991,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     product_price_id: string;
+    /**
+     * Whether the checkout requires payment. Useful to detect free products.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    is_payment_required: boolean;
     /**
      * Name of the customer.
      * @type {string}

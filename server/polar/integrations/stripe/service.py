@@ -587,6 +587,7 @@ class StripeService:
         customer: str,
         currency: str,
         price: str,
+        automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         invoice_metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
@@ -598,7 +599,7 @@ class StripeService:
             days_until_due=0,
             items=[{"price": price, "quantity": 1}],
             metadata=metadata or {},
-            automatic_tax={"enabled": True},
+            automatic_tax={"enabled": automatic_tax},
             expand=["latest_invoice"],
             idempotency_key=idempotency_key,
         )
@@ -606,29 +607,32 @@ class StripeService:
         if subscription.latest_invoice is None:
             raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
 
-        latest_invoice_id = get_expandable_id(subscription.latest_invoice)
-        stripe_lib.Invoice.modify(
-            latest_invoice_id,
+        invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
+        invoice_id = get_expandable_id(invoice)
+        invoice = stripe_lib.Invoice.modify(
+            invoice_id,
             metadata=invoice_metadata or {},
             idempotency_key=f"{idempotency_key}_update_invoice"
             if idempotency_key is not None
             else None,
         )
-        stripe_lib.Invoice.finalize_invoice(
-            latest_invoice_id,
+        invoice = stripe_lib.Invoice.finalize_invoice(
+            invoice_id,
             idempotency_key=f"{idempotency_key}_finalize_invoice"
             if idempotency_key is not None
             else None,
         )
-        stripe_lib.Invoice.pay(
-            latest_invoice_id,
-            paid_out_of_band=True,
-            idempotency_key=f"{idempotency_key}_pay_invoice"
-            if idempotency_key is not None
-            else None,
-        )
 
-        return subscription, cast(stripe_lib.Invoice, subscription.latest_invoice)
+        if invoice.status == "open":
+            stripe_lib.Invoice.pay(
+                invoice_id,
+                paid_out_of_band=True,
+                idempotency_key=f"{idempotency_key}_pay_invoice"
+                if idempotency_key is not None
+                else None,
+            )
+
+        return subscription, invoice
 
     def set_automatically_charged_subscription(
         self,
@@ -651,6 +655,7 @@ class StripeService:
         customer: str,
         currency: str,
         price: str,
+        automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Invoice:
@@ -660,37 +665,38 @@ class StripeService:
             days_until_due=0,
             customer=customer,
             metadata=metadata or {},
-            automatic_tax={"enabled": True},
+            automatic_tax={"enabled": automatic_tax},
             currency=currency,
             idempotency_key=f"{idempotency_key}_invoice" if idempotency_key else None,
         )
-        assert invoice.id is not None
+        invoice_id = cast(str, invoice.id)
 
         stripe_lib.InvoiceItem.create(
             customer=customer,
             currency=currency,
             price=price,
-            invoice=invoice.id,
+            invoice=invoice_id,
             quantity=1,
             idempotency_key=f"{idempotency_key}_invoice_item"
             if idempotency_key
             else None,
         )
 
-        stripe_lib.Invoice.finalize_invoice(
-            invoice.id,
+        invoice = stripe_lib.Invoice.finalize_invoice(
+            invoice_id,
             idempotency_key=f"{idempotency_key}_finalize_invoice"
             if idempotency_key
             else None,
         )
 
-        stripe_lib.Invoice.pay(
-            invoice.id,
-            paid_out_of_band=True,
-            idempotency_key=f"{idempotency_key}_pay_invoice"
-            if idempotency_key
-            else None,
-        )
+        if invoice.status == "open":
+            stripe_lib.Invoice.pay(
+                invoice_id,
+                paid_out_of_band=True,
+                idempotency_key=f"{idempotency_key}_pay_invoice"
+                if idempotency_key
+                else None,
+            )
 
         return invoice
 

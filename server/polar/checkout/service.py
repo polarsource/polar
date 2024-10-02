@@ -433,7 +433,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     to_stripe_tax_id(checkout.customer_tax_id)
                 ]
             stripe_customer = stripe_service.create_customer(**customer_params)
-            checkout.payment_processor_metadata["customer_id"] = stripe_customer.id
+            checkout.payment_processor_metadata = {"customer_id": stripe_customer.id}
 
             if checkout.is_payment_required:
                 assert checkout_confirm.confirmation_token_id is not None
@@ -648,6 +648,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
+                automatic_tax=False,
                 metadata=metadata,
                 idempotency_key=idempotency_key,
             )
@@ -661,6 +662,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
+                automatic_tax=False,
                 metadata=metadata,
                 idempotency_key=idempotency_key,
             )

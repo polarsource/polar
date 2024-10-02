@@ -8502,10 +8502,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
-                                "donation",
                                 "order",
-                                "free_subscription"
+                                "free_subscription",
+                                "donation",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -21717,6 +21717,11 @@
                         "title": "Product Price Id",
                         "description": "ID of the product price to checkout."
                     },
+                    "is_payment_required": {
+                        "type": "boolean",
+                        "title": "Is Payment Required",
+                        "description": "Whether the checkout requires payment. Useful to detect free products."
+                    },
                     "customer_name": {
                         "anyOf": [
                             {
@@ -21809,6 +21814,7 @@
                     "total_amount",
                     "product_id",
                     "product_price_id",
+                    "is_payment_required",
                     "customer_name",
                     "customer_email",
                     "customer_ip_address",
@@ -21912,15 +21918,19 @@
                         "title": "Customer Tax Id"
                     },
                     "confirmation_token_id": {
-                        "type": "string",
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Confirmation Token Id",
-                        "description": "ID of the Stripe confirmation token."
+                        "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
                     }
                 },
                 "type": "object",
-                "required": [
-                    "confirmation_token_id"
-                ],
                 "title": "CheckoutConfirmStripe",
                 "description": "Confirm a checkout session using a Stripe confirmation token."
             },
@@ -22148,6 +22158,11 @@
                         "title": "Product Price Id",
                         "description": "ID of the product price to checkout."
                     },
+                    "is_payment_required": {
+                        "type": "boolean",
+                        "title": "Is Payment Required",
+                        "description": "Whether the checkout requires payment. Useful to detect free products."
+                    },
                     "customer_name": {
                         "anyOf": [
                             {
@@ -22238,6 +22253,7 @@
                     "total_amount",
                     "product_id",
                     "product_price_id",
+                    "is_payment_required",
                     "customer_name",
                     "customer_email",
                     "customer_ip_address",

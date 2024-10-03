@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const successURL = `${requestURL.protocol}//${requestURL.host}/checkout/success?session_id={CHECKOUT_SESSION_ID}`
 
   try {
-    const { url } = await api.checkouts.create({
+    const { url } = await api.legacyCheckouts.create({
       body: {
         product_price_id: priceId,
         success_url: successURL,

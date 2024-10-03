@@ -130,8 +130,8 @@ export const CustomerPortal = ({
               {
                 accessorKey: 'context',
                 enableSorting: false,
-                header: ({ column }) => <></>,
-                cell: ({ row }) => {
+                header: () => <></>,
+                cell: () => {
                   return (
                     <div className="flex flex-row justify-end">
                       <DropdownMenu>

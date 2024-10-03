@@ -11,8 +11,9 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 
-const countryWhiteList: TCountryCode[] =
-  CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
+const countryWhiteList = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(
+  ',',
+) as TCountryCode[]
 
 const availableCountries = countryWhiteList.map((countryCode) => ({
   code: countryCode,

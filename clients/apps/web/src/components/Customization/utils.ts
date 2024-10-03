@@ -144,11 +144,14 @@ export const CHECKOUT_PREVIEW: CheckoutPublic = {
   product_price_id: PRODUCT_PREVIEW.prices[0].id,
   amount: 10000,
   tax_amount: 2000,
+  total_amount: 12000,
+  is_payment_required: true,
   currency: 'usd',
   customer_email: 'janedoe@gmail.com',
   customer_name: 'Jane Doe',
   customer_billing_address: null,
   customer_ip_address: null,
+  customer_tax_id: null,
   payment_processor_metadata: {},
 }
 

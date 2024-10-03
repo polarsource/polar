@@ -6,7 +6,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 export const Hero = () => {
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
-      <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
+      <div className="relative z-20 flex w-full flex-col items-center gap-y-16 text-center">
         <div className="z-20 flex flex-col items-center gap-y-8">
           <h1 className="text-balance text-5xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
             Launch SaaS, Products & Memberships in minutes

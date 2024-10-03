@@ -38,7 +38,7 @@ export default async function Layout({
       <div className="relative flex flex-row items-center justify-end gap-x-6">
         <BrandingMenu
           className="absolute left-1/2 -translate-x-1/2"
-          size={50}
+          size={40}
         />
 
         <TopbarRight authenticatedUser={authenticatedUser} />

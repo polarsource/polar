@@ -8,19 +8,34 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { PropsWithChildren, useEffect } from 'react'
+import { PropsWithChildren, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
+  const [hasScrolled, setHasScrolled] = useState(false)
 
   useEffect(() => {
     window.scroll(0, 0)
+
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 0)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [pathname])
 
   return (
-    <div className="dark:bg-polar-950 flex w-full flex-col items-center bg-white">
+    <div className="flex w-full flex-col items-center bg-[radial-gradient(800px_at_top,rgba(30,30,30,1)_0%,rgba(0,0,0,1)_100%)]">
       <Section
-        wrapperClassName="sticky top-0 z-30 dark:bg-polar-950 bg-white"
+        wrapperClassName={twMerge(
+          'sticky top-0 z-30 transition-colors duration-500',
+          hasScrolled ? 'bg-black' : '',
+        )}
         className="py-4 md:py-8"
       >
         <LandingPageTopbar />

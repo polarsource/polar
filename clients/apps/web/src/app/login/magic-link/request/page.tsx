@@ -15,7 +15,7 @@ export default function Page({
     <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50">
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center">
-        <LogoIcon size={60} className="mb-6 text-blue-500 dark:text-blue-400" />
+        <LogoIcon size={30} className="mb-6 text-blue-500 dark:text-blue-400" />
         <div className="dark:text-polar-400 text-center text-gray-500">
           Email with sign in link sent to{' '}
           <span className="font-bold">{email}</span>.

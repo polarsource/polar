@@ -23,7 +23,7 @@ export default function Page({
     >
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center gap-4">
-        <LogoIcon size={60} className="mb-6 text-blue-500 dark:text-blue-400" />
+        <LogoIcon size={30} className="mb-6 text-blue-500 dark:text-blue-400" />
         <div className="dark:text-polar-400 text-center text-gray-500">
           To complete the login verification process, please click the button
           below:

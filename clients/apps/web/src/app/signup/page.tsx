@@ -27,7 +27,7 @@ export default async function Page({
     <div className="flex h-full w-full flex-col items-center justify-center">
       <div className="md:rounded-4xl md:dark:border-polar-700 md:dark:bg-polar-900 grid w-full max-w-7xl grid-cols-1 gap-y-12 p-12 md:grid-cols-3 md:gap-x-32 md:border md:border-gray-100 md:bg-white md:py-12 md:pl-12 md:pr-0">
         <div className="flex flex-col justify-between gap-y-24">
-          <LogoIcon className="text-blue-500 dark:text-white" size={80} />
+          <LogoIcon className="text-blue-500 dark:text-white" size={50} />
 
           <div className="flex flex-col gap-y-4">
             <h1 className="text-3xl">Sign Up</h1>

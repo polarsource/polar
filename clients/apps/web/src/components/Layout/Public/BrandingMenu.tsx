@@ -71,7 +71,7 @@ export const BrandingMenu = ({
                   'text-blue-500 dark:text-white',
                   logoClassName,
                 )}
-                size={size ?? 42}
+                size={size ?? 32}
               />
             )}
           </Link>

@@ -166,7 +166,6 @@ export default function ClientPage({
                   </h3>
                   <div className="max-w-[600px]">
                     <CopyToClipboardInput
-                      id="embed-svg"
                       value={embedCodes[currentEmbedTab] || ''}
                     />
                   </div>

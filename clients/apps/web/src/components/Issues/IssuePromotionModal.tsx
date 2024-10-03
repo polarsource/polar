@@ -483,7 +483,6 @@ const PromoteTab = (props: {
         </div>
 
         <CopyToClipboardInput
-          id="padge-page-link"
           value={pledgePageLink}
           onCopy={() => onCopy('badge-page-link')}
         />
@@ -513,7 +512,6 @@ const PromoteTab = (props: {
         </div>
 
         <CopyToClipboardInput
-          id="badge-embed-content"
           value={embed.embed}
           onCopy={() => onCopy('badge-embed-content')}
         />

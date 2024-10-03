@@ -1,6 +1,5 @@
 import { ExpandMoreOutlined } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +61,7 @@ const GeneralSettings = () => {
   }, [])
 
   return (
-    <ShadowBox>
+    <div className="dark:text-polar-200 dark:border-polar-700 dark:bg-polar-900 flex w-full flex-col divide-y rounded-2xl border p-4 text-gray-900">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-1">
           <h3>Theme</h3>
@@ -97,7 +96,7 @@ const GeneralSettings = () => {
           </DropdownMenu>
         )}
       </div>
-    </ShadowBox>
+    </div>
   )
 }
 

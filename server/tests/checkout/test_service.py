@@ -211,28 +211,6 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_amount_set_on_fixed_price(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_one_time: Product,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.create(
-                session,
-                CheckoutCreate(
-                    payment_processor=PaymentProcessor.stripe,
-                    product_price_id=product_one_time.prices[0].id,
-                    amount=1000,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     @pytest.mark.parametrize("amount", [500, 10000])
     async def test_amount_invalid_limits(
         self,
@@ -299,8 +277,10 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    @pytest.mark.parametrize("amount", [None, 4242])
     async def test_valid_fixed_price(
         self,
+        amount: int | None,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
@@ -313,6 +293,7 @@ class TestCreate:
             CheckoutCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
+                amount=amount,
             ),
             auth_subject,
         )
@@ -326,8 +307,10 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    @pytest.mark.parametrize("amount", [None, 4242])
     async def test_valid_free_price(
         self,
+        amount: int | None,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
@@ -340,6 +323,7 @@ class TestCreate:
             CheckoutCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
+                amount=amount,
             ),
             auth_subject,
         )
@@ -525,21 +509,6 @@ class TestUpdate:
                 ),
             )
 
-    async def test_amount_set_on_fixed_price(
-        self,
-        session: AsyncSession,
-        user_organization: UserOrganization,
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session,
-                checkout_one_time_fixed,
-                CheckoutUpdate(
-                    amount=1000,
-                ),
-            )
-
     @pytest.mark.parametrize("amount", [500, 10000])
     async def test_amount_update_invalid_limits(
         self,
@@ -644,6 +613,24 @@ class TestUpdate:
         assert checkout.amount == new_price.price_amount
         assert checkout.currency == new_price.price_currency
 
+    async def test_valid_fixed_price_amount_update(
+        self,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdate(
+                amount=4242,
+            ),
+        )
+
+        price = checkout_one_time_fixed.product_price
+        assert isinstance(price, ProductPriceFixed)
+        assert checkout.amount == price.price_amount
+
     async def test_valid_custom_price_amount_update(
         self,
         session: AsyncSession,
@@ -658,6 +645,24 @@ class TestUpdate:
             ),
         )
         assert checkout.amount == 4242
+
+    async def test_valid_free_price_amount_update(
+        self,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_free,
+            CheckoutUpdate(
+                amount=4242,
+            ),
+        )
+
+        price = checkout_one_time_free.product_price
+        assert isinstance(price, ProductPriceFree)
+        assert checkout.amount is None
 
     async def test_valid_tax_id(
         self,

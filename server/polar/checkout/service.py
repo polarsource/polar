@@ -230,19 +230,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        if checkout_create.amount is not None:
-            if not isinstance(price, ProductPriceCustom):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "amount"),
-                            "msg": "Amount can only be set on custom prices.",
-                            "input": checkout_create.amount,
-                        }
-                    ]
-                )
-            elif (
+        if checkout_create.amount is not None and isinstance(price, ProductPriceCustom):
+            if (
                 price.minimum_amount is not None
                 and checkout_create.amount < price.minimum_amount
             ):
@@ -314,6 +303,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency = price.price_currency
             if amount is None:
                 amount = price.preset_amount
+        elif isinstance(price, ProductPriceFree):
+            amount = None
+            currency = None
 
         checkout = Checkout(
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
@@ -758,20 +750,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 checkout.amount = None
                 checkout.currency = None
 
-        if checkout_update.amount is not None:
-            price = checkout.product_price
-            if not isinstance(price, ProductPriceCustom):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "amount"),
-                            "msg": "Amount can only be set on custom prices.",
-                            "input": checkout_update.amount,
-                        }
-                    ]
-                )
-            elif (
+        price = checkout.product_price
+        if checkout_update.amount is not None and isinstance(price, ProductPriceCustom):
+            if (
                 price.minimum_amount is not None
                 and checkout_update.amount < price.minimum_amount
             ):

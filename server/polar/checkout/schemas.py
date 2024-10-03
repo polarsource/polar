@@ -20,8 +20,7 @@ Amount = Annotated[
     Field(
         description=(
             "Amount to pay in cents. "
-            "Only available for custom prices, "
-            "setting it for fixed or free prices will raise an error."
+            "Only useful for custom prices, it'll be ignored for fixed and free prices."
         )
     ),
 ]

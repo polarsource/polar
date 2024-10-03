@@ -8503,9 +8503,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
+                                "paid_subscription",
                                 "free_subscription",
-                                "donation",
-                                "paid_subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -21661,7 +21661,7 @@
                         "anyOf": [
                             {
                                 "type": "integer",
-                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                                "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
                             },
                             {
                                 "type": "null"
@@ -21845,7 +21845,7 @@
                         "anyOf": [
                             {
                                 "type": "integer",
-                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                                "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
                             },
                             {
                                 "type": "null"
@@ -21955,7 +21955,7 @@
                         "anyOf": [
                             {
                                 "type": "integer",
-                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                                "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
                             },
                             {
                                 "type": "null"
@@ -22102,7 +22102,7 @@
                         "anyOf": [
                             {
                                 "type": "integer",
-                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                                "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
                             },
                             {
                                 "type": "null"
@@ -22306,7 +22306,7 @@
                         "anyOf": [
                             {
                                 "type": "integer",
-                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                                "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
                             },
                             {
                                 "type": "null"
@@ -22417,7 +22417,7 @@
                         "anyOf": [
                             {
                                 "type": "integer",
-                                "description": "Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error."
+                                "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
                             },
                             {
                                 "type": "null"

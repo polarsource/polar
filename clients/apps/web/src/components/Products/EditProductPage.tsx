@@ -241,7 +241,11 @@ export const EditProductPage = ({
             />
           </div>
           <div className="flex flex-row items-center gap-2">
-            <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+            <Button
+              onClick={handleSubmit(onSubmit)}
+              loading={isLoading}
+              size="lg"
+            >
               Save Product
             </Button>
           </div>

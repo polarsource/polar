@@ -22,6 +22,7 @@ import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +44,7 @@ export default function ClientPage() {
 
   return (
     <DashboardBody className="flex flex-col gap-16">
-      <div className="flex flex-col gap-y-8">
+      <ShadowBoxOnMd className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h1 className="text-lg font-medium">Overview</h1>
           <div className="flex flex-row items-center gap-6">
@@ -71,7 +72,7 @@ export default function ClientPage() {
             ))}
           </List>
         )}
-      </div>
+      </ShadowBoxOnMd>
     </DashboardBody>
   )
 }

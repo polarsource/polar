@@ -12,54 +12,10 @@ export const Monetization = () => {
   return (
     <div className="flex flex-col gap-y-24 md:gap-y-32">
       <div className="flex flex-col gap-y-24">
-        <div className="relative flex flex-col items-center gap-y-2 text-center md:gap-y-4">
-          <h2 className="text-3xl leading-snug md:text-5xl">
-            Offer Community Funding & Rewards
-          </h2>
-        </div>
-
         <div className="grid grid-cols-1 gap-x-16 gap-y-16 md:grid-cols-3 md:gap-y-24">
           <div className="flex flex-col justify-between gap-y-12">
-            <div className="dark:bg-polar-950 dark:border-polar-700 flex h-full w-full flex-col gap-y-6 rounded-2xl border p-6 text-sm">
-              <div className="flex flex-row items-center gap-x-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
-                <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-              </div>
-              <div className="flex flex-col gap-y-2">
-                <span className="dark:text-polar-500 font-mono">
-                  // FUNDING.yaml
-                </span>
-                <pre>
-                  <code className="language-yaml">
-                    polar:{' '}
-                    <TypewriterText
-                      delay={1}
-                      texts={[
-                        'capawesome-team',
-                        'fief-dev',
-                        'LadybirdBrowser',
-                        'emilwidlund',
-                      ]}
-                    />
-                  </code>
-                </pre>
-              </div>
-            </div>
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-lg font-medium leading-snug md:text-xl">
-                Official GitHub Support
-              </h3>
-              <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500">
-                Your Polar page can be displayed as an official funding option
-                across your GitHub repositories.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-between gap-y-12">
             <motion.div
-              className="grid grid-flow-col grid-cols-[repeat(32,minmax(0,1fr))] grid-rows-[repeat(7,minmax(0,1fr))] gap-1 rounded-3xl md:mt-9"
+              className="grid grid-flow-col grid-cols-[repeat(32,minmax(0,1fr))] grid-rows-[repeat(7,minmax(0,1fr))] gap-1 rounded-3xl md:mt-6"
               whileInView="visible"
               initial="hidden"
               transition={{
@@ -104,13 +60,47 @@ export const Monetization = () => {
             </motion.div>
             <div className="flex flex-col gap-y-2">
               <h3 className="text-lg font-medium leading-snug md:text-xl">
-                Donations
+                Analytics
               </h3>
               <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500">
-                Get one-time donations of support from your community with ease.
+                Keep track of your sales with our built-in analytics dashboard
               </p>
             </div>
           </div>
+
+          <div className="flex flex-col justify-between gap-y-12">
+            <div className="dark:bg-polar-950 dark:border-polar-700 flex w-full flex-col gap-y-6 rounded-2xl border p-6 text-sm">
+              <div className="flex flex-row items-center gap-x-1.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              </div>
+              <div className="flex flex-col gap-y-2">
+                <pre>
+                  <code className="language-yaml">
+                    <TypewriterText
+                      delay={1}
+                      texts={[
+                        'polar.checkouts.create({...});',
+                        'polar.products.list({...});',
+                        'polar.benefits.get({...});',
+                      ]}
+                    />
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-lg font-medium leading-snug md:text-xl">
+                Integrate Polar in seconds
+              </h3>
+              <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500">
+                Use our SDKs to integrate Polar into your apps and platforms.
+                Webhooks, OAuth, and more.
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-col justify-between gap-y-12">
             <picture>
               <source
@@ -118,7 +108,7 @@ export const Monetization = () => {
                 srcSet={`/assets/landing/fund_dark.svg`}
               />
               <img
-                className="dark:border-polar-700 rounded-2xl border border-gray-100 md:mt-4"
+                className="dark:border-polar-700 rounded-2xl border border-gray-100"
                 srcSet={`/assets/landing/fund_dark.svg`}
                 alt="Polar crowdfunding badge embedded on a GitHub issue"
               />

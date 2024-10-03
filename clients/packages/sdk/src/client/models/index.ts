@@ -4695,7 +4695,7 @@ export interface Checkout {
      */
     expires_at: string;
     /**
-     * Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error.
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof Checkout
      */
@@ -4794,7 +4794,7 @@ export interface CheckoutConfirmStripe {
      */
     product_price_id?: string | null;
     /**
-     * Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error.
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof CheckoutConfirmStripe
      */
@@ -4855,7 +4855,7 @@ export interface CheckoutCreate {
      */
     product_price_id: string;
     /**
-     * Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error.
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof CheckoutCreate
      */
@@ -4956,7 +4956,7 @@ export interface CheckoutPublic {
      */
     expires_at: string;
     /**
-     * Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error.
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof CheckoutPublic
      */
@@ -5088,7 +5088,7 @@ export interface CheckoutUpdate {
      */
     product_price_id?: string | null;
     /**
-     * Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error.
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof CheckoutUpdate
      */
@@ -5143,7 +5143,7 @@ export interface CheckoutUpdatePublic {
      */
     product_price_id?: string | null;
     /**
-     * Amount to pay in cents. Only available for custom prices, setting it for fixed or free prices will raise an error.
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof CheckoutUpdatePublic
      */

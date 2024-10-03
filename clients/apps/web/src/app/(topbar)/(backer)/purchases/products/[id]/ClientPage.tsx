@@ -4,7 +4,6 @@ import BenefitDetails from '@/components/Benefit/BenefitDetails'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { InlineModal } from '@/components/Modal/InlineModal'
-import { Slideshow } from '@/components/Products/Slideshow'
 import {
   useOrganization,
   useUserBenefits,
@@ -15,6 +14,7 @@ import { ArrowBackOutlined } from '@mui/icons-material'
 import { UserBenefit, UserOrder } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
@@ -50,15 +50,21 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
       </Link>
       <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
         <div className="flex w-full flex-col gap-8 md:w-2/3">
-          <ShadowBox className="flex flex-col gap-6 p-12 ring-gray-100">
-            <h1 className="text-3xl">{order.product.name}</h1>
-            {order.product.medias.length > 0 && (
-              <Slideshow
-                images={order.product.medias.map(
-                  ({ public_url }) => public_url,
-                )}
-              />
+          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+            {organization && (
+              <Link
+                className="flex flex-row items-center gap-x-4"
+                href={`/${organization.slug}`}
+              >
+                <Avatar
+                  className="h-12 w-12"
+                  avatar_url={organization.avatar_url}
+                  name={organization.name}
+                />
+                <h3 className="text-lg">{organization.name}</h3>
+              </Link>
             )}
+            <h1 className="text-3xl font-medium">{order.product.name}</h1>
             {order.product.description ? (
               <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
                 <Markdown
@@ -79,11 +85,11 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               <></>
             )}
           </ShadowBox>
-          {benefits?.items && (
+          {(benefits?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
               <h3 className="text-lg font-medium">Benefits</h3>
               <List>
-                {benefits.items.map((benefit) => (
+                {benefits?.items.map((benefit) => (
                   <ListItem
                     key={benefit.id}
                     selected={benefit.id === selectedBenefit?.id}

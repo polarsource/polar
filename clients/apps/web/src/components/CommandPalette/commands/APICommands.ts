@@ -24,7 +24,6 @@ type Sitemap = {
   donations: FindMatchingPath<'/v1/donations'>[]
   subscriptions: FindMatchingPath<'/v1/subscriptions'>[]
   benefits: FindMatchingPath<'/v1/benefits'>[]
-  newsletters: FindMatchingPath<'/v1/articles'>[]
   users: FindMatchingPath<'/v1/users'>[]
   accounts: FindMatchingPath<'/v1/accounts'>[]
   webhooks: FindMatchingPath<'/v1/webhooks'>[]
@@ -45,7 +44,6 @@ const sitemap: Sitemap = {
   donations: filterPath('/v1/donations'),
   subscriptions: filterPath('/v1/subscriptions'),
   benefits: filterPath('/v1/benefits'),
-  newsletters: filterPath('/v1/articles'),
   users: filterPath('/v1/users'),
   accounts: filterPath('/v1/accounts'),
   webhooks: filterPath('/v1/webhooks'),

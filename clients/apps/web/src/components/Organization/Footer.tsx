@@ -36,17 +36,14 @@ const Footer = ({ wide }: { wide?: boolean }) => {
               <FooterLink href="https://api.polar.sh/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
                 Create an Account
               </FooterLink>
-              <FooterLink href="https://polar.sh/issue-funding">
-                Issue Funding
-              </FooterLink>
               <FooterLink href="https://polar.sh/products">
                 Products & Subscriptions
               </FooterLink>
               <FooterLink href="https://polar.sh/donations">
                 Donations
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/newsletters">
-                Newsletters
+              <FooterLink href="https://polar.sh/issue-funding">
+                Issue Funding
               </FooterLink>
             </div>
           </div>

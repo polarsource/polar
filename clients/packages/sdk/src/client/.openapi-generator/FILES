@@ -5,6 +5,7 @@ apis/AuthApi.ts
 apis/BackofficeApi.ts
 apis/BenefitsApi.ts
 apis/CheckoutsApi.ts
+apis/CheckoutsCustomApi.ts
 apis/DashboardApi.ts
 apis/DonationsApi.ts
 apis/ExternalOrganizationsApi.ts

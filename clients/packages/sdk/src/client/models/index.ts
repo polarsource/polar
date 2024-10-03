@@ -4647,141 +4647,6 @@ export interface BylineProfile {
     avatar_url: string | null;
 }
 /**
- * Checkout session data retrieved using an access token.
- * @export
- * @interface Checkout
- */
-export interface Checkout {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof Checkout
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Checkout
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the object.
-     * @type {string}
-     * @memberof Checkout
-     */
-    id: string;
-    /**
-     * Payment processor used.
-     * @type {PolarEnumsPaymentProcessor}
-     * @memberof Checkout
-     */
-    payment_processor: PolarEnumsPaymentProcessor;
-    /**
-     * Status of the checkout session.
-     * @type {CheckoutStatus}
-     * @memberof Checkout
-     */
-    status: CheckoutStatus;
-    /**
-     * Client secret used to update and complete the checkout session from the client.
-     * @type {string}
-     * @memberof Checkout
-     */
-    client_secret: string;
-    /**
-     * Expiration date and time of the checkout session.
-     * @type {string}
-     * @memberof Checkout
-     */
-    expires_at: string;
-    /**
-     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
-     * @type {number}
-     * @memberof Checkout
-     */
-    amount: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof Checkout
-     */
-    tax_amount: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Checkout
-     */
-    currency: string | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof Checkout
-     */
-    total_amount: number | null;
-    /**
-     * ID of the product to checkout.
-     * @type {string}
-     * @memberof Checkout
-     */
-    product_id: string;
-    /**
-     * ID of the product price to checkout.
-     * @type {string}
-     * @memberof Checkout
-     */
-    product_price_id: string;
-    /**
-     * Whether the checkout requires payment. Useful to detect free products.
-     * @type {boolean}
-     * @memberof Checkout
-     */
-    is_payment_required: boolean;
-    /**
-     * Name of the customer.
-     * @type {string}
-     * @memberof Checkout
-     */
-    customer_name: string | null;
-    /**
-     * Email address of the customer.
-     * @type {string}
-     * @memberof Checkout
-     */
-    customer_email: string | null;
-    /**
-     * IP address of the customer. Used to detect tax location.
-     * @type {string}
-     * @memberof Checkout
-     */
-    customer_ip_address: string | null;
-    /**
-     * Billing address of the customer.
-     * @type {Address}
-     * @memberof Checkout
-     */
-    customer_billing_address: Address | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Checkout
-     */
-    customer_tax_id: string | null;
-    /**
-     * 
-     * @type {object}
-     * @memberof Checkout
-     */
-    payment_processor_metadata: object;
-    /**
-     * Metadata to store with the checkout. Useful to store additional information about the checkout.
-     * @type {{ [key: string]: string; }}
-     * @memberof Checkout
-     */
-    metadata: { [key: string]: string; };
-}
-
-
-/**
  * Confirm a checkout session using a Stripe confirmation token.
  * @export
  * @interface CheckoutConfirmStripe
@@ -4836,77 +4701,6 @@ export interface CheckoutConfirmStripe {
      */
     confirmation_token_id?: string | null;
 }
-/**
- * Create a new checkout session.
- * @export
- * @interface CheckoutCreate
- */
-export interface CheckoutCreate {
-    /**
-     * Payment processor to use. Currently only Stripe is supported.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    payment_processor: CheckoutCreatePaymentProcessorEnum;
-    /**
-     * ID of the product price to checkout.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    product_price_id: string;
-    /**
-     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
-     * @type {number}
-     * @memberof CheckoutCreate
-     */
-    amount?: number | null;
-    /**
-     * Name of the customer.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    customer_name?: string | null;
-    /**
-     * Email address of the customer.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    customer_email?: string | null;
-    /**
-     * IP address of the customer. Used to detect tax location.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    customer_ip_address?: string | null;
-    /**
-     * Billing address of the customer.
-     * @type {Address}
-     * @memberof CheckoutCreate
-     */
-    customer_billing_address?: Address | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    customer_tax_id?: string | null;
-    /**
-     * Metadata to store with the checkout. Useful to store additional information about the checkout.
-     * @type {{ [key: string]: string; }}
-     * @memberof CheckoutCreate
-     */
-    user_metadata?: { [key: string]: string; };
-}
-
-
-/**
- * @export
- */
-export const CheckoutCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutCreatePaymentProcessorEnum = typeof CheckoutCreatePaymentProcessorEnum[keyof typeof CheckoutCreatePaymentProcessorEnum];
-
 /**
  * Checkout session data retrieved using the client secret.
  * @export
@@ -7560,10 +7354,10 @@ export interface ListResourceBenefitGrant {
 export interface ListResourceCheckout {
     /**
      * 
-     * @type {Array<Checkout>}
+     * @type {Array<PolarCheckoutSchemasCheckout>}
      * @memberof ListResourceCheckout
      */
-    items: Array<Checkout>;
+    items: Array<PolarCheckoutSchemasCheckout>;
     /**
      * 
      * @type {Pagination}
@@ -11755,6 +11549,286 @@ export interface PledgesTypeSummaries {
      */
     pay_directly: PledgesSummary;
 }
+/**
+ * A checkout session.
+ * @export
+ * @interface PolarCheckoutLegacySchemasCheckout
+ */
+export interface PolarCheckoutLegacySchemasCheckout {
+    /**
+     * The ID of the checkout.
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    url?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    customer_email: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    customer_name: string | null;
+    /**
+     * 
+     * @type {Product}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    product: Product;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    product_price: ProductPrice;
+}
+/**
+ * 
+ * @export
+ * @interface PolarCheckoutLegacySchemasCheckoutCreate
+ */
+export interface PolarCheckoutLegacySchemasCheckoutCreate {
+    /**
+     * ID of the product price to subscribe to.
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    product_price_id: string;
+    /**
+     * URL where the customer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the checkout session id.
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    success_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    customer_email?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    subscription_id?: string | null;
+}
+/**
+ * Checkout session data retrieved using an access token.
+ * @export
+ * @interface PolarCheckoutSchemasCheckout
+ */
+export interface PolarCheckoutSchemasCheckout {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    id: string;
+    /**
+     * Payment processor used.
+     * @type {PolarEnumsPaymentProcessor}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    payment_processor: PolarEnumsPaymentProcessor;
+    /**
+     * Status of the checkout session.
+     * @type {CheckoutStatus}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    status: CheckoutStatus;
+    /**
+     * Client secret used to update and complete the checkout session from the client.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    client_secret: string;
+    /**
+     * Expiration date and time of the checkout session.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    expires_at: string;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    tax_amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    total_amount: number | null;
+    /**
+     * ID of the product to checkout.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    product_id: string;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    product_price_id: string;
+    /**
+     * Whether the checkout requires payment. Useful to detect free products.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    is_payment_required: boolean;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_name: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_email: string | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_ip_address: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_billing_address: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_tax_id: string | null;
+    /**
+     * 
+     * @type {object}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    payment_processor_metadata: object;
+    /**
+     * Metadata to store with the checkout. Useful to store additional information about the checkout.
+     * @type {{ [key: string]: string; }}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    metadata: { [key: string]: string; };
+}
+
+
+/**
+ * Create a new checkout session.
+ * @export
+ * @interface PolarCheckoutSchemasCheckoutCreate
+ */
+export interface PolarCheckoutSchemasCheckoutCreate {
+    /**
+     * Payment processor to use. Currently only Stripe is supported.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    payment_processor: PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    product_price_id: string;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    amount?: number | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_name?: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_email?: string | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_ip_address?: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_billing_address?: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_tax_id?: string | null;
+    /**
+     * Metadata to store with the checkout. Useful to store additional information about the checkout.
+     * @type {{ [key: string]: string; }}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    metadata?: { [key: string]: string; };
+}
+
+
+/**
+ * @export
+ */
+export const PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum = {
+    STRIPE: 'stripe'
+} as const;
+export type PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum = typeof PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum[keyof typeof PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum];
+
 
 /**
  * 

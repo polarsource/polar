@@ -12598,27 +12598,9 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "anyOf": [
+                                    "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/BenefitArticles"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitAds"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitCustom"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitDiscord"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitGitHubRepository"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitDownloadables"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                            "$ref": "#/components/schemas/Benefit"
                                         }
                                     ],
                                     "title": "Response Benefits:Create"
@@ -12688,27 +12670,9 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "anyOf": [
+                                    "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/BenefitArticles"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitAds"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitCustom"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitDiscord"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitGitHubRepository"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitDownloadables"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                            "$ref": "#/components/schemas/Benefit"
                                         }
                                     ],
                                     "title": "Response Benefits:Get"
@@ -12818,27 +12782,9 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "anyOf": [
+                                    "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/BenefitArticles"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitAds"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitCustom"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitDiscord"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitGitHubRepository"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitDownloadables"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                            "$ref": "#/components/schemas/Benefit"
                                         }
                                     ],
                                     "title": "Response Benefits:Update"
@@ -17969,6 +17915,31 @@
                 ],
                 "title": "BackofficeReward"
             },
+            "Benefit": {
+                "anyOf": [
+                    {
+                        "$ref": "#/components/schemas/BenefitArticles"
+                    },
+                    {
+                        "$ref": "#/components/schemas/BenefitAds"
+                    },
+                    {
+                        "$ref": "#/components/schemas/BenefitCustom"
+                    },
+                    {
+                        "$ref": "#/components/schemas/BenefitDiscord"
+                    },
+                    {
+                        "$ref": "#/components/schemas/BenefitGitHubRepository"
+                    },
+                    {
+                        "$ref": "#/components/schemas/BenefitDownloadables"
+                    },
+                    {
+                        "$ref": "#/components/schemas/BenefitLicenseKeys"
+                    }
+                ]
+            },
             "BenefitAds": {
                 "properties": {
                     "created_at": {
@@ -18831,6 +18802,81 @@
                 ],
                 "title": "BenefitCustomUpdate"
             },
+            "BenefitDiscord": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the benefit."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "discord"
+                        ],
+                        "const": "discord",
+                        "title": "Type"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "The description of the benefit."
+                    },
+                    "selectable": {
+                        "type": "boolean",
+                        "title": "Selectable",
+                        "description": "Whether the benefit is selectable when creating a product."
+                    },
+                    "deletable": {
+                        "type": "boolean",
+                        "title": "Deletable",
+                        "description": "Whether the benefit is deletable."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the benefit."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitDiscordProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "type",
+                    "description",
+                    "selectable",
+                    "deletable",
+                    "organization_id",
+                    "properties"
+                ],
+                "title": "BenefitDiscord",
+                "description": "A benefit of type `discord`.\n\nUse it to automatically invite your backers to a Discord server."
+            },
             "BenefitDiscordCreate": {
                 "properties": {
                     "type": {
@@ -18898,6 +18944,33 @@
                 ],
                 "title": "BenefitDiscordCreateProperties",
                 "description": "Properties to create a benefit of type `discord`."
+            },
+            "BenefitDiscordProperties": {
+                "properties": {
+                    "guild_id": {
+                        "type": "string",
+                        "title": "Guild Id",
+                        "description": "The ID of the Discord server."
+                    },
+                    "role_id": {
+                        "type": "string",
+                        "title": "Role Id",
+                        "description": "The ID of the Discord role to grant."
+                    },
+                    "guild_token": {
+                        "type": "string",
+                        "title": "Guild Token",
+                        "readOnly": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "guild_id",
+                    "role_id",
+                    "guild_token"
+                ],
+                "title": "BenefitDiscordProperties",
+                "description": "Properties for a benefit of type `discord`."
             },
             "BenefitDiscordSubscriber": {
                 "properties": {
@@ -20465,27 +20538,9 @@
                         "title": "Properties"
                     },
                     "benefit": {
-                        "anyOf": [
+                        "allOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitArticles"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitAds"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitCustom"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitDiscord"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGitHubRepository"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitDownloadables"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                "$ref": "#/components/schemas/Benefit"
                             }
                         ],
                         "title": "Benefit"
@@ -20579,6 +20634,80 @@
                     "timeframe"
                 ],
                 "title": "BenefitLicenseKeyExpirationProperties"
+            },
+            "BenefitLicenseKeys": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the benefit."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "license_keys"
+                        ],
+                        "const": "license_keys",
+                        "title": "Type"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "The description of the benefit."
+                    },
+                    "selectable": {
+                        "type": "boolean",
+                        "title": "Selectable",
+                        "description": "Whether the benefit is selectable when creating a product."
+                    },
+                    "deletable": {
+                        "type": "boolean",
+                        "title": "Deletable",
+                        "description": "Whether the benefit is deletable."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the benefit."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "type",
+                    "description",
+                    "selectable",
+                    "deletable",
+                    "organization_id",
+                    "properties"
+                ],
+                "title": "BenefitLicenseKeys"
             },
             "BenefitLicenseKeysCreate": {
                 "properties": {
@@ -21341,6 +21470,95 @@
                 ],
                 "title": "DiscordGuildRole"
             },
+            "Donation": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Message"
+                    },
+                    "donor": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/DonationOrganization"
+                            },
+                            {
+                                "$ref": "#/components/schemas/DonationUser"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Donor"
+                    },
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "issue": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Issue"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount",
+                    "currency",
+                    "message",
+                    "donor",
+                    "email",
+                    "issue"
+                ],
+                "title": "Donation"
+            },
             "DonationCreateStripePaymentIntent": {
                 "properties": {
                     "to_organization_id": {
@@ -21744,7 +21962,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "organization_id": {
                         "type": "string",
@@ -22253,7 +22472,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "organization_id": {
                         "type": "string",
@@ -22444,7 +22664,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "organization_id": {
                         "type": "string",
@@ -22821,6 +23042,206 @@
                     "iat"
                 ],
                 "title": "IntrospectTokenResponse"
+            },
+            "Issue": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "platform": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Platforms"
+                            }
+                        ],
+                        "description": "Issue platform (currently always GitHub)"
+                    },
+                    "number": {
+                        "type": "integer",
+                        "title": "Number",
+                        "description": "GitHub #number"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "GitHub issue title"
+                    },
+                    "body": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Body",
+                        "description": "GitHub issue body"
+                    },
+                    "comments": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Comments",
+                        "description": "Number of GitHub comments made on the issue"
+                    },
+                    "labels": {
+                        "items": {
+                            "$ref": "#/components/schemas/Label"
+                        },
+                        "type": "array",
+                        "title": "Labels",
+                        "default": []
+                    },
+                    "author": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Author"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "GitHub author"
+                    },
+                    "assignees": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/Assignee"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Assignees",
+                        "description": "GitHub assignees"
+                    },
+                    "reactions": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Reactions"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "GitHub reactions"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/State"
+                    },
+                    "issue_closed_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Issue Closed At"
+                    },
+                    "issue_modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Issue Modified At"
+                    },
+                    "issue_created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Issue Created At"
+                    },
+                    "needs_confirmation_solved": {
+                        "type": "boolean",
+                        "title": "Needs Confirmation Solved",
+                        "description": "If a maintainer needs to mark this issue as solved"
+                    },
+                    "confirmed_solved_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Confirmed Solved At",
+                        "description": "If this issue has been marked as confirmed solved through Polar"
+                    },
+                    "funding": {
+                        "$ref": "#/components/schemas/Funding"
+                    },
+                    "repository": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Repository"
+                            }
+                        ],
+                        "description": "The repository that the issue is in"
+                    },
+                    "upfront_split_to_contributors": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Upfront Split To Contributors",
+                        "description": "Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."
+                    },
+                    "pledge_badge_currently_embedded": {
+                        "type": "boolean",
+                        "title": "Pledge Badge Currently Embedded",
+                        "description": "If this issue currently has the Polar badge SVG embedded"
+                    },
+                    "badge_custom_content": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Badge Custom Content",
+                        "description": "Optional custom badge SVG promotional content"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "platform",
+                    "number",
+                    "title",
+                    "state",
+                    "issue_created_at",
+                    "needs_confirmation_solved",
+                    "funding",
+                    "repository",
+                    "pledge_badge_currently_embedded"
+                ],
+                "title": "Issue"
             },
             "IssueFunding": {
                 "properties": {
@@ -23625,27 +24046,9 @@
                 "properties": {
                     "items": {
                         "items": {
-                            "anyOf": [
+                            "allOf": [
                                 {
-                                    "$ref": "#/components/schemas/BenefitArticles"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitAds"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitCustom"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDiscord"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitGitHubRepository"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDownloadables"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                    "$ref": "#/components/schemas/Benefit"
                                 }
                             ],
                             "title": "Benefit"
@@ -26202,6 +26605,111 @@
                 ],
                 "title": "OAuthPlatform"
             },
+            "Order": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "tax_amount": {
+                        "type": "integer",
+                        "title": "Tax Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/OrderUser"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/OrderProduct"
+                    },
+                    "product_price": {
+                        "$ref": "#/components/schemas/ProductPrice"
+                    },
+                    "subscription": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderSubscription"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount",
+                    "tax_amount",
+                    "currency",
+                    "user_id",
+                    "product_id",
+                    "product_price_id",
+                    "subscription_id",
+                    "user",
+                    "product",
+                    "product_price",
+                    "subscription"
+                ],
+                "title": "Order"
+            },
             "OrderInvoice": {
                 "properties": {
                     "url": {
@@ -26491,6 +26999,193 @@
                 ],
                 "title": "OrderUser"
             },
+            "Organization": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The organization ID.",
+                        "x-polar-selector-widget": {
+                            "displayProperty": "name",
+                            "resourceName": "Organization",
+                            "resourceRoot": "/v1/organizations"
+                        }
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "title": "Slug"
+                    },
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    },
+                    "bio": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Bio"
+                    },
+                    "company": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Company"
+                    },
+                    "blog": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Blog"
+                    },
+                    "location": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Location"
+                    },
+                    "email": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Email"
+                    },
+                    "twitter_username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Twitter Username"
+                    },
+                    "pledge_minimum_amount": {
+                        "type": "integer",
+                        "title": "Pledge Minimum Amount"
+                    },
+                    "pledge_badge_show_amount": {
+                        "type": "boolean",
+                        "title": "Pledge Badge Show Amount"
+                    },
+                    "default_upfront_split_to_contributors": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Default Upfront Split To Contributors"
+                    },
+                    "donations_enabled": {
+                        "type": "boolean",
+                        "title": "Donations Enabled",
+                        "description": "If this organizations accepts donations"
+                    },
+                    "profile_settings": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrganizationProfileSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Settings for the organization profile"
+                    },
+                    "feature_settings": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrganizationFeatureSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Settings for the organization features"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "name",
+                    "slug",
+                    "avatar_url",
+                    "bio",
+                    "company",
+                    "blog",
+                    "location",
+                    "email",
+                    "twitter_username",
+                    "pledge_minimum_amount",
+                    "pledge_badge_show_amount",
+                    "default_upfront_split_to_contributors",
+                    "donations_enabled",
+                    "profile_settings",
+                    "feature_settings"
+                ],
+                "title": "Organization"
+            },
             "OrganizationAvatarFileCreate": {
                 "properties": {
                     "organization_id": {
@@ -26577,7 +27272,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "organization_id": {
                         "type": "string",
@@ -27550,6 +28246,152 @@
                 "const": "github",
                 "title": "Platforms"
             },
+            "Pledge": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount",
+                        "description": "Amount pledged towards the issue"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "state": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PledgeState"
+                            }
+                        ],
+                        "description": "Current state of the pledge"
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PledgeType"
+                            }
+                        ],
+                        "description": "Type of pledge"
+                    },
+                    "refunded_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Refunded At",
+                        "description": "If and when the pledge was refunded to the pledger"
+                    },
+                    "scheduled_payout_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Scheduled Payout At",
+                        "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
+                    },
+                    "issue": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Issue"
+                            }
+                        ],
+                        "description": "The issue that the pledge was made towards"
+                    },
+                    "pledger": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Pledger"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "The user or organization that made this pledge"
+                    },
+                    "hosted_invoice_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Hosted Invoice Url",
+                        "description": "URL of invoice for this pledge"
+                    },
+                    "authed_can_admin_sender": {
+                        "type": "boolean",
+                        "title": "Authed Can Admin Sender",
+                        "description": "If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge",
+                        "default": false
+                    },
+                    "authed_can_admin_received": {
+                        "type": "boolean",
+                        "title": "Authed Can Admin Received",
+                        "description": "If the currently authenticated subject can perform admin actions on behalf of the receiver of the peldge",
+                        "default": false
+                    },
+                    "created_by": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Pledger"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "For pledges made by an organization, or on behalf of an organization. This is the user that made the pledge. Only visible for members of said organization."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount",
+                    "currency",
+                    "state",
+                    "type",
+                    "issue"
+                ],
+                "title": "Pledge"
+            },
             "PledgePledgesSummary": {
                 "properties": {
                     "funding": {
@@ -27988,6 +28830,115 @@
                 ],
                 "title": "PostIssueComment"
             },
+            "Product": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the product."
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The name of the product."
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the product."
+                    },
+                    "is_recurring": {
+                        "type": "boolean",
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the product is archived and no longer available."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the product."
+                    },
+                    "prices": {
+                        "items": {
+                            "$ref": "#/components/schemas/ProductPrice"
+                        },
+                        "type": "array",
+                        "title": "Prices",
+                        "description": "List of available prices for this product."
+                    },
+                    "benefits": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitBase"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticles"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "BenefitPublic",
+                        "description": "The benefits granted by the product."
+                    },
+                    "medias": {
+                        "items": {
+                            "$ref": "#/components/schemas/ProductMediaFileRead"
+                        },
+                        "type": "array",
+                        "title": "Medias",
+                        "description": "The medias associated to the product."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "name",
+                    "description",
+                    "is_recurring",
+                    "is_archived",
+                    "organization_id",
+                    "prices",
+                    "benefits",
+                    "medias"
+                ],
+                "title": "Product",
+                "description": "A product."
+            },
             "ProductBenefitsUpdate": {
                 "properties": {
                     "benefits": {
@@ -28094,6 +29045,153 @@
                 "title": "ProductMediaFileCreate",
                 "description": "Schema to create a file to be used as a product media file."
             },
+            "ProductMediaFileRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "title": "Mime Type"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "title": "Size"
+                    },
+                    "storage_version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Storage Version"
+                    },
+                    "checksum_etag": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Etag"
+                    },
+                    "checksum_sha256_base64": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Base64"
+                    },
+                    "checksum_sha256_hex": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Hex"
+                    },
+                    "last_modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Modified At"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
+                    "service": {
+                        "type": "string",
+                        "enum": [
+                            "product_media"
+                        ],
+                        "const": "product_media",
+                        "title": "Service"
+                    },
+                    "is_uploaded": {
+                        "type": "boolean",
+                        "title": "Is Uploaded"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "size_readable": {
+                        "type": "string",
+                        "title": "Size Readable",
+                        "readOnly": true
+                    },
+                    "public_url": {
+                        "type": "string",
+                        "title": "Public Url",
+                        "readOnly": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "organization_id",
+                    "name",
+                    "path",
+                    "mime_type",
+                    "size",
+                    "storage_version",
+                    "checksum_etag",
+                    "checksum_sha256_base64",
+                    "checksum_sha256_hex",
+                    "last_modified_at",
+                    "version",
+                    "service",
+                    "is_uploaded",
+                    "created_at",
+                    "size_readable",
+                    "public_url"
+                ],
+                "title": "ProductMediaFileRead",
+                "description": "File to be used as a product media file."
+            },
             "ProductOneTimeCreate": {
                 "properties": {
                     "name": {
@@ -28177,6 +29275,23 @@
                 ],
                 "title": "ProductOneTimeCreate",
                 "description": "Schema to create a one-time product."
+            },
+            "ProductPrice": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                    }
+                }
             },
             "ProductPriceOneTime": {
                 "oneOf": [
@@ -28589,6 +29704,27 @@
                 ],
                 "title": "ProductPriceOneTimeFreeCreate",
                 "description": "Schema to create a free one-time product price."
+            },
+            "ProductPriceRecurring": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringFixed"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringCustom"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurringFree"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "amount_type",
+                    "mapping": {
+                        "custom": "#/components/schemas/ProductPriceRecurringCustom",
+                        "fixed": "#/components/schemas/ProductPriceRecurringFixed",
+                        "free": "#/components/schemas/ProductPriceRecurringFree"
+                    }
+                }
             },
             "ProductPriceRecurringCustom": {
                 "properties": {
@@ -30195,6 +31331,154 @@
                     "organization"
                 ],
                 "title": "SubType"
+            },
+            "Subscription": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Currency"
+                    },
+                    "recurring_interval": {
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/SubscriptionStatus"
+                    },
+                    "current_period_start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Current Period Start"
+                    },
+                    "current_period_end": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Current Period End"
+                    },
+                    "cancel_at_period_end": {
+                        "type": "boolean",
+                        "title": "Cancel At Period End"
+                    },
+                    "started_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Started At"
+                    },
+                    "ended_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ended At"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Price Id"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/SubscriptionUser"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/Product"
+                    },
+                    "price": {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "amount",
+                    "currency",
+                    "recurring_interval",
+                    "status",
+                    "current_period_start",
+                    "current_period_end",
+                    "cancel_at_period_end",
+                    "started_at",
+                    "ended_at",
+                    "user_id",
+                    "product_id",
+                    "price_id",
+                    "user",
+                    "product",
+                    "price"
+                ],
+                "title": "Subscription"
             },
             "SubscriptionRecurringInterval": {
                 "type": "string",
@@ -33134,27 +34418,9 @@
                         "title": "Type"
                     },
                     "data": {
-                        "anyOf": [
+                        "allOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitArticles"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitAds"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitCustom"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitDiscord"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGitHubRepository"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitDownloadables"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                "$ref": "#/components/schemas/Benefit"
                             }
                         ],
                         "title": "Benefit"
@@ -33245,27 +34511,9 @@
                         "title": "Type"
                     },
                     "data": {
-                        "anyOf": [
+                        "allOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitArticles"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitAds"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitCustom"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitDiscord"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitGitHubRepository"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitDownloadables"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BenefitLicenseKeys"
+                                "$ref": "#/components/schemas/Benefit"
                             }
                         ],
                         "title": "Benefit"
@@ -33912,1202 +35160,6 @@
                 ],
                 "title": "Body_magic_link:magic_link.authenticate"
             },
-            "BenefitDiscord": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the benefit."
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "discord"
-                        ],
-                        "const": "discord",
-                        "title": "Type"
-                    },
-                    "description": {
-                        "type": "string",
-                        "title": "Description",
-                        "description": "The description of the benefit."
-                    },
-                    "selectable": {
-                        "type": "boolean",
-                        "title": "Selectable",
-                        "description": "Whether the benefit is selectable when creating a product."
-                    },
-                    "deletable": {
-                        "type": "boolean",
-                        "title": "Deletable",
-                        "description": "Whether the benefit is deletable."
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id",
-                        "description": "The ID of the organization owning the benefit."
-                    },
-                    "properties": {
-                        "$ref": "#/components/schemas/BenefitDiscordProperties"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "type",
-                    "description",
-                    "selectable",
-                    "deletable",
-                    "organization_id",
-                    "properties"
-                ],
-                "title": "BenefitDiscord",
-                "description": "A benefit of type `discord`.\n\nUse it to automatically invite your backers to a Discord server."
-            },
-            "BenefitDiscordProperties": {
-                "properties": {
-                    "guild_id": {
-                        "type": "string",
-                        "title": "Guild Id",
-                        "description": "The ID of the Discord server."
-                    },
-                    "role_id": {
-                        "type": "string",
-                        "title": "Role Id",
-                        "description": "The ID of the Discord role to grant."
-                    },
-                    "guild_token": {
-                        "type": "string",
-                        "title": "Guild Token",
-                        "readOnly": true
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "guild_id",
-                    "role_id",
-                    "guild_token"
-                ],
-                "title": "BenefitDiscordProperties",
-                "description": "Properties for a benefit of type `discord`."
-            },
-            "BenefitLicenseKeys": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the benefit."
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "license_keys"
-                        ],
-                        "const": "license_keys",
-                        "title": "Type"
-                    },
-                    "description": {
-                        "type": "string",
-                        "title": "Description",
-                        "description": "The description of the benefit."
-                    },
-                    "selectable": {
-                        "type": "boolean",
-                        "title": "Selectable",
-                        "description": "Whether the benefit is selectable when creating a product."
-                    },
-                    "deletable": {
-                        "type": "boolean",
-                        "title": "Deletable",
-                        "description": "Whether the benefit is deletable."
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id",
-                        "description": "The ID of the organization owning the benefit."
-                    },
-                    "properties": {
-                        "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "type",
-                    "description",
-                    "selectable",
-                    "deletable",
-                    "organization_id",
-                    "properties"
-                ],
-                "title": "BenefitLicenseKeys"
-            },
-            "Donation": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the object."
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Message"
-                    },
-                    "donor": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/DonationOrganization"
-                            },
-                            {
-                                "$ref": "#/components/schemas/DonationUser"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donor"
-                    },
-                    "email": {
-                        "type": "string",
-                        "title": "Email"
-                    },
-                    "issue": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "amount",
-                    "currency",
-                    "message",
-                    "donor",
-                    "email",
-                    "issue"
-                ],
-                "title": "Donation"
-            },
-            "Issue": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "platform": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Platforms"
-                            }
-                        ],
-                        "description": "Issue platform (currently always GitHub)"
-                    },
-                    "number": {
-                        "type": "integer",
-                        "title": "Number",
-                        "description": "GitHub #number"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title",
-                        "description": "GitHub issue title"
-                    },
-                    "body": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Body",
-                        "description": "GitHub issue body"
-                    },
-                    "comments": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Comments",
-                        "description": "Number of GitHub comments made on the issue"
-                    },
-                    "labels": {
-                        "items": {
-                            "$ref": "#/components/schemas/Label"
-                        },
-                        "type": "array",
-                        "title": "Labels",
-                        "default": []
-                    },
-                    "author": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Author"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "GitHub author"
-                    },
-                    "assignees": {
-                        "anyOf": [
-                            {
-                                "items": {
-                                    "$ref": "#/components/schemas/Assignee"
-                                },
-                                "type": "array"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Assignees",
-                        "description": "GitHub assignees"
-                    },
-                    "reactions": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Reactions"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "GitHub reactions"
-                    },
-                    "state": {
-                        "$ref": "#/components/schemas/State"
-                    },
-                    "issue_closed_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Issue Closed At"
-                    },
-                    "issue_modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Issue Modified At"
-                    },
-                    "issue_created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Issue Created At"
-                    },
-                    "needs_confirmation_solved": {
-                        "type": "boolean",
-                        "title": "Needs Confirmation Solved",
-                        "description": "If a maintainer needs to mark this issue as solved"
-                    },
-                    "confirmed_solved_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Confirmed Solved At",
-                        "description": "If this issue has been marked as confirmed solved through Polar"
-                    },
-                    "funding": {
-                        "$ref": "#/components/schemas/Funding"
-                    },
-                    "repository": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Repository"
-                            }
-                        ],
-                        "description": "The repository that the issue is in"
-                    },
-                    "upfront_split_to_contributors": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Upfront Split To Contributors",
-                        "description": "Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."
-                    },
-                    "pledge_badge_currently_embedded": {
-                        "type": "boolean",
-                        "title": "Pledge Badge Currently Embedded",
-                        "description": "If this issue currently has the Polar badge SVG embedded"
-                    },
-                    "badge_custom_content": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Badge Custom Content",
-                        "description": "Optional custom badge SVG promotional content"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "platform",
-                    "number",
-                    "title",
-                    "state",
-                    "issue_created_at",
-                    "needs_confirmation_solved",
-                    "funding",
-                    "repository",
-                    "pledge_badge_currently_embedded"
-                ],
-                "title": "Issue"
-            },
-            "Order": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the object."
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "tax_amount": {
-                        "type": "integer",
-                        "title": "Tax Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id"
-                    },
-                    "product_price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Price Id"
-                    },
-                    "subscription_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Subscription Id"
-                    },
-                    "user": {
-                        "$ref": "#/components/schemas/OrderUser"
-                    },
-                    "product": {
-                        "$ref": "#/components/schemas/OrderProduct"
-                    },
-                    "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
-                    },
-                    "subscription": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/OrderSubscription"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "amount",
-                    "tax_amount",
-                    "currency",
-                    "user_id",
-                    "product_id",
-                    "product_price_id",
-                    "subscription_id",
-                    "user",
-                    "product",
-                    "product_price",
-                    "subscription"
-                ],
-                "title": "Order"
-            },
-            "Organization": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The organization ID.",
-                        "x-polar-selector-widget": {
-                            "displayProperty": "name",
-                            "resourceName": "Organization",
-                            "resourceRoot": "/v1/organizations"
-                        }
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name"
-                    },
-                    "slug": {
-                        "type": "string",
-                        "title": "Slug"
-                    },
-                    "avatar_url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Avatar Url"
-                    },
-                    "bio": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Bio"
-                    },
-                    "company": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Company"
-                    },
-                    "blog": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Blog"
-                    },
-                    "location": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Location"
-                    },
-                    "email": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Email"
-                    },
-                    "twitter_username": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Twitter Username"
-                    },
-                    "pledge_minimum_amount": {
-                        "type": "integer",
-                        "title": "Pledge Minimum Amount"
-                    },
-                    "pledge_badge_show_amount": {
-                        "type": "boolean",
-                        "title": "Pledge Badge Show Amount"
-                    },
-                    "default_upfront_split_to_contributors": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Default Upfront Split To Contributors"
-                    },
-                    "donations_enabled": {
-                        "type": "boolean",
-                        "title": "Donations Enabled",
-                        "description": "If this organizations accepts donations"
-                    },
-                    "profile_settings": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/OrganizationProfileSettings"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "Settings for the organization profile"
-                    },
-                    "feature_settings": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/OrganizationFeatureSettings"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "Settings for the organization features"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "name",
-                    "slug",
-                    "avatar_url",
-                    "bio",
-                    "company",
-                    "blog",
-                    "location",
-                    "email",
-                    "twitter_username",
-                    "pledge_minimum_amount",
-                    "pledge_badge_show_amount",
-                    "default_upfront_split_to_contributors",
-                    "donations_enabled",
-                    "profile_settings",
-                    "feature_settings"
-                ],
-                "title": "Organization"
-            },
-            "Pledge": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the object."
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount",
-                        "description": "Amount pledged towards the issue"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "state": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeState"
-                            }
-                        ],
-                        "description": "Current state of the pledge"
-                    },
-                    "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
-                        "description": "Type of pledge"
-                    },
-                    "refunded_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Refunded At",
-                        "description": "If and when the pledge was refunded to the pledger"
-                    },
-                    "scheduled_payout_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Scheduled Payout At",
-                        "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
-                    },
-                    "issue": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            }
-                        ],
-                        "description": "The issue that the pledge was made towards"
-                    },
-                    "pledger": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Pledger"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "The user or organization that made this pledge"
-                    },
-                    "hosted_invoice_url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Hosted Invoice Url",
-                        "description": "URL of invoice for this pledge"
-                    },
-                    "authed_can_admin_sender": {
-                        "type": "boolean",
-                        "title": "Authed Can Admin Sender",
-                        "description": "If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge",
-                        "default": false
-                    },
-                    "authed_can_admin_received": {
-                        "type": "boolean",
-                        "title": "Authed Can Admin Received",
-                        "description": "If the currently authenticated subject can perform admin actions on behalf of the receiver of the peldge",
-                        "default": false
-                    },
-                    "created_by": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Pledger"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "For pledges made by an organization, or on behalf of an organization. This is the user that made the pledge. Only visible for members of said organization."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "amount",
-                    "currency",
-                    "state",
-                    "type",
-                    "issue"
-                ],
-                "title": "Pledge"
-            },
-            "Product": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the product."
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name",
-                        "description": "The name of the product."
-                    },
-                    "description": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Description",
-                        "description": "The description of the product."
-                    },
-                    "is_recurring": {
-                        "type": "boolean",
-                        "title": "Is Recurring",
-                        "description": "Whether the product is a subscription tier."
-                    },
-                    "is_archived": {
-                        "type": "boolean",
-                        "title": "Is Archived",
-                        "description": "Whether the product is archived and no longer available."
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id",
-                        "description": "The ID of the organization owning the product."
-                    },
-                    "prices": {
-                        "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
-                        },
-                        "type": "array",
-                        "title": "Prices",
-                        "description": "List of available prices for this product."
-                    },
-                    "benefits": {
-                        "items": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/BenefitBase"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitArticles"
-                                }
-                            ]
-                        },
-                        "type": "array",
-                        "title": "BenefitPublic",
-                        "description": "The benefits granted by the product."
-                    },
-                    "medias": {
-                        "items": {
-                            "$ref": "#/components/schemas/ProductMediaFileRead"
-                        },
-                        "type": "array",
-                        "title": "Medias",
-                        "description": "The medias associated to the product."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "name",
-                    "description",
-                    "is_recurring",
-                    "is_archived",
-                    "organization_id",
-                    "prices",
-                    "benefits",
-                    "medias"
-                ],
-                "title": "Product",
-                "description": "A product."
-            },
-            "ProductMediaFileRead": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id"
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name"
-                    },
-                    "path": {
-                        "type": "string",
-                        "title": "Path"
-                    },
-                    "mime_type": {
-                        "type": "string",
-                        "title": "Mime Type"
-                    },
-                    "size": {
-                        "type": "integer",
-                        "title": "Size"
-                    },
-                    "storage_version": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Storage Version"
-                    },
-                    "checksum_etag": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Etag"
-                    },
-                    "checksum_sha256_base64": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Sha256 Base64"
-                    },
-                    "checksum_sha256_hex": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Sha256 Hex"
-                    },
-                    "last_modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Modified At"
-                    },
-                    "version": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Version"
-                    },
-                    "service": {
-                        "type": "string",
-                        "enum": [
-                            "product_media"
-                        ],
-                        "const": "product_media",
-                        "title": "Service"
-                    },
-                    "is_uploaded": {
-                        "type": "boolean",
-                        "title": "Is Uploaded"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
-                    },
-                    "size_readable": {
-                        "type": "string",
-                        "title": "Size Readable",
-                        "readOnly": true
-                    },
-                    "public_url": {
-                        "type": "string",
-                        "title": "Public Url",
-                        "readOnly": true
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "organization_id",
-                    "name",
-                    "path",
-                    "mime_type",
-                    "size",
-                    "storage_version",
-                    "checksum_etag",
-                    "checksum_sha256_base64",
-                    "checksum_sha256_hex",
-                    "last_modified_at",
-                    "version",
-                    "service",
-                    "is_uploaded",
-                    "created_at",
-                    "size_readable",
-                    "public_url"
-                ],
-                "title": "ProductMediaFileRead",
-                "description": "File to be used as a product media file."
-            },
-            "ProductPrice": {
-                "oneOf": [
-                    {
-                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                    },
-                    {
-                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                    }
-                ],
-                "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                    }
-                }
-            },
-            "ProductPriceRecurring": {
-                "oneOf": [
-                    {
-                        "$ref": "#/components/schemas/ProductPriceRecurringFixed"
-                    },
-                    {
-                        "$ref": "#/components/schemas/ProductPriceRecurringCustom"
-                    },
-                    {
-                        "$ref": "#/components/schemas/ProductPriceRecurringFree"
-                    }
-                ],
-                "discriminator": {
-                    "propertyName": "amount_type",
-                    "mapping": {
-                        "custom": "#/components/schemas/ProductPriceRecurringCustom",
-                        "fixed": "#/components/schemas/ProductPriceRecurringFixed",
-                        "free": "#/components/schemas/ProductPriceRecurringFree"
-                    }
-                }
-            },
             "Repository": {
                 "properties": {
                     "id": {
@@ -35205,154 +35257,6 @@
                     "organization"
                 ],
                 "title": "Repository"
-            },
-            "Subscription": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the object."
-                    },
-                    "amount": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Amount"
-                    },
-                    "currency": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Currency"
-                    },
-                    "recurring_interval": {
-                        "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                    },
-                    "status": {
-                        "$ref": "#/components/schemas/SubscriptionStatus"
-                    },
-                    "current_period_start": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Current Period Start"
-                    },
-                    "current_period_end": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Current Period End"
-                    },
-                    "cancel_at_period_end": {
-                        "type": "boolean",
-                        "title": "Cancel At Period End"
-                    },
-                    "started_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Started At"
-                    },
-                    "ended_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Ended At"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id"
-                    },
-                    "price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Price Id"
-                    },
-                    "user": {
-                        "$ref": "#/components/schemas/SubscriptionUser"
-                    },
-                    "product": {
-                        "$ref": "#/components/schemas/Product"
-                    },
-                    "price": {
-                        "$ref": "#/components/schemas/ProductPrice"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "amount",
-                    "currency",
-                    "recurring_interval",
-                    "status",
-                    "current_period_start",
-                    "current_period_end",
-                    "cancel_at_period_end",
-                    "started_at",
-                    "ended_at",
-                    "user_id",
-                    "product_id",
-                    "price_id",
-                    "user",
-                    "product",
-                    "price"
-                ],
-                "title": "Subscription"
             }
         },
         "securitySchemes": {

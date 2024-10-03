@@ -29,7 +29,8 @@ from .schemas import (
 from .service import checkout as checkout_service
 
 router = APIRouter(
-    prefix="/checkouts/custom", tags=["checkouts", APITag.documented, APITag.featured]
+    prefix="/checkouts/custom",
+    tags=["checkouts", "custom", APITag.documented, APITag.featured],
 )
 
 

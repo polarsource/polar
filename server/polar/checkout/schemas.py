@@ -42,7 +42,17 @@ CustomerBillingAddress = Annotated[
     Address,
     Field(description="Billing address of the customer."),
 ]
-Metadata = Annotated[
+
+InputMetadata = Annotated[
+    dict[str, str],
+    Field(
+        description=(
+            "Metadata to store with the checkout. "
+            "Useful to store additional information about the checkout."
+        )
+    ),
+]
+OutputMetadata = Annotated[
     dict[str, str],
     Field(
         description=(
@@ -67,7 +77,7 @@ class CheckoutCreate(Schema):
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
-    metadata: Metadata = Field(default_factory=dict)
+    metadata: InputMetadata = Field(default_factory=dict)
 
 
 class CheckoutUpdateBase(Schema):
@@ -89,7 +99,7 @@ class CheckoutUpdateBase(Schema):
 class CheckoutUpdate(CheckoutUpdateBase):
     """Update an existing checkout session using an access token."""
 
-    metadata: Metadata | None = None
+    metadata: InputMetadata | None = None
 
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):
@@ -150,7 +160,7 @@ class CheckoutBase(IDSchema, TimestampedSchema):
 class Checkout(CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
-    metadata: Metadata
+    metadata: OutputMetadata
 
 
 class CheckoutPublic(CheckoutBase):

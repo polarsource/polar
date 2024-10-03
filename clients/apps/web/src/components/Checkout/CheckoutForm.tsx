@@ -62,8 +62,9 @@ interface BaseCheckoutFormProps {
   onSubmit: (value: any) => Promise<void>
   onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   amount: number | null
-  tax_amount: number | null
+  taxAmount: number | null
   currency: string | null
+  isPaymentRequired: boolean
   interval?: SubscriptionRecurringInterval
   disabled?: boolean
   loading?: boolean
@@ -73,8 +74,9 @@ const BaseCheckoutForm = ({
   onSubmit,
   onCheckoutUpdate,
   amount,
-  tax_amount,
+  taxAmount,
   currency,
+  isPaymentRequired,
   interval,
   disabled,
   loading,
@@ -93,7 +95,6 @@ const BaseCheckoutForm = ({
   const country = watch('customer_billing_address.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
     async (value, { name, type }) => {
-      console.log('watch', value, name, type)
       if (type !== 'change' || !name || !onCheckoutUpdate) {
         return
       }
@@ -142,12 +143,13 @@ const BaseCheckoutForm = ({
     },
     [clearErrors, resetField, onCheckoutUpdate],
   )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedWatcher = useCallback(debounce(watcher, 500), [watcher])
 
   useEffect(() => {
     const subscription = watch(debouncedWatcher)
     return () => subscription.unsubscribe()
-  }, [watch, clearErrors, resetField, onCheckoutUpdate])
+  }, [watch, debouncedWatcher])
 
   return (
     <div className="flex w-1/2 flex-col justify-between gap-y-24 p-20">
@@ -183,189 +185,191 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              <FormField
-                control={control}
-                name="customer_name"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cardholder name</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        autoComplete="name"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormItem>
-                <FormLabel>Billing address</FormLabel>
-                <FormControl>
+              {isPaymentRequired && (
+                <>
                   <FormField
                     control={control}
-                    name="customer_billing_address.country"
+                    name="customer_name"
                     rules={{
                       required: 'This field is required',
                     }}
                     render={({ field }) => (
-                      <>
-                        <CountryPicker
-                          autoComplete="billing country"
-                          value={field.value || undefined}
-                          onChange={field.onChange}
-                        />
+                      <FormItem>
+                        <FormLabel>Cardholder name</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            autoComplete="name"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
                         <FormMessage />
-                      </>
+                      </FormItem>
                     )}
                   />
-                </FormControl>
-                {(country === 'US' || country === 'CA') && (
-                  <FormControl>
-                    <FormField
-                      control={control}
-                      name="customer_billing_address.state"
-                      rules={{
-                        required: 'This field is required',
-                      }}
-                      render={({ field }) => (
-                        <>
-                          <CountryStatePicker
-                            autoComplete="billing address-level1"
-                            country={country}
-                            value={field.value || undefined}
-                            onChange={field.onChange}
-                          />
-                          <FormMessage />
-                        </>
-                      )}
-                    />
-                  </FormControl>
-                )}
-                {country === 'US' && (
-                  <>
+
+                  <FormItem>
+                    <FormLabel>Billing address</FormLabel>
                     <FormControl>
                       <FormField
                         control={control}
-                        name="customer_billing_address.line1"
+                        name="customer_billing_address.country"
                         rules={{
                           required: 'This field is required',
                         }}
                         render={({ field }) => (
                           <>
-                            <Input
-                              type="text"
-                              autoComplete="billing address-line1"
-                              placeholder="Line 1"
-                              {...field}
-                              value={field.value || ''}
+                            <CountryPicker
+                              autoComplete="billing country"
+                              value={field.value || undefined}
+                              onChange={field.onChange}
                             />
                             <FormMessage />
                           </>
                         )}
                       />
                     </FormControl>
-                    <FormControl>
-                      <FormField
-                        control={control}
-                        name="customer_billing_address.line2"
-                        render={({ field }) => (
-                          <>
-                            <Input
-                              type="text"
-                              autoComplete="billing address-line2"
-                              placeholder="Line 2"
-                              {...field}
-                              value={field.value || ''}
+                    {(country === 'US' || country === 'CA') && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customer_billing_address.state"
+                          rules={{
+                            required: 'This field is required',
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <CountryStatePicker
+                                autoComplete="billing address-level1"
+                                country={country}
+                                value={field.value || undefined}
+                                onChange={field.onChange}
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
+                    {country === 'US' && (
+                      <>
+                        <FormControl>
+                          <FormField
+                            control={control}
+                            name="customer_billing_address.line1"
+                            rules={{
+                              required: 'This field is required',
+                            }}
+                            render={({ field }) => (
+                              <>
+                                <Input
+                                  type="text"
+                                  autoComplete="billing address-line1"
+                                  placeholder="Line 1"
+                                  {...field}
+                                  value={field.value || ''}
+                                />
+                                <FormMessage />
+                              </>
+                            )}
+                          />
+                        </FormControl>
+                        <FormControl>
+                          <FormField
+                            control={control}
+                            name="customer_billing_address.line2"
+                            render={({ field }) => (
+                              <>
+                                <Input
+                                  type="text"
+                                  autoComplete="billing address-line2"
+                                  placeholder="Line 2"
+                                  {...field}
+                                  value={field.value || ''}
+                                />
+                                <FormMessage />
+                              </>
+                            )}
+                          />
+                        </FormControl>
+                        <div className="grid grid-cols-2 gap-x-2">
+                          <FormControl>
+                            <FormField
+                              control={control}
+                              name="customer_billing_address.postal_code"
+                              rules={{
+                                required: 'This field is required',
+                              }}
+                              render={({ field }) => (
+                                <>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing postal-code"
+                                    placeholder="Postal code"
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                  <FormMessage />
+                                </>
+                              )}
                             />
-                            <FormMessage />
-                          </>
-                        )}
-                      />
-                    </FormControl>
-                    <div className="grid grid-cols-2 gap-x-2">
-                      <FormControl>
-                        <FormField
-                          control={control}
-                          name="customer_billing_address.postal_code"
-                          rules={{
-                            required: 'This field is required',
-                          }}
-                          render={({ field }) => (
-                            <>
-                              <Input
-                                type="text"
-                                autoComplete="billing postal-code"
-                                placeholder="Postal code"
-                                {...field}
-                                value={field.value || ''}
-                              />
-                              <FormMessage />
-                            </>
-                          )}
-                        />
-                      </FormControl>
-                      <FormControl>
-                        <FormField
-                          control={control}
-                          name="customer_billing_address.city"
-                          rules={{
-                            required: 'This field is required',
-                          }}
-                          render={({ field }) => (
-                            <>
-                              <Input
-                                type="text"
-                                autoComplete="billing address-level2"
-                                placeholder="City"
-                                {...field}
-                                value={field.value || ''}
-                              />
-                              <FormMessage />
-                            </>
-                          )}
-                        />
-                      </FormControl>
-                    </div>
-                  </>
-                )}
-                {errors.customer_billing_address?.message && (
-                  <p className="text-destructive-foreground text-sm">
-                    {errors.customer_billing_address.message}
-                  </p>
-                )}
-              </FormItem>
-
-              <FormField
-                control={control}
-                name="customer_tax_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex flex-row items-center justify-between">
-                      <FormLabel>Tax ID</FormLabel>
-                      <span className="dark:text-polar-500 text-xs text-gray-500">
-                        Optional
-                      </span>
-                    </div>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        autoComplete="off"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
+                          </FormControl>
+                          <FormControl>
+                            <FormField
+                              control={control}
+                              name="customer_billing_address.city"
+                              rules={{
+                                required: 'This field is required',
+                              }}
+                              render={({ field }) => (
+                                <>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing address-level2"
+                                    placeholder="City"
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                  <FormMessage />
+                                </>
+                              )}
+                            />
+                          </FormControl>
+                        </div>
+                      </>
+                    )}
+                    {errors.customer_billing_address?.message && (
+                      <p className="text-destructive-foreground text-sm">
+                        {errors.customer_billing_address.message}
+                      </p>
+                    )}
                   </FormItem>
-                )}
-              />
-              {/*
+
+                  <FormField
+                    control={control}
+                    name="customer_tax_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex flex-row items-center justify-between">
+                          <FormLabel>Tax ID</FormLabel>
+                          <span className="dark:text-polar-500 text-xs text-gray-500">
+                            Optional
+                          </span>
+                        </div>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            autoComplete="off"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/*
               <FormField
                 control={control}
                 name="discount"
@@ -384,39 +388,43 @@ const BaseCheckoutForm = ({
                   </FormItem>
                 )}
               /> */}
-            </div>
-            <div className="flex flex-col gap-y-2">
-              {amount && currency ? (
-                <>
-                  <DetailRow title="Subtotal">
-                    <AmountLabel
-                      amount={amount}
-                      currency={currency}
-                      interval={interval}
-                    />
-                  </DetailRow>
-                  {tax_amount !== null && (
-                    <DetailRow title="VAT / Sales Tax">
-                      {formatCurrencyAndAmount(tax_amount, currency)}
-                    </DetailRow>
-                  )}
-                  {/* {discountCode && (
-                <DetailRow title={`Discount Code (${discountCode})`}>
-                  <span>$19</span>
-                </DetailRow>
-              )} */}
-                  <DetailRow title="Total" emphasis>
-                    <AmountLabel
-                      amount={amount + (tax_amount || 0)}
-                      currency={currency}
-                      interval={interval}
-                    />
-                  </DetailRow>
                 </>
-              ) : (
-                <span>Free</span>
               )}
             </div>
+            {isPaymentRequired && (
+              <div className="flex flex-col gap-y-2">
+                {amount && currency ? (
+                  <>
+                    <DetailRow title="Subtotal">
+                      <AmountLabel
+                        amount={amount}
+                        currency={currency}
+                        interval={interval}
+                      />
+                    </DetailRow>
+                    {taxAmount !== null && (
+                      <DetailRow title="VAT / Sales Tax">
+                        {formatCurrencyAndAmount(taxAmount, currency)}
+                      </DetailRow>
+                    )}
+                    {/* {discountCode && (
+                  <DetailRow title={`Discount Code (${discountCode})`}>
+                    <span>$19</span>
+                  </DetailRow>
+                )} */}
+                    <DetailRow title="Total" emphasis>
+                      <AmountLabel
+                        amount={amount + (taxAmount || 0)}
+                        currency={currency}
+                        interval={interval}
+                      />
+                    </DetailRow>
+                  </>
+                ) : (
+                  <span>Free</span>
+                )}
+              </div>
+            )}
             <Button
               type="submit"
               size="lg"
@@ -424,7 +432,7 @@ const BaseCheckoutForm = ({
               disabled={disabled}
               loading={loading}
             >
-              {interval ? 'Subscribe' : 'Pay'}
+              {!isPaymentRequired ? 'Submit' : interval ? 'Subscribe' : 'Pay'}
             </Button>
             {errors.root && (
               <p className="text-destructive-foreground text-sm">
@@ -466,11 +474,30 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     stripe: Stripe | null,
     elements: StripeElements | null,
   ) => {
-    if (!stripe || !elements || !onCheckoutConfirm) {
+    if (!onCheckoutConfirm) {
       return
     }
 
     setLoading(true)
+
+    if (!checkout.is_payment_required) {
+      let updatedCheckout: CheckoutPublic
+      try {
+        updatedCheckout = await onCheckoutConfirm(data)
+      } catch (e) {
+        setLoading(false)
+        return
+      }
+      await router.push(
+        `/checkout/${updatedCheckout.client_secret}/confirmation`,
+      )
+      return
+    }
+
+    if (!stripe || !elements) {
+      setLoading(false)
+      return
+    }
 
     const { error: submitError } = await elements.submit()
     if (submitError) {
@@ -555,17 +582,21 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     <Elements
       stripe={stripePromise}
       options={{
-        mode:
-          checkout.product_price.type === 'recurring'
-            ? 'subscription'
-            : 'payment',
-        setupFutureUsage:
-          checkout.product_price.type === 'recurring'
-            ? 'off_session'
-            : undefined,
-        paymentMethodCreation: 'manual',
-        amount: checkout.amount || 0,
-        currency: checkout.currency || 'usd',
+        ...(checkout.is_payment_required
+          ? {
+              mode:
+                checkout.product_price.type === 'recurring'
+                  ? 'subscription'
+                  : 'payment',
+              setupFutureUsage:
+                checkout.product_price.type === 'recurring'
+                  ? 'off_session'
+                  : undefined,
+              paymentMethodCreation: 'manual',
+              amount: checkout.amount || 0,
+              currency: checkout.currency || 'usd',
+            }
+          : {}),
         appearance: {
           rules: {
             '.Label': {
@@ -610,8 +641,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           <BaseCheckoutForm
             {...props}
             amount={checkout.amount}
-            tax_amount={checkout.tax_amount}
+            taxAmount={checkout.tax_amount}
             currency={checkout.currency}
+            isPaymentRequired={checkout.is_payment_required}
             interval={
               checkout.product_price.type === 'recurring'
                 ? checkout.product_price.recurring_interval
@@ -621,18 +653,20 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             onCheckoutUpdate={onCheckoutUpdate}
             loading={loading}
           >
-            <PaymentElement
-              options={{
-                fields: {
-                  billingDetails: {
-                    name: 'never',
-                    email: 'never',
-                    phone: 'never',
-                    address: 'never',
+            {checkout.is_payment_required && (
+              <PaymentElement
+                options={{
+                  fields: {
+                    billingDetails: {
+                      name: 'never',
+                      email: 'never',
+                      phone: 'never',
+                      address: 'never',
+                    },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            )}
           </BaseCheckoutForm>
         )}
       </ElementsConsumer>
@@ -644,8 +678,9 @@ const DummyCheckoutForm = ({ checkout }: CheckoutFormProps) => {
   return (
     <BaseCheckoutForm
       amount={checkout.amount}
-      tax_amount={checkout.tax_amount}
+      taxAmount={checkout.tax_amount}
       currency={checkout.currency}
+      isPaymentRequired={checkout.is_payment_required}
       onSubmit={async () => {}}
       onCheckoutUpdate={async () => checkout}
       disabled={true}

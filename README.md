@@ -4,56 +4,43 @@
       <img src="https://github.com/polarsource/polar/blob/main/clients/apps/web/public/assets/brand/polar_og.jpg?raw=true" />
   </a>
 
-
-
-
 </p>
 
 <div align="center">
 
-<a href="https://www.producthunt.com/posts/polar-5?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-polar&#0045;5" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=484271&theme=dark&period=daily" alt="Polar - An&#0032;open&#0032;source&#0032;monetization&#0032;platform&#0032;for&#0032;developers | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://www.producthunt.com/posts/polar-5?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-polar&#0045;5" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=484271&theme=dark&period=daily" alt="Polar - An&#0032;open&#0032;source&#0032;monetization&#0032;platform&#0032;for&#0032;developers | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>  <a href="https://www.producthunt.com/posts/polar-5?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-polar&#0045;5" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=484271&theme=dark&period=monthly&topic_id=267" alt="Polar - An&#0032;open&#0032;source&#0032;monetization&#0032;platform&#0032;for&#0032;developers | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 </div>
 
 <hr />
 <div align="center">
 
-<a href="https://polar.sh/polarsource">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=polarsource&label=Subscribe&darkmode">
-      <img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=polarsource&label=Subscribe">
-    </picture>
-</a>
 
-<a href="https://polar.sh">Sign Up</a>
+<a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/polarsource">Blog</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/docs">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://polar.sh/docs/api">API</a>
+<a href="https://polar.sh/docs/api">API Reference</a>
 
 
 <p align="center">
-  <a href="https://github.com/polarsource/polar/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Polar is released under the Apache 2.0 license." />
-  </a>
-
   <a href="https://discord.gg/STfRufb32V">
     <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
   </a>
 
   <a href="https://twitter.com/intent/follow?screen_name=polar_sh">
     <img src="https://img.shields.io/twitter/follow/polar_sh.svg?label=Follow%20@polar_sh" alt="Follow @polar_sh" />
-  </a><a href="https://polar.sh/polarsource"><img src="https://polar.sh/embed/seeks-funding-shield.svg?org=polarsource" /></a>
+  </a>
 </p>
 </div>
 <hr />
 
-## Polar.sh: All-in-one funding & monetization platform for developers
+## Polar: Open source Lemon Squeezy & Paddle alternative
 Focus on building your passion, while we focus on the infrastructure to get you paid.
 
-- All-in-one funding & monetization platform for open source- and indie developers.
+- All-in-one funding & monetization platform for developers.
 - Sell access to GitHub repositories, Discord Support channels, File Downloads, License Keys & much more with Digital Products & Subscriptions.
 - Setup crowdfunding on your GitHub issues
 - We're the merchant of record handling the...
@@ -67,7 +54,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 - Additional fees may apply. [Read more](https://polar.sh/docs/fees)
 
 ## Roadmap, Issues & Feature Requests
-**🎯 v1.0 North Star.** [Checkout what we're building towards](https://github.com/polarsource/polar/issues/3242)
+**🎯 Upcoming milestones.** [Checkout what we're building towards](https://github.com/polarsource/polar/issues/3242)
 
 **💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/STfRufb32V)
 

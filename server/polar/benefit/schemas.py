@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
+    ConfigDict,
     Discriminator,
     Field,
     TypeAdapter,
@@ -19,6 +20,7 @@ from polar.kit.schemas import (
     MergeJSONSchema,
     Schema,
     SelectorWidget,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.models.benefit import BenefitType
@@ -125,6 +127,9 @@ class BenefitDiscordProperties(Schema):
             secret=settings.SECRET,
             type="discord_guild_token",
         )
+
+    # Need to force it for this specific model, don't really understand why
+    model_config = ConfigDict(json_schema_mode_override="serialization")
 
 
 class BenefitDiscordCreateProperties(Schema):
@@ -512,6 +517,7 @@ Benefit = Annotated[
     | BenefitGitHubRepository
     | BenefitDownloadables
     | BenefitLicenseKeys,
+    SetSchemaReference("Benefit"),
     MergeJSONSchema({"title": "Benefit"}),
     ClassName("Benefit"),
 ]

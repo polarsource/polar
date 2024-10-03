@@ -101,13 +101,8 @@ const PlatformPopover = () => {
               />
               <PopoverLinkItem
                 title="Advertisements"
-                description="Promote your supporters in READMEs & Newsletters"
+                description="Promote your supporters in READMEs"
                 link="/docs/benefits/ads"
-              />
-              <PopoverLinkItem
-                title="Premium Newsletters"
-                description="Early & private access to newsletters"
-                link="/docs/benefits/newsletter"
               />
               <PopoverLinkItem
                 title="Custom"

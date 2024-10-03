@@ -47,11 +47,6 @@ export const API_SCOPES = [
     commands: createAPICommands('issues'),
   },
   {
-    name: 'api:newsletters',
-    type: ScopeType.Isolated,
-    commands: createAPICommands('newsletters'),
-  },
-  {
     name: 'api:users',
     type: ScopeType.Isolated,
     commands: createAPICommands('users'),

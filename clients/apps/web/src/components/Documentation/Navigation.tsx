@@ -312,12 +312,6 @@ export const MainNavigation = () => {
               Discord Invites
             </NavigationItem>
             <NavigationItem
-              href="/docs/benefits/newsletter"
-              icon={<ArrowForward fontSize="inherit" />}
-            >
-              Premium Newsletter
-            </NavigationItem>
-            <NavigationItem
               href="/docs/benefits/ads"
               icon={<ArrowForward fontSize="inherit" />}
             >
@@ -335,19 +329,6 @@ export const MainNavigation = () => {
         </NavigationItem>
         <NavigationItem href="/docs/sales/subscriptions">
           Subscriptions
-        </NavigationItem>
-      </div>
-
-      <div>
-        <NavigationHeadline>Online & Email Newsletters</NavigationHeadline>
-        <NavigationItem href="/docs/newsletters">
-          Writing (GitHub Markdown)
-        </NavigationItem>
-        <NavigationItem href="/docs/newsletters/publish">
-          Publishing
-        </NavigationItem>
-        <NavigationItem href="/docs/newsletters/analytics">
-          Analytics
         </NavigationItem>
       </div>
 

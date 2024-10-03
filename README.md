@@ -58,9 +58,9 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 **💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/STfRufb32V)
 
-**🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues).
+**🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues)
 
-**🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures to security@polar.sh. See [Security](./README.md#Security)
+**🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures. See [Security](./SECURITY.md)
 
 ### Polar API & SDK
 

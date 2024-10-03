@@ -5,7 +5,7 @@ from typing import Any, Self
 
 from pydantic import UUID4, computed_field
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import IDSchema, Schema
 from polar.kit.utils import human_readable_size
 from polar.organization.schemas import OrganizationID
 
@@ -47,8 +47,7 @@ class S3FileCreate(Schema):
     upload: S3FileCreateMultipart
 
 
-class S3File(Schema, validate_assignment=True):
-    id: UUID4
+class S3File(IDSchema, validate_assignment=True):
     organization_id: UUID4
 
     name: str

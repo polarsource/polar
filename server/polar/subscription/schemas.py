@@ -6,7 +6,7 @@ from pydantic import UUID4, Field
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
-from polar.product.schemas import Product, ProductPrice
+from polar.product.schemas import Product, ProductPriceRecurring
 
 
 class SubscriptionUser(Schema):
@@ -44,7 +44,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
     product: Product
-    price: ProductPrice
+    price: ProductPriceRecurring
 
 
 class SubscriptionCreateEmail(Schema):

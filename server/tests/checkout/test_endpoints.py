@@ -16,6 +16,8 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout
 
+API_PREFIX = "/v1/checkouts/custom"
+
 
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
@@ -44,7 +46,7 @@ async def checkout_open(
 class TestCreateCheckout:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
-            "/v1/checkouts/",
+            f"{API_PREFIX}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -56,7 +58,7 @@ class TestCreateCheckout:
     @pytest.mark.auth
     async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
-            "/v1/checkouts/",
+            f"{API_PREFIX}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -70,7 +72,7 @@ class TestCreateCheckout:
         self, client: AsyncClient, product: Product, user_organization: UserOrganization
     ) -> None:
         response = await client.post(
-            "/v1/checkouts/",
+            f"{API_PREFIX}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -91,7 +93,7 @@ class TestUpdateCheckout:
         self, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"/v1/checkouts/{checkout_open.id}",
+            f"{API_PREFIX}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -104,7 +106,7 @@ class TestUpdateCheckout:
         self, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"/v1/checkouts/{checkout_open.id}",
+            f"{API_PREFIX}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -122,7 +124,7 @@ class TestUpdateCheckout:
         self, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"/v1/checkouts/{checkout_open.id}",
+            f"{API_PREFIX}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -138,7 +140,7 @@ class TestUpdateCheckout:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/v1/checkouts/{checkout_open.id}",
+            f"{API_PREFIX}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -154,13 +156,13 @@ class TestUpdateCheckout:
 @pytest.mark.skip_db_asserts
 class TestClientGet:
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/checkouts/client/123")
+        response = await client.get(f"{API_PREFIX}/client/123")
 
         assert response.status_code == 404
 
     async def test_valid(self, client: AsyncClient, checkout_open: Checkout) -> None:
         response = await client.get(
-            f"/v1/checkouts/client/{checkout_open.client_secret}"
+            f"{API_PREFIX}/client/{checkout_open.client_secret}"
         )
 
         assert response.status_code == 200
@@ -175,7 +177,7 @@ class TestClientGet:
 class TestClientUpdate:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.patch(
-            "/v1/checkouts/client/123", json={"customer_name": "Customer Name"}
+            f"{API_PREFIX}/client/123", json={"customer_name": "Customer Name"}
         )
 
         assert response.status_code == 404
@@ -184,7 +186,7 @@ class TestClientUpdate:
         self, session: AsyncSession, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"/v1/checkouts/client/{checkout_open.client_secret}",
+            f"{API_PREFIX}/client/{checkout_open.client_secret}",
             json={
                 "customer_name": "Customer Name",
                 "metadata": {"test": "test"},
@@ -207,7 +209,7 @@ class TestClientUpdate:
 class TestClientConfirm:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/v1/checkouts/client/123/confirm",
+            f"{API_PREFIX}/client/123/confirm",
             json={"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
         )
 
@@ -226,7 +228,7 @@ class TestClientConfirm:
             client_secret="CLIENT_SECRET", status="succeeded"
         )
         response = await client.post(
-            f"/v1/checkouts/client/{checkout_open.client_secret}/confirm",
+            f"{API_PREFIX}/client/{checkout_open.client_secret}/confirm",
             json={
                 "customer_name": "Customer Name",
                 "customer_email": "customer@example.com",

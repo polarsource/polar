@@ -11,13 +11,13 @@ import { twMerge } from 'tailwind-merge'
 
 export type CreatableBenefit = Exclude<BenefitType, 'articles'>
 
-export const resolveBenefitIcon = (
-  benefit?: BenefitPublicInner,
+export const resolveBenefitCategoryIcon = (
+  type?: BenefitType,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
   className?: string,
 ) => {
   const cn = twMerge('h-4 w-4', className)
-  switch (benefit?.type) {
+  switch (type) {
     case BenefitType.ARTICLES:
       return <StickyNote2 className={cn} fontSize={fontSize} />
     case BenefitType.ADS:
@@ -33,6 +33,14 @@ export const resolveBenefitIcon = (
     default:
       return <CheckOutlined className={cn} fontSize={fontSize} />
   }
+}
+
+export const resolveBenefitIcon = (
+  benefit?: BenefitPublicInner,
+  fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
+  className?: string,
+) => {
+  return resolveBenefitCategoryIcon(benefit?.type, fontSize, className)
 }
 
 export const resolveBenefitTypeDisplayName = (type: BenefitType) => {
@@ -82,13 +90,13 @@ export const DiscordIcon = ({
 export const benefitsDisplayNames: {
   [key in BenefitType]: string
 } = {
+  [BenefitType.LICENSE_KEYS]: 'License Keys',
+  [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
+  [BenefitType.DISCORD]: 'Discord Invite',
+  [BenefitType.DOWNLOADABLES]: 'File Downloads',
   [BenefitType.ADS]: 'Ad',
   [BenefitType.ARTICLES]: 'Newsletter',
   [BenefitType.CUSTOM]: 'Custom',
-  [BenefitType.DISCORD]: 'Discord Invite',
-  [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
-  [BenefitType.DOWNLOADABLES]: 'File Downloads',
-  [BenefitType.LICENSE_KEYS]: 'License Keys',
 }
 
 const isArticleBenefit = (

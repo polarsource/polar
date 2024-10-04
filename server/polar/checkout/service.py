@@ -923,15 +923,19 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         ):
             checkout.user_metadata = checkout_update.metadata
 
+        exclude = {
+            "product_price_id",
+            "amount",
+            "customer_billing_address",
+            "customer_tax_id",
+            "metadata",
+        }
+
+        if checkout.customer is not None:
+            exclude.add("customer_email")
+
         for attr, value in checkout_update.model_dump(
-            exclude_unset=True,
-            exclude={
-                "product_price_id",
-                "amount",
-                "customer_billing_address",
-                "customer_tax_id",
-                "metadata",
-            },
+            exclude_unset=True, exclude=exclude
         ).items():
             setattr(checkout, attr, value)
 

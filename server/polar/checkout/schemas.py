@@ -172,6 +172,7 @@ class CheckoutBase(IDSchema, TimestampedSchema):
         )
     )
 
+    customer_id: UUID4 | None
     customer_name: CustomerName | None
     customer_email: CustomerEmail | None
     customer_ip_address: CustomerIPAddress | None

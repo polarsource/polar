@@ -616,6 +616,7 @@ class TestClientCreate:
             auth_subject,
         )
         assert checkout.customer == auth_subject.subject
+        assert checkout.customer_email == auth_subject.subject.email
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user", method=AuthMethod.PERSONAL_ACCESS_TOKEN),
@@ -658,7 +659,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        user_organization: UserOrganization,
         product_one_time: Product,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -680,7 +680,6 @@ class TestUpdate:
     async def test_price_from_different_product(
         self,
         session: AsyncSession,
-        user_organization: UserOrganization,
         product_one_time_custom_price: Product,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -699,7 +698,6 @@ class TestUpdate:
         amount: int,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        user_organization: UserOrganization,
         checkout_one_time_custom: Checkout,
     ) -> None:
         price = checkout_one_time_custom.product.prices[0]
@@ -720,7 +718,6 @@ class TestUpdate:
     async def test_not_open(
         self,
         session: AsyncSession,
-        user_organization: UserOrganization,
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
@@ -758,8 +755,6 @@ class TestUpdate:
         updated_values: dict[str, Any],
         save_fixture: SaveFixture,
         session: AsyncSession,
-        user_organization: UserOrganization,
-        product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
         for key, value in initial_values.items():
@@ -777,7 +772,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        user_organization: UserOrganization,
         product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
@@ -800,7 +794,6 @@ class TestUpdate:
     async def test_valid_fixed_price_amount_update(
         self,
         session: AsyncSession,
-        user_organization: UserOrganization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
@@ -818,7 +811,6 @@ class TestUpdate:
     async def test_valid_custom_price_amount_update(
         self,
         session: AsyncSession,
-        user_organization: UserOrganization,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
@@ -833,7 +825,6 @@ class TestUpdate:
     async def test_valid_free_price_amount_update(
         self,
         session: AsyncSession,
-        user_organization: UserOrganization,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
@@ -851,7 +842,6 @@ class TestUpdate:
     async def test_valid_tax_id(
         self,
         session: AsyncSession,
-        user_organization: UserOrganization,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
@@ -870,7 +860,6 @@ class TestUpdate:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        user_organization: UserOrganization,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout_one_time_custom.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
@@ -894,7 +883,6 @@ class TestUpdate:
         self,
         session: AsyncSession,
         calculate_tax_mock: AsyncMock,
-        user_organization: UserOrganization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         calculate_tax_mock.side_effect = IncompleteTaxLocation(
@@ -917,7 +905,6 @@ class TestUpdate:
         self,
         session: AsyncSession,
         calculate_tax_mock: AsyncMock,
-        user_organization: UserOrganization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         calculate_tax_mock.return_value = 100
@@ -933,6 +920,25 @@ class TestUpdate:
         assert checkout.tax_amount == 100
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
+
+    async def test_ignore_email_update_if_customer_set(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.customer = user
+        checkout_one_time_fixed.customer_email = user.email
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdate(customer_email="updatedemail@example.com"),
+        )
+
+        assert checkout.customer_email == user.email
 
 
 @pytest.mark.asyncio
@@ -1112,6 +1118,7 @@ class TestConfirm:
     ) -> None:
         user = await create_user(save_fixture, stripe_customer_id="STRIPE_CUSTOMER_ID")
         checkout_one_time_fixed.customer = user
+        checkout_one_time_fixed.customer_email = user.email
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
@@ -1125,7 +1132,6 @@ class TestConfirm:
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
                     "customer_name": "Customer Name",
-                    "customer_email": "customer@example.com",
                     "customer_billing_address": {"country": "FR"},
                 }
             ),

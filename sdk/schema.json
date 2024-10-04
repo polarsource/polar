@@ -4525,7 +4525,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Issue-Output"
+                  "$ref": "#/components/schemas/Issue"
                 }
               }
             }
@@ -4640,7 +4640,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Issue-Output"
+                  "$ref": "#/components/schemas/Issue"
                 }
               }
             }
@@ -4707,7 +4707,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Issue-Output"
+                  "$ref": "#/components/schemas/Issue"
                 }
               }
             }
@@ -4775,7 +4775,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Issue-Output"
+                  "$ref": "#/components/schemas/Issue"
                 }
               }
             }
@@ -5124,7 +5124,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Pledge-Output"
+                  "$ref": "#/components/schemas/Pledge"
                 }
               }
             }
@@ -5352,7 +5352,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Organization-Output"
+                  "$ref": "#/components/schemas/Organization"
                 }
               }
             }
@@ -5432,7 +5432,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Organization-Output"
+                  "$ref": "#/components/schemas/Organization"
                 }
               }
             }
@@ -5530,7 +5530,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Organization-Output"
+                  "$ref": "#/components/schemas/Organization"
                 }
               }
             }
@@ -8969,27 +8969,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
+                  "allOf": [
                     {
-                      "$ref": "#/components/schemas/BenefitArticles"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitAds"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitCustom"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitDiscord-Output"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitGitHubRepository"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitDownloadables"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitLicenseKeys-Output"
+                      "$ref": "#/components/schemas/Benefit"
                     }
                   ],
                   "title": "Response Benefits:Create"
@@ -9072,27 +9054,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
+                  "allOf": [
                     {
-                      "$ref": "#/components/schemas/BenefitArticles"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitAds"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitCustom"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitDiscord-Output"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitGitHubRepository"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitDownloadables"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitLicenseKeys-Output"
+                      "$ref": "#/components/schemas/Benefit"
                     }
                   ],
                   "title": "Response Benefits:Get"
@@ -9215,27 +9179,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
+                  "allOf": [
                     {
-                      "$ref": "#/components/schemas/BenefitArticles"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitAds"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitCustom"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitDiscord-Output"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitGitHubRepository"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitDownloadables"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BenefitLicenseKeys-Output"
+                      "$ref": "#/components/schemas/Benefit"
                     }
                   ],
                   "title": "Response Benefits:Update"
@@ -10460,7 +10406,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Product-Output"
+                  "$ref": "#/components/schemas/Product"
                 }
               }
             }
@@ -10541,7 +10487,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Product-Output"
+                  "$ref": "#/components/schemas/Product"
                 }
               }
             }
@@ -10640,7 +10586,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Product-Output"
+                  "$ref": "#/components/schemas/Product"
                 }
               }
             }
@@ -10750,7 +10696,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Product-Output"
+                  "$ref": "#/components/schemas/Product"
                 }
               }
             }
@@ -11103,7 +11049,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Order-Output"
+                  "$ref": "#/components/schemas/Order"
                 }
               }
             }
@@ -11658,7 +11604,7 @@
                       "$ref": "#/components/schemas/DownloadableFileRead"
                     },
                     {
-                      "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+                      "$ref": "#/components/schemas/ProductMediaFileRead"
                     },
                     {
                       "$ref": "#/components/schemas/OrganizationAvatarFileRead"
@@ -11668,7 +11614,7 @@
                     "propertyName": "service",
                     "mapping": {
                       "downloadable": "#/components/schemas/DownloadableFileRead",
-                      "product_media": "#/components/schemas/ProductMediaFileRead-Output",
+                      "product_media": "#/components/schemas/ProductMediaFileRead",
                       "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead"
                     }
                   },
@@ -11762,7 +11708,7 @@
                       "$ref": "#/components/schemas/DownloadableFileRead"
                     },
                     {
-                      "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+                      "$ref": "#/components/schemas/ProductMediaFileRead"
                     },
                     {
                       "$ref": "#/components/schemas/OrganizationAvatarFileRead"
@@ -11772,7 +11718,7 @@
                     "propertyName": "service",
                     "mapping": {
                       "downloadable": "#/components/schemas/DownloadableFileRead",
-                      "product_media": "#/components/schemas/ProductMediaFileRead-Output",
+                      "product_media": "#/components/schemas/ProductMediaFileRead",
                       "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead"
                     }
                   },
@@ -13205,7 +13151,7 @@
           },
           "organizations": {
             "items": {
-              "$ref": "#/components/schemas/Organization-Output"
+              "$ref": "#/components/schemas/Organization"
             },
             "type": "array",
             "title": "Organizations"
@@ -13469,7 +13415,7 @@
             "title": "Organization Id"
           },
           "organization": {
-            "$ref": "#/components/schemas/Organization-Output"
+            "$ref": "#/components/schemas/Organization"
           },
           "published_at": {
             "anyOf": [
@@ -14205,6 +14151,31 @@
           "avatar_url"
         ],
         "title": "AuthorizeUser"
+      },
+      "Benefit": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/BenefitArticles"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitAds"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitCustom"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitDiscord"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitGitHubRepository"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitDownloadables"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitLicenseKeys"
+          }
+        ]
       },
       "BenefitAds": {
         "properties": {
@@ -15068,7 +15039,7 @@
         ],
         "title": "BenefitCustomUpdate"
       },
-      "BenefitDiscord-Input": {
+      "BenefitDiscord": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -15125,82 +15096,7 @@
             "description": "The ID of the organization owning the benefit."
           },
           "properties": {
-            "$ref": "#/components/schemas/BenefitDiscordProperties-Input"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "type",
-          "description",
-          "selectable",
-          "deletable",
-          "organization_id",
-          "properties"
-        ],
-        "title": "BenefitDiscord",
-        "description": "A benefit of type `discord`.\n\nUse it to automatically invite your backers to a Discord server."
-      },
-      "BenefitDiscord-Output": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the benefit."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "discord"
-            ],
-            "const": "discord",
-            "title": "Type"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description",
-            "description": "The description of the benefit."
-          },
-          "selectable": {
-            "type": "boolean",
-            "title": "Selectable",
-            "description": "Whether the benefit is selectable when creating a product."
-          },
-          "deletable": {
-            "type": "boolean",
-            "title": "Deletable",
-            "description": "Whether the benefit is deletable."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the benefit."
-          },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitDiscordProperties-Output"
+            "$ref": "#/components/schemas/BenefitDiscordProperties"
           }
         },
         "type": "object",
@@ -15286,28 +15182,7 @@
         "title": "BenefitDiscordCreateProperties",
         "description": "Properties to create a benefit of type `discord`."
       },
-      "BenefitDiscordProperties-Input": {
-        "properties": {
-          "guild_id": {
-            "type": "string",
-            "title": "Guild Id",
-            "description": "The ID of the Discord server."
-          },
-          "role_id": {
-            "type": "string",
-            "title": "Role Id",
-            "description": "The ID of the Discord role to grant."
-          }
-        },
-        "type": "object",
-        "required": [
-          "guild_id",
-          "role_id"
-        ],
-        "title": "BenefitDiscordProperties",
-        "description": "Properties for a benefit of type `discord`."
-      },
-      "BenefitDiscordProperties-Output": {
+      "BenefitDiscordProperties": {
         "properties": {
           "guild_id": {
             "type": "string",
@@ -16900,27 +16775,9 @@
             "title": "Properties"
           },
           "benefit": {
-            "anyOf": [
+            "allOf": [
               {
-                "$ref": "#/components/schemas/BenefitArticles"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitAds"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitCustom"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitDiscord-Input"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGitHubRepository"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitDownloadables"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
+                "$ref": "#/components/schemas/Benefit"
               }
             ],
             "title": "Benefit"
@@ -17015,81 +16872,7 @@
         ],
         "title": "BenefitLicenseKeyExpirationProperties"
       },
-      "BenefitLicenseKeys-Input": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the benefit."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "license_keys"
-            ],
-            "const": "license_keys",
-            "title": "Type"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description",
-            "description": "The description of the benefit."
-          },
-          "selectable": {
-            "type": "boolean",
-            "title": "Selectable",
-            "description": "Whether the benefit is selectable when creating a product."
-          },
-          "deletable": {
-            "type": "boolean",
-            "title": "Deletable",
-            "description": "Whether the benefit is deletable."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the benefit."
-          },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "type",
-          "description",
-          "selectable",
-          "deletable",
-          "organization_id",
-          "properties"
-        ],
-        "title": "BenefitLicenseKeys"
-      },
-      "BenefitLicenseKeys-Output": {
+      "BenefitLicenseKeys": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -17571,10 +17354,10 @@
             "title": "Customer Name"
           },
           "product": {
-            "$ref": "#/components/schemas/Product-Output"
+            "$ref": "#/components/schemas/Product"
           },
           "product_price": {
-            "$ref": "#/components/schemas/ProductPrice-Output"
+            "$ref": "#/components/schemas/ProductPrice"
           }
         },
         "type": "object",
@@ -17709,7 +17492,7 @@
         ],
         "title": "CurrencyAmount"
       },
-      "Donation-Input": {
+      "Donation": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -17776,96 +17559,7 @@
           "issue": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Issue-Input"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "amount",
-          "currency",
-          "message",
-          "donor",
-          "email",
-          "issue"
-        ],
-        "title": "Donation"
-      },
-      "Donation-Output": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount"
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency"
-          },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Message"
-          },
-          "donor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DonationOrganization"
-              },
-              {
-                "$ref": "#/components/schemas/DonationUser"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Donor"
-          },
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "issue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Issue-Output"
+                "$ref": "#/components/schemas/Issue"
               },
               {
                 "type": "null"
@@ -18290,7 +17984,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "organization_id": {
             "type": "string",
@@ -18615,7 +18310,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "organization_id": {
             "type": "string",
@@ -18806,7 +18502,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "organization_id": {
             "type": "string",
@@ -19071,7 +18768,7 @@
         ],
         "title": "IntrospectTokenResponse"
       },
-      "Issue-Input": {
+      "Issue": {
         "properties": {
           "id": {
             "type": "string",
@@ -19271,210 +18968,10 @@
         ],
         "title": "Issue"
       },
-      "Issue-Output": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "platform": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Platforms"
-              }
-            ],
-            "description": "Issue platform (currently always GitHub)"
-          },
-          "number": {
-            "type": "integer",
-            "title": "Number",
-            "description": "GitHub #number"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title",
-            "description": "GitHub issue title"
-          },
-          "body": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Body",
-            "description": "GitHub issue body"
-          },
-          "comments": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Comments",
-            "description": "Number of GitHub comments made on the issue"
-          },
-          "labels": {
-            "items": {
-              "$ref": "#/components/schemas/Label"
-            },
-            "type": "array",
-            "title": "Labels",
-            "default": []
-          },
-          "author": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Author"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "GitHub author"
-          },
-          "assignees": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/Assignee"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assignees",
-            "description": "GitHub assignees"
-          },
-          "reactions": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Reactions"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "GitHub reactions"
-          },
-          "state": {
-            "$ref": "#/components/schemas/State"
-          },
-          "issue_closed_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Issue Closed At"
-          },
-          "issue_modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Issue Modified At"
-          },
-          "issue_created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Issue Created At"
-          },
-          "needs_confirmation_solved": {
-            "type": "boolean",
-            "title": "Needs Confirmation Solved",
-            "description": "If a maintainer needs to mark this issue as solved"
-          },
-          "confirmed_solved_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confirmed Solved At",
-            "description": "If this issue has been marked as confirmed solved through Polar"
-          },
-          "funding": {
-            "$ref": "#/components/schemas/Funding"
-          },
-          "repository": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Repository-Output"
-              }
-            ],
-            "description": "The repository that the issue is in"
-          },
-          "upfront_split_to_contributors": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Upfront Split To Contributors",
-            "description": "Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."
-          },
-          "pledge_badge_currently_embedded": {
-            "type": "boolean",
-            "title": "Pledge Badge Currently Embedded",
-            "description": "If this issue currently has the Polar badge SVG embedded"
-          },
-          "badge_custom_content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Badge Custom Content",
-            "description": "Optional custom badge SVG promotional content"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "platform",
-          "number",
-          "title",
-          "state",
-          "issue_created_at",
-          "needs_confirmation_solved",
-          "funding",
-          "repository",
-          "pledge_badge_currently_embedded"
-        ],
-        "title": "Issue"
-      },
       "IssueFunding": {
         "properties": {
           "issue": {
-            "$ref": "#/components/schemas/Issue-Output"
+            "$ref": "#/components/schemas/Issue"
           },
           "funding_goal": {
             "anyOf": [
@@ -20148,27 +19645,9 @@
         "properties": {
           "items": {
             "items": {
-              "anyOf": [
+              "allOf": [
                 {
-                  "$ref": "#/components/schemas/BenefitArticles"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitAds"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitCustom"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitDiscord-Output"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitGitHubRepository"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitDownloadables"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitLicenseKeys-Output"
+                  "$ref": "#/components/schemas/Benefit"
                 }
               ],
               "title": "Benefit"
@@ -20191,7 +19670,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Donation-Output"
+              "$ref": "#/components/schemas/Donation"
             },
             "type": "array",
             "title": "Items"
@@ -20256,7 +19735,7 @@
                   "$ref": "#/components/schemas/DownloadableFileRead"
                 },
                 {
-                  "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+                  "$ref": "#/components/schemas/ProductMediaFileRead"
                 },
                 {
                   "$ref": "#/components/schemas/OrganizationAvatarFileRead"
@@ -20268,7 +19747,7 @@
                 "mapping": {
                   "downloadable": "#/components/schemas/DownloadableFileRead",
                   "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead",
-                  "product_media": "#/components/schemas/ProductMediaFileRead-Output"
+                  "product_media": "#/components/schemas/ProductMediaFileRead"
                 }
               }
             },
@@ -20310,7 +19789,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Issue-Output"
+              "$ref": "#/components/schemas/Issue"
             },
             "type": "array",
             "title": "Items"
@@ -20370,7 +19849,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Order-Output"
+              "$ref": "#/components/schemas/Order"
             },
             "type": "array",
             "title": "Items"
@@ -20390,7 +19869,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Organization-Output"
+              "$ref": "#/components/schemas/Organization"
             },
             "type": "array",
             "title": "Items"
@@ -20410,7 +19889,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Pledge-Output"
+              "$ref": "#/components/schemas/Pledge"
             },
             "type": "array",
             "title": "Items"
@@ -20430,7 +19909,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Product-Output"
+              "$ref": "#/components/schemas/Product"
             },
             "type": "array",
             "title": "Items"
@@ -20530,7 +20009,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Subscription-Output"
+              "$ref": "#/components/schemas/Subscription"
             },
             "type": "array",
             "title": "Items"
@@ -21527,7 +21006,7 @@
         ],
         "title": "OAuth2ClientPublic"
       },
-      "Order-Input": {
+      "Order": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -21600,112 +21079,7 @@
             "$ref": "#/components/schemas/OrderProduct"
           },
           "product_price": {
-            "$ref": "#/components/schemas/ProductPrice-Input"
-          },
-          "subscription": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrderSubscription"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "amount",
-          "tax_amount",
-          "currency",
-          "user_id",
-          "product_id",
-          "product_price_id",
-          "subscription_id",
-          "user",
-          "product",
-          "product_price",
-          "subscription"
-        ],
-        "title": "Order"
-      },
-      "Order-Output": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount"
-          },
-          "tax_amount": {
-            "type": "integer",
-            "title": "Tax Amount"
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id"
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id"
-          },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id"
-          },
-          "subscription_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subscription Id"
-          },
-          "user": {
-            "$ref": "#/components/schemas/OrderUser"
-          },
-          "product": {
-            "$ref": "#/components/schemas/OrderProduct"
-          },
-          "product_price": {
-            "$ref": "#/components/schemas/ProductPrice-Output"
+            "$ref": "#/components/schemas/ProductPrice"
           },
           "subscription": {
             "anyOf": [
@@ -22026,194 +21400,7 @@
         ],
         "title": "OrderUser"
       },
-      "Organization-Input": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The organization ID.",
-            "x-polar-selector-widget": {
-              "displayProperty": "name",
-              "resourceName": "Organization",
-              "resourceRoot": "/v1/organizations"
-            }
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "slug": {
-            "type": "string",
-            "title": "Slug"
-          },
-          "avatar_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avatar Url"
-          },
-          "bio": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bio"
-          },
-          "company": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company"
-          },
-          "blog": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Blog"
-          },
-          "location": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Location"
-          },
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "twitter_username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Twitter Username"
-          },
-          "pledge_minimum_amount": {
-            "type": "integer",
-            "title": "Pledge Minimum Amount"
-          },
-          "pledge_badge_show_amount": {
-            "type": "boolean",
-            "title": "Pledge Badge Show Amount"
-          },
-          "default_upfront_split_to_contributors": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Upfront Split To Contributors"
-          },
-          "donations_enabled": {
-            "type": "boolean",
-            "title": "Donations Enabled",
-            "description": "If this organizations accepts donations"
-          },
-          "profile_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationProfileSettings"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Settings for the organization profile"
-          },
-          "feature_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationFeatureSettings"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Settings for the organization features"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "name",
-          "slug",
-          "avatar_url",
-          "bio",
-          "company",
-          "blog",
-          "location",
-          "email",
-          "twitter_username",
-          "pledge_minimum_amount",
-          "pledge_badge_show_amount",
-          "default_upfront_split_to_contributors",
-          "donations_enabled",
-          "profile_settings",
-          "feature_settings"
-        ],
-        "title": "Organization"
-      },
-      "Organization-Output": {
+      "Organization": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -22486,7 +21673,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "organization_id": {
             "type": "string",
@@ -23054,7 +22242,7 @@
         "const": "github",
         "title": "Platforms"
       },
-      "Pledge-Input": {
+      "Pledge": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -23135,153 +22323,7 @@
           "issue": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/Issue-Input"
-              }
-            ],
-            "description": "The issue that the pledge was made towards"
-          },
-          "pledger": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Pledger"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The user or organization that made this pledge"
-          },
-          "hosted_invoice_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Hosted Invoice Url",
-            "description": "URL of invoice for this pledge"
-          },
-          "authed_can_admin_sender": {
-            "type": "boolean",
-            "title": "Authed Can Admin Sender",
-            "description": "If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge",
-            "default": false
-          },
-          "authed_can_admin_received": {
-            "type": "boolean",
-            "title": "Authed Can Admin Received",
-            "description": "If the currently authenticated subject can perform admin actions on behalf of the receiver of the peldge",
-            "default": false
-          },
-          "created_by": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Pledger"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For pledges made by an organization, or on behalf of an organization. This is the user that made the pledge. Only visible for members of said organization."
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "amount",
-          "currency",
-          "state",
-          "type",
-          "issue"
-        ],
-        "title": "Pledge"
-      },
-      "Pledge-Output": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "description": "Amount pledged towards the issue"
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency"
-          },
-          "state": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PledgeState"
-              }
-            ],
-            "description": "Current state of the pledge"
-          },
-          "type": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PledgeType"
-              }
-            ],
-            "description": "Type of pledge"
-          },
-          "refunded_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Refunded At",
-            "description": "If and when the pledge was refunded to the pledger"
-          },
-          "scheduled_payout_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scheduled Payout At",
-            "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
-          },
-          "issue": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Issue-Output"
+                "$ref": "#/components/schemas/Issue"
               }
             ],
             "description": "The issue that the pledge was made towards"
@@ -23483,7 +22525,7 @@
         ],
         "title": "PledgesTypeSummaries"
       },
-      "Product-Input": {
+      "Product": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -23545,7 +22587,7 @@
           },
           "prices": {
             "items": {
-              "$ref": "#/components/schemas/ProductPrice-Input"
+              "$ref": "#/components/schemas/ProductPrice"
             },
             "type": "array",
             "title": "Prices",
@@ -23568,116 +22610,7 @@
           },
           "medias": {
             "items": {
-              "$ref": "#/components/schemas/ProductMediaFileRead-Input"
-            },
-            "type": "array",
-            "title": "Medias",
-            "description": "The medias associated to the product."
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "name",
-          "description",
-          "is_recurring",
-          "is_archived",
-          "organization_id",
-          "prices",
-          "benefits",
-          "medias"
-        ],
-        "title": "Product",
-        "description": "A product."
-      },
-      "Product-Output": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the product."
-          },
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "The name of the product."
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the product."
-          },
-          "is_recurring": {
-            "type": "boolean",
-            "title": "Is Recurring",
-            "description": "Whether the product is a subscription tier."
-          },
-          "is_archived": {
-            "type": "boolean",
-            "title": "Is Archived",
-            "description": "Whether the product is archived and no longer available."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the product."
-          },
-          "prices": {
-            "items": {
-              "$ref": "#/components/schemas/ProductPrice-Output"
-            },
-            "type": "array",
-            "title": "Prices",
-            "description": "List of available prices for this product."
-          },
-          "benefits": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/BenefitBase"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitArticles"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "BenefitPublic",
-            "description": "The benefits granted by the product."
-          },
-          "medias": {
-            "items": {
-              "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+              "$ref": "#/components/schemas/ProductMediaFileRead"
             },
             "type": "array",
             "title": "Medias",
@@ -23807,146 +22740,13 @@
         "title": "ProductMediaFileCreate",
         "description": "Schema to create a file to be used as a product media file."
       },
-      "ProductMediaFileRead-Input": {
+      "ProductMediaFileRead": {
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "path": {
-            "type": "string",
-            "title": "Path"
-          },
-          "mime_type": {
-            "type": "string",
-            "title": "Mime Type"
-          },
-          "size": {
-            "type": "integer",
-            "title": "Size"
-          },
-          "storage_version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Storage Version"
-          },
-          "checksum_etag": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checksum Etag"
-          },
-          "checksum_sha256_base64": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checksum Sha256 Base64"
-          },
-          "checksum_sha256_hex": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checksum Sha256 Hex"
-          },
-          "last_modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Modified At"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version"
-          },
-          "service": {
-            "type": "string",
-            "enum": [
-              "product_media"
-            ],
-            "const": "product_media",
-            "title": "Service"
-          },
-          "is_uploaded": {
-            "type": "boolean",
-            "title": "Is Uploaded"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "organization_id",
-          "name",
-          "path",
-          "mime_type",
-          "size",
-          "storage_version",
-          "checksum_etag",
-          "checksum_sha256_base64",
-          "checksum_sha256_hex",
-          "last_modified_at",
-          "version",
-          "service",
-          "is_uploaded",
-          "created_at"
-        ],
-        "title": "ProductMediaFileRead",
-        "description": "File to be used as a product media file."
-      },
-      "ProductMediaFileRead-Output": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "organization_id": {
             "type": "string",
@@ -24171,10 +22971,10 @@
         "title": "ProductOneTimeCreate",
         "description": "Schema to create a one-time product."
       },
-      "ProductPrice-Input": {
+      "ProductPrice": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ProductPriceRecurring-Input"
+            "$ref": "#/components/schemas/ProductPriceRecurring"
           },
           {
             "$ref": "#/components/schemas/ProductPriceOneTime"
@@ -24184,24 +22984,7 @@
           "propertyName": "type",
           "mapping": {
             "one_time": "#/components/schemas/ProductPriceOneTime",
-            "recurring": "#/components/schemas/ProductPriceRecurring-Input"
-          }
-        }
-      },
-      "ProductPrice-Output": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ProductPriceRecurring-Output"
-          },
-          {
-            "$ref": "#/components/schemas/ProductPriceOneTime"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "one_time": "#/components/schemas/ProductPriceOneTime",
-            "recurring": "#/components/schemas/ProductPriceRecurring-Output"
+            "recurring": "#/components/schemas/ProductPriceRecurring"
           }
         }
       },
@@ -24617,28 +23400,7 @@
         "title": "ProductPriceOneTimeFreeCreate",
         "description": "Schema to create a free one-time product price."
       },
-      "ProductPriceRecurring-Input": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ProductPriceRecurringFixed"
-          },
-          {
-            "$ref": "#/components/schemas/ProductPriceRecurringCustom"
-          },
-          {
-            "$ref": "#/components/schemas/ProductPriceRecurringFree"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "amount_type",
-          "mapping": {
-            "custom": "#/components/schemas/ProductPriceRecurringCustom",
-            "fixed": "#/components/schemas/ProductPriceRecurringFixed",
-            "free": "#/components/schemas/ProductPriceRecurringFree"
-          }
-        }
-      },
-      "ProductPriceRecurring-Output": {
+      "ProductPriceRecurring": {
         "oneOf": [
           {
             "$ref": "#/components/schemas/ProductPriceRecurringFixed"
@@ -25802,7 +24564,7 @@
           "pledge": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/Pledge-Output"
+                "$ref": "#/components/schemas/Pledge"
               }
             ],
             "description": "The pledge that the reward was split from"
@@ -25821,7 +24583,7 @@
           "organization": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Organization-Output"
+                "$ref": "#/components/schemas/Organization"
               },
               {
                 "type": "null"
@@ -26194,7 +24956,7 @@
         ],
         "title": "SubType"
       },
-      "Subscription-Input": {
+      "Subscription": {
         "properties": {
           "created_at": {
             "type": "string",
@@ -26313,158 +25075,10 @@
             "$ref": "#/components/schemas/SubscriptionUser"
           },
           "product": {
-            "$ref": "#/components/schemas/Product-Input"
+            "$ref": "#/components/schemas/Product"
           },
           "price": {
-            "$ref": "#/components/schemas/ProductPrice-Input"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "amount",
-          "currency",
-          "recurring_interval",
-          "status",
-          "current_period_start",
-          "current_period_end",
-          "cancel_at_period_end",
-          "started_at",
-          "ended_at",
-          "user_id",
-          "product_id",
-          "price_id",
-          "user",
-          "product",
-          "price"
-        ],
-        "title": "Subscription"
-      },
-      "Subscription-Output": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Currency"
-          },
-          "recurring_interval": {
-            "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-          },
-          "status": {
-            "$ref": "#/components/schemas/SubscriptionStatus"
-          },
-          "current_period_start": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Current Period Start"
-          },
-          "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Current Period End"
-          },
-          "cancel_at_period_end": {
-            "type": "boolean",
-            "title": "Cancel At Period End"
-          },
-          "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At"
-          },
-          "ended_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ended At"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id"
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id"
-          },
-          "price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Price Id"
-          },
-          "user": {
-            "$ref": "#/components/schemas/SubscriptionUser"
-          },
-          "product": {
-            "$ref": "#/components/schemas/Product-Output"
-          },
-          "price": {
-            "$ref": "#/components/schemas/ProductPrice-Output"
+            "$ref": "#/components/schemas/ProductPriceRecurring"
           }
         },
         "type": "object",
@@ -27512,7 +26126,7 @@
             "$ref": "#/components/schemas/TransactionProduct"
           },
           "product_price": {
-            "$ref": "#/components/schemas/ProductPrice-Output"
+            "$ref": "#/components/schemas/ProductPrice"
           },
           "subscription_id": {
             "anyOf": [
@@ -28317,7 +26931,7 @@
             "$ref": "#/components/schemas/UserOrderProduct"
           },
           "product_price": {
-            "$ref": "#/components/schemas/ProductPrice-Output"
+            "$ref": "#/components/schemas/ProductPrice"
           },
           "subscription": {
             "anyOf": [
@@ -28425,7 +27039,7 @@
           },
           "prices": {
             "items": {
-              "$ref": "#/components/schemas/ProductPrice-Output"
+              "$ref": "#/components/schemas/ProductPrice"
             },
             "type": "array",
             "title": "Prices",
@@ -28448,7 +27062,7 @@
           },
           "medias": {
             "items": {
-              "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+              "$ref": "#/components/schemas/ProductMediaFileRead"
             },
             "type": "array",
             "title": "Medias",
@@ -28742,7 +27356,7 @@
             "$ref": "#/components/schemas/UserSubscriptionProduct"
           },
           "price": {
-            "$ref": "#/components/schemas/ProductPrice-Output"
+            "$ref": "#/components/schemas/ProductPrice"
           }
         },
         "type": "object",
@@ -28829,7 +27443,7 @@
           },
           "prices": {
             "items": {
-              "$ref": "#/components/schemas/ProductPrice-Output"
+              "$ref": "#/components/schemas/ProductPrice"
             },
             "type": "array",
             "title": "Prices",
@@ -28852,7 +27466,7 @@
           },
           "medias": {
             "items": {
-              "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+              "$ref": "#/components/schemas/ProductMediaFileRead"
             },
             "type": "array",
             "title": "Medias",
@@ -29071,27 +27685,9 @@
             "title": "Type"
           },
           "data": {
-            "anyOf": [
+            "allOf": [
               {
-                "$ref": "#/components/schemas/BenefitArticles"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitAds"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitCustom"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitDiscord-Input"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGitHubRepository"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitDownloadables"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
+                "$ref": "#/components/schemas/Benefit"
               }
             ],
             "title": "Benefit"
@@ -29182,27 +27778,9 @@
             "title": "Type"
           },
           "data": {
-            "anyOf": [
+            "allOf": [
               {
-                "$ref": "#/components/schemas/BenefitArticles"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitAds"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitCustom"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitDiscord-Input"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGitHubRepository"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitDownloadables"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
+                "$ref": "#/components/schemas/Benefit"
               }
             ],
             "title": "Benefit"
@@ -29291,7 +27869,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Donation-Input"
+            "$ref": "#/components/schemas/Donation"
           }
         },
         "type": "object",
@@ -29636,7 +28214,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Order-Input"
+            "$ref": "#/components/schemas/Order"
           }
         },
         "type": "object",
@@ -29658,7 +28236,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Organization-Input"
+            "$ref": "#/components/schemas/Organization"
           }
         },
         "type": "object",
@@ -29680,7 +28258,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Pledge-Input"
+            "$ref": "#/components/schemas/Pledge"
           }
         },
         "type": "object",
@@ -29702,7 +28280,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Pledge-Input"
+            "$ref": "#/components/schemas/Pledge"
           }
         },
         "type": "object",
@@ -29724,7 +28302,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Product-Input"
+            "$ref": "#/components/schemas/Product"
           }
         },
         "type": "object",
@@ -29746,7 +28324,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Product-Input"
+            "$ref": "#/components/schemas/Product"
           }
         },
         "type": "object",
@@ -29768,7 +28346,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Subscription-Input"
+            "$ref": "#/components/schemas/Subscription"
           }
         },
         "type": "object",
@@ -29790,7 +28368,7 @@
             "title": "Type"
           },
           "data": {
-            "$ref": "#/components/schemas/Subscription-Input"
+            "$ref": "#/components/schemas/Subscription"
           }
         },
         "type": "object",

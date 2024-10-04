@@ -20,9 +20,11 @@ import { CheckoutCard } from './CheckoutCard'
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 const StripeRequiresAction = ({
+  stripe,
   checkout,
   updateCheckout,
 }: {
+  stripe: Stripe | null
   checkout: CheckoutPublic
   updateCheckout: () => Promise<void>
 }) => {
@@ -44,37 +46,33 @@ const StripeRequiresAction = ({
         }
       }
     },
-    [],
+    [payment_intent_client_secret, payment_intent_status, updateCheckout],
   )
-  return (
-    <Elements stripe={stripePromise}>
-      <ElementsConsumer>
-        {({ stripe }) => {
-          useEffect(() => {
-            if (stripe) {
-              handleNextAction(stripe)
-            }
-          }, [stripe])
 
-          if (!stripe) {
-            return
-          }
+  useEffect(() => {
+    if (!stripe) {
+      return
+    }
+    handleNextAction(stripe)
+  }, [stripe, handleNextAction])
 
-          return payment_intent_status === 'requires_action' ? (
-            <Button
-              type="button"
-              onClick={() => handleNextAction(stripe)}
-              loading={pendingHandling}
-            >
-              Confirm payment
-            </Button>
-          ) : (
-            <SpinnerNoMargin className="h-8 w-8" />
-          )
-        }}
-      </ElementsConsumer>
-    </Elements>
-  )
+  if (!stripe) {
+    return null
+  }
+
+  if (payment_intent_status === 'requires_action') {
+    return (
+      <Button
+        type="button"
+        onClick={() => handleNextAction(stripe)}
+        loading={pendingHandling}
+      >
+        Confirm payment
+      </Button>
+    )
+  }
+
+  return <SpinnerNoMargin className="h-8 w-8" />
 }
 
 export interface CheckoutConfirmationProps {
@@ -160,10 +158,17 @@ export const CheckoutConfirmation = ({
         {status === CheckoutStatus.CONFIRMED && (
           <div className="flex items-center justify-center">
             {checkout.payment_processor === 'stripe' ? (
-              <StripeRequiresAction
-                checkout={checkout}
-                updateCheckout={updateCheckout}
-              />
+              <Elements stripe={stripePromise}>
+                <ElementsConsumer>
+                  {({ stripe }) => (
+                    <StripeRequiresAction
+                      stripe={stripe}
+                      checkout={checkout}
+                      updateCheckout={updateCheckout}
+                    />
+                  )}
+                </ElementsConsumer>
+              </Elements>
             ) : (
               <SpinnerNoMargin className="h-8 w-8" />
             )}

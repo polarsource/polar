@@ -595,6 +595,11 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               currency: checkout.currency || 'usd',
             }
           : {}),
+        customerSessionClientSecret: (
+          checkout.payment_processor_metadata as {
+            customer_session_client_secret?: string
+          }
+        ).customer_session_client_secret,
         appearance: {
           rules: {
             '.Label': {

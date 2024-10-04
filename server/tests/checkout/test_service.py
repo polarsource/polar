@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
+from pydantic_core import Url
 from pytest_mock import MockerFixture
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
@@ -400,6 +401,33 @@ class TestCreate:
 
         assert checkout.customer_tax_id == ("FR61954506077", TaxIDFormat.eu_vat)
         assert checkout.customer_tax_id_number == "FR61954506077"
+
+    @pytest.mark.auth
+    async def test_valid_success_url(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                success_url=Url(
+                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert (
+            checkout.success_url
+            == f"https://example.com/success?checkout_id={checkout.id}"
+        )
 
     async def test_silent_calculate_tax_error(
         self,

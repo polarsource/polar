@@ -76,6 +76,7 @@ class TestCreateCheckout:
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
+                "success_url": "https://example.com/success?checkout_id={CHECKOUT_ID}",
             },
         )
 
@@ -84,6 +85,10 @@ class TestCreateCheckout:
         json = response.json()
         assert "client_secret" in json
         assert "metadata" in json
+        assert (
+            json["success_url"]
+            == f"https://example.com/success?checkout_id={json['id']}"
+        )
 
 
 @pytest.mark.asyncio

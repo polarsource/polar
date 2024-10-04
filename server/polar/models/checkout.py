@@ -52,6 +52,9 @@ class Checkout(RecordModel):
     payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
+    _success_url: Mapped[str | None] = mapped_column(
+        "success_url", String, nullable=True, default=None
+    )
 
     amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
@@ -100,6 +103,18 @@ class Checkout(RecordModel):
     customer_tax_id: Mapped[TaxID | None] = mapped_column(
         TaxIDType, nullable=True, default=None
     )
+
+    @property
+    def success_url(self) -> str:
+        if self._success_url is None:
+            return settings.generate_frontend_url(
+                f"/checkout/{self.client_secret}/confirmation"
+            )
+        return self._success_url.format(CHECKOUT_ID=self.id)
+
+    @success_url.setter
+    def success_url(self, value: str | None) -> None:
+        self._success_url = str(value) if value is not None else None
 
     @property
     def customer_tax_id_number(self) -> str | None:

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Field, IPvAnyAddress, computed_field
+from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress, computed_field
 
 from polar.config import settings
 from polar.enums import PaymentProcessor
@@ -43,7 +43,16 @@ CustomerBillingAddress = Annotated[
     Address,
     Field(description="Billing address of the customer."),
 ]
-
+SuccessURL = Annotated[
+    HttpUrl | None,
+    Field(
+        description=(
+            "URL where the customer will be redirected after a successful payment."
+            "You can add the `checkout_id={CHECKOUT_ID}` query parameter "
+            "to retrieve the checkout session id."
+        )
+    ),
+]
 InputMetadata = Annotated[
     dict[str, str],
     Field(
@@ -78,6 +87,7 @@ class CheckoutCreate(Schema):
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    success_url: SuccessURL = None
     metadata: InputMetadata = Field(default_factory=dict)
 
 
@@ -108,6 +118,7 @@ class CheckoutUpdate(CheckoutUpdateBase):
     """Update an existing checkout session using an access token."""
 
     metadata: InputMetadata | None = None
+    success_url: SuccessURL = None
 
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):
@@ -143,6 +154,11 @@ class CheckoutBase(IDSchema, TimestampedSchema):
     )
     expires_at: datetime = Field(
         description="Expiration date and time of the checkout session."
+    )
+    success_url: str = Field(
+        description=(
+            "URL where the customer will be redirected after a successful payment."
+        )
     )
     amount: Amount | None
     tax_amount: int | None = Field(description="Computed tax amount to pay in cents.")

@@ -17,7 +17,12 @@ import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
-import { CreatableBenefit, resolveBenefitIcon } from '../Benefit/utils'
+import {
+  benefitsDisplayNames,
+  CreatableBenefit,
+  resolveBenefitCategoryIcon,
+  resolveBenefitIcon,
+} from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -114,16 +119,6 @@ const BenefitRow = ({
   )
 }
 
-const benefitTypes: Record<BenefitType, string> = {
-  license_keys: 'License Keys',
-  github_repository: 'GitHub Repositories',
-  discord: 'Discord Channels',
-  downloadables: 'File Downloads',
-  ads: 'Ads',
-  articles: 'Newsletters',
-  custom: 'Custom',
-}
-
 interface ProductBenefitsFormProps {
   organization: Organization
   benefits: BenefitPublicInner[]
@@ -169,7 +164,7 @@ const ProductBenefitsForm = ({
           purchase the product
         </p>
         <div className="flex flex-col gap-y-4">
-          {Object.entries(benefitTypes).map(([type, title]) => (
+          {Object.entries(benefitsDisplayNames).map(([type, title]) => (
             <BenefitsContainer
               key={type}
               title={title}
@@ -227,6 +222,7 @@ const BenefitsContainer = ({
   enabledBenefits,
   handleCheckedChange,
   onCreateNewBenefit,
+  type,
 }: BenefitsContainerProps) => {
   const [open, setOpen] = useState(false)
 
@@ -250,7 +246,10 @@ const BenefitsContainer = ({
         onClick={() => !hasEnabledBenefits && setOpen((v) => !v)}
         role="button"
       >
-        <span>{title}</span>
+        <div className="flex flex-row items-center gap-x-3">
+          {resolveBenefitCategoryIcon(type, 'small', 'h-4 w-4')}
+          <span>{title}</span>
+        </div>
         <span className="flex flex-row gap-x-4">
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
             {benefits.length}

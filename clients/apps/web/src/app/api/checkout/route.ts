@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams
   const priceId = searchParams.get('price') as string
-  const subscriptionId = searchParams.get('subscription') as string | null
 
   try {
     const { url } = await api.checkouts.clientCreate({

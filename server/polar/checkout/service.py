@@ -7,10 +7,17 @@ import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import (
+    Anonymous,
+    AuthSubject,
+    is_direct_user,
+    is_organization,
+    is_user,
+)
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutCreate,
+    CheckoutCreatePublic,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -42,6 +49,7 @@ from polar.models.product_price import ProductPriceFree
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
+from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
 from .sorting import CheckoutSortProperty
@@ -336,6 +344,84 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         return checkout
 
+    async def client_create(
+        self,
+        session: AsyncSession,
+        checkout_create: CheckoutCreatePublic,
+        auth_subject: AuthSubject[User | Anonymous],
+    ) -> Checkout:
+        price = await product_price_service.get_by_id(
+            session, checkout_create.product_price_id
+        )
+
+        if price is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not exist.",
+                        "input": checkout_create.product_price_id,
+                    }
+                ]
+            )
+
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": checkout_create.product_price_id,
+                    }
+                ]
+            )
+
+        product = price.product
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is archived.",
+                        "input": checkout_create.product_price_id,
+                    }
+                ]
+            )
+
+        product = cast(Product, await product_service.get_loaded(session, product.id))
+
+        amount = None
+        currency = None
+        if isinstance(price, ProductPriceFixed):
+            amount = price.price_amount
+            currency = price.price_currency
+        elif isinstance(price, ProductPriceCustom):
+            currency = price.price_currency
+            if amount is None:
+                amount = price.preset_amount
+        elif isinstance(price, ProductPriceFree):
+            amount = None
+            currency = None
+
+        checkout = Checkout(
+            client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
+            amount=amount,
+            currency=currency,
+            product=product,
+            product_price=price,
+        )
+        if is_direct_user(auth_subject):
+            checkout.customer = auth_subject.subject
+            checkout.customer_email = auth_subject.subject.email
+        elif checkout_create.customer_email is not None:
+            checkout.customer_email = checkout_create.customer_email
+
+        session.add(checkout)
+        return checkout
+
     async def update(
         self,
         session: AsyncSession,
@@ -413,19 +499,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         assert checkout.customer_email is not None
 
         if checkout.payment_processor == PaymentProcessor.stripe:
-            customer_params: stripe_lib.Customer.CreateParams = {
-                "email": checkout.customer_email
-            }
-            if checkout.customer_name is not None:
-                customer_params["name"] = checkout.customer_name
-            if checkout.customer_billing_address is not None:
-                customer_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
-            if checkout.customer_tax_id is not None:
-                customer_params["tax_id_data"] = [
-                    to_stripe_tax_id(checkout.customer_tax_id)
-                ]
-            stripe_customer = stripe_service.create_customer(**customer_params)
-            checkout.payment_processor_metadata = {"customer_id": stripe_customer.id}
+            stripe_customer_id = await self._create_or_update_stripe_customer(
+                session, checkout
+            )
+            checkout.payment_processor_metadata = {"customer_id": stripe_customer_id}
 
             if checkout.is_payment_required:
                 assert checkout_confirm.confirmation_token_id is not None
@@ -446,7 +523,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     "automatic_payment_methods": {"enabled": True},
                     "confirm": True,
                     "confirmation_token": checkout_confirm.confirmation_token_id,
-                    "customer": stripe_customer.id,
+                    "customer": stripe_customer_id,
                     "metadata": payment_intent_metadata,
                     "return_url": settings.generate_frontend_url(
                         f"/checkout/{checkout.client_secret}/confirmation"
@@ -884,6 +961,49 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if checkout.is_payment_required:
             fields.update({"customer_name", "customer_billing_address"})
         return fields
+
+    async def _create_or_update_stripe_customer(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> str:
+        assert checkout.customer_email is not None
+
+        stripe_customer_id: str | None = None
+        if checkout.customer_id is not None:
+            user = await user_service.get(session, checkout.customer_id)
+            if user is not None and user.stripe_customer_id is not None:
+                stripe_customer_id = user.stripe_customer_id
+
+        if stripe_customer_id is None:
+            create_params: stripe_lib.Customer.CreateParams = {
+                "email": checkout.customer_email
+            }
+            if checkout.customer_name is not None:
+                create_params["name"] = checkout.customer_name
+            if checkout.customer_billing_address is not None:
+                create_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
+            if checkout.customer_tax_id is not None:
+                create_params["tax_id_data"] = [
+                    to_stripe_tax_id(checkout.customer_tax_id)
+                ]
+            stripe_customer = stripe_service.create_customer(**create_params)
+            stripe_customer_id = stripe_customer.id
+        else:
+            update_params: stripe_lib.Customer.ModifyParams = {
+                "email": checkout.customer_email
+            }
+            if checkout.customer_name is not None:
+                update_params["name"] = checkout.customer_name
+            if checkout.customer_billing_address is not None:
+                update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
+            stripe_service.update_customer(
+                stripe_customer_id,
+                tax_id=to_stripe_tax_id(checkout.customer_tax_id)
+                if checkout.customer_tax_id is not None
+                else None,
+                **update_params,
+            )
+
+        return stripe_customer_id
 
     def _get_readable_checkout_statement(
         self, auth_subject: AuthSubject[User | Organization]

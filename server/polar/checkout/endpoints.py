@@ -10,7 +10,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Checkout
-from polar.openapi import APITag
+from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
@@ -22,6 +22,7 @@ from .schemas import Checkout as CheckoutSchema
 from .schemas import (
     CheckoutConfirm,
     CheckoutCreate,
+    CheckoutCreatePublic,
     CheckoutPublic,
     CheckoutUpdate,
     CheckoutUpdatePublic,
@@ -153,6 +154,22 @@ async def client_get(
         raise ResourceNotFound()
 
     return checkout
+
+
+@router.post(
+    "/client/",
+    summary="Create Checkout Session from Client",
+    response_model=CheckoutPublic,
+    status_code=201,
+    include_in_schema=IN_DEVELOPMENT_ONLY,
+)
+async def client_create(
+    checkout_create: CheckoutCreatePublic,
+    auth_subject: auth.CheckoutWeb,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Create a checkout session from a client. Suitable to build checkout links."""
+    return await checkout_service.client_create(session, checkout_create, auth_subject)
 
 
 @router.patch(

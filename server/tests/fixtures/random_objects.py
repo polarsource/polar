@@ -268,13 +268,16 @@ async def user(
     return await create_user(save_fixture)
 
 
-async def create_user(save_fixture: SaveFixture) -> User:
+async def create_user(
+    save_fixture: SaveFixture, stripe_customer_id: str | None = None
+) -> User:
     user = User(
         id=uuid.uuid4(),
         username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],
+        stripe_customer_id=stripe_customer_id,
     )
     await save_fixture(user)
     return user

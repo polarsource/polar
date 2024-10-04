@@ -581,6 +581,19 @@ class StripeService:
     ) -> stripe_lib.Customer:
         return stripe_lib.Customer.create(**params)
 
+    def update_customer(
+        self,
+        id: str,
+        tax_id: stripe_lib.Customer.CreateParamsTaxIdDatum | None = None,
+        **params: Unpack[stripe_lib.Customer.ModifyParams],
+    ) -> stripe_lib.Customer:
+        if tax_id is not None:
+            stripe_lib.Customer.create_tax_id(id, **tax_id)
+
+        customer = stripe_lib.Customer.modify(id, **params)
+
+        return customer
+
     def create_out_of_band_subscription(
         self,
         *,

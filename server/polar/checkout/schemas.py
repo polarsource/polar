@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Field, IPvAnyAddress
+from pydantic import UUID4, Field, IPvAnyAddress, computed_field
 
+from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
 from polar.kit.schemas import (
@@ -80,6 +81,13 @@ class CheckoutCreate(Schema):
     metadata: InputMetadata = Field(default_factory=dict)
 
 
+class CheckoutCreatePublic(Schema):
+    """Create a new checkout session from a client."""
+
+    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    customer_email: CustomerEmail | None = None
+
+
 class CheckoutUpdateBase(Schema):
     product_price_id: UUID4 | None = Field(
         default=None,
@@ -155,6 +163,11 @@ class CheckoutBase(IDSchema, TimestampedSchema):
     customer_tax_id: str | None = Field(validation_alias="customer_tax_id_number")
 
     payment_processor_metadata: dict[str, Any]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def url(self) -> str:
+        return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
 
 
 class Checkout(CheckoutBase):

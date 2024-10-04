@@ -8578,10 +8578,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
-                                "order",
+                                "free_subscription",
                                 "paid_subscription",
-                                "free_subscription"
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -15315,6 +15315,65 @@
                 },
                 "x-speakeasy-group": "checkouts.custom",
                 "x-speakeasy-name-override": "client_update"
+            }
+        },
+        "/v1/checkouts/custom/client/": {
+            "post": {
+                "tags": [
+                    "checkouts",
+                    "custom",
+                    "documented",
+                    "featured"
+                ],
+                "summary": "Create Checkout Session from Client",
+                "description": "Create a checkout session from a client. Suitable to build checkout links.",
+                "operationId": "checkouts:custom:client_create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutCreatePublic"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutPublic"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "oidc": []
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkouts.custom",
+                "x-speakeasy-name-override": "client_create"
             }
         },
         "/v1/checkouts/custom/client/{client_secret}/confirm": {
@@ -22640,6 +22699,35 @@
                 "title": "CheckoutConfirmStripe",
                 "description": "Confirm a checkout session using a Stripe confirmation token."
             },
+            "CheckoutCreatePublic": {
+                "properties": {
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout."
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email",
+                                "description": "Email address of the customer."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "product_price_id"
+                ],
+                "title": "CheckoutCreatePublic",
+                "description": "Create a new checkout session from a client."
+            },
             "CheckoutPublic": {
                 "properties": {
                     "created_at": {
@@ -22693,6 +22781,11 @@
                         "format": "date-time",
                         "title": "Expires At",
                         "description": "Expiration date and time of the checkout session."
+                    },
+                    "success_url": {
+                        "type": "string",
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment."
                     },
                     "amount": {
                         "anyOf": [
@@ -22832,6 +22925,11 @@
                     },
                     "product_price": {
                         "$ref": "#/components/schemas/ProductPrice"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "readOnly": true
                     }
                 },
                 "type": "object",
@@ -22843,6 +22941,7 @@
                     "status",
                     "client_secret",
                     "expires_at",
+                    "success_url",
                     "amount",
                     "tax_amount",
                     "currency",
@@ -22857,7 +22956,8 @@
                     "customer_tax_id",
                     "payment_processor_metadata",
                     "product",
-                    "product_price"
+                    "product_price",
+                    "url"
                 ],
                 "title": "CheckoutPublic",
                 "description": "Checkout session data retrieved using the client secret."
@@ -22988,6 +23088,21 @@
                             }
                         ],
                         "title": "Metadata"
+                    },
+                    "success_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
                     }
                 },
                 "type": "object",
@@ -37225,10 +37340,10 @@
                         "title": "Customer Name"
                     },
                     "product": {
-                        "$ref": "#/components/schemas/Product-Output"
+                        "$ref": "#/components/schemas/Product"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice-Output"
+                        "$ref": "#/components/schemas/ProductPrice"
                     }
                 },
                 "type": "object",
@@ -37344,6 +37459,11 @@
                         "format": "date-time",
                         "title": "Expires At",
                         "description": "Expiration date and time of the checkout session."
+                    },
+                    "success_url": {
+                        "type": "string",
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment."
                     },
                     "amount": {
                         "anyOf": [
@@ -37485,6 +37605,11 @@
                         "type": "object",
                         "title": "Metadata",
                         "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "readOnly": true
                     }
                 },
                 "type": "object",
@@ -37496,6 +37621,7 @@
                     "status",
                     "client_secret",
                     "expires_at",
+                    "success_url",
                     "amount",
                     "tax_amount",
                     "currency",
@@ -37509,7 +37635,8 @@
                     "customer_billing_address",
                     "customer_tax_id",
                     "payment_processor_metadata",
-                    "metadata"
+                    "metadata",
+                    "url"
                 ],
                 "title": "Checkout",
                 "description": "Checkout session data retrieved using an access token."
@@ -37606,6 +37733,21 @@
                             }
                         ],
                         "title": "Customer Tax Id"
+                    },
+                    "success_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
                     },
                     "metadata": {
                         "additionalProperties": {

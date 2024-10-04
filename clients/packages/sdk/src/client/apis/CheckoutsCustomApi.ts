@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   CheckoutConfirmStripe,
+  CheckoutCreatePublic,
   CheckoutPublic,
   CheckoutSortProperty,
   CheckoutUpdate,
@@ -32,6 +33,10 @@ import type {
 export interface CheckoutsCustomApiClientConfirmRequest {
     clientSecret: string;
     body: CheckoutConfirmStripe;
+}
+
+export interface CheckoutsCustomApiClientCreateRequest {
+    body: CheckoutCreatePublic;
 }
 
 export interface CheckoutsCustomApiClientGetRequest {
@@ -111,6 +116,52 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      */
     async clientConfirm(requestParameters: CheckoutsCustomApiClientConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CheckoutPublic> {
         const response = await this.clientConfirmRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Create a checkout session from a client. Suitable to build checkout links.
+     * Create Checkout Session from Client
+     */
+    async clientCreateRaw(requestParameters: CheckoutsCustomApiClientCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CheckoutPublic>> {
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling clientCreate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/checkouts/custom/client/`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['body'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create a checkout session from a client. Suitable to build checkout links.
+     * Create Checkout Session from Client
+     */
+    async clientCreate(requestParameters: CheckoutsCustomApiClientCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CheckoutPublic> {
+        const response = await this.clientCreateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -4702,6 +4702,25 @@ export interface CheckoutConfirmStripe {
     confirmation_token_id?: string | null;
 }
 /**
+ * Create a new checkout session from a client.
+ * @export
+ * @interface CheckoutCreatePublic
+ */
+export interface CheckoutCreatePublic {
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutCreatePublic
+     */
+    product_price_id: string;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutCreatePublic
+     */
+    customer_email?: string | null;
+}
+/**
  * Checkout session data retrieved using the client secret.
  * @export
  * @interface CheckoutPublic
@@ -4749,6 +4768,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     expires_at: string;
+    /**
+     * URL where the customer will be redirected after a successful payment.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    success_url: string;
     /**
      * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
@@ -4839,6 +4864,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     product_price: ProductPrice;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    readonly url: string;
 }
 
 
@@ -4923,6 +4954,12 @@ export interface CheckoutUpdate {
      * @memberof CheckoutUpdate
      */
     metadata?: { [key: string]: string; } | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    success_url?: string | null;
 }
 /**
  * Update an existing checkout session using the client secret.
@@ -11672,6 +11709,12 @@ export interface PolarCheckoutSchemasCheckout {
      */
     expires_at: string;
     /**
+     * URL where the customer will be redirected after a successful payment.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    success_url: string;
+    /**
      * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
      * @memberof PolarCheckoutSchemasCheckout
@@ -11755,6 +11798,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    readonly url: string;
 }
 
 
@@ -11812,6 +11861,12 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
     customer_tax_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    success_url?: string | null;
     /**
      * Metadata to store with the checkout. Useful to store additional information about the checkout.
      * @type {{ [key: string]: string; }}

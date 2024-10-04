@@ -147,6 +147,7 @@ export const CHECKOUT_PREVIEW: CheckoutPublic = {
   total_amount: 12000,
   is_payment_required: true,
   currency: 'usd',
+  customer_id: null,
   customer_email: 'janedoe@gmail.com',
   customer_name: 'Jane Doe',
   customer_billing_address: null,

@@ -1,7 +1,11 @@
 import { useDeleteBenefit } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  CheckOutlined,
+  MoreVertOutlined,
+} from '@mui/icons-material'
 import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -21,7 +25,6 @@ import {
   benefitsDisplayNames,
   CreatableBenefit,
   resolveBenefitCategoryIcon,
-  resolveBenefitIcon,
 } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
@@ -61,9 +64,9 @@ const BenefitRow = ({
     <div
       className={twMerge('flex w-full flex-row items-center justify-between')}
     >
-      <div className="flex flex-row items-start gap-x-3 align-middle">
+      <div className="flex flex-row items-center gap-x-3">
         <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-          {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+          <CheckOutlined className="h-3 w-3" fontSize="inherit" />
         </span>
         <span className="text-sm">{benefit.description}</span>
       </div>
@@ -270,6 +273,7 @@ const BenefitsContainer = ({
               {benefits.map((benefit) => {
                 return (
                   <BenefitRow
+                    key={benefit.id}
                     organization={organization}
                     benefit={benefit}
                     checked={enabledBenefits.some((b) => b.id === benefit.id)}

@@ -594,6 +594,24 @@ class StripeService:
 
         return customer
 
+    def create_customer_session(self, customer_id: str) -> stripe_lib.CustomerSession:
+        return stripe_lib.CustomerSession.create(
+            components={
+                "payment_element": {
+                    "enabled": True,
+                    "features": {
+                        "payment_method_allow_redisplay_filters": [
+                            "always",
+                            "limited",
+                            "unspecified",
+                        ],
+                        "payment_method_redisplay": "enabled",
+                    },
+                }
+            },
+            customer=customer_id,
+        )
+
     def create_out_of_band_subscription(
         self,
         *,

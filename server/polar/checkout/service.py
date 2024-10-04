@@ -407,6 +407,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency = None
 
         checkout = Checkout(
+            payment_processor=PaymentProcessor.stripe,
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
@@ -418,6 +419,16 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             checkout.customer_email = auth_subject.subject.email
         elif checkout_create.customer_email is not None:
             checkout.customer_email = checkout_create.customer_email
+
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            if checkout.customer and checkout.customer.stripe_customer_id is not None:
+                stripe_customer_session = stripe_service.create_customer_session(
+                    checkout.customer.stripe_customer_id
+                )
+                checkout.payment_processor_metadata = {
+                    **(checkout.payment_processor_metadata or {}),
+                    "customer_session_client_secret": stripe_customer_session.client_secret,
+                }
 
         session.add(checkout)
         return checkout

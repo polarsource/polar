@@ -4,7 +4,6 @@ import {
   CheckoutConfirmStripe,
   CheckoutPublic,
   CheckoutUpdatePublic,
-  SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import {
@@ -61,11 +60,7 @@ const DetailRow = ({
 interface BaseCheckoutFormProps {
   onSubmit: (value: any) => Promise<void>
   onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
-  amount: number | null
-  taxAmount: number | null
-  currency: string | null
-  isPaymentRequired: boolean
-  interval?: SubscriptionRecurringInterval
+  checkout: CheckoutPublic
   disabled?: boolean
   loading?: boolean
 }
@@ -73,15 +68,15 @@ interface BaseCheckoutFormProps {
 const BaseCheckoutForm = ({
   onSubmit,
   onCheckoutUpdate,
-  amount,
-  taxAmount,
-  currency,
-  isPaymentRequired,
-  interval,
+  checkout,
   disabled,
   loading,
   children,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
+  const interval =
+    checkout.product_price.type === 'recurring'
+      ? checkout.product_price.recurring_interval
+      : undefined
   const form = useFormContext<CheckoutUpdatePublic>()
   const {
     control,
@@ -161,31 +156,33 @@ const BaseCheckoutForm = ({
             className="flex flex-col gap-y-12"
           >
             <div className="flex flex-col gap-y-6">
-              <FormField
-                control={control}
-                name="customer_email"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        autoComplete="email"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!checkout.customer_id && (
+                <FormField
+                  control={control}
+                  name="customer_email"
+                  rules={{
+                    required: 'This field is required',
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          autoComplete="email"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {children}
 
-              {isPaymentRequired && (
+              {checkout.is_payment_required && (
                 <>
                   <FormField
                     control={control}
@@ -391,20 +388,23 @@ const BaseCheckoutForm = ({
                 </>
               )}
             </div>
-            {isPaymentRequired && (
+            {checkout.is_payment_required && (
               <div className="flex flex-col gap-y-2">
-                {amount && currency ? (
+                {checkout.amount !== null && checkout.currency ? (
                   <>
                     <DetailRow title="Subtotal">
                       <AmountLabel
-                        amount={amount}
-                        currency={currency}
+                        amount={checkout.amount}
+                        currency={checkout.currency}
                         interval={interval}
                       />
                     </DetailRow>
-                    {taxAmount !== null && (
+                    {checkout.tax_amount !== null && (
                       <DetailRow title="VAT / Sales Tax">
-                        {formatCurrencyAndAmount(taxAmount, currency)}
+                        {formatCurrencyAndAmount(
+                          checkout.tax_amount,
+                          checkout.currency,
+                        )}
                       </DetailRow>
                     )}
                     {/* {discountCode && (
@@ -414,8 +414,8 @@ const BaseCheckoutForm = ({
                 )} */}
                     <DetailRow title="Total" emphasis>
                       <AmountLabel
-                        amount={amount + (taxAmount || 0)}
-                        currency={currency}
+                        amount={checkout.total_amount || 0}
+                        currency={checkout.currency}
                         interval={interval}
                       />
                     </DetailRow>
@@ -432,7 +432,11 @@ const BaseCheckoutForm = ({
               disabled={disabled}
               loading={loading}
             >
-              {!isPaymentRequired ? 'Submit' : interval ? 'Subscribe' : 'Pay'}
+              {!checkout.is_payment_required
+                ? 'Submit'
+                : interval
+                  ? 'Subscribe'
+                  : 'Pay'}
             </Button>
             {errors.root && (
               <p className="text-destructive-foreground text-sm">
@@ -643,15 +647,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         {({ stripe, elements }) => (
           <BaseCheckoutForm
             {...props}
-            amount={checkout.amount}
-            taxAmount={checkout.tax_amount}
-            currency={checkout.currency}
-            isPaymentRequired={checkout.is_payment_required}
-            interval={
-              checkout.product_price.type === 'recurring'
-                ? checkout.product_price.recurring_interval
-                : undefined
-            }
+            checkout={checkout}
             onSubmit={(data) => onSubmit(data, stripe, elements)}
             onCheckoutUpdate={onCheckoutUpdate}
             loading={loading}
@@ -680,10 +676,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
 const DummyCheckoutForm = ({ checkout }: CheckoutFormProps) => {
   return (
     <BaseCheckoutForm
-      amount={checkout.amount}
-      taxAmount={checkout.tax_amount}
-      currency={checkout.currency}
-      isPaymentRequired={checkout.is_payment_required}
+      checkout={checkout}
       onSubmit={async () => {}}
       onCheckoutUpdate={async () => checkout}
       disabled={true}

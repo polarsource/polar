@@ -285,7 +285,7 @@ const BenefitsContainer = ({
           ) : (
             <div className="flex flex-col">
               <p className="dark:text-polar-500 text-sm text-gray-500">
-                You haven't configured any {title}
+                You haven&apos;t configured any {title}
               </p>
             </div>
           )}

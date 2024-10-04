@@ -1,12 +1,12 @@
 import { Checkout } from '@/components/Checkout/Checkout'
-import { Organization, Product } from '@polar-sh/sdk'
+import { CheckoutPublic, Organization } from '@polar-sh/sdk'
 
 export default function ClientPage({
   organization,
-  product,
+  checkout,
 }: {
   organization: Organization
-  product: Product
+  checkout: CheckoutPublic
 }) {
-  return <Checkout organization={organization} product={product} />
+  return <Checkout checkout={checkout} organization={organization} />
 }

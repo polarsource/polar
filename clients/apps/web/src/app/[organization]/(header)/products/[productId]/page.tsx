@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Product, ResponseError } from '@polar-sh/sdk'
+import { CheckoutPublic, Product, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -90,5 +90,16 @@ export default async function Page({
     notFound()
   }
 
-  return <ClientPage organization={organization} product={product} />
+  let checkout: CheckoutPublic
+  try {
+    checkout = await api.checkouts.clientCreate({
+      body: {
+        product_price_id: product.prices[0].id,
+      },
+    })
+  } catch (err) {
+    throw err
+  }
+
+  return <ClientPage checkout={checkout} organization={organization} />
 }

@@ -15,7 +15,7 @@ export default async function Page({
   const checkout = await getCheckoutByClientSecret(api, clientSecret)
 
   if (checkout.status !== CheckoutStatus.OPEN) {
-    redirect(`/checkout/${clientSecret}/confirmation`)
+    redirect(checkout.success_url)
   }
 
   const organization = await getOrganizationById(

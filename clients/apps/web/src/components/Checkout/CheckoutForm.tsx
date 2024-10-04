@@ -488,9 +488,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         setLoading(false)
         return
       }
-      await router.push(
-        `/checkout/${updatedCheckout.client_secret}/confirmation`,
-      )
+      await router.push(updatedCheckout.success_url)
       return
     }
 
@@ -575,7 +573,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       }
     }
 
-    await router.push(`/checkout/${checkout.client_secret}/confirmation`)
+    await router.push(updatedCheckout.success_url)
   }
 
   return (

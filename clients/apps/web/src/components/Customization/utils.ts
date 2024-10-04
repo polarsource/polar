@@ -153,6 +153,8 @@ export const CHECKOUT_PREVIEW: CheckoutPublic = {
   customer_ip_address: null,
   customer_tax_id: null,
   payment_processor_metadata: {},
+  url: '/checkout/CLIENT_SECRET',
+  success_url: '/checkout/CLIENT_SECRET/confirmation',
 }
 
 export const ORDER_PREVIEW: UserOrder = {

@@ -29,6 +29,11 @@ class Schema(BaseModel):
 class IDSchema(Schema):
     id: UUID4 = Field(..., description="The ID of the object.")
 
+    model_config = ConfigDict(
+        # IMPORTANT: this ensures FastAPI doesn't generate `-Input` for output schemas
+        json_schema_mode_override="serialization",
+    )
+
 
 class TimestampedSchema(Schema):
     created_at: datetime = Field(description="Creation timestamp of the object.")

@@ -7,63 +7,63 @@ import GeneralSettings from '@/components/Settings/GeneralSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import { Separator } from 'polarkit/components/ui/separator'
 
 export default function Page() {
   return (
     <div className="relative z-0">
-      <div className="mb-24 flex flex-col gap-y-8">
-        <h1 className="text-2xl">Settings</h1>
-        <div className="flex flex-col gap-y-4">
-          <Section>
-            <SectionDescription title="General" description="" />
-            <GeneralSettings />
-          </Section>
+      <div className="mb-24 flex flex-col gap-y-16">
+        <div className="flex flex-col gap-y-8">
+          <h1 className="text-2xl">Settings</h1>
+          <div className="flex flex-col gap-y-4">
+            <Section>
+              <SectionDescription title="General" description="" />
+              <GeneralSettings />
+            </Section>
 
-          <Section>
-            <SectionDescription title="Payment methods" />
-            <PaymentMethodSettings />
-          </Section>
+            <Section>
+              <SectionDescription title="Payment methods" />
+              <PaymentMethodSettings />
+            </Section>
 
-          <Section>
-            <SectionDescription
-              title="Connected Apps"
-              description="Manage connection to apps"
-            />
-            <ConnectedAppSettings />
-          </Section>
+            <Section>
+              <SectionDescription
+                title="Connected Apps"
+                description="Manage connection to apps"
+              />
+              <ConnectedAppSettings />
+            </Section>
 
-          <Section>
-            <SectionDescription
-              title="Signin connections"
-              description="Connect external accounts for authenticating to Polar."
-            />
-            <AuthenticationSettings />
-          </Section>
+            <Section>
+              <SectionDescription
+                title="Signin connections"
+                description="Connect external accounts for authenticating to Polar."
+              />
+              <AuthenticationSettings />
+            </Section>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-y-6">
-          <h2 className="text-xl">Developer Settings</h2>
-          <Separator className="dark:bg-polar-600" />
-        </div>
+        <div className="flex flex-col gap-y-8">
+          <h2 className="text-2xl">Developer Settings</h2>
 
-        <div className="flex flex-col gap-y-4">
-          <Section id="pat">
-            <SectionDescription
-              title="Personal Access Tokens"
-              description="Manage access tokens which can be used to authenticate you with the Polar API."
-            />
-            <AccessTokensSettings />
-          </Section>
+          <div className="flex flex-col gap-y-4">
+            <Section id="pat">
+              <SectionDescription
+                title="Personal Access Tokens"
+                description="Manage access tokens which can be used to authenticate you with the Polar API."
+              />
+              <AccessTokensSettings />
+            </Section>
 
-          <Section id="oauth">
-            <SectionDescription
-              title="OAuth Applications"
-              description="Your configured OAuth Applications."
-            />
+            <Section id="oauth">
+              <SectionDescription
+                title="OAuth Applications"
+                description="Your configured OAuth Applications."
+              />
 
-            <OAuthSettings />
-          </Section>
+              <OAuthSettings />
+            </Section>
+          </div>
         </div>
       </div>
     </div>

@@ -161,17 +161,6 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/newsletters',
-        destination: 'https://docs.polar.sh/newsletters',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
-      {
         source: '/issue-funding',
         destination: 'https://docs.polar.sh/issue-funding',
         has: [

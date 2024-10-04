@@ -5545,7 +5545,7 @@ export type DownloadableFileCreateServiceEnum = typeof DownloadableFileCreateSer
  */
 export interface DownloadableFileRead {
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof DownloadableFileRead
      */
@@ -5958,7 +5958,7 @@ export type FileCreate = { service: 'downloadable' } & DownloadableFileCreate | 
  */
 export interface FileDownload {
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof FileDownload
      */
@@ -6129,7 +6129,7 @@ export type FileServiceTypes = typeof FileServiceTypes[keyof typeof FileServiceT
  */
 export interface FileUpload {
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof FileUpload
      */
@@ -10236,7 +10236,7 @@ export type OrganizationAvatarFileCreateServiceEnum = typeof OrganizationAvatarF
  */
 export interface OrganizationAvatarFileRead {
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
@@ -12053,7 +12053,7 @@ export type ProductMediaFileCreateServiceEnum = typeof ProductMediaFileCreateSer
  */
 export interface ProductMediaFileRead {
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof ProductMediaFileRead
      */
@@ -13595,24 +13595,6 @@ export const ResourceNotFoundTypeEnum = {
 export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typeof ResourceNotFoundTypeEnum];
 
 /**
- * @type ResponseBenefitsCreate
- * @export
- */
-export type ResponseBenefitsCreate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
-
-/**
- * @type ResponseBenefitsGet
- * @export
- */
-export type ResponseBenefitsGet = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
-
-/**
- * @type ResponseBenefitsUpdate
- * @export
- */
-export type ResponseBenefitsUpdate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
-
-/**
  * @type ResponseFilesUpdate
  * 
  * @export
@@ -14187,10 +14169,10 @@ export interface Subscription {
     product: Product;
     /**
      * 
-     * @type {ProductPrice}
+     * @type {ProductPriceRecurring}
      * @memberof Subscription
      */
-    price: ProductPrice;
+    price: ProductPriceRecurring;
 }
 
 

@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  Benefit,
   BenefitCreate,
   BenefitTypeFilter,
   BenefitUpdate,
@@ -24,9 +25,6 @@ import type {
   NotPermitted,
   OrganizationIDFilter,
   ResourceNotFound,
-  ResponseBenefitsCreate,
-  ResponseBenefitsGet,
-  ResponseBenefitsUpdate,
 } from '../models/index';
 
 export interface BenefitsApiCreateRequest {
@@ -71,7 +69,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Create a benefit.
      * Create Benefit
      */
-    async createRaw(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsCreate>> {
+    async createRaw(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Benefit>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -108,7 +106,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Create a benefit.
      * Create Benefit
      */
-    async create(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsCreate> {
+    async create(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Benefit> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -159,7 +157,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Get a benefit by ID.
      * Get Benefit
      */
-    async getRaw(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsGet>> {
+    async getRaw(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Benefit>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -193,7 +191,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Get a benefit by ID.
      * Get Benefit
      */
-    async get(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsGet> {
+    async get(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Benefit> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -317,7 +315,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Update a benefit.
      * Update Benefit
      */
-    async updateRaw(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsUpdate>> {
+    async updateRaw(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Benefit>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -361,7 +359,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Update a benefit.
      * Update Benefit
      */
-    async update(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsUpdate> {
+    async update(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Benefit> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

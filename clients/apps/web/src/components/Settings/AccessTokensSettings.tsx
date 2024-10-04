@@ -12,6 +12,17 @@ import {
   PersonalAccessTokenCreateResponse,
 } from '@polar-sh/sdk'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from 'polarkit/components/ui/alert-dialog'
+import {
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
@@ -41,17 +52,6 @@ import {
 } from 'polarkit/components/ui/popover'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from 'polarkit/components/ui/alert-dialog'
 
 const AccessToken = (
   props: PersonalAccessToken & { createdTokenJWT?: string },
@@ -85,9 +85,7 @@ const AccessToken = (
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-4 space-x-4 text-gray-500">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                Revoke
-              </Button>
+              <Button variant="destructive">Revoke</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -99,8 +97,9 @@ const AccessToken = (
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  className="cursor-pointer bg-destructive text-white hover:bg-destructive/90"
-                  asChild>
+                  className="bg-destructive hover:bg-destructive/90 cursor-pointer text-white"
+                  asChild
+                >
                   <span
                     onClick={async () => {
                       await deleteToken.mutateAsync({ id: props.id })
@@ -116,10 +115,7 @@ const AccessToken = (
       </div>
       {props.createdTokenJWT && (
         <>
-          <CopyToClipboardInput
-            id="access-token-jwt"
-            value={props.createdTokenJWT}
-          />
+          <CopyToClipboardInput value={props.createdTokenJWT} />
           <Banner color="blue">
             <span className="text-sm">
               Copy the access token and save it somewhere safe. You won’t be

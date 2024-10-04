@@ -12,11 +12,11 @@ export default function ClientPage() {
 
   return (
     <DashboardBody>
-      <div className="dark:divide-polar-700 divide-y divide-gray-200">
+      <div className="flex flex-col gap-y-12">
         <Section>
           <SectionDescription
-            title="Appearance"
-            description="Configure how your organization appears to the public"
+            title="Organization"
+            description="Configure your organization settings"
           />
           <OrganizationAppearanceSettings organization={org} />
         </Section>

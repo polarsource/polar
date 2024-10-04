@@ -1,43 +1,50 @@
+import { CheckOutlined } from '@mui/icons-material'
+import { useState } from 'react'
+import Button from './Button'
 import Input from './Input'
 
-const CopyToClipboardInput = (props: {
-  id: string
+const CopyToClipboardInput = ({
+  value,
+  onCopy,
+}: {
   value: string
   onCopy?: () => void
 }) => {
-  const copyToClipboard = (id: string) => {
-    const copyText = document.getElementById(id) as HTMLInputElement
-    if (!copyText) {
-      return
-    }
-    copyText.select()
-    copyText.setSelectionRange(0, 99999)
-    navigator.clipboard.writeText(copyText.value)
+  const [isCopied, setIsCopied] = useState(false)
 
-    if (props.onCopy) {
-      props.onCopy()
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(value)
+
+    if (onCopy) {
+      onCopy()
     }
+
+    setIsCopied(true)
+
+    setTimeout(() => {
+      setIsCopied(false)
+    }, 2000)
   }
 
   return (
-    <div className="dark:border-polar-600 dark:bg-polar-700 flex w-full flex-row overflow-hidden rounded-lg border bg-white">
+    <div className="dark:border-polar-700 dark:bg-polar-800 flex w-full flex-row items-center overflow-hidden rounded-full border bg-white">
       <Input
-        id={props.id}
-        className="dark:text-polar-400 w-full grow rounded-l-lg rounded-r-none border-none font-mono text-sm text-gray-600"
-        onClick={() => {
-          copyToClipboard(props.id)
-        }}
-        value={props.value}
+        className="dark:text-polar-400 !focus:border-transparent !focus:ring-transparent !dark:focus:border-transparent !dark:focus:ring-transparent w-full grow border-none bg-transparent font-mono text-xs text-gray-600 focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:ring-transparent"
+        value={value}
         readOnly={true}
       />
-      <div
-        className="dark:bg-polar-500/30 dark:text-polar-300 flex cursor-pointer items-center justify-center bg-blue-50 px-3 py-2 text-sm font-medium text-blue-500"
-        onClick={() => {
-          copyToClipboard(props.id)
-        }}
+      <Button
+        className="mr-0.5 text-xs"
+        type="button"
+        variant="ghost"
+        onClick={copyToClipboard}
       >
-        Copy
-      </div>
+        {isCopied ? (
+          <CheckOutlined className="text-sm" fontSize="inherit" />
+        ) : (
+          'Copy'
+        )}
+      </Button>
     </div>
   )
 }

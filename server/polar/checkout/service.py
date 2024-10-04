@@ -931,7 +931,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             "metadata",
         }
 
-        if checkout.customer is not None:
+        if checkout.customer_id is not None:
             exclude.add("customer_email")
 
         for attr, value in checkout_update.model_dump(

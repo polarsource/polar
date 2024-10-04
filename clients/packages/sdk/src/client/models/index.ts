@@ -4817,6 +4817,12 @@ export interface CheckoutPublic {
      */
     is_payment_required: boolean;
     /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    customer_id: string | null;
+    /**
      * Name of the customer.
      * @type {string}
      * @memberof CheckoutPublic
@@ -11756,6 +11762,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     is_payment_required: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_id: string | null;
     /**
      * Name of the customer.
      * @type {string}

@@ -8578,10 +8578,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
                                 "paid_subscription",
                                 "donation",
-                                "order"
+                                "order",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -22852,6 +22852,18 @@
                         "title": "Is Payment Required",
                         "description": "Whether the checkout requires payment. Useful to detect free products."
                     },
+                    "customer_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Id"
+                    },
                     "customer_name": {
                         "anyOf": [
                             {
@@ -22949,6 +22961,7 @@
                     "product_id",
                     "product_price_id",
                     "is_payment_required",
+                    "customer_id",
                     "customer_name",
                     "customer_email",
                     "customer_ip_address",
@@ -37530,6 +37543,18 @@
                         "title": "Is Payment Required",
                         "description": "Whether the checkout requires payment. Useful to detect free products."
                     },
+                    "customer_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Id"
+                    },
                     "customer_name": {
                         "anyOf": [
                             {
@@ -37629,6 +37654,7 @@
                     "product_id",
                     "product_price_id",
                     "is_payment_required",
+                    "customer_id",
                     "customer_name",
                     "customer_email",
                     "customer_ip_address",

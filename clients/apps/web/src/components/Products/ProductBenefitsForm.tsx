@@ -171,6 +171,7 @@ const ProductBenefitsForm = ({
         <div className="flex flex-col gap-y-4">
           {Object.entries(benefitTypes).map(([type, title]) => (
             <BenefitsContainer
+              key={type}
               title={title}
               type={type as BenefitType}
               handleCheckedChange={handleCheckedChange}

@@ -22,7 +22,6 @@ import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,23 +42,21 @@ export default function ClientPage() {
   )
 
   return (
-    <DashboardBody className="flex flex-col gap-16">
-      <ShadowBoxOnMd className="flex flex-col gap-y-8">
-        <div className="flex flex-row items-center justify-between">
-          <h1 className="text-lg font-medium">Overview</h1>
-          <div className="flex flex-row items-center gap-6">
-            <Input
-              preSlot={<Search fontSize="small" />}
-              placeholder="Search Products"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Link href={`/dashboard/${org.slug}/products/new`}>
-              <Button size="icon" role="link">
-                <AddOutlined className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+    <DashboardBody>
+      <div className="flex flex-col gap-y-8">
+        <div className="flex flex-row items-center justify-between gap-6">
+          <Input
+            className="w-full max-w-64"
+            preSlot={<Search fontSize="small" />}
+            placeholder="Search Products"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Link href={`/dashboard/${org.slug}/products/new`}>
+            <Button size="icon" role="link">
+              <AddOutlined className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
         {(filteredProducts?.length ?? 0) > 0 && (
           <List size="small">
@@ -72,7 +69,7 @@ export default function ClientPage() {
             ))}
           </List>
         )}
-      </ShadowBoxOnMd>
+      </div>
     </DashboardBody>
   )
 }

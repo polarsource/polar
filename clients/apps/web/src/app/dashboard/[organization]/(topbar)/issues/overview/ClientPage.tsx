@@ -198,7 +198,7 @@ const OrganizationIssues = ({
   const allOrgRepositories = listRepositoriesQuery?.data?.items
 
   return (
-    <DashboardBody className="flex flex-col gap-y-8">
+    <DashboardBody>
       {!hasLinkedExternalOrganizations && (
         <GitHubAppInstallationUpsell organization={org} />
       )}

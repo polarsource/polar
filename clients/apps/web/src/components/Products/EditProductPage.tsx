@@ -164,7 +164,7 @@ export const EditProductPage = ({
   }, [product, updateProduct, organization, router])
 
   return (
-    <DashboardBody className="flex flex-col">
+    <DashboardBody>
       <div className="flex w-full max-w-xl flex-col gap-y-12">
         <div className="flex flex-col gap-y-8">
           <Form {...form}>

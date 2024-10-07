@@ -218,11 +218,11 @@ export const DashboardBody = (props: {
   return (
     <div
       className={twMerge(
-        'relative flex h-full flex-col gap-y-12 px-4 pb-6 sm:px-6 md:px-16',
+        'relative flex h-full flex-col px-4 pb-6 sm:px-6 md:px-16',
         props.className,
       )}
     >
-      <div className="flex flex-col gap-y-4 py-12">
+      <div className="flex flex-row items-center justify-between gap-y-4 py-12">
         <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
           {currentRoute?.title}
         </h4>

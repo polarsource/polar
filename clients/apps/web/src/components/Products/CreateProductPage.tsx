@@ -150,7 +150,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   }, [newProduct, saveDraft])
 
   return (
-    <DashboardBody className="flex flex-col pb-24">
+    <DashboardBody>
       <div className="flex w-full max-w-xl flex-col gap-y-16">
         <div className="flex flex-col gap-y-4">
           <p className="dark:text-polar-500 leading-relaxed text-gray-500">

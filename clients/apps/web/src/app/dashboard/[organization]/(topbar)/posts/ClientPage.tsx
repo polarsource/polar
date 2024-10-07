@@ -122,7 +122,7 @@ const ClientPage = () => {
 
   return (
     <>
-      <DashboardBody className="flex flex-col">
+      <DashboardBody>
         <div className="mb-24 flex w-full flex-col-reverse items-start gap-y-12 xl:flex-row xl:gap-x-12 xl:gap-y-0">
           <div className="flex w-full flex-1 flex-col gap-y-8">
             <div className="flex flex-row items-center justify-between">

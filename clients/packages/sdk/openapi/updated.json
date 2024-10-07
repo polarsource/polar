@@ -8503,9 +8503,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "paid_subscription",
-                                "donation",
+                                "free_subscription",
                                 "order",
-                                "free_subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -22394,16 +22394,18 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "maxLength": 500
                                 },
                                 "type": "object",
-                                "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
+                                "maxProperties": 50
                             },
                             {
                                 "type": "null"
                             }
                         ],
-                        "title": "Metadata"
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
                     },
                     "success_url": {
                         "anyOf": [
@@ -27897,6 +27899,13 @@
                         "title": "Id",
                         "description": "The ID of the object."
                     },
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Metadata"
+                    },
                     "amount": {
                         "type": "integer",
                         "title": "Amount"
@@ -27936,6 +27945,18 @@
                         ],
                         "title": "Subscription Id"
                     },
+                    "checkout_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checkout Id"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/OrderUser"
                     },
@@ -27961,6 +27982,7 @@
                     "created_at",
                     "modified_at",
                     "id",
+                    "metadata",
                     "amount",
                     "tax_amount",
                     "currency",
@@ -27968,6 +27990,7 @@
                     "product_id",
                     "product_price_id",
                     "subscription_id",
+                    "checkout_id",
                     "user",
                     "product",
                     "product_price",
@@ -28082,6 +28105,13 @@
             },
             "OrderSubscription": {
                 "properties": {
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Metadata"
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -28194,10 +28224,23 @@
                         "type": "string",
                         "format": "uuid4",
                         "title": "Price Id"
+                    },
+                    "checkout_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checkout Id"
                     }
                 },
                 "type": "object",
                 "required": [
+                    "metadata",
                     "created_at",
                     "modified_at",
                     "id",
@@ -28212,7 +28255,8 @@
                     "ended_at",
                     "user_id",
                     "product_id",
-                    "price_id"
+                    "price_id",
+                    "checkout_id"
                 ],
                 "title": "OrderSubscription"
             },
@@ -32705,6 +32749,25 @@
                         "format": "uuid4",
                         "title": "Price Id"
                     },
+                    "checkout_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checkout Id"
+                    },
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Metadata"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/SubscriptionUser"
                     },
@@ -32732,6 +32795,8 @@
                     "user_id",
                     "product_id",
                     "price_id",
+                    "checkout_id",
+                    "metadata",
                     "user",
                     "product",
                     "price"
@@ -35069,6 +35134,18 @@
                         "type": "string",
                         "format": "uuid4",
                         "title": "Price Id"
+                    },
+                    "checkout_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checkout Id"
                     }
                 },
                 "type": "object",
@@ -35087,7 +35164,8 @@
                     "ended_at",
                     "user_id",
                     "product_id",
-                    "price_id"
+                    "price_id",
+                    "checkout_id"
                 ],
                 "title": "UserOrderSubscription"
             },
@@ -35343,6 +35421,18 @@
                         "format": "uuid4",
                         "title": "Price Id"
                     },
+                    "checkout_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checkout Id"
+                    },
                     "product": {
                         "$ref": "#/components/schemas/UserSubscriptionProduct"
                     },
@@ -35367,6 +35457,7 @@
                     "user_id",
                     "product_id",
                     "price_id",
+                    "checkout_id",
                     "product",
                     "price"
                 ],
@@ -35785,6 +35876,50 @@
                 "title": "WebhookBenefitUpdatedPayload",
                 "description": "Sent when a benefit is updated.\n\n**Discord & Slack support:** Basic"
             },
+            "WebhookCheckoutCreatedPayload": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "checkout.created"
+                        ],
+                        "const": "checkout.created",
+                        "title": "Type"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/polar__checkout__schemas__Checkout"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "data"
+                ],
+                "title": "WebhookCheckoutCreatedPayload",
+                "description": "Sent when a new checkout is created.\n\n**Discord & Slack support:** Basic"
+            },
+            "WebhookCheckoutUpdatedPayload": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "checkout.updated"
+                        ],
+                        "const": "checkout.updated",
+                        "title": "Type"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/polar__checkout__schemas__Checkout"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "data"
+                ],
+                "title": "WebhookCheckoutUpdatedPayload",
+                "description": "Sent when a checkout is updated.\n\n**Discord & Slack support:** Basic"
+            },
             "WebhookDelivery": {
                 "properties": {
                     "created_at": {
@@ -36168,6 +36303,8 @@
             "WebhookEventType": {
                 "type": "string",
                 "enum": [
+                    "checkout.created",
+                    "checkout.updated",
                     "order.created",
                     "subscription.created",
                     "subscription.updated",
@@ -36735,8 +36872,7 @@
                             "type": "string"
                         },
                         "type": "object",
-                        "title": "Metadata",
-                        "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
+                        "title": "Metadata"
                     },
                     "url": {
                         "type": "string",
@@ -36776,6 +36912,16 @@
             },
             "polar__checkout__schemas__CheckoutCreate": {
                 "properties": {
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 500
+                        },
+                        "type": "object",
+                        "maxProperties": 50,
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                    },
                     "payment_processor": {
                         "type": "string",
                         "enum": [
@@ -36881,14 +37027,6 @@
                         ],
                         "title": "Success Url",
                         "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-                    },
-                    "metadata": {
-                        "additionalProperties": {
-                            "type": "string"
-                        },
-                        "type": "object",
-                        "title": "Metadata",
-                        "description": "Metadata to store with the checkout. Useful to store additional information about the checkout."
                     }
                 },
                 "type": "object",

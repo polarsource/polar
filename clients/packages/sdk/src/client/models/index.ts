@@ -4955,7 +4955,7 @@ export interface CheckoutUpdate {
      */
     customer_tax_id?: string | null;
     /**
-     * Metadata to store with the checkout. Useful to store additional information about the checkout.
+     * 
      * @type {{ [key: string]: string; }}
      * @memberof CheckoutUpdate
      */
@@ -9797,6 +9797,12 @@ export interface Order {
     id: string;
     /**
      * 
+     * @type {{ [key: string]: string; }}
+     * @memberof Order
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
      * @type {number}
      * @memberof Order
      */
@@ -9837,6 +9843,12 @@ export interface Order {
      * @memberof Order
      */
     subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    checkout_id: string | null;
     /**
      * 
      * @type {OrderUser}
@@ -9963,6 +9975,12 @@ export type OrderSortProperty = typeof OrderSortProperty[keyof typeof OrderSortP
  */
 export interface OrderSubscription {
     /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof OrderSubscription
+     */
+    metadata: { [key: string]: string; };
+    /**
      * Creation timestamp of the object.
      * @type {string}
      * @memberof OrderSubscription
@@ -10052,6 +10070,12 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    checkout_id: string | null;
 }
 
 
@@ -11805,7 +11829,7 @@ export interface PolarCheckoutSchemasCheckout {
      */
     payment_processor_metadata: object;
     /**
-     * Metadata to store with the checkout. Useful to store additional information about the checkout.
+     * 
      * @type {{ [key: string]: string; }}
      * @memberof PolarCheckoutSchemasCheckout
      */
@@ -11825,6 +11849,16 @@ export interface PolarCheckoutSchemasCheckout {
  * @interface PolarCheckoutSchemasCheckoutCreate
  */
 export interface PolarCheckoutSchemasCheckoutCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    metadata?: { [key: string]: string; };
     /**
      * Payment processor to use. Currently only Stripe is supported.
      * @type {string}
@@ -11879,12 +11913,6 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
     success_url?: string | null;
-    /**
-     * Metadata to store with the checkout. Useful to store additional information about the checkout.
-     * @type {{ [key: string]: string; }}
-     * @memberof PolarCheckoutSchemasCheckoutCreate
-     */
-    metadata?: { [key: string]: string; };
 }
 
 
@@ -14224,6 +14252,18 @@ export interface Subscription {
     price_id: string;
     /**
      * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    checkout_id: string | null;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof Subscription
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
      * @type {SubscriptionUser}
      * @memberof Subscription
      */
@@ -16134,6 +16174,12 @@ export interface UserOrderSubscription {
      * @memberof UserOrderSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    checkout_id: string | null;
 }
 
 
@@ -16345,6 +16391,12 @@ export interface UserSubscription {
      * @memberof UserSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    checkout_id: string | null;
     /**
      * 
      * @type {UserSubscriptionProduct}
@@ -16739,6 +16791,68 @@ export const WebhookBenefitUpdatedPayloadTypeEnum = {
 export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitUpdatedPayloadTypeEnum];
 
 /**
+ * Sent when a new checkout is created.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookCheckoutCreatedPayload
+ */
+export interface WebhookCheckoutCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookCheckoutCreatedPayload
+     */
+    type: WebhookCheckoutCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {PolarCheckoutSchemasCheckout}
+     * @memberof WebhookCheckoutCreatedPayload
+     */
+    data: PolarCheckoutSchemasCheckout;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookCheckoutCreatedPayloadTypeEnum = {
+    CHECKOUT_CREATED: 'checkout.created'
+} as const;
+export type WebhookCheckoutCreatedPayloadTypeEnum = typeof WebhookCheckoutCreatedPayloadTypeEnum[keyof typeof WebhookCheckoutCreatedPayloadTypeEnum];
+
+/**
+ * Sent when a checkout is updated.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookCheckoutUpdatedPayload
+ */
+export interface WebhookCheckoutUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookCheckoutUpdatedPayload
+     */
+    type: WebhookCheckoutUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {PolarCheckoutSchemasCheckout}
+     * @memberof WebhookCheckoutUpdatedPayload
+     */
+    data: PolarCheckoutSchemasCheckout;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookCheckoutUpdatedPayloadTypeEnum = {
+    CHECKOUT_UPDATED: 'checkout.updated'
+} as const;
+export type WebhookCheckoutUpdatedPayloadTypeEnum = typeof WebhookCheckoutUpdatedPayloadTypeEnum[keyof typeof WebhookCheckoutUpdatedPayloadTypeEnum];
+
+/**
  * A webhook delivery for a webhook event.
  * @export
  * @interface WebhookDelivery
@@ -16996,6 +17110,8 @@ export interface WebhookEvent {
  * @export
  */
 export const WebhookEventType = {
+    CHECKOUT_CREATED: 'checkout.created',
+    CHECKOUT_UPDATED: 'checkout.updated',
     ORDER_CREATED: 'order.created',
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',

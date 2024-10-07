@@ -62,7 +62,7 @@ const DashboardTopbar = () => {
             const link = (
               <Link
                 key={path}
-                href={href}
+                href={`/${href}`}
                 className={twMerge(
                   'dark:text-polar-500 dark:hover:bg-polar-800 rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-black dark:hover:text-white',
                   containsDash ? 'lowercase' : 'capitalize',

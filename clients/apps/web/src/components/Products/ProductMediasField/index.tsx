@@ -23,8 +23,8 @@ const DropzoneView = ({
         className={twMerge(
           'flex aspect-video w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent px-4',
           isDragActive
-            ? 'dark:border-polar-700 dark:bg-polar-950 border-blue-100 bg-blue-50'
-            : 'dark:border-polar-700 bg-gray-100 dark:bg-transparent',
+            ? 'dark:border-polar-800 dark:bg-polar-950 border-blue-100 bg-blue-50'
+            : 'dark:border-polar-800 bg-gray-100 dark:bg-transparent',
         )}
       >
         <div className="dark:text-polar-500 text-center text-gray-500">

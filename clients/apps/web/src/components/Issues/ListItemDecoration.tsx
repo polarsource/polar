@@ -169,7 +169,7 @@ const IssueListItemDecoration = ({
       </div>
 
       {showDisputeAction && showPledgeStatusBox && (
-        <div className="dark:bg-polar-900 dark:border-polar-700 border-t border-gray-100 bg-gray-50 px-6 pb-1.5 pt-1">
+        <div className="dark:bg-polar-900 dark:border-polar-800 border-t border-gray-100 bg-gray-50 px-6 pb-1.5 pt-1">
           {disputablePledges.map((p) => {
             return (
               <div key={p.id}>

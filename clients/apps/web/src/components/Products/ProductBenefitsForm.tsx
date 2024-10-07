@@ -267,7 +267,7 @@ const BenefitsContainer = ({
         </span>
       </div>
       {open || hasEnabledBenefits ? (
-        <div className="dark:border-polar-700 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
+        <div className="dark:border-polar-800 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
           {benefits.length > 0 ? (
             <div className="flex flex-col">
               {benefits.map((benefit) => {

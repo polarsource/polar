@@ -48,7 +48,7 @@ export const Slideshow = ({ images }: SlideshowProps) => {
   )
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex aspect-video w-full items-center justify-center overflow-hidden bg-gray-100 bg-cover bg-center dark:border">
+    <div className="dark:bg-polar-900 dark:border-polar-800 rounded-4xl relative flex aspect-video w-full items-center justify-center overflow-hidden bg-gray-100 bg-cover bg-center dark:border">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           className="absolute inset-0 h-full w-full bg-cover bg-center"
@@ -75,28 +75,28 @@ export const Slideshow = ({ images }: SlideshowProps) => {
               } else if (swipe > swipeConfidenceThreshold) {
                 paginate(-1)
               }
-            }
+            },
           })}
         />
       </AnimatePresence>
 
       {hasMultipleImages && (
-      <div className="absolute bottom-6 left-6 z-10 flex flex-row items-center justify-between gap-x-2">
-        <Button
-          className="h-8 w-8 rounded-full bg-white shadow-sm"
-          variant="secondary"
-          onClick={() => paginate(-1)}
-        >
-          <ChevronLeftRounded fontSize="inherit" />
-        </Button>
-        <Button
-          className="h-8 w-8 rounded-full bg-white shadow-sm"
-          variant="secondary"
-          onClick={() => paginate(1)}
-        >
-          <ChevronRightRounded fontSize="inherit" />
-        </Button>
-      </div>
+        <div className="absolute bottom-6 left-6 z-10 flex flex-row items-center justify-between gap-x-2">
+          <Button
+            className="h-8 w-8 rounded-full bg-white shadow-sm"
+            variant="secondary"
+            onClick={() => paginate(-1)}
+          >
+            <ChevronLeftRounded fontSize="inherit" />
+          </Button>
+          <Button
+            className="h-8 w-8 rounded-full bg-white shadow-sm"
+            variant="secondary"
+            onClick={() => paginate(1)}
+          >
+            <ChevronRightRounded fontSize="inherit" />
+          </Button>
+        </div>
       )}
     </div>
   )

@@ -127,7 +127,7 @@ export default function ClientPage({
                   </TabsList>
                 </div>
 
-                <div className="dark:bg-polar-800 dark:border-polar-700 relative min-h-[200px] rounded-2xl border border-gray-200 bg-gray-50 p-12">
+                <div className="dark:bg-polar-800 dark:border-polar-800 relative min-h-[200px] rounded-2xl border border-gray-200 bg-gray-50 p-12">
                   <div className="relative z-10 flex h-[20px] w-full flex-col items-center justify-around">
                     {/* Kind of hacky loading indicator _behind_ the image */}
                     {currentEmbedTab === 'Shield' ? (

@@ -113,7 +113,7 @@ const Popover = () => {
           onMouseDown={clickBell}
         />
         {showBadge && (
-          <div className="dark:border-polar-700 -ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
+          <div className="dark:border-polar-800 -ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
         )}
       </div>
 

@@ -102,7 +102,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         >
           <DashboardTopbar />
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="dark:bg-polar-900 dark:border-polar-700 border-gray-75 relative h-full w-full rounded-3xl border bg-white md:overflow-auto">
+          <main className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 relative h-full w-full rounded-3xl border bg-white md:overflow-auto">
             {props.children}
           </main>
         </div>
@@ -169,7 +169,7 @@ export const RepoPickerHeader = (props: {
   return (
     <>
       <form
-        className="dark:border-polar-700 flex flex-row items-center justify-between space-x-4 space-y-0 bg-transparent"
+        className="dark:border-polar-800 flex flex-row items-center justify-between space-x-4 space-y-0 bg-transparent"
         onSubmit={onSubmit}
       >
         <MaintainerRepoSelection

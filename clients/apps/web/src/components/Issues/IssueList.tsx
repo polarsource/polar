@@ -261,7 +261,7 @@ export const Header = (props: {
         {canFilterByBadged && (
           <>
             <DropdownMenu>
-              <DropdownMenuTrigger className="dark:hover:bg-polar-700 dark:border-polar-700 dark:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
+              <DropdownMenuTrigger className="dark:hover:bg-polar-700 dark:border-polar-800 dark:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
                 <FunnelIcon className="dark:text-polar-300 h-4 w-4" />
                 <span>Filter</span>
               </DropdownMenuTrigger>
@@ -288,7 +288,7 @@ export const Header = (props: {
         )}
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="dark:hover:bg-polar-700 dark:border-polar-700 dark:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
+          <DropdownMenuTrigger className="dark:hover:bg-polar-700 dark:border-polar-800 dark:bg-polar-800 inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50">
             <ArrowsUpDownIcon className="dark:text-polar-300 h-4 w-4" />
             <span>
               {props.filters?.sort

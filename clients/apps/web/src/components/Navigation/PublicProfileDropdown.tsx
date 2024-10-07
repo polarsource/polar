@@ -54,7 +54,7 @@ const PublicProfileDropdown = ({
       <div className={classNames}>
         <div
           className={twMerge(
-            'dark:border-polar-700 dark:hover:border-polar-600 relative flex flex-shrink-0 cursor-pointer flex-row items-center rounded-full border-2 border-blue-50 shadow-sm transition-colors hover:border-blue-100',
+            'dark:border-polar-800 dark:hover:border-polar-600 relative flex flex-shrink-0 cursor-pointer flex-row items-center rounded-full border-2 border-blue-50 shadow-sm transition-colors hover:border-blue-100',
           )}
           onClick={() => setOpen(true)}
         >
@@ -69,7 +69,7 @@ const PublicProfileDropdown = ({
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
+              'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-800 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
             )}
           >
             <Link

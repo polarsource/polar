@@ -22,7 +22,6 @@ import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
-import DashboardTopbar from '../Navigation/DashboardTopbar'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm'
 
@@ -165,92 +164,89 @@ export const EditProductPage = ({
   }, [product, updateProduct, organization, router])
 
   return (
-    <>
-      <DashboardTopbar title="Edit Product" hideSubNav />
-      <DashboardBody className="flex flex-col">
-        <div className="flex w-full max-w-xl flex-col gap-y-12">
-          <div className="flex flex-col gap-y-8">
-            <Form {...form}>
-              <form
-                onSubmit={handleSubmit(onSubmit)}
-                className="flex flex-col gap-y-6"
-              >
-                <ProductForm organization={organization} update={true} />
-              </form>
-            </Form>
-            <ProductBenefitsForm
-              className="w-full"
-              organization={organization}
-              organizationBenefits={organizationBenefits.filter(
-                (benefit) =>
-                  // Hide not selectable benefits unless they are already enabled
-                  benefit.selectable ||
-                  enabledBenefits.some((b) => b.id === benefit.id),
-              )}
-              benefits={enabledBenefits}
-              onSelectBenefit={onSelectBenefit}
-              onRemoveBenefit={onRemoveBenefit}
-            />
-            {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
-              <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-                Existing customers will immediately{' '}
-                {benefitsAdded.length > 0 && (
-                  <>
-                    get access to{' '}
-                    {benefitsAdded
-                      .map((benefit) => benefit.description)
-                      .join(', ')}
-                  </>
-                )}
-                {benefitsRemoved.length > 0 && (
-                  <>
-                    {benefitsAdded.length > 0 && ' and '}lose access to{' '}
-                    {benefitsRemoved
-                      .map((benefit) => benefit.description)
-                      .join(', ')}
-                  </>
-                )}
-                .
-              </div>
-            )}
-            <ShadowBox className="flex flex-col gap-6 p-6">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm font-medium">Archive Product</h3>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Archiving a product will not affect its current customers,
-                  only prevent new subscribers and purchases.
-                </p>
-              </div>
-              <Button
-                className="self-start"
-                variant="destructive"
-                onClick={showArchiveModal}
-                size="sm"
-              >
-                Archive
-              </Button>
-            </ShadowBox>
-            <ConfirmModal
-              title="Archive Product"
-              description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
-              onConfirm={handleArchiveProduct}
-              isShown={isArchiveModalShown}
-              hide={hideArchiveModal}
-              destructiveText="Archive"
-              destructive
-            />
-          </div>
-          <div className="flex flex-row items-center gap-2">
-            <Button
-              onClick={handleSubmit(onSubmit)}
-              loading={isLoading}
-              size="lg"
+    <DashboardBody className="flex flex-col">
+      <div className="flex w-full max-w-xl flex-col gap-y-12">
+        <div className="flex flex-col gap-y-8">
+          <Form {...form}>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-y-6"
             >
-              Save Product
+              <ProductForm organization={organization} update={true} />
+            </form>
+          </Form>
+          <ProductBenefitsForm
+            className="w-full"
+            organization={organization}
+            organizationBenefits={organizationBenefits.filter(
+              (benefit) =>
+                // Hide not selectable benefits unless they are already enabled
+                benefit.selectable ||
+                enabledBenefits.some((b) => b.id === benefit.id),
+            )}
+            benefits={enabledBenefits}
+            onSelectBenefit={onSelectBenefit}
+            onRemoveBenefit={onRemoveBenefit}
+          />
+          {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
+            <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+              Existing customers will immediately{' '}
+              {benefitsAdded.length > 0 && (
+                <>
+                  get access to{' '}
+                  {benefitsAdded
+                    .map((benefit) => benefit.description)
+                    .join(', ')}
+                </>
+              )}
+              {benefitsRemoved.length > 0 && (
+                <>
+                  {benefitsAdded.length > 0 && ' and '}lose access to{' '}
+                  {benefitsRemoved
+                    .map((benefit) => benefit.description)
+                    .join(', ')}
+                </>
+              )}
+              .
+            </div>
+          )}
+          <ShadowBox className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-sm font-medium">Archive Product</h3>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                Archiving a product will not affect its current customers, only
+                prevent new subscribers and purchases.
+              </p>
+            </div>
+            <Button
+              className="self-start"
+              variant="destructive"
+              onClick={showArchiveModal}
+              size="sm"
+            >
+              Archive
             </Button>
-          </div>
+          </ShadowBox>
+          <ConfirmModal
+            title="Archive Product"
+            description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
+            onConfirm={handleArchiveProduct}
+            isShown={isArchiveModalShown}
+            hide={hideArchiveModal}
+            destructiveText="Archive"
+            destructive
+          />
         </div>
-      </DashboardBody>
-    </>
+        <div className="flex flex-row items-center gap-2">
+          <Button
+            onClick={handleSubmit(onSubmit)}
+            loading={isLoading}
+            size="lg"
+          >
+            Save Product
+          </Button>
+        </div>
+      </div>
+    </DashboardBody>
   )
 }

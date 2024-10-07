@@ -3,7 +3,6 @@
 import revalidate from '@/app/actions'
 import { PostEditor } from '@/components/Feed/PostEditor'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
 import { useAlertIfUnsaved } from '@/hooks/editor'
 import { useArticleBySlug, useUpdateArticle } from '@/hooks/queries'
@@ -167,34 +166,32 @@ const ClientPage = () => {
 
   return (
     <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
-      <DashboardTopbar title="Edit Post" marginBottom={false}>
-        <div className="flex flex-row items-center gap-x-2">
-          <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
-            {isPublished ? 'Published' : 'Unpublished'}
-          </span>
-          {orgContext.organization.profile_settings?.enabled && (
-            <Link
-              href={organizationPageLink(
-                post.data.organization,
-                `posts/${post.data.slug}`,
-              )}
-              target="_blank"
-            >
-              <Button variant="secondary">
-                <span>Read</span>
-                <ArrowUpRightIcon className="ml-2 h-3 w-3" />
-              </Button>
-            </Link>
-          )}
-          <Button
-            disabled={!localHasDiff}
-            onClick={() => handleSave()}
-            loading={update.isPending}
+      <div className="flex flex-row items-center gap-x-2">
+        <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
+          {isPublished ? 'Published' : 'Unpublished'}
+        </span>
+        {orgContext.organization.profile_settings?.enabled && (
+          <Link
+            href={organizationPageLink(
+              post.data.organization,
+              `posts/${post.data.slug}`,
+            )}
+            target="_blank"
           >
-            Save
-          </Button>
-        </div>
-      </DashboardTopbar>
+            <Button variant="secondary">
+              <span>Read</span>
+              <ArrowUpRightIcon className="ml-2 h-3 w-3" />
+            </Button>
+          </Link>
+        )}
+        <Button
+          disabled={!localHasDiff}
+          onClick={() => handleSave()}
+          loading={update.isPending}
+        >
+          Save
+        </Button>
+      </div>
       <PostEditor
         article={post.data}
         title={localArticle.title}

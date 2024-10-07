@@ -25,10 +25,14 @@ const MaintainerNavigation = () => {
 
   return (
     <div className="flex flex-col gap-y-10">
-      <NavigationContainer routes={generalRoutesList} />
-      <NavigationContainer title="Funding" routes={fundingRoutes} />
-      <NavigationContainer title="Community" routes={communityRoutes} />
-      <NavigationContainer title="Organization" routes={organizationRoutes} />
+      <NavigationContainer
+        routes={[
+          ...generalRoutesList,
+          ...fundingRoutes,
+          ...communityRoutes,
+          ...organizationRoutes,
+        ]}
+      />
     </div>
   )
 }

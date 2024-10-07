@@ -237,7 +237,7 @@ const BenefitsContainer = ({
     <div className="flex flex-col gap-2">
       <div
         className={twMerge(
-          'dark:bg-polar-700 dark:hover:border-polar-600 group flex flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-2 text-sm transition-colors dark:border-transparent',
+          'dark:bg-polar-800 dark:hover:border-polar-700 group flex flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-2 text-sm transition-colors dark:border-transparent',
           hasEnabledBenefits ? '' : 'cursor-pointer hover:border-gray-100',
         )}
         onClick={() => !hasEnabledBenefits && setOpen((v) => !v)}

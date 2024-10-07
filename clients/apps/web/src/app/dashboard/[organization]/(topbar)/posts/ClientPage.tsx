@@ -261,7 +261,7 @@ const PostItem = (post: Article) => {
     >
       <div
         className={twMerge(
-          'dark:bg-polar-900 dark:hover:bg-polar-800 rounded-4xl flex flex-col justify-between gap-x-8 gap-y-6 bg-white p-8 shadow-sm transition-colors hover:bg-gray-50',
+          'dark:bg-polar-700 dark:hover:bg-polar-800 rounded-4xl flex flex-col justify-between gap-x-8 gap-y-6 bg-white p-8 shadow-sm transition-colors hover:bg-gray-50',
           post.paid_subscribers_only &&
             'border-white bg-gradient-to-l from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
         )}

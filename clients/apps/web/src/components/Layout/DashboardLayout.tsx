@@ -102,7 +102,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         >
           <DashboardTopbar />
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 relative h-full w-full rounded-3xl border bg-white md:overflow-auto">
+          <main className="relative flex h-full w-full flex-col md:overflow-auto">
             {props.children}
           </main>
         </div>
@@ -213,6 +213,7 @@ export const DashboardBody = (props: {
   children?: React.ReactNode
   className?: string
   title?: string
+  contextView?: React.ReactElement
 }) => {
   const currentRoute = useRoute()
 
@@ -223,25 +224,34 @@ export const DashboardBody = (props: {
   return (
     <div
       className={twMerge(
-        'relative flex h-full flex-col px-4 pb-6 sm:px-6 md:px-16',
+        'flex h-full w-full flex-row gap-x-6',
         props.className,
       )}
     >
-      <div className="flex flex-row items-center justify-between gap-y-4 py-12">
-        <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
-          {props.title ?? currentRoute?.title}
-        </h4>
+      <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 relative flex h-full w-full flex-col rounded-3xl border px-12">
+        <div className="flex h-full w-full max-w-screen-2xl flex-col">
+          <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">
+            <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
+              {props.title ?? currentRoute?.title}
+            </h4>
 
-        {currentRoute &&
-        'subs' in currentRoute &&
-        hasCurrent &&
-        (currentRoute.subs?.length ?? 0) > 0 ? (
-          <div className="flex flex-row items-center gap-4 gap-y-24">
-            <SubNav items={currentRoute.subs ?? []} />
+            {currentRoute &&
+            'subs' in currentRoute &&
+            hasCurrent &&
+            (currentRoute.subs?.length ?? 0) > 0 ? (
+              <div className="flex flex-row items-center gap-4 gap-y-24">
+                <SubNav items={currentRoute.subs ?? []} />
+              </div>
+            ) : null}
           </div>
-        ) : null}
+          <div className="flex w-full flex-col pb-8">{props.children}</div>
+        </div>
       </div>
-      <div className="flex flex-col pb-8">{props.children}</div>
+      {props.contextView ? (
+        <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 w-full max-w-96 overflow-y-auto rounded-3xl border bg-white p-8">
+          {props.contextView}
+        </div>
+      ) : null}
     </div>
   )
 }

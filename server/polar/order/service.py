@@ -9,6 +9,7 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -24,6 +25,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import (
+    Checkout,
     HeldBalance,
     Order,
     Organization,
@@ -89,6 +91,17 @@ class ProductPriceDoesNotExist(OrderError):
         message = (
             f"Received invoice {invoice_id} from Stripe with price {stripe_price_id}, "
             f"but no associated ProductPrice exists."
+        )
+        super().__init__(message)
+
+
+class CheckoutDoesNotExist(OrderError):
+    def __init__(self, invoice_id: str, checkout_id: str) -> None:
+        self.invoice_id = invoice_id
+        self.checkout_id = checkout_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe with checkout {checkout_id}, "
+            f"but no associated Checkout exists."
         )
         super().__init__(message)
 
@@ -268,6 +281,16 @@ class OrderService(ResourceServiceReader[Order]):
 
         product = product_price.product
 
+        # Get Checkout if available
+        checkout: Checkout | None = None
+        if (
+            invoice.metadata
+            and (checkout_id := invoice.metadata.get("checkout_id")) is not None
+        ):
+            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
+            if checkout is None:
+                raise CheckoutDoesNotExist(invoice.id, checkout_id)
+
         user: User | None = None
 
         # Get subscription if applicable
@@ -310,6 +333,8 @@ class OrderService(ResourceServiceReader[Order]):
             product=product,
             product_price=product_price,
             subscription=subscription,
+            checkout=checkout,
+            user_metadata=checkout.user_metadata if checkout is not None else {},
         )
         session.add(order)
         await session.flush()

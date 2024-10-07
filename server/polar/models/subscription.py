@@ -18,9 +18,10 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
+from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
-    from polar.models import BenefitGrant, Product, ProductPrice, User
+    from polar.models import BenefitGrant, Checkout, Product, ProductPrice, User
 
 
 class SubscriptionStatus(StrEnum):
@@ -33,7 +34,7 @@ class SubscriptionStatus(StrEnum):
     unpaid = "unpaid"
 
 
-class Subscription(RecordModel):
+class Subscription(MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
     amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -91,6 +92,14 @@ class Subscription(RecordModel):
         return relationship(
             "ProductPrice", lazy="raise", back_populates="subscriptions"
         )
+
+    checkout_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
+    )
+
+    @declared_attr
+    def checkout(cls) -> Mapped["Checkout | None"]:
+        return relationship("Checkout", lazy="raise")
 
     @declared_attr
     def grants(cls) -> Mapped[list["BenefitGrant"]]:

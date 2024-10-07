@@ -595,6 +595,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
             "product_price_id": str(checkout.product_price_id),
+            "checkout_id": str(checkout.id),
         }
         idempotency_key = f"checkout_{checkout.id}"
 
@@ -629,7 +630,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     currency=checkout.currency or "usd",
                     price=stripe_price_id,
                     metadata=metadata,
-                    invoice_metadata={"payment_intent_id": payment_intent.id},
+                    invoice_metadata={
+                        "payment_intent_id": payment_intent.id,
+                        "checkout_id": str(checkout.id),
+                    },
                     idempotency_key=idempotency_key,
                 )
             )
@@ -719,6 +723,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
             "product_price_id": str(checkout.product_price_id),
+            "checkout_id": str(checkout.id),
         }
         idempotency_key = f"checkout_{checkout.id}"
 

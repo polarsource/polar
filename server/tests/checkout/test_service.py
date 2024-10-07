@@ -300,6 +300,7 @@ class TestCreate:
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
+                metadata={"key": "value"},
             ),
             auth_subject,
         )
@@ -308,6 +309,7 @@ class TestCreate:
         assert checkout.product == product_one_time
         assert checkout.amount == price.price_amount
         assert checkout.currency == price.price_currency
+        assert checkout.user_metadata == {"key": "value"}
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -330,6 +332,7 @@ class TestCreate:
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
+                metadata={"key": "value"},
             ),
             auth_subject,
         )
@@ -338,6 +341,7 @@ class TestCreate:
         assert checkout.product == product_one_time_free_price
         assert checkout.amount is None
         assert checkout.currency is None
+        assert checkout.user_metadata == {"key": "value"}
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -363,6 +367,7 @@ class TestCreate:
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
+                metadata={"key": "value"},
             ),
             auth_subject,
         )
@@ -374,6 +379,7 @@ class TestCreate:
         else:
             assert checkout.amount == amount
         assert checkout.currency == price.price_currency
+        assert checkout.user_metadata == {"key": "value"}
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -939,6 +945,21 @@ class TestUpdate:
         )
 
         assert checkout.customer_email == user.email
+
+    async def test_valid_metadata(
+        self,
+        session: AsyncSession,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_free,
+            CheckoutUpdate(
+                metadata={"key": "value"},
+            ),
+        )
+
+        assert checkout.user_metadata == {"key": "value"}
 
 
 @pytest.mark.asyncio

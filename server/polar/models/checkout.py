@@ -12,6 +12,7 @@ from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
+from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 
 from .product import Product
@@ -31,7 +32,7 @@ class CheckoutStatus(StrEnum):
     failed = "failed"
 
 
-class Checkout(RecordModel):
+class Checkout(MetadataMixin, RecordModel):
     __tablename__ = "checkouts"
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(
@@ -45,9 +46,6 @@ class Checkout(RecordModel):
     )
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=get_expires_at
-    )
-    user_metadata: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
     )
     payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict

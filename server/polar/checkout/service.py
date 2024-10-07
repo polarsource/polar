@@ -319,7 +319,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
-            user_metadata=checkout_create.metadata,
             product=product,
             product_price=price,
             customer_billing_address=checkout_create.customer_billing_address,
@@ -330,8 +329,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     "amount",
                     "customer_billing_address",
                     "customer_tax_id",
-                    "metadata",
-                }
+                },
+                by_alias=True,
             ),
         )
         session.add(checkout)
@@ -917,25 +916,18 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         ]
                     ) from e
 
-        if (
-            isinstance(checkout_update, CheckoutUpdate)
-            and checkout_update.metadata is not None
-        ):
-            checkout.user_metadata = checkout_update.metadata
-
         exclude = {
             "product_price_id",
             "amount",
             "customer_billing_address",
             "customer_tax_id",
-            "metadata",
         }
 
         if checkout.customer_id is not None:
             exclude.add("customer_email")
 
         for attr, value in checkout_update.model_dump(
-            exclude_unset=True, exclude=exclude
+            exclude_unset=True, exclude=exclude, by_alias=True
         ).items():
             setattr(checkout, attr, value)
 

@@ -6,6 +6,11 @@ from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress, computed_field
 from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
+from polar.kit.metadata import (
+    MetadataInputMixin,
+    MetadataOutputMixin,
+    OptionalMetadataInputMixin,
+)
 from polar.kit.schemas import (
     EmailStrDNS,
     EmptyStrToNoneValidator,
@@ -53,28 +58,9 @@ SuccessURL = Annotated[
         )
     ),
 ]
-InputMetadata = Annotated[
-    dict[str, str],
-    Field(
-        description=(
-            "Metadata to store with the checkout. "
-            "Useful to store additional information about the checkout."
-        )
-    ),
-]
-OutputMetadata = Annotated[
-    dict[str, str],
-    Field(
-        description=(
-            "Metadata to store with the checkout. "
-            "Useful to store additional information about the checkout."
-        ),
-        validation_alias="user_metadata",
-    ),
-]
 
 
-class CheckoutCreate(Schema):
+class CheckoutCreate(MetadataInputMixin, Schema):
     """Create a new checkout session."""
 
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
@@ -88,7 +74,6 @@ class CheckoutCreate(Schema):
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     success_url: SuccessURL = None
-    metadata: InputMetadata = Field(default_factory=dict)
 
 
 class CheckoutCreatePublic(Schema):
@@ -114,10 +99,9 @@ class CheckoutUpdateBase(Schema):
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
-class CheckoutUpdate(CheckoutUpdateBase):
+class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
     """Update an existing checkout session using an access token."""
 
-    metadata: InputMetadata | None = None
     success_url: SuccessURL = None
 
 
@@ -187,10 +171,8 @@ class CheckoutBase(IDSchema, TimestampedSchema):
         return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
 
 
-class Checkout(CheckoutBase):
+class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
-
-    metadata: OutputMetadata
 
 
 class CheckoutPublic(CheckoutBase):

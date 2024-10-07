@@ -16,7 +16,7 @@ import { LinkItem, ListItem, Profile } from './Navigation'
 
 const DashboardProfileDropdown = ({ className = '' }) => {
   const classNames = twMerge(
-    'relative flex w-full flex-col rounded-full bg-gray-100 hover:bg-gray-75 dark:hover:bg-polar-700 dark:bg-polar-800 transition-colors z-40',
+    'relative flex w-full flex-col rounded-full bg-gray-100 hover:bg-gray-75 dark:hover:bg-polar-800 dark:bg-polar-900 transition-colors z-40 border border-transparent dark:border-polar-800',
     className,
   )
   const { currentUser: loggedUser } = useAuth()
@@ -63,7 +63,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         <div
           ref={ref}
           className={twMerge(
-            'dark:bg-polar-800 dark:text-polar-400 rounded-4xl absolute -left-1 -top-1 right-0 overflow-hidden bg-white p-2 shadow-xl',
+            'dark:bg-polar-900 dark:text-polar-400 rounded-4xl dark:border-polar-800 border:transparent absolute -left-2 -top-2 right-0 overflow-hidden border bg-white p-2 shadow-xl',
           )}
         >
           {orgs.length > 0 ? (
@@ -107,7 +107,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
               }
             >
               <span className="mx-2 text-blue-500 dark:text-blue-400">
-                Go to sandbox
+                Open Sandbox
               </span>
             </LinkItem>
           )}

@@ -51,13 +51,14 @@ const DashboardTopbar = () => {
 
   const Breadcrumbs = useCallback(() => {
     return (
-      <div className="flex flex-row items-center gap-x-1 text-sm">
+      <div className="flex flex-row items-center gap-x-0.5 text-xs">
         {pathname
           .split('/')
           .filter(Boolean)
           .flatMap((path, index, arr) => {
             const href = arr.slice(0, index + 1).join('/')
             const containsDash = path.includes('-')
+            const isCurrent = index === arr.length - 1
 
             const link = (
               <Link
@@ -66,6 +67,10 @@ const DashboardTopbar = () => {
                 className={twMerge(
                   'dark:text-polar-500 dark:hover:bg-polar-800 rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-black dark:hover:text-white',
                   containsDash ? 'lowercase' : 'capitalize',
+
+                  isCurrent
+                    ? 'dark:bg-polar-800 bg-gray-100 text-black dark:text-white'
+                    : '',
                 )}
               >
                 {path}

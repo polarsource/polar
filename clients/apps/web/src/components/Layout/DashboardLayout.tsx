@@ -89,7 +89,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   const { organization } = useContext(MaintainerOrganizationContext)
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col gap-x-12 md:flex-row md:p-8">
+      <div className="relative flex h-full w-full flex-col gap-x-8 md:flex-row md:p-6">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
@@ -212,8 +212,13 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
 export const DashboardBody = (props: {
   children?: React.ReactNode
   className?: string
+  title?: string
 }) => {
   const currentRoute = useRoute()
+
+  const hasCurrent = (currentRoute?.subs as SubRouteWithActive[])?.some(
+    (i) => i.isActive,
+  )
 
   return (
     <div
@@ -224,18 +229,19 @@ export const DashboardBody = (props: {
     >
       <div className="flex flex-row items-center justify-between gap-y-4 py-12">
         <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
-          {currentRoute?.title}
+          {props.title ?? currentRoute?.title}
         </h4>
 
         {currentRoute &&
         'subs' in currentRoute &&
+        hasCurrent &&
         (currentRoute.subs?.length ?? 0) > 0 ? (
           <div className="flex flex-row items-center gap-4 gap-y-24">
             <SubNav items={currentRoute.subs ?? []} />
           </div>
         ) : null}
       </div>
-      <div className="flex flex-col">{props.children}</div>
+      <div className="flex flex-col pb-8">{props.children}</div>
     </div>
   )
 }

@@ -102,7 +102,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         >
           <DashboardTopbar />
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="relative flex h-full w-full flex-col md:overflow-auto">
+          <main className="relative flex min-h-0 w-full flex-grow flex-col">
             {props.children}
           </main>
         </div>
@@ -222,13 +222,8 @@ export const DashboardBody = (props: {
   )
 
   return (
-    <div
-      className={twMerge(
-        'flex h-full w-full flex-row gap-x-6',
-        props.className,
-      )}
-    >
-      <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 relative flex h-full w-full flex-col rounded-3xl border px-12">
+    <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
+      <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 relative flex w-full flex-col rounded-2xl border px-12 md:overflow-y-auto">
         <div className="flex h-full w-full max-w-screen-2xl flex-col">
           <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">
             <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
@@ -244,11 +239,15 @@ export const DashboardBody = (props: {
               </div>
             ) : null}
           </div>
-          <div className="flex w-full flex-col pb-8">{props.children}</div>
+          <div
+            className={twMerge('flex w-full flex-col pb-8', props.className)}
+          >
+            {props.children}
+          </div>
         </div>
       </div>
       {props.contextView ? (
-        <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 w-full max-w-96 overflow-y-auto rounded-3xl border bg-white p-8">
+        <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 w-full max-w-96 overflow-y-auto rounded-3xl border bg-white p-8 py-12">
           {props.contextView}
         </div>
       ) : null}

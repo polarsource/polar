@@ -81,7 +81,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         render={({ field }) => {
           return (
             <FormItem className="grow">
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <FormControl>
                   <MoneyInput
                     name={field.name}
@@ -397,14 +397,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
                 <TabsTrigger
                   className="flex-grow"
                   value={ProductPriceType.ONE_TIME}
-                  size="small"
                 >
                   Pay Once
                 </TabsTrigger>
                 <TabsTrigger
                   className="flex-grow"
                   value={ProductPriceType.RECURRING}
-                  size="small"
                 >
                   Subscription
                 </TabsTrigger>

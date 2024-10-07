@@ -53,8 +53,9 @@ export default function ClientPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <Link href={`/dashboard/${org.slug}/products/new`}>
-            <Button size="icon" role="link">
+            <Button role="link" wrapperClassNames="gap-x-2">
               <AddOutlined className="h-4 w-4" />
+              <span>New Product</span>
             </Button>
           </Link>
         </div>

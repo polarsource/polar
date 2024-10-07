@@ -20,7 +20,6 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { Textarea } from 'polarkit/components/ui/textarea'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
@@ -51,14 +50,60 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     setSelectedBenefit(benefits?.items[0])
   }, [benefits])
 
+  const selectedBenefitContextView = useMemo(() => {
+    return selectedBenefit ? (
+      <div className="flex flex-col gap-y-8">
+        <div className="flex flex-row items-start gap-x-3 align-middle">
+          <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
+            {resolveBenefitIcon(selectedBenefit, 'inherit', 'h-3 w-3')}
+          </span>
+          <span className="text-sm">{selectedBenefit.description}</span>
+        </div>
+
+        <div className="flex flex-col gap-y-4">
+          <h3 className="font-medium">Products</h3>
+
+          {benefitProducts?.items.length ? (
+            <List size="small">
+              {benefitProducts.items.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/dashboard/${organization.slug}/products/${product.id}`}
+                >
+                  <ListItem className="text-sm" size="small">
+                    <span>{product.name}</span>
+                    <span className="dark:text-polar-500 text-xs text-gray-500">
+                      {product.benefits.length > 0
+                        ? `${product.benefits.length} ${product.benefits.length === 1 ? 'Benefit' : 'Benefits'}`
+                        : null}
+                    </span>
+                  </ListItem>
+                </Link>
+              ))}
+            </List>
+          ) : (
+            <span className="text-sm text-gray-500">
+              Benefit not tied to any product
+            </span>
+          )}
+        </div>
+
+        {selectedBenefit.type === 'ads' ? (
+          <AdsBenefitContent benefit={selectedBenefit} />
+        ) : null}
+      </div>
+    ) : undefined
+  }, [selectedBenefit, benefitProducts])
+
   return (
-    <DashboardBody>
+    <DashboardBody contextView={selectedBenefitContextView}>
       <div className="flex flex-row items-start gap-x-16">
-        <div className="flex w-2/3 flex-col gap-y-8">
+        <div className="flex w-full flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between">
             <h2 className="text-lg font-medium">Benefits</h2>
-            <Button className="h-8 w-8 rounded-full" onClick={toggle}>
+            <Button wrapperClassNames="gap-x-2" onClick={toggle}>
               <AddOutlined fontSize="inherit" />
+              <span>New Benefit</span>
             </Button>
           </div>
           {(benefits?.items.length ?? 0) > 0 && (
@@ -81,48 +126,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             </List>
           )}
         </div>
-        {selectedBenefit && (
-          <ShadowBoxOnMd className="sticky top-8 flex w-1/3 flex-col gap-y-8">
-            <div className="flex flex-row items-start gap-x-3 align-middle">
-              <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                {resolveBenefitIcon(selectedBenefit, 'inherit', 'h-3 w-3')}
-              </span>
-              <span className="text-sm">{selectedBenefit.description}</span>
-            </div>
-
-            <div className="flex flex-col gap-y-4">
-              <h3 className="font-medium">Products</h3>
-
-              {benefitProducts?.items.length ? (
-                <List size="small">
-                  {benefitProducts.items.map((product) => (
-                    <Link
-                      key={product.id}
-                      href={`/dashboard/${organization.slug}/products/${product.id}`}
-                    >
-                      <ListItem className="text-sm" size="small">
-                        <span>{product.name}</span>
-                        <span className="dark:text-polar-500 text-xs text-gray-500">
-                          {product.benefits.length > 0
-                            ? `${product.benefits.length} ${product.benefits.length === 1 ? 'Benefit' : 'Benefits'}`
-                            : null}
-                        </span>
-                      </ListItem>
-                    </Link>
-                  ))}
-                </List>
-              ) : (
-                <span className="text-sm text-gray-500">
-                  Benefit not tied to any product
-                </span>
-              )}
-            </div>
-
-            {selectedBenefit.type === 'ads' ? (
-              <AdsBenefitContent benefit={selectedBenefit} />
-            ) : null}
-          </ShadowBoxOnMd>
-        )}
 
         <InlineModal
           isShown={isShown}

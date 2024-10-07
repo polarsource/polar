@@ -192,6 +192,7 @@ export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
   user_id: '123',
   product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
   price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
+  checkout_id: null,
   product: SUBSCRIPTION_PRODUCT_PREVIEW,
   price: {
     id: '123',

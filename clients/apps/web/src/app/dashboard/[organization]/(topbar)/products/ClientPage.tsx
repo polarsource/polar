@@ -82,7 +82,7 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="flex aspect-square h-8 flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
+    <div className="flex aspect-square h-8 flex-col items-center justify-center text-center">
       {coverUrl ? (
         <img
           src={coverUrl}
@@ -91,8 +91,8 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
         />
       ) : (
         <TextureOutlined
-          fontSize="small"
-          className="dark:text-polar-500 text-gray-500"
+          fontSize="large"
+          className="dark:text-polar-700 text-gray-300"
         />
       )}
     </div>

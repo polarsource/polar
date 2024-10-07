@@ -26,10 +26,10 @@ const SectionDescription = ({
   description?: string
 }) => {
   return (
-    <div className="flex w-full flex-shrink-0 flex-col gap-y-2 md:w-1/3">
+    <div className="flex w-full flex-shrink-0 flex-col gap-y-2 md:w-2/5">
       <h2 className="text-lg font-medium">{title}</h2>
       {description && (
-        <p className="dark:text-polar-500 text-balance text-gray-500">
+        <p className="dark:text-polar-500 text-balance leading-normal text-gray-500">
           {description}
         </p>
       )}

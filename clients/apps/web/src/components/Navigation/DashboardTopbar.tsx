@@ -51,13 +51,13 @@ const DashboardTopbar = () => {
 
   const Breadcrumbs = useCallback(() => {
     return (
-      <div className="flex flex-row items-center gap-x-0.5 text-xs">
+      <div className="text-xxs flex flex-row items-center gap-x-0.5 font-mono">
         {pathname
           .split('/')
           .filter(Boolean)
           .flatMap((path, index, arr) => {
             const href = arr.slice(0, index + 1).join('/')
-            const containsDash = path.includes('-')
+            const normalizePath = !path.includes('-') && path !== org.slug
             const isCurrent = index === arr.length - 1
 
             const link = (
@@ -66,8 +66,7 @@ const DashboardTopbar = () => {
                 href={`/${href}`}
                 className={twMerge(
                   'dark:text-polar-500 dark:hover:bg-polar-800 rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-black dark:hover:text-white',
-                  containsDash ? '!text-xxs font-mono lowercase' : 'capitalize',
-
+                  normalizePath ? 'capitalize' : 'lowercase',
                   isCurrent
                     ? 'dark:bg-polar-800 bg-gray-100 text-black dark:text-white'
                     : '',

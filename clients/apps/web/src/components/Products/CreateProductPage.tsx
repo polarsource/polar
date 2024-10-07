@@ -150,41 +150,33 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   }, [newProduct, saveDraft])
 
   return (
-    <DashboardBody title="Create Product">
-      <div className="flex flex-col gap-y-16">
-        <div className="flex flex-col gap-y-4">
-          <p className="dark:text-polar-500 leading-relaxed text-gray-500">
-            Products are packaged benefits which can be purchased at a fixed
-            one-time or recurring price.
-          </p>
-        </div>
-        <div className="flex flex-col gap-y-8">
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-6"
-            >
-              <ProductForm organization={organization} update={false} />
-            </form>
-          </Form>
-          <ProductBenefitsForm
-            organization={organization}
-            organizationBenefits={organizationBenefits.filter(
-              (benefit) =>
-                // Hide not selectable benefits unless they are already enabled
-                benefit.selectable ||
-                enabledBenefits.some((b) => b.id === benefit.id),
-            )}
-            benefits={enabledBenefits}
-            onSelectBenefit={onSelectBenefit}
-            onRemoveBenefit={onRemoveBenefit}
-          />
-        </div>
-        <div className="flex flex-row items-center gap-2">
-          <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
-            Create Product
-          </Button>
-        </div>
+    <DashboardBody title="Create Product" className="gap-y-16">
+      <div className="flex flex-col gap-y-8">
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-y-6"
+          >
+            <ProductForm organization={organization} update={false} />
+          </form>
+        </Form>
+        <ProductBenefitsForm
+          organization={organization}
+          organizationBenefits={organizationBenefits.filter(
+            (benefit) =>
+              // Hide not selectable benefits unless they are already enabled
+              benefit.selectable ||
+              enabledBenefits.some((b) => b.id === benefit.id),
+          )}
+          benefits={enabledBenefits}
+          onSelectBenefit={onSelectBenefit}
+          onRemoveBenefit={onRemoveBenefit}
+        />
+      </div>
+      <div className="flex flex-row items-center gap-2">
+        <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+          Create Product
+        </Button>
       </div>
     </DashboardBody>
   )

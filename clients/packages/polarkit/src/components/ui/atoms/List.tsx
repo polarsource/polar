@@ -10,7 +10,7 @@ export const List = ({ children, className, size = 'default' }: ListProps) => {
   return children ? (
     <div
       className={twMerge(
-        'dark:divide-polar-700 dark:border-polar-800 dark:bg-polar-900 flex flex-col divide-y divide-gray-100 overflow-hidden border border-gray-100 bg-white',
+        'dark:divide-polar-700 dark:border-polar-700 dark:bg-polar-900 flex flex-col divide-y divide-gray-100 overflow-hidden border border-gray-100 bg-white',
         size === 'default' ? 'rounded-4xl' : 'rounded-2xl',
         className,
       )}

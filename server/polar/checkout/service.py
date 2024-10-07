@@ -46,10 +46,13 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.product_price import ProductPriceFree
+from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.user.service.user import user as user_service
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .sorting import CheckoutSortProperty
@@ -341,6 +344,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         except TaxCalculationError:
             pass
 
+        await session.flush()
+        await self._after_checkout_created(session, checkout)
+
         return checkout
 
     async def client_create(
@@ -430,6 +436,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 }
 
         session.add(checkout)
+
+        await session.flush()
+        await self._after_checkout_created(session, checkout)
+
         return checkout
 
     async def update(
@@ -444,6 +454,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         # Swallow incomplete tax calculation error: require it only on confirm
         except TaxCalculationError:
             pass
+
+        await self._after_checkout_updated(session, checkout)
         return checkout
 
     async def confirm(
@@ -563,6 +575,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         checkout.status = CheckoutStatus.confirmed
         session.add(checkout)
+
+        await self._after_checkout_updated(session, checkout)
+
         return checkout
 
     async def handle_stripe_success(
@@ -667,9 +682,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
 
-        await publish(
-            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
-        )
+        await self._after_checkout_updated(session, checkout)
 
         return checkout
 
@@ -693,9 +706,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout.status = CheckoutStatus.failed
         session.add(checkout)
 
-        await publish(
-            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
-        )
+        await self._after_checkout_updated(session, checkout)
 
         return checkout
 
@@ -754,9 +765,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
 
-        await publish(
-            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
-        )
+        await self._after_checkout_updated(session, checkout)
 
         return checkout
 
@@ -1016,6 +1025,31 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         return stripe_customer_id
+
+    async def _after_checkout_created(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> None:
+        organization = await organization_service.get(
+            session, checkout.product.organization_id
+        )
+        assert organization is not None
+        await webhook_service.send(
+            session, organization, (WebhookEventType.checkout_created, checkout)
+        )
+
+    async def _after_checkout_updated(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> None:
+        await publish(
+            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
+        )
+        organization = await organization_service.get(
+            session, checkout.product.organization_id
+        )
+        assert organization is not None
+        await webhook_service.send(
+            session, organization, (WebhookEventType.checkout_updated, checkout)
+        )
 
     def _get_readable_checkout_statement(
         self, auth_subject: AuthSubject[User | Organization]

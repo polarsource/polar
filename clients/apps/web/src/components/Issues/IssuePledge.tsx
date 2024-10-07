@@ -126,7 +126,7 @@ const IssuePledge = (props: Props) => {
       {selfMadePledges.map((p) => (
         <div
           className={twMerge(
-            'dark:border-polar-700 border-t',
+            'dark:border-polar-800 border-t',
             'bg-gray-75 flex flex-row items-center gap-2 px-6 py-2 text-sm  dark:bg-transparent',
           )}
           key={p.id}

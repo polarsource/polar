@@ -59,7 +59,7 @@ export const Share = ({
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute left-0 top-12 z-50 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
+              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-800 absolute left-0 top-12 z-50 w-[300px] overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
             )}
           >
             <LinkItem

@@ -23,7 +23,7 @@ const FeatureItem = ({
   return (
     <Link
       className={twMerge(
-        'dark:border-polar-700 group flex h-full flex-col rounded-3xl border border-gray-100 bg-transparent p-8 transition-colors dark:bg-transparent',
+        'dark:border-polar-800 group flex h-full flex-col rounded-3xl border border-gray-100 bg-transparent p-8 transition-colors dark:bg-transparent',
         className,
       )}
       href={link ?? '#'}

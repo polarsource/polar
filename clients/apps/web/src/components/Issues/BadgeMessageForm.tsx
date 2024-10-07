@@ -101,7 +101,7 @@ const BadgeMessageForm = (props: {
       <div
         className={twMerge(
           props.innerClassNames,
-          'dark:bg-polar-900 dark:border-polar-700 rounded-2xl bg-white p-8 dark:border',
+          'dark:bg-polar-900 dark:border-polar-800 rounded-2xl bg-white p-8 dark:border',
         )}
       >
         {descriptionMode === 'View' && (

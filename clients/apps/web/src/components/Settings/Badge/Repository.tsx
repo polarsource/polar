@@ -168,7 +168,7 @@ export const BadgeRepository = ({
           {showControls && (
             <div className="flex flex-row justify-end space-x-2 align-middle">
               {repo.is_private && (
-                <p className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <p className="dark:bg-polar-800 dark:border-polar-800 dark:text-polar-400 flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600">
                   Private
                 </p>
               )}

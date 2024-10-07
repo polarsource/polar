@@ -29,7 +29,6 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import React from 'react'
 
 interface ClientPageProps {
@@ -259,24 +258,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   return (
     <DashboardBody>
-      <ShadowBoxOnMd className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-lg font-medium">Overview</h1>
-          <div className="flex items-center gap-2">
-            <div className="w-full min-w-[180px]">
-              <SubscriptionStatusSelect
-                statuses={['active', 'canceled']}
-                value={subscriptionStatus || 'active'}
-                onChange={setStatus}
-              />
-            </div>
-            <div className="w-full min-w-[180px]">
-              <SubscriptionTiersSelect
-                products={subscriptionTiers.data?.items || []}
-                value={productId || 'all'}
-                onChange={setFilter}
-              />
-            </div>
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center justify-start gap-4">
+          <div className="w-full max-w-[180px]">
+            <SubscriptionStatusSelect
+              statuses={['active', 'canceled']}
+              value={subscriptionStatus || 'active'}
+              onChange={setStatus}
+            />
+          </div>
+          <div className="w-full max-w-[180px]">
+            <SubscriptionTiersSelect
+              products={subscriptionTiers.data?.items || []}
+              value={productId || 'all'}
+              onChange={setFilter}
+            />
           </div>
         </div>
         {subscriptions && pageCount !== undefined && (
@@ -301,7 +297,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <span>Export</span>
           </Button>
         </div>
-      </ShadowBoxOnMd>
+      </div>
     </DashboardBody>
   )
 }

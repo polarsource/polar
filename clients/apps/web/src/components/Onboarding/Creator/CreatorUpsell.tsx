@@ -37,7 +37,7 @@ export const CreatorUpsell = () => {
             </p>
           </div>
           <div className="flex flex-col">
-            <pre className="dark:border-polar-700 dark:bg-polar-950 rounded-3xl border p-4 text-sm">
+            <pre className="dark:border-polar-800 dark:bg-polar-950 rounded-3xl border p-4 text-sm">
               <SyntaxHighlighterProvider>
                 <SyntaxHighlighterClient
                   lang="javascript"

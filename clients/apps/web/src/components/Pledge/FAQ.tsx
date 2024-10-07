@@ -116,11 +116,11 @@ const FAQ: NextLayoutComponentType = () => {
     <>
       <div className="w-full">
         <div className="relative mb-8 flex items-center">
-          <div className="dark:border-polar-700 flex-grow border-t border-gray-200"></div>
+          <div className="dark:border-polar-800 flex-grow border-t border-gray-200"></div>
           <span className="dark:text-polar-500 mx-4 flex-shrink text-gray-500">
             FAQ
           </span>
-          <div className="dark:border-polar-700 flex-grow border-t border-gray-200"></div>
+          <div className="dark:border-polar-800 flex-grow border-t border-gray-200"></div>
         </div>
 
         <FAQSection

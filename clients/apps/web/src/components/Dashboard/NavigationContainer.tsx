@@ -42,7 +42,7 @@ export const NavigationContainer = ({
                 className={twMerge(
                   'flex flex-row items-center gap-x-3 rounded-lg border border-transparent px-3 py-2 transition-colors dark:border-transparent',
                   route.isActive
-                    ? 'dark:bg-polar-800 border-gray-75 dark:border-polar-700 bg-white text-blue-500 dark:text-white'
+                    ? 'dark:bg-polar-800 border-gray-75 dark:border-polar-800 bg-white text-blue-500 dark:text-white'
                     : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-600 hover:text-blue-500',
                 )}
                 href={route.link}

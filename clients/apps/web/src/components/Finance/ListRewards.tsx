@@ -106,7 +106,7 @@ const List = (props: {
             </th>
           </tr>
         </thead>
-        <tbody className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-t border-gray-200">
+        <tbody className="dark:border-polar-800 dark:divide-polar-700 divide-y divide-gray-200 border-t border-gray-200">
           {rewards &&
             rewards.map((t) => (
               <tr key={t.pledge.id}>

@@ -164,8 +164,8 @@ export const EditProductPage = ({
   }, [product, updateProduct, organization, router])
 
   return (
-    <DashboardBody>
-      <div className="flex w-full max-w-xl flex-col gap-y-12">
+    <DashboardBody title="Edit Product">
+      <div className="flex flex-col gap-y-12">
         <div className="flex flex-col gap-y-8">
           <Form {...form}>
             <form
@@ -176,7 +176,6 @@ export const EditProductPage = ({
             </form>
           </Form>
           <ProductBenefitsForm
-            className="w-full"
             organization={organization}
             organizationBenefits={organizationBenefits.filter(
               (benefit) =>
@@ -212,7 +211,7 @@ export const EditProductPage = ({
           )}
           <ShadowBox className="flex flex-col gap-6 p-6">
             <div className="flex flex-col gap-y-2">
-              <h3 className="text-sm font-medium">Archive Product</h3>
+              <h3 className="text-lg font-medium">Archive Product</h3>
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 Archiving a product will not affect its current customers, only
                 prevent new subscribers and purchases.
@@ -222,7 +221,6 @@ export const EditProductPage = ({
               className="self-start"
               variant="destructive"
               onClick={showArchiveModal}
-              size="sm"
             >
               Archive
             </Button>

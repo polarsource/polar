@@ -10,7 +10,6 @@ import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import {
   CreatableBenefit,
   resolveBenefitCategoryIcon,
 } from '../Benefit/utils'
+import { Section } from '../Layout/Section'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -137,7 +137,6 @@ const ProductBenefitsForm = ({
   organizationBenefits,
   onSelectBenefit,
   onRemoveBenefit,
-  className,
 }: ProductBenefitsFormProps) => {
   const searchParams = useSearchParams()
   const [type, setType] = useState<CreatableBenefit | undefined>()
@@ -157,37 +156,32 @@ const ProductBenefitsForm = ({
   )
 
   return (
-    <ShadowBox>
-      <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
-        <div className="flex flex-row items-center justify-between">
-          <h2 className="text-gray-950 dark:text-white">Automated Benefits</h2>
-        </div>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          Configure which benefits you want to grant to your customers when they
-          purchase the product
-        </p>
-        <div className="flex flex-col gap-y-4">
-          {Object.entries(benefitsDisplayNames).map(([type, title]) => (
-            <BenefitsContainer
-              key={type}
-              title={title}
-              type={type as BenefitType}
-              handleCheckedChange={handleCheckedChange}
-              enabledBenefits={benefits}
-              benefits={organizationBenefits.filter(
-                (benefit) => benefit.type === type,
-              )}
-              onCreateNewBenefit={
-                type !== 'articles'
-                  ? () => {
-                      setType(type as CreatableBenefit)
-                      show()
-                    }
-                  : undefined
-              }
-            />
-          ))}
-        </div>
+    <Section
+      title="Automated Benefits"
+      description="Configure which benefits you want to grant to your customers when they
+      purchase the product"
+    >
+      <div className="flex w-full flex-col gap-y-4">
+        {Object.entries(benefitsDisplayNames).map(([type, title]) => (
+          <BenefitsContainer
+            key={type}
+            title={title}
+            type={type as BenefitType}
+            handleCheckedChange={handleCheckedChange}
+            enabledBenefits={benefits}
+            benefits={organizationBenefits.filter(
+              (benefit) => benefit.type === type,
+            )}
+            onCreateNewBenefit={
+              type !== 'articles'
+                ? () => {
+                    setType(type as CreatableBenefit)
+                    show()
+                  }
+                : undefined
+            }
+          />
+        ))}
       </div>
       <InlineModal
         isShown={isShown}
@@ -204,7 +198,7 @@ const ProductBenefitsForm = ({
           />
         }
       />
-    </ShadowBox>
+    </Section>
   )
 }
 

@@ -150,8 +150,8 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   }, [newProduct, saveDraft])
 
   return (
-    <DashboardBody>
-      <div className="flex w-full max-w-xl flex-col gap-y-16">
+    <DashboardBody title="Create Product">
+      <div className="flex flex-col gap-y-16">
         <div className="flex flex-col gap-y-4">
           <p className="dark:text-polar-500 leading-relaxed text-gray-500">
             Products are packaged benefits which can be purchased at a fixed
@@ -168,7 +168,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
             </form>
           </Form>
           <ProductBenefitsForm
-            className="w-full"
             organization={organization}
             organizationBenefits={organizationBenefits.filter(
               (benefit) =>

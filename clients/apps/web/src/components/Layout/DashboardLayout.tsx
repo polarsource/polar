@@ -5,7 +5,9 @@ import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import {
   PropsWithChildren,
   UIEventHandler,
@@ -20,7 +22,10 @@ import { CommandPaletteTrigger } from '../CommandPalette/CommandPaletteTrigger'
 import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider, useDashboard } from '../Dashboard/DashboardProvider'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
+import { SubRouteWithActive } from '../Dashboard/navigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
+import DashboardTopbar from '../Navigation/DashboardTopbar'
+import { useRoute } from '../Navigation/useRoute'
 import { BrandingMenu } from './Public/BrandingMenu'
 
 const DashboardSidebar = () => {
@@ -46,28 +51,27 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'dark:bg-polar-900 rounded-4xl flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto bg-white md:w-[320px] md:overflow-y-visible',
+        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[260px] md:overflow-y-visible',
       )}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col gap-y-8">
+        <div className="hidden md:flex">
+          <BrandingMenu />
+        </div>
+
         <div className={upperScrollClassName}>
-          <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
-            <BrandingMenu />
-          </div>
-          <div className="mb-4 mt-8 flex px-6">
-            <DashboardProfileDropdown />
-          </div>
+          <DashboardProfileDropdown />
         </div>
 
         <div
-          className="flex w-full flex-grow flex-col gap-y-12 py-8 md:h-full md:justify-between md:overflow-y-auto"
+          className="flex w-full flex-grow flex-col gap-y-12 md:h-full md:justify-between md:overflow-y-auto"
           onScroll={handleScroll}
         >
           <div className="flex flex-col gap-y-12">
             <MaintainerNavigation />
           </div>
           <div className="flex flex-col">
-            <div className="flex px-8">
+            <div className="flex">
               <CommandPaletteTrigger
                 title="API & Documentation"
                 className="w-full cursor-text"
@@ -85,19 +89,20 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   const { organization } = useContext(MaintainerOrganizationContext)
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col md:flex-row md:p-4">
+      <div className="relative flex h-full w-full flex-col gap-x-12 md:flex-row md:p-8">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
         </div>
         <div
           className={twMerge(
-            'relative flex h-full w-full translate-x-0 flex-row overflow-hidden pt-8 md:pt-0',
+            'relative flex h-full w-full flex-col gap-y-4 pt-8 md:pt-0',
             props.className,
           )}
         >
+          <DashboardTopbar />
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="relative w-full md:overflow-auto">
+          <main className="dark:bg-polar-900 dark:border-polar-700 border-gray-75 relative h-full w-full rounded-3xl border bg-white md:overflow-auto">
             {props.children}
           </main>
         </div>
@@ -177,11 +182,30 @@ export const RepoPickerHeader = (props: {
   )
 }
 
-export const DashboardHeader = (props: { children?: React.ReactNode }) => {
+const SubNav = (props: { items: SubRouteWithActive[] }) => {
+  const current = props.items.find((i) => i.isActive)
+
   return (
-    <div className={twMerge('sticky left-[300px] right-0 top-20 z-10')}>
-      {props.children}
-    </div>
+    <Tabs className="md:-mx-4" value={current?.title}>
+      <TabsList
+        className="
+          flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"
+      >
+        {props.items.map((item) => {
+          return (
+            <Link key={item.title} href={item.link}>
+              <TabsTrigger
+                className="flex flex-row items-center gap-x-2 px-4"
+                value={item.title}
+              >
+                {item.icon && <div className="text-[17px]">{item.icon}</div>}
+                <div>{item.title}</div>
+              </TabsTrigger>
+            </Link>
+          )
+        })}
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -189,14 +213,29 @@ export const DashboardBody = (props: {
   children?: React.ReactNode
   className?: string
 }) => {
+  const currentRoute = useRoute()
+
   return (
     <div
       className={twMerge(
-        'relative mx-auto max-w-screen-xl px-4 pb-6 sm:px-6 md:px-16',
+        'relative flex h-full flex-col gap-y-12 px-4 pb-6 sm:px-6 md:px-16',
         props.className,
       )}
     >
-      {props.children}
+      <div className="flex flex-col gap-y-4 py-12">
+        <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
+          {currentRoute?.title}
+        </h4>
+
+        {currentRoute &&
+        'subs' in currentRoute &&
+        (currentRoute.subs?.length ?? 0) > 0 ? (
+          <div className="flex flex-row items-center gap-4 gap-y-24">
+            <SubNav items={currentRoute.subs ?? []} />
+          </div>
+        ) : null}
+      </div>
+      <div className="flex flex-col">{props.children}</div>
     </div>
   )
 }

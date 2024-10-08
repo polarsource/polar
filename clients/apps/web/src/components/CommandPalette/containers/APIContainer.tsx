@@ -32,7 +32,7 @@ export const APIContainer = ({
       )}
     >
       <Tabs defaultValue={COMMAND_BUILDERS[0].lang}>
-        <TabsList className="dark:border-polar-700 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-100 px-4 py-3">
+        <TabsList className="dark:border-polar-700 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-200 px-4 py-3">
           <div className="flex w-full flex-row items-center">
             {COMMAND_BUILDERS.map(({ lang, displayName }) => {
               return (

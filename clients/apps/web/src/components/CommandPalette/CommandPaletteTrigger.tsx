@@ -17,7 +17,7 @@ export const CommandPaletteTrigger = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-800 flex min-w-52 cursor-pointer flex-row items-center justify-between gap-x-4 rounded-xl border border-gray-200/50 bg-gray-50 py-2 pl-4 pr-2 shadow-none',
+        'dark:bg-polar-900 dark:border-polar-800 flex min-w-52 cursor-pointer flex-row items-center justify-between gap-x-4 rounded-xl border border-gray-200 bg-gray-50 py-2 pl-4 pr-2 shadow-none',
         className,
       )}
       role="button"

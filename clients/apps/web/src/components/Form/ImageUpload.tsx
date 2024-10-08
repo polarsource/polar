@@ -111,7 +111,7 @@ const ImageUpload = ({
                 ref={imageRef}
                 src={imagePreviewSrc}
                 className={twMerge(
-                  'flex cursor-pointer items-center justify-center rounded-xl border border-gray-100 bg-gray-50 object-cover hover:opacity-80',
+                  'flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-gray-50 object-cover hover:opacity-80',
                   isLoading ? 'opacity-50' : '',
                   errorMessage ? 'border-red-500' : '',
                   !height && !width ? 'h-32 w-32' : '',
@@ -135,7 +135,7 @@ const ImageUpload = ({
                 inputFileRef.current?.click()
               }}
               className={twMerge(
-                'dark:bg-polar-700 dark:border-polar-600 flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100',
+                'dark:bg-polar-700 dark:border-polar-600 flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100',
                 !height && !width ? 'h-32 w-32' : '',
               )}
               style={{

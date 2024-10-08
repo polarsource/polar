@@ -8,10 +8,10 @@ export default async function Layout({ children }: PropsWithChildren) {
   const centerClsx =
     'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
   return (
-    <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-gray-50">
+    <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-gray-100">
       <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch">
         <div className="flex w-full flex-grow flex-col gap-y-12 pt-12 md:pt-0">
-          <div className="dark:bg-polar-950 dark:border-polar-700 relative hidden flex-row items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-8 md:flex md:px-12">
+          <div className="dark:bg-polar-950 dark:border-polar-700 relative hidden flex-row items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-8 md:flex md:px-12">
             <h1 className="text-xl font-medium">Documentation</h1>
 
             <BrandingMenu

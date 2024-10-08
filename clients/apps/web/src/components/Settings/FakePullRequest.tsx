@@ -26,7 +26,7 @@ const FakePullRequest = ({
           </strong>{' '}
           commented 2 days ago &mdash; edited by {CONFIG.GITHUB_APP_NAMESPACE}
         </span>
-        <div className="dark:border-polar-500 rounded-full border-[1px] border-gray-300 px-2 py-0.5">
+        <div className="dark:border-polar-500 rounded-full border-[1px] border-gray-200 px-2 py-0.5">
           bot
         </div>
       </div>

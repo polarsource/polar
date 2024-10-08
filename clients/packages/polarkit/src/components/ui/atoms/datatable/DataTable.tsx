@@ -104,7 +104,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className={twMerge('flex flex-col gap-6', className)}>
-      <div className="dark:border-polar-700 rounded-3xl border border-gray-200/50">
+      <div className="dark:border-polar-700 rounded-3xl border border-gray-200">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

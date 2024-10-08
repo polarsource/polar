@@ -9,6 +9,7 @@ from httpx import AsyncClient
 from polar.app import app
 from polar.auth.dependencies import get_auth_subject
 from polar.auth.models import AuthSubject, Subject
+from polar.checkout.ip_geolocation import _get_client_dependency
 from polar.postgres import AsyncSession, get_db_session
 
 # We used to use anyio, but it was causing garbage collection issues
@@ -36,6 +37,7 @@ async def client(
 ) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_session] = lambda: session
     app.dependency_overrides[get_auth_subject] = lambda: auth_subject
+    app.dependency_overrides[_get_client_dependency] = lambda: None
 
     request_hooks = []
 

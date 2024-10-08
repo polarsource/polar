@@ -1,9 +1,10 @@
 import os
 from datetime import timedelta
 from enum import StrEnum
+from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, PostgresDsn
+from pydantic import DirectoryPath, Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from polar.kit.jwk import JWKSFile
@@ -61,6 +62,8 @@ class Settings(BaseSettings):
 
     # Checkout
     CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
+    IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent
+    IP_GEOLOCATION_DATABASE_NAME: str = "ip-geolocation.mmdb"
 
     # Database
     POSTGRES_USER: str = "polar"

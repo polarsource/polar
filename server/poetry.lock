@@ -51,6 +51,17 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.23)"]
 
 [[package]]
+name = "appdirs"
+version = "1.4.4"
+description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+optional = false
+python-versions = "*"
+files = [
+    {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
+    {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
+]
+
+[[package]]
 name = "arq"
 version = "0.25.0"
 description = "Job queues in python with asyncio and redis"
@@ -1553,6 +1564,21 @@ files = [
 ]
 
 [[package]]
+name = "ipinfo-db"
+version = "0.0.4"
+description = "Official Python free database library for IPinfo"
+optional = false
+python-versions = "*"
+files = [
+    {file = "ipinfo_db-0.0.4-py3-none-any.whl", hash = "sha256:4a6f219d274372b30ea7ae339f3494bbefd1cce41e20523f0e9ba1710629ee74"},
+    {file = "ipinfo_db-0.0.4.tar.gz", hash = "sha256:1465b94245eecf70e1dfb61b799460d1752475737cc2ac3bdfb4be19e1bd295a"},
+]
+
+[package.dependencies]
+appdirs = "*"
+maxminddb = "*"
+
+[[package]]
 name = "itsdangerous"
 version = "2.2.0"
 description = "Safely pass data to untrusted environments and back."
@@ -1786,6 +1812,84 @@ files = [
     {file = "MarkupSafe-2.1.5-cp39-cp39-win32.whl", hash = "sha256:00e046b6dd71aa03a41079792f8473dc494d564611a8f89bbbd7cb93295ebdcf"},
     {file = "MarkupSafe-2.1.5-cp39-cp39-win_amd64.whl", hash = "sha256:fa173ec60341d6bb97a89f5ea19c85c5643c1e7dedebc22f5181eb73573142c5"},
     {file = "MarkupSafe-2.1.5.tar.gz", hash = "sha256:d283d37a890ba4c1ae73ffadf8046435c76e7bc2247bbb63c00bd1a709c6544b"},
+]
+
+[[package]]
+name = "maxminddb"
+version = "2.6.2"
+description = "Reader for the MaxMind DB format"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "maxminddb-2.6.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:7cfdf5c29a2739610700b9fea7f8d68ce81dcf30bb8016f1a1853ef889a2624b"},
+    {file = "maxminddb-2.6.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:05e873eb82281cef6e787bd40bd1d58b2e496a21b3689346f0d0420988b3cbb1"},
+    {file = "maxminddb-2.6.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e2b85ffc9fb2e192321c2f0b34d0b291b8e82de6e51a6ec7534645663678e835"},
+    {file = "maxminddb-2.6.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:28a2eaf9769262c05c486e777016771f3367c843b053c43cd5fde1108755753d"},
+    {file = "maxminddb-2.6.2-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:96a1fa38322bce1d587bb6ce39a0e6ca4c1b824f48fbc5739a5ec507f63aa889"},
+    {file = "maxminddb-2.6.2-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:eb534333f5fd7180e35c0207b3d95d621e4b9be3b8c1709995d0feb6c752b6f4"},
+    {file = "maxminddb-2.6.2-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:0b281c0eec3601dde1f169a1c04e2615751c66368141aded9f03131fe635450b"},
+    {file = "maxminddb-2.6.2-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:a771df92e599ad867c16ae4acb08cc3763c9d1028f4ca772c0571da97f7f86d2"},
+    {file = "maxminddb-2.6.2-cp310-cp310-win32.whl", hash = "sha256:f412a54f87ef9083911c334267188d3d1b14f2591eac94b94ca32528f21d5f25"},
+    {file = "maxminddb-2.6.2-cp310-cp310-win_amd64.whl", hash = "sha256:7e5a90a1cb0c7fd6226aa44e18a87b26fa85b6eebae36d529d7582f93e8dfbd1"},
+    {file = "maxminddb-2.6.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:38941a38278491bf95e5ca544969782c7ab33326802f6a93816867289c3f6401"},
+    {file = "maxminddb-2.6.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:eef1c26210155c7b94c4ca28fef65eb44a5ca1584427b1fbdeec1cd3c81e25c5"},
+    {file = "maxminddb-2.6.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b4d9cd7ddd02ee123a44d0d7821166d31540ea85352deb06b29d55e802f32781"},
+    {file = "maxminddb-2.6.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8101291e5b92bd272a050c25822a5e30860d453dde16b4fffed9d751f0483a82"},
+    {file = "maxminddb-2.6.2-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5c7c520d06d335b288d06a00b786cea9b7e023bd588efb1a6ef485e94ccc7244"},
+    {file = "maxminddb-2.6.2-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:58bfd2c55c96aaaa7c4996c704edabfb1bd369dfc1592cedf8957a24062178b1"},
+    {file = "maxminddb-2.6.2-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:886af3ba4aa26214ff39214565f53152b62a5abdb6ef9e00c76c194dbfd79231"},
+    {file = "maxminddb-2.6.2-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:93691c8b4b4c448babb37bedc6f3d51523a3f06ab11bdd171da7ffc4005a7897"},
+    {file = "maxminddb-2.6.2-cp311-cp311-win32.whl", hash = "sha256:e9013076deca5d136c260510cd05e82ec2b4ddb9476d63e2180a13ddfd305c3e"},
+    {file = "maxminddb-2.6.2-cp311-cp311-win_amd64.whl", hash = "sha256:47170ec0e1e76787cc5882301c487f495d67f3146318f2f4e2adc281951a96ef"},
+    {file = "maxminddb-2.6.2-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:eacd65e38bdf4efdf42bbc15cfa734b09eb818ecfef76b7b36e64be382be4c83"},
+    {file = "maxminddb-2.6.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:20662878bc9514e90b0b4c4eb1a76622ecc7504d012e76bad9cdb7372fc0ef96"},
+    {file = "maxminddb-2.6.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7607e45f7eca991fa34d57c03a791a1dfbe774ddd9250d0f35cdcc6f17142a15"},
+    {file = "maxminddb-2.6.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d0970b661c4fac6624b9128057ed5fe35a2d95aa60359272289cd4c7207c9a6d"},
+    {file = "maxminddb-2.6.2-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:12207f0becf3f2bf14e7a4bf86efcaa6e90d665a918915ae228c4e77792d7151"},
+    {file = "maxminddb-2.6.2-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:826a1858b93b193df7fa71e3caca65c3051db20545df0020444f55c02e8ed2c3"},
+    {file = "maxminddb-2.6.2-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:e63649a82926f1d93acdd3df5f7be66dc9473653350afe73f365bb25e5b34368"},
+    {file = "maxminddb-2.6.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:ebf9fdf8a8e55862aabb8b2c34a4af31a8a5b686007288eeb561fa20ef348378"},
+    {file = "maxminddb-2.6.2-cp312-cp312-win32.whl", hash = "sha256:2aaefb62f881151960bb67e5aeb302c159a32bd2d623cf72dad688bda1020869"},
+    {file = "maxminddb-2.6.2-cp312-cp312-win_amd64.whl", hash = "sha256:78c3aa70c62be68ace23f819e7f23258545f2bfbd92cd6c33ee398cd261f6b84"},
+    {file = "maxminddb-2.6.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:e1e40449bd278fdca1f351df442f391e72fd3d98b054ccac1672f27d70210642"},
+    {file = "maxminddb-2.6.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:80d7f943f6b8bc437eaae5da778a83d8f38e4b7463756fdee04833e1be0bdea2"},
+    {file = "maxminddb-2.6.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:058ca89789bc1770fe58d02a88272ca91dabeef9f3fe0011fe506484355f1804"},
+    {file = "maxminddb-2.6.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:80d20683afe01b4d41bad1c1829f87ab12f3d19c68ec230f83318a2fd13871a7"},
+    {file = "maxminddb-2.6.2-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:dd90c3798e6c347d48d5d9a9c95dc678b52a5a965f1fb72152067fdf52b994da"},
+    {file = "maxminddb-2.6.2-cp38-cp38-musllinux_1_2_aarch64.whl", hash = "sha256:add1e55620033516c5f0734b1d9d03848859192d9f3825aabe720dfa8a783958"},
+    {file = "maxminddb-2.6.2-cp38-cp38-musllinux_1_2_i686.whl", hash = "sha256:8cb992da535264177b380e7b81943c884d57dcbfad6b3335d7f633967144746e"},
+    {file = "maxminddb-2.6.2-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:86048ff328793599e584bcc2fc8278c2b7c5d3a4005c70403613449ec93817ef"},
+    {file = "maxminddb-2.6.2-cp38-cp38-win32.whl", hash = "sha256:f2e326a99eaa924ff2fb09d6e44127983a43016228e7780888f15e9ba171d7b3"},
+    {file = "maxminddb-2.6.2-cp38-cp38-win_amd64.whl", hash = "sha256:9a2671e8f4161130803cf226cd9cb8b93ec5c4b2493f83a902986177052d95d3"},
+    {file = "maxminddb-2.6.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6a50bc348c699d8f6a5f0aa35e5096515d642ca2f38b944bd71c3dedda3d3588"},
+    {file = "maxminddb-2.6.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:dc9f1203eb2b139252aa08965960fe13c36cc8b80b536490b94b05c31aa1fca9"},
+    {file = "maxminddb-2.6.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d8ccca5327cb4e706f669456ec6d556badfa92c0fdacd57a15076f3cdc061560"},
+    {file = "maxminddb-2.6.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3987e103396e925edebbef4877e94515822f63b3b436027a0b164b500622fccd"},
+    {file = "maxminddb-2.6.2-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b31ecf3083b78c77624783bfdf6177e6ac73ae14684ef182855eb5569bc78e7c"},
+    {file = "maxminddb-2.6.2-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:cd4530b9604d66cfa5e37eb94c671e54feff87769f8ba7fa997cce959e0cb241"},
+    {file = "maxminddb-2.6.2-cp39-cp39-musllinux_1_2_i686.whl", hash = "sha256:ecce0b2d125691e2311f94dbd564c2d61c36c5033d082919431a21e6c694fa3f"},
+    {file = "maxminddb-2.6.2-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:34b6e8d667d724f60d52635f3d959f793ab4e5d57d78b27fe66f02752d8c6b08"},
+    {file = "maxminddb-2.6.2-cp39-cp39-win32.whl", hash = "sha256:d15414d251513748cb646d284a2829a5f4c69d8c90963a6e6da53a1a6d0accf7"},
+    {file = "maxminddb-2.6.2-cp39-cp39-win_amd64.whl", hash = "sha256:7c1220838ba9b0bcdaa0c5846f9da70a2304df2ac255fe518370f8faf8c18316"},
+    {file = "maxminddb-2.6.2-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:39eab93ddd75fd02f8d5ad6b1bd3f8d894828d91d6f6c1a96bb9e87c34e94aaa"},
+    {file = "maxminddb-2.6.2-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:aa8cb54b01a29a23a0ea6659fbb38deec6f35453588c5decdbf8669feb53b624"},
+    {file = "maxminddb-2.6.2-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1c096dfd20926c4de7d7fd5b5e75c756eddd4bdac5ab7aafd4bb67d000b13743"},
+    {file = "maxminddb-2.6.2-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1dc2b511c7255f7cbbb01e8ba01ba82e62e9c1213e382d36f9d9b0ee45c2f6b2"},
+    {file = "maxminddb-2.6.2-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:80d7495565d30260c630afbe74d61522b13dd31ed05b8916003ec5b127109a12"},
+    {file = "maxminddb-2.6.2-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:9dccd7a438f81e3df84dfc31a75af4c8d29adefb6082329385bfde604c9ea01b"},
+    {file = "maxminddb-2.6.2-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:b0a3b9cab1a94cc633df3da85c6567f0188f10165e3338ec9a6c421de9fe53b9"},
+    {file = "maxminddb-2.6.2-pp38-pypy38_pp73-macosx_11_0_arm64.whl", hash = "sha256:fb38aa94e76a87785b654c035f9f3ee39b74a98e9beea9a10b1aa62abdcc4cbd"},
+    {file = "maxminddb-2.6.2-pp38-pypy38_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c9e9e893f7c0fa44cfdd5ab819a07d93f63ee398c28b792cedd50b94dcfea7c0"},
+    {file = "maxminddb-2.6.2-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:28af9470f28fce2ccb945478235f53fb52d98a505653b1bf4028e34df6149a06"},
+    {file = "maxminddb-2.6.2-pp38-pypy38_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a74b60cdc61a69b967ec44201c6259fbc48ef2eab2e885fbdc50ec1accaad545"},
+    {file = "maxminddb-2.6.2-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:485c0778f6801e1437c2efd6e3b964a7ae71c8819f063e0b5460c3267d977040"},
+    {file = "maxminddb-2.6.2-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:0b480a31589750da4e36d1ba04b77ee3ac3853ac7b94d63f337b9d4d0403043f"},
+    {file = "maxminddb-2.6.2-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:85fc9406f42c1311ce8ea9f2c820db5d7ac687a39ab5d932708dc783607378ef"},
+    {file = "maxminddb-2.6.2-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6fd1a612110ff182a559d8010e7615e5d05ef9d2c234b5f7de124ee8fdf1ecb9"},
+    {file = "maxminddb-2.6.2-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7cd7f525eb2331cf05181c5ba562cc3edec3de4b41dbb18a5fee9ad24884b499"},
+    {file = "maxminddb-2.6.2-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d32266792b349f5507b0369d3277d45318fcd346a16dcc98b484aadc208e4d74"},
+    {file = "maxminddb-2.6.2-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:5662386db91872d5505fde9e7bb0b9530b6aab7a6f3ece7df59a2b43a7b45d17"},
+    {file = "maxminddb-2.6.2.tar.gz", hash = "sha256:7d842d32e2620abc894b7d79a5a1007a69df2c6cf279a06b94c9c3913f66f264"},
 ]
 
 [[package]]
@@ -3658,13 +3762,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "uvicorn"
-version = "0.30.6"
+version = "0.31.0"
 description = "The lightning-fast ASGI server."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "uvicorn-0.30.6-py3-none-any.whl", hash = "sha256:65fd46fe3fda5bdc1b03b94eb634923ff18cd35b2f084813ea79d1f103f711b5"},
-    {file = "uvicorn-0.30.6.tar.gz", hash = "sha256:4b15decdda1e72be08209e860a1e10e92439ad5b97cf44cc945fcbee66fc5788"},
+    {file = "uvicorn-0.31.0-py3-none-any.whl", hash = "sha256:cac7be4dd4d891c363cd942160a7b02e69150dcbc7a36be04d5f4af4b17c8ced"},
+    {file = "uvicorn-0.31.0.tar.gz", hash = "sha256:13bc21373d103859f68fe739608e2eb054a816dea79189bc3ca08ea89a275906"},
 ]
 
 [package.dependencies]
@@ -4121,4 +4225,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "fc9678d853d30407fe7ca64018d6bbaa2da1ee4239cb070dd673105e7a698bef"
+content-hash = "87c6f459ab48f8840315ce46541f3e5d75d6a6fceb8a0478881093947fb4aadc"

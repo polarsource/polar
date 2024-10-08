@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Connection, ForeignKey, Integer, String, Uuid, event
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship
 
 from polar.checkout.tax import TaxID, TaxIDType
@@ -92,8 +93,8 @@ class Checkout(MetadataMixin, RecordModel):
     customer_email: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
-    customer_ip_address: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None
+    _customer_ip_address: Mapped[str | None] = mapped_column(
+        "customer_ip_address", String, nullable=True, default=None
     )
     customer_billing_address: Mapped[Address | None] = mapped_column(
         AddressType, nullable=True, default=None
@@ -101,6 +102,14 @@ class Checkout(MetadataMixin, RecordModel):
     customer_tax_id: Mapped[TaxID | None] = mapped_column(
         TaxIDType, nullable=True, default=None
     )
+
+    @hybrid_property
+    def customer_ip_address(self) -> str | None:
+        return self._customer_ip_address
+
+    @customer_ip_address.inplace.setter
+    def _customer_ip_address_setter(self, value: Any | None) -> None:
+        self._customer_ip_address = str(value) if value is not None else None
 
     @property
     def success_url(self) -> str:

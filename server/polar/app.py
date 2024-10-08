@@ -8,6 +8,7 @@ from fastapi.routing import APIRoute
 
 from polar import receivers, worker  # noqa
 from polar.api import router
+from polar.checkout import ip_geolocation
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
@@ -89,6 +90,7 @@ class State(TypedDict):
     sync_engine: Engine
     sync_sessionmaker: SyncSessionMaker
     arq_pool: ArqRedis
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient | None
 
 
 @contextlib.asynccontextmanager
@@ -104,6 +106,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         sync_sessionmaker = create_sync_sessionmaker(sync_engine)
         instrument_sqlalchemy(sync_engine)
 
+        try:
+            ip_geolocation_client = ip_geolocation.get_client()
+        except FileNotFoundError:
+            log.info(
+                "IP geolocation database not found. "
+                "Checkout won't automatically geolocate IPs."
+            )
+            ip_geolocation_client = None
+
         log.info("Polar API started")
 
         yield {
@@ -112,10 +123,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
             "sync_engine": sync_engine,
             "sync_sessionmaker": sync_sessionmaker,
             "arq_pool": arq_pool,
+            "ip_geolocation_client": ip_geolocation_client,
         }
 
         await async_engine.dispose()
         sync_engine.dispose()
+        if ip_geolocation_client is not None:
+            ip_geolocation_client.close()
 
         log.info("Polar API stopped")
 

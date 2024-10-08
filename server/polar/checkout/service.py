@@ -29,6 +29,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, Validation
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.address import Address
 from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -55,6 +56,7 @@ from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from . import ip_geolocation
 from .sorting import CheckoutSortProperty
 from .tax import TaxCalculationError, calculate_tax
 
@@ -199,6 +201,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session: AsyncSession,
         checkout_create: CheckoutCreate,
         auth_subject: AuthSubject[User | Organization],
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         price = await product_price_service.get_writable_by_id(
             session, checkout_create.product_price_id, auth_subject
@@ -338,6 +341,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
         session.add(checkout)
 
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
+
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         # Swallow incomplete tax calculation error: require it only on confirm
@@ -354,6 +361,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session: AsyncSession,
         checkout_create: CheckoutCreatePublic,
         auth_subject: AuthSubject[User | Anonymous],
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
+        ip_address: str | None = None,
     ) -> Checkout:
         price = await product_price_service.get_by_id(
             session, checkout_create.product_price_id
@@ -435,6 +444,17 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     "customer_session_client_secret": stripe_customer_session.client_secret,
                 }
 
+        checkout.customer_ip_address = ip_address
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
+
+        try:
+            checkout = await self._update_checkout_tax(session, checkout)
+        # Swallow incomplete tax calculation error: require it only on confirm
+        except TaxCalculationError:
+            pass
+
         session.add(checkout)
 
         await session.flush()
@@ -447,8 +467,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session: AsyncSession,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        checkout = await self._update_checkout(session, checkout, checkout_update)
+        checkout = await self._update_checkout(
+            session, checkout, checkout_update, ip_geolocation_client
+        )
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         # Swallow incomplete tax calculation error: require it only on confirm
@@ -794,6 +817,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session: AsyncSession,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         if checkout.status != CheckoutStatus.open:
             raise NotOpenCheckout(checkout)
@@ -930,6 +954,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         ]
                     ) from e
 
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
+
         exclude = {
             "product_price_id",
             "amount",
@@ -974,6 +1002,32 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 raise
             finally:
                 session.add(checkout)
+
+        return checkout
+
+    async def _update_checkout_ip_geolocation(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
+    ) -> Checkout:
+        if ip_geolocation_client is None:
+            return checkout
+
+        if checkout.customer_ip_address is None:
+            return checkout
+
+        if checkout.customer_billing_address is not None:
+            return checkout
+
+        country = ip_geolocation.get_ip_country(
+            ip_geolocation_client, checkout.customer_ip_address
+        )
+        if country is not None:
+            checkout.customer_billing_address = Address.model_validate(
+                {"country": country}
+            )
+            session.add(checkout)
 
         return checkout
 

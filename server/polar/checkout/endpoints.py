@@ -17,7 +17,7 @@ from polar.product.schemas import ProductID
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from . import auth, sorting
+from . import auth, ip_geolocation, sorting
 from .schemas import Checkout as CheckoutSchema
 from .schemas import (
     CheckoutConfirm,
@@ -107,10 +107,13 @@ async def get(
 async def create(
     checkout_create: CheckoutCreate,
     auth_subject: auth.CheckoutWrite,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Create a checkout session."""
-    return await checkout_service.create(session, checkout_create, auth_subject)
+    return await checkout_service.create(
+        session, checkout_create, auth_subject, ip_geolocation_client
+    )
 
 
 @router.patch(
@@ -126,6 +129,7 @@ async def update(
     id: CheckoutID,
     checkout_update: CheckoutUpdate,
     auth_subject: auth.CheckoutWrite,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Update a checkout session."""
@@ -134,7 +138,9 @@ async def update(
     if checkout is None:
         raise ResourceNotFound()
 
-    return await checkout_service.update(session, checkout, checkout_update)
+    return await checkout_service.update(
+        session, checkout, checkout_update, ip_geolocation_client
+    )
 
 
 @router.get(
@@ -164,12 +170,17 @@ async def client_get(
     include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def client_create(
+    request: Request,
     checkout_create: CheckoutCreatePublic,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Create a checkout session from a client. Suitable to build checkout links."""
-    return await checkout_service.client_create(session, checkout_create, auth_subject)
+    ip_address = request.client.host if request.client else None
+    return await checkout_service.client_create(
+        session, checkout_create, auth_subject, ip_geolocation_client, ip_address
+    )
 
 
 @router.patch(
@@ -184,6 +195,7 @@ async def client_create(
 async def client_update(
     client_secret: CheckoutClientSecret,
     checkout_update: CheckoutUpdatePublic,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Update a checkout session by client secret."""
@@ -192,7 +204,9 @@ async def client_update(
     if checkout is None:
         raise ResourceNotFound()
 
-    return await checkout_service.update(session, checkout, checkout_update)
+    return await checkout_service.update(
+        session, checkout, checkout_update, ip_geolocation_client
+    )
 
 
 @router.post(

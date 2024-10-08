@@ -133,3 +133,4 @@ playground.py
 .secrets/
 
 .jwks.json
+*.mmdb

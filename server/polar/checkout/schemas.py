@@ -94,7 +94,6 @@ class CheckoutUpdateBase(Schema):
     amount: Amount | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
-    customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
@@ -102,6 +101,7 @@ class CheckoutUpdateBase(Schema):
 class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
     """Update an existing checkout session using an access token."""
 
+    customer_ip_address: CustomerIPAddress | None = None
     success_url: SuccessURL = None
 
 

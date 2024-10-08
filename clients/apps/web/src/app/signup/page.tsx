@@ -50,7 +50,7 @@ export default async function Page({
             <Login returnTo={returnTo} />
           </div>
         </div>
-        <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-200 bg-gray-100 py-2 pl-2 md:flex">
+        <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">
           <picture className="flex h-full">
             <source
               media="(prefers-color-scheme: dark)"

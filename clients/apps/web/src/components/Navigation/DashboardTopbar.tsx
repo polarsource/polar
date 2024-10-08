@@ -77,7 +77,12 @@ const DashboardTopbar = () => {
             return arr.length - 1 !== index
               ? [
                   link,
-                  <span className="dark:text-polar-500 text-gray-500">/</span>,
+                  <span
+                    key={path + 'sep'}
+                    className="dark:text-polar-500 text-gray-500"
+                  >
+                    /
+                  </span>,
                 ]
               : link
           })}

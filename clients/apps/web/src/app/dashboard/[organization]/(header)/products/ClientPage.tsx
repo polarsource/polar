@@ -8,6 +8,7 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { CONFIG } from '@/utils/config'
 import {
   AddOutlined,
+  HiveOutlined,
   MoreVertOutlined,
   Search,
   TextureOutlined,
@@ -22,6 +23,7 @@ import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,7 +61,7 @@ export default function ClientPage() {
             </Button>
           </Link>
         </div>
-        {(filteredProducts?.length ?? 0) > 0 && (
+        {(filteredProducts?.length ?? 0) > 0 ? (
           <List size="small">
             {filteredProducts?.map((product) => (
               <ProductListItem
@@ -69,6 +71,27 @@ export default function ClientPage() {
               />
             ))}
           </List>
+        ) : (
+          <ShadowBoxOnMd className="items-center justify-center gap-y-4 md:flex md:flex-col md:py-48">
+            <HiveOutlined
+              className="dark:text-polar-600 text-6xl text-gray-300"
+              fontSize="inherit"
+            />
+            <div className="flex flex-col items-center gap-y-6">
+              <div className="flex flex-col items-center gap-y-2">
+                <h3 className="text-lg font-medium">No products found</h3>
+                <p className="dark:text-polar-500 text-gray-500">
+                  Start selling digital products today
+                </p>
+              </div>
+              <Link href={`/dashboard/${org.slug}/products/new`}>
+                <Button role="link" wrapperClassNames="gap-x-2" size="sm">
+                  <AddOutlined className="h-4 w-4" />
+                  <span>New Product</span>
+                </Button>
+              </Link>
+            </div>
+          </ShadowBoxOnMd>
         )}
       </div>
     </DashboardBody>

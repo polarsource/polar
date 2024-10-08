@@ -122,7 +122,7 @@ const MobileNav = () => {
   }, [pathname])
 
   const header = (
-    <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 flex flex-row items-center justify-between bg-gray-50 px-2 py-4 sm:px-3 md:px-4">
+    <div className="dark:bg-polar-900 sticky top-0 flex flex-row items-center justify-between bg-gray-50 px-2 py-4 sm:px-3 md:px-4">
       <a
         href="/"
         className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
@@ -140,14 +140,12 @@ const MobileNav = () => {
   )
 
   return (
-    <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-gray-50 px-4 py-5 sm:px-6 md:hidden md:px-8">
+    <div className="dark:bg-polar-900 relative z-20 flex flex-row items-center justify-between space-x-2 bg-gray-50 px-4 py-5 sm:px-6 md:hidden md:px-8">
       {mobileNavOpen ? (
         <div className="relative flex h-full w-full flex-col">
           <div className="fixed inset-0 z-10 flex h-full flex-col">
-            <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-gray-50 px-4 pt-5 sm:px-6 md:hidden md:px-8">
-              {header}
-            </div>
-            <div className="flex h-full flex-col overflow-y-auto pt-8">
+            {header}
+            <div className="dark:bg-polar-950 flex h-full flex-col bg-gray-50 p-4">
               <DashboardSidebar />
             </div>
           </div>
@@ -230,7 +228,7 @@ export const DashboardBody = ({
 
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
-      <div className="dark:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border border-gray-200 bg-gray-50 px-12 shadow-sm md:overflow-y-auto">
+      <div className="dark:md:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-gray-50 md:px-12 md:shadow-sm">
         <div className="flex h-full w-full max-w-screen-xl flex-col">
           {header && (
             <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">

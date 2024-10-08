@@ -5,7 +5,7 @@ import IssueLabel from '../Issues/IssueLabel'
 
 const OnboardingAddBadge = () => {
   return (
-    <div className="dark:bg-polar-800 dark:ring-polar-700 grid overflow-hidden rounded-2xl bg-white shadow-sm lg:grid-cols-2 dark:ring-1">
+    <div className="dark:bg-polar-800 dark:ring-polar-700 grid overflow-hidden rounded-2xl bg-gray-50 shadow-sm lg:grid-cols-2 dark:ring-1">
       <div className="px-6 py-4">
         <h2 className="font-medium text-gray-900 dark:text-white">
           Add the Polar badge to an issue to promote funding.

@@ -62,7 +62,7 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
           className="md:rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl"
         />
         <Avatar
-          className="dark:border-polar-950 border-gray-75 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 text-lg md:text-5xl"
+          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 border-gray-50 text-lg md:text-5xl"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />

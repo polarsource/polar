@@ -18,9 +18,9 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [pathname])
 
   return (
-    <div className="dark:bg-polar-950 flex w-full flex-col items-center bg-white">
+    <div className="dark:bg-polar-950 flex w-full flex-col items-center bg-gray-50">
       <Section
-        wrapperClassName="sticky top-0 z-30 dark:bg-polar-950 bg-white"
+        wrapperClassName="sticky top-0 z-30 dark:bg-polar-950 bg-gray-50"
         className="py-4 md:py-8"
       >
         <LandingPageTopbar />
@@ -57,7 +57,7 @@ const LandingPageTopbar = () => {
 const LandingPageFooter = () => {
   return (
     <motion.div
-      className="dark:bg-polar-900 flex w-full flex-col items-center justify-center bg-white"
+      className="dark:bg-polar-900 flex w-full flex-col items-center justify-center bg-gray-50"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}

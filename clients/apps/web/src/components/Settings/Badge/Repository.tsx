@@ -70,7 +70,7 @@ const EmbedSetting = ({
   const getTabClasses = (active: boolean) => {
     return twMerge(
       active
-        ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-polar-600 dark:text-white'
+        ? 'bg-gray-50 rounded-lg text-gray-900 shadow dark:bg-polar-600 dark:text-white'
         : '',
       'cursor-pointer py-1.5 px-2.5 rounded-lg',
     )
@@ -134,7 +134,7 @@ export const BadgeRepository = ({
       className={twMerge(
         showControls && repo.is_private
           ? 'dark:bg-polar-900 bg-gray-100/50 py-2 text-sm'
-          : 'dark:bg-polar-800 bg-white py-4',
+          : 'dark:bg-polar-800 bg-gray-50 py-4',
         'flex flex-row px-5',
       )}
     >
@@ -142,7 +142,7 @@ export const BadgeRepository = ({
         {repo.avatar_url && (
           <img
             alt={`Avatar of ${repo.name}`}
-            className="h-6 w-6 rounded-full bg-white"
+            className="h-6 w-6 rounded-full bg-gray-50"
             src={repo.avatar_url}
             height={200}
             width={200}
@@ -168,7 +168,7 @@ export const BadgeRepository = ({
           {showControls && (
             <div className="flex flex-row justify-end space-x-2 align-middle">
               {repo.is_private && (
-                <p className="dark:bg-polar-800 dark:border-polar-800 dark:text-polar-400 flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <p className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600">
                   Private
                 </p>
               )}

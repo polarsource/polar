@@ -23,14 +23,14 @@ const FeatureItem = ({
   return (
     <Link
       className={twMerge(
-        'dark:border-polar-800 group flex h-full flex-col rounded-3xl border border-gray-100 bg-transparent p-8 transition-colors dark:bg-transparent',
+        'dark:border-polar-700 group flex h-full flex-col rounded-3xl border border-gray-100 bg-transparent p-8 transition-colors dark:bg-transparent',
         className,
       )}
       href={link ?? '#'}
     >
       <div className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
         {icon && (
-          <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-white text-xl shadow-sm transition-colors">
+          <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-gray-50 text-xl shadow-sm transition-colors">
             {React.cloneElement(icon, { fontSize: 'inherit' })}
           </span>
         )}

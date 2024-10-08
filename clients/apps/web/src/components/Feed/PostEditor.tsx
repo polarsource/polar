@@ -105,7 +105,7 @@ export const PostEditor = ({
                   />
                 </TabsContent>
                 <TabsContent value="preview">
-                  <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 md:bg-white md:p-12 md:shadow-sm dark:ring-1 dark:md:border">
+                  <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 md:bg-gray-50 md:p-12 md:shadow-sm dark:ring-1 dark:md:border">
                     <LongformPost
                       {...previewProps}
                       isSubscriber={previewAs === 'premium'}
@@ -200,7 +200,7 @@ const Sidebar = () => {
   return (
     <div>
       <div className="sticky top-24 hidden w-full min-w-[250px] max-w-[280px] flex-col gap-y-4 lg:flex">
-        <ShadowBoxOnMd className="dark:border-polar-800 w-full md:p-8 dark:border">
+        <ShadowBoxOnMd className="dark:border-polar-700 w-full md:p-8 dark:border">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
               <div className="flex flex-col gap-y-4">

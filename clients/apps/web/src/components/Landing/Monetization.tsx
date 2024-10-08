@@ -69,7 +69,7 @@ export const Monetization = () => {
           </div>
 
           <div className="flex flex-col justify-between gap-y-12">
-            <div className="dark:bg-polar-950 dark:border-polar-800 flex w-full flex-col gap-y-6 rounded-2xl border p-6 text-sm">
+            <div className="dark:bg-polar-950 dark:border-polar-700 flex w-full flex-col gap-y-6 rounded-2xl border p-6 text-sm">
               <div className="flex flex-row items-center gap-x-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
                 <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
@@ -108,7 +108,7 @@ export const Monetization = () => {
                 srcSet={`/assets/landing/fund_dark.svg`}
               />
               <img
-                className="dark:border-polar-800 rounded-2xl border border-gray-100"
+                className="dark:border-polar-700 rounded-2xl border border-gray-100"
                 srcSet={`/assets/landing/fund_dark.svg`}
                 alt="Polar crowdfunding badge embedded on a GitHub issue"
               />

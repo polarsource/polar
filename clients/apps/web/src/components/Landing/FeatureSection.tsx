@@ -37,7 +37,7 @@ export const FeatureSection = ({
       <picture className="md:w-1/2">
         <source media="(prefers-color-scheme: dark)" srcSet={media.dark} />
         <img
-          className="border-gray-75 dark:border-polar-800 rounded-2xl border shadow-sm"
+          className="dark:border-polar-700 rounded-2xl border border-gray-100 shadow-sm"
           src={media.light}
         />
       </picture>

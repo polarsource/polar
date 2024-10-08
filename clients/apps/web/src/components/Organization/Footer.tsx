@@ -7,7 +7,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 dark:bg-polar-950 border-gray-75 flex w-full flex-col items-center space-y-24 border-t bg-white py-24 md:py-32',
+        'dark:border-polar-700 dark:bg-polar-950 flex w-full flex-col items-center space-y-24 border-t border-gray-100 bg-gray-50 py-24 md:py-32',
       )}
     >
       <div

@@ -238,7 +238,7 @@ const BenefitsContainer = ({
       <div
         className={twMerge(
           'dark:bg-polar-800 dark:hover:border-polar-700 group flex flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-3 text-sm transition-colors dark:border-transparent',
-          hasEnabledBenefits ? '' : 'cursor-pointer hover:border-gray-100',
+          hasEnabledBenefits ? '' : 'cursor-pointer hover:border-gray-200',
         )}
         onClick={() => !hasEnabledBenefits && setOpen((v) => !v)}
         role="button"
@@ -261,7 +261,7 @@ const BenefitsContainer = ({
         </span>
       </div>
       {open || hasEnabledBenefits ? (
-        <div className="dark:border-polar-800 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
+        <div className="dark:border-polar-700 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4">
           {benefits.length > 0 ? (
             <div className="flex flex-col">
               {benefits.map((benefit) => {

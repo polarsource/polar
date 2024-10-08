@@ -145,7 +145,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
 
   return (
     <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-      <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-white">
+      <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-gray-50">
         <div className="flex flex-grow flex-row items-center gap-x-4">
           <ProductListCoverImage product={product} />
           <span>{product.name}</span>

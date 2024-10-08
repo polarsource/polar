@@ -51,10 +51,10 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[260px] md:overflow-y-visible',
+        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[240px] md:overflow-y-visible',
       )}
     >
-      <div className="flex h-full flex-col gap-y-8">
+      <div className="flex h-full flex-col gap-y-6">
         <div className="hidden md:flex">
           <BrandingMenu />
         </div>
@@ -73,7 +73,7 @@ const DashboardSidebar = () => {
           <div className="flex flex-col">
             <div className="flex">
               <CommandPaletteTrigger
-                title="API & Documentation"
+                title="Documentation"
                 className="w-full cursor-text"
                 onClick={showCommandPalette}
               />
@@ -89,7 +89,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   const { organization } = useContext(MaintainerOrganizationContext)
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col gap-x-8 md:flex-row md:p-6">
+      <div className="relative flex h-full w-full flex-col gap-x-8 bg-gray-100 md:flex-row md:p-6 dark:bg-transparent">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
@@ -122,7 +122,7 @@ const MobileNav = () => {
   }, [pathname])
 
   const header = (
-    <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 flex flex-row items-center justify-between bg-white px-2 py-4 sm:px-3 md:px-4">
+    <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 flex flex-row items-center justify-between bg-gray-50 px-2 py-4 sm:px-3 md:px-4">
       <a
         href="/"
         className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
@@ -140,11 +140,11 @@ const MobileNav = () => {
   )
 
   return (
-    <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-white px-4 py-5 sm:px-6 md:hidden md:px-8">
+    <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-gray-50 px-4 py-5 sm:px-6 md:hidden md:px-8">
       {mobileNavOpen ? (
         <div className="relative flex h-full w-full flex-col">
           <div className="fixed inset-0 z-10 flex h-full flex-col">
-            <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-white px-4 pt-5 sm:px-6 md:hidden md:px-8">
+            <div className="dark:bg-polar-900 relative z-10 flex flex-row items-center justify-between space-x-2 bg-gray-50 px-4 pt-5 sm:px-6 md:hidden md:px-8">
               {header}
             </div>
             <div className="flex h-full flex-col overflow-y-auto pt-8">
@@ -169,7 +169,7 @@ export const RepoPickerHeader = (props: {
   return (
     <>
       <form
-        className="dark:border-polar-800 flex flex-row items-center justify-between space-x-4 space-y-0 bg-transparent"
+        className="dark:border-polar-700 flex flex-row items-center justify-between space-x-4 space-y-0 bg-transparent"
         onSubmit={onSubmit}
       >
         <MaintainerRepoSelection
@@ -223,8 +223,8 @@ export const DashboardBody = (props: {
 
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
-      <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 relative flex w-full flex-col rounded-2xl border px-12 md:overflow-y-auto">
-        <div className="flex h-full w-full max-w-screen-2xl flex-col">
+      <div className="dark:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border border-gray-200/50 bg-gray-50 px-12 md:overflow-y-auto">
+        <div className="flex h-full w-full max-w-screen-xl flex-col">
           <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">
             <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
               {props.title ?? currentRoute?.title}
@@ -247,7 +247,7 @@ export const DashboardBody = (props: {
         </div>
       </div>
       {props.contextView ? (
-        <div className="dark:bg-polar-900 dark:border-polar-800 border-gray-75 w-full max-w-96 overflow-y-auto rounded-3xl border bg-white p-8 py-12">
+        <div className="dark:bg-polar-900 dark:border-polar-700 w-full max-w-[440px] overflow-y-auto rounded-2xl border border-gray-200/50 bg-gray-50 p-8 py-12">
           {props.contextView}
         </div>
       ) : null}

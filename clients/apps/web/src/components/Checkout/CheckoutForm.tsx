@@ -612,19 +612,40 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               fontSize: '14px',
               marginBottom: '8px',
             },
+            '.PickerItem': {
+              padding: '12px',
+              backgroundColor:
+                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              color: resolvedTheme === 'dark' ? '#E5E5E1' : '#181A1F',
+              borderRadius: '9999px',
+              boxShadow: 'none',
+              borderColor: 'transparent',
+            },
+            '.PickerItem--selected': {
+              backgroundColor:
+                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              borderColor: '#0062FF',
+              borderWidth: '2px',
+            },
+            '.PickerItem--selected:hover': {
+              backgroundColor:
+                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
+            },
             '.Input': {
               padding: '12px',
               backgroundColor:
                 resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
-              border: '0px',
               color: resolvedTheme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
+              boxShadow: 'none',
+              borderColor: resolvedTheme === 'dark' ? 'transparent' : '#EEE',
             },
             '.Input:focus': {
               borderColor: resolvedTheme === 'dark' ? '#4667CA' : '#A5C2EB',
             },
             '.Tab': {
               backgroundColor: 'transparent',
+              borderColor: resolvedTheme === 'dark' ? '#353641' : '#EEE',
             },
           },
           variables: {

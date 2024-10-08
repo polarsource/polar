@@ -549,7 +549,7 @@ export const Controls = ({
   return (
     <>
       {hasRetroactiveChanges && (
-        <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-row space-x-8 rounded-xl border bg-white p-4">
+        <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row space-x-8 rounded-xl border bg-gray-50 p-4">
           <div className="w-1/2 items-center text-sm">
             <SettingsCheckbox
               id="retroactive_embed"

@@ -46,7 +46,7 @@ export default function ClientPage() {
           {showControls && (
             <>
               <div className="text-center">
-                <span className="dark:border-polar-800 rounded-2xl border border-gray-200 px-3 py-1 text-sm font-medium text-gray-500">
+                <span className="dark:border-polar-700 rounded-2xl border border-gray-200 px-3 py-1 text-sm font-medium text-gray-500">
                   {syncedIssuesCount} issues fetched
                 </span>
                 <h1 className="mt-8 text-xl font-normal">

@@ -115,7 +115,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                     'dark:hover:bg-polar-800',
                     selectedBenefit?.id === benefit.id
                       ? 'dark:bg-polar-800 bg-gray-50'
-                      : 'dark:bg-polar-900 bg-white',
+                      : 'dark:bg-polar-900 bg-gray-50',
                   )}
                   selected={selectedBenefit?.id === benefit.id}
                   onSelect={() => setSelectedBenefit(benefit)}

@@ -19,7 +19,7 @@ export const Hero = () => {
           </div>
         </div>
         <div className="z-20 flex flex-row items-center gap-x-4">
-          {/* <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-white py-2 pl-6 pr-2">
+          {/* <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-gray-50 py-2 pl-6 pr-2">
             <div className="flex flex-row items-center gap-x-0.5">
               <span>polar.sh/</span>
               <input
@@ -45,7 +45,7 @@ export const Hero = () => {
         <video
           src="/assets/landing/polar_ui_2.webm"
           width="100%"
-          className="dark:border-polar-800 xl:rounded-4xl aspect-video rounded-2xl border border-gray-200 lg:rounded-3xl"
+          className="dark:border-polar-700 xl:rounded-4xl aspect-video rounded-2xl border border-gray-200 lg:rounded-3xl"
           autoPlay
           playsInline
           muted

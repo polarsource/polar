@@ -102,7 +102,7 @@ export function RepoSelection(props: {
               className={twMerge(
                 width,
                 props.openClassNames,
-                'dark:bg-polar-800 dark:border-polar-800 !absolute z-10 w-max rounded-lg bg-white shadow-lg dark:border',
+                'dark:bg-polar-800 dark:border-polar-700 !absolute z-10 w-max rounded-lg bg-gray-50 shadow-lg dark:border',
               )}
             >
               <div className="flex items-center px-2">
@@ -115,7 +115,7 @@ export function RepoSelection(props: {
                   onValueChange={onInputValueChange}
                 />
               </div>
-              <hr className="dark:border-polar-800" />
+              <hr className="dark:border-polar-700" />
               <Command.List
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"

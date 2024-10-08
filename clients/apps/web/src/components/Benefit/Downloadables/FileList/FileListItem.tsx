@@ -253,7 +253,7 @@ export const FileListItem = ({
     <div
       ref={sortable ? sortable.setNodeRef : undefined}
       className={twMerge(
-        'dark:hover:bg-polar-700 dark:text-polar-500 hover:bg-gray-75 flex flex-row items-center justify-between gap-x-8 gap-y-2 rounded-xl px-4 py-2 text-gray-500 transition-colors',
+        'dark:hover:bg-polar-700 dark:text-polar-500 flex flex-row items-center justify-between gap-x-8 gap-y-2 rounded-xl px-4 py-2 text-gray-500 transition-colors hover:bg-gray-100',
         sortable?.isDragging && 'opacity-30',
       )}
       style={

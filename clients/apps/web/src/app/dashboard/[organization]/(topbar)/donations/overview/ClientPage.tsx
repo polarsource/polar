@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useDonationStatistics, useUpdateOrganization } from '@/hooks/queries'
 import {
@@ -84,7 +83,7 @@ export default function ClientPage({
 
   if (!organization.donations_enabled) {
     return (
-      <EmptyLayout>
+      <DashboardBody>
         <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
           <span className="text-6xl text-blue-400">
             <SpokeOutlined fontSize="inherit" />
@@ -101,7 +100,7 @@ export default function ClientPage({
             Enable Donations
           </Button>
         </div>
-      </EmptyLayout>
+      </DashboardBody>
     )
   }
 

@@ -84,9 +84,9 @@ export const Testamonials = () => {
       <h3 className="text-center text-2xl leading-snug md:text-5xl">
         Serving world-class developers, world-wide
       </h3>
-      <div className="dark:border-polar-800 rounded-4xl flex flex-col divide-y overflow-hidden border">
+      <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border">
         <Link
-          className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col items-center gap-y-12 p-12 transition-colors"
+          className="dark:hover:bg-polar-900 flex flex-col items-center gap-y-12 p-12 transition-colors hover:bg-gray-100"
           href={testamonials[0].link}
           target="_blank"
         >
@@ -112,7 +112,7 @@ export const Testamonials = () => {
           {testamonials.slice(1).map((testamonial) => (
             <Link
               key={testamonial.name}
-              className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex flex-col transition-colors md:w-1/3"
+              className="dark:hover:bg-polar-900 group relative flex flex-col transition-colors hover:bg-gray-100 md:w-1/3"
               href={testamonial.link}
               target="_blank"
             >

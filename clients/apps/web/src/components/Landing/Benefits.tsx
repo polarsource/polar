@@ -142,7 +142,7 @@ const Benefit = forwardRef<HTMLAnchorElement, BenefitProps>(
       <Link
         ref={ref}
         href={link}
-        className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-y-4 rounded-3xl border border-gray-100 bg-white p-6"
+        className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-4 rounded-3xl border border-gray-100 bg-gray-50 p-6"
       >
         <span className="text-2xl">
           {React.cloneElement(icon, {

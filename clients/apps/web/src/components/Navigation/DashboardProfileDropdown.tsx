@@ -16,7 +16,7 @@ import { LinkItem, ListItem, Profile } from './Navigation'
 
 const DashboardProfileDropdown = ({ className = '' }) => {
   const classNames = twMerge(
-    'relative flex w-full flex-col rounded-full bg-gray-100 hover:bg-gray-75 dark:hover:bg-polar-800 dark:bg-polar-900 transition-colors z-40 border border-transparent dark:border-polar-800',
+    'relative flex w-full flex-col rounded-full bg-gray-50 hover:bg-white dark:hover:bg-polar-800 dark:bg-polar-900 transition-colors z-40 border border-gray-200/50 dark:border-polar-700',
     className,
   )
   const { currentUser: loggedUser } = useAuth()
@@ -51,7 +51,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
     <div className={classNames}>
       <div
         className={twMerge(
-          'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 py-2 pl-2 pr-3 transition-colors',
+          'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 py-2 pl-2 pr-4 transition-colors',
         )}
         onClick={() => setOpen(true)}
       >
@@ -63,7 +63,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         <div
           ref={ref}
           className={twMerge(
-            'dark:bg-polar-900 dark:text-polar-400 rounded-4xl dark:border-polar-800 border:transparent absolute -left-2 -top-2 right-0 overflow-hidden border bg-white p-2 shadow-xl',
+            'dark:bg-polar-900 dark:text-polar-400 rounded-4xl dark:border-polar-700 border:transparent absolute -left-2 -top-2 right-0 overflow-hidden border bg-gray-50 p-2 shadow-xl',
           )}
         >
           {orgs.length > 0 ? (

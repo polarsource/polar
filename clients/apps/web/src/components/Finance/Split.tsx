@@ -338,7 +338,7 @@ const Split = (props: {
             </Banner>
           )}
         </div>
-        <div className="bg-gray-75 dark:bg-polar-800 dark:text-polar-300 flex items-center px-4 py-2 text-gray-500">
+        <div className="dark:bg-polar-800 dark:text-polar-300 flex items-center bg-gray-100 px-4 py-2 text-gray-500">
           <InformationCircleIcon className="mr-2 h-6 w-6" />
           <div className="w-1-2 mr-4 flex-1 text-sm">
             Polar&apos;s fee of ${getCentsInDollarString(polarShare, true)} has

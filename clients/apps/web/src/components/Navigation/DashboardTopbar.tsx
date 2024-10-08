@@ -88,7 +88,7 @@ const DashboardTopbar = () => {
   return (
     <div className="flex w-full flex-col">
       <div className="flex w-full flex-row items-center justify-between gap-x-8">
-        <div className="flex w-full flex-grow flex-row items-center gap-x-8">
+        <div className="hidden w-full flex-grow flex-row items-center gap-x-8 md:flex">
           <Breadcrumbs />
         </div>
         <div className="flex flex-row items-center gap-x-6">

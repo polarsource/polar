@@ -209,6 +209,7 @@ export const EditProductPage = ({
               .
             </div>
           )}
+
           <ShadowBox className="flex flex-col gap-6 p-12">
             <div className="flex flex-col gap-y-2">
               <h3 className="text-lg font-medium">Archive Product</h3>

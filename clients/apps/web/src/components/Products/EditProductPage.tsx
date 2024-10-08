@@ -221,7 +221,6 @@ export const EditProductPage = ({
             onClick={handleSubmit(onSubmit)}
             loading={isLoading}
             size="lg"
-            disabled={!form.formState.isDirty}
           >
             Save Product
           </Button>

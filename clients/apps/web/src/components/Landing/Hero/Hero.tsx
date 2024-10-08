@@ -1,7 +1,6 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import Button from 'polarkit/components/ui/atoms/button'
 
 export const Hero = () => {
   return (
@@ -19,26 +18,20 @@ export const Hero = () => {
           </div>
         </div>
         <div className="z-20 flex flex-row items-center gap-x-4">
-          {/* <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-gray-50 py-2 pl-6 pr-2">
+          <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-gray-50 py-2 pl-6 pr-2">
             <div className="flex flex-row items-center gap-x-0.5">
               <span>polar.sh/</span>
               <input
                 autoFocus
-                className="border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
+                className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
                 placeholder="my-organization"
               />
             </div>
             <GetStartedButton
               wrapperClassNames="p-0"
-              className="px-4 py-2 text-sm"
+              className="px-4 py-3 text-sm"
             />
-          </div> */}
-          <GetStartedButton />
-          <a target="_blank" href="https://github.com/polarsource/polar">
-            <Button size="lg" variant="ghost">
-              Star on GitHub
-            </Button>
-          </a>
+          </div>
         </div>
       </div>
       <div>

@@ -27,14 +27,6 @@ export const useUpsellSteps = () => {
       CTA: 'Create',
     })
 
-    steps.push({
-      title: 'Connect Payout Account',
-      description: 'Connect your Polar account with Stripe or Open Collective',
-      href: `/dashboard/${currentOrg.slug}/finance/account`,
-      done: onboarding.payoutAccountCompleted,
-      CTA: 'Connect',
-    })
-
     return steps
   }, [currentOrg, onboarding])
 

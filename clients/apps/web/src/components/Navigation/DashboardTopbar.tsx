@@ -12,6 +12,7 @@ import { useCallback, useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import TopbarRight from '../Layout/Public/TopbarRight'
+import { isUUID } from './utils'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -57,7 +58,7 @@ const DashboardTopbar = () => {
           .filter(Boolean)
           .flatMap((path, index, arr) => {
             const href = arr.slice(0, index + 1).join('/')
-            const normalizePath = !path.includes('-') && path !== org.slug
+            const normalizePath = !isUUID(path) && path !== org.slug
             const isCurrent = index === arr.length - 1
 
             const link = (
@@ -65,10 +66,10 @@ const DashboardTopbar = () => {
                 key={path}
                 href={`/${href}`}
                 className={twMerge(
-                  'dark:text-polar-500 dark:hover:bg-polar-800 rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-black dark:hover:text-white',
+                  'dark:text-polar-500 dark:hover:bg-polar-800 rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
                   normalizePath ? 'capitalize' : 'lowercase',
                   isCurrent
-                    ? 'dark:bg-polar-800 bg-gray-200 text-black dark:text-white'
+                    ? 'dark:bg-polar-800 bg-gray-50 text-black shadow-sm dark:text-white'
                     : '',
                 )}
               >

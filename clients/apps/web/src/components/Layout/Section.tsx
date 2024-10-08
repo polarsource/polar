@@ -1,4 +1,3 @@
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import React from 'react'
 
 export const Section = ({
@@ -11,10 +10,10 @@ export const Section = ({
   children: React.ReactNode
 }) => {
   return (
-    <ShadowBoxOnMd className="relative flex flex-col gap-12 md:flex-row md:gap-32 md:p-12">
+    <div className="relative flex flex-col gap-12 py-12 md:flex-row md:gap-32 md:py-16">
       <SectionDescription title={title} description={description} />
       {children}
-    </ShadowBoxOnMd>
+    </div>
   )
 }
 

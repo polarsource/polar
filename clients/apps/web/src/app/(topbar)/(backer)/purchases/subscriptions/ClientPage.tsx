@@ -5,7 +5,7 @@ import { PurchasesQueryParametersContext } from '@/components/Purchases/Purchase
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
-import { Search } from '@mui/icons-material'
+import { Search, ShoppingBagOutlined } from '@mui/icons-material'
 import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -69,50 +69,52 @@ export default function ClientPage() {
           </div>
         </PurchaseSidebar>
       </div>
-
-      <div className="flex w-full max-w-2xl flex-col gap-y-6">
-        <div className="flex flex-row items-center justify-between">
-          <h3 className="text-2xl">Subscriptions</h3>
-          <div className="w-full max-w-64">
-            <Input
-              preSlot={<Search fontSize="small" />}
-              placeholder="Search Subscriptions"
-              onChange={handleSearch}
-              value={purchaseParameters.query}
-            />
-          </div>
-        </div>
-        {subscriptions?.pagination.total_count === 0 ? (
-          <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
-            <div className="flex flex-col items-center gap-y-2">
-              <h3 className="p-2 text-xl font-medium">
-                No subscriptions found
-              </h3>
-              <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
-                Subscribe to creators & you&apos;ll see them here
-              </p>
+      <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex w-full flex-col items-center gap-y-8 border border-gray-200/50 bg-gray-50 p-12">
+        <div className="flex w-full flex-col gap-y-6">
+          <div className="flex flex-row items-center justify-between">
+            <h3 className="text-2xl">Subscriptions</h3>
+            <div className="w-full max-w-64">
+              <Input
+                preSlot={<Search fontSize="small" />}
+                placeholder="Search Subscriptions"
+                onChange={handleSearch}
+                value={purchaseParameters.query}
+              />
             </div>
           </div>
-        ) : (
-          <>
-            {subscriptions?.items.map((order) => (
-              <Link
-                key={order.id}
-                className="flex w-full flex-row items-center justify-between"
-                href={`/purchases/subscriptions/${order.id}`}
-              >
-                <SubscriptionItem subscription={order} />
-              </Link>
-            ))}
-            <Pagination
-              currentPage={purchaseParameters.page}
-              totalCount={subscriptions?.pagination.total_count || 0}
-              pageSize={purchaseParameters.limit}
-              onPageChange={onPageChange}
-              currentURL={searchParams}
-            />
-          </>
-        )}
+          {subscriptions?.pagination.total_count === 0 ? (
+            <div className="flex h-full w-full flex-col items-center gap-y-4 py-32 text-6xl">
+              <ShoppingBagOutlined
+                className="dark:text-polar-600 text-gray-400"
+                fontSize="inherit"
+              />
+              <div className="flex flex-col items-center gap-y-2">
+                <h3 className="p-2 text-xl font-medium">
+                  No subscriptions found
+                </h3>
+              </div>
+            </div>
+          ) : (
+            <>
+              {subscriptions?.items.map((order) => (
+                <Link
+                  key={order.id}
+                  className="flex w-full flex-row items-center justify-between"
+                  href={`/purchases/subscriptions/${order.id}`}
+                >
+                  <SubscriptionItem subscription={order} />
+                </Link>
+              ))}
+              <Pagination
+                currentPage={purchaseParameters.page}
+                totalCount={subscriptions?.pagination.total_count || 0}
+                pageSize={purchaseParameters.limit}
+                onPageChange={onPageChange}
+                currentURL={searchParams}
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -186,7 +188,7 @@ const SubscriptionItem = ({
           <Button size="sm">Manage Subscription</Button>
         </Link>
       </div>
-      <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-100 text-sm">
+      <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 text-sm">
         <div className="flex flex-row items-center justify-between py-2">
           <span>Amount</span>
           {subscription.amount && subscription.currency ? (

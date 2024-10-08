@@ -6,7 +6,10 @@ import React from 'react'
 
 const OnboardingPage: React.FC = ({}) => {
   return (
-    <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
+    <DashboardBody
+      header={false}
+      className="flex flex-col gap-y-8 pb-24 md:gap-y-20"
+    >
       <CreatorUpsell />
     </DashboardBody>
   )

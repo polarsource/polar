@@ -72,9 +72,9 @@ export default function ClientPage() {
             ))}
           </List>
         ) : (
-          <ShadowBoxOnMd className="items-center justify-center gap-y-4 md:flex md:flex-col md:py-48">
+          <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
             <HiveOutlined
-              className="dark:text-polar-600 text-6xl text-gray-300"
+              className="dark:text-polar-600 text-5xl text-gray-300"
               fontSize="inherit"
             />
             <div className="flex flex-col items-center gap-y-6">
@@ -85,9 +85,8 @@ export default function ClientPage() {
                 </p>
               </div>
               <Link href={`/dashboard/${org.slug}/products/new`}>
-                <Button role="link" wrapperClassNames="gap-x-2" size="sm">
-                  <AddOutlined className="h-4 w-4" />
-                  <span>New Product</span>
+                <Button role="link" variant="secondary">
+                  <span>Create Product</span>
                 </Button>
               </Link>
             </div>

@@ -51,7 +51,7 @@ const DashboardTopbar = () => {
 
   const Breadcrumbs = useCallback(() => {
     return (
-      <div className="text-xxs flex flex-row items-center gap-x-0.5 font-mono">
+      <div className="flex flex-row items-center gap-x-0.5 font-mono text-xs">
         {pathname
           .split('/')
           .filter(Boolean)
@@ -86,7 +86,7 @@ const DashboardTopbar = () => {
   }, [pathname])
 
   return (
-    <div className="flex w-full flex-col">
+    <div className="hidden w-full flex-col md:flex">
       <div className="flex w-full flex-row items-center justify-between gap-x-8">
         <div className="hidden w-full flex-grow flex-row items-center gap-x-8 md:flex">
           <Breadcrumbs />

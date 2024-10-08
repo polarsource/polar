@@ -63,7 +63,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         <div
           ref={ref}
           className={twMerge(
-            'dark:bg-polar-900 dark:text-polar-400 rounded-4xl dark:border-polar-700 border:transparent absolute -left-2 -top-2 right-0 overflow-hidden border bg-gray-50 p-2 shadow-xl',
+            'dark:bg-polar-900 dark:text-polar-400 rounded-4xl dark:border-polar-700 border:transparent absolute -left-2 -right-4 -top-2 overflow-hidden border bg-gray-50 p-2 shadow-xl',
           )}
         >
           {orgs.length > 0 ? (

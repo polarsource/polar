@@ -3,10 +3,12 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { organizationPageLink } from '@/utils/nav'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import {
   PropsWithChildren,
@@ -27,6 +29,7 @@ import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import DashboardTopbar from '../Navigation/DashboardTopbar'
 import { useRoute } from '../Navigation/useRoute'
 import { BrandingMenu } from './Public/BrandingMenu'
+import TopbarRight from './Public/TopbarRight'
 
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
@@ -96,7 +99,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         </div>
         <div
           className={twMerge(
-            'relative flex h-full w-full flex-col gap-y-4 pt-8 md:pt-0',
+            'relative flex h-full w-full flex-col gap-y-4',
             props.className,
           )}
         >
@@ -116,38 +119,50 @@ export default DashboardLayout
 const MobileNav = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()
+  const { organization } = useContext(MaintainerOrganizationContext)
+  const { currentUser } = useAuth()
 
   useEffect(() => {
     setMobileNavOpen(false)
   }, [pathname])
 
   const header = (
-    <div className="dark:bg-polar-900 sticky top-0 flex flex-row items-center justify-between bg-gray-50 px-2 py-4 sm:px-3 md:px-4">
+    <div className="dark:bg-polar-900 sticky left-0 right-0 top-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
       <a
         href="/"
-        className="flex-shrink-0 items-center font-semibold text-blue-500 dark:text-blue-400"
+        className="flex-shrink-0 items-center font-semibold text-black dark:text-white"
       >
         <LogoIcon className="h-10 w-10" />
       </a>
 
-      <div
-        className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
-        onClick={() => setMobileNavOpen((toggle) => !toggle)}
-      >
-        {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
+      <div className="flex flex-row items-center gap-x-6">
+        {organization.profile_settings?.enabled ? (
+          <Link href={organizationPageLink(organization)}>
+            <Button>
+              <div className="flex flex-row items-center gap-x-2">
+                <span className="whitespace-nowrap text-xs">Storefront</span>
+              </div>
+            </Button>
+          </Link>
+        ) : null}
+        <TopbarRight authenticatedUser={currentUser} />
+        <div
+          className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
+          onClick={() => setMobileNavOpen((toggle) => !toggle)}
+        >
+          {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
+        </div>
       </div>
     </div>
   )
 
   return (
-    <div className="dark:bg-polar-900 relative z-20 flex flex-row items-center justify-between space-x-2 bg-gray-50 px-4 py-5 sm:px-6 md:hidden md:px-8">
+    <div className="dark:bg-polar-900 relative z-20 flex w-screen flex-col items-center justify-between bg-gray-50 md:hidden">
       {mobileNavOpen ? (
         <div className="relative flex h-full w-full flex-col">
-          <div className="fixed inset-0 z-10 flex h-full flex-col">
-            {header}
-            <div className="dark:bg-polar-950 flex h-full flex-col bg-gray-50 p-4">
-              <DashboardSidebar />
-            </div>
+          {header}
+          <div className="dark:bg-polar-900 flex h-full flex-col bg-gray-50 px-4">
+            <DashboardSidebar />
           </div>
         </div>
       ) : (
@@ -231,7 +246,7 @@ export const DashboardBody = ({
       <div className="dark:md:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-gray-50 md:px-12 md:shadow-sm">
         <div className="flex h-full w-full max-w-screen-xl flex-col">
           {header && (
-            <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">
+            <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-12">
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
                 {title ?? currentRoute?.title}
               </h4>

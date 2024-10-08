@@ -328,7 +328,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
   }, [update, pricingType, replace, amountType])
 
   return (
-    <>
+    <div className="flex flex-col divide-y">
       <Section
         title="Product Information"
         description="Basic product information which helps identify the product"
@@ -521,7 +521,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
           )}
         />
       </Section>
-    </>
+    </div>
   )
 }
 

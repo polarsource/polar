@@ -5,6 +5,7 @@ import {
   AddOutlined,
   CheckOutlined,
   MoreVertOutlined,
+  RemoveOutlined,
 } from '@mui/icons-material'
 import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
@@ -65,10 +66,25 @@ const BenefitRow = ({
       className={twMerge('flex w-full flex-row items-center justify-between')}
     >
       <div className="flex flex-row items-center gap-x-3">
-        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-          <CheckOutlined className="h-3 w-3" fontSize="inherit" />
+        <span
+          className={twMerge(
+            'flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full text-2xl',
+            checked
+              ? ' dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-white'
+              : 'dark:bg-polar-800 dark:text-polar-500 bg-gray-200 text-gray-500',
+          )}
+        >
+          {checked ? (
+            <CheckOutlined className="h-3 w-3" fontSize="inherit" />
+          ) : (
+            <RemoveOutlined className="h-3 w-3" fontSize="inherit" />
+          )}
         </span>
-        <span className="text-sm">{benefit.description}</span>
+        <span
+          className={twMerge('text-sm', checked ? 'opacity-100' : 'opacity-50')}
+        >
+          {benefit.description}
+        </span>
       </div>
       <div className="flex flex-row items-center gap-x-2 text-[14px]">
         <Switch

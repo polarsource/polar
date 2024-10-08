@@ -151,7 +151,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   return (
     <DashboardBody title="Create Product" className="gap-y-16">
-      <div className="flex flex-col gap-y-8">
+      <div className="flex flex-col gap-y-8 divide-y">
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}

@@ -209,11 +209,18 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
-export const DashboardBody = (props: {
+export const DashboardBody = ({
+  children,
+  className,
+  title,
+  contextView,
+  header = true,
+}: {
   children?: React.ReactNode
   className?: string
   title?: string
   contextView?: React.ReactElement
+  header?: boolean
 }) => {
   const currentRoute = useRoute()
 
@@ -225,30 +232,30 @@ export const DashboardBody = (props: {
     <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
       <div className="dark:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border border-gray-200/50 bg-gray-50 px-12 md:overflow-y-auto">
         <div className="flex h-full w-full max-w-screen-xl flex-col">
-          <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">
-            <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
-              {props.title ?? currentRoute?.title}
-            </h4>
+          {header && (
+            <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">
+              <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
+                {title ?? currentRoute?.title}
+              </h4>
 
-            {currentRoute &&
-            'subs' in currentRoute &&
-            hasCurrent &&
-            (currentRoute.subs?.length ?? 0) > 0 ? (
-              <div className="flex flex-row items-center gap-4 gap-y-24">
-                <SubNav items={currentRoute.subs ?? []} />
-              </div>
-            ) : null}
-          </div>
-          <div
-            className={twMerge('flex w-full flex-col pb-8', props.className)}
-          >
-            {props.children}
+              {currentRoute &&
+              'subs' in currentRoute &&
+              hasCurrent &&
+              (currentRoute.subs?.length ?? 0) > 0 ? (
+                <div className="flex flex-row items-center gap-4 gap-y-24">
+                  <SubNav items={currentRoute.subs ?? []} />
+                </div>
+              ) : null}
+            </div>
+          )}
+          <div className={twMerge('flex w-full flex-col pb-8', className)}>
+            {children}
           </div>
         </div>
       </div>
-      {props.contextView ? (
+      {contextView ? (
         <div className="dark:bg-polar-900 dark:border-polar-700 w-full max-w-[440px] overflow-y-auto rounded-2xl border border-gray-200/50 bg-gray-50 p-8 py-12">
-          {props.contextView}
+          {contextView}
         </div>
       ) : null}
     </div>

@@ -50,7 +50,7 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
       </Link>
       <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
         <div className="flex w-full flex-col gap-8 md:w-2/3">
-          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+          <ShadowBox className="flex flex-col gap-6 border-gray-200/50">
             {organization && (
               <Link
                 className="flex flex-row items-center gap-x-4"
@@ -104,7 +104,7 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
         </div>
 
         <div className="flex w-full flex-col gap-8 md:max-w-[340px]">
-          <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
+          <ShadowBox className="flex flex-col gap-8 border-gray-200/50">
             <h3 className="text-lg font-medium">{order.product.name}</h3>
             <div className="flex flex-col gap-4">
               <h1 className="text-5xl font-light">

@@ -2,7 +2,10 @@
 
 import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
-import { resolveBenefitIcon } from '@/components/Benefit/utils'
+import {
+  resolveBenefitIcon,
+  resolveBenefitTypeDisplayName,
+} from '@/components/Benefit/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
@@ -53,11 +56,11 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   const selectedBenefitContextView = useMemo(() => {
     return selectedBenefit ? (
       <div className="flex flex-col gap-y-8">
-        <div className="flex flex-row items-start gap-x-3 align-middle">
-          <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-            {resolveBenefitIcon(selectedBenefit, 'inherit', 'h-3 w-3')}
+        <div className="flex flex-col gap-y-2">
+          <h3 className="text-lg font-medium">{selectedBenefit.description}</h3>
+          <span className="dark:text-polar-500 text-sm text-gray-500">
+            {resolveBenefitTypeDisplayName(selectedBenefit.type)}
           </span>
-          <span className="text-sm">{selectedBenefit.description}</span>
         </div>
 
         <div className="flex flex-col gap-y-4">
@@ -114,7 +117,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                   className={twMerge(
                     'dark:hover:bg-polar-800',
                     selectedBenefit?.id === benefit.id
-                      ? 'dark:bg-polar-800 bg-gray-50'
+                      ? 'dark:bg-polar-800 bg-gray-100'
                       : 'dark:bg-polar-900 bg-gray-50',
                   )}
                   selected={selectedBenefit?.id === benefit.id}

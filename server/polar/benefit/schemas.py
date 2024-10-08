@@ -65,6 +65,14 @@ class BenefitCustomProperties(Schema):
     note: Note | None
 
 
+class BenefitCustomCreateProperties(Schema):
+    """
+    Properties for creating a benefit of type `custom`.
+    """
+
+    note: Note | None = None
+
+
 class BenefitCustomSubscriberProperties(Schema):
     """
     Properties available to subscribers for a benefit of type `custom`.
@@ -327,7 +335,7 @@ class BenefitCustomCreate(BenefitCreateBase):
 
     type: Literal[BenefitType.custom]
     is_tax_applicable: IsTaxApplicable
-    properties: BenefitCustomProperties
+    properties: BenefitCustomCreateProperties
 
 
 class BenefitAdsCreate(BenefitCreateBase):

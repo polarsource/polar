@@ -14858,35 +14858,6 @@
         "title": "BenefitCustomCreate",
         "description": "Schema to create a benefit of type `custom`."
       },
-      "BenefitCustomProperties": {
-        "properties": {
-          "note": {
-            "anyOf": [
-              {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "description": "Private note to be shared with users who have this benefit granted."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          }
-        },
-        "type": "object",
-        "required": [
-          "note"
-        ],
-        "title": "BenefitCustomProperties",
-        "description": "Properties for a benefit of type `custom`."
-      },
       "BenefitCustomCreateProperties": {
         "properties": {
           "note": {

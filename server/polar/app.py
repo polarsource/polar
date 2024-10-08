@@ -1,6 +1,5 @@
 import contextlib
 from collections.abc import AsyncIterator
-from os import environ
 from typing import TypedDict
 
 import structlog
@@ -34,7 +33,6 @@ from polar.middlewares import (
     LogCorrelationIdMiddleware,
     PathRewriteMiddleware,
     SandboxResponseHeaderMiddleware,
-    XForwardedHostMiddleware,
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
@@ -132,10 +130,6 @@ def create_app() -> FastAPI:
 
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
-    app.add_middleware(
-        XForwardedHostMiddleware,
-        trusted_hosts=environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
-    )
     app.add_middleware(LogCorrelationIdMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)

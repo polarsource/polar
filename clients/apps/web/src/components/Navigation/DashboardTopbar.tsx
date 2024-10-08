@@ -3,7 +3,6 @@
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
-import { KeyboardArrowRight } from '@mui/icons-material'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -66,11 +65,9 @@ const DashboardTopbar = () => {
                 key={path}
                 href={`/${href}`}
                 className={twMerge(
-                  'dark:text-polar-500 dark:hover:bg-polar-800 rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
+                  'dark:text-polar-500 dark:hover:bg-polar-800 flex flex-row items-center justify-center rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
                   normalizePath ? 'capitalize' : 'lowercase',
-                  isCurrent
-                    ? 'dark:bg-polar-800 bg-gray-50 text-black shadow-sm dark:text-white'
-                    : '',
+                  isCurrent ? 'text-black dark:text-white' : '',
                 )}
               >
                 {path}
@@ -80,11 +77,7 @@ const DashboardTopbar = () => {
             return arr.length - 1 !== index
               ? [
                   link,
-                  <KeyboardArrowRight
-                    className="dark:text-polar-500 text-sm text-gray-500"
-                    key={path + 'sep'}
-                    fontSize="inherit"
-                  />,
+                  <span className="dark:text-polar-500 text-gray-500">/</span>,
                 ]
               : link
           })}

@@ -98,29 +98,13 @@
 
   .dark {
 
-
-    --blackA1: hsl(0 0% 0% / 0.012);
-    --blackA2: hsl(0 0% 0% / 0.027);
-    --blackA3: hsl(0 0% 0% / 0.047);
-    --blackA4: hsl(0 0% 0% / 0.071);
-    --blackA5: hsl(0 0% 0% / 0.09);
-    --blackA6: hsl(0 0% 0% / 0.114);
-    --blackA7: hsl(0 0% 0% / 0.141);
-    --blackA8: hsl(0 0% 0% / 0.22);
-    --blackA9: hsl(0 0% 0% / 0.439);
-    --blackA10: hsl(0 0% 0% / 0.478);
-    --blackA11: hsl(0 0% 0% / 0.565);
-    --blackA12: hsl(0 0% 0% / 0.91);
+    --background: 233 10% 9%;
+    --foreground: 233 10% 36%;
     
-    
-
-    --background: 228 17% 6%;
-    --foreground: 231 16% 46%;
-    
-    --card: 228 17% 6%;
+    --card: 233 10% 9%;
     --card-foreground: 231 17% 100%;
 
-    --popover: 228 17% 6%;
+    --popover: 233 10% 9%;
     --popover-foreground: 231 17% 85%;
 
     --primary: 217 100% 50%;
@@ -138,9 +122,9 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 75% 60%;
 
-    --border: 234 15% 13%;
-    --input: 234 15% 13%;
-    --ring: 234 15% 13%;
+    --border: 234 10% 14%;
+    --input: 234 10% 14%;
+    --ring: 234 10% 14%;
   }
 }
 

@@ -230,7 +230,7 @@ export const DashboardBody = ({
 
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
-      <div className="dark:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border border-gray-200/50 bg-gray-50 px-12 md:overflow-y-auto">
+      <div className="dark:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border border-gray-200/50 bg-gray-50 px-12 shadow-sm md:overflow-y-auto">
         <div className="flex h-full w-full max-w-screen-xl flex-col">
           {header && (
             <div className="flex w-full flex-row items-center justify-between gap-y-4 py-12">

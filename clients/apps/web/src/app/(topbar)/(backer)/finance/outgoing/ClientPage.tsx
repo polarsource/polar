@@ -11,7 +11,6 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
   pagination,
@@ -62,10 +61,10 @@ export default function ClientPage({
   const transactionsCount = transactionsHook.data?.pagination.max_page ?? 1
 
   return (
-    <div className="flex flex-col gap-y-6">
+    <div className="flex flex-col gap-y-8">
       {currentUser && <AccountBanner user={currentUser} />}
-      <ShadowBoxOnMd>
-        <div className="mb-8 flex flex-row items-center justify-between">
+      <div className="flex flex-col gap-y-8">
+        <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium capitalize">Transactions</h2>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -82,7 +81,7 @@ export default function ClientPage({
           onSortingChange={setSorting}
           isLoading={transactionsHook.isLoading}
         />
-      </ShadowBoxOnMd>
+      </div>
     </div>
   )
 }

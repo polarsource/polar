@@ -69,7 +69,7 @@ export default function ClientPage() {
           </div>
         </PurchaseSidebar>
       </div>
-      <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex w-full flex-col items-center gap-y-8 border border-gray-200/50 bg-gray-50 p-12">
+      <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex w-full flex-col items-center gap-y-8 border border-gray-200 bg-gray-50 p-12">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex flex-row items-center justify-between">
             <h3 className="text-2xl">Subscriptions</h3>

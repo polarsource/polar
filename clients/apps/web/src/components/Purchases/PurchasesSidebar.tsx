@@ -40,7 +40,7 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
   })
 
   return (
-    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6 border-gray-200/50 bg-gray-50">
+    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6 border-gray-200 bg-gray-50">
       <div className="flex flex-col gap-y-2">
         <h2 className="text-lg font-medium">Library</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">

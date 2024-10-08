@@ -49,7 +49,7 @@ export const ProjectsEditor = ({
   const EditorEmptyState = () => {
     return (
       <div className="flex flex-col gap-y-8">
-        <div className="dark:border-polar-700 dark:bg-polar-900 rounded-4xl flex flex-col items-center gap-y-4 border-gray-100 bg-gray-50 py-16 shadow-sm">
+        <div className="dark:border-polar-700 dark:bg-polar-900 rounded-4xl flex flex-col items-center gap-y-4 border-gray-200 bg-gray-50 py-16 shadow-sm">
           <HiveOutlined
             fontSize="large"
             className="text-blue-500 dark:text-blue-400"

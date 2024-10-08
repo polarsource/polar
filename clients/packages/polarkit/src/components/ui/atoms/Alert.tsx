@@ -13,7 +13,7 @@ const Alert: React.FC<React.PropsWithChildren<AlertProps>> = ({
       case 'blue':
         return 'bg-blue-50 border border-blue-100 text-blue-500 dark:bg-blue-950 dark:border-blue-900 dark:text-blue-400'
       case 'gray':
-        return 'bg-gray-50 border border-gray-100 text-gray-600 dark:bg-polar-950 dark:border-polar-700 dark:text-polar-400'
+        return 'bg-gray-50 border border-gray-200 text-gray-600 dark:bg-polar-950 dark:border-polar-700 dark:text-polar-400'
       case 'red':
         return 'bg-red-50 border border-red-100 text-red-600 dark:bg-red-950 dark:border-red-900 dark:text-red-400'
       case 'green':

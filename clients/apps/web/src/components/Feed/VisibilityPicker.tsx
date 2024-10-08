@@ -47,7 +47,7 @@ export const VisibilityPicker = ({
                 className={twMerge(
                   'capitalize',
                   disabled
-                    ? 'dark:text-polar-600 text-gray-300'
+                    ? 'dark:text-polar-600 text-gray-500'
                     : 'text-gray-950 dark:text-white',
                 )}
                 htmlFor={v}

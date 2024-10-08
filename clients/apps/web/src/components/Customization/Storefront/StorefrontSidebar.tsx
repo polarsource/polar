@@ -217,7 +217,7 @@ const StorefrontForm = () => {
                 <div className="flex flex-row items-center gap-x-6">
                   <input
                     className={twMerge(
-                      'dark:border-polar-600 h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-100 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
+                      'dark:border-polar-600 h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-200 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
                     )}
                     type="color"
                     {...field}

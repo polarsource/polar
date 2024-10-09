@@ -1,22 +1,20 @@
-# syntax=docker/dockerfile:1
-
-#
-# Python runtime environment
-#
-FROM --platform=$BUILDPLATFORM docker.io/python:3.12.0-bullseye
+FROM --platform=$BUILDPLATFORM python:3.12-slim
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0
 
-RUN pip install "poetry==1.4.2"
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/server
 
 ADD poetry.lock .
 ADD pyproject.toml .
 
-RUN poetry config virtualenvs.in-project true && \
-    poetry install --without test,docs --no-root
+RUN apt-get update && apt-get install -y build-essential redis libpq-dev curl \
+    && pip install --upgrade pip poetry \
+    && poetry config virtualenvs.in-project true \
+    && poetry install --without dev --no-root \
+    && apt-get autoremove -y build-essential
 
 ADD polar polar
 ADD scripts scripts
@@ -24,6 +22,10 @@ ADD run_worker.py .
 
 ADD migrations migrations
 ADD alembic.ini .
+
+RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN mkdir /data && curl -fsSL https://ipinfo.io/data/free/country_asn.mmdb?token=$(cat /run/secrets/IPINFO_ACCESS_TOKEN) -o /data/country_asn.mmdb
+ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data
+ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
 
 ARG RELEASE_VERSION
 ENV RELEASE_VERSION=${RELEASE_VERSION}

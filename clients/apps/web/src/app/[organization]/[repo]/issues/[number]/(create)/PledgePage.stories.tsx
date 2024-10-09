@@ -183,58 +183,6 @@ export const AssigneeAndRewards: Story = {
   },
 }
 
-export const PullRequests: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    issue: {
-      ...issue,
-      upfront_split_to_contributors: 75,
-    },
-    pullRequests: [
-      {
-        id: 'x',
-        number: 123,
-        title: 'I am a pull request! Here we gooooooooo!',
-        additions: 500,
-        deletions: 200,
-        is_merged: false,
-        is_closed: false,
-      },
-      {
-        id: 'x',
-        number: 12322,
-        title: 'I am a merged pull request!',
-        additions: 500,
-        deletions: 200,
-        is_merged: true,
-        is_closed: true,
-        author: {
-          login: 'baz',
-          html_url: 'x',
-          id: 132,
-          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-        },
-      },
-      {
-        id: 'x',
-        number: 12322,
-        title: 'I am a closed pull request!',
-        additions: 10,
-        deletions: 200,
-        is_merged: false,
-        is_closed: true,
-        author: {
-          login: 'baz',
-          html_url: 'x',
-          id: 132,
-          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-        },
-      },
-    ],
-  },
-}
-
 export const LongAuthorName: Story = {
   ...Default,
   args: {

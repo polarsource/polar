@@ -153,25 +153,6 @@ async def create_issue(
     return hook
 
 
-async def create_pr(
-    job_context: JobContext,
-    organization: Organization,
-    session: AsyncSession,
-    github_webhook: TestWebhookFactory,
-) -> TestWebhook:
-    await create_repositories(session, organization, github_webhook)
-    hook = github_webhook.create("pull_request.opened")
-
-    await webhook_tasks.pull_request_opened(
-        job_context,
-        "pull_request",
-        "opened",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-    return hook
-
-
 @pytest.mark.asyncio
 async def test_webhook_installation_suspend(
     job_context: JobContext,
@@ -646,93 +627,6 @@ async def test_webhook_issues_labeled(
 
 
 @pytest.mark.asyncio
-async def test_webhook_pull_request_opened(
-    job_context: JobContext,
-    mocker: MockerFixture,
-    session: AsyncSession,
-    organization: Organization,
-    github_webhook: TestWebhookFactory,
-) -> None:
-    hook = github_webhook.create("pull_request.opened")
-    pr_id = hook["pull_request"]["id"]
-
-    # then
-    session.expunge_all()
-
-    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
-    assert pr is None
-
-    await create_pr(job_context, organization, session, github_webhook)
-
-    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
-    assert pr is not None
-
-    assert pr.additions == 3
-    assert pr.deletions == 1
-
-
-@pytest.mark.asyncio
-async def test_webhook_pull_request_edited(
-    job_context: JobContext,
-    mocker: MockerFixture,
-    session: AsyncSession,
-    organization: Organization,
-    github_webhook: TestWebhookFactory,
-) -> None:
-    # then
-    session.expunge_all()
-
-    hook = github_webhook.create("pull_request.edited")
-    pr_id = hook["pull_request"]["id"]
-
-    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
-    assert pr is None
-
-    await create_repositories(session, organization, github_webhook)
-    hook = github_webhook.create("pull_request.edited")
-    await webhook_tasks.pull_request_edited(
-        job_context,
-        "pull_request",
-        "edited",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-
-
-@pytest.mark.asyncio
-async def test_webhook_pull_request_synchronize(
-    job_context: JobContext,
-    session: AsyncSession,
-    organization: Organization,
-    mocker: MockerFixture,
-    github_webhook: TestWebhookFactory,
-) -> None:
-    await create_pr(job_context, organization, session, github_webhook)
-
-    # then
-    session.expunge_all()
-
-    hook = github_webhook.create("pull_request.synchronize")
-    pr_id = hook["pull_request"]["id"]
-
-    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
-    assert pr is not None
-    assert pr.merge_commit_sha is None
-
-    await webhook_tasks.pull_request_synchronize(
-        job_context,
-        "pull_request",
-        "synchronize",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-
-    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
-    assert pr is not None
-    assert pr.merge_commit_sha is not None
-
-
-@pytest.mark.asyncio
 async def test_webhook_issues_deleted(
     job_context: JobContext,
     mocker: MockerFixture,
@@ -855,14 +749,7 @@ async def test_webhook_labeled_remove_badge_body(
     github_webhook: TestWebhookFactory,
 ) -> None:
     async def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
-        if name == "github.issue.sync.issue_references":
-            return None  # skip
-        if name == "github.issue.sync.issue_dependencies":
-            return None  # skip
-        if name == "github.repo.sync.issue_references":
-            return None  # skip
-        else:
-            raise Exception(f"unexpected job: {name}")
+        raise Exception(f"unexpected job: {name}")
 
     mocker.patch("polar.worker.enqueue_job", new=in_process_enqueue_job)
 

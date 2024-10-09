@@ -32,8 +32,6 @@ from polar.kit.utils import utc_now
 from polar.models import (
     ExternalOrganization,
     Issue,
-    IssueDependency,
-    IssueReference,
     IssueReward,
     Notification,
     Organization,
@@ -250,7 +248,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         pledged_by_user: UUID
         | None = None,  # Only include issues that have been pledged by this user
         have_pledge: bool | None = None,  # If issues have pledge or not
-        load_references: bool = False,
         load_pledges: bool = False,
         load_repository: bool = False,
         sort_by: IssueSortBy = IssueSortBy.newest,
@@ -401,11 +398,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         else:
             raise Exception("unknown sort_by")
 
-        if load_references:
-            statement = statement.options(
-                joinedload(Issue.references).joinedload(IssueReference.pull_request)
-            )
-
         if load_pledges:
             statement = statement.options(
                 contains_eager(Issue.pledges),
@@ -469,84 +461,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         issues = [r[0] for r in rows]
 
         return (issues, total_count)
-
-    async def list_issue_references(
-        self,
-        session: AsyncSession,
-        issue: Issue,
-    ) -> Sequence[IssueReference]:
-        stmt = (
-            sql.select(IssueReference)
-            .where(
-                IssueReference.issue_id == issue.id,
-            )
-            .options(joinedload(IssueReference.pull_request))
-        )
-        res = await session.execute(stmt)
-        refs = res.scalars().unique().all()
-        return refs
-
-    async def list_issue_references_for_issues(
-        self, session: AsyncSession, issue_ids: Sequence[UUID]
-    ) -> Sequence[IssueReference]:
-        stmt = (
-            sql.select(IssueReference)
-            .where(
-                IssueReference.issue_id.in_(issue_ids),
-            )
-            .options(joinedload(IssueReference.pull_request))
-        )
-        res = await session.execute(stmt)
-        refs = res.scalars().unique().all()
-        return refs
-
-    async def list_issue_dependencies_for_repositories(
-        self,
-        session: AsyncSession,
-        repos: Sequence[Repository],
-    ) -> Sequence[IssueDependency]:
-        """
-        Returns a dict of issue_id -> list of issues dependent on that issue
-        """
-        stmt = (
-            sql.select(IssueDependency)
-            .where(IssueDependency.repository_id.in_(list({r.id for r in repos})))
-            .options(
-                joinedload(IssueDependency.dependent_issue),
-                joinedload(IssueDependency.dependency_issue),
-            )
-        )
-        res = await session.execute(stmt)
-        deps = res.scalars().unique().all()
-        return deps
-
-    async def update_issue_reference_state(
-        self,
-        session: AsyncSession,
-        issue: Issue,
-    ) -> None:
-        refs = await self.list_issue_references(session, issue)
-
-        in_progress = False
-        pull_request = False
-
-        for r in refs:
-            if r.pull_request and not r.pull_request.is_draft:
-                pull_request = True
-            else:
-                in_progress = True
-
-        stmt = (
-            sql.update(Issue)
-            .where(Issue.id == issue.id)
-            .values(
-                issue_has_in_progress_relationship=in_progress,
-                issue_has_pull_request_relationship=pull_request,
-            )
-        )
-
-        await session.execute(stmt)
-        await session.commit()
 
     async def mark_confirmed_solved(
         self,

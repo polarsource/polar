@@ -4,9 +4,23 @@ from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
 from polar.auth.models import Anonymous, AuthSubject, User
+from polar.auth.scope import Scope
+from polar.models.organization import Organization
 
-_Checkout = Authenticator(
-    required_scopes=None,
+_CheckoutRead = Authenticator(
+    required_scopes={Scope.checkouts_read, Scope.checkouts_write},
+    allowed_subjects={User, Organization},
+)
+CheckoutRead = Annotated[AuthSubject[User | Organization], Depends(_CheckoutRead)]
+
+_CheckoutWrite = Authenticator(
+    required_scopes={Scope.checkouts_write},
+    allowed_subjects={User, Organization},
+)
+CheckoutWrite = Annotated[AuthSubject[User | Organization], Depends(_CheckoutWrite)]
+
+_CheckoutWeb = Authenticator(
+    required_scopes={Scope.web_default},
     allowed_subjects={User, Anonymous},
 )
-Checkout = Annotated[AuthSubject[User | Anonymous], Depends(_Checkout)]
+CheckoutWeb = Annotated[AuthSubject[User | Anonymous], Depends(_CheckoutWeb)]

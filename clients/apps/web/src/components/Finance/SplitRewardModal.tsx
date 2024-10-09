@@ -3,10 +3,9 @@ import {
   useIssue,
   useIssueMarkConfirmed,
   useListPledesForIssue,
-  useListPullsReferencingIssue,
   useOrganization,
 } from '@/hooks/queries'
-import { Author, ConfirmIssueSplit } from '@polar-sh/sdk'
+import { ConfirmIssueSplit } from '@polar-sh/sdk'
 import { useState } from 'react'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'
@@ -20,7 +19,6 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
       issue.repository.organization.organization_id !== undefined,
   )
   const pledges = useListPledesForIssue(props.issueId)
-  const pulls = useListPullsReferencingIssue(props.issueId)
 
   const { currentUser } = useAuth()
 
@@ -84,7 +82,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     }
   }
 
-  const selfOrgContributors: Contributor[] = organization
+  const contributors: Contributor[] = organization
     ? [
         {
           id: organization.id,
@@ -94,25 +92,6 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
         },
       ]
     : []
-
-  const pullRequestContributors: Contributor[] = pulls.data?.items
-    ? pulls.data.items
-        .map((pr) => pr.author)
-        .filter((a): a is Author => !!a)
-        .map((a) => {
-          return {
-            id: a.id.toString(),
-            username: a.login,
-            avatar_url: a.avatar_url,
-            is_suggested_from_contributions: true,
-          }
-        })
-    : []
-
-  const contributors: Contributor[] = [
-    ...selfOrgContributors,
-    ...pullRequestContributors,
-  ]
 
   const tmpShares: Share[] = contributors.map((c) => {
     return {
@@ -126,7 +105,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     ...new Map(tmpShares.map((item) => [item.username, item])).values(),
   ]
 
-  if (!pledges.isFetched || !pulls.isFetched) {
+  if (!pledges.isFetched) {
     return <Spinner />
   }
 

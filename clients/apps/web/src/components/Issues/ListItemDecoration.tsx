@@ -1,7 +1,6 @@
 import {
   Funding,
   Issue,
-  IssueReferenceRead,
   Organization,
   Pledge,
   PledgeState,
@@ -12,29 +11,12 @@ import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
 } from 'polarkit/lib/money'
-import { twMerge } from 'tailwind-merge'
 import IssuePledge from './IssuePledge'
-import IssueReference from './IssueReference'
 import IssueRewards from './IssueRewards'
-
-// When rendering in the Chrome Extension, the iframe needs to know it's expected height in pixels
-export const getExpectedHeight = ({
-  pledges,
-  references,
-}: {
-  pledges: Pledge[]
-  references: IssueReferenceRead[]
-}): number => {
-  const pledgeHeight = pledges.length > 0 ? 28 : 0
-  const referenceHeight = 28 * references.length
-  const inner = Math.max(pledgeHeight, referenceHeight)
-  return inner + 24
-}
 
 const IssueListItemDecoration = ({
   pledges,
   pledgesSummary,
-  references,
   showDisputeAction,
   onDispute,
   onConfirmPledges,
@@ -47,7 +29,6 @@ const IssueListItemDecoration = ({
 }: {
   pledges: Array<Pledge>
   pledgesSummary: PledgesTypeSummaries | null
-  references: IssueReferenceRead[]
   showDisputeAction: boolean
   onDispute: (pledge: Pledge) => void
   onConfirmPledges: () => void
@@ -123,8 +104,6 @@ const IssueListItemDecoration = ({
     return pledge.amount
   }
 
-  const haveReferences = references && references.length > 0
-
   const pledgesSummaryOrDefault = pledgesSummary ?? {
     pay_directly: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
     pay_on_completion: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
@@ -146,30 +125,11 @@ const IssueListItemDecoration = ({
             funding={funding}
           />
         )}
-        {haveReferences && (
-          <div
-            className={twMerge(
-              'dark:bg-polar-900 space-y-2 bg-gray-50 px-6 py-2',
-            )}
-          >
-            {haveReferences &&
-              references.map((r: IssueReferenceRead) => {
-                return (
-                  <IssueReference
-                    orgName={issue.repository.organization.name}
-                    repoName={issue.repository.name}
-                    reference={r}
-                    key={r.id}
-                  />
-                )
-              })}
-          </div>
-        )}
         {rewards && rewards?.length > 0 && <IssueRewards rewards={rewards} />}
       </div>
 
       {showDisputeAction && showPledgeStatusBox && (
-        <div className="dark:bg-polar-900 dark:border-polar-700 border-t border-gray-100 bg-gray-50 px-6 pb-1.5 pt-1">
+        <div className="dark:bg-polar-900 dark:border-polar-700 border-t border-gray-200 bg-gray-50 px-6 pb-1.5 pt-1">
           {disputablePledges.map((p) => {
             return (
               <div key={p.id}>

@@ -1,18 +1,29 @@
 import { Configuration, HTTPHeaders, PolarAPI } from '@polar-sh/sdk'
-import { cookies } from 'next/headers'
+import { cookies, headers as getOriginalHeaders } from 'next/headers'
 import { cache } from 'react'
 import { getServerURL } from '.'
 
 const _getServerSideAPI = (token?: string): PolarAPI => {
-  let headers: HTTPHeaders | undefined
+  let headers: HTTPHeaders = {}
+
+  const originalHeaders = getOriginalHeaders()
+  const xForwardedFor = originalHeaders.get('X-Forwarded-For')
+  if (xForwardedFor) {
+    headers = {
+      ...headers,
+      'X-Forwarded-For': xForwardedFor,
+    }
+  }
 
   if (token) {
     headers = {
+      ...headers,
       Authorization: `Bearer ${token}`,
     }
   } else {
     const cookieStore = cookies()
     headers = {
+      ...headers,
       Cookie: cookieStore.toString(),
     }
   }

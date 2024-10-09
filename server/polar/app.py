@@ -1,6 +1,5 @@
 import contextlib
 from collections.abc import AsyncIterator
-from os import environ
 from typing import TypedDict
 
 import structlog
@@ -9,6 +8,7 @@ from fastapi.routing import APIRoute
 
 from polar import receivers, worker  # noqa
 from polar.api import router
+from polar.checkout import ip_geolocation
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
@@ -34,7 +34,6 @@ from polar.middlewares import (
     LogCorrelationIdMiddleware,
     PathRewriteMiddleware,
     SandboxResponseHeaderMiddleware,
-    XForwardedHostMiddleware,
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
@@ -42,7 +41,7 @@ from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry
-from polar.webhook.webhooks import app as webhook_app
+from polar.webhook.webhooks import document_webhooks
 from polar.worker import ArqRedis
 from polar.worker import lifespan as worker_lifespan
 
@@ -91,6 +90,7 @@ class State(TypedDict):
     sync_engine: Engine
     sync_sessionmaker: SyncSessionMaker
     arq_pool: ArqRedis
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient | None
 
 
 @contextlib.asynccontextmanager
@@ -106,6 +106,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         sync_sessionmaker = create_sync_sessionmaker(sync_engine)
         instrument_sqlalchemy(sync_engine)
 
+        try:
+            ip_geolocation_client = ip_geolocation.get_client()
+        except FileNotFoundError:
+            log.info(
+                "IP geolocation database not found. "
+                "Checkout won't automatically geolocate IPs."
+            )
+            ip_geolocation_client = None
+
         log.info("Polar API started")
 
         yield {
@@ -114,10 +123,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
             "sync_engine": sync_engine,
             "sync_sessionmaker": sync_sessionmaker,
             "arq_pool": arq_pool,
+            "ip_geolocation_client": ip_geolocation_client,
         }
 
         await async_engine.dispose()
         sync_engine.dispose()
+        if ip_geolocation_client is not None:
+            ip_geolocation_client.close()
 
         log.info("Polar API stopped")
 
@@ -132,10 +144,6 @@ def create_app() -> FastAPI:
 
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
-    app.add_middleware(
-        XForwardedHostMiddleware,
-        trusted_hosts=environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
-    )
     app.add_middleware(LogCorrelationIdMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
@@ -150,7 +158,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
 
     app.include_router(router)
-    app.webhooks.routes = webhook_app.webhooks.routes
+    document_webhooks(app)
 
     return app
 

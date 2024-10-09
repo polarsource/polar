@@ -7,6 +7,7 @@ from polar.auth.endpoints import router as auth_router
 from polar.backoffice.endpoints import router as backoffice_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.checkout.endpoints import router as checkout_router
+from polar.checkout.legacy.endpoints import router as checkout_legacy_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.donation.endpoints import router as donations_router
 from polar.eventstream.endpoints import router as stream_router
@@ -32,7 +33,6 @@ from polar.payment_method.endpoints import router as payment_method_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.pledge.endpoints import router as pledge_router
 from polar.product.endpoints import router as product_router
-from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
 from polar.subscription.endpoints import router as subscription_router
@@ -73,8 +73,6 @@ router.include_router(rewards_router)
 router.include_router(pat_router)
 # /payment_methods
 router.include_router(payment_method_router)
-# /pull_requests
-router.include_router(pull_requests_router)
 # /{platform}/{org_name}/{repo_name}/accounts
 # /accounts
 router.include_router(accounts_router)
@@ -110,8 +108,10 @@ router.include_router(webhook_router)
 router.include_router(product_router)
 # /orders
 router.include_router(order_router)
-# /checkout
+# /checkouts/custom
 router.include_router(checkout_router)
+# /checkouts
+router.include_router(checkout_legacy_router)
 # /files
 router.include_router(files_router)
 # /metrics

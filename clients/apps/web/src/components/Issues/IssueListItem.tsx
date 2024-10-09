@@ -4,13 +4,7 @@ import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useOrganization } from '@/hooks/queries'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { api } from '@/utils/api'
-import {
-  Issue,
-  IssueReferenceRead,
-  Pledge,
-  PledgesTypeSummaries,
-  Reward,
-} from '@polar-sh/sdk'
+import { Issue, Pledge, PledgesTypeSummaries, Reward } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
@@ -24,7 +18,6 @@ import IssueListItemDecoration from './ListItemDecoration'
 
 const IssueListItem = (props: {
   issue: Issue
-  references: IssueReferenceRead[]
   pledges: Array<Pledge>
   pledgesSummary: PledgesTypeSummaries | null
   checkJustPledged?: boolean
@@ -58,8 +51,6 @@ const IssueListItem = (props: {
   }
 
   const havePledge = mergedPledges.length > 0
-  const haveReference = props.references && props.references?.length > 0
-  const havePledgeOrReference = havePledge || haveReference
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
     Pledge | undefined
@@ -100,14 +91,13 @@ const IssueListItem = (props: {
           }
           linkToFunding={!props.canAddRemovePolarLabel}
         />
-        {havePledgeOrReference && organization && (
+        {havePledge && organization && (
           <IssueActivityBox>
             <IssueListItemDecoration
               issue={props.issue}
               organization={organization}
               pledges={mergedPledges}
               pledgesSummary={props.pledgesSummary}
-              references={props.references}
               showDisputeAction={true}
               onDispute={onDispute}
               showConfirmPledgeAction={true}
@@ -192,7 +182,7 @@ const DisputeModal = (props: { pledge: Pledge }) => {
           manually reviewed the issue and resolved the dispute.
         </p>
 
-        <table className="min-w-full divide-y divide-gray-300">
+        <table className="min-w-full divide-y divide-gray-200">
           <tr>
             <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
               Amount

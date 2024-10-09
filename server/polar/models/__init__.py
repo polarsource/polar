@@ -6,6 +6,7 @@ from .article import Article
 from .articles_subscription import ArticlesSubscription
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
+from .checkout import Checkout
 from .donation import Donation
 from .downloadable import Downloadable
 from .external_organization import ExternalOrganization
@@ -13,8 +14,6 @@ from .file import File
 from .held_balance import HeldBalance
 from .invites import Invite
 from .issue import Issue
-from .issue_dependency import IssueDependency
-from .issue_reference import IssueReference
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
@@ -38,7 +37,6 @@ from .product_price import (
     ProductPriceFixed,
     ProductPriceFree,
 )
-from .pull_request import PullRequest
 from .repository import Repository
 from .subscription import Subscription
 from .traffic import Traffic
@@ -59,6 +57,7 @@ __all__ = [
     "ArticlesSubscription",
     "Benefit",
     "BenefitGrant",
+    "Checkout",
     "Donation",
     "Downloadable",
     "ExternalOrganization",
@@ -66,8 +65,6 @@ __all__ = [
     "HeldBalance",
     "Invite",
     "Issue",
-    "IssueDependency",
-    "IssueReference",
     "IssueReward",
     "LicenseKey",
     "LicenseKeyActivation",
@@ -90,7 +87,6 @@ __all__ = [
     "ProductPriceCustom",
     "ProductPriceFixed",
     "ProductPriceFree",
-    "PullRequest",
     "Repository",
     "Subscription",
     "Traffic",

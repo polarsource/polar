@@ -1,44 +1,59 @@
-import { CONFIG } from '@/utils/config'
-import { ArrowForwardOutlined } from '@mui/icons-material'
-import Link from 'next/link'
+'use client'
+
+import { KeyboardArrowRight } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
+import { AuthModal } from './AuthModal'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
-  href?: string
+  orgSlug?: string
 }
 
 const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   text: _text,
-  href: _href,
   wrapperClassNames,
+  orgSlug: slug,
   size = 'lg',
   ...props
 }) => {
-  const text = _text || 'Get started'
-
-  const signupPath = `${CONFIG.FRONTEND_BASE_URL}/signup?return_to=/dashboard`
-  const href = _href ? _href : signupPath
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const text = _text || 'Get Started'
 
   return (
-    <Link href={href}>
+    <>
       <Button
         wrapperClassNames={twMerge(
           'flex flex-row items-center gap-x-2',
           wrapperClassNames,
         )}
         size={size}
+        onClick={showModal}
         {...props}
       >
         <div>{text}</div>
-        <ArrowForwardOutlined
+        <KeyboardArrowRight
           className={size === 'lg' ? 'text-lg' : 'text-md'}
           fontSize="inherit"
         />
       </Button>
-    </Link>
+
+      <Modal
+        isShown={isModalShown}
+        hide={hideModal}
+        modalContent={
+          <AuthModal
+            return_to={`/dashboard/create`}
+            params={slug ? { slug, auto: 'true' } : {}}
+            type="signup"
+          />
+        }
+        className="lg:w-full lg:max-w-[480px]"
+      />
+    </>
   )
 }
 

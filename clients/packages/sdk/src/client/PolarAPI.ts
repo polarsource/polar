@@ -6,6 +6,7 @@ import {
   BackofficeApi,
   BenefitsApi,
   CheckoutsApi,
+  CheckoutsCustomApi,
   Configuration,
   DashboardApi,
   DonationsApi,
@@ -27,7 +28,6 @@ import {
   PersonalAccessTokenApi,
   PledgesApi,
   ProductsApi,
-  PullRequestsApi,
   RepositoriesApi,
   RewardsApi,
   SubscriptionsApi,
@@ -49,7 +49,8 @@ export class PolarAPI {
   public readonly articles: ArticlesApi
   public readonly auth: AuthApi
   public readonly backoffice: BackofficeApi
-  public readonly checkouts: CheckoutsApi
+  public readonly legacyCheckouts: CheckoutsApi
+  public readonly checkouts: CheckoutsCustomApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly donations: DonationsApi
@@ -70,7 +71,6 @@ export class PolarAPI {
   public readonly personalAccessToken: PersonalAccessTokenApi
   public readonly pledges: PledgesApi
   public readonly products: ProductsApi
-  public readonly pullRequests: PullRequestsApi
   public readonly repositories: RepositoriesApi
   public readonly rewards: RewardsApi
   public readonly subscriptions: SubscriptionsApi
@@ -92,7 +92,8 @@ export class PolarAPI {
     this.articles = new ArticlesApi(config)
     this.auth = new AuthApi(config)
     this.backoffice = new BackofficeApi(config)
-    this.checkouts = new CheckoutsApi(config)
+    this.legacyCheckouts = new CheckoutsApi(config)
+    this.checkouts = new CheckoutsCustomApi(config)
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
     this.donations = new DonationsApi(config)
@@ -114,7 +115,6 @@ export class PolarAPI {
     this.personalAccessToken = new PersonalAccessTokenApi(config)
     this.pledges = new PledgesApi(config)
     this.products = new ProductsApi(config)
-    this.pullRequests = new PullRequestsApi(config)
     this.repositories = new RepositoriesApi(config)
     this.rewards = new RewardsApi(config)
     this.subscriptions = new SubscriptionsApi(config)

@@ -17,9 +17,9 @@ const PurchaseLink = ({ ...props }: PropsWithChildren<LinkProps>) => {
   return (
     <Link
       className={twMerge(
-        'dark:text-polar-500 flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-full bg-transparent px-4 py-2 text-sm text-gray-500 transition-colors [font-feature-settings:"tnum"] hover:text-blue-500 dark:hover:text-blue-50',
+        'dark:text-polar-500 flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-lg bg-transparent px-4 py-2 text-sm text-gray-500 transition-colors [font-feature-settings:"tnum"] hover:text-black dark:hover:text-blue-50',
         active
-          ? 'dark:bg-polar-800 bg-blue-50 text-blue-500 dark:text-blue-50'
+          ? 'dark:bg-polar-800 bg-white font-medium text-black shadow-sm dark:text-blue-50'
           : '',
       )}
       {...props}
@@ -40,7 +40,7 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
   })
 
   return (
-    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6">
+    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6 border-gray-200 bg-gray-50">
       <div className="flex flex-col gap-y-2">
         <h2 className="text-lg font-medium">Library</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">

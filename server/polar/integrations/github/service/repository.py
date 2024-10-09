@@ -37,13 +37,6 @@ class GithubRepositoryService(RepositoryService):
             queue_name=QueueName.github_crawl,
             crawl_with_installation_id=crawl_with_installation_id,
         )
-        enqueue_job(
-            "github.repo.sync.pull_requests",
-            repository.organization_id,
-            repository.id,
-            queue_name=QueueName.github_crawl,
-            crawl_with_installation_id=crawl_with_installation_id,
-        )
 
     async def install_for_organization(
         self,

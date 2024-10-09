@@ -1,9 +1,29 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import Button from 'polarkit/components/ui/atoms/button'
+import { useCallback, useMemo, useState } from 'react'
 
 export const Hero = () => {
+  const [slug, setSlug] = useState('')
+
+  const slugify = useCallback(
+    (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '-')
+        .trim(),
+    [],
+  )
+
+  const isPhone = useMemo(() => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined')
+      return false
+
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
+      navigator.userAgent,
+    )
+  }, [])
+
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
@@ -19,26 +39,22 @@ export const Hero = () => {
           </div>
         </div>
         <div className="z-20 flex flex-row items-center gap-x-4">
-          {/* <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-white py-2 pl-6 pr-2">
+          <div
+            className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
+            role="form"
+          >
             <div className="flex flex-row items-center gap-x-0.5">
               <span>polar.sh/</span>
               <input
-                autoFocus
-                className="border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
+                autoFocus={!isPhone}
+                className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
                 placeholder="my-organization"
+                value={slug}
+                onChange={(e) => setSlug(slugify(e.target.value))}
               />
             </div>
-            <GetStartedButton
-              wrapperClassNames="p-0"
-              className="px-4 py-2 text-sm"
-            />
-          </div> */}
-          <GetStartedButton />
-          <a target="_blank" href="https://github.com/polarsource/polar">
-            <Button size="lg" variant="ghost">
-              Star on GitHub
-            </Button>
-          </a>
+            <GetStartedButton className="px-3" orgSlug={slug} size="default" />
+          </div>
         </div>
       </div>
       <div>

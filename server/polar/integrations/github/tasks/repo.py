@@ -5,8 +5,6 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
-    QueueName,
-    enqueue_job,
     task,
 )
 
@@ -52,56 +50,5 @@ async def sync_repository_issues(
                 session,
                 organization=organization,
                 repository=repository,
-                crawl_with_installation_id=crawl_with_installation_id,
-            )
-
-
-@task("github.repo.sync.pull_requests")
-@github_rate_limit_retry
-async def sync_repository_pull_requests(
-    ctx: JobContext,
-    organization_id: UUID,
-    repository_id: UUID,
-    polar_context: PolarWorkerContext,
-    crawl_with_installation_id: int | None = None,
-) -> None:
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_external_organization_and_repo(
-                session, organization_id, repository_id
-            )
-            await service.github_pull_request.sync_pull_requests(
-                session,
-                organization=organization,
-                repository=repository,
-                crawl_with_installation_id=crawl_with_installation_id,
-            )
-            enqueue_job(
-                "github.repo.sync.issue_references",
-                organization.id,
-                repository.id,
-                queue_name=QueueName.github_crawl,
-                crawl_with_installation_id=crawl_with_installation_id,
-            )
-
-
-@task("github.repo.sync.issue_references")
-@github_rate_limit_retry
-async def repo_sync_issue_references(
-    ctx: JobContext,
-    organization_id: UUID,
-    repository_id: UUID,
-    polar_context: PolarWorkerContext,
-    crawl_with_installation_id: int | None = None,
-) -> None:
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_external_organization_and_repo(
-                session, organization_id, repository_id
-            )
-            await service.github_reference.sync_repo_references(
-                session,
-                org=organization,
-                repo=repository,
                 crawl_with_installation_id=crawl_with_installation_id,
             )

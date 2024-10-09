@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { issue, issueBodyHTML, pledger, pullRequest } from '@/utils/testdata'
+import { issue, issueBodyHTML, pledger } from '@/utils/testdata'
 import IssueCard from './IssueCard'
 
 const meta: Meta<typeof IssueCard> = {
@@ -239,51 +239,5 @@ export const RewardedSplit: Story = {
         },
       ],
     },
-  },
-}
-
-export const RewardedSplitPulls: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    rewards: {
-      receivers: [
-        {
-          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-          name: 'zegl',
-        },
-      ],
-    },
-    issue: {
-      ...issue,
-      upfront_split_to_contributors: 75,
-      assignees: [
-        {
-          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-          login: 'zegl',
-          id: 123,
-          html_url: 'x',
-        },
-        {
-          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-          login: 'zegl',
-          id: 123,
-          html_url: 'x',
-        },
-      ],
-    },
-    pullRequests: [pullRequest, pullRequest],
-  },
-}
-
-export const Pulls: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-
-    issue: {
-      ...issue,
-    },
-    pullRequests: [pullRequest, pullRequest],
   },
 }

@@ -20,7 +20,6 @@ const repo: RepositoryBadgeSettingsRead = {
   open_issues: 20,
   auto_embedded_issues: 0,
   label_embedded_issues: 0,
-  pull_requests: 5,
   badge_auto_embed: false,
   badge_label: 'Fund',
   is_private: false,

@@ -34,7 +34,7 @@ export const opts = {
     footer: (args: any) => (
       <footer
         {...args}
-        className="space-y-4 whitespace-pre-line border-t-[1px] border-gray-300 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
+        className="space-y-4 whitespace-pre-line border-t-[1px] border-gray-200 pt-4 text-xs text-gray-500 dark:border-gray-500 dark:text-gray-500"
       />
     ),
   },

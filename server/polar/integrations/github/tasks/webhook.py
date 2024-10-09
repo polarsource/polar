@@ -18,8 +18,6 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
-    QueueName,
-    enqueue_job,
     task,
 )
 
@@ -463,14 +461,6 @@ async def handle_issue(
     if not issue:
         raise Exception(f"failed to save issue external_id={event.issue.id}")
 
-    # Trigger references sync job for entire repository
-    enqueue_job(
-        "github.repo.sync.issue_references",
-        issue.organization_id,
-        issue.repository_id,
-        queue_name=QueueName.github_crawl,
-    )
-
     return issue
 
 
@@ -838,133 +828,6 @@ async def issue_assigned_async(
     )
     await session.execute(stmt)
     await session.commit()
-
-
-# ------------------------------------------------------------------------------
-# PULL REQUESTS
-# ------------------------------------------------------------------------------
-
-
-async def handle_pull_request(
-    session: AsyncSession,
-    scope: str,
-    action: str,
-    event: types.WebhookPullRequestOpened
-    | types.WebhookPullRequestEdited
-    | types.WebhookPullRequestClosed
-    | types.WebhookPullRequestReopened
-    | types.WebhookPullRequestSynchronize,
-) -> None:
-    owner_id = event.repository.owner.id
-    repository_id = event.repository.id
-
-    organization = await service.github_organization.get_by_external_id(
-        session, owner_id
-    )
-    if not organization:
-        return None
-
-    repository = await service.github_repository.get_by_external_id(
-        session, repository_id
-    )
-    if not repository:
-        return None
-
-    await service.github_pull_request.store_many_full(
-        session, [event.pull_request], organization=organization, repository=repository
-    )
-
-    return
-
-
-@task("github.webhook.pull_request.opened")
-async def pull_request_opened(
-    ctx: JobContext,
-    scope: Literal["pull_request"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookPullRequestOpened):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-
-        async with AsyncSessionMaker(ctx) as session:
-            await handle_pull_request(session, scope, action, parsed)
-
-
-@task("github.webhook.pull_request.edited")
-async def pull_request_edited(
-    ctx: JobContext,
-    scope: Literal["pull_request"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookPullRequestEdited):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-
-        async with AsyncSessionMaker(ctx) as session:
-            await handle_pull_request(session, scope, action, parsed)
-
-
-@task("github.webhook.pull_request.closed")
-async def pull_request_closed(
-    ctx: JobContext,
-    scope: Literal["pull_request"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookPullRequestClosed):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-
-        async with AsyncSessionMaker(ctx) as session:
-            await handle_pull_request(session, scope, action, parsed)
-
-
-@task("github.webhook.pull_request.reopened")
-async def pull_request_reopened(
-    ctx: JobContext,
-    scope: Literal["pull_request"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookPullRequestReopened):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-
-        async with AsyncSessionMaker(ctx) as session:
-            await handle_pull_request(session, scope, action, parsed)
-
-
-@task("github.webhook.pull_request.synchronize")
-async def pull_request_synchronize(
-    ctx: JobContext,
-    scope: Literal["pull_request"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookPullRequestSynchronize):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-
-        async with AsyncSessionMaker(ctx) as session:
-            await handle_pull_request(session, scope, action, parsed)
 
 
 # ------------------------------------------------------------------------------

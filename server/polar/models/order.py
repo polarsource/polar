@@ -5,12 +5,13 @@ from sqlalchemy import ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
-    from polar.models import Product, ProductPrice, Subscription, User
+    from polar.models import Checkout, Product, ProductPrice, Subscription, User
 
 
-class Order(RecordModel):
+class Order(MetadataMixin, RecordModel):
     __tablename__ = "orders"
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -57,3 +58,11 @@ class Order(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription"]:
         return relationship("Subscription", lazy="raise")
+
+    checkout_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
+    )
+
+    @declared_attr
+    def checkout(cls) -> Mapped["Checkout | None"]:
+        return relationship("Checkout", lazy="raise")

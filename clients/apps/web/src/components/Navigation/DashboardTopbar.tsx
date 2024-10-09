@@ -4,13 +4,14 @@ import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import { PropsWithChildren, useContext } from 'react'
+import { useCallback, useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import TopbarRight from '../Layout/Public/TopbarRight'
-import { useRoute } from './useRoute'
+import { isUUID } from './utils'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -41,58 +42,72 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
-const DashboardTopbar = ({
-  children,
-  title,
-  marginBottom = true,
-  hideSubNav = false,
-}: PropsWithChildren<{
-  title?: string
-  marginBottom?: boolean
-  hideSubNav?: boolean
-}>) => {
+const DashboardTopbar = () => {
   const { currentUser } = useAuth()
 
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const currentRoute = useRoute()
+  const pathname = usePathname()
 
-  const className = twMerge(
-    'flex h-fit md:min-h-20 w-full items-center justify-between space-x-4 flex-col',
-    marginBottom && 'mb-6',
-  )
+  const Breadcrumbs = useCallback(() => {
+    return (
+      <div className="flex flex-row items-center gap-x-0.5 font-mono text-xs">
+        {pathname
+          .split('/')
+          .filter(Boolean)
+          .flatMap((path, index, arr) => {
+            const href = arr.slice(0, index + 1).join('/')
+            const normalizePath = !isUUID(path) && path !== org.slug
+            const isCurrent = index === arr.length - 1
+
+            const link = (
+              <Link
+                key={path}
+                href={`/${href}`}
+                className={twMerge(
+                  'dark:text-polar-500 dark:hover:bg-polar-800 flex flex-row items-center justify-center rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
+                  normalizePath ? 'capitalize' : 'lowercase',
+                  isCurrent ? 'text-black dark:text-white' : '',
+                )}
+              >
+                {path}
+              </Link>
+            )
+
+            return arr.length - 1 !== index
+              ? [
+                  link,
+                  <span
+                    key={path + 'sep'}
+                    className="dark:text-polar-500 text-gray-500"
+                  >
+                    /
+                  </span>,
+                ]
+              : link
+          })}
+      </div>
+    )
+  }, [pathname])
 
   return (
-    <div className={className}>
-      <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-x-4 gap-y-6 px-4 py-8 sm:px-6 md:gap-x-12 md:px-16 xl:gap-x-24">
-        <div className="flex flex-row flex-wrap items-center justify-start">
-          <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
-            {title ?? currentRoute?.title}
-          </h4>
-          <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
-            {children}
-            {org.profile_settings?.enabled ? (
-              <Link href={organizationPageLink(org)}>
-                <Button>
-                  <div className="flex flex-row items-center gap-x-2">
-                    <span className="whitespace-nowrap text-xs">
-                      Storefront
-                    </span>
-                  </div>
-                </Button>
-              </Link>
-            ) : null}
-            <TopbarRight authenticatedUser={currentUser} />
-          </div>
+    <div className="hidden w-full flex-col md:flex">
+      <div className="flex w-full flex-row items-center justify-between gap-x-8">
+        <div className="hidden w-full flex-grow flex-row items-center gap-x-8 md:flex">
+          <Breadcrumbs />
         </div>
-        {currentRoute &&
-        !hideSubNav &&
-        'subs' in currentRoute &&
-        (currentRoute.subs?.length ?? 0) > 0 ? (
-          <div className="flex flex-row items-center gap-4 gap-y-24">
-            <SubNav items={currentRoute.subs ?? []} />
-          </div>
-        ) : null}
+        <div className="flex flex-row items-center gap-x-6">
+          {org.profile_settings?.enabled ? (
+            <Link href={organizationPageLink(org)}>
+              <Button>
+                <div className="flex flex-row items-center gap-x-2">
+                  <span className="whitespace-nowrap text-xs">Storefront</span>
+                </div>
+              </Button>
+            </Link>
+          ) : null}
+          <TopbarRight authenticatedUser={currentUser} />
+        </div>
       </div>
     </div>
   )

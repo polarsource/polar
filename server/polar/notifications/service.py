@@ -8,7 +8,6 @@ from polar.kit.extensions.sqlalchemy import sql
 from polar.models.issue import Issue
 from polar.models.notification import Notification
 from polar.models.pledge import Pledge
-from polar.models.pull_request import PullRequest
 from polar.models.user_notification import UserNotification
 from polar.notifications.notification import Notification as NotificationSchema
 from polar.notifications.notification import NotificationPayload, NotificationType
@@ -22,8 +21,6 @@ from polar.worker import enqueue_job
 class PartialNotification(BaseModel):
     issue_id: UUID | None = None
     pledge_id: UUID | None = None
-    pull_request_id: UUID | None = None
-    issue_reference_id: UUID | None = None
     type: NotificationType
     payload: NotificationPayload
 
@@ -42,11 +39,6 @@ class NotificationsService:
             sql.select(Notification)
             .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
             .join(Issue, Issue.id == Notification.issue_id, isouter=True)
-            .join(
-                PullRequest,
-                PullRequest.id == Notification.pull_request_id,
-                isouter=True,
-            )
             .where(Notification.user_id == user_id)
             .order_by(desc(Notification.created_at))
             .limit(100)
@@ -66,7 +58,6 @@ class NotificationsService:
             type=notif.type,
             issue_id=notif.issue_id,
             pledge_id=notif.pledge_id,
-            pull_request_id=notif.pull_request_id,
             payload=notif.payload.model_dump(mode="json"),
         )
 
@@ -100,7 +91,6 @@ class NotificationsService:
             type=notif.type,
             issue_id=notif.issue_id,
             pledge_id=notif.pledge_id,
-            pull_request_id=notif.pull_request_id,
             payload=notif.payload.model_dump(mode="json"),
         )
 

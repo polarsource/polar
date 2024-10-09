@@ -2,6 +2,7 @@
 	route /v1/* {
 		reverse_proxy 127.0.0.1:8000 {
 			trusted_proxies private_ranges
+      header_up Host {http.request.header.X-Forwarded-Host}
 		}
 	}
 	route * {

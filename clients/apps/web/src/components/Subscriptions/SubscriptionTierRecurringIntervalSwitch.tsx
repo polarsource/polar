@@ -1,21 +1,25 @@
 import { SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import React from 'react'
+import React, { useCallback } from 'react'
 
 interface SubscriptionTierRecurringIntervalSwitchProps {
-  recurringInterval: SubscriptionRecurringInterval
-  onChange: (recurringInterval: SubscriptionRecurringInterval) => void
+  value: SubscriptionRecurringInterval
+  onChange: (value: SubscriptionRecurringInterval) => void
 }
 
 const SubscriptionTierRecurringIntervalSwitch: React.FC<
   SubscriptionTierRecurringIntervalSwitchProps
-> = ({ recurringInterval, onChange }) => {
-  const onCheckedChange = (checked: string) => {
-    onChange(checked as SubscriptionRecurringInterval)
-  }
+> = ({ value: value, onChange }) => {
+  const onValueChange = useCallback(
+    (newValue: string) => {
+      if (newValue === value) return
+      onChange(newValue as SubscriptionRecurringInterval)
+    },
+    [onChange, value],
+  )
 
   return (
-    <Tabs onValueChange={onCheckedChange} value={recurringInterval}>
+    <Tabs onValueChange={onValueChange} value={value}>
       <TabsList>
         <TabsTrigger value={SubscriptionRecurringInterval.MONTH} size="small">
           Monthly Billing

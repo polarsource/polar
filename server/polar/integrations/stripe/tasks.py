@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 import stripe
@@ -5,6 +6,7 @@ import structlog
 from arq import Retry
 
 from polar.account.service import account as account_service
+from polar.checkout.service import checkout as checkout_service
 from polar.donation.service import donation_service
 from polar.exceptions import PolarTaskError
 from polar.integrations.stripe.schemas import (
@@ -89,7 +91,17 @@ async def payment_intent_succeeded(
             payload = PaymentIntentSuccessWebhook.model_validate(payment_intent)
             metadata = payment_intent.get("metadata", {})
 
-            # Check if there is a Checkout Session related,
+            # Payment for Polar Checkout Session
+            if (
+                metadata.get("type") == ProductType.product
+                and (checkout_id := metadata.get("checkout_id")) is not None
+            ):
+                await checkout_service.handle_stripe_success(
+                    session, uuid.UUID(checkout_id), payment_intent
+                )
+                return
+
+            # Check if there is a Stripe Checkout Session related,
             # meaning it's a product or subscription purchase
             checkout_session = stripe_service.get_checkout_session_by_payment_intent(
                 payload.id
@@ -136,6 +148,27 @@ async def payment_intent_succeeded(
                 "stripe.webhook.payment_intent.succeeded.not_handled",
                 pi=payload.id,
             )
+
+
+@task("stripe.webhook.payment_intent.payment_failed")
+async def payment_intent_payment_failed(
+    ctx: JobContext,
+    event: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            payment_intent = event["data"]["object"]
+            metadata = payment_intent.metadata or {}
+
+            # Payment for Polar Checkout Session
+            if (
+                metadata.get("type") == ProductType.product
+                and (checkout_id := metadata.get("checkout_id")) is not None
+            ):
+                await checkout_service.handle_stripe_failure(
+                    session, uuid.UUID(checkout_id), payment_intent
+                )
 
 
 @task("stripe.webhook.charge.succeeded")

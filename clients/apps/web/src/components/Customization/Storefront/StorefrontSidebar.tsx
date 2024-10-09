@@ -55,7 +55,7 @@ const StorefrontSidebarContentWrapper = ({
   onEnabledChange: (enabled: boolean) => void
 }>) => {
   return (
-    <ShadowBox className="flex min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
+    <ShadowBox className="shadow-3xl flex min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -217,7 +217,7 @@ const StorefrontForm = () => {
                 <div className="flex flex-row items-center gap-x-6">
                   <input
                     className={twMerge(
-                      'dark:border-polar-600 h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-100 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
+                      'dark:border-polar-600 h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-200 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
                     )}
                     type="color"
                     {...field}

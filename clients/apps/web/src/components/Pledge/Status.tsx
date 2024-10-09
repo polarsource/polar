@@ -68,7 +68,6 @@ export const Status = (props: {
           <IssueListItem
             issue={pledge.issue}
             pledges={[pledge]}
-            references={[]}
             checkJustPledged={false}
             canAddRemovePolarLabel={false}
             showPledgeAction={true}

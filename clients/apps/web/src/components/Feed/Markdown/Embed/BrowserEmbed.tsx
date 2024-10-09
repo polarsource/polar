@@ -95,10 +95,9 @@ const EmbedIssue = (props: { src: string }) => {
   const issue = realIssue ?? tempIssue
 
   return (
-    <div className="not-prose dark:bg-polar-800 border-bg-gray-100 dark:border:bg-polar-700 my-2 overflow-hidden rounded-2xl border bg-white">
+    <div className="not-prose dark:bg-polar-800 border-bg-gray-100 dark:border:bg-polar-700 my-2 overflow-hidden rounded-2xl border bg-gray-50">
       <IssueListItem
         issue={issue}
-        references={[]}
         pledges={[]}
         pledgesSummary={null}
         rewards={null}

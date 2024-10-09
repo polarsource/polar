@@ -86,9 +86,7 @@ const getRetroactiveChanges = (
         if (repo.badge_auto_embed) {
           changes.additions =
             repo.synced_issues -
-            (repo.auto_embedded_issues +
-              repo.label_embedded_issues +
-              repo.pull_requests)
+            (repo.auto_embedded_issues + repo.label_embedded_issues)
         } else {
           changes.removals = repo.auto_embedded_issues
         }
@@ -549,7 +547,7 @@ export const Controls = ({
   return (
     <>
       {hasRetroactiveChanges && (
-        <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row space-x-8 rounded-xl border bg-white p-4">
+        <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row space-x-8 rounded-xl border bg-gray-50 p-4">
           <div className="w-1/2 items-center text-sm">
             <SettingsCheckbox
               id="retroactive_embed"

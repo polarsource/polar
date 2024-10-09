@@ -23,7 +23,6 @@ import {
   PledgerPledgePendingNotification,
   PledgerPledgePendingNotificationPayload,
   PledgesTypeSummaries,
-  PullRequest,
   Reactions,
   Repository,
   RewardPaidNotification,
@@ -352,16 +351,6 @@ export const notification_maintainerPledgedIssueConfirmationPendingNotification:
     type: 'MaintainerPledgedIssueConfirmationPendingNotification',
     payload: maintainerPledgedIssueConfirmationPendingNotification,
   }
-
-export const pullRequest: PullRequest = {
-  id: '12355',
-  number: 1337,
-  title: 'Hello `world` from a PR',
-  additions: 20,
-  deletions: 20,
-  is_merged: true,
-  is_closed: true,
-}
 
 export const article: Article = {
   id: 'xxxx',

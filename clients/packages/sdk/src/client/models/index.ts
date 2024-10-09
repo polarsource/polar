@@ -129,6 +129,49 @@ export type AccountType = typeof AccountType[keyof typeof AccountType];
 /**
  * 
  * @export
+ * @interface Address
+ */
+export interface Address {
+    /**
+     * 
+     * @type {string}
+     * @memberof Address
+     */
+    line1?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Address
+     */
+    line2?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Address
+     */
+    postal_code?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Address
+     */
+    city?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Address
+     */
+    state?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Address
+     */
+    country: string;
+}
+/**
+ * 
+ * @export
  * @interface AdvertisementCampaign
  */
 export interface AdvertisementCampaign {
@@ -1568,6 +1611,8 @@ export const AvailableScope = {
     USERREAD: 'user:read',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
+    CHECKOUTSREAD: 'checkouts:read',
+    CHECKOUTSWRITE: 'checkouts:write',
     PRODUCTSREAD: 'products:read',
     PRODUCTSWRITE: 'products:write',
     BENEFITSREAD: 'benefits:read',
@@ -2512,10 +2557,10 @@ export interface BenefitCustomCreate {
     is_tax_applicable: boolean;
     /**
      * 
-     * @type {BenefitCustomProperties}
+     * @type {BenefitCustomCreateProperties}
      * @memberof BenefitCustomCreate
      */
-    properties: BenefitCustomProperties;
+    properties: BenefitCustomCreateProperties;
 }
 
 
@@ -2528,6 +2573,26 @@ export const BenefitCustomCreateTypeEnum = {
 export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[keyof typeof BenefitCustomCreateTypeEnum];
 
 /**
+ * Properties for creating a benefit of type `custom`.
+ * @export
+ * @interface BenefitCustomCreateProperties
+ */
+export interface BenefitCustomCreateProperties {
+    /**
+     * 
+     * @type {BenefitCustomCreatePropertiesNote}
+     * @memberof BenefitCustomCreateProperties
+     */
+    note?: BenefitCustomCreatePropertiesNote | null;
+}
+/**
+ * @type BenefitCustomCreatePropertiesNote
+ * Private note to be shared with users who have this benefit granted.
+ * @export
+ */
+export type BenefitCustomCreatePropertiesNote = string;
+
+/**
  * Properties for a benefit of type `custom`.
  * @export
  * @interface BenefitCustomProperties
@@ -2535,18 +2600,11 @@ export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[key
 export interface BenefitCustomProperties {
     /**
      * 
-     * @type {BenefitCustomPropertiesNote}
+     * @type {BenefitCustomCreatePropertiesNote}
      * @memberof BenefitCustomProperties
      */
-    note: BenefitCustomPropertiesNote | null;
+    note: BenefitCustomCreatePropertiesNote | null;
 }
-/**
- * @type BenefitCustomPropertiesNote
- * Private note to be shared with users who have this benefit granted.
- * @export
- */
-export type BenefitCustomPropertiesNote = string;
-
 /**
  * 
  * @export
@@ -2632,10 +2690,10 @@ export type BenefitCustomSubscriberTypeEnum = typeof BenefitCustomSubscriberType
 export interface BenefitCustomSubscriberProperties {
     /**
      * 
-     * @type {BenefitCustomPropertiesNote}
+     * @type {BenefitCustomCreatePropertiesNote}
      * @memberof BenefitCustomSubscriberProperties
      */
-    note: BenefitCustomPropertiesNote | null;
+    note: BenefitCustomCreatePropertiesNote | null;
 }
 /**
  * 
@@ -4602,78 +4660,362 @@ export interface BylineProfile {
     avatar_url: string | null;
 }
 /**
- * A checkout session.
+ * Confirm a checkout session using a Stripe confirmation token.
  * @export
- * @interface Checkout
+ * @interface CheckoutConfirmStripe
  */
-export interface Checkout {
+export interface CheckoutConfirmStripe {
     /**
-     * The ID of the checkout.
+     * 
      * @type {string}
-     * @memberof Checkout
+     * @memberof CheckoutConfirmStripe
+     */
+    product_price_id?: string | null;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof CheckoutConfirmStripe
+     */
+    amount?: number | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof CheckoutConfirmStripe
+     */
+    customer_name?: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutConfirmStripe
+     */
+    customer_email?: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof CheckoutConfirmStripe
+     */
+    customer_billing_address?: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutConfirmStripe
+     */
+    customer_tax_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutConfirmStripe
+     */
+    confirmation_token_id?: string | null;
+}
+/**
+ * Create a new checkout session from a client.
+ * @export
+ * @interface CheckoutCreatePublic
+ */
+export interface CheckoutCreatePublic {
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutCreatePublic
+     */
+    product_price_id: string;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutCreatePublic
+     */
+    customer_email?: string | null;
+}
+/**
+ * Checkout session data retrieved using the client secret.
+ * @export
+ * @interface CheckoutPublic
+ */
+export interface CheckoutPublic {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutPublic
      */
     id: string;
     /**
-     * 
-     * @type {string}
-     * @memberof Checkout
+     * Payment processor used.
+     * @type {PolarEnumsPaymentProcessor}
+     * @memberof CheckoutPublic
      */
-    url?: string | null;
+    payment_processor: PolarEnumsPaymentProcessor;
+    /**
+     * Status of the checkout session.
+     * @type {CheckoutStatus}
+     * @memberof CheckoutPublic
+     */
+    status: CheckoutStatus;
+    /**
+     * Client secret used to update and complete the checkout session from the client.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    client_secret: string;
+    /**
+     * Expiration date and time of the checkout session.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    expires_at: string;
+    /**
+     * URL where the customer will be redirected after a successful payment.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    success_url: string;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof CheckoutPublic
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublic
+     */
+    tax_amount: number | null;
     /**
      * 
      * @type {string}
-     * @memberof Checkout
+     * @memberof CheckoutPublic
      */
-    customer_email: string | null;
+    currency: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublic
+     */
+    total_amount: number | null;
+    /**
+     * ID of the product to checkout.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    product_id: string;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    product_price_id: string;
+    /**
+     * Whether the checkout requires payment. Useful to detect free products.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    is_payment_required: boolean;
     /**
      * 
      * @type {string}
-     * @memberof Checkout
+     * @memberof CheckoutPublic
+     */
+    customer_id: string | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof CheckoutPublic
      */
     customer_name: string | null;
     /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    customer_email: string | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    customer_ip_address: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof CheckoutPublic
+     */
+    customer_billing_address: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    customer_tax_id: string | null;
+    /**
+     * 
+     * @type {object}
+     * @memberof CheckoutPublic
+     */
+    payment_processor_metadata: object;
+    /**
      * 
      * @type {Product}
-     * @memberof Checkout
+     * @memberof CheckoutPublic
      */
     product: Product;
     /**
      * 
      * @type {ProductPrice}
-     * @memberof Checkout
+     * @memberof CheckoutPublic
      */
     product_price: ProductPrice;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    readonly url: string;
 }
+
+
+
 /**
  * 
  * @export
- * @interface CheckoutCreate
  */
-export interface CheckoutCreate {
-    /**
-     * ID of the product price to subscribe to.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    product_price_id: string;
-    /**
-     * URL where the customer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the checkout session id.
-     * @type {string}
-     * @memberof CheckoutCreate
-     */
-    success_url: string;
+export const CheckoutSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    EXPIRES_AT: 'expires_at',
+    EXPIRES_AT2: '-expires_at'
+} as const;
+export type CheckoutSortProperty = typeof CheckoutSortProperty[keyof typeof CheckoutSortProperty];
+
+
+/**
+ * 
+ * @export
+ */
+export const CheckoutStatus = {
+    OPEN: 'open',
+    EXPIRED: 'expired',
+    CONFIRMED: 'confirmed',
+    SUCCEEDED: 'succeeded',
+    FAILED: 'failed'
+} as const;
+export type CheckoutStatus = typeof CheckoutStatus[keyof typeof CheckoutStatus];
+
+/**
+ * Update an existing checkout session using an access token.
+ * @export
+ * @interface CheckoutUpdate
+ */
+export interface CheckoutUpdate {
     /**
      * 
      * @type {string}
-     * @memberof CheckoutCreate
+     * @memberof CheckoutUpdate
+     */
+    product_price_id?: string | null;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof CheckoutUpdate
+     */
+    amount?: number | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    customer_name?: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutUpdate
      */
     customer_email?: string | null;
     /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof CheckoutUpdate
+     */
+    customer_billing_address?: Address | null;
+    /**
      * 
      * @type {string}
-     * @memberof CheckoutCreate
+     * @memberof CheckoutUpdate
      */
-    subscription_id?: string | null;
+    customer_tax_id?: string | null;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CheckoutUpdate
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    customer_ip_address?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    success_url?: string | null;
+}
+/**
+ * Update an existing checkout session using the client secret.
+ * @export
+ * @interface CheckoutUpdatePublic
+ */
+export interface CheckoutUpdatePublic {
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdatePublic
+     */
+    product_price_id?: string | null;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof CheckoutUpdatePublic
+     */
+    amount?: number | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof CheckoutUpdatePublic
+     */
+    customer_name?: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutUpdatePublic
+     */
+    customer_email?: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof CheckoutUpdatePublic
+     */
+    customer_billing_address?: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdatePublic
+     */
+    customer_tax_id?: string | null;
 }
 /**
  * 
@@ -5416,12 +5758,6 @@ export interface Entry {
     pledges_summary: PledgesTypeSummaries | null;
     /**
      * 
-     * @type {Array<IssueReferenceRead>}
-     * @memberof Entry
-     */
-    references: Array<IssueReferenceRead> | null;
-    /**
-     * 
      * @type {Array<Pledge>}
      * @memberof Entry
      */
@@ -5441,104 +5777,6 @@ export interface ExistingProductPrice {
      * @memberof ExistingProductPrice
      */
     id: string;
-}
-/**
- * 
- * @export
- * @interface ExternalGitHubCommitReference
- */
-export interface ExternalGitHubCommitReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    sha: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    branch_name?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    message?: string | null;
-}
-/**
- * 
- * @export
- * @interface ExternalGitHubPullRequestReference
- */
-export interface ExternalGitHubPullRequestReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    number: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    state: string;
 }
 /**
  * 
@@ -6383,57 +6621,6 @@ export interface IssueListResponse {
  */
 export type IssueNumberFilter = Array<number> | number;
 
-/**
- * 
- * @export
- * @interface IssueReferenceRead
- */
-export interface IssueReferenceRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof IssueReferenceRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {IssueReferenceType}
-     * @memberof IssueReferenceRead
-     */
-    type: IssueReferenceType;
-    /**
-     * 
-     * @type {PullRequestReference}
-     * @memberof IssueReferenceRead
-     */
-    pull_request_reference?: PullRequestReference | null;
-    /**
-     * 
-     * @type {ExternalGitHubPullRequestReference}
-     * @memberof IssueReferenceRead
-     */
-    external_github_pull_request_reference?: ExternalGitHubPullRequestReference | null;
-    /**
-     * 
-     * @type {ExternalGitHubCommitReference}
-     * @memberof IssueReferenceRead
-     */
-    external_github_commit_reference?: ExternalGitHubCommitReference | null;
-}
-
-
-
-/**
- * 
- * @export
- */
-export const IssueReferenceType = {
-    PULL_REQUEST: 'pull_request',
-    EXTERNAL_GITHUB_PULL_REQUEST: 'external_github_pull_request',
-    EXTERNAL_GITHUB_COMMIT: 'external_github_commit'
-} as const;
-export type IssueReferenceType = typeof IssueReferenceType[keyof typeof IssueReferenceType];
-
 
 /**
  * 
@@ -7051,6 +7238,25 @@ export interface ListResourceBenefitGrant {
 /**
  * 
  * @export
+ * @interface ListResourceCheckout
+ */
+export interface ListResourceCheckout {
+    /**
+     * 
+     * @type {Array<PolarCheckoutSchemasCheckout>}
+     * @memberof ListResourceCheckout
+     */
+    items: Array<PolarCheckoutSchemasCheckout>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCheckout
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceDonation
  */
 export interface ListResourceDonation {
@@ -7368,25 +7574,6 @@ export interface ListResourcePublicDonation {
      * 
      * @type {Pagination}
      * @memberof ListResourcePublicDonation
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourcePullRequest
- */
-export interface ListResourcePullRequest {
-    /**
-     * 
-     * @type {Array<PullRequest>}
-     * @memberof ListResourcePullRequest
-     */
-    items: Array<PullRequest>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourcePullRequest
      */
     pagination: Pagination;
 }
@@ -9437,6 +9624,12 @@ export interface Order {
     id: string;
     /**
      * 
+     * @type {{ [key: string]: string; }}
+     * @memberof Order
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
      * @type {number}
      * @memberof Order
      */
@@ -9477,6 +9670,12 @@ export interface Order {
      * @memberof Order
      */
     subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    checkout_id: string | null;
     /**
      * 
      * @type {OrderUser}
@@ -9603,6 +9802,12 @@ export type OrderSortProperty = typeof OrderSortProperty[keyof typeof OrderSortP
  */
 export interface OrderSubscription {
     /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof OrderSubscription
+     */
+    metadata: { [key: string]: string; };
+    /**
      * Creation timestamp of the object.
      * @type {string}
      * @memberof OrderSubscription
@@ -9692,6 +9897,12 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    checkout_id: string | null;
 }
 
 
@@ -10561,17 +10772,6 @@ export const PaymentMethodTypeEnum = {
 } as const;
 export type PaymentMethodTypeEnum = typeof PaymentMethodTypeEnum[keyof typeof PaymentMethodTypeEnum];
 
-
-/**
- * Supported payment processors.
- * @export
- */
-export const PaymentProcessor = {
-    STRIPE: 'stripe',
-    OPEN_COLLECTIVE: 'open_collective'
-} as const;
-export type PaymentProcessor = typeof PaymentProcessor[keyof typeof PaymentProcessor];
-
 /**
  * 
  * @export
@@ -11243,6 +11443,335 @@ export interface PledgesTypeSummaries {
      */
     pay_directly: PledgesSummary;
 }
+/**
+ * A checkout session.
+ * @export
+ * @interface PolarCheckoutLegacySchemasCheckout
+ */
+export interface PolarCheckoutLegacySchemasCheckout {
+    /**
+     * The ID of the checkout.
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    url?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    customer_email: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    customer_name: string | null;
+    /**
+     * 
+     * @type {Product}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    product: Product;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof PolarCheckoutLegacySchemasCheckout
+     */
+    product_price: ProductPrice;
+}
+/**
+ * 
+ * @export
+ * @interface PolarCheckoutLegacySchemasCheckoutCreate
+ */
+export interface PolarCheckoutLegacySchemasCheckoutCreate {
+    /**
+     * ID of the product price to subscribe to.
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    product_price_id: string;
+    /**
+     * URL where the customer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the checkout session id.
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    success_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    customer_email?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutLegacySchemasCheckoutCreate
+     */
+    subscription_id?: string | null;
+}
+/**
+ * Checkout session data retrieved using an access token.
+ * @export
+ * @interface PolarCheckoutSchemasCheckout
+ */
+export interface PolarCheckoutSchemasCheckout {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    id: string;
+    /**
+     * Payment processor used.
+     * @type {PolarEnumsPaymentProcessor}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    payment_processor: PolarEnumsPaymentProcessor;
+    /**
+     * Status of the checkout session.
+     * @type {CheckoutStatus}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    status: CheckoutStatus;
+    /**
+     * Client secret used to update and complete the checkout session from the client.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    client_secret: string;
+    /**
+     * Expiration date and time of the checkout session.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    expires_at: string;
+    /**
+     * URL where the customer will be redirected after a successful payment.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    success_url: string;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    tax_amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    total_amount: number | null;
+    /**
+     * ID of the product to checkout.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    product_id: string;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    product_price_id: string;
+    /**
+     * Whether the checkout requires payment. Useful to detect free products.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    is_payment_required: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_id: string | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_name: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_email: string | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_ip_address: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_billing_address: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    customer_tax_id: string | null;
+    /**
+     * 
+     * @type {object}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    payment_processor_metadata: object;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    readonly url: string;
+}
+
+
+/**
+ * Create a new checkout session.
+ * @export
+ * @interface PolarCheckoutSchemasCheckoutCreate
+ */
+export interface PolarCheckoutSchemasCheckoutCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * Payment processor to use. Currently only Stripe is supported.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    payment_processor: PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    product_price_id: string;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    amount?: number | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_name?: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_email?: string | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_ip_address?: string | null;
+    /**
+     * Billing address of the customer.
+     * @type {Address}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_billing_address?: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    customer_tax_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    success_url?: string | null;
+}
+
+
+/**
+ * @export
+ */
+export const PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum = {
+    STRIPE: 'stripe'
+} as const;
+export type PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum = typeof PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum[keyof typeof PolarCheckoutSchemasCheckoutCreatePaymentProcessorEnum];
+
+
+/**
+ * 
+ * @export
+ */
+export const PolarEnumsPaymentProcessor = {
+    STRIPE: 'stripe'
+} as const;
+export type PolarEnumsPaymentProcessor = typeof PolarEnumsPaymentProcessor[keyof typeof PolarEnumsPaymentProcessor];
+
+
+/**
+ * Supported payment processors.
+ * @export
+ */
+export const PolarModelsTransactionPaymentProcessor = {
+    STRIPE: 'stripe',
+    OPEN_COLLECTIVE: 'open_collective'
+} as const;
+export type PolarModelsTransactionPaymentProcessor = typeof PolarModelsTransactionPaymentProcessor[keyof typeof PolarModelsTransactionPaymentProcessor];
+
 /**
  * 
  * @export
@@ -12465,140 +12994,6 @@ export interface PublicDonation {
 /**
  * 
  * @export
- * @interface PullRequest
- */
-export interface PullRequest {
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequest
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequest
-     */
-    number: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequest
-     */
-    title: string;
-    /**
-     * 
-     * @type {Author}
-     * @memberof PullRequest
-     */
-    author?: Author | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequest
-     */
-    additions: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequest
-     */
-    deletions: number;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequest
-     */
-    is_merged: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequest
-     */
-    is_closed: boolean;
-}
-/**
- * 
- * @export
- * @interface PullRequestReference
- */
-export interface PullRequestReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    number: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    additions: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    deletions: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    state: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    merged_at?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    closed_at?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequestReference
-     */
-    is_draft: boolean;
-}
-/**
- * 
- * @export
  * @interface Reactions
  */
 export interface Reactions {
@@ -12774,12 +13169,6 @@ export interface RepositoryBadgeSettingsRead {
      * @memberof RepositoryBadgeSettingsRead
      */
     label_embedded_issues: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof RepositoryBadgeSettingsRead
-     */
-    pull_requests: number;
     /**
      * 
      * @type {boolean}
@@ -13383,6 +13772,8 @@ export const Scope = {
     WEB_DEFAULT: 'web_default',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
+    CHECKOUTSREAD: 'checkouts:read',
+    CHECKOUTSWRITE: 'checkouts:write',
     PRODUCTSREAD: 'products:read',
     PRODUCTSWRITE: 'products:write',
     BENEFITSREAD: 'benefits:read',
@@ -13546,6 +13937,18 @@ export interface Subscription {
      * @memberof Subscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    checkout_id: string | null;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof Subscription
+     */
+    metadata: { [key: string]: string; };
     /**
      * 
      * @type {SubscriptionUser}
@@ -13968,10 +14371,10 @@ export interface Transaction {
     type: TransactionType;
     /**
      * 
-     * @type {PaymentProcessor}
+     * @type {PolarModelsTransactionPaymentProcessor}
      * @memberof Transaction
      */
-    processor: PaymentProcessor | null;
+    processor: PolarModelsTransactionPaymentProcessor | null;
     /**
      * 
      * @type {string}
@@ -14121,10 +14524,10 @@ export interface TransactionDetails {
     type: TransactionType;
     /**
      * 
-     * @type {PaymentProcessor}
+     * @type {PolarModelsTransactionPaymentProcessor}
      * @memberof TransactionDetails
      */
-    processor: PaymentProcessor | null;
+    processor: PolarModelsTransactionPaymentProcessor | null;
     /**
      * 
      * @type {string}
@@ -14311,10 +14714,10 @@ export interface TransactionEmbedded {
     type: TransactionType;
     /**
      * 
-     * @type {PaymentProcessor}
+     * @type {PolarModelsTransactionPaymentProcessor}
      * @memberof TransactionEmbedded
      */
-    processor: PaymentProcessor | null;
+    processor: PolarModelsTransactionPaymentProcessor | null;
     /**
      * 
      * @type {string}
@@ -15458,6 +15861,12 @@ export interface UserOrderSubscription {
      * @memberof UserOrderSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    checkout_id: string | null;
 }
 
 
@@ -15669,6 +16078,12 @@ export interface UserSubscription {
      * @memberof UserSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    checkout_id: string | null;
     /**
      * 
      * @type {UserSubscriptionProduct}
@@ -16063,6 +16478,68 @@ export const WebhookBenefitUpdatedPayloadTypeEnum = {
 export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitUpdatedPayloadTypeEnum];
 
 /**
+ * Sent when a new checkout is created.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookCheckoutCreatedPayload
+ */
+export interface WebhookCheckoutCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookCheckoutCreatedPayload
+     */
+    type: WebhookCheckoutCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {PolarCheckoutSchemasCheckout}
+     * @memberof WebhookCheckoutCreatedPayload
+     */
+    data: PolarCheckoutSchemasCheckout;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookCheckoutCreatedPayloadTypeEnum = {
+    CHECKOUT_CREATED: 'checkout.created'
+} as const;
+export type WebhookCheckoutCreatedPayloadTypeEnum = typeof WebhookCheckoutCreatedPayloadTypeEnum[keyof typeof WebhookCheckoutCreatedPayloadTypeEnum];
+
+/**
+ * Sent when a checkout is updated.
+ * 
+ * **Discord & Slack support:** Basic
+ * @export
+ * @interface WebhookCheckoutUpdatedPayload
+ */
+export interface WebhookCheckoutUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookCheckoutUpdatedPayload
+     */
+    type: WebhookCheckoutUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {PolarCheckoutSchemasCheckout}
+     * @memberof WebhookCheckoutUpdatedPayload
+     */
+    data: PolarCheckoutSchemasCheckout;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookCheckoutUpdatedPayloadTypeEnum = {
+    CHECKOUT_UPDATED: 'checkout.updated'
+} as const;
+export type WebhookCheckoutUpdatedPayloadTypeEnum = typeof WebhookCheckoutUpdatedPayloadTypeEnum[keyof typeof WebhookCheckoutUpdatedPayloadTypeEnum];
+
+/**
  * A webhook delivery for a webhook event.
  * @export
  * @interface WebhookDelivery
@@ -16320,6 +16797,8 @@ export interface WebhookEvent {
  * @export
  */
 export const WebhookEventType = {
+    CHECKOUT_CREATED: 'checkout.created',
+    CHECKOUT_UPDATED: 'checkout.updated',
     ORDER_CREATED: 'order.created',
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',

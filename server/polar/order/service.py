@@ -9,6 +9,7 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -24,6 +25,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import (
+    Checkout,
     HeldBalance,
     Order,
     Organization,
@@ -93,6 +95,17 @@ class ProductPriceDoesNotExist(OrderError):
         super().__init__(message)
 
 
+class CheckoutDoesNotExist(OrderError):
+    def __init__(self, invoice_id: str, checkout_id: str) -> None:
+        self.invoice_id = invoice_id
+        self.checkout_id = checkout_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe with checkout {checkout_id}, "
+            f"but no associated Checkout exists."
+        )
+        super().__init__(message)
+
+
 class SubscriptionDoesNotExist(OrderError):
     def __init__(self, invoice_id: str, stripe_subscription_id: str) -> None:
         self.invoice_id = invoice_id
@@ -102,6 +115,13 @@ class SubscriptionDoesNotExist(OrderError):
             f"for subscription {stripe_subscription_id}, "
             f"but no associated Subscription exists."
         )
+        super().__init__(message)
+
+
+class InvoiceWithoutCharge(OrderError):
+    def __init__(self, invoice_id: str) -> None:
+        self.invoice_id = invoice_id
+        message = f"Received invoice {invoice_id} from Stripe, but it has no charge."
         super().__init__(message)
 
 
@@ -214,22 +234,29 @@ class OrderService(ResourceServiceReader[Order]):
             raise NotAnOrderInvoice(invoice.id)
 
         # Get price and product
-        stripe_price_ids = set[str]()
+        stripe_prices: list[stripe_lib.Price] = []
         for line in invoice.lines.data:
             if not line.proration and line.price is not None:
-                stripe_price_ids.add(line.price.id)
+                stripe_prices.append(line.price)
 
         product_price: ProductPrice | None = None
         # For invoices with only one line item, get the price from the line item
-        if len(stripe_price_ids) == 1:
-            stripe_price_id = stripe_price_ids.pop()
-            product_price = await product_price_service.get_by_stripe_price_id(
-                session, stripe_price_id
-            )
+        if len(stripe_prices) == 1:
+            stripe_price = stripe_prices.pop()
+            # For custom prices, we create ad-hoc prices on Stripe,
+            # but set the "father" price ID as metadata
+            if stripe_price.metadata and stripe_price.metadata.get("product_price_id"):
+                product_price = await product_price_service.get_by_id(
+                    session, uuid.UUID(stripe_price.metadata["product_price_id"])
+                )
+            else:
+                product_price = await product_price_service.get_by_stripe_price_id(
+                    session, stripe_price.id
+                )
             if product_price is None:
-                raise ProductPriceDoesNotExist(invoice.id, stripe_price_id)
+                raise ProductPriceDoesNotExist(invoice.id, stripe_price.id)
         # For invoices with only prorations, try to get the price from the subscription metadata
-        elif len(stripe_price_ids) == 0:
+        elif len(stripe_prices) == 0:
             if (
                 invoice.subscription_details is None
                 or invoice.subscription_details.metadata is None
@@ -253,6 +280,16 @@ class OrderService(ResourceServiceReader[Order]):
             raise CantDetermineInvoicePrice(invoice.id)
 
         product = product_price.product
+
+        # Get Checkout if available
+        checkout: Checkout | None = None
+        if (
+            invoice.metadata
+            and (checkout_id := invoice.metadata.get("checkout_id")) is not None
+        ):
+            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
+            if checkout is None:
+                raise CheckoutDoesNotExist(invoice.id, checkout_id)
 
         user: User | None = None
 
@@ -296,15 +333,30 @@ class OrderService(ResourceServiceReader[Order]):
             product=product,
             product_price=product_price,
             subscription=subscription,
+            checkout=checkout,
+            user_metadata=checkout.user_metadata if checkout is not None else {},
         )
         session.add(order)
         await session.flush()
 
-        # Free orders don't have a charge
+        # Create the transactions balances for the order, if not a free order
         if invoice.total > 0:
-            assert invoice.charge is not None
+            charge_id = get_expandable_id(invoice.charge) if invoice.charge else None
+            # With Polar Checkout, we mark the order paid out-of-band,
+            # so we need to retrieve the charge manually from metadata
+            if charge_id is None:
+                invoice_metadata = invoice.metadata or {}
+                payment_intent_id = invoice_metadata.get("payment_intent_id")
+                if payment_intent_id is None:
+                    raise InvoiceWithoutCharge(invoice.id)
+
+                payment_intent = stripe_service.get_payment_intent(payment_intent_id)
+                if payment_intent.latest_charge is None:
+                    raise InvoiceWithoutCharge(invoice.id)
+                charge_id = get_expandable_id(payment_intent.latest_charge)
+
             await self._create_order_balance(
-                session, order, charge_id=get_expandable_id(invoice.charge)
+                session, order, charge_id=get_expandable_id(charge_id)
             )
 
         if order.subscription is None:

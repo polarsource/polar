@@ -1,13 +1,22 @@
-import uuid
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.scope import Scope
+from polar.checkout.service import checkout as checkout_service
+from polar.checkout.tax import calculate_tax
 from polar.integrations.stripe.service import StripeService
-from polar.models import Product
+from polar.models import Checkout, Product, UserOrganization
+from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_checkout
+
+API_PREFIX = "/v1/checkouts/custom"
 
 
 @pytest.fixture(autouse=True)
@@ -17,118 +26,258 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
+@pytest.fixture(autouse=True)
+def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock(spec=calculate_tax)
+    mocker.patch("polar.checkout.service.calculate_tax", new=mock)
+    mock.return_value = 0
+    return mock
+
+
+@pytest_asyncio.fixture
+async def checkout_open(
+    save_fixture: SaveFixture, product_one_time: Product
+) -> Checkout:
+    return await create_checkout(save_fixture, price=product_one_time.prices[0])
+
+
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestCreateCheckout:
-    async def test_not_existing(self, client: AsyncClient) -> None:
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
-            "/v1/checkouts/",
+            f"{API_PREFIX}/",
             json={
-                "product_id": str(uuid.uuid4()),
-                "product_price_id": str(uuid.uuid4()),
-                "success_url": "https://polar.sh",
+                "payment_processor": "stripe",
+                "product_price_id": str(product.prices[0].id),
             },
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 401
 
-    @pytest.mark.parametrize("success_url", [None, "INVALID_URL"])
-    async def test_missing_invalid_success_url(
-        self,
-        success_url: str | None,
-        client: AsyncClient,
-        product: Product,
-    ) -> None:
-        json = {
-            "product_id": str(product.id),
-            "product_price_id": str(product.prices[0].id),
-        }
-        if success_url is not None:
-            json["success_url"] = success_url
-
-        response = await client.post("/v1/checkouts/", json=json)
-
-        assert response.status_code == 422
-
-    async def test_invalid_customer_email(
-        self, client: AsyncClient, product: Product
-    ) -> None:
+    @pytest.mark.auth
+    async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
-            "/v1/checkouts/",
+            f"{API_PREFIX}/",
             json={
-                "product_id": str(product.id),
+                "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
-                "success_url": "https://polar.sh",
-                "customer_email": "INVALID_EMAIL",
             },
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 403
 
-    async def test_anonymous_product_organization(
-        self,
-        client: AsyncClient,
-        product: Product,
-        stripe_service_mock: MagicMock,
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_valid(
+        self, client: AsyncClient, product: Product, user_organization: UserOrganization
     ) -> None:
-        create_checkout_session_mock: MagicMock = (
-            stripe_service_mock.create_checkout_session
-        )
-        create_checkout_session_mock.return_value = SimpleNamespace(
-            id="SESSION_ID",
-            url="STRIPE_URL",
-            customer_email=None,
-            customer_details=None,
-            metadata={},
-        )
-
         response = await client.post(
-            "/v1/checkouts/",
+            f"{API_PREFIX}/",
             json={
-                "product_id": str(product.id),
+                "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
-                "success_url": "https://polar.sh",
+                "success_url": "https://example.com/success?checkout_id={CHECKOUT_ID}",
             },
         )
 
         assert response.status_code == 201
 
         json = response.json()
-        assert json["id"] == "SESSION_ID"
-        assert json["url"] == "STRIPE_URL"
-        assert json["product"]["id"] == str(product.id)
-        assert json["product_price"]["id"] == str(product.prices[0].id)
+        assert "client_secret" in json
+        assert "metadata" in json
+        assert (
+            json["success_url"]
+            == f"https://example.com/success?checkout_id={json['id']}"
+        )
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-class TestGetCheckout:
-    async def test_valid_product_organization(
-        self,
-        client: AsyncClient,
-        product: Product,
-        stripe_service_mock: MagicMock,
+@pytest.mark.skip_db_asserts
+class TestUpdateCheckout:
+    async def test_anonymous(
+        self, client: AsyncClient, checkout_open: Checkout
     ) -> None:
-        get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
-        get_checkout_session_mock.return_value = SimpleNamespace(
-            id="SESSION_ID",
-            url="STRIPE_URL",
-            customer_email=None,
-            customer_details={"name": "John", "email": "backer@example.com"},
-            metadata={
-                "product_id": str(product.id),
-                "product_price_id": str(product.prices[0].id),
+        response = await client.patch(
+            f"{API_PREFIX}/{checkout_open.id}",
+            json={
+                "metadata": {"test": "test"},
             },
         )
 
-        response = await client.get("/v1/checkouts/SESSION_ID")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_missing_scope(
+        self, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.patch(
+            f"{API_PREFIX}/{checkout_open.id}",
+            json={
+                "metadata": {"test": "test"},
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user_second", scopes={Scope.checkouts_write}),
+        AuthSubjectFixture(
+            subject="organization_second", scopes={Scope.checkouts_write}
+        ),
+    )
+    async def test_not_writable(
+        self, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.patch(
+            f"{API_PREFIX}/{checkout_open.id}",
+            json={
+                "metadata": {"test": "test"},
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"{API_PREFIX}/{checkout_open.id}",
+            json={
+                "metadata": {"test": "test"},
+            },
+        )
 
         assert response.status_code == 200
 
         json = response.json()
-        assert json["id"] == "SESSION_ID"
-        assert json["url"] == "STRIPE_URL"
-        assert json["customer_name"] == "John"
-        assert json["customer_email"] == "backer@example.com"
-        assert json["product"]["id"] == str(product.id)
-        assert json["product_price"]["id"] == str(product.prices[0].id)
+        assert json["metadata"] == {"test": "test"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestClientGet:
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(f"{API_PREFIX}/client/123")
+
+        assert response.status_code == 404
+
+    async def test_valid(self, client: AsyncClient, checkout_open: Checkout) -> None:
+        response = await client.get(
+            f"{API_PREFIX}/client/{checkout_open.client_secret}"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(checkout_open.id)
+        assert "metadata" not in json
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestClientCreateCheckout:
+    @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=set()))
+    async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
+        response = await client.post(
+            f"{API_PREFIX}/client/",
+            json={
+                "product_price_id": str(product.prices[0].id),
+            },
+        )
+
+        assert response.status_code == 403
+
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.post(
+            f"{API_PREFIX}/client/",
+            json={
+                "product_price_id": str(product.prices[0].id),
+            },
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.auth
+    async def test_user(
+        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+    ) -> None:
+        response = await client.post(
+            f"{API_PREFIX}/client/",
+            json={
+                "product_price_id": str(product.prices[0].id),
+            },
+        )
+
+        assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestClientUpdate:
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.patch(
+            f"{API_PREFIX}/client/123", json={"customer_name": "Customer Name"}
+        )
+
+        assert response.status_code == 404
+
+    async def test_valid(
+        self, session: AsyncSession, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.patch(
+            f"{API_PREFIX}/client/{checkout_open.client_secret}",
+            json={
+                "customer_name": "Customer Name",
+                "metadata": {"test": "test"},
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["customer_name"] == "Customer Name"
+        assert "metadata" not in json
+
+        updated_checkout = await checkout_service.get(session, checkout_open.id)
+        assert updated_checkout is not None
+        assert updated_checkout.user_metadata == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestClientConfirm:
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"{API_PREFIX}/client/123/confirm",
+            json={"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
+        )
+
+        assert response.status_code == 404
+
+    async def test_valid(
+        self,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        response = await client.post(
+            f"{API_PREFIX}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+            },
+        )
+
+        assert response.status_code == 200

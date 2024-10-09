@@ -14,6 +14,7 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
+from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -30,6 +31,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     BenefitGrant,
+    Checkout,
     Organization,
     Product,
     ProductBenefit,
@@ -89,6 +91,17 @@ class SubscriptionDoesNotExist(SubscriptionError):
         message = (
             f"Received a subscription update from Stripe for {stripe_subscription_id}, "
             f"but no associated Subscription exists."
+        )
+        super().__init__(message)
+
+
+class CheckoutDoesNotExist(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, checkout_id: str) -> None:
+        self.stripe_subscription_id = stripe_subscription_id
+        self.checkout_id = checkout_id
+        message = (
+            f"Received a subscription update from Stripe for {stripe_subscription_id}, "
+            f"but no associated Checkout exists."
         )
         super().__init__(message)
 
@@ -344,6 +357,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         assert subscription_tier_org is not None
 
+        # Get Checkout if available
+        checkout: Checkout | None = None
+        if (checkout_id := stripe_subscription.metadata.get("checkout_id")) is not None:
+            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
+            if checkout is None:
+                raise CheckoutDoesNotExist(stripe_subscription.id, checkout_id)
         subscription: Subscription | None = None
 
         # Upgrade from a subscription set in metadata
@@ -380,6 +399,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription.amount = None
             subscription.currency = None
         subscription.product = subscription_tier
+
+        subscription.checkout = checkout
+        subscription.user_metadata = {
+            **(checkout.user_metadata if checkout is not None else {}),
+            **(subscription.user_metadata or {}),
+        }
 
         subscription.set_started_at()
 

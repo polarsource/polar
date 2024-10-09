@@ -8,13 +8,19 @@ from typing import Any, Unpack
 
 import pytest_asyncio
 
-from polar.enums import AccountType, Platforms, SubscriptionRecurringInterval
+from polar.enums import (
+    AccountType,
+    PaymentProcessor,
+    Platforms,
+    SubscriptionRecurringInterval,
+)
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     AdvertisementCampaign,
     Article,
     Benefit,
+    Checkout,
     ExternalOrganization,
     Order,
     Organization,
@@ -35,11 +41,11 @@ from polar.models.benefit_grant import (
     BenefitGrantProperties,
     BenefitGrantScope,
 )
+from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import HasPriceCurrency, ProductPriceType
-from polar.models.pull_request import PullRequest
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import OAuthAccount, OAuthPlatform
 from tests.fixtures.database import SaveFixture
@@ -261,13 +267,16 @@ async def user(
     return await create_user(save_fixture)
 
 
-async def create_user(save_fixture: SaveFixture) -> User:
+async def create_user(
+    save_fixture: SaveFixture, stripe_customer_id: str | None = None
+) -> User:
     user = User(
         id=uuid.uuid4(),
         username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],
+        stripe_customer_id=stripe_customer_id,
     )
     await save_fixture(user)
     return user
@@ -421,46 +430,6 @@ async def pledge_by_user(
 
 
 @pytest_asyncio.fixture(scope="function")
-async def pull_request(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-) -> PullRequest:
-    pr = PullRequest(
-        id=uuid.uuid4(),
-        repository=repository,
-        organization=external_organization,
-        number=secrets.randbelow(5000),
-        external_id=secrets.randbelow(5000),
-        title="PR Title",
-        author={
-            "login": "pr_creator_login",
-            "avatar_url": "http://example.com/avatar.jpg",
-            "html_url": "https://github.com/pr_creator_login",
-            "id": 47952,
-        },
-        platform=Platforms.github,
-        state="open",
-        issue_created_at=datetime.now(),
-        issue_modified_at=datetime.now(),
-        commits=1,
-        additions=2,
-        deletions=3,
-        changed_files=4,
-        is_draft=False,
-        is_rebaseable=True,
-        is_mergeable=True,
-        review_comments=5,
-        maintainer_can_modify=True,
-        merged_at=None,
-        merge_commit_sha=None,
-        body="x",
-    )
-    await save_fixture(pr)
-    return pr
-
-
-@pytest_asyncio.fixture(scope="function")
 async def user_organization(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -600,6 +569,7 @@ async def create_product_price_fixed(
     recurring_interval: SubscriptionRecurringInterval
     | None = SubscriptionRecurringInterval.month,
     amount: int = 1000,
+    is_archived: bool = False,
 ) -> ProductPriceFixed:
     price = ProductPriceFixed(
         price_amount=amount,
@@ -608,6 +578,7 @@ async def create_product_price_fixed(
         recurring_interval=recurring_interval,
         stripe_price_id=rstr("PRICE_ID"),
         product=product,
+        is_archived=is_archived,
     )
     await save_fixture(price)
     return price
@@ -887,6 +858,51 @@ async def products(
     product_organization_second: Product,
 ) -> list[Product]:
     return [product, product_second, product_organization_second]
+
+
+async def create_checkout(
+    save_fixture: SaveFixture,
+    *,
+    price: ProductPrice,
+    payment_processor: PaymentProcessor = PaymentProcessor.stripe,
+    status: CheckoutStatus = CheckoutStatus.open,
+    expires_at: datetime | None = None,
+    client_secret: str | None = None,
+    user_metadata: dict[str, Any] = {},
+    payment_processor_metadata: dict[str, Any] = {},
+    amount: int | None = None,
+    tax_amount: int | None = None,
+    currency: str | None = None,
+    customer: User | None = None,
+) -> Checkout:
+    if isinstance(price, ProductPriceFixed):
+        amount = price.price_amount
+        currency = price.price_currency
+    elif isinstance(price, ProductPriceCustom):
+        currency = price.price_currency
+    else:
+        amount = None
+        currency = None
+
+    checkout = Checkout(
+        payment_processor=payment_processor,
+        status=status,
+        expires_at=expires_at or get_expires_at(),
+        client_secret=client_secret
+        or rstr(
+            "CHECKOUT_CLIENT_SECRET",
+        ),
+        user_metadata=user_metadata,
+        payment_processor_metadata=payment_processor_metadata,
+        amount=amount,
+        tax_amount=tax_amount,
+        currency=currency,
+        product_price=price,
+        product=price.product,
+        customer=customer,
+    )
+    await save_fixture(checkout)
+    return checkout
 
 
 @pytest_asyncio.fixture

@@ -8,7 +8,6 @@ import {
   Issue,
   Organization,
   Pledger,
-  PullRequest,
   RewardsSummary,
 } from '@polar-sh/sdk'
 import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui/atoms'
@@ -16,11 +15,6 @@ import Alert from 'polarkit/components/ui/atoms/alert'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
-import GitMergeIcon from '../Icons/GitMergeIcon'
-import GitPullRequestClosedIcon from '../Icons/GitPullRequestClosedIcon'
-import GitPullRequestIcon from '../Icons/GitPullRequestIcon'
-import { DiffStat } from '../Issues/IssueReference'
 import Pledgers from '../Issues/Pledgers'
 import { generateMarkdownTitle } from '../Issues/markdown'
 
@@ -31,7 +25,6 @@ const IssueCard = ({
   pledgers,
   currentPledgeAmount,
   rewards,
-  pullRequests,
 }: {
   issue: Issue
   organization: Organization
@@ -39,7 +32,6 @@ const IssueCard = ({
   pledgers: Pledger[]
   currentPledgeAmount: number
   rewards?: RewardsSummary
-  pullRequests?: PullRequest[]
 }) => {
   const { repository } = issue
   const { organization: externalOrganization } = repository
@@ -196,10 +188,6 @@ const IssueCard = ({
           )}
         </div>
       ) : null}
-
-      {pullRequests && pullRequests.length > 0 && (
-        <PullRequests pulls={pullRequests} />
-      )}
     </div>
   )
 }
@@ -307,7 +295,7 @@ const FundingGoal = ({
 }
 
 const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
-  <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
+  <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-gray-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {rewards.receivers.map((r) => (
         <Avatar
@@ -335,52 +323,5 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
     </span>
   </div>
 )
-
-const PullRequests = ({ pulls }: { pulls: PullRequest[] }) => (
-  <div className="hidden space-y-2 py-4 sm:block">
-    {pulls.map((pr) => (
-      <Pull pr={pr} key={pr.id} />
-    ))}
-  </div>
-)
-
-const Pull = ({ pr }: { pr: PullRequest }) => {
-  const merged = pr.is_merged
-  const closed = pr.is_closed && !merged
-  const open = !merged && !closed
-
-  return (
-    <div className="dark:text-polar-400 flex w-full items-center gap-2 overflow-hidden text-sm text-gray-600">
-      <div
-        className={twMerge(
-          'h-6 w-6 rounded-lg border p-0.5',
-          merged
-            ? 'border-purple-200 bg-purple-100 text-purple-600 dark:border-purple-500/40 dark:bg-purple-500/40 dark:text-purple-200'
-            : '',
-          closed
-            ? 'border-red-200 bg-red-100 text-red-500 dark:border-red-500/30 dark:bg-red-500/30 dark:text-red-300'
-            : '',
-          open
-            ? 'border-green-200 bg-green-100 text-[#26A869] dark:border-green-500/30 dark:bg-green-500/30 dark:text-green-300'
-            : '',
-        )}
-      >
-        {merged && <GitMergeIcon />}
-        {closed && <GitPullRequestClosedIcon />}
-        {open && <GitPullRequestIcon />}
-      </div>
-      <div className="whitespace-nowrap font-bold ">#{pr.number}</div>
-      <div className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap ">
-        {pr.title}
-      </div>
-      <div className="flex-shrink-0">
-        <DiffStat additions={pr.additions} deletions={pr.deletions} />
-      </div>
-      {pr.author && (
-        <Avatar avatar_url={pr.author.avatar_url} name={pr.author.login} />
-      )}
-    </div>
-  )
-}
 
 export default IssueCard

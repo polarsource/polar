@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from polar.kit.hook import Hook
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
-from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 
 
@@ -11,7 +10,7 @@ from polar.models.repository import Repository
 class SyncedHook:
     repository: Repository
     organization: ExternalOrganization
-    record: Issue | PullRequest
+    record: Issue
     synced: int
 
 

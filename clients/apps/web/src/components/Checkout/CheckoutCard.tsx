@@ -3,7 +3,7 @@
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
-import { useRecurringInterval } from '@/hooks/products'
+import { hasIntervals } from '@/utils/product'
 import {
   CheckoutPublic,
   CheckoutUpdatePublic,
@@ -19,7 +19,7 @@ import {
   FormItem,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
 export interface CheckoutCardProps {
@@ -33,22 +33,32 @@ export const CheckoutCard = ({
   onCheckoutUpdate,
   disabled,
 }: CheckoutCardProps) => {
-  const { product, product_price } = checkout
-  const [, , hasBothIntervals] = useRecurringInterval([product])
+  const { product, product_price: productPrice } = checkout
+  const [, , hasBothIntervals] = useMemo(() => hasIntervals(product), [product])
+  const [recurringInterval, setRecurringInterval] =
+    useState<SubscriptionRecurringInterval>(
+      productPrice.type === 'recurring'
+        ? productPrice.recurring_interval
+        : SubscriptionRecurringInterval.MONTH,
+    )
 
   const onRecurringIntervalChange = useCallback(
-    async (recurringInterval: SubscriptionRecurringInterval) => {
+    (recurringInterval: SubscriptionRecurringInterval) => {
+      setRecurringInterval(recurringInterval)
       for (const price of product.prices) {
         if (
           price.type === 'recurring' &&
           price.recurring_interval === recurringInterval
         ) {
-          await onCheckoutUpdate?.({ product_price_id: price.id })
+          if (price.id === productPrice.id) {
+            return
+          }
+          onCheckoutUpdate?.({ product_price_id: price.id })
           return
         }
       }
     },
-    [product, onCheckoutUpdate],
+    [product, productPrice, onCheckoutUpdate],
   )
 
   const form = useForm<{ amount: number }>({
@@ -67,11 +77,7 @@ export const CheckoutCard = ({
     <div className="flex w-full flex-col items-center gap-8">
       {!disabled && hasBothIntervals && (
         <SubscriptionTierRecurringIntervalSwitch
-          recurringInterval={
-            product_price.type === 'recurring'
-              ? product_price.recurring_interval
-              : SubscriptionRecurringInterval.MONTH
-          }
+          value={recurringInterval}
           onChange={onRecurringIntervalChange}
         />
       )}
@@ -79,10 +85,10 @@ export const CheckoutCard = ({
         <h2 className="text-xl">{product.name}</h2>
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-light">
-            {product_price.amount_type !== 'custom' && (
-              <ProductPriceLabel price={product_price} />
+            {productPrice.amount_type !== 'custom' && (
+              <ProductPriceLabel price={productPrice} />
             )}
-            {product_price.amount_type === 'custom' && (
+            {productPrice.amount_type === 'custom' && (
               <>
                 {disabled ? (
                   formatCurrencyAndAmount(
@@ -101,14 +107,14 @@ export const CheckoutCard = ({
                         name="amount"
                         rules={{
                           min: {
-                            value: product_price.minimum_amount || 50,
-                            message: `Price must be greater than ${(product_price.minimum_amount || 50) / 100}`,
+                            value: productPrice.minimum_amount || 50,
+                            message: `Price must be greater than ${(productPrice.minimum_amount || 50) / 100}`,
                           },
-                          ...(product_price.maximum_amount
+                          ...(productPrice.maximum_amount
                             ? {
                                 max: {
-                                  value: product_price.maximum_amount,
-                                  message: `Price must be less than ${product_price.maximum_amount / 100}`,
+                                  value: productPrice.maximum_amount,
+                                  message: `Price must be less than ${productPrice.maximum_amount / 100}`,
                                 },
                               }
                             : {}),

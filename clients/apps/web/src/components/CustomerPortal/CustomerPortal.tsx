@@ -2,7 +2,6 @@
 
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useOrganization } from '@/hooks/queries'
-import { MoreVertOutlined } from '@mui/icons-material'
 import { Organization, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -12,12 +11,6 @@ import {
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
 import { PropsWithChildren, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -127,7 +120,7 @@ export const CustomerPortal = ({
                   )
                 },
               },
-              {
+              /*  {
                 accessorKey: 'context',
                 enableSorting: false,
                 header: () => <></>,
@@ -160,7 +153,7 @@ export const CustomerPortal = ({
                     </div>
                   )
                 },
-              },
+              }, */
             ]}
           />
         </div>

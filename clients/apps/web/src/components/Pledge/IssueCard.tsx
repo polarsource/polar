@@ -307,7 +307,7 @@ const FundingGoal = ({
 }
 
 const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
-  <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
+  <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-gray-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {rewards.receivers.map((r) => (
         <Avatar

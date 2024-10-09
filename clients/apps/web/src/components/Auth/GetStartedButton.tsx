@@ -1,5 +1,5 @@
 import { CONFIG } from '@/utils/config'
-import { ArrowForwardOutlined } from '@mui/icons-material'
+import { KeyboardArrowRight } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ComponentProps } from 'react'
@@ -17,7 +17,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   size = 'lg',
   ...props
 }) => {
-  const text = _text || 'Get started'
+  const text = _text || 'Get Started'
 
   const signupPath = `${CONFIG.FRONTEND_BASE_URL}/signup?return_to=/dashboard`
   const href = _href ? _href : signupPath
@@ -33,7 +33,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
         {...props}
       >
         <div>{text}</div>
-        <ArrowForwardOutlined
+        <KeyboardArrowRight
           className={size === 'lg' ? 'text-lg' : 'text-md'}
           fontSize="inherit"
         />

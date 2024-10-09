@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks'
 import { useAccount, useListAccounts } from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -60,7 +59,7 @@ export default function ClientPage() {
         />
       )}
       {accounts?.items && accounts.items.length > 0 && (
-        <ShadowBoxOnMd>
+        <div className="flex flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">
               <h2 className="text-lg font-medium">All payout accounts</h2>
@@ -76,7 +75,7 @@ export default function ClientPage() {
               returnPath="/finance/account"
             />
           )}
-        </ShadowBoxOnMd>
+        </div>
       )}
       <Modal
         isShown={isShownSetupModal}

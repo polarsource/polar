@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form, FormField } from 'polarkit/components/ui/form'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useForm } from 'react-hook-form'
@@ -65,7 +64,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   }
 
   return (
-    <ShadowBoxOnMd>
+    <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">
         <div className="flex flex-col gap-y-2">
           <h2 className="text-lg font-medium">Payout account</h2>
@@ -75,7 +74,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
         </div>
       </div>
       <Separator className="my-8" />
-      <div className="flex flex-col gap-2 text-sm">
+      <div className="flex flex-col gap-6 text-sm">
         {bothOrganizationAndPersonal && (
           <>
             <p>
@@ -241,7 +240,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
           </>
         )}
       </div>
-    </ShadowBoxOnMd>
+    </div>
   )
 }
 

@@ -13,7 +13,6 @@ import {
 } from '@/utils/datatable'
 import { Organization, TransactionType } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   Tabs,
   TabsContent,
@@ -110,52 +109,50 @@ export default function ClientPage({
         />
       )}
 
-      <ShadowBoxOnMd>
-        <Tabs
-          defaultValue={params?.get('type') ?? 'transactions'}
-          onValueChange={setActiveTab}
-        >
-          <div className="mb-8 flex flex-col gap-y-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col gap-y-2">
-              <h2 className="text-lg font-medium capitalize">
-                {params?.get('type') ?? 'Transactions'}
-              </h2>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                {params?.get('type') === 'payouts'
-                  ? 'Made from your account to your bank account'
-                  : 'Made from Polar to your account'}
-              </p>
-            </div>
-
-            <TabsList>
-              <TabsTrigger value="transactions">Transactions</TabsTrigger>
-              <TabsTrigger value="payouts">Payouts</TabsTrigger>
-            </TabsList>
+      <Tabs
+        defaultValue={params?.get('type') ?? 'transactions'}
+        onValueChange={setActiveTab}
+      >
+        <div className="mb-8 flex flex-col gap-y-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-y-2">
+            <h2 className="text-lg font-medium capitalize">
+              {params?.get('type') ?? 'Transactions'}
+            </h2>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              {params?.get('type') === 'payouts'
+                ? 'Made from your account to your bank account'
+                : 'Made from Polar to your account'}
+            </p>
           </div>
-          <TabsContent value="transactions">
-            <TransactionsList
-              transactions={balances}
-              pageCount={balancesCount}
-              pagination={pagination}
-              onPaginationChange={setPagination}
-              sorting={sorting}
-              onSortingChange={setSorting}
-              isLoading={accountIsLoading || balancesHook.isLoading}
-            />
-          </TabsContent>
-          <TabsContent value="payouts">
-            <PayoutTransactionsList
-              transactions={payouts}
-              pageCount={payoutsCount}
-              pagination={pagination}
-              onPaginationChange={setPagination}
-              sorting={sorting}
-              onSortingChange={setSorting}
-              isLoading={accountIsLoading || payoutsHooks.isLoading}
-            />
-          </TabsContent>
-        </Tabs>
-      </ShadowBoxOnMd>
+
+          <TabsList>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="payouts">Payouts</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="transactions">
+          <TransactionsList
+            transactions={balances}
+            pageCount={balancesCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            isLoading={accountIsLoading || balancesHook.isLoading}
+          />
+        </TabsContent>
+        <TabsContent value="payouts">
+          <PayoutTransactionsList
+            transactions={payouts}
+            pageCount={payoutsCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            isLoading={accountIsLoading || payoutsHooks.isLoading}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

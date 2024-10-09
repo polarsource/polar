@@ -5,12 +5,12 @@ import {
   AddOutlined,
   CheckOutlined,
   MoreVertOutlined,
+  RemoveOutlined,
 } from '@mui/icons-material'
 import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import {
   CreatableBenefit,
   resolveBenefitCategoryIcon,
 } from '../Benefit/utils'
+import { Section } from '../Layout/Section'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -65,10 +66,25 @@ const BenefitRow = ({
       className={twMerge('flex w-full flex-row items-center justify-between')}
     >
       <div className="flex flex-row items-center gap-x-3">
-        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-          <CheckOutlined className="h-3 w-3" fontSize="inherit" />
+        <span
+          className={twMerge(
+            'flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full text-2xl',
+            checked
+              ? ' dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-white'
+              : 'dark:bg-polar-800 dark:text-polar-500 bg-gray-200 text-gray-500',
+          )}
+        >
+          {checked ? (
+            <CheckOutlined className="h-3 w-3" fontSize="inherit" />
+          ) : (
+            <RemoveOutlined className="h-3 w-3" fontSize="inherit" />
+          )}
         </span>
-        <span className="text-sm">{benefit.description}</span>
+        <span
+          className={twMerge('text-sm', checked ? 'opacity-100' : 'opacity-50')}
+        >
+          {benefit.description}
+        </span>
       </div>
       <div className="flex flex-row items-center gap-x-2 text-[14px]">
         <Switch
@@ -137,7 +153,6 @@ const ProductBenefitsForm = ({
   organizationBenefits,
   onSelectBenefit,
   onRemoveBenefit,
-  className,
 }: ProductBenefitsFormProps) => {
   const searchParams = useSearchParams()
   const [type, setType] = useState<CreatableBenefit | undefined>()
@@ -157,37 +172,32 @@ const ProductBenefitsForm = ({
   )
 
   return (
-    <ShadowBox>
-      <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
-        <div className="flex flex-row items-center justify-between">
-          <h2 className="text-gray-950 dark:text-white">Automated Benefits</h2>
-        </div>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          Configure which benefits you want to grant to your customers when they
-          purchase the product
-        </p>
-        <div className="flex flex-col gap-y-4">
-          {Object.entries(benefitsDisplayNames).map(([type, title]) => (
-            <BenefitsContainer
-              key={type}
-              title={title}
-              type={type as BenefitType}
-              handleCheckedChange={handleCheckedChange}
-              enabledBenefits={benefits}
-              benefits={organizationBenefits.filter(
-                (benefit) => benefit.type === type,
-              )}
-              onCreateNewBenefit={
-                type !== 'articles'
-                  ? () => {
-                      setType(type as CreatableBenefit)
-                      show()
-                    }
-                  : undefined
-              }
-            />
-          ))}
-        </div>
+    <Section
+      title="Automated Benefits"
+      description="Configure which benefits you want to grant to your customers when they
+      purchase the product"
+    >
+      <div className="flex w-full flex-col gap-y-4">
+        {Object.entries(benefitsDisplayNames).map(([type, title]) => (
+          <BenefitsContainer
+            key={type}
+            title={title}
+            type={type as BenefitType}
+            handleCheckedChange={handleCheckedChange}
+            enabledBenefits={benefits}
+            benefits={organizationBenefits.filter(
+              (benefit) => benefit.type === type,
+            )}
+            onCreateNewBenefit={
+              type !== 'articles'
+                ? () => {
+                    setType(type as CreatableBenefit)
+                    show()
+                  }
+                : undefined
+            }
+          />
+        ))}
       </div>
       <InlineModal
         isShown={isShown}
@@ -204,7 +214,7 @@ const ProductBenefitsForm = ({
           />
         }
       />
-    </ShadowBox>
+    </Section>
   )
 }
 
@@ -243,8 +253,8 @@ const BenefitsContainer = ({
     <div className="flex flex-col gap-2">
       <div
         className={twMerge(
-          'dark:bg-polar-700 dark:hover:border-polar-600 group flex flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-2 text-sm transition-colors dark:border-transparent',
-          hasEnabledBenefits ? '' : 'cursor-pointer hover:border-gray-100',
+          'dark:bg-polar-800 dark:hover:border-polar-700 group flex flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-3 text-sm transition-colors dark:border-transparent',
+          hasEnabledBenefits ? '' : 'cursor-pointer hover:border-gray-200',
         )}
         onClick={() => !hasEnabledBenefits && setOpen((v) => !v)}
         role="button"
@@ -267,7 +277,7 @@ const BenefitsContainer = ({
         </span>
       </div>
       {open || hasEnabledBenefits ? (
-        <div className="dark:border-polar-700 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-100 p-4">
+        <div className="dark:border-polar-700 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4">
           {benefits.length > 0 ? (
             <div className="flex flex-col">
               {benefits.map((benefit) => {

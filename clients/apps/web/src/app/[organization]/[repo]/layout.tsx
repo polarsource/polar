@@ -43,7 +43,7 @@ export default async function Layout({
   return (
     <div className="flex flex-col">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col items-start gap-y-8 px-4 pb-12 md:h-full md:space-y-8 md:px-24">
-        <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
+        <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-gray-50 py-4 md:relative md:hidden">
           <a href="/">
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
           </a>

@@ -18,7 +18,7 @@ export const CreatorUpsell = () => {
   return (
     <div className="flex flex-col items-center gap-y-16 py-16">
       <div className="flex flex-col items-center gap-y-4 text-center">
-        <h3 className="text-3xl">Welcome to Polar!</h3>
+        <h3 className="text-3xl font-medium">Welcome to Polar!</h3>
         <p className="dark:text-polar-400 text-gray-500">
           Let&apos;s get up to speed by completing a few simple steps
         </p>

@@ -108,7 +108,7 @@ export const Monetization = () => {
                 srcSet={`/assets/landing/fund_dark.svg`}
               />
               <img
-                className="dark:border-polar-700 rounded-2xl border border-gray-100"
+                className="dark:border-polar-700 rounded-2xl border border-gray-200"
                 srcSet={`/assets/landing/fund_dark.svg`}
                 alt="Polar crowdfunding badge embedded on a GitHub issue"
               />

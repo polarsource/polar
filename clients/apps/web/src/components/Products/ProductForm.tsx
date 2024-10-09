@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
@@ -37,6 +36,7 @@ import {
   useFieldArray,
   useFormContext,
 } from 'react-hook-form'
+import { Section } from '../Layout/Section'
 import ProductMediasField from './ProductMediasField'
 
 export interface ProductFullMediasMixin {
@@ -81,7 +81,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         render={({ field }) => {
           return (
             <FormItem className="grow">
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <FormControl>
                   <MoneyInput
                     name={field.name}
@@ -328,57 +328,64 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
   }, [update, pricingType, replace, amountType])
 
   return (
-    <>
-      <ShadowBox className="flex flex-col gap-y-6">
-        <FormField
-          control={control}
-          name="name"
-          rules={{
-            required: 'This field is required',
-            minLength: 3,
-          }}
-          defaultValue=""
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Name</FormLabel>
-              </div>
-              <FormControl>
-                <Input {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="description"
-          rules={{
-            required: 'This field is required',
-          }}
-          render={({ field }) => (
-            <FormItem className="flex flex-col gap-2">
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Description</FormLabel>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Markdown format
-                </p>
-              </div>
-              <FormControl>
-                <TextArea
-                  className="min-h-44 resize-none rounded-2xl"
-                  {...field}
-                  value={field.value || ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </ShadowBox>
-      <ShadowBox>
-        <div className="flex flex-col gap-6">
-          <FormLabel>Pricing</FormLabel>
+    <div className="flex flex-col divide-y">
+      <Section
+        title="Product Information"
+        description="Basic product information which helps identify the product"
+      >
+        <div className="flex w-full flex-col gap-y-6">
+          <FormField
+            control={control}
+            name="name"
+            rules={{
+              required: 'This field is required',
+              minLength: 3,
+            }}
+            defaultValue=""
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between">
+                  <FormLabel>Name</FormLabel>
+                </div>
+                <FormControl>
+                  <Input {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="description"
+            rules={{
+              required: 'This field is required',
+            }}
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-2">
+                <div className="flex flex-row items-center justify-between">
+                  <FormLabel>Description</FormLabel>
+                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                    Markdown format
+                  </p>
+                </div>
+                <FormControl>
+                  <TextArea
+                    className="min-h-44 resize-none rounded-2xl font-mono text-xs"
+                    {...field}
+                    value={field.value || ''}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </Section>
+      <Section
+        title="Pricing"
+        description="Set a one-time price, recurring price or a “pay what you want” pricing model"
+      >
+        <div className="flex w-full flex-col gap-6">
           {!update && (
             <Tabs
               value={pricingType}
@@ -390,14 +397,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
                 <TabsTrigger
                   className="flex-grow"
                   value={ProductPriceType.ONE_TIME}
-                  size="small"
                 >
                   Pay Once
                 </TabsTrigger>
                 <TabsTrigger
                   className="flex-grow"
                   value={ProductPriceType.RECURRING}
-                  size="small"
                 >
                   Subscription
                 </TabsTrigger>
@@ -494,17 +499,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
             )}
           />
         </div>
-      </ShadowBox>
-
-      <ShadowBox>
+      </Section>
+      <Section
+        title="Media"
+        description="Enhance the product page with medias, giving the customers a better idea of the product"
+      >
         <FormField
           control={control}
           name="full_medias"
           render={({ field }) => (
-            <FormItem className="flex flex-col gap-2">
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Media</FormLabel>
-              </div>
+            <FormItem className="flex w-full flex-col gap-2">
               <FormControl>
                 <ProductMediasField
                   organization={organization}
@@ -516,8 +520,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
             </FormItem>
           )}
         />
-      </ShadowBox>
-    </>
+      </Section>
+    </div>
   )
 }
 

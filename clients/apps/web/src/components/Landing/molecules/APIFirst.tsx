@@ -32,7 +32,7 @@ https://api.polar.sh/v1/products/123 \\
             repeatType: 'mirror',
             repeatDelay: 0.4,
           }}
-          className="ml-1 inline-block h-4 w-1.5 bg-black [vertical-align:sub] dark:bg-white"
+          className="ml-1 inline-block h-4 w-1.5 bg-black [vertical-align:sub] dark:bg-gray-50"
         />
       </span>
     </div>

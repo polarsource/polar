@@ -8,6 +8,7 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { CONFIG } from '@/utils/config'
 import {
   AddOutlined,
+  HiveOutlined,
   MoreVertOutlined,
   Search,
   TextureOutlined,
@@ -43,25 +44,24 @@ export default function ClientPage() {
   )
 
   return (
-    <DashboardBody className="flex flex-col gap-16">
-      <ShadowBoxOnMd className="flex flex-col gap-y-8">
-        <div className="flex flex-row items-center justify-between">
-          <h1 className="text-lg font-medium">Overview</h1>
-          <div className="flex flex-row items-center gap-6">
-            <Input
-              preSlot={<Search fontSize="small" />}
-              placeholder="Search Products"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Link href={`/dashboard/${org.slug}/products/new`}>
-              <Button size="icon" role="link">
-                <AddOutlined className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+    <DashboardBody>
+      <div className="flex flex-col gap-y-8">
+        <div className="flex flex-row items-center justify-between gap-6">
+          <Input
+            className="w-full max-w-64"
+            preSlot={<Search fontSize="small" />}
+            placeholder="Search Products"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Link href={`/dashboard/${org.slug}/products/new`}>
+            <Button role="link" wrapperClassNames="gap-x-2">
+              <AddOutlined className="h-4 w-4" />
+              <span>New Product</span>
+            </Button>
+          </Link>
         </div>
-        {(filteredProducts?.length ?? 0) > 0 && (
+        {(filteredProducts?.length ?? 0) > 0 ? (
           <List size="small">
             {filteredProducts?.map((product) => (
               <ProductListItem
@@ -71,8 +71,28 @@ export default function ClientPage() {
               />
             ))}
           </List>
+        ) : (
+          <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
+            <HiveOutlined
+              className="dark:text-polar-600 text-5xl text-gray-300"
+              fontSize="inherit"
+            />
+            <div className="flex flex-col items-center gap-y-6">
+              <div className="flex flex-col items-center gap-y-2">
+                <h3 className="text-lg font-medium">No products found</h3>
+                <p className="dark:text-polar-500 text-gray-500">
+                  Start selling digital products today
+                </p>
+              </div>
+              <Link href={`/dashboard/${org.slug}/products/new`}>
+                <Button role="link" variant="secondary">
+                  <span>Create Product</span>
+                </Button>
+              </Link>
+            </div>
+          </ShadowBoxOnMd>
         )}
-      </ShadowBoxOnMd>
+      </div>
     </DashboardBody>
   )
 }
@@ -84,7 +104,7 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="flex aspect-square h-8 flex-col items-center justify-center rounded bg-blue-50 text-center dark:bg-gray-900">
+    <div className="flex aspect-square h-8 flex-col items-center justify-center text-center">
       {coverUrl ? (
         <img
           src={coverUrl}
@@ -93,8 +113,8 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
         />
       ) : (
         <TextureOutlined
-          fontSize="small"
-          className="dark:text-polar-500 text-gray-500"
+          fontSize="large"
+          className="dark:text-polar-700 text-gray-500"
         />
       )}
     </div>
@@ -147,7 +167,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
 
   return (
     <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-      <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-white">
+      <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-gray-50">
         <div className="flex flex-grow flex-row items-center gap-x-4">
           <ProductListCoverImage product={product} />
           <span>{product.name}</span>

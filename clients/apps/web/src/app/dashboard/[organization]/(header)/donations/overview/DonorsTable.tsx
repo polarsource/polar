@@ -161,7 +161,7 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
         const message = props.getValue() as string | undefined
 
         if (!message) {
-          return <span className="text-gray-300">-</span>
+          return <span className="text-gray-500">-</span>
         }
 
         return (
@@ -182,7 +182,7 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
         const issue = props.getValue() as Issue | undefined
 
         if (!issue) {
-          return <span className="text-gray-300">-</span>
+          return <span className="text-gray-500">-</span>
         }
 
         return (

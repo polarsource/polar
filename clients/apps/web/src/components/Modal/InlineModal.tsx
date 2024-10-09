@@ -66,7 +66,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
           >
             <div
               className={twMerge(
-                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:w-[540px]',
+                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-gray-50 shadow md:w-[540px]',
                 className,
               )}
               onClick={onInnerClick}
@@ -149,7 +149,7 @@ export const ModalBox = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-700 z-0 flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-white p-5 shadow-2xl',
+        'dark:bg-polar-700 z-0 flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-gray-50 p-5 shadow-2xl',
         className,
       )}
     >

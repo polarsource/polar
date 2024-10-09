@@ -27,7 +27,7 @@ const CopyToClipboardInput = ({
   }
 
   return (
-    <div className="dark:border-polar-700 dark:bg-polar-800 flex w-full flex-row items-center overflow-hidden rounded-full border bg-white">
+    <div className="dark:border-polar-700 dark:bg-polar-800 flex w-full flex-row items-center overflow-hidden rounded-full border bg-gray-50">
       <Input
         className="dark:text-polar-400 !focus:border-transparent !focus:ring-transparent !dark:focus:border-transparent !dark:focus:ring-transparent w-full grow border-none bg-transparent font-mono text-xs text-gray-600 focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:ring-transparent"
         value={value}

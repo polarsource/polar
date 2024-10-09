@@ -7,7 +7,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-800 dark:bg-polar-950 border-gray-75 flex w-full flex-col items-center space-y-24 border-t bg-white py-24 md:py-32',
+        'dark:border-polar-700 dark:bg-polar-950 flex w-full flex-col items-center space-y-24 border-t border-gray-200 bg-gray-50 py-24 md:py-32',
       )}
     >
       <div
@@ -96,7 +96,7 @@ export default Footer
 const FooterLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-300"
+      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-500"
       {...props}
     >
       {props.children}

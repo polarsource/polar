@@ -148,6 +148,7 @@ interface ProductBenefitsFormProps {
 }
 
 const ProductBenefitsForm = ({
+  className,
   benefits,
   organization,
   organizationBenefits,
@@ -176,6 +177,7 @@ const ProductBenefitsForm = ({
       title="Automated Benefits"
       description="Configure which benefits you want to grant to your customers when they
       purchase the product"
+      className={className}
     >
       <div className="flex w-full flex-col gap-y-4">
         {Object.entries(benefitsDisplayNames).map(([type, title]) => (

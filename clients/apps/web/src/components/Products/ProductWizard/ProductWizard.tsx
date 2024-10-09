@@ -10,6 +10,7 @@ import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ProductBenefitsForm from '../ProductBenefitsForm'
 import { ProductInfoSection } from '../ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../ProductForm/ProductPricingSection'
@@ -108,7 +109,15 @@ export interface ProductWizardProps {
 }
 
 export const ProductWizard = ({ organization }: ProductWizardProps) => {
-  const { form, handleSubmit, onSubmit } = useCreateProductWizard(organization)
+  const {
+    form,
+    handleSubmit,
+    onSubmit,
+    organizationBenefits,
+    enabledBenefits,
+    onRemoveBenefit,
+    onSelectBenefit,
+  } = useCreateProductWizard(organization)
 
   return (
     <ProductWizardPanel className="min-h-[720px] w-full gap-y-12">
@@ -136,6 +145,24 @@ export const ProductWizard = ({ organization }: ProductWizardProps) => {
                   <ProductMediaSection
                     className="md:py-0"
                     organization={organization}
+                  />
+                ),
+              },
+              {
+                id: 'product-benefits',
+                children: (
+                  <ProductBenefitsForm
+                    className="md:py-0"
+                    organization={organization}
+                    organizationBenefits={organizationBenefits.filter(
+                      (benefit) =>
+                        // Hide not selectable benefits unless they are already enabled
+                        benefit.selectable ||
+                        enabledBenefits.some((b) => b.id === benefit.id),
+                    )}
+                    benefits={enabledBenefits}
+                    onSelectBenefit={onSelectBenefit}
+                    onRemoveBenefit={onRemoveBenefit}
                   />
                 ),
               },

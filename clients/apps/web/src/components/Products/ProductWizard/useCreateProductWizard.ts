@@ -131,5 +131,7 @@ export const useCreateProductWizard = (organization: Organization) => {
     onSelectBenefit,
     onRemoveBenefit,
     enabledBenefits,
+    organizationBenefits,
+    benefits,
   }
 }

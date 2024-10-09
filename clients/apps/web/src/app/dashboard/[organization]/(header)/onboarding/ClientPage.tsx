@@ -28,8 +28,8 @@ const OnboardingPage: React.FC = ({}) => {
       header={false}
       className="flex flex-col gap-y-8 pb-24 md:gap-y-20"
     >
-      <div className="flex flex-col items-center gap-y-16 py-16">
-        <div className="flex flex-col items-center gap-y-4 text-center">
+      <div className="flex flex-col gap-y-16 py-16">
+        <div className="flex flex-col gap-y-4">
           <h3 className="text-3xl font-medium">Welcome to Polar!</h3>
           <p className="dark:text-polar-400 text-gray-500">
             Let&apos;s get up to speed by setting up your storefront or
@@ -38,8 +38,6 @@ const OnboardingPage: React.FC = ({}) => {
         </div>
 
         <div className="flex w-full flex-col gap-y-8">
-          <h3 className="self-start text-2xl font-medium">Create Product</h3>
-
           <ProductWizard organization={organization} />
         </div>
 

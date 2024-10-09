@@ -21,7 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import ProductBenefitsForm from './ProductBenefitsForm'
-import ProductForm, { ProductFullMediasMixin } from './ProductForm'
+import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 
 export interface CreateProductPageProps {
   organization: Organization

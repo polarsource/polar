@@ -1,16 +1,24 @@
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export const Section = ({
   title,
   description,
   children,
+  className,
 }: {
   title: string
   description?: string
   children: React.ReactNode
+  className?: string
 }) => {
   return (
-    <div className="relative flex flex-col gap-12 py-12 md:flex-row md:gap-32 md:py-16">
+    <div
+      className={twMerge(
+        'relative flex flex-col gap-12 py-12 md:flex-row md:gap-32 md:py-16',
+        className,
+      )}
+    >
       <SectionDescription title={title} description={description} />
       {children}
     </div>

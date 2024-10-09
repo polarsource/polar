@@ -6,6 +6,8 @@ Create Date: 2024-06-06 10:59:25.903538
 
 """
 
+import enum
+
 import citext
 import sqlalchemy as sa
 from alembic import op
@@ -16,7 +18,20 @@ from polar.enums import Platforms
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.models import Account, Issue
 from polar.models.article import ArticleByline, ArticleVisibility
-from polar.models.issue_reference import ReferenceType
+
+
+# This enum has been removed from the codebase since this migration was created
+# Creating it here to avoid breaking the migration
+class ReferenceType(str, enum.Enum):
+    # external_id is a pull_requests.id UUID
+    PULL_REQUEST = "pull_request"
+
+    # external_id is a HREF
+    EXTERNAL_GITHUB_PULL_REQUEST = "external_github_pull_request"
+
+    # external_id is a SHA1
+    EXTERNAL_GITHUB_COMMIT = "external_github_commit"
+
 
 # revision identifiers, used by Alembic.
 revision = "26ccc98e38f1"

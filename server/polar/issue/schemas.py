@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
 from typing import Annotated, Any, Self
 from uuid import UUID
 
@@ -18,16 +17,6 @@ from polar.models.external_organization import (
     ExternalOrganization as ExternalOrganizationModel,
 )
 from polar.models.issue import Issue as IssueModel
-from polar.models.issue_reference import (
-    ExternalGitHubCommitReference as ExternalGitHubCommitReferenceModel,
-)
-from polar.models.issue_reference import (
-    ExternalGitHubPullRequestReference as ExternalGitHubPullRequestReferenceModel,
-)
-from polar.models.issue_reference import (
-    IssueReference,
-    ReferenceType,
-)
 from polar.models.repository import Repository as RepositoryModel
 from polar.repository.schemas import Repository
 from polar.types import JSONAny
@@ -358,12 +347,6 @@ class IssueRead(IssueCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
-class IssueReferenceType(str, Enum):
-    pull_request = "pull_request"
-    external_github_pull_request = "external_github_pull_request"
-    external_github_commit = "external_github_commit"
-
-
 class PullRequestReference(Schema):
     id: UUID
     title: str
@@ -401,111 +384,6 @@ class ExternalGitHubCommitReference(Schema):
     repository_name: str
     branch_name: str | None = None
     message: str | None = None
-
-
-class IssueReferenceRead(Schema):
-    id: str
-    type: IssueReferenceType
-
-    pull_request_reference: PullRequestReference | None = None
-    external_github_pull_request_reference: (
-        ExternalGitHubPullRequestReference | None
-    ) = None
-    external_github_commit_reference: ExternalGitHubCommitReference | None = None
-
-    @classmethod
-    def from_model(cls, m: IssueReference) -> IssueReferenceRead:
-        match m.reference_type:
-            case ReferenceType.PULL_REQUEST:
-                if pr := m.pull_request:
-                    avatar = (
-                        pr.author.get("avatar_url", None)
-                        if pr.author and isinstance(pr.author, dict)
-                        else None
-                    )
-                    if not avatar:
-                        raise Exception(
-                            "unable to convert IssueReference to IssueReferenceRead"
-                        )
-
-                    login = (
-                        pr.author.get("login", None)
-                        if pr.author and isinstance(pr.author, dict)
-                        else None
-                    )
-                    if not login:
-                        raise Exception(
-                            "unable to convert IssueReference to IssueReferenceRead"
-                        )
-
-                    pr_ref = PullRequestReference(
-                        id=pr.id,
-                        title=pr.title,
-                        author_login=login,
-                        author_avatar=avatar,
-                        number=pr.number,
-                        additions=pr.additions or 0,
-                        deletions=pr.deletions or 0,
-                        state=pr.state,
-                        created_at=pr.issue_created_at,
-                        merged_at=pr.merged_at,
-                        closed_at=pr.issue_closed_at,
-                        is_draft=bool(pr.is_draft),
-                    )
-
-                    return IssueReferenceRead(
-                        id=m.external_id,
-                        type=IssueReferenceType.pull_request,
-                        pull_request_reference=pr_ref,
-                    )
-
-            case ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST:
-                if m.external_source:
-                    prx = ExternalGitHubPullRequestReferenceModel.model_validate(
-                        m.external_source
-                    )
-                    ext_pr_ref = ExternalGitHubPullRequestReference(
-                        title=prx.title,
-                        author_login=prx.user_login,
-                        author_avatar=prx.user_avatar,
-                        number=prx.number,
-                        organization_name=prx.organization_name,
-                        repository_name=prx.repository_name,
-                        state=prx.state,
-                    )
-                    return IssueReferenceRead(
-                        id=m.external_id,
-                        type=IssueReferenceType.external_github_pull_request,
-                        external_github_pull_request_reference=ext_pr_ref,
-                    )
-
-            case ReferenceType.EXTERNAL_GITHUB_COMMIT:
-                if m.external_source:
-                    r = ExternalGitHubCommitReferenceModel.model_validate(
-                        m.external_source
-                    )
-                    ext_commit_ref = ExternalGitHubCommitReference(
-                        author_login=r.user_login,
-                        author_avatar=r.user_avatar,
-                        organization_name=r.organization_name,
-                        repository_name=r.repository_name,
-                        sha=r.commit_id,
-                        branch_name=r.branch_name,
-                        message=r.message,
-                    )
-                    return IssueReferenceRead(
-                        id=m.external_id,
-                        type=IssueReferenceType.external_github_commit,
-                        external_github_commit_reference=ext_commit_ref,
-                    )
-
-        raise Exception("unable to convert IssueReference to IssueReferenceRead")
-
-
-class IssueDependencyRead(Schema):
-    dependent_issue_id: UUID
-    dependency_issue_id: UUID
-    model_config = ConfigDict(from_attributes=True)
 
 
 class PostIssueComment(Schema):

@@ -38,7 +38,6 @@ from polar.types import JSONAny
 
 if TYPE_CHECKING:  # pragma: no cover
     from .external_organization import ExternalOrganization
-    from .issue_reference import IssueReference
     from .pledge import Pledge
     from .repository import Repository
 
@@ -204,10 +203,6 @@ class Issue(IssueFields, RecordModel):
     github_timeline_fetched_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-
-    @declared_attr
-    def references(cls) -> "Mapped[list[IssueReference]]":
-        return relationship("IssueReference", lazy="raise", viewonly=True)
 
     @declared_attr
     def pledges(cls) -> "Mapped[list[Pledge]]":

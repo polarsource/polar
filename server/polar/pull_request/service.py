@@ -3,8 +3,6 @@ from uuid import UUID
 
 from polar.enums import Platforms
 from polar.kit.services import ResourceService
-from polar.models.issue import Issue
-from polar.models.issue_reference import IssueReference
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 
@@ -24,17 +22,6 @@ class PullRequestService(
     ) -> Sequence[PullRequest]:
         statement = sql.select(PullRequest).where(
             PullRequest.repository_id == repository_id
-        )
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
-
-    async def list_referencing_issue(
-        self, session: AsyncSession, issue: Issue
-    ) -> Sequence[PullRequest]:
-        statement = (
-            sql.select(PullRequest)
-            .join(IssueReference, IssueReference.pull_request_id == PullRequest.id)
-            .where(IssueReference.issue_id == issue.id)
         )
         res = await session.execute(statement)
         return res.scalars().unique().all()

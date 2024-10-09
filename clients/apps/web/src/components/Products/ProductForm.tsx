@@ -46,13 +46,13 @@ export interface ProductFullMediasMixin {
 export type ProductFormType = (ProductCreate | ProductUpdate) &
   ProductFullMediasMixin
 
-interface ProductPriceItemProps {
+export interface ProductPriceItemProps {
   index: number
   fieldArray: UseFieldArrayReturn<ProductFormType, 'prices', 'id'>
   deletable: boolean
 }
 
-const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
+export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   index,
   fieldArray,
   deletable,
@@ -128,11 +128,11 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   )
 }
 
-interface ProductPriceCustomItemProps {
+export interface ProductPriceCustomItemProps {
   index: number
 }
 
-const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
+export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   index,
 }) => {
   const { control, register, setValue } = useFormContext<ProductFormType>()
@@ -202,11 +202,11 @@ const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   )
 }
 
-interface ProductPriceFreeItemProps {
+export interface ProductPriceFreeItemProps {
   index: number
 }
 
-const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = ({
+export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = ({
   index,
 }) => {
   const { register } = useFormContext<ProductFormType>()

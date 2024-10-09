@@ -26,7 +26,10 @@ export const Checkout = ({
   organization,
 }: CheckoutProps) => {
   const [checkout, setCheckout] = useState(_checkout)
-  const form = useForm<CheckoutUpdatePublic>({ defaultValues: checkout })
+  const form = useForm<CheckoutUpdatePublic>({
+    defaultValues: checkout,
+    shouldUnregister: true,
+  })
   const { setError } = form
 
   const onCheckoutUpdate = useCallback(

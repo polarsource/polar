@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -33,6 +34,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
+from polar.kit.utils import utc_now
 from polar.models import Checkout, Organization, Product, User, UserOrganization
 from polar.models.checkout import CheckoutStatus
 from polar.models.product_price import (
@@ -1440,3 +1442,48 @@ class TestHandleFreeSuccess:
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
         stripe_service_mock.create_out_of_band_invoice.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestExpireOpenCheckouts:
+    async def test_valid(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        price = product.prices[0]
+        open_checkout = await create_checkout(
+            save_fixture,
+            price=price,
+            status=CheckoutStatus.open,
+            expires_at=utc_now() + timedelta(days=1),
+        )
+        expired_checkout = await create_checkout(
+            save_fixture,
+            price=price,
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+        successful_checkout = await create_checkout(
+            save_fixture,
+            price=price,
+            status=CheckoutStatus.succeeded,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+
+        await checkout_service.expire_open_checkouts(session)
+
+        updated_open_checkout = await checkout_service.get(session, open_checkout.id)
+        assert updated_open_checkout is not None
+        assert updated_open_checkout.status == CheckoutStatus.open
+
+        updated_expired_checkout = await checkout_service.get(
+            session, expired_checkout.id
+        )
+        assert updated_expired_checkout is not None
+        assert updated_expired_checkout.status == CheckoutStatus.expired
+
+        updated_successful_checkout = await checkout_service.get(
+            session, successful_checkout.id
+        )
+        assert updated_successful_checkout is not None
+        assert updated_successful_checkout.status == CheckoutStatus.succeeded

@@ -4,7 +4,7 @@ from typing import Any, cast
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, select, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import (
@@ -811,6 +811,18 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+    async def expire_open_checkouts(self, session: AsyncSession) -> None:
+        statement = (
+            update(Checkout)
+            .where(
+                Checkout.deleted_at.is_(None),
+                Checkout.expires_at <= utc_now(),
+                Checkout.status == CheckoutStatus.open,
+            )
+            .values(status=CheckoutStatus.expired)
+        )
+        await session.execute(statement)
 
     async def _update_checkout(
         self,

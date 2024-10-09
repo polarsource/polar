@@ -1,5 +1,6 @@
 'use client'
 
+import { useUserOrders } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -18,6 +19,10 @@ export const StorefrontNav = ({
 }: OrganizationStorefrontNavProps) => {
   const routeSegment = useSelectedLayoutSegment()
   const currentTab = routeSegment ?? 'products'
+
+  const { data: orders } = useUserOrders({
+    organizationId: organization.id,
+  })
 
   return (
     <Tabs value={currentTab}>
@@ -49,9 +54,11 @@ export const StorefrontNav = ({
           </Link>
         )}
 
-        <Link href={organizationPageLink(organization, 'portal')}>
-          <TabsTrigger value="portal">My Orders</TabsTrigger>
-        </Link>
+        {(orders?.items.length ?? 0) > 0 && (
+          <Link href={organizationPageLink(organization, 'portal')}>
+            <TabsTrigger value="portal">My Orders</TabsTrigger>
+          </Link>
+        )}
       </TabsList>
     </Tabs>
   )

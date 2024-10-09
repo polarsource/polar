@@ -1005,7 +1005,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 tax_amount = await calculate_tax(
                     checkout.currency,
                     checkout.amount,
-                    str(checkout.id),
                     checkout.product.stripe_product_id,
                     checkout.customer_billing_address,
                     [checkout.customer_tax_id]

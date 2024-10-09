@@ -114,7 +114,7 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
       ) : (
         <TextureOutlined
           fontSize="large"
-          className="dark:text-polar-700 text-gray-500"
+          className="dark:text-polar-600 text-gray-300"
         />
       )}
     </div>

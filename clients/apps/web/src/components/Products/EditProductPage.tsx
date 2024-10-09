@@ -22,7 +22,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
-import ProductForm, { ProductFullMediasMixin } from './ProductForm'
+import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 
 export interface EditProductPageProps {
   organization: Organization

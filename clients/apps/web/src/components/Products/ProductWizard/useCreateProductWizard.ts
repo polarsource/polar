@@ -11,16 +11,14 @@ import {
   BenefitPublicInner,
   Organization,
   ProductCreate,
-  ProductPrice,
   ProductPriceType,
   ResponseError,
-  SubscriptionRecurringInterval,
   ValidationError,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
-import { ProductFullMediasMixin } from '../ProductForm'
+import { useCallback, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
 export const useCreateProductWizard = (organization: Organization) => {
   const router = useRouter()
@@ -124,95 +122,6 @@ export const useCreateProductWizard = (organization: Organization) => {
     [organizationBenefits, enabledBenefitIds],
   )
 
-  const pricesFieldArray = useFieldArray({
-    control,
-    name: 'prices',
-  })
-  const { fields: prices, append, replace } = pricesFieldArray
-
-  const hasMonthlyPrice = useMemo(
-    () =>
-      (prices as ProductPrice[]).some(
-        (price) =>
-          price.type === 'recurring' &&
-          price.recurring_interval === SubscriptionRecurringInterval.MONTH,
-      ),
-    [prices],
-  )
-  const hasYearlyPrice = useMemo(
-    () =>
-      (prices as ProductPrice[]).some(
-        (price) =>
-          price.type === 'recurring' &&
-          price.recurring_interval === SubscriptionRecurringInterval.YEAR,
-      ),
-    [prices],
-  )
-
-  const [pricingType, setPricingType] = useState<ProductPriceType | undefined>(
-    hasMonthlyPrice || hasYearlyPrice
-      ? ProductPriceType.RECURRING
-      : ProductPriceType.ONE_TIME,
-  )
-
-  const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
-    prices.length > 0 && (prices as ProductPrice[])[0].amount_type
-      ? (prices as ProductPrice[])[0].amount_type
-      : 'fixed',
-  )
-
-  useEffect(() => {
-    if (pricingType === ProductPriceType.ONE_TIME) {
-      if (amountType === 'fixed') {
-        replace([
-          {
-            type: 'one_time',
-            amount_type: 'fixed',
-            price_currency: 'usd',
-            price_amount: 0,
-          },
-        ])
-      } else if (amountType === 'custom') {
-        replace([
-          {
-            type: 'one_time',
-            amount_type: 'custom',
-            price_currency: 'usd',
-          },
-        ])
-      } else {
-        replace([
-          {
-            type: 'one_time',
-            amount_type: 'free',
-          },
-        ])
-      }
-    } else if (pricingType === ProductPriceType.RECURRING) {
-      if (amountType === 'fixed') {
-        replace([
-          {
-            type: 'recurring',
-            amount_type: 'fixed',
-            recurring_interval: SubscriptionRecurringInterval.MONTH,
-            price_currency: 'usd',
-            price_amount: 0,
-          },
-        ])
-      } else if (amountType === 'free') {
-        replace([
-          {
-            type: 'recurring',
-            amount_type: 'free',
-            recurring_interval: SubscriptionRecurringInterval.MONTH,
-          },
-        ])
-      } else {
-        setAmountType('fixed')
-      }
-    }
-  }, [pricingType, replace, amountType])
-
   return {
     form,
     handleSubmit,
@@ -222,14 +131,5 @@ export const useCreateProductWizard = (organization: Organization) => {
     onSelectBenefit,
     onRemoveBenefit,
     enabledBenefits,
-    prices,
-    append,
-    pricingType,
-    setPricingType,
-    amountType,
-    setAmountType,
-    hasMonthlyPrice,
-    hasYearlyPrice,
-    pricesFieldArray,
   }
 }

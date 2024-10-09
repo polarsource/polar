@@ -69,7 +69,7 @@ const PublicProfileDropdown = ({
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
+              'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-3xl bg-gray-50 p-2 shadow-xl dark:border',
             )}
           >
             <Link

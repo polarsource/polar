@@ -111,7 +111,7 @@ const IssuePledge = (props: Props) => {
               )}
               {confirmable && (
                 <button
-                  className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-400 dark:hover:bg-polar-900 flex items-center gap-2 rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800"
+                  className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-400 dark:hover:bg-polar-900 flex items-center gap-2 rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800"
                   onClick={props.onConfirmPledges}
                 >
                   <CheckCircleIcon className="h-6 w-6 text-green-600" />
@@ -127,7 +127,7 @@ const IssuePledge = (props: Props) => {
         <div
           className={twMerge(
             'dark:border-polar-700 border-t',
-            'bg-gray-75 flex flex-row items-center gap-2 px-6 py-2 text-sm  dark:bg-transparent',
+            'flex flex-row items-center gap-2 bg-gray-100 px-6 py-2 text-sm  dark:bg-transparent',
           )}
           key={p.id}
         >
@@ -155,7 +155,7 @@ const IssuePledge = (props: Props) => {
             {p.hosted_invoice_url ? (
               <a
                 href={p.hosted_invoice_url}
-                className="border-1 dark:text-polar-200 dark:border-polar-400 dark:hover:bg-polar-700 flex items-center gap-2 rounded-md border border-gray-300 py-1 pl-3 pr-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="border-1 dark:text-polar-200 dark:border-polar-400 dark:hover:bg-polar-700 flex items-center gap-2 rounded-md border border-gray-200 py-1 pl-3 pr-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 {p.state === PledgeState.CREATED ? (
                   <span>Pay Invoice</span>

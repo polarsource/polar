@@ -36,9 +36,9 @@ export const ResponseContainer = ({
   }, [])
 
   return (
-    <div className="dark:border-polar-700 rounded-4xl flex h-full w-full flex-col bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none">
+    <div className="dark:border-polar-700 flex h-full w-full flex-col rounded-2xl bg-gray-50 shadow-sm dark:border dark:bg-transparent dark:shadow-none">
       <Tabs defaultValue={Object.keys(responses)[0]}>
-        <div className="dark:border-polar-700 flex w-full flex-row items-center justify-between border-b border-gray-100 px-5 py-1">
+        <div className="dark:border-polar-700 flex w-full flex-row items-center justify-between border-b border-gray-200 px-5 py-1">
           <span className="text-sm text-black dark:text-white">Responses</span>
           <TabsList className="flex flex-row items-center rounded-none py-3">
             {Object.keys(responses).map((statusCode) => (

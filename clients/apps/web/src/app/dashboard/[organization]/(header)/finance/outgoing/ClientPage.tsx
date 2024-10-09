@@ -11,7 +11,6 @@ import {
 } from '@/utils/datatable'
 import { Organization } from '@polar-sh/sdk'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
   pagination,
@@ -65,25 +64,23 @@ export default function ClientPage({
   return (
     <div className="flex flex-col gap-y-6">
       <AccountBanner organization={organization} />
-      <ShadowBoxOnMd>
-        <div className="mb-8 flex flex-row items-center justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h2 className="text-lg font-medium capitalize">Transactions</h2>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              Payments made to maintainers on Polar
-            </p>
-          </div>
+      <div className="mb-8 flex flex-row items-center justify-between">
+        <div className="flex flex-col gap-y-2">
+          <h2 className="text-lg font-medium capitalize">Transactions</h2>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Payments made to maintainers on Polar
+          </p>
         </div>
-        <TransactionsList
-          transactions={transactions}
-          pageCount={transactionsCount}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          isLoading={transactionsHook.isLoading}
-        />
-      </ShadowBoxOnMd>
+      </div>
+      <TransactionsList
+        transactions={transactions}
+        pageCount={transactionsCount}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        isLoading={transactionsHook.isLoading}
+      />
     </div>
   )
 }

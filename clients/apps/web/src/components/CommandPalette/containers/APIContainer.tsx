@@ -27,12 +27,12 @@ export const APIContainer = ({
   return (
     <div
       className={twMerge(
-        'dark:border-polar-700 rounded-4xl flex h-full w-full flex-col bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none',
+        'dark:border-polar-700 rounded-4xl flex h-full w-full flex-col bg-gray-50 shadow-sm dark:border dark:bg-transparent dark:shadow-none',
         className,
       )}
     >
       <Tabs defaultValue={COMMAND_BUILDERS[0].lang}>
-        <TabsList className="dark:border-polar-700 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-100 px-4 py-3">
+        <TabsList className="dark:border-polar-700 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-200 px-4 py-3">
           <div className="flex w-full flex-row items-center">
             {COMMAND_BUILDERS.map(({ lang, displayName }) => {
               return (

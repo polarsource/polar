@@ -18,7 +18,7 @@ const Switch = React.forwardRef<
   >
     <SwitchPrimitives.Thumb
       className={twMerge(
-        'bg-background dark:data-[state=unchecked]:bg-polar-500 pointer-events-none block h-2 w-2 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[22px] data-[state=unchecked]:translate-x-1 dark:data-[state=checked]:bg-white',
+        'bg-background dark:data-[state=unchecked]:bg-polar-500 pointer-events-none block h-2 w-2 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[22px] data-[state=unchecked]:translate-x-1 dark:data-[state=checked]:bg-gray-50',
       )}
     />
   </SwitchPrimitives.Root>

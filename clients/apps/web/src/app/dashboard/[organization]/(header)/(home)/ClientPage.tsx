@@ -17,7 +17,7 @@ interface OverviewPageProps {
 
 const OverviewPage: React.FC<OverviewPageProps> = ({}) => {
   return (
-    <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
+    <DashboardBody>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10">
         <ActivityWidget className="col-span-2" />
         <OrdersWidget />

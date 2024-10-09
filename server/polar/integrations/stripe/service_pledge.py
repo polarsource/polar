@@ -223,6 +223,7 @@ Thank you for your support!
             description=f"Pledge to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
             currency="USD",
             metadata={
+                "type": ProductType.pledge,
                 "pledge_id": str(pledge.id),
             },
         )

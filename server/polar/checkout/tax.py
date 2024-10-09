@@ -287,7 +287,6 @@ class InvalidTaxLocation(TaxCalculationError):
 async def calculate_tax(
     currency: str,
     amount: int,
-    reference: str,
     stripe_product_id: str,
     address: Address,
     tax_ids: list[TaxID],
@@ -296,7 +295,7 @@ async def calculate_tax(
     address_str = address.model_dump_json()
     tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
     idempotency_key_str = (
-        f"{currency}{amount}{reference}{stripe_product_id}{address_str}{tax_ids_str}"
+        f"{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}"
     )
     idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
 
@@ -308,7 +307,7 @@ async def calculate_tax(
                     "amount": amount,
                     "product": stripe_product_id,
                     "quantity": 1,
-                    "reference": reference,
+                    "reference": stripe_product_id,
                 }
             ],
             customer_details={

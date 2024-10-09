@@ -1,7 +1,6 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { CONFIG } from '@/utils/config'
 import { useCallback, useState } from 'react'
 
 export const Hero = () => {
@@ -31,7 +30,7 @@ export const Hero = () => {
           </div>
         </div>
         <div className="z-20 flex flex-row items-center gap-x-4">
-          <form
+          <div
             className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
             role="form"
           >
@@ -45,13 +44,8 @@ export const Hero = () => {
                 onChange={(e) => setSlug(slugify(e.target.value))}
               />
             </div>
-            <GetStartedButton
-              wrapperClassNames="p-0"
-              className="px-4 py-3 text-sm"
-              href={`${CONFIG.FRONTEND_BASE_URL}/signup?return_to=/dashboard/create&auto=true&slug=${slug}`}
-              type="submit"
-            />
-          </form>
+            <GetStartedButton className="px-3" orgSlug={slug} size="default" />
+          </div>
         </div>
       </div>
       <div>

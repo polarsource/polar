@@ -1,11 +1,14 @@
 'use client'
 
+import { AuthModal } from '@/components/Auth/AuthModal'
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/Popover'
 import { UserRead } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Button from 'polarkit/components/ui/atoms/button'
 
 const TopbarRight = ({
   authenticatedUser,
@@ -14,6 +17,7 @@ const TopbarRight = ({
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/purchases'
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
   return (
     <>
@@ -29,13 +33,16 @@ const TopbarRight = ({
         </div>
       ) : (
         <>
-          <GetStartedButton size="sm" />
-          <Link
-            href={`/login?return_to=${loginReturnTo}`}
-            className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-          >
+          <Button onClick={showModal} variant="secondary">
             Login
-          </Link>
+          </Button>
+          <GetStartedButton size="default" />
+          <Modal
+            isShown={isModalShown}
+            hide={hideModal}
+            modalContent={<AuthModal type="login" return_to={loginReturnTo} />}
+            className="lg:w-full lg:max-w-[480px]"
+          />
         </>
       )}
     </>

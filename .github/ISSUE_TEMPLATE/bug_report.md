@@ -2,7 +2,7 @@
 name: 🪲 Bug Report
 about: Report an issue to help us improve
 title: ""
-labels: "Issue-Bug"
+labels: "bug"
 assignees: ""
 ---
 
@@ -27,16 +27,8 @@ assignees: ""
 -   Operating System: [e.g., Windows, macOS, Linux]
 -   Browser (if applicable): [e.g., Chrome, Firefox, Safari]
 
-### Checklist
-
--   [ ] I have read and followed the project's code of conduct.
--   [ ] I have searched for similar issues before creating this one.
--   [ ] I have provided steps to reproduce the issue.
--   [ ] I have provided all the necessary information to understand and reproduce the issue.
--   [ ] I am willing to contribute to the resolution of this issue if approved.
-
 ---
 
-Thank you for contributing to Polar! We appreciate your help in improving it.
+<!-- Thank you for contributing to Polar! We appreciate your help in improving it. -->
 
-Questions: [Discord Server](https://discord.com/invite/STfRufb32V).
+<!-- Questions: [Discord Server](https://discord.com/invite/STfRufb32V). -->

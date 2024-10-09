@@ -1,4 +1,4 @@
-from typing import Any, Literal, LiteralString, TypedDict
+from typing import Any, Literal, LiteralString, NotRequired, TypedDict
 
 from pydantic import BaseModel, create_model
 from pydantic_core import ErrorDetails, InitErrorDetails, PydanticCustomError
@@ -116,6 +116,7 @@ class ValidationError(TypedDict):
     msg: LiteralString
     type: LiteralString
     input: Any
+    ctx: NotRequired[dict[str, Any]]
 
 
 class PolarRequestValidationError(PolarError):

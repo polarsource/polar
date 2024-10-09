@@ -1,6 +1,11 @@
-import React, { PropsWithChildren } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import React, { PropsWithChildren, useEffect } from 'react'
 
-export type CustomizationContextMode = 'storefront' | 'checkout' | 'receipt'
+export type CustomizationContextMode =
+  | 'storefront'
+  | 'checkout'
+  | 'confirmation'
+  | 'portal'
 
 export type CustomizationContextValue = {
   readonly customizationMode: CustomizationContextMode
@@ -23,6 +28,13 @@ export const CustomizationProvider = ({
 }>) => {
   const [customizationMode, setCustomizationMode] =
     React.useState<CustomizationContextMode>(initialCustomizationMode)
+
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    router.replace(`${pathname}?mode=${customizationMode}`)
+  }, [customizationMode])
 
   return (
     <CustomizationContext.Provider

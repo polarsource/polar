@@ -11,6 +11,7 @@ from polar.integrations.stripe.schemas import (
     DonationPaymentIntentMetadata,
     PledgePaymentIntentMetadata,
 )
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.logfire import instrument_httpx
 from polar.models.organization import Organization
 from polar.models.user import User
@@ -30,6 +31,13 @@ class MissingOrganizationBillingEmail(PolarError):
         super().__init__(message)
 
 
+class MissingLatestInvoiceForOutofBandSubscription(PolarError):
+    def __init__(self, subscription_id: str) -> None:
+        self.subscription_id = subscription_id
+        message = f"The subscription {subscription_id} does not have a latest invoice."
+        super().__init__(message)
+
+
 class StripeService:
     async def _get_customer(
         self,
@@ -42,7 +50,7 @@ class StripeService:
             return await self.get_or_create_org_customer(session, customer)
         return None
 
-    async def create_payment_intent(
+    async def create_pledge_payment_intent(
         self,
         session: AsyncSession,
         *,
@@ -350,11 +358,20 @@ class StripeService:
         params: stripe_lib.Price.CreateParams,
         *,
         set_default: bool = False,
+        idempotency_key: str | None = None,
     ) -> stripe_lib.Price:
         params = {**params, "product": product}
+        if idempotency_key is not None:
+            params["idempotency_key"] = idempotency_key
         price = stripe_lib.Price.create(**params)
         if set_default:
-            stripe_lib.Product.modify(product, default_price=price.id)
+            stripe_lib.Product.modify(
+                product,
+                default_price=price.id,
+                idempotency_key=f"{idempotency_key}_set_default"
+                if idempotency_key is not None
+                else None,
+            )
         return price
 
     def update_product(
@@ -550,6 +567,175 @@ class StripeService:
             currency=currency,
             metadata=metadata or {},
         )
+
+    def create_payment_intent(
+        self, **params: Unpack[stripe_lib.PaymentIntent.CreateParams]
+    ) -> stripe_lib.PaymentIntent:
+        return stripe_lib.PaymentIntent.create(**params)
+
+    def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
+        return stripe_lib.PaymentIntent.retrieve(id)
+
+    def create_customer(
+        self, **params: Unpack[stripe_lib.Customer.CreateParams]
+    ) -> stripe_lib.Customer:
+        return stripe_lib.Customer.create(**params)
+
+    def update_customer(
+        self,
+        id: str,
+        tax_id: stripe_lib.Customer.CreateParamsTaxIdDatum | None = None,
+        **params: Unpack[stripe_lib.Customer.ModifyParams],
+    ) -> stripe_lib.Customer:
+        if tax_id is not None:
+            stripe_lib.Customer.create_tax_id(id, **tax_id)
+
+        customer = stripe_lib.Customer.modify(id, **params)
+
+        return customer
+
+    def create_customer_session(self, customer_id: str) -> stripe_lib.CustomerSession:
+        return stripe_lib.CustomerSession.create(
+            components={
+                "payment_element": {
+                    "enabled": True,
+                    "features": {
+                        "payment_method_allow_redisplay_filters": [
+                            "always",
+                            "limited",
+                            "unspecified",
+                        ],
+                        "payment_method_redisplay": "enabled",
+                    },
+                }
+            },
+            customer=customer_id,
+        )
+
+    def create_out_of_band_subscription(
+        self,
+        *,
+        customer: str,
+        currency: str,
+        price: str,
+        automatic_tax: bool = True,
+        metadata: dict[str, str] | None = None,
+        invoice_metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
+        subscription = stripe_lib.Subscription.create(
+            customer=customer,
+            currency=currency,
+            collection_method="send_invoice",
+            days_until_due=0,
+            items=[{"price": price, "quantity": 1}],
+            metadata=metadata or {},
+            automatic_tax={"enabled": automatic_tax},
+            expand=["latest_invoice"],
+            idempotency_key=idempotency_key,
+        )
+
+        if subscription.latest_invoice is None:
+            raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
+
+        invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
+        invoice_id = get_expandable_id(invoice)
+        invoice = stripe_lib.Invoice.modify(
+            invoice_id,
+            metadata=invoice_metadata or {},
+            idempotency_key=f"{idempotency_key}_update_invoice"
+            if idempotency_key is not None
+            else None,
+        )
+        invoice = stripe_lib.Invoice.finalize_invoice(
+            invoice_id,
+            idempotency_key=f"{idempotency_key}_finalize_invoice"
+            if idempotency_key is not None
+            else None,
+        )
+
+        if invoice.status == "open":
+            stripe_lib.Invoice.pay(
+                invoice_id,
+                paid_out_of_band=True,
+                idempotency_key=f"{idempotency_key}_pay_invoice"
+                if idempotency_key is not None
+                else None,
+            )
+
+        return subscription, invoice
+
+    def set_automatically_charged_subscription(
+        self,
+        subscription_id: str,
+        payment_method: str | None,
+        *,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Subscription:
+        params: stripe_lib.Subscription.ModifyParams = {
+            "collection_method": "charge_automatically",
+            "idempotency_key": idempotency_key,
+        }
+        if payment_method is not None:
+            params["default_payment_method"] = payment_method
+        return stripe_lib.Subscription.modify(subscription_id, **params)
+
+    def create_out_of_band_invoice(
+        self,
+        *,
+        customer: str,
+        currency: str,
+        price: str,
+        automatic_tax: bool = True,
+        metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Invoice:
+        invoice = stripe_lib.Invoice.create(
+            auto_advance=True,
+            collection_method="send_invoice",
+            days_until_due=0,
+            customer=customer,
+            metadata=metadata or {},
+            automatic_tax={"enabled": automatic_tax},
+            currency=currency,
+            idempotency_key=f"{idempotency_key}_invoice" if idempotency_key else None,
+        )
+        invoice_id = cast(str, invoice.id)
+
+        stripe_lib.InvoiceItem.create(
+            customer=customer,
+            currency=currency,
+            price=price,
+            invoice=invoice_id,
+            quantity=1,
+            idempotency_key=f"{idempotency_key}_invoice_item"
+            if idempotency_key
+            else None,
+        )
+
+        invoice = stripe_lib.Invoice.finalize_invoice(
+            invoice_id,
+            idempotency_key=f"{idempotency_key}_finalize_invoice"
+            if idempotency_key
+            else None,
+        )
+
+        if invoice.status == "open":
+            stripe_lib.Invoice.pay(
+                invoice_id,
+                paid_out_of_band=True,
+                idempotency_key=f"{idempotency_key}_pay_invoice"
+                if idempotency_key
+                else None,
+            )
+
+        return invoice
+
+    def create_tax_calculation(
+        self,
+        **params: Unpack[stripe_lib.tax.Calculation.CreateParams],
+    ) -> stripe_lib.tax.Calculation:
+        return stripe_lib.tax.Calculation.create(**params)
 
 
 stripe = StripeService()

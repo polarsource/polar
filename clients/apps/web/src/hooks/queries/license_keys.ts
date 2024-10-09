@@ -12,7 +12,7 @@ export const useLicenseKey = ({ licenseKeyId }: GetLicenseKeysRequest) =>
     queryKey: ['user', 'license_key', licenseKeyId],
     queryFn: () =>
       api.usersLicenseKeys.get({
-        id: licenseKeyId ?? '',
+        id: licenseKeyId as string,
       }),
     retry: defaultRetry,
     enabled: !!licenseKeyId,

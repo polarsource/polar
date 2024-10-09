@@ -12,6 +12,10 @@ class UserSignupType(StrEnum):
     imported = "imported"
 
 
+class PaymentProcessor(StrEnum):
+    stripe = "stripe"
+
+
 class AccountType(StrEnum):
     stripe = "stripe"
     open_collective = "open_collective"

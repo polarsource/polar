@@ -1,12 +1,13 @@
 from babel.numbers import format_currency
 from pydantic import UUID4, Field
 
+from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
 
-class OrderBase(IDSchema, TimestampedSchema):
+class OrderBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     amount: int
     tax_amount: int
     currency: str
@@ -15,6 +16,7 @@ class OrderBase(IDSchema, TimestampedSchema):
     product_id: UUID4
     product_price_id: UUID4
     subscription_id: UUID4 | None
+    checkout_id: UUID4 | None
 
     def get_amount_display(self) -> str:
         return f"{format_currency(
@@ -35,7 +37,7 @@ class OrderUser(Schema):
 class OrderProduct(ProductBase): ...
 
 
-class OrderSubscription(SubscriptionBase): ...
+class OrderSubscription(SubscriptionBase, MetadataOutputMixin): ...
 
 
 class Order(OrderBase):

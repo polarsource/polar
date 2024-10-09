@@ -142,7 +142,7 @@ const ClientPage = ({
           <ShadowBox className="flex flex-col gap-8 border-gray-200">
             <h3 className="text-lg font-medium">{subscription.product.name}</h3>
             <div className="flex flex-col gap-4">
-              <h1 className="text-5xl font-light">
+              <h1 className="text-4xl font-light">
                 {subscription.amount && subscription.currency && (
                   <AmountLabel
                     amount={subscription.amount}

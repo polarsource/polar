@@ -9,6 +9,8 @@ from polar.kit.db.models.base import RecordModel
 
 
 class WebhookEventType(StrEnum):
+    checkout_created = "checkout.created"
+    checkout_updated = "checkout.updated"
     order_created = "order.created"
     subscription_created = "subscription.created"
     subscription_updated = "subscription.updated"

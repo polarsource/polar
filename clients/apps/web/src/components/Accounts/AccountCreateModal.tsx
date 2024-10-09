@@ -178,7 +178,7 @@ const AccountCreateModal = ({
             )}
 
             <div>
-              <CountryPicker onSelectCountry={onChangeCountry} />
+              <CountryPicker onChange={onChangeCountry} value={country} />
               <p className="dark:text-polar-500 mt-2 text-justify text-xs text-gray-500">
                 If this is a personal account, please select your country of
                 residence. If this is an organization or business, select the

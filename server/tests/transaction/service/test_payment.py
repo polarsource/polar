@@ -53,7 +53,9 @@ def build_stripe_charge(
     payment_intent: str | None = None,
     balance_transaction: str | None = None,
     type: ProductType | None = None,
+    metadata: dict[str, str] | None = None,
 ) -> stripe_lib.Charge:
+    metadata = metadata or {}
     return stripe_lib.Charge.construct_from(
         {
             "id": "STRIPE_CHARGE_ID",
@@ -63,7 +65,7 @@ def build_stripe_charge(
             "invoice": invoice,
             "payment_intent": payment_intent,
             "balance_transaction": balance_transaction,
-            "metadata": {"type": type} if type is not None else {},
+            "metadata": {"type": type, **metadata} if type is not None else metadata,
         },
         None,
     )
@@ -300,3 +302,38 @@ class TestCreatePayment:
         assert transaction.pledge == pledge
         assert transaction.payment_user == pledge.user
         assert transaction.payment_organization == pledge.by_organization
+
+    async def test_tax_metadata(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        pledge: Pledge,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        pledge.payment_id = "STRIPE_PAYMENT_ID"
+        await save_fixture(pledge)
+
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer="GUEST_CUSTOMER_ID",
+            payment_intent=pledge.payment_id,
+            balance_transaction=stripe_balance_transaction.id,
+            type=ProductType.product,
+            metadata={"tax_country": "US", "tax_state": "NY", "tax_amount": "100"},
+        )
+
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        # then
+        session.expunge_all()
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.type == TransactionType.payment
+        assert transaction.tax_amount == 100
+        assert transaction.tax_country == "US"
+        assert transaction.tax_state == "NY"

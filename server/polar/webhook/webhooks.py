@@ -7,16 +7,18 @@ from typing import Annotated, Any, Literal, assert_never, get_args
 from babel.dates import format_date
 from fastapi import FastAPI
 from makefun import with_signature
-from pydantic import Discriminator, TypeAdapter
+from pydantic import ConfigDict, Discriminator, TypeAdapter
 
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
+from polar.checkout.schemas import Checkout as CheckoutSchema
 from polar.donation.schemas import Donation as DonationSchema
 from polar.exceptions import PolarError
 from polar.kit.schemas import IDSchema, Schema
 from polar.models import (
     Benefit,
     BenefitGrant,
+    Checkout,
     Donation,
     Order,
     Organization,
@@ -36,7 +38,9 @@ from .discord import DiscordEmbedField, DiscordPayload, get_branded_discord_embe
 from .slack import SlackPayload, SlackText, get_branded_slack_payload
 
 WebhookTypeObject = (
-    tuple[Literal[WebhookEventType.order_created], Order]
+    tuple[Literal[WebhookEventType.checkout_created], Checkout]
+    | tuple[Literal[WebhookEventType.checkout_updated], Checkout]
+    | tuple[Literal[WebhookEventType.order_created], Order]
     | tuple[Literal[WebhookEventType.subscription_created], Subscription]
     | tuple[Literal[WebhookEventType.subscription_updated], Subscription]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -144,6 +148,33 @@ class BaseWebhookPayload(Schema):
         )
 
         return json.dumps(payload)
+
+    model_config = ConfigDict(
+        # IMPORTANT: this ensures FastAPI doesn't generate `-Input` for output schemas
+        json_schema_mode_override="serialization",
+    )
+
+
+class WebhookCheckoutCreatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new checkout is created.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.checkout_created]
+    data: CheckoutSchema
+
+
+class WebhookCheckoutUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a checkout is updated.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.checkout_updated]
+    data: CheckoutSchema
 
 
 class WebhookOrderCreatedPayload(BaseWebhookPayload):
@@ -607,7 +638,9 @@ class WebhookBenefitGrantRevokedPayload(BaseWebhookPayload):
 
 
 WebhookPayload = Annotated[
-    WebhookOrderCreatedPayload
+    WebhookCheckoutCreatedPayload
+    | WebhookCheckoutUpdatedPayload
+    | WebhookOrderCreatedPayload
     | WebhookSubscriptionCreatedPayload
     | WebhookSubscriptionUpdatedPayload
     | WebhookProductCreatedPayload
@@ -626,7 +659,7 @@ WebhookPayload = Annotated[
 WebhookPayloadTypeAdapter: TypeAdapter[WebhookPayload] = TypeAdapter(WebhookPayload)
 
 
-def _document_webhooks(app: FastAPI) -> None:
+def document_webhooks(app: FastAPI) -> None:
     def _endpoint(body: Any) -> None: ...
 
     webhooks_schemas: tuple[type[BaseWebhookPayload]] = typing.get_args(
@@ -655,7 +688,3 @@ def _document_webhooks(app: FastAPI) -> None:
             summary=event_type,
             description=inspect.getdoc(webhook_schema),
         )
-
-
-app = FastAPI()
-_document_webhooks(app)

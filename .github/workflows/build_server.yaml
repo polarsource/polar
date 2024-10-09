@@ -54,6 +54,8 @@ jobs:
           platforms: linux/amd64,linux/arm64/v8
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+          secrets: |
+            IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
       - name: Deploy
         if: github.ref == 'refs/heads/main'

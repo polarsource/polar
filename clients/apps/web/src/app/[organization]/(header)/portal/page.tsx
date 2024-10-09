@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Product, ResponseError } from '@polar-sh/sdk'
+import { ListResourceUserSubscription, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -23,10 +23,10 @@ export async function generateMetadata({
   )
 
   return {
-    title: `${organization.name}`, // " | Polar is added by the template"
+    title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.name} on Polar`,
-      description: `${organization.name} on Polar`,
+      title: `Customer Portal | ${organization.name} on Polar`,
+      description: `Customer Portal | ${organization.name} on Polar`,
       siteName: 'Polar',
 
       images: [
@@ -47,19 +47,8 @@ export async function generateMetadata({
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.name} on Polar`,
-      description: `${organization.name} on Polar`,
-    },
-
-    alternates: {
-      types: {
-        'application/rss+xml': [
-          {
-            title: `${organization.name}`,
-            url: `https://polar.sh/${organization.slug}/rss`,
-          },
-        ],
-      },
+      title: `Customer Portal | ${organization.name} on Polar`,
+      description: `Customer Portal | ${organization.name} on Polar`,
     },
   }
 }
@@ -75,9 +64,12 @@ export default async function Page({
     params.organization,
   )
 
-  let product: Product | undefined
+  let subscriptions: ListResourceUserSubscription | undefined
   try {
-    product = await api.products.get({ id: params.productId }, cacheConfig)
+    subscriptions = await api.usersSubscriptions.list(
+      { organizationId: organization.id, active: true },
+      cacheConfig,
+    )
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -86,9 +78,7 @@ export default async function Page({
     }
   }
 
-  if (product.is_archived) {
-    notFound()
-  }
-
-  return <ClientPage organization={organization} product={product} />
+  return (
+    <ClientPage organization={organization} subscriptions={subscriptions} />
+  )
 }

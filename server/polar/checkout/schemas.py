@@ -1,47 +1,182 @@
-from pydantic import UUID4, AnyHttpUrl, Field
+from datetime import datetime
+from typing import Annotated, Any, Literal
 
-from polar.kit.schemas import EmailStrDNS, Schema
+from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress, computed_field
+
+from polar.config import settings
+from polar.enums import PaymentProcessor
+from polar.kit.address import Address
+from polar.kit.metadata import (
+    MetadataInputMixin,
+    MetadataOutputMixin,
+    OptionalMetadataInputMixin,
+)
+from polar.kit.schemas import (
+    EmailStrDNS,
+    EmptyStrToNoneValidator,
+    IDSchema,
+    Schema,
+    TimestampedSchema,
+)
+from polar.models.checkout import CheckoutStatus
 from polar.product.schemas import Product, ProductPrice
 
-
-class CheckoutCreate(Schema):
-    product_price_id: UUID4 = Field(
-        ...,
-        description="ID of the product price to subscribe to.",
-    )
-    success_url: AnyHttpUrl = Field(
-        ...,
+Amount = Annotated[
+    int,
+    Field(
         description=(
-            "URL where the customer will be redirected after a successful subscription. "
-            "You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter "
+            "Amount to pay in cents. "
+            "Only useful for custom prices, it'll be ignored for fixed and free prices."
+        )
+    ),
+]
+CustomerName = Annotated[
+    str,
+    Field(description="Name of the customer."),
+]
+CustomerEmail = Annotated[
+    EmailStrDNS,
+    Field(description="Email address of the customer."),
+]
+CustomerIPAddress = Annotated[
+    IPvAnyAddress,
+    Field(
+        description="IP address of the customer. Used to detect tax location.",
+    ),
+]
+CustomerBillingAddress = Annotated[
+    Address,
+    Field(description="Billing address of the customer."),
+]
+SuccessURL = Annotated[
+    HttpUrl | None,
+    Field(
+        description=(
+            "URL where the customer will be redirected after a successful payment."
+            "You can add the `checkout_id={CHECKOUT_ID}` query parameter "
             "to retrieve the checkout session id."
+        )
+    ),
+]
+
+
+class CheckoutCreate(MetadataInputMixin, Schema):
+    """Create a new checkout session."""
+
+    payment_processor: Literal[PaymentProcessor.stripe] = Field(
+        description="Payment processor to use. Currently only Stripe is supported."
+    )
+    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    amount: Amount | None = None
+    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
+    customer_email: CustomerEmail | None = None
+    customer_ip_address: CustomerIPAddress | None = None
+    customer_billing_address: CustomerBillingAddress | None = None
+    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    success_url: SuccessURL = None
+
+
+class CheckoutCreatePublic(Schema):
+    """Create a new checkout session from a client."""
+
+    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    customer_email: CustomerEmail | None = None
+
+
+class CheckoutUpdateBase(Schema):
+    product_price_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of the product price to checkout. "
+            "Must correspond to a price linked to the same product."
         ),
     )
-    customer_email: EmailStrDNS | None = Field(
+    amount: Amount | None = None
+    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
+    customer_email: CustomerEmail | None = None
+    customer_billing_address: CustomerBillingAddress | None = None
+    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+
+
+class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
+    """Update an existing checkout session using an access token."""
+
+    customer_ip_address: CustomerIPAddress | None = None
+    success_url: SuccessURL = None
+
+
+class CheckoutUpdatePublic(CheckoutUpdateBase):
+    """Update an existing checkout session using the client secret."""
+
+
+class CheckoutConfirmBase(CheckoutUpdatePublic): ...
+
+
+class CheckoutConfirmStripe(CheckoutConfirmBase):
+    """Confirm a checkout session using a Stripe confirmation token."""
+
+    confirmation_token_id: str | None = Field(
         None,
         description=(
-            "If you already know the email of your customer, you can set it. "
-            "It'll be pre-filled on the checkout page."
+            "ID of the Stripe confirmation token. "
+            "Required for fixed prices and custom prices."
         ),
     )
-    subscription_id: UUID4 | None = Field(
-        None,
+
+
+CheckoutConfirm = CheckoutConfirmStripe
+
+
+class CheckoutBase(IDSchema, TimestampedSchema):
+    payment_processor: PaymentProcessor = Field(description="Payment processor used.")
+    status: CheckoutStatus = Field(description="Status of the checkout session.")
+    client_secret: str = Field(
         description=(
-            "ID of the subscription to update. "
-            "If not provided, a new subscription will be created."
-        ),
+            "Client secret used to update and complete "
+            "the checkout session from the client."
+        )
+    )
+    expires_at: datetime = Field(
+        description="Expiration date and time of the checkout session."
+    )
+    success_url: str = Field(
+        description=(
+            "URL where the customer will be redirected after a successful payment."
+        )
+    )
+    amount: Amount | None
+    tax_amount: int | None = Field(description="Computed tax amount to pay in cents.")
+    currency: str | None = Field(description="Currency code of the checkout session.")
+    total_amount: int | None = Field(description="Total amount to pay in cents.")
+    product_id: UUID4 = Field(description="ID of the product to checkout.")
+    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    is_payment_required: bool = Field(
+        description=(
+            "Whether the checkout requires payment. " "Useful to detect free products."
+        )
     )
 
+    customer_id: UUID4 | None
+    customer_name: CustomerName | None
+    customer_email: CustomerEmail | None
+    customer_ip_address: CustomerIPAddress | None
+    customer_billing_address: CustomerBillingAddress | None
+    customer_tax_id: str | None = Field(validation_alias="customer_tax_id_number")
 
-class Checkout(Schema):
-    """A checkout session."""
+    payment_processor_metadata: dict[str, Any]
 
-    id: str = Field(..., description="The ID of the checkout.")
-    url: str | None = Field(
-        None,
-        description="URL the customer should be redirected to complete the purchase.",
-    )
-    customer_email: str | None
-    customer_name: str | None
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def url(self) -> str:
+        return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
+
+
+class Checkout(MetadataOutputMixin, CheckoutBase):
+    """Checkout session data retrieved using an access token."""
+
+
+class CheckoutPublic(CheckoutBase):
+    """Checkout session data retrieved using the client secret."""
+
     product: Product
     product_price: ProductPrice

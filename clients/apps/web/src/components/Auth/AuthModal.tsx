@@ -28,7 +28,7 @@ export const AuthModal = ({
     ) : null
 
   return (
-    <ShadowBox className="p-12">
+    <ShadowBox className="overflow-y-auto p-12">
       <div className="flex flex-col justify-between gap-y-16">
         <LogoIcon className="text-black dark:text-white" size={60} />
 

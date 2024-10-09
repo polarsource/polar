@@ -89,7 +89,6 @@ const IssueListPage = (props: {
       {props.page.data.map((issue) => (
         <IssueListItem
           issue={issue.attributes}
-          references={issue.references || []}
           pledges={issue.pledges || []}
           pledgesSummary={issue.pledges_summary}
           rewards={issue.rewards}

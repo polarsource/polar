@@ -86,9 +86,7 @@ const getRetroactiveChanges = (
         if (repo.badge_auto_embed) {
           changes.additions =
             repo.synced_issues -
-            (repo.auto_embedded_issues +
-              repo.label_embedded_issues +
-              repo.pull_requests)
+            (repo.auto_embedded_issues + repo.label_embedded_issues)
         } else {
           changes.removals = repo.auto_embedded_issues
         }

@@ -1,12 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
-import {
-  Pledger,
-  PullRequest,
-  ResponseError,
-  RewardsSummary,
-} from '@polar-sh/sdk'
+import { Pledger, ResponseError, RewardsSummary } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -107,23 +102,19 @@ export default async function Page({
   let issueHTMLBody: string | undefined
   let pledgers: Pledger[] = []
   let rewards: RewardsSummary | undefined
-  let pulls: PullRequest[] = []
 
   try {
-    const [bodyResponse, pledgeSummary, rewardsSummary, pullRequests] =
-      await Promise.all([
-        api.issues.getBody({ id: issue.id }, { next: { revalidate: 60 } }), // Cache for 60s
-        api.pledges.summary({ issueId: issue.id }, cacheConfig),
-        api.rewards.summary({ issueId: issue.id }, cacheConfig),
-        api.pullRequests.search({ referencesIssueId: issue.id }, cacheConfig),
-      ])
+    const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
+      api.issues.getBody({ id: issue.id }, { next: { revalidate: 60 } }), // Cache for 60s
+      api.pledges.summary({ issueId: issue.id }, cacheConfig),
+      api.rewards.summary({ issueId: issue.id }, cacheConfig),
+    ])
 
     issueHTMLBody = bodyResponse
     pledgers = pledgeSummary.pledges
       .map(({ pledger }) => pledger)
       .filter((p): p is Pledger => !!p)
     rewards = rewardsSummary
-    pulls = pullRequests.items || []
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -143,7 +134,6 @@ export default async function Page({
       pledgers={pledgers}
       rewards={rewards}
       gotoURL={undefined}
-      pullRequests={pulls}
     />
   )
 }

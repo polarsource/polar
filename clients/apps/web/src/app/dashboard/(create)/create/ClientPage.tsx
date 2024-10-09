@@ -7,6 +7,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -31,7 +32,7 @@ export default function ClientPage({
   validationErrors?: ValidationError[]
   error?: string
 }) {
-  const { currentUser, setUserOrganizations } = useAuth()
+  const { currentUser, setUserOrganizations, userOrganizations } = useAuth()
   const router = useRouter()
   const form = useForm<{ name: string; slug: string }>({
     defaultValues: { name: initialSlug || '', slug: initialSlug || '' },
@@ -178,14 +179,20 @@ export default function ClientPage({
                 {errors.root.message}
               </p>
             )}
-            <Button
-              className="self-start"
-              type="submit"
-              size="lg"
-              loading={createOrganization.isPending}
-            >
-              Create
-            </Button>
+            <div className="flex flex-row items-center gap-x-4">
+              <Button
+                className="self-start"
+                type="submit"
+                loading={createOrganization.isPending}
+              >
+                Create
+              </Button>
+              {userOrganizations.length > 0 && (
+                <Link href={`/dashboard`}>
+                  <Button variant="secondary">Back to Dashboard</Button>
+                </Link>
+              )}
+            </div>
           </ShadowBox>
         </form>
       </Form>

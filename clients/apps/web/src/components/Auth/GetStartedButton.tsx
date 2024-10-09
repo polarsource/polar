@@ -1,3 +1,5 @@
+'use client'
+
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ComponentProps } from 'react'

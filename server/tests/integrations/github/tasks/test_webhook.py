@@ -855,14 +855,7 @@ async def test_webhook_labeled_remove_badge_body(
     github_webhook: TestWebhookFactory,
 ) -> None:
     async def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
-        if name == "github.issue.sync.issue_references":
-            return None  # skip
-        if name == "github.issue.sync.issue_dependencies":
-            return None  # skip
-        if name == "github.repo.sync.issue_references":
-            return None  # skip
-        else:
-            raise Exception(f"unexpected job: {name}")
+        raise Exception(f"unexpected job: {name}")
 
     mocker.patch("polar.worker.enqueue_job", new=in_process_enqueue_job)
 

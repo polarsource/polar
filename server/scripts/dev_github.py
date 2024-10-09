@@ -100,23 +100,6 @@ async def trigger_issues_sync(session: AsyncSession, org: ExternalOrganization) 
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 
-async def trigger_issue_references_sync(
-    session: AsyncSession, org: ExternalOrganization
-) -> None:
-    repositories = await get_repositories(session, org)
-    if not repositories:
-        raise RuntimeError(f"No repositories found for {org.name}")
-
-    for repository in repositories:
-        enqueue_job(
-            "github.repo.sync.issue_references",
-            org.id,
-            repository.id,
-            queue_name=QueueName.github_crawl,
-        )
-        typer.echo(f"Triggered issue references sync for {org.name}/{repository.name}")
-
-
 async def trigger_repositories_sync(
     session: AsyncSession, org: ExternalOrganization
 ) -> None:
@@ -126,24 +109,6 @@ async def trigger_repositories_sync(
         queue_name=QueueName.github_crawl,
     )
     typer.echo(f"Triggered repo sync for {org.name}")
-
-
-async def trigger_issue_dependencies_sync(
-    session: AsyncSession, org: ExternalOrganization
-) -> None:
-    issues = await get_issues(session, org)
-    if not issues:
-        raise RuntimeError(f"No issues found for {org.name}")
-
-    for issue in issues:
-        enqueue_job(
-            "github.issue.sync.issue_dependencies",
-            issue.id,
-            queue_name=QueueName.github_crawl,
-        )
-        typer.echo(
-            f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}"
-        )
 
 
 ###############################################################################
@@ -170,28 +135,6 @@ async def resync_issues(org_name: str) -> None:
                 raise RuntimeError(f"Organization {org_name} not found")
 
             await trigger_issues_sync(session, org)
-
-
-@cli.command()
-@typer_async
-async def sync_references(org_name: str) -> None:
-    async with AsyncSessionLocal() as session:
-        org = await github_organization.get_by_name(session, Platforms.github, org_name)
-        if not org:
-            raise RuntimeError(f"Organization {org_name} not found")
-
-        await trigger_issue_references_sync(session, org)
-
-
-@cli.command()
-@typer_async
-async def sync_dependencies(org_name: str) -> None:
-    async with AsyncSessionLocal() as session:
-        org = await github_organization.get_by_name(session, Platforms.github, org_name)
-        if not org:
-            raise RuntimeError(f"Organization {org_name} not found")
-
-        await trigger_issue_dependencies_sync(session, org)
 
 
 @cli.command()

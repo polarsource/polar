@@ -3,7 +3,6 @@ from uuid import UUID
 
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
-from polar.issue.schemas import IssueReferenceRead
 from polar.kit.schemas import Schema
 from polar.pledge.schemas import Pledge
 from polar.reward.schemas import Reward
@@ -35,7 +34,6 @@ class Entry(Schema):
 
     rewards: list[Reward] | None
     pledges_summary: PledgesTypeSummaries | None
-    references: list[IssueReferenceRead] | None
     pledges: list[Pledge] | None
 
 

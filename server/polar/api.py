@@ -33,7 +33,6 @@ from polar.payment_method.endpoints import router as payment_method_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.pledge.endpoints import router as pledge_router
 from polar.product.endpoints import router as product_router
-from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
 from polar.subscription.endpoints import router as subscription_router
@@ -74,8 +73,6 @@ router.include_router(rewards_router)
 router.include_router(pat_router)
 # /payment_methods
 router.include_router(payment_method_router)
-# /pull_requests
-router.include_router(pull_requests_router)
 # /{platform}/{org_name}/{repo_name}/accounts
 # /accounts
 router.include_router(accounts_router)

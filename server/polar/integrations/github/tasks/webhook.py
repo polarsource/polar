@@ -18,8 +18,6 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
-    QueueName,
-    enqueue_job,
     task,
 )
 
@@ -462,14 +460,6 @@ async def handle_issue(
 
     if not issue:
         raise Exception(f"failed to save issue external_id={event.issue.id}")
-
-    # Trigger references sync job for entire repository
-    enqueue_job(
-        "github.repo.sync.issue_references",
-        issue.organization_id,
-        issue.repository_id,
-        queue_name=QueueName.github_crawl,
-    )
 
     return issue
 

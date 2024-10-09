@@ -23,7 +23,6 @@ class PartialNotification(BaseModel):
     issue_id: UUID | None = None
     pledge_id: UUID | None = None
     pull_request_id: UUID | None = None
-    issue_reference_id: UUID | None = None
     type: NotificationType
     payload: NotificationPayload
 

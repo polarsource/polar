@@ -1,3 +1,4 @@
+import hashlib
 import json
 from collections.abc import Sequence
 from enum import StrEnum
@@ -291,6 +292,14 @@ async def calculate_tax(
     address: Address,
     tax_ids: list[TaxID],
 ) -> int:
+    # Compute an idempotency key based on the input parameters to work as a sort of cache
+    address_str = address.model_dump_json()
+    tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
+    idempotency_key_str = (
+        f"{currency}{amount}{reference}{stripe_product_id}{address_str}{tax_ids_str}"
+    )
+    idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
+
     try:
         calculation = await stripe_service.create_tax_calculation(
             currency=currency,
@@ -307,6 +316,7 @@ async def calculate_tax(
                 "address_source": "billing",
                 "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
             },
+            idempotency_key=idempotency_key,
         )
     except stripe_lib.InvalidRequestError as e:
         if (

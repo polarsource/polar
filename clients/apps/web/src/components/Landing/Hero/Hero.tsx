@@ -15,6 +15,10 @@ export const Hero = () => {
     [],
   )
 
+  const isPhone = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
+    navigator.userAgent,
+  )
+
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
@@ -37,7 +41,7 @@ export const Hero = () => {
             <div className="flex flex-row items-center gap-x-0.5">
               <span>polar.sh/</span>
               <input
-                autoFocus
+                autoFocus={!isPhone}
                 className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
                 placeholder="my-organization"
                 value={slug}

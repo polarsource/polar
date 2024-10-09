@@ -1,6 +1,10 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { ListResourceUserSubscription, ResponseError } from '@polar-sh/sdk'
+import {
+  ListResourceUserOrder,
+  ListResourceUserSubscription,
+  ResponseError,
+} from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -65,11 +69,16 @@ export default async function Page({
   )
 
   let subscriptions: ListResourceUserSubscription | undefined
+  let oneTimePurchases: ListResourceUserOrder | undefined
   try {
     subscriptions = await api.usersSubscriptions.list(
-      { organizationId: organization.id, active: true },
+      { organizationId: organization.id, active: true, limit: 100 },
       cacheConfig,
     )
+    oneTimePurchases = await api.usersOrders.list({
+      organizationId: organization.id,
+      limit: 100,
+    })
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -79,6 +88,10 @@ export default async function Page({
   }
 
   return (
-    <ClientPage organization={organization} subscriptions={subscriptions} />
+    <ClientPage
+      organization={organization}
+      subscriptions={subscriptions}
+      orders={oneTimePurchases}
+    />
   )
 }

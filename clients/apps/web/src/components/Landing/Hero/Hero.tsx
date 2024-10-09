@@ -2,10 +2,19 @@
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { CONFIG } from '@/utils/config'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 export const Hero = () => {
   const [slug, setSlug] = useState('')
+
+  const slugify = useCallback(
+    (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '-')
+        .trim(),
+    [],
+  )
 
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
@@ -33,7 +42,7 @@ export const Hero = () => {
                 className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
                 placeholder="my-organization"
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                onChange={(e) => setSlug(slugify(e.target.value))}
               />
             </div>
             <GetStartedButton

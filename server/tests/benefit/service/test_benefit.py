@@ -12,7 +12,7 @@ from polar.benefit.benefits import (
 )
 from polar.benefit.schemas import (
     BenefitCustomCreate,
-    BenefitCustomProperties,
+    BenefitCustomCreateProperties,
     BenefitCustomUpdate,
 )
 from polar.benefit.service.benefit import benefit as benefit_service
@@ -220,7 +220,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(note=None),
+            properties=BenefitCustomCreateProperties(note=None),
             organization_id=None,
         )
 
@@ -240,7 +240,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(note=None),
+            properties=BenefitCustomCreateProperties(note=None),
             organization_id=uuid.uuid4(),
         )
 
@@ -264,7 +264,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(note=None),
+            properties=BenefitCustomCreateProperties(note=None),
             organization_id=organization.id,
         )
 
@@ -290,7 +290,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(note=None),
+            properties=BenefitCustomCreateProperties(note=None),
             organization_id=organization.id,
         )
 
@@ -313,7 +313,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(note=None),
+            properties=BenefitCustomCreateProperties(note=None),
             organization_id=uuid.uuid4(),
         )
 
@@ -353,7 +353,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(note=None),
+            properties=BenefitCustomCreateProperties(note=None),
             organization_id=organization.id,
         )
 

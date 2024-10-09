@@ -208,7 +208,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         product.stripe_product_id = stripe_product.id
 
         for price_create in create_schema.prices:
-            stripe_price = stripe_service.create_price_for_product(
+            stripe_price = await stripe_service.create_price_for_product(
                 stripe_product.id, price_create.get_stripe_price_params()
             )
             model_class = price_create.get_model_class()
@@ -306,7 +306,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     continue
 
                 assert product.stripe_product_id is not None
-                stripe_price = stripe_service.create_price_for_product(
+                stripe_price = await stripe_service.create_price_for_product(
                     product.stripe_product_id, price_update.get_stripe_price_params()
                 )
                 model_class = price_update.get_model_class()

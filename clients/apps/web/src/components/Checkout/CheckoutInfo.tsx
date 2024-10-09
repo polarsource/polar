@@ -1,11 +1,13 @@
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { Slideshow } from '@/components/Products/Slideshow'
+import { organizationPageLink } from '@/utils/nav'
 import {
   CheckoutPublic,
   CheckoutUpdatePublic,
   Organization,
 } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
+import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { CheckoutCard } from './CheckoutCard'
 
@@ -22,14 +24,14 @@ export const CheckoutInfo = ({
 }: CheckoutInfoProps) => {
   const { product } = checkout
   return (
-    <div className="flex w-1/2 flex-col gap-y-12 p-20">
-      {!organization.profile_settings?.enabled && (
+    <div className="flex flex-col gap-y-12 md:w-1/2 md:p-20">
+      <Link href={organizationPageLink(organization)}>
         <Avatar
           className="md:h-16 md:w-16"
           avatar_url={organization.avatar_url}
           name={organization.name}
         />
-      )}
+      </Link>
       <h1 className="text-3xl">{product.name}</h1>
       {product.medias.length > 0 && (
         <Slideshow

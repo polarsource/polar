@@ -10,7 +10,7 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { CheckoutForm } from './CheckoutForm'
@@ -80,7 +80,7 @@ export const Checkout = ({
   )
 
   return (
-    <ShadowBox className="dark:border-polar-700 dark:divide-polar-700 flex w-full max-w-7xl flex-row items-stretch divide-x divide-gray-100 border border-gray-100 p-0">
+    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 flex w-full max-w-7xl flex-col gap-y-24 divide-gray-100 md:flex-row md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
       <FormProvider {...form}>
         <CheckoutInfo
           organization={organization}
@@ -93,6 +93,6 @@ export const Checkout = ({
           onCheckoutConfirm={onCheckoutConfirm}
         />
       </FormProvider>
-    </ShadowBox>
+    </ShadowBoxOnMd>
   )
 }

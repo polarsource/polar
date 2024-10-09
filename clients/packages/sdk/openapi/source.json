@@ -6117,96 +6117,6 @@
                 "x-speakeasy-ignore": true
             }
         },
-        "/v1/pull_requests/search": {
-            "get": {
-                "tags": [
-                    "pull_requests"
-                ],
-                "summary": "Search pull requests",
-                "description": "Search pull requests.",
-                "operationId": "pull_requests:search",
-                "security": [
-                    {
-                        "oidc": []
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "references_issue_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Search pull requests that are mentioning this issue",
-                            "title": "References Issue Id"
-                        },
-                        "description": "Search pull requests that are mentioning this issue"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_PullRequest_"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
-                ],
-                "x-speakeasy-pagination": {
-                    "type": "offsetLimit",
-                    "inputs": [
-                        {
-                            "name": "page",
-                            "in": "parameters",
-                            "type": "page"
-                        },
-                        {
-                            "name": "limit",
-                            "in": "parameters",
-                            "type": "limit"
-                        }
-                    ],
-                    "outputs": {
-                        "results": "$.items",
-                        "numPages": "$.pagination.max_page"
-                    }
-                },
-                "x-speakeasy-group": "pull_requests",
-                "x-speakeasy-name-override": "search",
-                "x-speakeasy-ignore": true
-            }
-        },
         "/v1/accounts/search": {
             "get": {
                 "tags": [
@@ -8578,10 +8488,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
                                 "free_subscription",
-                                "paid_subscription",
-                                "order"
+                                "order",
+                                "donation",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -20105,7 +20015,7 @@
                         "description": "Whether the benefit is taxable."
                     },
                     "properties": {
-                        "$ref": "#/components/schemas/BenefitCustomProperties"
+                        "$ref": "#/components/schemas/BenefitCustomCreateProperties"
                     }
                 },
                 "type": "object",
@@ -20117,6 +20027,32 @@
                 ],
                 "title": "BenefitCustomCreate",
                 "description": "Schema to create a benefit of type `custom`."
+            },
+            "BenefitCustomCreateProperties": {
+                "properties": {
+                    "note": {
+                        "anyOf": [
+                            {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "description": "Private note to be shared with users who have this benefit granted."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Note"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitCustomCreateProperties",
+                "description": "Properties for creating a benefit of type `custom`."
             },
             "BenefitCustomProperties": {
                 "properties": {
@@ -22717,19 +22653,6 @@
                         ],
                         "title": "Customer Email"
                     },
-                    "customer_ip_address": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "ipvanyaddress",
-                                "description": "IP address of the customer. Used to detect tax location."
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Ip Address"
-                    },
                     "customer_billing_address": {
                         "anyOf": [
                             {
@@ -23122,19 +23045,6 @@
                         ],
                         "title": "Customer Email"
                     },
-                    "customer_ip_address": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "ipvanyaddress",
-                                "description": "IP address of the customer. Used to detect tax location."
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Ip Address"
-                    },
                     "customer_billing_address": {
                         "anyOf": [
                             {
@@ -23177,6 +23087,19 @@
                         ],
                         "title": "Metadata",
                         "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                    },
+                    "customer_ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "ipvanyaddress",
+                                "description": "IP address of the customer. Used to detect tax location."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Ip Address"
                     },
                     "success_url": {
                         "anyOf": [
@@ -23249,19 +23172,6 @@
                             }
                         ],
                         "title": "Customer Email"
-                    },
-                    "customer_ip_address": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "ipvanyaddress",
-                                "description": "IP address of the customer. Used to detect tax location."
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Ip Address"
                     },
                     "customer_billing_address": {
                         "anyOf": [
@@ -24185,20 +24095,6 @@
                             }
                         ]
                     },
-                    "references": {
-                        "anyOf": [
-                            {
-                                "items": {
-                                    "$ref": "#/components/schemas/IssueReferenceRead"
-                                },
-                                "type": "array"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "References"
-                    },
                     "pledges": {
                         "anyOf": [
                             {
@@ -24221,7 +24117,6 @@
                     "attributes",
                     "rewards",
                     "pledges_summary",
-                    "references",
                     "pledges"
                 ],
                 "title": "Entry"
@@ -24240,104 +24135,6 @@
                 ],
                 "title": "ExistingProductPrice",
                 "description": "A price that already exists for this product.\n\nUseful when updating a product if you want to keep an existing price."
-            },
-            "ExternalGitHubCommitReference": {
-                "properties": {
-                    "author_login": {
-                        "type": "string",
-                        "title": "Author Login"
-                    },
-                    "author_avatar": {
-                        "type": "string",
-                        "title": "Author Avatar"
-                    },
-                    "sha": {
-                        "type": "string",
-                        "title": "Sha"
-                    },
-                    "organization_name": {
-                        "type": "string",
-                        "title": "Organization Name"
-                    },
-                    "repository_name": {
-                        "type": "string",
-                        "title": "Repository Name"
-                    },
-                    "branch_name": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Branch Name"
-                    },
-                    "message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Message"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "author_login",
-                    "author_avatar",
-                    "sha",
-                    "organization_name",
-                    "repository_name"
-                ],
-                "title": "ExternalGitHubCommitReference"
-            },
-            "ExternalGitHubPullRequestReference": {
-                "properties": {
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "author_login": {
-                        "type": "string",
-                        "title": "Author Login"
-                    },
-                    "author_avatar": {
-                        "type": "string",
-                        "title": "Author Avatar"
-                    },
-                    "number": {
-                        "type": "integer",
-                        "title": "Number"
-                    },
-                    "organization_name": {
-                        "type": "string",
-                        "title": "Organization Name"
-                    },
-                    "repository_name": {
-                        "type": "string",
-                        "title": "Repository Name"
-                    },
-                    "state": {
-                        "type": "string",
-                        "title": "State"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "title",
-                    "author_login",
-                    "author_avatar",
-                    "number",
-                    "organization_name",
-                    "repository_name",
-                    "state"
-                ],
-                "title": "ExternalGitHubPullRequestReference"
             },
             "ExternalOrganization": {
                 "properties": {
@@ -25311,62 +25108,6 @@
                     "pagination"
                 ],
                 "title": "IssueListResponse"
-            },
-            "IssueReferenceRead": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "title": "Id"
-                    },
-                    "type": {
-                        "$ref": "#/components/schemas/IssueReferenceType"
-                    },
-                    "pull_request_reference": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/PullRequestReference"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
-                    "external_github_pull_request_reference": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ExternalGitHubPullRequestReference"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
-                    "external_github_commit_reference": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ExternalGitHubCommitReference"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "type"
-                ],
-                "title": "IssueReferenceRead"
-            },
-            "IssueReferenceType": {
-                "type": "string",
-                "enum": [
-                    "pull_request",
-                    "external_github_pull_request",
-                    "external_github_commit"
-                ],
-                "title": "IssueReferenceType"
             },
             "IssueSortBy": {
                 "type": "string",
@@ -26463,26 +26204,6 @@
                     "pagination"
                 ],
                 "title": "ListResource[PublicDonation]"
-            },
-            "ListResource_PullRequest_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/PullRequest"
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[PullRequest]"
             },
             "ListResource_Repository_": {
                 "properties": {
@@ -32397,144 +32118,6 @@
                 ],
                 "title": "PublicDonation"
             },
-            "PullRequest": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "number": {
-                        "type": "integer",
-                        "title": "Number"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "author": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Author"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
-                    "additions": {
-                        "type": "integer",
-                        "title": "Additions"
-                    },
-                    "deletions": {
-                        "type": "integer",
-                        "title": "Deletions"
-                    },
-                    "is_merged": {
-                        "type": "boolean",
-                        "title": "Is Merged"
-                    },
-                    "is_closed": {
-                        "type": "boolean",
-                        "title": "Is Closed"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "number",
-                    "title",
-                    "additions",
-                    "deletions",
-                    "is_merged",
-                    "is_closed"
-                ],
-                "title": "PullRequest"
-            },
-            "PullRequestReference": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "author_login": {
-                        "type": "string",
-                        "title": "Author Login"
-                    },
-                    "author_avatar": {
-                        "type": "string",
-                        "title": "Author Avatar"
-                    },
-                    "number": {
-                        "type": "integer",
-                        "title": "Number"
-                    },
-                    "additions": {
-                        "type": "integer",
-                        "title": "Additions"
-                    },
-                    "deletions": {
-                        "type": "integer",
-                        "title": "Deletions"
-                    },
-                    "state": {
-                        "type": "string",
-                        "title": "State"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
-                    },
-                    "merged_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Merged At"
-                    },
-                    "closed_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Closed At"
-                    },
-                    "is_draft": {
-                        "type": "boolean",
-                        "title": "Is Draft"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "title",
-                    "author_login",
-                    "author_avatar",
-                    "number",
-                    "additions",
-                    "deletions",
-                    "state",
-                    "created_at",
-                    "is_draft"
-                ],
-                "title": "PullRequestReference"
-            },
             "Reactions": {
                 "properties": {
                     "total_count": {
@@ -32822,10 +32405,6 @@
                         "type": "integer",
                         "title": "Label Embedded Issues"
                     },
-                    "pull_requests": {
-                        "type": "integer",
-                        "title": "Pull Requests"
-                    },
                     "badge_auto_embed": {
                         "type": "boolean",
                         "title": "Badge Auto Embed"
@@ -32852,7 +32431,6 @@
                     "open_issues",
                     "auto_embedded_issues",
                     "label_embedded_issues",
-                    "pull_requests",
                     "badge_auto_embed",
                     "badge_label",
                     "is_private",

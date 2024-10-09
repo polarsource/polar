@@ -2557,10 +2557,10 @@ export interface BenefitCustomCreate {
     is_tax_applicable: boolean;
     /**
      * 
-     * @type {BenefitCustomProperties}
+     * @type {BenefitCustomCreateProperties}
      * @memberof BenefitCustomCreate
      */
-    properties: BenefitCustomProperties;
+    properties: BenefitCustomCreateProperties;
 }
 
 
@@ -2573,6 +2573,26 @@ export const BenefitCustomCreateTypeEnum = {
 export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[keyof typeof BenefitCustomCreateTypeEnum];
 
 /**
+ * Properties for creating a benefit of type `custom`.
+ * @export
+ * @interface BenefitCustomCreateProperties
+ */
+export interface BenefitCustomCreateProperties {
+    /**
+     * 
+     * @type {BenefitCustomCreatePropertiesNote}
+     * @memberof BenefitCustomCreateProperties
+     */
+    note?: BenefitCustomCreatePropertiesNote | null;
+}
+/**
+ * @type BenefitCustomCreatePropertiesNote
+ * Private note to be shared with users who have this benefit granted.
+ * @export
+ */
+export type BenefitCustomCreatePropertiesNote = string;
+
+/**
  * Properties for a benefit of type `custom`.
  * @export
  * @interface BenefitCustomProperties
@@ -2580,18 +2600,11 @@ export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[key
 export interface BenefitCustomProperties {
     /**
      * 
-     * @type {BenefitCustomPropertiesNote}
+     * @type {BenefitCustomCreatePropertiesNote}
      * @memberof BenefitCustomProperties
      */
-    note: BenefitCustomPropertiesNote | null;
+    note: BenefitCustomCreatePropertiesNote | null;
 }
-/**
- * @type BenefitCustomPropertiesNote
- * Private note to be shared with users who have this benefit granted.
- * @export
- */
-export type BenefitCustomPropertiesNote = string;
-
 /**
  * 
  * @export
@@ -2677,10 +2690,10 @@ export type BenefitCustomSubscriberTypeEnum = typeof BenefitCustomSubscriberType
 export interface BenefitCustomSubscriberProperties {
     /**
      * 
-     * @type {BenefitCustomPropertiesNote}
+     * @type {BenefitCustomCreatePropertiesNote}
      * @memberof BenefitCustomSubscriberProperties
      */
-    note: BenefitCustomPropertiesNote | null;
+    note: BenefitCustomCreatePropertiesNote | null;
 }
 /**
  * 
@@ -4677,12 +4690,6 @@ export interface CheckoutConfirmStripe {
      */
     customer_email?: string | null;
     /**
-     * IP address of the customer. Used to detect tax location.
-     * @type {string}
-     * @memberof CheckoutConfirmStripe
-     */
-    customer_ip_address?: string | null;
-    /**
      * Billing address of the customer.
      * @type {Address}
      * @memberof CheckoutConfirmStripe
@@ -4937,12 +4944,6 @@ export interface CheckoutUpdate {
      */
     customer_email?: string | null;
     /**
-     * IP address of the customer. Used to detect tax location.
-     * @type {string}
-     * @memberof CheckoutUpdate
-     */
-    customer_ip_address?: string | null;
-    /**
      * Billing address of the customer.
      * @type {Address}
      * @memberof CheckoutUpdate
@@ -4960,6 +4961,12 @@ export interface CheckoutUpdate {
      * @memberof CheckoutUpdate
      */
     metadata?: { [key: string]: string; } | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    customer_ip_address?: string | null;
     /**
      * 
      * @type {string}
@@ -4997,12 +5004,6 @@ export interface CheckoutUpdatePublic {
      * @memberof CheckoutUpdatePublic
      */
     customer_email?: string | null;
-    /**
-     * IP address of the customer. Used to detect tax location.
-     * @type {string}
-     * @memberof CheckoutUpdatePublic
-     */
-    customer_ip_address?: string | null;
     /**
      * Billing address of the customer.
      * @type {Address}
@@ -5757,12 +5758,6 @@ export interface Entry {
     pledges_summary: PledgesTypeSummaries | null;
     /**
      * 
-     * @type {Array<IssueReferenceRead>}
-     * @memberof Entry
-     */
-    references: Array<IssueReferenceRead> | null;
-    /**
-     * 
      * @type {Array<Pledge>}
      * @memberof Entry
      */
@@ -5782,104 +5777,6 @@ export interface ExistingProductPrice {
      * @memberof ExistingProductPrice
      */
     id: string;
-}
-/**
- * 
- * @export
- * @interface ExternalGitHubCommitReference
- */
-export interface ExternalGitHubCommitReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    sha: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    branch_name?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubCommitReference
-     */
-    message?: string | null;
-}
-/**
- * 
- * @export
- * @interface ExternalGitHubPullRequestReference
- */
-export interface ExternalGitHubPullRequestReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    number: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExternalGitHubPullRequestReference
-     */
-    state: string;
 }
 /**
  * 
@@ -6723,57 +6620,6 @@ export interface IssueListResponse {
  * @export
  */
 export type IssueNumberFilter = Array<number> | number;
-
-/**
- * 
- * @export
- * @interface IssueReferenceRead
- */
-export interface IssueReferenceRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof IssueReferenceRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {IssueReferenceType}
-     * @memberof IssueReferenceRead
-     */
-    type: IssueReferenceType;
-    /**
-     * 
-     * @type {PullRequestReference}
-     * @memberof IssueReferenceRead
-     */
-    pull_request_reference?: PullRequestReference | null;
-    /**
-     * 
-     * @type {ExternalGitHubPullRequestReference}
-     * @memberof IssueReferenceRead
-     */
-    external_github_pull_request_reference?: ExternalGitHubPullRequestReference | null;
-    /**
-     * 
-     * @type {ExternalGitHubCommitReference}
-     * @memberof IssueReferenceRead
-     */
-    external_github_commit_reference?: ExternalGitHubCommitReference | null;
-}
-
-
-
-/**
- * 
- * @export
- */
-export const IssueReferenceType = {
-    PULL_REQUEST: 'pull_request',
-    EXTERNAL_GITHUB_PULL_REQUEST: 'external_github_pull_request',
-    EXTERNAL_GITHUB_COMMIT: 'external_github_commit'
-} as const;
-export type IssueReferenceType = typeof IssueReferenceType[keyof typeof IssueReferenceType];
 
 
 /**
@@ -7728,25 +7574,6 @@ export interface ListResourcePublicDonation {
      * 
      * @type {Pagination}
      * @memberof ListResourcePublicDonation
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourcePullRequest
- */
-export interface ListResourcePullRequest {
-    /**
-     * 
-     * @type {Array<PullRequest>}
-     * @memberof ListResourcePullRequest
-     */
-    items: Array<PullRequest>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourcePullRequest
      */
     pagination: Pagination;
 }
@@ -13167,140 +12994,6 @@ export interface PublicDonation {
 /**
  * 
  * @export
- * @interface PullRequest
- */
-export interface PullRequest {
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequest
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequest
-     */
-    number: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequest
-     */
-    title: string;
-    /**
-     * 
-     * @type {Author}
-     * @memberof PullRequest
-     */
-    author?: Author | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequest
-     */
-    additions: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequest
-     */
-    deletions: number;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequest
-     */
-    is_merged: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequest
-     */
-    is_closed: boolean;
-}
-/**
- * 
- * @export
- * @interface PullRequestReference
- */
-export interface PullRequestReference {
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    number: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    additions: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof PullRequestReference
-     */
-    deletions: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    state: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    merged_at?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof PullRequestReference
-     */
-    closed_at?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof PullRequestReference
-     */
-    is_draft: boolean;
-}
-/**
- * 
- * @export
  * @interface Reactions
  */
 export interface Reactions {
@@ -13476,12 +13169,6 @@ export interface RepositoryBadgeSettingsRead {
      * @memberof RepositoryBadgeSettingsRead
      */
     label_embedded_issues: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof RepositoryBadgeSettingsRead
-     */
-    pull_requests: number;
     /**
      * 
      * @type {boolean}

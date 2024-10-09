@@ -232,7 +232,6 @@ class RepositoryBadgeSettingsRead(Schema):
     open_issues: int
     auto_embedded_issues: int
     label_embedded_issues: int
-    pull_requests: int
     badge_auto_embed: bool
     badge_label: str
     is_private: bool

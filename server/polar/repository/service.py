@@ -12,14 +12,7 @@ from polar.enums import Platforms
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.sorting import Sorting
-from polar.models import (
-    ExternalOrganization,
-    Issue,
-    Organization,
-    PullRequest,
-    Repository,
-    User,
-)
+from polar.models import ExternalOrganization, Issue, Organization, Repository, User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import RepositoryBadgeSettingsUpdate
 from polar.postgres import AsyncSession, sql
@@ -371,19 +364,10 @@ class RepositoryService(
                 Issue.has_pledge_badge_label.label("labelled"),
                 Issue.pledge_badge_embedded_at.is_not(None).label("embedded"),
                 sql.func.count(distinct(Issue.id)).label("issue_count"),
-                sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
             )
             .join(
                 Issue,
                 and_(Issue.repository_id == Repository.id, Issue.state == "open"),
-                isouter=True,
-            )
-            .join(
-                PullRequest,
-                and_(
-                    PullRequest.repository_id == Repository.id,
-                    PullRequest.state == "open",
-                ),
                 isouter=True,
             )
             .where(
@@ -396,7 +380,6 @@ class RepositoryService(
         res = await session.execute(stmt)
         rows = res.unique().all()
 
-        prs: dict[UUID, bool] = {}
         ret: dict[UUID, dict[str, int]] = {}
         for r in rows:
             mapped = r._mapping
@@ -407,16 +390,10 @@ class RepositoryService(
                     "synced_issues": 0,
                     "auto_embedded_issues": 0,
                     "label_embedded_issues": 0,
-                    # We get duplicate PR counts due to SQL grouping.
-                    # So we only need to set it once at initation here.
-                    "pull_requests": mapped["pull_request_count"],
                 },
             )
             is_labelled = mapped["labelled"]
             repo["synced_issues"] += mapped["issue_count"]
-            if repo_id not in prs:
-                repo["synced_issues"] += mapped["pull_request_count"]
-                prs[repo_id] = True
 
             if not mapped["embedded"]:
                 continue

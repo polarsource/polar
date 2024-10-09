@@ -37,7 +37,6 @@ from .product_price import (
     ProductPriceFixed,
     ProductPriceFree,
 )
-from .pull_request import PullRequest
 from .repository import Repository
 from .subscription import Subscription
 from .traffic import Traffic
@@ -88,7 +87,6 @@ __all__ = [
     "ProductPriceCustom",
     "ProductPriceFixed",
     "ProductPriceFree",
-    "PullRequest",
     "Repository",
     "Subscription",
     "Traffic",

@@ -8,7 +8,6 @@ from githubkit import Paginator
 
 from polar.kit.hook import Hook
 from polar.models import ExternalOrganization, Issue, Repository
-from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession
 from polar.repository.hooks import SyncCompletedHook, SyncedHook
 
@@ -27,9 +26,7 @@ class GitHubPaginatedService:
         session: AsyncSession,
         *,
         paginator: Paginator[types.Issue] | Paginator[types.PullRequestSimple],
-        store_resource_method: Callable[
-            ..., Coroutine[Any, Any, Issue | PullRequest | None]
-        ],
+        store_resource_method: Callable[..., Coroutine[Any, Any, Issue | None]],
         organization: ExternalOrganization,
         repository: Repository,
         resource_type: Literal["issue", "pull_request"],

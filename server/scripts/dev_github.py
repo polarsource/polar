@@ -91,12 +91,6 @@ async def trigger_issues_sync(session: AsyncSession, org: ExternalOrganization) 
             repository.id,
             queue_name=QueueName.github_crawl,
         )
-        enqueue_job(
-            "github.repo.sync.pull_requests",
-            org.id,
-            repository.id,
-            queue_name=QueueName.github_crawl,
-        )
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 

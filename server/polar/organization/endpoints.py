@@ -407,7 +407,6 @@ async def get_badge_settings(
                 "synced_issues": 0,
                 "auto_embedded_issues": 0,
                 "label_embedded_issues": 0,
-                "pull_requests": 0,
             },
         )
         synced_issues = synced_data["synced_issues"]
@@ -426,7 +425,6 @@ async def get_badge_settings(
                 synced_issues=synced_issues,
                 auto_embedded_issues=synced_data["auto_embedded_issues"],
                 label_embedded_issues=synced_data["label_embedded_issues"],
-                pull_requests=synced_data["pull_requests"],
                 open_issues=open_issues,
                 is_private=repo.is_private,
                 is_sync_completed=is_sync_completed,

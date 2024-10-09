@@ -5,11 +5,13 @@ import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { AuthModal } from '../Auth/AuthModal'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
@@ -45,6 +47,8 @@ export default function Layout({ children }: PropsWithChildren) {
 }
 
 const LandingPageTopbar = () => {
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+
   return (
     <div className="relative flex flex-row items-center justify-between bg-transparent">
       <TopbarNavigation />
@@ -59,10 +63,14 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <Link href="/login">
-          <Button>Login</Button>
-        </Link>
+        <Button onClick={showModal}>Login</Button>
       </div>
+      <Modal
+        isShown={isModalShown}
+        hide={hideModal}
+        modalContent={<AuthModal type="login" />}
+        className="lg:w-full lg:max-w-[480px]"
+      />
     </div>
   )
 }

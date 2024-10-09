@@ -178,16 +178,15 @@ export default function ClientPage({
                 {errors.root.message}
               </p>
             )}
+            <Button
+              className="self-start"
+              type="submit"
+              size="lg"
+              loading={createOrganization.isPending}
+            >
+              Create
+            </Button>
           </ShadowBox>
-
-          <Button
-            className="self-start"
-            type="submit"
-            size="lg"
-            loading={createOrganization.isPending}
-          >
-            Create
-          </Button>
         </form>
       </Form>
     </div>

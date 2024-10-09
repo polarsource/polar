@@ -1,8 +1,12 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { CONFIG } from '@/utils/config'
+import { useState } from 'react'
 
 export const Hero = () => {
+  const [slug, setSlug] = useState('')
+
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
@@ -18,20 +22,27 @@ export const Hero = () => {
           </div>
         </div>
         <div className="z-20 flex flex-row items-center gap-x-4">
-          <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-gray-50 py-2 pl-6 pr-2">
+          <form
+            className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
+            role="form"
+          >
             <div className="flex flex-row items-center gap-x-0.5">
               <span>polar.sh/</span>
               <input
                 autoFocus
                 className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
                 placeholder="my-organization"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
               />
             </div>
             <GetStartedButton
               wrapperClassNames="p-0"
               className="px-4 py-3 text-sm"
+              href={`${CONFIG.FRONTEND_BASE_URL}/signup?return_to=/dashboard/create&auto=true&slug=${slug}`}
+              type="submit"
             />
-          </div>
+          </form>
         </div>
       </div>
       <div>

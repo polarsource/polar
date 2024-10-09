@@ -352,7 +352,7 @@ class StripeService:
             create_params["description"] = description
         return stripe_lib.Product.create(**create_params)
 
-    def create_price_for_product(
+    async def create_price_for_product(
         self,
         product: str,
         params: stripe_lib.Price.CreateParams,
@@ -363,9 +363,9 @@ class StripeService:
         params = {**params, "product": product}
         if idempotency_key is not None:
             params["idempotency_key"] = idempotency_key
-        price = stripe_lib.Price.create(**params)
+        price = await stripe_lib.Price.create_async(**params)
         if set_default:
-            stripe_lib.Product.modify(
+            await stripe_lib.Product.modify_async(
                 product,
                 default_price=price.id,
                 idempotency_key=f"{idempotency_key}_set_default"
@@ -568,34 +568,36 @@ class StripeService:
             metadata=metadata or {},
         )
 
-    def create_payment_intent(
+    async def create_payment_intent(
         self, **params: Unpack[stripe_lib.PaymentIntent.CreateParams]
     ) -> stripe_lib.PaymentIntent:
-        return stripe_lib.PaymentIntent.create(**params)
+        return await stripe_lib.PaymentIntent.create_async(**params)
 
     def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.retrieve(id)
 
-    def create_customer(
+    async def create_customer(
         self, **params: Unpack[stripe_lib.Customer.CreateParams]
     ) -> stripe_lib.Customer:
-        return stripe_lib.Customer.create(**params)
+        return await stripe_lib.Customer.create_async(**params)
 
-    def update_customer(
+    async def update_customer(
         self,
         id: str,
         tax_id: stripe_lib.Customer.CreateParamsTaxIdDatum | None = None,
         **params: Unpack[stripe_lib.Customer.ModifyParams],
     ) -> stripe_lib.Customer:
         if tax_id is not None:
-            stripe_lib.Customer.create_tax_id(id, **tax_id)
+            await stripe_lib.Customer.create_tax_id_async(id, **tax_id)
 
-        customer = stripe_lib.Customer.modify(id, **params)
+        customer = await stripe_lib.Customer.modify_async(id, **params)
 
         return customer
 
-    def create_customer_session(self, customer_id: str) -> stripe_lib.CustomerSession:
-        return stripe_lib.CustomerSession.create(
+    async def create_customer_session(
+        self, customer_id: str
+    ) -> stripe_lib.CustomerSession:
+        return await stripe_lib.CustomerSession.create_async(
             components={
                 "payment_element": {
                     "enabled": True,
@@ -612,7 +614,7 @@ class StripeService:
             customer=customer_id,
         )
 
-    def create_out_of_band_subscription(
+    async def create_out_of_band_subscription(
         self,
         *,
         customer: str,
@@ -623,7 +625,7 @@ class StripeService:
         invoice_metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
-        subscription = stripe_lib.Subscription.create(
+        subscription = await stripe_lib.Subscription.create_async(
             customer=customer,
             currency=currency,
             collection_method="send_invoice",
@@ -640,14 +642,14 @@ class StripeService:
 
         invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
         invoice_id = get_expandable_id(invoice)
-        invoice = stripe_lib.Invoice.modify(
+        invoice = await stripe_lib.Invoice.modify_async(
             invoice_id,
             metadata=invoice_metadata or {},
             idempotency_key=f"{idempotency_key}_update_invoice"
             if idempotency_key is not None
             else None,
         )
-        invoice = stripe_lib.Invoice.finalize_invoice(
+        invoice = await stripe_lib.Invoice.finalize_invoice_async(
             invoice_id,
             idempotency_key=f"{idempotency_key}_finalize_invoice"
             if idempotency_key is not None
@@ -655,7 +657,7 @@ class StripeService:
         )
 
         if invoice.status == "open":
-            stripe_lib.Invoice.pay(
+            await stripe_lib.Invoice.pay_async(
                 invoice_id,
                 paid_out_of_band=True,
                 idempotency_key=f"{idempotency_key}_pay_invoice"
@@ -665,7 +667,7 @@ class StripeService:
 
         return subscription, invoice
 
-    def set_automatically_charged_subscription(
+    async def set_automatically_charged_subscription(
         self,
         subscription_id: str,
         payment_method: str | None,
@@ -678,9 +680,9 @@ class StripeService:
         }
         if payment_method is not None:
             params["default_payment_method"] = payment_method
-        return stripe_lib.Subscription.modify(subscription_id, **params)
+        return await stripe_lib.Subscription.modify_async(subscription_id, **params)
 
-    def create_out_of_band_invoice(
+    async def create_out_of_band_invoice(
         self,
         *,
         customer: str,
@@ -690,7 +692,7 @@ class StripeService:
         metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Invoice:
-        invoice = stripe_lib.Invoice.create(
+        invoice = await stripe_lib.Invoice.create_async(
             auto_advance=True,
             collection_method="send_invoice",
             days_until_due=0,
@@ -702,7 +704,7 @@ class StripeService:
         )
         invoice_id = cast(str, invoice.id)
 
-        stripe_lib.InvoiceItem.create(
+        await stripe_lib.InvoiceItem.create_async(
             customer=customer,
             currency=currency,
             price=price,
@@ -713,7 +715,7 @@ class StripeService:
             else None,
         )
 
-        invoice = stripe_lib.Invoice.finalize_invoice(
+        invoice = await stripe_lib.Invoice.finalize_invoice_async(
             invoice_id,
             idempotency_key=f"{idempotency_key}_finalize_invoice"
             if idempotency_key
@@ -721,7 +723,7 @@ class StripeService:
         )
 
         if invoice.status == "open":
-            stripe_lib.Invoice.pay(
+            await stripe_lib.Invoice.pay_async(
                 invoice_id,
                 paid_out_of_band=True,
                 idempotency_key=f"{idempotency_key}_pay_invoice"
@@ -731,11 +733,11 @@ class StripeService:
 
         return invoice
 
-    def create_tax_calculation(
+    async def create_tax_calculation(
         self,
         **params: Unpack[stripe_lib.tax.Calculation.CreateParams],
     ) -> stripe_lib.tax.Calculation:
-        return stripe_lib.tax.Calculation.create(**params)
+        return await stripe_lib.tax.Calculation.create_async(**params)
 
 
 stripe = StripeService()

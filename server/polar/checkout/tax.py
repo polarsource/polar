@@ -292,7 +292,7 @@ async def calculate_tax(
     tax_ids: list[TaxID],
 ) -> int:
     try:
-        calculation = stripe_service.create_tax_calculation(
+        calculation = await stripe_service.create_tax_calculation(
             currency=currency,
             line_items=[
                 {

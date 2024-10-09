@@ -436,7 +436,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             if checkout.customer and checkout.customer.stripe_customer_id is not None:
-                stripe_customer_session = stripe_service.create_customer_session(
+                stripe_customer_session = await stripe_service.create_customer_session(
                     checkout.customer.stripe_customer_id
                 )
                 checkout.payment_processor_metadata = {
@@ -578,7 +578,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     payment_intent_params["setup_future_usage"] = "off_session"
 
                 try:
-                    payment_intent = stripe_service.create_payment_intent(
+                    payment_intent = await stripe_service.create_payment_intent(
                         **payment_intent_params
                     )
                 except stripe_lib.StripeError as e:
@@ -654,7 +654,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 price_params["recurring"] = {
                     "interval": product_price.recurring_interval.as_literal(),
                 }
-            stripe_custom_price = stripe_service.create_price_for_product(
+            stripe_custom_price = await stripe_service.create_price_for_product(
                 checkout.product.stripe_product_id,
                 price_params,
                 idempotency_key=f"{idempotency_key}_price",
@@ -662,26 +662,27 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             stripe_price_id = stripe_custom_price.id
 
         if product_price.is_recurring:
-            stripe_subscription, stripe_invoice = (
-                stripe_service.create_out_of_band_subscription(
-                    customer=stripe_customer_id,
-                    currency=checkout.currency or "usd",
-                    price=stripe_price_id,
-                    metadata=metadata,
-                    invoice_metadata={
-                        "payment_intent_id": payment_intent.id,
-                        "checkout_id": str(checkout.id),
-                    },
-                    idempotency_key=idempotency_key,
-                )
+            (
+                stripe_subscription,
+                stripe_invoice,
+            ) = await stripe_service.create_out_of_band_subscription(
+                customer=stripe_customer_id,
+                currency=checkout.currency or "usd",
+                price=stripe_price_id,
+                metadata=metadata,
+                invoice_metadata={
+                    "payment_intent_id": payment_intent.id,
+                    "checkout_id": str(checkout.id),
+                },
+                idempotency_key=idempotency_key,
             )
-            stripe_service.set_automatically_charged_subscription(
+            await stripe_service.set_automatically_charged_subscription(
                 stripe_subscription.id,
                 stripe_payment_method_id,
                 idempotency_key=f"{idempotency_key}_subscription_auto_charge",
             )
         else:
-            stripe_invoice = stripe_service.create_out_of_band_invoice(
+            stripe_invoice = await stripe_service.create_out_of_band_invoice(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
@@ -762,7 +763,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         idempotency_key = f"checkout_{checkout.id}"
 
         if product_price.is_recurring:
-            stripe_subscription, _ = stripe_service.create_out_of_band_subscription(
+            (
+                stripe_subscription,
+                _,
+            ) = await stripe_service.create_out_of_band_subscription(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
@@ -770,13 +774,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 metadata=metadata,
                 idempotency_key=idempotency_key,
             )
-            stripe_service.set_automatically_charged_subscription(
+            await stripe_service.set_automatically_charged_subscription(
                 stripe_subscription.id,
                 None,
                 idempotency_key=f"{idempotency_key}_subscription_auto_charge",
             )
         else:
-            stripe_service.create_out_of_band_invoice(
+            await stripe_service.create_out_of_band_invoice(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
@@ -1072,7 +1076,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 create_params["tax_id_data"] = [
                     to_stripe_tax_id(checkout.customer_tax_id)
                 ]
-            stripe_customer = stripe_service.create_customer(**create_params)
+            stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
             update_params: stripe_lib.Customer.ModifyParams = {
@@ -1082,7 +1086,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 update_params["name"] = checkout.customer_name
             if checkout.customer_billing_address is not None:
                 update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
-            stripe_service.update_customer(
+            await stripe_service.update_customer(
                 stripe_customer_id,
                 tax_id=to_stripe_tax_id(checkout.customer_tax_id)
                 if checkout.customer_tax_id is not None

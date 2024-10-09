@@ -2,7 +2,6 @@ import structlog
 
 from polar.eventstream.service import publish
 from polar.issue.hooks import IssueHook, issue_upserted
-from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.repository.hooks import (
     SyncCompletedHook,
     SyncedHook,
@@ -74,14 +73,3 @@ async def on_issue_updated(hook: IssueHook) -> None:
 
 
 issue_upserted.add(on_issue_updated)
-
-
-async def on_pull_request_updated(hook: PullRequestHook) -> None:
-    await publish(
-        "pull_request.updated",
-        {"pull_request": hook.pull_request.id},
-        organization_id=hook.pull_request.organization_id,
-    )
-
-
-pull_request_upserted.add(on_pull_request_updated)

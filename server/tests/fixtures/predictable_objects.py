@@ -7,7 +7,6 @@ import pytest_asyncio
 from polar.enums import Platforms
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
-from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
 from tests.fixtures.database import SaveFixture
@@ -70,38 +69,3 @@ async def predictable_user(save_fixture: SaveFixture) -> User:
     )
     await save_fixture(user)
     return user
-
-
-@pytest_asyncio.fixture
-async def predictable_pull_request(
-    save_fixture: SaveFixture,
-    predictable_external_organization: ExternalOrganization,
-    predictable_repository: Repository,
-) -> PullRequest:
-    pr = PullRequest(
-        id=uuid.uuid4(),
-        repository_id=predictable_repository.id,
-        organization_id=predictable_external_organization.id,
-        number=5555,
-        external_id=random.randrange(5000),
-        title="PR Title",
-        author={"login": "pr_creator_login"},
-        platform=Platforms.github,
-        state="open",
-        issue_created_at=datetime.now(),
-        issue_modified_at=datetime.now(),
-        commits=1,
-        additions=2,
-        deletions=3,
-        changed_files=4,
-        is_draft=False,
-        is_rebaseable=True,
-        is_mergeable=True,
-        review_comments=5,
-        maintainer_can_modify=True,
-        merged_at=None,
-        merge_commit_sha=None,
-        body="x",
-    )
-    await save_fixture(pr)
-    return pr

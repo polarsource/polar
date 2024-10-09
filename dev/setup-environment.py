@@ -20,7 +20,6 @@ import string
 import typing
 import urllib.parse
 import webbrowser
-import sys
 
 import httpx
 from authlib.jose import JsonWebKey, KeySet
@@ -112,9 +111,6 @@ def _get_github_app_manifest(
             "issues",
             "issue_comment",
             "label",
-            "pull_request_review",
-            "pull_request_review_comment",
-            "pull_request_review_thread",
             "public",
             "repository",
             "milestone",

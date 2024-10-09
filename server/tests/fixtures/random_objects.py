@@ -46,7 +46,6 @@ from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import HasPriceCurrency, ProductPriceType
-from polar.models.pull_request import PullRequest
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import OAuthAccount, OAuthPlatform
 from tests.fixtures.database import SaveFixture
@@ -428,46 +427,6 @@ async def pledge_by_user(
     )
     await save_fixture(pledge)
     return pledge
-
-
-@pytest_asyncio.fixture(scope="function")
-async def pull_request(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-) -> PullRequest:
-    pr = PullRequest(
-        id=uuid.uuid4(),
-        repository=repository,
-        organization=external_organization,
-        number=secrets.randbelow(5000),
-        external_id=secrets.randbelow(5000),
-        title="PR Title",
-        author={
-            "login": "pr_creator_login",
-            "avatar_url": "http://example.com/avatar.jpg",
-            "html_url": "https://github.com/pr_creator_login",
-            "id": 47952,
-        },
-        platform=Platforms.github,
-        state="open",
-        issue_created_at=datetime.now(),
-        issue_modified_at=datetime.now(),
-        commits=1,
-        additions=2,
-        deletions=3,
-        changed_files=4,
-        is_draft=False,
-        is_rebaseable=True,
-        is_mergeable=True,
-        review_comments=5,
-        maintainer_can_modify=True,
-        merged_at=None,
-        merge_commit_sha=None,
-        body="x",
-    )
-    await save_fixture(pr)
-    return pr
 
 
 @pytest_asyncio.fixture(scope="function")

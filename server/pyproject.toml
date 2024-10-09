@@ -55,6 +55,7 @@ pycountry = "^24.6.1"
 python-stdnum = "^1.20"
 ipinfo-db = "^0.0.4"
 taskipy = "^1.10.3"
+psycopg2-binary = "^2.9.5"
 
 [tool.poetry.group.backoffice]
 optional = true
@@ -68,7 +69,6 @@ mypy = "^1.6.0"
 pytest = "<9"
 pytest-sugar = "^1.0.0"
 typer = "^0.12.5"
-psycopg2-binary = "^2.9.5"
 coverage = "^7.6.0"
 pytest-mock = "^3.10.0"
 ruff = "^0.6.8"
@@ -80,7 +80,6 @@ respx = "^0.21.1"
 pytest-cov = "^5.0.0"
 types-python-slugify = "^8.0.0.3"
 types-requests = "^2.31.0.10"
-python-dateutil = "^2.9.0.post0"
 boto3-stubs = {extras = ["s3"], version = "^1.35.10"}
 freezegun = "^1.5.1"
 

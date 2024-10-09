@@ -41,7 +41,7 @@ from polar.models.benefit_grant import (
     BenefitGrantProperties,
     BenefitGrantScope,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -907,7 +907,8 @@ async def create_checkout(
     price: ProductPrice,
     payment_processor: PaymentProcessor = PaymentProcessor.stripe,
     status: CheckoutStatus = CheckoutStatus.open,
-    client_secret: str = "CHECKOUT_CLIENT_SECRET",
+    expires_at: datetime | None = None,
+    client_secret: str | None = None,
     user_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
     amount: int | None = None,
@@ -927,7 +928,11 @@ async def create_checkout(
     checkout = Checkout(
         payment_processor=payment_processor,
         status=status,
-        client_secret=client_secret,
+        expires_at=expires_at or get_expires_at(),
+        client_secret=client_secret
+        or rstr(
+            "CHECKOUT_CLIENT_SECRET",
+        ),
         user_metadata=user_metadata,
         payment_processor_metadata=payment_processor_metadata,
         amount=amount,

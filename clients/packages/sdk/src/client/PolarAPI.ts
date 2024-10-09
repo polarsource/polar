@@ -28,7 +28,6 @@ import {
   PersonalAccessTokenApi,
   PledgesApi,
   ProductsApi,
-  PullRequestsApi,
   RepositoriesApi,
   RewardsApi,
   SubscriptionsApi,
@@ -72,7 +71,6 @@ export class PolarAPI {
   public readonly personalAccessToken: PersonalAccessTokenApi
   public readonly pledges: PledgesApi
   public readonly products: ProductsApi
-  public readonly pullRequests: PullRequestsApi
   public readonly repositories: RepositoriesApi
   public readonly rewards: RewardsApi
   public readonly subscriptions: SubscriptionsApi
@@ -117,7 +115,6 @@ export class PolarAPI {
     this.personalAccessToken = new PersonalAccessTokenApi(config)
     this.pledges = new PledgesApi(config)
     this.products = new ProductsApi(config)
-    this.pullRequests = new PullRequestsApi(config)
     this.repositories = new RepositoriesApi(config)
     this.rewards = new RewardsApi(config)
     this.subscriptions = new SubscriptionsApi(config)

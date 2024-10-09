@@ -61,7 +61,7 @@ psycopg2-binary = "^2.9.5"
 optional = true
 
 [tool.poetry.group.backoffice.dependencies]
-textual = "^0.79.1"
+textual = "^0.82.0"
 halo = "^0.0.31"
 
 [tool.poetry.group.dev.dependencies]

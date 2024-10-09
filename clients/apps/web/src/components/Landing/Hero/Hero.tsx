@@ -1,7 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 export const Hero = () => {
   const [slug, setSlug] = useState('')
@@ -15,9 +15,14 @@ export const Hero = () => {
     [],
   )
 
-  const isPhone = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
-    navigator.userAgent,
-  )
+  const isPhone = useMemo(() => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined')
+      return false
+
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
+      navigator.userAgent,
+    )
+  }, [])
 
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">

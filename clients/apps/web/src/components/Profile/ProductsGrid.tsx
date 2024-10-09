@@ -28,7 +28,7 @@ export const ProductsGrid = ({
         {hasBothIntervals && recurringInterval && setRecurringInterval && (
           <div className="flex justify-center">
             <SubscriptionTierRecurringIntervalSwitch
-              recurringInterval={recurringInterval}
+              value={recurringInterval}
               onChange={setRecurringInterval}
             />
           </div>

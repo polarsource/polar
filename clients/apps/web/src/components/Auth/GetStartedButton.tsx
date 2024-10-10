@@ -48,7 +48,9 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
           <AuthModal
             return_to={`/dashboard/create`}
             params={slug ? { slug, auto: 'true' } : {}}
-            type="signup"
+            signup={{
+              first_intent: 'creator'
+            }}
           />
         }
         className="lg:w-full lg:max-w-[480px]"

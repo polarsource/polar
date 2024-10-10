@@ -47,7 +47,9 @@ export default async function Page({
               </label>
               <Input name="org-name" autoFocus />
             </div> */}
-            <Login returnTo={returnTo} />
+            <Login returnTo={returnTo} signup={{
+              first_intent: 'creator',
+            }}/>
           </div>
         </div>
         <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">

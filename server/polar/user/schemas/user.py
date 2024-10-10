@@ -1,6 +1,7 @@
 import uuid
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
+from fastapi import Depends
 from pydantic import UUID4, EmailStr, Field
 
 from polar.auth.scope import Scope
@@ -81,3 +82,17 @@ UserSignupAttributionSource = str | None
 class UserSignupAttribution(Schema):
     first_intent: UserSignupAttributionFirstIntent = None
     source: UserSignupAttributionSource = None
+
+
+async def get_signup_attribution(
+    intent: UserSignupAttributionFirstIntent = None,
+    attribution: UserSignupAttributionSource = None,
+) -> UserSignupAttribution | None:
+    if intent or attribution:
+        return UserSignupAttribution(first_intent=intent, source=attribution)
+    return None
+
+
+UserSignupAttributionQuery = Annotated[
+    UserSignupAttribution | None, Depends(get_signup_attribution)
+]

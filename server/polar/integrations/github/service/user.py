@@ -12,6 +12,7 @@ from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.user.oauth_service import oauth_account_service
+from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import UserService
 from polar.worker import enqueue_job
 
@@ -117,6 +118,7 @@ class GithubUserService(UserService):
         github_user: GithubUser,
         github_email: GithubEmail,
         tokens: OAuthAccessToken,
+        attribution: UserSignupAttribution | None = None,
     ) -> User:
         email, email_verified = github_email
         new_user = User(
@@ -137,6 +139,9 @@ class GithubUserService(UserService):
                 )
             ],
         )
+        if attribution:
+            new_user.attribution = attribution.model_dump(mode="json")
+
         session.add(new_user)
         await session.commit()
 
@@ -211,6 +216,7 @@ class GithubUserService(UserService):
         locker: Locker,
         *,
         tokens: OAuthAccessToken,
+        attribution: UserSignupAttribution | None = None,
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
@@ -220,6 +226,7 @@ class GithubUserService(UserService):
             tokens=tokens,
             client=client,
             authenticated=authenticated,
+            attribution=attribution,
         )
 
         posthog.user_event(user, "user", event_name, "done")
@@ -237,6 +244,7 @@ class GithubUserService(UserService):
         tokens: OAuthAccessToken,
         client: GitHub[TokenAuthStrategy],
         authenticated: GithubUser,
+        attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, str, bool]:
         # Check if we have an existing user with this GitHub account
         existing_user_by_id = await self.get_user_by_github_id(
@@ -283,6 +291,7 @@ class GithubUserService(UserService):
             github_user=authenticated,
             github_email=github_email,
             tokens=tokens,
+            attribution=attribution,
         )
         posthog.user_event(user, "user", "github_oauth_signed_up", "done")
         return (user, "signed_up", True)

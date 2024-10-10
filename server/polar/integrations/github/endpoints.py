@@ -42,6 +42,7 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.reward.service import reward_service
+from polar.user.schemas.user import UserSignupAttribution, UserSignupAttributionQuery
 from polar.worker import enqueue_job
 
 from .schemas import (
@@ -90,6 +91,7 @@ async def github_authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
+    user_attribution: UserSignupAttributionQuery,
     payment_intent_id: str | None = None,
 ) -> RedirectResponse:
     state = {}
@@ -97,6 +99,9 @@ async def github_authorize(
         state["payment_intent_id"] = payment_intent_id
 
     state["return_to"] = return_to
+
+    if user_attribution:
+        state["user_attribution"] = user_attribution.model_dump_json()
 
     if is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
@@ -143,6 +148,12 @@ async def github_callback(
 
     state_user_id = state_data.get("user_id")
 
+    state_user_attribution = state_data.get("user_attribution")
+    if state_user_attribution:
+        state_user_attribution = UserSignupAttribution.model_validate_json(
+            state_user_attribution
+        )
+
     try:
         if (
             is_user(auth_subject)
@@ -153,7 +164,12 @@ async def github_callback(
                 session, user=auth_subject.subject, tokens=tokens
             )
         else:
-            user = await github_user.login_or_signup(session, locker, tokens=tokens)
+            user = await github_user.login_or_signup(
+                session,
+                locker,
+                tokens=tokens,
+                attribution=state_user_attribution,
+            )
 
     except GithubUserServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e

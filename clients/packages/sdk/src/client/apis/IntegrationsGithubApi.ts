@@ -22,7 +22,6 @@ import type {
   LookupUserRequest,
   OrganizationBillingPlan,
   OrganizationCheckPermissionsInput,
-  UserSignupType,
   WebhookResponse,
 } from '../models/index';
 
@@ -41,7 +40,6 @@ export interface IntegrationsGithubApiInstallRequest {
 
 export interface IntegrationsGithubApiIntegrationsGithubAuthorizeRequest {
     paymentIntentId?: string;
-    userSignupType?: UserSignupType;
     returnTo?: string;
 }
 
@@ -209,10 +207,6 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
 
         if (requestParameters['paymentIntentId'] != null) {
             queryParameters['payment_intent_id'] = requestParameters['paymentIntentId'];
-        }
-
-        if (requestParameters['userSignupType'] != null) {
-            queryParameters['user_signup_type'] = requestParameters['userSignupType'];
         }
 
         if (requestParameters['returnTo'] != null) {

@@ -16,11 +16,9 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
-  UserSignupType,
 } from '../models/index';
 
 export interface IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest {
-    userSignupType?: UserSignupType;
     returnTo?: string;
 }
 
@@ -41,10 +39,6 @@ export class IntegrationsGoogleApi extends runtime.BaseAPI {
      */
     async integrationsGoogleAuthorizeRaw(requestParameters: IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
-
-        if (requestParameters['userSignupType'] != null) {
-            queryParameters['user_signup_type'] = requestParameters['userSignupType'];
-        }
 
         if (requestParameters['returnTo'] != null) {
             queryParameters['return_to'] = requestParameters['returnTo'];

@@ -7,7 +7,6 @@ import {
   Organization,
   Platforms,
   UserRead,
-  UserSignupType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -52,7 +51,6 @@ const Topbar = ({
           <GithubLoginButton
             text="Connect with GitHub"
             returnTo={returnTo}
-            userSignupType={UserSignupType.BACKER}
           />
         )}
         {!hasOrgs && (

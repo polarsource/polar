@@ -2596,22 +2596,6 @@
                         }
                     },
                     {
-                        "name": "user_signup_type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/UserSignupType"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "User Signup Type"
-                        }
-                    },
-                    {
                         "name": "return_to",
                         "in": "query",
                         "required": false,
@@ -8488,10 +8472,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
-                                "order",
                                 "donation",
-                                "paid_subscription"
+                                "paid_subscription",
+                                "free_subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -16183,22 +16167,6 @@
                     }
                 ],
                 "parameters": [
-                    {
-                        "name": "user_signup_type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/UserSignupType"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "User Signup Type"
-                        }
-                    },
                     {
                         "name": "return_to",
                         "in": "query",
@@ -35828,15 +35796,6 @@
                     "account_id"
                 ],
                 "title": "UserSetAccount"
-            },
-            "UserSignupType": {
-                "type": "string",
-                "enum": [
-                    "maintainer",
-                    "backer",
-                    "imported"
-                ],
-                "title": "UserSignupType"
             },
             "UserStripePortalSession": {
                 "properties": {

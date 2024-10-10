@@ -12,7 +12,6 @@ import {
   FetchError,
   Organization,
   ResponseError,
-  UserSignupType,
   ValidationError,
 } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -181,7 +180,6 @@ export default function Page() {
           {pathname && (
             <GithubLoginButton
               returnTo={pathname}
-              userSignupType={UserSignupType.MAINTAINER}
               posthogProps={{
                 view: 'Github Installation Page',
               }}

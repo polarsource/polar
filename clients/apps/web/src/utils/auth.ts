@@ -19,9 +19,6 @@ export const getGitHubAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  if (params.userSignupType !== undefined) {
-    searchParams.set('user_signup_type', params.userSignupType)
-  }
   return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
 
@@ -31,9 +28,6 @@ export const getGoogleAuthorizeURL = (
   const searchParams = new URLSearchParams()
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
-  }
-  if (params.userSignupType !== undefined) {
-    searchParams.set('user_signup_type', params.userSignupType)
   }
   return `${getServerURL()}/v1/integrations/google/authorize?${searchParams}`
 }

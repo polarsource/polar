@@ -15957,18 +15957,6 @@ export interface UserSetAccount {
      */
     account_id: string;
 }
-
-/**
- * 
- * @export
- */
-export const UserSignupType = {
-    MAINTAINER: 'maintainer',
-    BACKER: 'backer',
-    IMPORTED: 'imported'
-} as const;
-export type UserSignupType = typeof UserSignupType[keyof typeof UserSignupType];
-
 /**
  * 
  * @export

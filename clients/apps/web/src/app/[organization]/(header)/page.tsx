@@ -54,17 +54,6 @@ export async function generateMetadata({
       title: `${organization.name} on Polar`,
       description: `${organization.name} on Polar`,
     },
-
-    alternates: {
-      types: {
-        'application/rss+xml': [
-          {
-            title: `${organization.name}`,
-            url: `https://polar.sh/${organization.slug}/rss`,
-          },
-        ],
-      },
-    },
   }
 }
 

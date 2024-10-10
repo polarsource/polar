@@ -15,10 +15,7 @@ flowchart TD
         POSTGRESQL["PostgreSQL"]
         REDIS["Redis"]
         S3["S3 Storage"]
-        subgraph "Workers"
-            WORKER["Generic Worker"]
-            GITHUB_WORKER["GitHub Worker"]
-        end
+        WORKER["Worker"]
     end
     subgraph "Frontend"
         WEB["Web client"]
@@ -31,9 +28,7 @@ flowchart TD
     API --> POSTGRESQL
     API --> REDIS
     REDIS <--> WORKER
-    REDIS <--> GITHUB_WORKER
     WORKER --> POSTGRESQL
-    GITHUB_WORKER --> POSTGRESQL
     API --> S3
     WEB --> S3
 
@@ -161,13 +156,6 @@ poetry run task api
 ```sh
 poetry run task worker
 ```
-
-```sh
-poetry run task worker_github_crawl
-```
-
-> [!TIP]
-> If you don't have to work on issue funding features, you can avoid to run this worker.
 
 By default, the API server will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 

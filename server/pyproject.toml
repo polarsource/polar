@@ -85,8 +85,7 @@ freezegun = "^1.5.1"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "arq run_worker.WorkerSettings --watch polar --custom-log-dict run_worker.silent_logger_config_dict", help = "run arq worker" }
-worker_github_crawl = { cmd = "arq run_worker.WorkerSettingsGitHubCrawl --watch polar --custom-log-dict run_worker.silent_logger_config_dict", help = "run arq worker" }
+worker = { cmd = "watchfiles 'python -m run_worker' polar", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && coverage report -m", help = "run all tests" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }

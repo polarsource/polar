@@ -202,7 +202,6 @@ class IssueAndPullRequestBase(Base):
         | types.WebhookIssuesTransferredPropChangesPropNewIssue
         | types.PullRequest
         | types.PullRequestSimple
-        | types.WebhookPullRequestSynchronizePropPullRequest
         | types.PullRequestWebhook,
         organization: ExternalOrganizationModel,
         repository: RepositoryModel,

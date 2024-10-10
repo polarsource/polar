@@ -55,17 +55,7 @@ async def issue_sync(
             )
 
 
-@interval(
-    minute={
-        2,
-        12,
-        22,
-        32,
-        42,
-        52,
-    },
-    second=0,
-)
+@interval(hour=1, minute=0)
 @github_rate_limit_retry
 async def cron_refresh_issues(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:

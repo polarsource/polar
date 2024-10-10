@@ -426,37 +426,6 @@ class GithubIssueService(IssueService):
 
         return res.scalars().unique().all()
 
-    async def list_issues_to_crawl_timeline(
-        self,
-        session: AsyncSession,
-        organization: ExternalOrganization,
-    ) -> Sequence[Issue]:
-        current_time = utc_now()
-        cutoff_time = current_time - datetime.timedelta(hours=12)
-
-        stmt = (
-            sql.select(Issue)
-            .join(Issue.organization)
-            .join(Issue.repository)
-            .where(
-                or_(
-                    Issue.github_timeline_fetched_at.is_(None),
-                    Issue.github_timeline_fetched_at < cutoff_time,
-                ),
-                Issue.deleted_at.is_(None),
-                ExternalOrganization.deleted_at.is_(None),
-                Repository.deleted_at.is_(None),
-                ExternalOrganization.installation_id.is_not(None),
-                ExternalOrganization.id == organization.id,
-            )
-            .order_by(asc(Issue.github_timeline_fetched_at))
-            .limit(100)
-        )
-
-        res = await session.execute(stmt)
-
-        return res.scalars().unique().all()
-
     async def list_issues_to_add_badge_to_auto(
         self,
         session: AsyncSession,

@@ -136,9 +136,10 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     }
   }
 
-  const generateCopyCheckoutLabel = (
+  const generateCopyPriceLabel = (
     price: ProductPrice,
     amountOfPrices: number,
+    prefix: string,
   ) => {
     let suffix = ''
     // We only add the suffix in case we have more than 1 price point, i.e
@@ -152,10 +153,16 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
           suffix = 'Yearly'
           break
       }
-      suffix = `(${suffix})`
+      suffix = ` (${suffix})`
     }
 
-    return `Copy Checkout URL ${suffix}`
+    return `${prefix}${suffix}`
+  }
+
+  const onCopyPriceID = (price: ProductPrice) => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(price.id)
+    }
   }
 
   const onGenerateCheckoutUrl = (price: ProductPrice) => {
@@ -218,7 +225,26 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                         onGenerateCheckoutUrl(price)
                       })}
                     >
-                      {generateCopyCheckoutLabel(price, product.prices.length)}
+                      {generateCopyPriceLabel(
+                        price,
+                        product.prices.length,
+                        'Copy Checkout URL',
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                  {product.prices.map((price) => (
+                    <DropdownMenuItem
+                      key={price.id}
+                      onClick={handleContextMenuCallback(() => {
+                        onCopyPriceID(price)
+                      })}
+                    >
+                      {generateCopyPriceLabel(
+                        price,
+                        product.prices.length,
+                        'Copy Price ID',
+                      )}
                     </DropdownMenuItem>
                   ))}
                 </>

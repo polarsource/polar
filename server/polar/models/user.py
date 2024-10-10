@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -14,6 +15,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -126,6 +128,10 @@ class User(RecordModel):
         TIMESTAMP(timezone=True),
         nullable=True,
         default=None,
+    )
+
+    attribution: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
     )
 
     def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:

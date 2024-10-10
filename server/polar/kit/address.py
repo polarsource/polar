@@ -43,10 +43,10 @@ class AddressType(TypeDecorator[Any]):
 
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if isinstance(value, Address):
-            return value.model_dump_json(exclude_none=True)
+            return value.model_dump(exclude_none=True)
         return value
 
     def process_result_value(self, value: str | None, dialect: Dialect) -> Any:
         if value is not None:
-            return Address.model_validate_json(value)
+            return Address.model_validate(value)
         return value

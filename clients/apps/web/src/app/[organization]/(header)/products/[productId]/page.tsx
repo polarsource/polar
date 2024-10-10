@@ -1,7 +1,10 @@
+import CheckoutProductInfo from '@/components/Checkout/CheckoutProductInfo'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { isCrawler } from '@/utils/crawlers'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { CheckoutPublic, Product, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -88,6 +91,13 @@ export default async function Page({
 
   if (product.is_archived) {
     notFound()
+  }
+
+  /* Avoid creating a checkout for crawlers, just render a simple product info page */
+  const headersList = headers()
+  const userAgent = headersList.get('user-agent')
+  if (userAgent && isCrawler(userAgent)) {
+    return <CheckoutProductInfo organization={organization} product={product} />
   }
 
   let checkout: CheckoutPublic

@@ -134,7 +134,7 @@ class BalanceTransactionService(BaseTransactionService):
         issue_reward: IssueReward | None = None,
         donation: Donation | None = None,
     ) -> tuple[Transaction, Transaction]:
-        payment_intent = stripe_service.retrieve_intent(payment_intent_id)
+        payment_intent = await stripe_service.retrieve_intent(payment_intent_id)
         assert payment_intent.latest_charge is not None
         charge_id = get_expandable_id(payment_intent.latest_charge)
 

@@ -22,6 +22,7 @@ from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
+from tests.transaction.conftest import create_async_iterator
 
 
 @pytest.fixture(autouse=True)
@@ -442,7 +443,7 @@ class TestCreatePayoutFromStripe:
             balance_transactions.append(balance_transaction)
 
         stripe_service_mock.list_balance_transactions.return_value = (
-            balance_transactions
+            create_async_iterator(balance_transactions)
         )
 
         stripe_payout = build_stripe_payout(
@@ -516,7 +517,7 @@ class TestCreatePayoutFromStripe:
             balance_transactions.append(balance_transaction)
 
         stripe_service_mock.list_balance_transactions.return_value = (
-            balance_transactions
+            create_async_iterator(balance_transactions)
         )
 
         stripe_payout = build_stripe_payout(

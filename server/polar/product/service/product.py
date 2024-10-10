@@ -200,7 +200,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         metadata["organization_id"] = str(organization.id)
         metadata["organization_name"] = organization.slug
 
-        stripe_product = stripe_service.create_product(
+        stripe_product = await stripe_service.create_product(
             product.get_stripe_name(),
             description=product.description,
             metadata=metadata,
@@ -293,7 +293,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             product_update["description"] = update_schema.description
 
         if product_update and product.stripe_product_id is not None:
-            stripe_service.update_product(product.stripe_product_id, **product_update)
+            await stripe_service.update_product(
+                product.stripe_product_id, **product_update
+            )
 
         existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
@@ -323,12 +325,12 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             if deleted_prices:
                 # Make sure to set Stripe's default price to a non-archived price
                 assert product.stripe_product_id is not None
-                stripe_service.update_product(
+                await stripe_service.update_product(
                     product.stripe_product_id,
                     default_price=updated_prices[0].stripe_price_id,
                 )
                 for deleted_price in deleted_prices:
-                    stripe_service.archive_price(deleted_price.stripe_price_id)
+                    await stripe_service.archive_price(deleted_price.stripe_price_id)
                     deleted_price.is_archived = True
                     session.add(deleted_price)
 
@@ -441,7 +443,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
     async def _archive(self, product: Product) -> Product:
         if product.stripe_product_id is not None:
-            stripe_service.archive_product(product.stripe_product_id)
+            await stripe_service.archive_product(product.stripe_product_id)
 
         product.is_archived = True
 
@@ -449,7 +451,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
     async def _unarchive(self, product: Product) -> Product:
         if product.stripe_product_id is not None:
-            stripe_service.unarchive_product(product.stripe_product_id)
+            await stripe_service.unarchive_product(product.stripe_product_id)
 
         product.is_archived = False
 

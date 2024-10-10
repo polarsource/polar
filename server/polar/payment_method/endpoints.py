@@ -31,5 +31,5 @@ async def list(
     "/payment_methods/{id}/detach", response_model=PaymentMethod, status_code=200
 )
 async def detach(id: str, auth_subject: WebUser) -> PaymentMethod:
-    pm = stripe_service.detach_payment_method(id)
+    pm = await stripe_service.detach_payment_method(id)
     return PaymentMethod.from_stripe(pm)

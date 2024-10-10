@@ -103,8 +103,8 @@ async def payment_intent_succeeded(
 
             # Check if there is a Stripe Checkout Session related,
             # meaning it's a product or subscription purchase
-            checkout_session = stripe_service.get_checkout_session_by_payment_intent(
-                payload.id
+            checkout_session = (
+                await stripe_service.get_checkout_session_by_payment_intent(payload.id)
             )
             if (
                 checkout_session is not None
@@ -133,7 +133,7 @@ async def payment_intent_succeeded(
             # payment for pay_on_completion
             # metadata is on the invoice, not the payment_intent
             if payload.invoice:
-                invoice = stripe_service.get_invoice(payload.invoice)
+                invoice = await stripe_service.get_invoice(payload.invoice)
                 if (
                     invoice.metadata
                     and invoice.metadata.get("type") == ProductType.pledge
@@ -235,7 +235,7 @@ async def charge_dispute_created(
                 else:
                     raise
 
-            charge = stripe_service.get_charge(dispute.charge)
+            charge = await stripe_service.get_charge(dispute.charge)
             if charge.metadata.get("type") == ProductType.pledge:
                 await pledge_service.mark_charge_disputed_by_payment_id(
                     session=session,

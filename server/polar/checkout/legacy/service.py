@@ -96,7 +96,7 @@ class CheckoutService:
         elif create_schema.customer_email is not None:
             customer_options["customer_email"] = create_schema.customer_email
 
-        checkout_session = stripe_service.create_checkout_session(
+        checkout_session = await stripe_service.create_checkout_session(
             price.stripe_price_id,
             str(create_schema.success_url),
             is_subscription=price.is_recurring,
@@ -121,7 +121,7 @@ class CheckoutService:
 
     async def get_by_id(self, session: AsyncSession, id: str) -> Checkout:
         try:
-            checkout_session = stripe_service.get_checkout_session(id)
+            checkout_session = await stripe_service.get_checkout_session(id)
         except stripe_lib.InvalidRequestError as e:
             raise ResourceNotFound() from e
 

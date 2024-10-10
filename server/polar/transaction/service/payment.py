@@ -83,7 +83,7 @@ class PaymentTransactionService(BaseTransactionService):
             tax_state = charge.metadata.get("tax_state")
         # Stripe Checkout sets tax info in invoice
         elif charge.invoice:
-            stripe_invoice = stripe_service.get_invoice(
+            stripe_invoice = await stripe_service.get_invoice(
                 get_expandable_id(charge.invoice)
             )
             if stripe_invoice.tax is not None:

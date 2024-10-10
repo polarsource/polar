@@ -215,7 +215,7 @@ class OrderService(ResourceServiceReader[Order]):
         if order.stripe_invoice_id is None:
             raise InvoiceNotAvailable(order)
 
-        stripe_invoice = stripe_service.get_invoice(order.stripe_invoice_id)
+        stripe_invoice = await stripe_service.get_invoice(order.stripe_invoice_id)
 
         if stripe_invoice.hosted_invoice_url is None:
             raise InvoiceNotAvailable(order)
@@ -350,7 +350,9 @@ class OrderService(ResourceServiceReader[Order]):
                 if payment_intent_id is None:
                     raise InvoiceWithoutCharge(invoice.id)
 
-                payment_intent = stripe_service.get_payment_intent(payment_intent_id)
+                payment_intent = await stripe_service.get_payment_intent(
+                    payment_intent_id
+                )
                 if payment_intent.latest_charge is None:
                     raise InvoiceWithoutCharge(invoice.id)
                 charge_id = get_expandable_id(payment_intent.latest_charge)

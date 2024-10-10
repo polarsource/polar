@@ -14,6 +14,7 @@ from polar.transaction.service.processor_fee import (
     processor_fee_transaction as processor_fee_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
+from tests.transaction.conftest import create_async_iterator
 
 
 @pytest.fixture(autouse=True)
@@ -462,7 +463,7 @@ class TestSyncStripeFees:
         ]
 
         stripe_service_mock.list_balance_transactions.return_value = (
-            balance_transactions
+            create_async_iterator(balance_transactions)
         )
 
         fee_transaction_11 = Transaction(

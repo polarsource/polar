@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator, Sequence
+from typing import TypeVar
+
 import pytest_asyncio
 
 from polar.enums import AccountType
@@ -281,3 +284,11 @@ async def all_transactions(
         await create_transaction(save_fixture),
         await create_transaction(save_fixture),
     ]
+
+
+T = TypeVar("T")
+
+
+async def create_async_iterator(iterable: Sequence[T]) -> AsyncIterator[T]:
+    for item in iterable:
+        yield item

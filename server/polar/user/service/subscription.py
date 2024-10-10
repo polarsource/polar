@@ -248,7 +248,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             raise SubscriptionNotActiveOnStripe(subscription)
 
         assert subscription.price is not None
-        stripe_service.update_subscription_price(
+        await stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
             old_price=subscription.price.stripe_price_id,
             new_price=price.stripe_price_id,
@@ -277,7 +277,9 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             raise AlreadyCanceledSubscription(subscription)
 
         if subscription.stripe_subscription_id is not None:
-            stripe_service.cancel_subscription(subscription.stripe_subscription_id)
+            await stripe_service.cancel_subscription(
+                subscription.stripe_subscription_id
+            )
         else:
             subscription.ended_at = utc_now()
             subscription.cancel_at_period_end = True

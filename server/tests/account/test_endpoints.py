@@ -180,7 +180,7 @@ async def test_create_personal_stripe(
     mocker: MockerFixture,
     client: AsyncClient,
 ) -> None:
-    stripe_mock = mocker.patch.object(stripe_lib.Account, "create")
+    stripe_mock = mocker.patch.object(stripe_lib.Account, "create_async")
 
     class FakeStripeAccount:
         id = "fake_stripe_id"

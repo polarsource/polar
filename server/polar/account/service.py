@@ -177,7 +177,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         self, session: AsyncSession, admin_id: UUID, account_create: AccountCreate
     ) -> Account:
         try:
-            stripe_account = stripe.create_account(
+            stripe_account = await stripe.create_account(
                 account_create, name=None
             )  # TODO: name
         except stripe_lib.StripeError as e:
@@ -293,7 +293,9 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     ) -> AccountLink | None:
         if account.account_type == AccountType.stripe:
             assert account.stripe_id is not None
-            account_link = stripe.create_account_link(account.stripe_id, return_path)
+            account_link = await stripe.create_account_link(
+                account.stripe_id, return_path
+            )
             return AccountLink(url=account_link.url)
 
         return None
@@ -301,7 +303,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     async def dashboard_link(self, account: Account) -> AccountLink | None:
         if account.account_type == AccountType.stripe:
             assert account.stripe_id is not None
-            account_link = stripe.create_login_link(account.stripe_id)
+            account_link = await stripe.create_login_link(account.stripe_id)
             return AccountLink(url=account_link.url)
 
         elif account.account_type == AccountType.open_collective:
@@ -313,20 +315,11 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         return None
 
-    def get_balance(
-        self,
-        account: Account,
-    ) -> tuple[str, int] | None:
-        if account.account_type != AccountType.stripe:
-            return None
-        assert account.stripe_id is not None
-        return stripe.retrieve_balance(account.stripe_id)
-
     async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
         name = await self._build_stripe_account_name(session, account)
 
         if account.account_type == AccountType.stripe and account.stripe_id:
-            stripe.update_account(account.stripe_id, name)
+            await stripe.update_account(account.stripe_id, name)
 
     def _get_readable_accounts_statement(self, user: User) -> Select[tuple[Account]]:
         statement = (

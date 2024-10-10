@@ -266,7 +266,7 @@ class DonationSender:
         if issue_id:
             metadata.issue_id = issue_id
 
-        def _stripe_get_charge(self: Any, id: str) -> stripe.Charge:
+        async def _stripe_get_charge(self: Any, id: str) -> stripe.Charge:
             assert id == latest_charge
             return stripe.Charge.construct_from(
                 key=None,
@@ -283,7 +283,7 @@ class DonationSender:
             _stripe_get_charge,
         )
 
-        def _stripe_get_balance_transaction(
+        async def _stripe_get_balance_transaction(
             self: Any, id: str
         ) -> stripe.BalanceTransaction:
             assert id == balance_transaction_id
@@ -309,8 +309,7 @@ class DonationSender:
         )
 
         self.mocker.patch(
-            "polar.integrations.stripe.service.StripeService.get_checkout_session_by_payment_intent",
-            return_value=None,
+            "polar.integrations.stripe.service.StripeService.get_checkout_session_by_payment_intent"
         )
 
         await payment_intent_succeeded(

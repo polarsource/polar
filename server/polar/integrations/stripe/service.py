@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from typing import Literal, Unpack, cast
 
 import stripe as stripe_lib
@@ -19,8 +19,8 @@ from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
-stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
-instrument_httpx(stripe_http_client._client)
+stripe_http_client = stripe_lib.HTTPXClient()
+instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
 
 
@@ -79,7 +79,7 @@ class StripeService:
                 raise InternalServerError("Failed to create Stripe Customer")
             params["customer"] = stripe_customer.id
 
-        return stripe_lib.PaymentIntent.create(**params)
+        return await stripe_lib.PaymentIntent.create_async(**params)
 
     async def modify_payment_intent(
         self,
@@ -119,15 +119,15 @@ class StripeService:
                 raise InternalServerError("Failed to create Stripe Customer")
             params["customer"] = stripe_customer.id
 
-        return stripe_lib.PaymentIntent.modify(
+        return await stripe_lib.PaymentIntent.modify_async(
             id,
             **params,
         )
 
-    def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
-        return stripe_lib.PaymentIntent.retrieve(id)
+    async def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
+        return await stripe_lib.PaymentIntent.retrieve_async(id)
 
-    def create_account(
+    async def create_account(
         self, account: AccountCreate, name: str | None
     ) -> stripe_lib.Account:
         create_params: stripe_lib.Account.CreateParams = {
@@ -144,45 +144,42 @@ class StripeService:
 
         if account.country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
-        return stripe_lib.Account.create(**create_params)
+        return await stripe_lib.Account.create_async(**create_params)
 
-    def update_account(self, id: str, name: str | None) -> None:
+    async def update_account(self, id: str, name: str | None) -> None:
         obj = {}
         if name:
             obj["business_profile"] = {"name": name}
-        stripe_lib.Account.modify(id, **obj)
+        await stripe_lib.Account.modify_async(id, **obj)
 
-    def retrieve_account(self, id: str) -> stripe_lib.Account:
-        return stripe_lib.Account.retrieve(id)
-
-    def retrieve_balance(self, id: str) -> tuple[str, int]:
+    async def retrieve_balance(self, id: str) -> tuple[str, int]:
         # Return available balance in the account's default currency (we assume that
         # there is no balance in other currencies for now)
-        account = stripe_lib.Account.retrieve(id)
-        balance = stripe_lib.Balance.retrieve(stripe_account=id)
+        account = await stripe_lib.Account.retrieve_async(id)
+        balance = await stripe_lib.Balance.retrieve_async(stripe_account=id)
         for b in balance.available:
             if b.currency == account.default_currency:
                 return (b.currency, b.amount)
         return (cast(str, account.default_currency), 0)
 
-    def create_account_link(
+    async def create_account_link(
         self, stripe_id: str, return_path: str
     ) -> stripe_lib.AccountLink:
         refresh_url = settings.generate_external_url(
             f"/integrations/stripe/refresh?return_path={return_path}"
         )
         return_url = settings.generate_frontend_url(return_path)
-        return stripe_lib.AccountLink.create(
+        return await stripe_lib.AccountLink.create_async(
             account=stripe_id,
             refresh_url=refresh_url,
             return_url=return_url,
             type="account_onboarding",
         )
 
-    def create_login_link(self, stripe_id: str) -> stripe_lib.LoginLink:
-        return stripe_lib.Account.create_login_link(stripe_id)
+    async def create_login_link(self, stripe_id: str) -> stripe_lib.LoginLink:
+        return await stripe_lib.Account.create_login_link_async(stripe_id)
 
-    def transfer(
+    async def transfer(
         self,
         destination_stripe_id: str,
         amount: int,
@@ -201,32 +198,21 @@ class StripeService:
             create_params["source_transaction"] = source_transaction
         if transfer_group is not None:
             create_params["transfer_group"] = transfer_group
-        return stripe_lib.Transfer.create(**create_params)
+        return await stripe_lib.Transfer.create_async(**create_params)
 
-    def reverse_transfer(
-        self,
-        transfer_id: str,
-        amount: int,
-        *,
-        metadata: dict[str, str] | None = None,
-    ) -> stripe_lib.Reversal:
-        create_params: stripe_lib.Transfer.CreateReversalParams = {
-            "amount": amount,
-            "metadata": metadata or {},
-        }
-        return stripe_lib.Transfer.create_reversal(transfer_id, **create_params)
+    async def get_transfer(self, id: str) -> stripe_lib.Transfer:
+        return await stripe_lib.Transfer.retrieve_async(id)
 
-    def get_transfer(self, id: str) -> stripe_lib.Transfer:
-        return stripe_lib.Transfer.retrieve(id)
-
-    def update_transfer(self, id: str, metadata: dict[str, str]) -> stripe_lib.Transfer:
+    async def update_transfer(
+        self, id: str, metadata: dict[str, str]
+    ) -> stripe_lib.Transfer:
         update_params: stripe_lib.Transfer.ModifyParams = {
             "metadata": metadata,
         }
-        return stripe_lib.Transfer.modify(id, **update_params)
+        return await stripe_lib.Transfer.modify_async(id, **update_params)
 
-    def get_customer(self, customer_id: str) -> stripe_lib.Customer:
-        return stripe_lib.Customer.retrieve(customer_id)
+    async def get_customer(self, customer_id: str) -> stripe_lib.Customer:
+        return await stripe_lib.Customer.retrieve_async(customer_id)
 
     async def get_or_create_user_customer(
         self,
@@ -234,9 +220,9 @@ class StripeService:
         user: User,
     ) -> stripe_lib.Customer | None:
         if user.stripe_customer_id:
-            return self.get_customer(user.stripe_customer_id)
+            return await self.get_customer(user.stripe_customer_id)
 
-        customer = stripe_lib.Customer.create(
+        customer = await stripe_lib.Customer.create_async(
             name=user.username_or_email,
             email=user.email,
             metadata={
@@ -263,12 +249,12 @@ class StripeService:
         self, session: AsyncSession, org: Organization
     ) -> stripe_lib.Customer | None:
         if org.stripe_customer_id:
-            return self.get_customer(org.stripe_customer_id)
+            return await self.get_customer(org.stripe_customer_id)
 
         if org.billing_email is None:
             raise MissingOrganizationBillingEmail(org.id)
 
-        customer = stripe_lib.Customer.create(
+        customer = await stripe_lib.Customer.create_async(
             name=org.slug,
             email=org.billing_email,
             metadata={
@@ -299,15 +285,15 @@ class StripeService:
         if not customer:
             return []
 
-        payment_methods = stripe_lib.PaymentMethod.list(
+        payment_methods = await stripe_lib.PaymentMethod.list_async(
             customer=customer.id,
             type="card",
         )
 
         return payment_methods.data
 
-    def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
-        return stripe_lib.PaymentMethod.detach(id)
+    async def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
+        return await stripe_lib.PaymentMethod.detach_async(id)
 
     async def create_user_portal_session(
         self,
@@ -318,7 +304,7 @@ class StripeService:
         if not customer:
             return None
 
-        return stripe_lib.billing_portal.Session.create(
+        return await stripe_lib.billing_portal.Session.create_async(
             customer=customer.id,
             return_url=f"{settings.FRONTEND_BASE_URL}/settings",
         )
@@ -332,12 +318,12 @@ class StripeService:
         if not customer:
             return None
 
-        return stripe_lib.billing_portal.Session.create(
+        return await stripe_lib.billing_portal.Session.create_async(
             customer=customer.id,
             return_url=f"{settings.FRONTEND_BASE_URL}/team/{org.slug}/settings",
         )
 
-    def create_product(
+    async def create_product(
         self,
         name: str,
         *,
@@ -350,7 +336,7 @@ class StripeService:
         }
         if description is not None:
             create_params["description"] = description
-        return stripe_lib.Product.create(**create_params)
+        return await stripe_lib.Product.create_async(**create_params)
 
     async def create_price_for_product(
         self,
@@ -374,24 +360,21 @@ class StripeService:
             )
         return price
 
-    def update_product(
+    async def update_product(
         self, product: str, **kwargs: Unpack[stripe_lib.Product.ModifyParams]
     ) -> stripe_lib.Product:
-        return stripe_lib.Product.modify(product, **kwargs)
+        return await stripe_lib.Product.modify_async(product, **kwargs)
 
-    def archive_product(self, id: str) -> stripe_lib.Product:
-        return stripe_lib.Product.modify(id, active=False)
+    async def archive_product(self, id: str) -> stripe_lib.Product:
+        return await stripe_lib.Product.modify_async(id, active=False)
 
-    def unarchive_product(self, id: str) -> stripe_lib.Product:
-        return stripe_lib.Product.modify(id, active=True)
+    async def unarchive_product(self, id: str) -> stripe_lib.Product:
+        return await stripe_lib.Product.modify_async(id, active=True)
 
-    def get_price(self, id: str) -> stripe_lib.Price:
-        return stripe_lib.Price.retrieve(id)
+    async def archive_price(self, id: str) -> stripe_lib.Price:
+        return await stripe_lib.Price.modify_async(id, active=False)
 
-    def archive_price(self, id: str) -> stripe_lib.Price:
-        return stripe_lib.Price.modify(id, active=False)
-
-    def create_checkout_session(
+    async def create_checkout_session(
         self,
         price: str,
         success_url: str,
@@ -433,23 +416,22 @@ class StripeService:
         if customer_email is not None:
             create_params["customer_email"] = customer_email
 
-        return stripe_lib.checkout.Session.create(**create_params)
+        return await stripe_lib.checkout.Session.create_async(**create_params)
 
-    def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
-        return stripe_lib.checkout.Session.retrieve(id)
+    async def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
+        return await stripe_lib.checkout.Session.retrieve_async(id)
 
-    def get_checkout_session_by_payment_intent(
+    async def get_checkout_session_by_payment_intent(
         self, payment_intent: str
     ) -> stripe_lib.checkout.Session | None:
-        sessions = stripe_lib.checkout.Session.list(payment_intent=payment_intent)
+        sessions = await stripe_lib.checkout.Session.list_async(
+            payment_intent=payment_intent
+        )
         for session in sessions:
             return session
         return None
 
-    def get_subscription(self, id: str) -> stripe_lib.Subscription:
-        return stripe_lib.Subscription.retrieve(id, expand=["latest_invoice"])
-
-    def update_subscription_price(
+    async def update_subscription_price(
         self, id: str, *, old_price: str, new_price: str
     ) -> stripe_lib.Subscription:
         subscription = stripe_lib.Subscription.retrieve(id)
@@ -461,42 +443,34 @@ class StripeService:
                 new_items.append({"id": item.id, "deleted": True})
         new_items.append({"price": new_price, "quantity": 1})
 
-        return stripe_lib.Subscription.modify(id, items=new_items)
+        return await stripe_lib.Subscription.modify_async(id, items=new_items)
 
-    def cancel_subscription(self, id: str) -> stripe_lib.Subscription:
-        return stripe_lib.Subscription.modify(
+    async def cancel_subscription(self, id: str) -> stripe_lib.Subscription:
+        return await stripe_lib.Subscription.modify_async(
             id,
             cancel_at_period_end=True,
         )
 
-    def update_invoice(
+    async def update_invoice(
         self, id: str, *, metadata: dict[str, str] | None = None
     ) -> stripe_lib.Invoice:
-        return stripe_lib.Invoice.modify(id, metadata=metadata or {})
+        return await stripe_lib.Invoice.modify_async(id, metadata=metadata or {})
 
-    def get_customer_credit_balance(self, customer_id: str) -> int:
-        transactions = stripe_lib.Customer.list_balance_transactions(
-            customer_id, limit=1
+    async def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
+        return await stripe_lib.BalanceTransaction.retrieve_async(id)
+
+    async def get_invoice(self, id: str) -> stripe_lib.Invoice:
+        return await stripe_lib.Invoice.retrieve_async(
+            id, expand=["total_tax_amounts.tax_rate"]
         )
 
-        for transaction in transactions:
-            return transaction.ending_balance
-
-        return 0
-
-    def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
-        return stripe_lib.BalanceTransaction.retrieve(id)
-
-    def get_invoice(self, id: str) -> stripe_lib.Invoice:
-        return stripe_lib.Invoice.retrieve(id, expand=["total_tax_amounts.tax_rate"])
-
-    def list_balance_transactions(
+    async def list_balance_transactions(
         self,
         *,
         account_id: str | None = None,
         payout: str | None = None,
         type: str | None = None,
-    ) -> Iterator[stripe_lib.BalanceTransaction]:
+    ) -> AsyncIterator[stripe_lib.BalanceTransaction]:
         params: stripe_lib.BalanceTransaction.ListParams = {
             "limit": 100,
             "stripe_account": account_id,
@@ -507,53 +481,55 @@ class StripeService:
         if type is not None:
             params["type"] = type
 
-        return stripe_lib.BalanceTransaction.list(**params).auto_paging_iter()
+        result = await stripe_lib.BalanceTransaction.list_async(**params)
+        return result.auto_paging_iter()
 
-    def list_refunds(
+    async def list_refunds(
         self,
         *,
         charge: str | None = None,
-    ) -> Iterator[stripe_lib.Refund]:
+    ) -> AsyncIterator[stripe_lib.Refund]:
         params: stripe_lib.Refund.ListParams = {"limit": 100}
         if charge is not None:
             params["charge"] = charge
 
-        return stripe_lib.Refund.list(**params).auto_paging_iter()
+        result = await stripe_lib.Refund.list_async(**params)
+        return result.auto_paging_iter()
 
-    def get_charge(
+    async def get_charge(
         self,
         id: str,
         *,
         stripe_account: str | None = None,
         expand: list[str] | None = None,
     ) -> stripe_lib.Charge:
-        return stripe_lib.Charge.retrieve(
+        return await stripe_lib.Charge.retrieve_async(
             id, stripe_account=stripe_account, expand=expand or []
         )
 
-    def get_refund(
+    async def get_refund(
         self,
         id: str,
         *,
         stripe_account: str | None = None,
         expand: list[str] | None = None,
     ) -> stripe_lib.Refund:
-        return stripe_lib.Refund.retrieve(
+        return await stripe_lib.Refund.retrieve_async(
             id, stripe_account=stripe_account, expand=expand or []
         )
 
-    def get_dispute(
+    async def get_dispute(
         self,
         id: str,
         *,
         stripe_account: str | None = None,
         expand: list[str] | None = None,
     ) -> stripe_lib.Dispute:
-        return stripe_lib.Dispute.retrieve(
+        return await stripe_lib.Dispute.retrieve_async(
             id, stripe_account=stripe_account, expand=expand or []
         )
 
-    def create_payout(
+    async def create_payout(
         self,
         *,
         stripe_account: str,
@@ -561,7 +537,7 @@ class StripeService:
         currency: str,
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Payout:
-        return stripe_lib.Payout.create(
+        return await stripe_lib.Payout.create_async(
             stripe_account=stripe_account,
             amount=amount,
             currency=currency,
@@ -573,8 +549,8 @@ class StripeService:
     ) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.create_async(**params)
 
-    def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
-        return stripe_lib.PaymentIntent.retrieve(id)
+    async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
+        return await stripe_lib.PaymentIntent.retrieve_async(id)
 
     async def create_customer(
         self, **params: Unpack[stripe_lib.Customer.CreateParams]

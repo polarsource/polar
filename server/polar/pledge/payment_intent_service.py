@@ -165,7 +165,7 @@ class PaymentIntentService:
         if pledge:
             return pledge
 
-        intent = stripe_service.retrieve_intent(payment_intent_id)
+        intent = await stripe_service.retrieve_intent(payment_intent_id)
         if not intent:
             raise ResourceNotFound()
 

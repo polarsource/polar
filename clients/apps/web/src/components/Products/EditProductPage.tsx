@@ -13,11 +13,14 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { CheckoutInfo } from '../Checkout/CheckoutInfo'
+import { createCheckoutPreview } from '../Customization/utils'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
@@ -54,7 +57,8 @@ export const EditProductPage = ({
 
   const [isLoading, setLoading] = useState(false)
 
-  const { handleSubmit, setError } = form
+  const { handleSubmit, setError, watch } = form
+  const updatedProduct = watch()
 
   const updateProduct = useUpdateProduct(organization?.id)
   const updateBenefits = useUpdateProductBenefits(organization.id)
@@ -163,7 +167,30 @@ export const EditProductPage = ({
   }, [product, updateProduct, organization, router])
 
   return (
-    <DashboardBody title="Edit Product">
+    <DashboardBody
+      title="Edit Product"
+      contextView={
+        <div className="flex h-full flex-col justify-between">
+          <div className="flex h-full flex-col overflow-y-auto p-8 py-12">
+            <CheckoutInfo
+              className="md:w-full md:p-0"
+              organization={organization}
+              checkout={createCheckoutPreview(product, product?.prices[0])}
+            />
+          </div>
+          {organization.profile_settings?.enabled && (
+            <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
+              <Link
+                href={`/${organization.slug}/products/${product.id}`}
+                target="_blank"
+              >
+                <Button>View Product Page</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      }
+    >
       <div className="flex flex-col gap-y-12">
         <div className="flex flex-col divide-y">
           <Form {...form}>

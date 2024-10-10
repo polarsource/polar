@@ -6,6 +6,7 @@ import {
   ChevronRightOutlined,
 } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
+import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useMemo, useState } from 'react'
@@ -14,7 +15,6 @@ import ProductBenefitsForm from '../ProductBenefitsForm'
 import { ProductInfoSection } from '../ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../ProductForm/ProductPricingSection'
-import { ProductWizardPanel } from './ProductWizardPanel'
 import { useCreateProductWizard } from './useCreateProductWizard'
 
 export interface JourneyProps {
@@ -22,9 +22,10 @@ export interface JourneyProps {
     id: string
     children: React.ReactElement
   }[]
+  loading?: boolean
 }
 
-export const Journey = ({ steps }: JourneyProps) => {
+export const Journey = ({ steps, loading }: JourneyProps) => {
   const [currentStep, setCurrentStep] = useState(0)
 
   const step = useMemo(() => steps[currentStep], [currentStep, steps])
@@ -36,54 +37,59 @@ export const Journey = ({ steps }: JourneyProps) => {
 
   return (
     <>
-      <div className="flex h-full w-full flex-grow flex-col">
-        {step && (
-          <ShadowBox className="bg-transparent p-12 dark:bg-transparent">
+      <div className="relative flex h-full w-full flex-grow flex-col">
+        {steps.map((step, index) => (
+          <div
+            key={step.id}
+            className={twMerge(
+              'h-full w-full flex-col gap-y-12',
+              currentStep === index ? 'flex' : 'hidden',
+            )}
+          >
             {step.children}
-          </ShadowBox>
-        )}
+          </div>
+        ))}
       </div>
       <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-row items-center gap-x-8">
-          <button
-            className={twMerge(
-              'dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 text-gray-500 transition-colors hover:bg-gray-100 dark:text-white',
-              previousStep ? '' : 'opacity-30',
-            )}
+        <div className="flex flex-row items-center gap-x-6">
+          <Button
             onClick={() => setCurrentStep(currentStep - 1)}
+            className="h-10 w-10"
             disabled={!previousStep}
             type="button"
+            variant="secondary"
+            size="icon"
           >
             <ChevronLeftOutlined />
-          </button>
+          </Button>
 
-          <span className="dark:text-polar-500 text-sm text-gray-500">
+          <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
             {currentStep + 1} / {steps.length}
           </span>
 
           {nextStep ? (
-            <button
+            <Button
               key={step.id}
-              className={twMerge(
-                'dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 text-gray-500 transition-colors hover:bg-gray-100 dark:text-white',
-              )}
+              className="h-10 w-10"
+              variant="secondary"
               type="button"
+              size="icon"
               onClick={() => {
                 setCurrentStep(currentStep + 1)
               }}
             >
               <ChevronRightOutlined />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               key={step.id}
-              className={twMerge(
-                'flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-blue-500 text-white transition-colors hover:bg-blue-400',
-              )}
+              className="h-10 w-10"
               type="submit"
+              size="icon"
+              loading={loading}
             >
               <CheckOutlined fontSize="small" />
-            </button>
+            </Button>
           )}
         </div>
         <div className="flex flex-row items-center gap-x-3">
@@ -113,6 +119,7 @@ export const ProductWizard = ({ organization }: ProductWizardProps) => {
     form,
     handleSubmit,
     onSubmit,
+    isLoading,
     organizationBenefits,
     enabledBenefits,
     onRemoveBenefit,
@@ -120,7 +127,7 @@ export const ProductWizard = ({ organization }: ProductWizardProps) => {
   } = useCreateProductWizard(organization)
 
   return (
-    <ProductWizardPanel className="min-h-[720px] w-full gap-y-12">
+    <ShadowBox className="flex min-h-[720px] w-full flex-col gap-y-24 p-12">
       <h3 className="self-start text-2xl font-medium">Create Product</h3>
       <Form {...form}>
         <form
@@ -128,6 +135,7 @@ export const ProductWizard = ({ organization }: ProductWizardProps) => {
           className="flex h-full w-full flex-col gap-y-12"
         >
           <Journey
+            loading={isLoading}
             steps={[
               {
                 id: 'product-info',
@@ -170,6 +178,6 @@ export const ProductWizard = ({ organization }: ProductWizardProps) => {
           />
         </form>
       </Form>
-    </ProductWizardPanel>
+    </ShadowBox>
   )
 }

@@ -3,6 +3,7 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
+  AllInclusiveOutlined,
   CheckOutlined,
   MoreVertOutlined,
   RemoveOutlined,
@@ -174,6 +175,7 @@ const ProductBenefitsForm = ({
 
   return (
     <Section
+      icon={<AllInclusiveOutlined fontSize="medium" />}
       title="Automated Benefits"
       description="Configure which benefits you want to grant to your customers when they
       purchase the product"

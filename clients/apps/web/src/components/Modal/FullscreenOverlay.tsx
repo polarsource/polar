@@ -1,3 +1,5 @@
+'use client'
+
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -75,6 +77,10 @@ export const FullscreenOverlay: FunctionComponent<FullscreenOverlayProps> = ({
       </FocusLock>
     </React.Fragment>
   )
+
+  if (typeof document === 'undefined') {
+    return null
+  }
 
   return isShown ? ReactDOM.createPortal(modal, document.body) : null
 }

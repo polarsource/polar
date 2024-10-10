@@ -1,10 +1,8 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   AttachMoneyOutlined,
   DiamondOutlined,
-  DonutLargeOutlined,
   DraftsOutlined,
   HiveOutlined,
   HowToVote,
@@ -19,7 +17,7 @@ import {
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
-import { useContext, useMemo } from 'react'
+import { useMemo } from 'react'
 
 export type SubRoute = {
   readonly title: string
@@ -80,18 +78,17 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
 }
 
 const useResolveRoutes = (
-  routesResolver: (org: Organization, onboardingCompleted: boolean) => Route[],
+  routesResolver: (org: Organization) => Route[],
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
-  const { onboarding } = useContext(MaintainerOrganizationContext)
 
   return useMemo(() => {
-    return routesResolver(org, onboarding.completed)
+    return routesResolver(org)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
-  }, [org, path, allowAll, routesResolver, onboarding])
+  }, [org, path, allowAll, routesResolver])
 }
 
 export const useDashboardRoutes = (
@@ -143,10 +140,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (
-  org: Organization,
-  onboardingCompleted: boolean,
-): Route[] => [
+const generalRoutesList = (org: Organization): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -210,13 +204,6 @@ const generalRoutesList = (
     link: `/dashboard/${org.slug}/analytics`,
     if: true,
   },
-  {
-    id: 'onboarding',
-    title: 'Onboarding',
-    icon: <DonutLargeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/onboarding`,
-    if: !onboardingCompleted,
-  },
 ]
 
 const fundingRoutesList = (org: Organization): Route[] => [
@@ -273,15 +260,12 @@ const communityRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/posts`)
     },
-    if: !!org.feature_settings?.articles_enabled ?? false,
+    if: org.feature_settings?.articles_enabled ?? false,
   },
 ]
 
-const dashboardRoutesList = (
-  org: Organization,
-  onboardingCompleted: boolean,
-): Route[] => [
-  ...generalRoutesList(org, onboardingCompleted),
+const dashboardRoutesList = (org: Organization): Route[] => [
+  ...generalRoutesList(org),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...organizationRoutesList(org),

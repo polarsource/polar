@@ -1,6 +1,7 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
+import { HiveOutlined } from '@mui/icons-material'
 import Input from 'polarkit/components/ui/atoms/input'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
@@ -22,6 +23,7 @@ export const ProductInfoSection = ({ className }: ProductInfoSectionProps) => {
 
   return (
     <Section
+      icon={<HiveOutlined fontSize="medium" />}
       title="Product Information"
       description="Basic product information which helps identify the product"
       className={className}

@@ -1,9 +1,16 @@
+import { Product } from '@polar-sh/sdk'
 import { ConfirmationPreview } from './ConfirmationPreview'
 
-export const ConfirmationCustomization = () => {
+export interface ConfirmationCustomizationProps {
+  product?: Product
+}
+
+export const ConfirmationCustomization = ({
+  product,
+}: ConfirmationCustomizationProps) => {
   return (
     <>
-      <ConfirmationPreview />
+      <ConfirmationPreview product={product} />
       {/* <ConfirmationSidebar /> */}
     </>
   )

@@ -47,7 +47,7 @@ export default async function Page({
         await revalidate(`organizations:${organization.slug}`)
         const currentUser = await getAuthenticatedUser(api)
         await revalidate(`users:${currentUser?.id}:organizations`)
-        return redirect(`/dashboard/${organization.slug}/onboarding`)
+        return redirect(`/dashboard/${organization.slug}`)
       }
     }
   }

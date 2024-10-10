@@ -10,6 +10,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import {
   BenefitPublicInner,
   Organization,
+  Product,
   ProductCreate,
   ProductPriceType,
   ResponseError,
@@ -20,7 +21,10 @@ import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
-export const useCreateProductWizard = (organization: Organization) => {
+export const useCreateProductWizard = (
+  organization: Organization,
+  onSuccess?: (product: Product) => void,
+) => {
   const router = useRouter()
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
@@ -76,9 +80,8 @@ export const useCreateProductWizard = (organization: Organization) => {
         revalidate(`products:${organization.id}:recurring`)
         revalidate(`products:${organization.id}:one_time`)
 
-        router.push(`/dashboard/${organization.slug}/products`)
+        onSuccess?.(product)
       } catch (e) {
-        setLoading(false)
         if (e instanceof ResponseError) {
           const body = await e.response.json()
           if (e.response.status === 422) {
@@ -86,6 +89,8 @@ export const useCreateProductWizard = (organization: Organization) => {
             setValidationErrors(validationErrors, setError)
           }
         }
+      } finally {
+        setLoading(false)
       }
     },
     [
@@ -95,6 +100,7 @@ export const useCreateProductWizard = (organization: Organization) => {
       updateBenefits,
       setError,
       router,
+      onSuccess,
     ],
   )
 

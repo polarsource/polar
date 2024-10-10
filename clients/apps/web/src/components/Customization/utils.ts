@@ -2,6 +2,7 @@ import {
   CheckoutPublic,
   CheckoutStatus,
   Product,
+  ProductPrice,
   UserOrder,
   UserSubscription,
 } from '@polar-sh/sdk'
@@ -128,6 +129,46 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: Product = {
     },
   ],
   created_at: new Date().toDateString(),
+}
+
+export const createCheckoutPreview = (
+  product: Product,
+  price: ProductPrice,
+): CheckoutPublic => {
+  const amount =
+    price.amount_type === 'custom'
+      ? (price.minimum_amount ?? 0)
+      : price.amount_type === 'fixed'
+        ? price.price_amount
+        : 0
+
+  return {
+    id: '123',
+    created_at: new Date().toDateString(),
+    modified_at: new Date().toDateString(),
+    payment_processor: 'dummy' as 'stripe',
+    status: CheckoutStatus.OPEN,
+    expires_at: new Date().toDateString(),
+    client_secret: 'CLIENT_SECRET',
+    product: product,
+    product_id: product.id,
+    product_price: price,
+    product_price_id: price.id,
+    amount,
+    tax_amount: null,
+    total_amount: amount,
+    is_payment_required: price.amount_type !== 'free',
+    currency: 'usd',
+    customer_id: null,
+    customer_email: 'janedoe@gmail.com',
+    customer_name: 'Jane Doe',
+    customer_billing_address: null,
+    customer_ip_address: null,
+    customer_tax_id: null,
+    payment_processor_metadata: {},
+    url: '/checkout/CLIENT_SECRET',
+    success_url: '/checkout/CLIENT_SECRET/confirmation',
+  }
 }
 
 export const CHECKOUT_PREVIEW: CheckoutPublic = {

@@ -23,7 +23,7 @@ stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
 
 class PledgeStripeService:
-    def create_anonymous_intent(
+    async def create_anonymous_intent(
         self,
         amount: int,
         currency: str,
@@ -38,7 +38,7 @@ class PledgeStripeService:
             anonymous=True,
             anonymous_email=anonymous_email,
         )
-        return stripe_lib.PaymentIntent.create(
+        return await stripe_lib.PaymentIntent.create_async(
             amount=amount,
             currency=currency,
             metadata=metadata.model_dump(exclude_none=True),
@@ -72,7 +72,7 @@ class PledgeStripeService:
         if on_behalf_of_organization_id:
             metadata.on_behalf_of_organization_id = on_behalf_of_organization_id
 
-        return stripe_lib.PaymentIntent.create(
+        return await stripe_lib.PaymentIntent.create_async(
             amount=amount,
             currency=currency,
             customer=customer.id,
@@ -81,31 +81,7 @@ class PledgeStripeService:
             description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
-    def create_organization_intent(
-        self,
-        amount: int,
-        issue: Issue,
-        organization: Organization,
-        user: User,
-    ) -> stripe_lib.PaymentIntent:
-        metadata = PledgePaymentIntentMetadata(
-            issue_id=issue.id,
-            issue_title=issue.title,
-            user_id=user.id,
-            user_username=user.username_or_email,
-            user_email=user.email,
-            organization_id=organization.id,
-            organization_name=organization.slug,
-        )
-
-        return stripe_lib.PaymentIntent.create(
-            amount=amount,
-            currency="USD",
-            metadata=metadata.model_dump(exclude_none=True),
-            receipt_email=user.email,
-        )
-
-    def modify_intent(
+    async def modify_intent(
         self,
         id: str,
         amount: int,
@@ -119,7 +95,7 @@ class PledgeStripeService:
             else "",  # Set to empty string to unset the value on Stripe.
         )
 
-        return stripe_lib.PaymentIntent.modify(
+        return await stripe_lib.PaymentIntent.modify_async(
             id,
             amount=amount,
             receipt_email=receipt_email,
@@ -142,12 +118,12 @@ class PledgeStripeService:
 
         # Sync user email
         if not customer.email or customer.email != user.email:
-            stripe_lib.Customer.modify(
+            await stripe_lib.Customer.modify_async(
                 customer.id,
                 email=user.email,
             )
 
-        return self.create_pledge_invoice(
+        return await self.create_pledge_invoice(
             customer,
             pledge,
             pledge_issue,
@@ -175,12 +151,12 @@ class PledgeStripeService:
 
         # Sync billing email
         if not customer.email or customer.email != organization.billing_email:
-            stripe_lib.Customer.modify(
+            await stripe_lib.Customer.modify_async(
                 customer.id,
                 email=organization.billing_email,
             )
 
-        return self.create_pledge_invoice(
+        return await self.create_pledge_invoice(
             customer,
             pledge,
             pledge_issue,
@@ -188,7 +164,7 @@ class PledgeStripeService:
             pledge_issue_external_org,
         )
 
-    def create_pledge_invoice(
+    async def create_pledge_invoice(
         self,
         customer: stripe_lib.Customer,
         pledge: Pledge,
@@ -197,7 +173,7 @@ class PledgeStripeService:
         pledge_issue_external_org: ExternalOrganization,
     ) -> stripe_lib.Invoice | None:
         # Create an invoice, then add line items to it
-        invoice = stripe_lib.Invoice.create(
+        invoice = await stripe_lib.Invoice.create_async(
             customer=customer.id,
             description=f"""You pledged to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
 
@@ -216,7 +192,7 @@ Thank you for your support!
 
         assert invoice.id is not None
 
-        stripe_lib.InvoiceItem.create(
+        await stripe_lib.InvoiceItem.create_async(
             invoice=invoice.id,
             customer=customer.id,
             amount=pledge.amount_including_fee,
@@ -228,9 +204,9 @@ Thank you for your support!
             },
         )
 
-        stripe_lib.Invoice.finalize_invoice(invoice.id, auto_advance=True)
+        await stripe_lib.Invoice.finalize_invoice_async(invoice.id, auto_advance=True)
 
-        sent_invoice = stripe_lib.Invoice.send_invoice(invoice.id)
+        sent_invoice = await stripe_lib.Invoice.send_invoice_async(invoice.id)
 
         return sent_invoice
 

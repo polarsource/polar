@@ -73,7 +73,7 @@ class PaymentIntentService:
 
         # Create a payment intent with Stripe
         try:
-            payment_intent = pledge_stripe_service.create_anonymous_intent(
+            payment_intent = await pledge_stripe_service.create_anonymous_intent(
                 amount=amount_including_fee,
                 currency=intent.currency,
                 pledge_issue=pledge_issue,
@@ -135,7 +135,7 @@ class PaymentIntentService:
         fee = self.calculate_fee(updates.amount)
         amount_including_fee = updates.amount + fee
 
-        payment_intent = pledge_stripe_service.modify_intent(
+        payment_intent = await pledge_stripe_service.modify_intent(
             payment_intent_id,
             amount=amount_including_fee,
             receipt_email=updates.email,

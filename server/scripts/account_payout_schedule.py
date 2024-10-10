@@ -56,7 +56,7 @@ async def account_payout_schedule() -> None:
                 typer.echo("\n---\n")
                 typer.echo(f"🔄 Handling {account.id}")
 
-                stripe_lib.Account.modify(
+                await stripe_lib.Account.modify_async(
                     account.stripe_id,
                     settings={"payouts": {"schedule": {"interval": "manual"}}},
                 )

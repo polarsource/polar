@@ -2610,6 +2610,45 @@
                             ],
                             "title": "Return To"
                         }
+                    },
+                    {
+                        "name": "intent",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "enum": [
+                                        "creator",
+                                        "order",
+                                        "pledge",
+                                        "donation",
+                                        "newsletter_subscription"
+                                    ],
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Intent"
+                        }
+                    },
+                    {
+                        "name": "attribution",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Attribution"
+                        }
                     }
                 ],
                 "responses": {
@@ -8472,10 +8511,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
                                 "order",
-                                "donation",
-                                "paid_subscription"
+                                "paid_subscription",
+                                "free_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },

@@ -34,6 +34,7 @@ const Login = ({
           size="large"
           fullWidth
           returnTo={returnTo}
+          signup={signup}
           posthogProps={{
             view: 'Login Page',
           }}

@@ -5,20 +5,31 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
+import { UserSignupAttribution, IntegrationsGithubApiIntegrationsGithubAuthorizeRequest } from '@polar-sh/sdk'
 
 const GithubLoginButton = (props: {
   className?: string
   returnTo?: string
+  signup?: UserSignupAttribution
   size?: 'large' | 'small'
   fullWidth?: boolean
   posthogProps?: object
   text: string
 }) => {
   const search = useSearchParams()
-  const authorizeURL = getGitHubAuthorizeURL({
+  const signup = props.signup
+  let authorizeParams: IntegrationsGithubApiIntegrationsGithubAuthorizeRequest = {
     paymentIntentId: search?.get('payment_intent_id') ?? undefined,
     returnTo: props.returnTo,
   })
+  if (signup && signup.source) {
+    authorizeParams.attribution = signup.source
+  }
+  if (signup && signup.first_intent) {
+    authorizeParams.intent = signup.first_intent
+  }
+
+  const authorizeURL = getGitHubAuthorizeURL(authorizeParams)
 
   const largeStyle = 'p-2.5 px-5 text-md space-x-3'
   const smallStyle = 'p-2 px-4 text-sm space-x-2'

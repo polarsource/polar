@@ -19,6 +19,12 @@ export const getGitHubAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
+  if (params.intent !== undefined) {
+    searchParams.set('intent', params.intent)
+  }
+  if (params.attribution !== undefined) {
+    searchParams.set('attribution', params.attribution)
+  }
   return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
 

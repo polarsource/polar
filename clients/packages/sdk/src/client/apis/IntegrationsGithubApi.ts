@@ -41,6 +41,8 @@ export interface IntegrationsGithubApiInstallRequest {
 export interface IntegrationsGithubApiIntegrationsGithubAuthorizeRequest {
     paymentIntentId?: string;
     returnTo?: string;
+    intent?: IntegrationsGithubAuthorizeIntentEnum;
+    attribution?: string;
 }
 
 export interface IntegrationsGithubApiIntegrationsGithubCallbackRequest {
@@ -211,6 +213,14 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
 
         if (requestParameters['returnTo'] != null) {
             queryParameters['return_to'] = requestParameters['returnTo'];
+        }
+
+        if (requestParameters['intent'] != null) {
+            queryParameters['intent'] = requestParameters['intent'];
+        }
+
+        if (requestParameters['attribution'] != null) {
+            queryParameters['attribution'] = requestParameters['attribution'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -419,3 +429,15 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
     }
 
 }
+
+/**
+ * @export
+ */
+export const IntegrationsGithubAuthorizeIntentEnum = {
+    CREATOR: 'creator',
+    ORDER: 'order',
+    PLEDGE: 'pledge',
+    DONATION: 'donation',
+    NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription'
+} as const;
+export type IntegrationsGithubAuthorizeIntentEnum = typeof IntegrationsGithubAuthorizeIntentEnum[keyof typeof IntegrationsGithubAuthorizeIntentEnum];

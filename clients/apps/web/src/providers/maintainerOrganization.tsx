@@ -1,6 +1,6 @@
 'use client'
 
-import { useOrders } from '@/hooks/queries/orders'
+import { useProducts } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
 import React, { useMemo } from 'react'
 
@@ -14,6 +14,7 @@ interface MaintainerOrganizationContextType {
   organization: Organization
   organizations: Organization[]
   onboarding: {
+    loading: boolean
     completed: boolean
   }
 }
@@ -47,20 +48,17 @@ export const MaintainerOrganizationContextProvider = ({
 }
 
 const useOnboardingState = (organization: Organization) => {
-  const { data: orders, isLoading: ordersLoading } = useOrders(
-    organization.id,
-    { limit: 1 },
-  )
-
-  const isQueriesLoading = ordersLoading
+  const { data: products, isLoading } = useProducts(organization.id, {
+    limit: 1,
+  })
 
   const shouldUpsellOrders = useMemo(
-    () => orders?.pagination.total_count === 0,
-    [orders],
+    () => products?.pagination.total_count === 0,
+    [products],
   )
 
   return {
-    isQueriesLoading,
-    completed: isQueriesLoading || !shouldUpsellOrders,
+    completed: !shouldUpsellOrders,
+    loading: isLoading,
   }
 }

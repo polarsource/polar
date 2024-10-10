@@ -1,11 +1,18 @@
 'use client'
 
+import { Product } from '@polar-sh/sdk'
 import { CheckoutPreview } from './CheckoutPreview'
 
-export const CheckoutCustomization = () => {
+export interface CheckoutCustomizationProps {
+  product?: Product
+}
+
+export const CheckoutCustomization = ({
+  product,
+}: CheckoutCustomizationProps) => {
   return (
     <>
-      <CheckoutPreview />
+      <CheckoutPreview product={product} />
       {/* <CheckoutSidebar /> */}
     </>
   )

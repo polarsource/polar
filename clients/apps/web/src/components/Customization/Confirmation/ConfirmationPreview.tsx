@@ -4,12 +4,16 @@ import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { CheckoutStatus } from '@polar-sh/sdk'
+import { CheckoutStatus, Product } from '@polar-sh/sdk'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
-import { CHECKOUT_PREVIEW } from '../utils'
+import { CHECKOUT_PREVIEW, createCheckoutPreview } from '../utils'
 
-export const ConfirmationPreview = () => {
+export interface ConfirmationPreviewProps {
+  product?: Product
+}
+
+export const ConfirmationPreview = ({ product }: ConfirmationPreviewProps) => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const { currentUser } = useAuth()
@@ -30,7 +34,12 @@ export const ConfirmationPreview = () => {
         )}
         <CheckoutConfirmation
           organization={org}
-          checkout={{ ...CHECKOUT_PREVIEW, status: CheckoutStatus.SUCCEEDED }}
+          checkout={{
+            ...(product
+              ? createCheckoutPreview(product, product.prices[0])
+              : CHECKOUT_PREVIEW),
+            status: CheckoutStatus.SUCCEEDED,
+          }}
           disabled
         />
       </div>

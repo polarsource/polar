@@ -7,16 +7,21 @@ import {
 } from '@/components/Customization/CustomizationProvider'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useAuth } from '@/hooks'
+import { useProduct } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ArrowBack } from '@mui/icons-material'
+import { OrganizationUpdate } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import { Form } from 'polarkit/components/ui/form'
 import { useContext, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
 import { CheckoutCustomization } from './Checkout/CheckoutCustomization'
 import { ConfirmationCustomization } from './Confirmation/ConfirmationCustomization'
 import { PortalCustomization } from './Portal/PortalCustomization'
 import { StorefrontCustomization } from './Storefront/StorefrontCustomization'
+import { StorefrontSidebar } from './Storefront/StorefrontSidebar'
 
 export const CustomizationPage = () => {
   const search = useSearchParams()
@@ -38,20 +43,32 @@ const Customization = () => {
 
   const router = useRouter()
   const { currentUser } = useAuth()
+  const params = useSearchParams()
+  const productId = params.get('productId')
+
+  const { data: product, isLoading } = useProduct(productId ?? '')
 
   const customizationContent = useMemo(() => {
     switch (customizationMode) {
       case 'checkout':
-        return <CheckoutCustomization />
+        return isLoading ? null : <CheckoutCustomization product={product} />
       case 'confirmation':
-        return <ConfirmationCustomization />
+        return isLoading ? null : (
+          <ConfirmationCustomization product={product} />
+        )
       case 'portal':
         return <PortalCustomization />
       case 'storefront':
       default:
         return <StorefrontCustomization />
     }
-  }, [customizationMode])
+  }, [customizationMode, product, isLoading])
+
+  const form = useForm<OrganizationUpdate>({
+    defaultValues: {
+      ...organization,
+    },
+  })
 
   return (
     <div className="flex h-full flex-col px-8">
@@ -94,9 +111,12 @@ const Customization = () => {
           className="flex-shrink-0"
         />
       </div>
-      <div className="flex min-h-0 flex-grow flex-row gap-x-8 pb-8">
-        {customizationContent}
-      </div>
+      <Form {...form}>
+        <div className="flex min-h-0 flex-grow flex-row gap-x-8 pb-8">
+          {customizationContent}
+          <StorefrontSidebar />
+        </div>
+      </Form>
     </div>
   )
 }

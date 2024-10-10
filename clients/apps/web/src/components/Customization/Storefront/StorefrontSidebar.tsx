@@ -14,7 +14,7 @@ import {
   ValidationError,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Switch } from 'polarkit/components/ui/atoms'
+import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -47,21 +47,25 @@ const colorThemes = [
 const StorefrontSidebarContentWrapper = ({
   title,
   enabled,
-  onEnabledChange,
   children,
 }: PropsWithChildren<{
   title: string
   enabled: boolean
-  onEnabledChange: (enabled: boolean) => void
 }>) => {
   return (
-    <ShadowBox className="shadow-3xl flex min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
+    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
-          <Switch checked={enabled} onCheckedChange={onEnabledChange} />
+          <Pill className="px-2 py-1" color={enabled ? 'blue' : 'gray'}>
+            {enabled ? 'Enabled' : 'Disabled'}
+          </Pill>
         </div>
-        <div className={twMerge('flex flex-col gap-y-8')}>{children}</div>
+        <div
+          className={twMerge('flex flex-grow flex-col justify-between gap-y-8')}
+        >
+          {children}
+        </div>
       </div>
     </ShadowBox>
   )
@@ -249,7 +253,6 @@ const StorefrontForm = () => {
           </FormItem>
         )}
       />
-
       <ErrorMessage
         errors={errors}
         name="prices"
@@ -263,7 +266,9 @@ const StorefrontForm = () => {
 
 export const StorefrontSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
-  const [isLoading, setLoading] = useState(false)
+  const [isSaveLoading, setSaveLoading] = useState(false)
+  const [isProfilePageEnabledLoading, setProfilePageEnabledLoading] =
+    useState(false)
 
   const { handleSubmit, setError, formState, reset } = useFormContext()
 
@@ -272,7 +277,7 @@ export const StorefrontSidebar = () => {
   const onSubmit = useCallback(
     async (organizationUpdate: OrganizationUpdate) => {
       try {
-        setLoading(true)
+        setSaveLoading(true)
         const org = await updateOrganization.mutateAsync({
           id: organization.id,
           body: organizationUpdate,
@@ -287,7 +292,7 @@ export const StorefrontSidebar = () => {
           }
         }
       } finally {
-        setLoading(false)
+        setSaveLoading(false)
       }
     },
     [organization, setError, updateOrganization, reset],
@@ -295,25 +300,31 @@ export const StorefrontSidebar = () => {
 
   const toggleProfilePage = useCallback(
     async (enabled: boolean) => {
-      const org = await updateOrganization.mutateAsync({
-        id: organization.id,
-        body: {
-          profile_settings: {
-            enabled,
+      try {
+        setProfilePageEnabledLoading(true)
+        const org = await updateOrganization.mutateAsync({
+          id: organization.id,
+          body: {
+            profile_settings: {
+              enabled,
+            },
           },
-        },
-      })
+        })
 
-      reset(org)
+        reset(org)
+      } finally {
+        setProfilePageEnabledLoading(false)
+      }
     },
     [organization, updateOrganization, reset],
   )
+
+  const storefrontEnabled = organization.profile_settings?.enabled ?? false
 
   return (
     <StorefrontSidebarContentWrapper
       title="Storefront"
       enabled={organization.profile_settings?.enabled ?? false}
-      onEnabledChange={toggleProfilePage}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
         <StorefrontForm />
@@ -321,7 +332,7 @@ export const StorefrontSidebar = () => {
           <Button
             className="self-start"
             type="submit"
-            loading={isLoading}
+            loading={isSaveLoading}
             disabled={!formState.isDirty}
           >
             Save
@@ -335,6 +346,24 @@ export const StorefrontSidebar = () => {
           )}
         </div>
       </form>
+      <ShadowBox className="dark:bg-polar-950 flex flex-col gap-y-4 bg-white p-6">
+        <h3>
+          {storefrontEnabled ? 'Deactivate Storefront' : 'Activate Storefront'}
+        </h3>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          {storefrontEnabled
+            ? 'Disables the storefront and only allows checkouts via API and Checkout URLs'
+            : 'Publish your very own Polar Storefront and drive traffic to your products'}
+        </p>
+        <Button
+          fullWidth
+          onClick={() => toggleProfilePage(!storefrontEnabled)}
+          variant={storefrontEnabled ? 'destructive' : 'default'}
+          loading={isProfilePageEnabledLoading}
+        >
+          {storefrontEnabled ? 'Deactivate Storefront' : 'Activate Storefront'}
+        </Button>
+      </ShadowBox>
     </StorefrontSidebarContentWrapper>
   )
 }

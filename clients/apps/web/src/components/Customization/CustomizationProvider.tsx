@@ -1,4 +1,4 @@
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { PropsWithChildren, useEffect } from 'react'
 
 export type CustomizationContextMode =
@@ -31,9 +31,12 @@ export const CustomizationProvider = ({
 
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const search = new URLSearchParams(searchParams.toString())
+  search.set('mode', customizationMode)
 
   useEffect(() => {
-    router.replace(`${pathname}?mode=${customizationMode}`)
+    router.replace(`${pathname}?${search.toString()}`)
   }, [customizationMode])
 
   return (

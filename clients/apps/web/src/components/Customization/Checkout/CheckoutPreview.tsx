@@ -6,11 +6,16 @@ import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { Product } from '@polar-sh/sdk'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useContext } from 'react'
-import { CHECKOUT_PREVIEW } from '../utils'
+import { CHECKOUT_PREVIEW, createCheckoutPreview } from '../utils'
 
-export const CheckoutPreview = () => {
+export interface CheckoutPreviewProps {
+  product?: Product
+}
+
+export const CheckoutPreview = ({ product }: CheckoutPreviewProps) => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const { currentUser } = useAuth()
@@ -29,7 +34,14 @@ export const CheckoutPreview = () => {
         {org.profile_settings?.enabled && (
           <StorefrontHeader organization={org} />
         )}
-        <Checkout organization={org} checkout={CHECKOUT_PREVIEW} />
+        <Checkout
+          organization={org}
+          checkout={
+            product
+              ? createCheckoutPreview(product, product.prices[0])
+              : CHECKOUT_PREVIEW
+          }
+        />
       </div>
     </ShadowBox>
   )

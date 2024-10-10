@@ -156,29 +156,28 @@ const BaseCheckoutForm = ({
             className="flex flex-col gap-y-12"
           >
             <div className="flex flex-col gap-y-6">
-              {!checkout.customer_id && (
-                <FormField
-                  control={control}
-                  name="customer_email"
-                  rules={{
-                    required: 'This field is required',
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          autoComplete="email"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={control}
+                name="customer_email"
+                rules={{
+                  required: 'This field is required',
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        autoComplete="email"
+                        {...field}
+                        value={field.value || ''}
+                        disabled={checkout.customer_id !== null}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {children}
 

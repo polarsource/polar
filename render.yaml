@@ -74,7 +74,7 @@ services:
 
   # Worker
   - type: worker
-    name: worker
+    name: worker-default
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
@@ -198,7 +198,7 @@ services:
 
   # Worker
   - type: worker
-    name: worker-sandbox
+    name: worker-default-sandbox
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest

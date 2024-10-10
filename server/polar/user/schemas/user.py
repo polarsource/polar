@@ -1,5 +1,5 @@
 import uuid
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import UUID4, EmailStr, Field
 
@@ -62,3 +62,22 @@ class UserStripePortalSession(Schema):
 
 class UserScopes(Schema):
     scopes: list[Scope]
+
+
+UserSignupAttributionFirstIntent = (
+    Literal[
+        "creator",
+        "order",
+        "pledge",
+        "donation",
+        "newsletter_subscription",
+    ]
+    | None
+)
+
+UserSignupAttributionSource = str | None
+
+
+class UserSignupAttribution(Schema):
+    first_intent: UserSignupAttributionFirstIntent = None
+    source: UserSignupAttributionSource = None

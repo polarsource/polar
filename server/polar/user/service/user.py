@@ -13,6 +13,7 @@ from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
+from polar.user.schemas.user import UserSignupAttribution
 from polar.worker import enqueue_job
 
 from ..schemas.user import UserCreate, UserUpdate
@@ -86,11 +87,15 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         self,
         session: AsyncSession,
         email: str,
+        *,
+        signup_attribution: UserSignupAttribution,
     ) -> User:
         user = await self.get_by_email(session, email)
         signup = False
         if user is None:
-            user = await self.signup_by_email(session, email)
+            user = await self.signup_by_email(
+                session, email, signup_attribution=signup_attribution
+            )
             signup = True
 
         if signup:
@@ -99,8 +104,18 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
             await loops_service.user_update(user)
         return user
 
-    async def signup_by_email(self, session: AsyncSession, email: str) -> User:
-        user = User(username=email, email=email, oauth_accounts=[])
+    async def signup_by_email(
+        self,
+        session: AsyncSession,
+        email: str,
+        signup_attribution: UserSignupAttribution | None = None,
+    ) -> User:
+        user = User(
+            username=email,
+            email=email,
+            oauth_accounts=[],
+            attribution=signup_attribution,
+        )
         session.add(user)
         await session.commit()
 

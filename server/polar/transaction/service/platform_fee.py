@@ -200,7 +200,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         if payment_transaction.charge_id is None:
             return False
 
-        charge = stripe_service.get_charge(payment_transaction.charge_id)
+        charge = await stripe_service.get_charge(payment_transaction.charge_id)
 
         if (payment_method_details := charge.payment_method_details) is None:
             return False

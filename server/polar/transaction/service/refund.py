@@ -37,11 +37,11 @@ class RefundTransactionService(BaseTransactionService):
             raise RefundUnknownPaymentTransaction(charge.id)
 
         # Get all the refunds for this charge
-        refunds = stripe_service.list_refunds(charge=charge.id)
+        refunds = await stripe_service.list_refunds(charge=charge.id)
 
         refund_transactions: list[Transaction] = []
         # Handle each individual refund
-        for refund in refunds:
+        async for refund in refunds:
             if refund.status != "succeeded":
                 continue
 

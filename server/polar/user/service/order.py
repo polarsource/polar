@@ -123,7 +123,7 @@ class UserOrderService(ResourceServiceReader[Order]):
         if order.stripe_invoice_id is None:
             raise InvoiceNotAvailable(order)
 
-        stripe_invoice = stripe_service.get_invoice(order.stripe_invoice_id)
+        stripe_invoice = await stripe_service.get_invoice(order.stripe_invoice_id)
 
         if stripe_invoice.hosted_invoice_url is None:
             raise InvoiceNotAvailable(order)

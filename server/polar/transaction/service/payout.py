@@ -211,7 +211,7 @@ class PayoutTransactionService(BaseTransactionService):
         account = await account_service.get(session, payout.account_id)
         assert account is not None
         assert account.stripe_id is not None
-        _, balance = stripe_service.retrieve_balance(account.stripe_id)
+        _, balance = await stripe_service.retrieve_balance(account.stripe_id)
 
         if balance < -payout.account_amount:
             log.info(
@@ -226,7 +226,7 @@ class PayoutTransactionService(BaseTransactionService):
             return payout
 
         # Trigger a payout on the Stripe Connect account
-        stripe_payout = stripe_service.create_payout(
+        stripe_payout = await stripe_service.create_payout(
             stripe_account=account.stripe_id,
             amount=-payout.account_amount,
             currency=payout.account_currency,
@@ -282,10 +282,10 @@ class PayoutTransactionService(BaseTransactionService):
         )
 
         # Retrieve and mark all transactions paid by this payout
-        balance_transactions = stripe_service.list_balance_transactions(
+        balance_transactions = await stripe_service.list_balance_transactions(
             account_id=account.stripe_id, payout=payout.id
         )
-        for balance_transaction in balance_transactions:
+        async for balance_transaction in balance_transactions:
             source = balance_transaction.source
             if source is not None:
                 source_transfer: str | None = getattr(source, "source_transfer", None)
@@ -456,7 +456,7 @@ class PayoutTransactionService(BaseTransactionService):
         assert account.stripe_id is not None
         for source_transaction, amount, balance_transaction in transfers:
             if balance_transaction.transfer_id is None:
-                stripe_transfer = stripe_service.transfer(
+                stripe_transfer = await stripe_service.transfer(
                     account.stripe_id,
                     amount,
                     source_transaction=source_transaction,
@@ -473,10 +473,10 @@ class PayoutTransactionService(BaseTransactionService):
             # Legacy behavior from the time when we automatically
             # transferred each balance
             else:
-                stripe_transfer = stripe_service.get_transfer(
+                stripe_transfer = await stripe_service.get_transfer(
                     balance_transaction.transfer_id
                 )
-                stripe_service.update_transfer(
+                await stripe_service.update_transfer(
                     stripe_transfer.id,
                     metadata={"payout_transaction_id": str(transaction.id)},
                 )
@@ -484,7 +484,7 @@ class PayoutTransactionService(BaseTransactionService):
             # Different source and destination currencies: get the converted amount
             if transaction.currency != transaction.account_currency:
                 assert stripe_transfer.destination_payment is not None
-                stripe_destination_charge = stripe_service.get_charge(
+                stripe_destination_charge = await stripe_service.get_charge(
                     get_expandable_id(stripe_transfer.destination_payment),
                     stripe_account=account.stripe_id,
                     expand=["balance_transaction"],

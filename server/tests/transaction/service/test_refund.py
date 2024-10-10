@@ -22,7 +22,7 @@ from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.transaction.conftest import create_transaction
+from tests.transaction.conftest import create_async_iterator, create_transaction
 
 
 def build_stripe_balance_transaction(
@@ -138,11 +138,13 @@ class TestCreateRefunds:
             balance_transaction=balance_transaction.id,
         )
 
-        stripe_service_mock.list_refunds.return_value = [
-            new_refund,
-            handled_refund,
-            failed_refund,
-        ]
+        stripe_service_mock.list_refunds.return_value = create_async_iterator(
+            [
+                new_refund,
+                handled_refund,
+                failed_refund,
+            ]
+        )
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
 
         account = Account(

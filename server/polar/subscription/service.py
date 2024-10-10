@@ -409,7 +409,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.set_started_at()
 
         customer_id = get_expandable_id(stripe_subscription.customer)
-        customer = stripe_service.get_customer(customer_id)
+        customer = await stripe_service.get_customer(customer_id)
         customer_email = cast(str, customer.email)
 
         # Take user from existing subscription, or get it from metadata

@@ -52,11 +52,11 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         if payment_transaction.charge_id is None:
             return fee_transactions
 
-        charge = stripe_service.get_charge(payment_transaction.charge_id)
+        charge = await stripe_service.get_charge(payment_transaction.charge_id)
 
         # Payment fee
         if charge.balance_transaction:
-            stripe_balance_transaction = stripe_service.get_balance_transaction(
+            stripe_balance_transaction = await stripe_service.get_balance_transaction(
                 get_expandable_id(charge.balance_transaction)
             )
             payment_fee_transaction = Transaction(
@@ -91,12 +91,12 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         if refund_transaction.refund_id is None:
             return fee_transactions
 
-        refund = stripe_service.get_refund(refund_transaction.refund_id)
+        refund = await stripe_service.get_refund(refund_transaction.refund_id)
 
         if refund.balance_transaction is None:
             return fee_transactions
 
-        balance_transaction = stripe_service.get_balance_transaction(
+        balance_transaction = await stripe_service.get_balance_transaction(
             get_expandable_id(refund.balance_transaction)
         )
 
@@ -134,7 +134,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         if dispute_transaction.dispute_id is None:
             return fee_transactions
 
-        dispute = stripe_service.get_dispute(dispute_transaction.dispute_id)
+        dispute = await stripe_service.get_dispute(dispute_transaction.dispute_id)
         balance_transaction = next(
             bt
             for bt in dispute.balance_transactions
@@ -163,9 +163,10 @@ class ProcessorFeeTransactionService(BaseTransactionService):
     async def sync_stripe_fees(self, session: AsyncSession) -> list[Transaction]:
         transactions: list[Transaction] = []
 
-        for balance_transaction in stripe_service.list_balance_transactions(
+        balance_transactions = await stripe_service.list_balance_transactions(
             type="stripe_fee"
-        ):
+        )
+        async for balance_transaction in balance_transactions:
             transaction = await self.get_by(
                 session, fee_balance_transaction_id=balance_transaction.id
             )

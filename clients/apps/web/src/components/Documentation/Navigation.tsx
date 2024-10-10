@@ -318,6 +318,9 @@ export const MainNavigation = () => {
               Sponsorship Placement
             </NavigationItem>
           </NavigationSection>
+          <NavigationItem href="/docs/products/checkout">
+            Checkout
+          </NavigationItem>
         </div>
       </div>
 

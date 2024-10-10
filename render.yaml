@@ -82,7 +82,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: poetry run arq run_worker.WorkerSettings --custom-log-dict run_worker.silent_logger_config_dict
+    dockerCommand: poetry run python -m run_worker
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -135,7 +135,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: poetry run arq run_worker.WorkerSettingsGitHubCrawl --custom-log-dict run_worker.silent_logger_config_dict
+    dockerCommand: poetry run python -m run_worker
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -258,7 +258,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: poetry run arq run_worker.WorkerSettings --custom-log-dict run_worker.silent_logger_config_dict
+    dockerCommand: poetry run python -m run_worker
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -308,7 +308,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: poetry run arq run_worker.WorkerSettingsGitHubCrawl --custom-log-dict run_worker.silent_logger_config_dict
+    dockerCommand: poetry run python -m run_worker
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions

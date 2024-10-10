@@ -57,8 +57,7 @@ export const EditProductPage = ({
 
   const [isLoading, setLoading] = useState(false)
 
-  const { handleSubmit, setError, watch } = form
-  const updatedProduct = watch()
+  const { handleSubmit, setError } = form
 
   const updateProduct = useUpdateProduct(organization?.id)
   const updateBenefits = useUpdateProductBenefits(organization.id)

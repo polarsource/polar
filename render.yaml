@@ -72,9 +72,9 @@ services:
       - fromGroup: stripe-production
       - fromGroup: logfire-server
 
-  # Worker Default
+  # Worker
   - type: worker
-    name: worker-default
+    name: worker
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
@@ -124,58 +124,6 @@ services:
       - fromGroup: backend-production
       - fromGroup: stripe-production
       - fromGroup: logfire-worker
-
-  # Worker GitHub Sync
-  - type: worker
-    name: worker-github
-    runtime: image
-    image:
-      url: ghcr.io/polarsource/polar:latest
-      creds:
-        fromRegistryCreds:
-          name: Registry Credentials (by fvoron)
-    plan: standard
-    dockerCommand: poetry run python -m run_worker
-    region: ohio
-    numInstances: 1
-    autoDeploy: false # deploys are triggered by github actions
-    envVars:
-      - key: POLAR_POSTGRES_DATABASE
-        fromDatabase:
-          name: db
-          property: database
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: db
-          property: host
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: db
-          property: port
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: db
-          property: password
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: db
-          property: user
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: redis
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: redis
-          property: port
-      - key: POLAR_REDIS_DB
-        value: 0
-      - fromGroup: google-production
-      - fromGroup: github-production
-      - fromGroup: backend-production
-      - fromGroup: stripe-production
 
   - type: redis
     name: redis
@@ -248,59 +196,9 @@ services:
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
 
-  # Worker Default
+  # Worker
   - type: worker
-    name: worker-default-sandbox
-    runtime: image
-    image:
-      url: ghcr.io/polarsource/polar:latest
-      creds:
-        fromRegistryCreds:
-          name: Registry Credentials (by fvoron)
-    plan: standard
-    dockerCommand: poetry run python -m run_worker
-    region: ohio
-    numInstances: 1
-    autoDeploy: false # deploys are triggered by github actions
-    envVars:
-      - key: POLAR_POSTGRES_DATABASE
-        value: polar_sandbox
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: db
-          property: host
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: db
-          property: port
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: db
-          property: password
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: db
-          property: user
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: redis
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: redis
-          property: port
-      - key: POLAR_REDIS_DB
-        value: 1
-      - fromGroup: google-sandbox
-      - fromGroup: github-sandbox
-      - fromGroup: backend-sandbox
-      - fromGroup: stripe-sandbox
-
-  # Worker GitHub Sync
-  - type: worker
-    name: worker-github-sandbox
+    name: worker-sandbox
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest

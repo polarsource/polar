@@ -267,7 +267,7 @@ export const DashboardBody = ({
         </div>
       </div>
       {contextView ? (
-        <div className="dark:bg-polar-900 dark:border-polar-700 w-full max-w-[440px] overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 p-8 py-12">
+        <div className="dark:bg-polar-900 dark:border-polar-700 w-full max-w-[440px] overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50">
           {contextView}
         </div>
       ) : null}

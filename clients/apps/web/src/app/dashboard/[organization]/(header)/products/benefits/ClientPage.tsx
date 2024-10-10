@@ -55,7 +55,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   const selectedBenefitContextView = useMemo(() => {
     return selectedBenefit ? (
-      <div className="flex flex-col gap-y-8">
+      <div className="flex flex-col gap-y-8 p-8 py-12">
         <div className="flex flex-col gap-y-2">
           <h3 className="text-lg font-medium">{selectedBenefit.description}</h3>
           <span className="dark:text-polar-500 text-sm text-gray-500">

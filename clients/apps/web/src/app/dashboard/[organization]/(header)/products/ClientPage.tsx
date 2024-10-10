@@ -1,5 +1,7 @@
 'use client'
 
+import { CheckoutInfo } from '@/components/Checkout/CheckoutInfo'
+import { createCheckoutPreview } from '@/components/Customization/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
@@ -31,20 +33,57 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useContext, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 
 export default function ClientPage() {
   const { organization: org } = useContext(MaintainerOrganizationContext)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | undefined>()
 
   const products = useProducts(org.id)
 
-  const filteredProducts = products.data?.items.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredProducts = useMemo(
+    () =>
+      products.data?.items.filter((product) =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [products, searchQuery],
   )
 
   return (
-    <DashboardBody>
+    <DashboardBody
+      contextView={
+        selectedProduct ? (
+          <div className="flex h-full flex-col justify-between">
+            <div className="flex h-full flex-col overflow-y-auto p-8 py-12">
+              <CheckoutInfo
+                className="md:w-full md:p-0"
+                organization={org}
+                checkout={createCheckoutPreview(
+                  selectedProduct,
+                  selectedProduct?.prices[0],
+                )}
+              />
+            </div>
+            <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
+              {org.profile_settings?.enabled && (
+                <Link
+                  href={`/${org.slug}/products/${selectedProduct.id}`}
+                  target="_blank"
+                >
+                  <Button>View Product Page</Button>
+                </Link>
+              )}
+              <Link
+                href={`/dashboard/${org.slug}/products/${selectedProduct.id}`}
+              >
+                <Button variant="secondary">Edit Product</Button>
+              </Link>
+            </div>
+          </div>
+        ) : undefined
+      }
+    >
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between gap-6">
           <Input
@@ -68,6 +107,8 @@ export default function ClientPage() {
                 key={product.id}
                 organization={org}
                 product={product}
+                onSelect={setSelectedProduct}
+                selected={selectedProduct?.id === product.id}
               />
             ))}
           </List>
@@ -124,9 +165,16 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
 interface ProductListItemProps {
   product: Product
   organization: Organization
+  onSelect?: (product: Product) => void
+  selected?: boolean
 }
 
-const ProductListItem = ({ product, organization }: ProductListItemProps) => {
+const ProductListItem = ({
+  product,
+  organization,
+  onSelect,
+  selected,
+}: ProductListItemProps) => {
   const handleContextMenuCallback = (
     callback: (e: React.MouseEvent) => void,
   ) => {
@@ -173,110 +221,114 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
   }
 
   return (
-    <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-      <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-gray-50">
-        <div className="flex flex-grow flex-row items-center gap-x-4">
-          <ProductListCoverImage product={product} />
-          <span>{product.name}</span>
-        </div>
-        <div className="flex flex-row items-center gap-x-6">
-          <span className="text-sm leading-snug">
-            {product.prices.length < 2 ? (
-              <ProductPriceLabel price={product.prices[0]} />
-            ) : (
-              <ProductPrices prices={product.prices} />
-            )}
-          </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none" asChild>
-              <Button
-                className={
-                  'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                }
-                size="icon"
-                variant="secondary"
-              >
-                <MoreVertOutlined fontSize="inherit" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+    <ListItem
+      className="flex flex-row items-center justify-between"
+      onSelect={() => {
+        onSelect?.(product)
+      }}
+      selected={selected}
+    >
+      <div className="flex flex-grow flex-row items-center gap-x-4">
+        <ProductListCoverImage product={product} />
+        <span>{product.name}</span>
+      </div>
+      <div className="flex flex-row items-center gap-x-6">
+        <span className="text-sm leading-snug">
+          {product.prices.length < 2 ? (
+            <ProductPriceLabel price={product.prices[0]} />
+          ) : (
+            <ProductPrices prices={product.prices} />
+          )}
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="focus:outline-none" asChild>
+            <Button
+              className={
+                'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+              }
+              size="icon"
+              variant="secondary"
             >
+              <MoreVertOutlined fontSize="inherit" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+          >
+            <DropdownMenuItem
+              onClick={handleContextMenuCallback(() => {
+                if (typeof window !== 'undefined') {
+                  window.open(
+                    `/dashboard/${organization.slug}/products/${product.id}`,
+                    '_self',
+                  )
+                }
+              })}
+            >
+              Edit
+            </DropdownMenuItem>
+            {product.prices.length > 0 && (
+              <>
+                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                {product.prices.map((price) => (
+                  <DropdownMenuItem
+                    key={price.id}
+                    onClick={handleContextMenuCallback(() => {
+                      onGenerateCheckoutUrl(price)
+                    })}
+                  >
+                    {generateCopyPriceLabel(
+                      price,
+                      product.prices.length,
+                      'Copy Checkout URL',
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                {product.prices.map((price) => (
+                  <DropdownMenuItem
+                    key={price.id}
+                    onClick={handleContextMenuCallback(() => {
+                      onCopyPriceID(price)
+                    })}
+                  >
+                    {generateCopyPriceLabel(
+                      price,
+                      product.prices.length,
+                      'Copy Price ID',
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+            <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+            <DropdownMenuItem
+              onClick={handleContextMenuCallback(() => {
+                if (typeof navigator !== 'undefined') {
+                  navigator.clipboard.writeText(product.id)
+                }
+              })}
+            >
+              Copy Product ID
+            </DropdownMenuItem>
+            {organization.profile_settings?.enabled && (
               <DropdownMenuItem
                 onClick={handleContextMenuCallback(() => {
                   if (typeof window !== 'undefined') {
                     window.open(
-                      `/dashboard/${organization.slug}/products/${product.id}`,
-                      '_self',
+                      `/${organization.slug}/products/${product.id}`,
+                      '_blank',
                     )
                   }
                 })}
               >
-                Edit
+                View Product Page
               </DropdownMenuItem>
-              {product.prices.length > 0 && (
-                <>
-                  <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
-                  {product.prices.map((price) => (
-                    <DropdownMenuItem
-                      key={price.id}
-                      onClick={handleContextMenuCallback(() => {
-                        onGenerateCheckoutUrl(price)
-                      })}
-                    >
-                      {generateCopyPriceLabel(
-                        price,
-                        product.prices.length,
-                        'Copy Checkout URL',
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
-                  {product.prices.map((price) => (
-                    <DropdownMenuItem
-                      key={price.id}
-                      onClick={handleContextMenuCallback(() => {
-                        onCopyPriceID(price)
-                      })}
-                    >
-                      {generateCopyPriceLabel(
-                        price,
-                        product.prices.length,
-                        'Copy Price ID',
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </>
-              )}
-              <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
-              <DropdownMenuItem
-                onClick={handleContextMenuCallback(() => {
-                  if (typeof navigator !== 'undefined') {
-                    navigator.clipboard.writeText(product.id)
-                  }
-                })}
-              >
-                Copy Product ID
-              </DropdownMenuItem>
-              {organization.profile_settings?.enabled && (
-                <DropdownMenuItem
-                  onClick={handleContextMenuCallback(() => {
-                    if (typeof window !== 'undefined') {
-                      window.open(
-                        `/${organization.slug}/products/${product.id}`,
-                        '_blank',
-                      )
-                    }
-                  })}
-                >
-                  View Product Page
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </ListItem>
-    </Link>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </ListItem>
   )
 }

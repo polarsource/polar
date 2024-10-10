@@ -58,6 +58,7 @@
     "@vercel/speed-insights": "^1.0.12",
     "class-variance-authority": "^0.6.0",
     "cmdk": "^0.2.0",
+    "crawler-user-agents": "^1.0.151",
     "d3": "^7.9.0",
     "d3-scale-chromatic": "^3.1",
     "date-fns": "^2.30.0",

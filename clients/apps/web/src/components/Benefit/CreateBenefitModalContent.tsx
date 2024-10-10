@@ -63,7 +63,11 @@ const CreateBenefitModalContent = ({
     },
   })
 
-  const { handleSubmit, setError, formState: { errors } } = form
+  const {
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = form
 
   const handleCreateNewBenefit = useCallback(
     async (subscriptionBenefitCreate: BenefitCreate) => {
@@ -99,7 +103,7 @@ const CreateBenefitModalContent = ({
   }, [error, setError])
 
   return (
-    <div className="flex flex-col gap-y-6 px-8 py-10">
+    <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
       <div>
         <h2 className="text-lg">Create Benefit</h2>
         <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
@@ -109,18 +113,20 @@ const CreateBenefitModalContent = ({
       </div>
       <div className="flex flex-col gap-y-6">
         <Form {...form}>
-          <form
-            className="flex flex-col gap-y-6"
-            onSubmit={handleSubmit(handleCreateNewBenefit)}
-          >
+          <form className="flex flex-col gap-y-6">
             <NewBenefitForm organization={organization} />
-            {errors.root && <p className="text-sm text-destructive-foreground">{errors.root.message}</p>}
+            {errors.root && (
+              <p className="text-destructive-foreground text-sm">
+                {errors.root.message}
+              </p>
+            )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button
                 className="self-start"
-                type="submit"
+                type="button"
                 loading={isLoading}
                 disabled={!form.formState.isValid}
+                onClick={handleSubmit(handleCreateNewBenefit)}
               >
                 Create
               </Button>

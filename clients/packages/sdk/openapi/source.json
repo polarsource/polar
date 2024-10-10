@@ -8472,10 +8472,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
-                                "paid_subscription",
                                 "free_subscription",
-                                "order"
+                                "order",
+                                "donation",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -26458,6 +26458,16 @@
                             }
                         ],
                         "title": "Return To"
+                    },
+                    "user_attribution": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/UserSignupAttribution"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "type": "object",
@@ -35796,6 +35806,41 @@
                     "account_id"
                 ],
                 "title": "UserSetAccount"
+            },
+            "UserSignupAttribution": {
+                "properties": {
+                    "first_intent": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "creator",
+                                    "order",
+                                    "pledge",
+                                    "donation",
+                                    "newsletter_subscription"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "First Intent"
+                    },
+                    "source": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Source"
+                    }
+                },
+                "type": "object",
+                "title": "UserSignupAttribution"
             },
             "UserStripePortalSession": {
                 "properties": {

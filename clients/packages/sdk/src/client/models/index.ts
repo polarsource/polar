@@ -7823,6 +7823,12 @@ export interface MagicLinkRequest {
      * @memberof MagicLinkRequest
      */
     return_to?: string | null;
+    /**
+     * 
+     * @type {UserSignupAttribution}
+     * @memberof MagicLinkRequest
+     */
+    user_attribution?: UserSignupAttribution | null;
 }
 /**
  * 
@@ -15957,6 +15963,39 @@ export interface UserSetAccount {
      */
     account_id: string;
 }
+/**
+ * 
+ * @export
+ * @interface UserSignupAttribution
+ */
+export interface UserSignupAttribution {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    first_intent?: UserSignupAttributionFirstIntentEnum | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    source?: string | null;
+}
+
+
+/**
+ * @export
+ */
+export const UserSignupAttributionFirstIntentEnum = {
+    CREATOR: 'creator',
+    ORDER: 'order',
+    PLEDGE: 'pledge',
+    DONATION: 'donation',
+    NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription'
+} as const;
+export type UserSignupAttributionFirstIntentEnum = typeof UserSignupAttributionFirstIntentEnum[keyof typeof UserSignupAttributionFirstIntentEnum];
+
 /**
  * 
  * @export

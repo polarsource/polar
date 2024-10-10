@@ -1,6 +1,5 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import CheckoutCelebration from '@/components/Checkout/CheckoutCelebration'
 import { useAuth } from '@/hooks/auth'
 import { useSendMagicLink } from '@/hooks/magicLink'
@@ -14,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from 'polarkit/components/ui/atoms/card'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 const ClientPage = ({
   organization,
@@ -27,10 +26,6 @@ const ClientPage = ({
 
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)
   const sendMagicLink = useSendMagicLink()
-
-  useEffect(() => {
-    revalidate(`donations:${organization.slug}`)
-  }, [organization])
 
   const router = useRouter()
 

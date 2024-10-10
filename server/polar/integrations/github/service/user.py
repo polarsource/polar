@@ -2,7 +2,6 @@ from typing import Any
 
 import structlog
 
-from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
@@ -212,7 +211,6 @@ class GithubUserService(UserService):
         locker: Locker,
         *,
         tokens: OAuthAccessToken,
-        signup_type: UserSignupType | None = None,
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
@@ -227,7 +225,7 @@ class GithubUserService(UserService):
         posthog.user_event(user, "user", event_name, "done")
 
         if signup:
-            await loops_service.user_signup(user, signup_type, gitHubConnected=True)
+            await loops_service.user_signup(user, gitHubConnected=True)
         else:
             await loops_service.user_update(user, gitHubConnected=True)
         return user

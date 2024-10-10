@@ -13,7 +13,6 @@ from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
-from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
@@ -314,7 +313,7 @@ class OrderService(ResourceServiceReader[Order]):
             if user is None:
                 assert invoice.customer_email is not None
                 user = await user_service.get_by_email_or_signup(
-                    session, invoice.customer_email, signup_type=UserSignupType.backer
+                    session, invoice.customer_email
                 )
 
         # Take the chance to update Stripe customer ID and email marketing

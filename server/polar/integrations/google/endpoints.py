@@ -9,7 +9,6 @@ from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.config import settings
-from polar.enums import UserSignupType
 from polar.exceptions import PolarRedirectionError
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
@@ -41,14 +40,10 @@ async def google_authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
-    user_signup_type: UserSignupType | None = None,
 ) -> RedirectResponse:
     state = {}
 
     state["return_to"] = return_to
-
-    if user_signup_type:
-        state["user_signup_type"] = user_signup_type
 
     if is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
@@ -90,9 +85,6 @@ async def google_callback(
 
     return_to = state_data.get("return_to", None)
     state_user_id = state_data.get("user_id")
-    state_user_type = UserSignupType.backer
-    if state_data.get("user_signup_type") == UserSignupType.maintainer:
-        state_user_type = UserSignupType.maintainer
 
     try:
         if (
@@ -104,9 +96,7 @@ async def google_callback(
                 session, user=auth_subject.subject, token=token_data
             )
         else:
-            user = await google_service.login_or_signup(
-                session, token=token_data, signup_type=state_user_type
-            )
+            user = await google_service.login_or_signup(session, token=token_data)
     except GoogleServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
 

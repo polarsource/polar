@@ -1,6 +1,5 @@
 from typing import Unpack
 
-from polar.enums import UserSignupType
 from polar.models import Issue, Organization, User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -15,12 +14,8 @@ class Loops:
     async def user_signup(
         self,
         user: User,
-        signup_type: UserSignupType | None = None,
         **properties: Unpack[Properties],
     ) -> None:
-        if signup_type == UserSignupType.imported:
-            return
-
         properties = {
             "isMaintainer": False,
             "isBacker": False,
@@ -31,10 +26,6 @@ class Loops:
             "userId": str(user.id),
             **properties,
         }
-        if signup_type is not None:
-            properties["isMaintainer"] = signup_type == UserSignupType.maintainer
-            properties["isBacker"] = signup_type == UserSignupType.backer
-
         enqueue_job("loops.send_event", user.email, "User Signed Up", **properties)
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:

@@ -21,7 +21,6 @@ from polar.auth.service import AuthService
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.context import ExecutionContext
-from polar.enums import UserSignupType
 from polar.exceptions import (
     InternalServerError,
     NotPermitted,
@@ -92,16 +91,12 @@ async def github_authorize(
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
     payment_intent_id: str | None = None,
-    user_signup_type: UserSignupType | None = None,
 ) -> RedirectResponse:
     state = {}
     if payment_intent_id:
         state["payment_intent_id"] = payment_intent_id
 
     state["return_to"] = return_to
-
-    if user_signup_type:
-        state["user_signup_type"] = user_signup_type
 
     if is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
@@ -147,9 +142,6 @@ async def github_callback(
         raise OAuthCallbackError("Invalid token data", return_to=return_to) from e
 
     state_user_id = state_data.get("user_id")
-    state_user_type = UserSignupType.backer
-    if state_data.get("user_signup_type") == UserSignupType.maintainer:
-        state_user_type = UserSignupType.maintainer
 
     try:
         if (
@@ -161,9 +153,7 @@ async def github_callback(
                 session, user=auth_subject.subject, tokens=tokens
             )
         else:
-            user = await github_user.login_or_signup(
-                session, locker, tokens=tokens, signup_type=state_user_type
-            )
+            user = await github_user.login_or_signup(session, locker, tokens=tokens)
 
     except GithubUserServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e

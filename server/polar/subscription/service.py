@@ -18,7 +18,7 @@ from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
-from polar.enums import SubscriptionRecurringInterval, UserSignupType
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -420,7 +420,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 user = await user_service.get(session, uuid.UUID(user_id))
             if user is None:
                 user = await user_service.get_by_email_or_signup(
-                    session, customer_email, signup_type=UserSignupType.backer
+                    session, customer_email
                 )
         subscription.user = user
 

@@ -56,9 +56,3 @@ class SubscriptionCreateEmail(Schema):
     product_id: UUID4 = Field(
         description="The ID of the product. **Must be the free subscription tier**."
     )
-
-
-class SubscriptionsImported(Schema):
-    """Result of a subscription import operation."""
-
-    count: int

@@ -5,7 +5,6 @@ from sqlalchemy import func
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
-from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
@@ -87,8 +86,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         self,
         session: AsyncSession,
         email: str,
-        *,
-        signup_type: UserSignupType | None = None,
     ) -> User:
         user = await self.get_by_email(session, email)
         signup = False
@@ -97,7 +94,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
             signup = True
 
         if signup:
-            await loops_service.user_signup(user, signup_type)
+            await loops_service.user_signup(user)
         else:
             await loops_service.user_update(user)
         return user

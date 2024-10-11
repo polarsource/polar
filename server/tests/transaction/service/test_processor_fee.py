@@ -416,7 +416,7 @@ class TestSyncStripeFees:
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_7",
                     "net": -700,
                     "currency": "usd",
-                    "description": "Invoicing (2024-01-03): Invoicing Plus",
+                    "description": "Tax Api Calculation (2024-10-09)",
                 },
                 None,
             ),
@@ -426,7 +426,7 @@ class TestSyncStripeFees:
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_8",
                     "net": -800,
                     "currency": "usd",
-                    "description": "Post Payment Invoices (2024-06-05)",
+                    "description": "Invoicing (2024-01-03): Invoicing Plus",
                 },
                 None,
             ),
@@ -434,6 +434,16 @@ class TestSyncStripeFees:
                 {
                     "created": now_timestamp,
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_9",
+                    "net": -900,
+                    "currency": "usd",
+                    "description": "Post Payment Invoices (2024-06-05)",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "created": now_timestamp,
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_10",
                     "net": -150,
                     "currency": "usd",
                     "description": "Connections Verification (2024-08-01 - 2024-08-31)",
@@ -443,7 +453,7 @@ class TestSyncStripeFees:
             stripe_lib.BalanceTransaction.construct_from(
                 {
                     "created": now_timestamp,
-                    "id": "STRIPE_BALANCE_TRANSACTION_ID_10",
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_11",
                     "net": -100,
                     "currency": "usd",
                     "description": "Connect (2024-01-01 - 2024-01-31): Payout Fee",
@@ -453,7 +463,7 @@ class TestSyncStripeFees:
             stripe_lib.BalanceTransaction.construct_from(
                 {
                     "created": now_timestamp,
-                    "id": "STRIPE_BALANCE_TRANSACTION_ID_11",
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_12",
                     "net": -200,
                     "currency": "usd",
                     "description": "Connect (2024-01-01 - 2024-01-31): Account Volume Billing",
@@ -466,7 +476,7 @@ class TestSyncStripeFees:
             create_async_iterator(balance_transactions)
         )
 
-        fee_transaction_11 = Transaction(
+        fee_transaction_12 = Transaction(
             type=TransactionType.processor_fee,
             processor=PaymentProcessor.stripe,
             processor_fee_type=ProcessorFeeType.payout,
@@ -475,9 +485,9 @@ class TestSyncStripeFees:
             account_currency="usd",
             account_amount=-200,
             tax_amount=0,
-            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_11",
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_12",
         )
-        fee_transaction_10 = Transaction(
+        fee_transaction_13 = Transaction(
             type=TransactionType.processor_fee,
             processor=PaymentProcessor.stripe,
             processor_fee_type=ProcessorFeeType.payout,
@@ -486,10 +496,10 @@ class TestSyncStripeFees:
             account_currency="usd",
             account_amount=-100,
             tax_amount=0,
-            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_10",
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_11",
         )
-        await save_fixture(fee_transaction_11)
-        await save_fixture(fee_transaction_10)
+        await save_fixture(fee_transaction_12)
+        await save_fixture(fee_transaction_13)
 
         # then
         session.expunge_all()
@@ -498,7 +508,7 @@ class TestSyncStripeFees:
             session
         )
 
-        assert len(fee_transactions) == 9
+        assert len(fee_transactions) == 10
 
         (
             fee_transaction_1,
@@ -510,6 +520,7 @@ class TestSyncStripeFees:
             fee_transaction_7,
             fee_transaction_8,
             fee_transaction_9,
+            fee_transaction_10,
         ) = fee_transactions
 
         assert fee_transaction_1.type == TransactionType.processor_fee
@@ -540,7 +551,7 @@ class TestSyncStripeFees:
         assert fee_transaction_6.amount == -600
 
         assert fee_transaction_7.type == TransactionType.processor_fee
-        assert fee_transaction_7.processor_fee_type == ProcessorFeeType.invoice
+        assert fee_transaction_7.processor_fee_type == ProcessorFeeType.tax
         assert fee_transaction_7.amount == -700
 
         assert fee_transaction_8.type == TransactionType.processor_fee
@@ -548,5 +559,9 @@ class TestSyncStripeFees:
         assert fee_transaction_8.amount == -800
 
         assert fee_transaction_9.type == TransactionType.processor_fee
-        assert fee_transaction_9.processor_fee_type == ProcessorFeeType.payment
-        assert fee_transaction_9.amount == -150
+        assert fee_transaction_9.processor_fee_type == ProcessorFeeType.invoice
+        assert fee_transaction_9.amount == -900
+
+        assert fee_transaction_10.type == TransactionType.processor_fee
+        assert fee_transaction_10.processor_fee_type == ProcessorFeeType.payment
+        assert fee_transaction_10.amount == -150

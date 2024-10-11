@@ -17,7 +17,7 @@ const cacheConfig = {
 export async function generateMetadata({
   params,
 }: {
-  params: { organization: string }
+  params: { organization: string; productId: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
@@ -25,16 +25,24 @@ export async function generateMetadata({
     params.organization,
   )
 
+  const product = await api.products.get({ id: params.productId }, cacheConfig)
+
+  if (!product) {
+    notFound()
+  }
+
   return {
-    title: `${organization.name}`, // " | Polar is added by the template"
+    title: `${product.name} by ${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.name} on Polar`,
-      description: `${organization.name} on Polar`,
+      title: `${product.name}`,
+      description: `A product from ${organization.name}`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.slug}`,
+          url:
+            product.medias[0]?.public_url ??
+            `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -43,15 +51,17 @@ export async function generateMetadata({
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.slug}`,
+          url:
+            product.medias[0]?.public_url ??
+            `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.name} on Polar`,
+          alt: `${product.name}`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.name} on Polar`,
-      description: `${organization.name} on Polar`,
+      title: `${product.name}`,
+      description: `A product from ${organization.name}`,
     },
   }
 }

@@ -10,7 +10,7 @@ jobs:
   chromatic-deployment:
     name: "Publish 🎨"
     timeout-minutes: 15
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out code

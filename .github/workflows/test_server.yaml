@@ -14,8 +14,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.12"]
-        poetry-version: ["1.6.1"]
-        os: [ubuntu-22.04]
+        poetry-version: ["1.8.3"]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -55,8 +55,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.12"]
-        poetry-version: ["1.6.1"]
-        os: [ubuntu-22.04]
+        poetry-version: ["1.8.3"]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
 

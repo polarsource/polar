@@ -8,7 +8,7 @@ jobs:
   build:
     name: "Server: Build 🐳"
     timeout-minutes: 15
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write

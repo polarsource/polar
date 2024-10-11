@@ -127,7 +127,7 @@ target-version = "py311"
 
 [tool.mypy]
 ignore_missing_imports = true
-plugins = ["pydantic.mypy"]
+plugins = ["pydantic.mypy", "polar.integrations.github.mypy"]
 warn_redundant_casts = true
 warn_unused_ignores = true
 disallow_any_generics = true

@@ -3,6 +3,9 @@
 import { CheckoutInfo } from '@/components/Checkout/CheckoutInfo'
 import { createCheckoutPreview } from '@/components/Customization/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
+import { ProductCheckoutModal } from '@/components/Products/ProductCheckoutModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
@@ -175,6 +178,12 @@ const ProductListItem = ({
   onSelect,
   selected,
 }: ProductListItemProps) => {
+  const {
+    isShown: isCheckoutModalShown,
+    hide: hideCheckoutModal,
+    show: showCheckoutModal,
+  } = useModal()
+
   const handleContextMenuCallback = (
     callback: (e: React.MouseEvent) => void,
   ) => {
@@ -268,23 +277,15 @@ const ProductListItem = ({
             >
               Edit
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleContextMenuCallback(() => {
+                showCheckoutModal()
+              })}
+            >
+              Generate Checkout URL
+            </DropdownMenuItem>
             {product.prices.length > 0 && (
               <>
-                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
-                {product.prices.map((price) => (
-                  <DropdownMenuItem
-                    key={price.id}
-                    onClick={handleContextMenuCallback(() => {
-                      onGenerateCheckoutUrl(price)
-                    })}
-                  >
-                    {generateCopyPriceLabel(
-                      price,
-                      product.prices.length,
-                      'Copy Checkout URL',
-                    )}
-                  </DropdownMenuItem>
-                ))}
                 <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 {product.prices.map((price) => (
                   <DropdownMenuItem
@@ -329,6 +330,12 @@ const ProductListItem = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <Modal
+        className="lg:w-full lg:max-w-[480px]"
+        isShown={isCheckoutModalShown}
+        hide={hideCheckoutModal}
+        modalContent={<ProductCheckoutModal product={product} />}
+      />
     </ListItem>
   )
 }

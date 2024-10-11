@@ -14,11 +14,6 @@ curl -X POST \
     --silent --show-error --fail-with-body \
     "https://api.render.com/deploy/srv-cojpsb0cmk4c73c0pndg?key=${RENDER_DEPLOY_KEY_WORKER_DEFAULT}&imgURL=${IMG}"
 
-# Deploy worker-github
-curl -X POST \
-    --silent --show-error --fail-with-body \
-    "https://api.render.com/deploy/srv-cojpsb0cmk4c73c0pne0?key=${RENDER_DEPLOY_KEY_WORKER_GITHUB}&imgURL=${IMG}"
-
 # Deploy api-sandbox
 curl -X POST \
     --silent --show-error --fail-with-body \
@@ -28,8 +23,3 @@ curl -X POST \
 curl -X POST \
     --silent --show-error --fail-with-body \
     "https://api.render.com/deploy/srv-crkocgbtq21c73ddsda0?key=${RENDER_DEPLOY_KEY_WORKER_DEFAULT_SANDBOX}&imgURL=${IMG}"
-
-# Deploy worker-github-sandbox
-curl -X POST \
-    --silent --show-error --fail-with-body \
-    "https://api.render.com/deploy/srv-crkocgbtq21c73ddsdag?key=${RENDER_DEPLOY_KEY_WORKER_GITHUB_SANDBOX}&imgURL=${IMG}"

@@ -45,6 +45,7 @@ from polar.posthog import posthog
 from polar.reward.service import reward_service
 from polar.worker import enqueue_job
 
+from . import types
 from .schemas import (
     GithubUser,
     InstallationCreate,
@@ -317,6 +318,12 @@ async def get_organization_billing_plan(
     ):
         raise NotPermitted()
 
+    plan: (
+        types.PrivateUserPropPlan
+        | types.PublicUserPropPlan
+        | types.OrganizationFullPropPlan
+        | None
+    ) = None
     if external_organization.is_personal:
         user_client = await github.get_user_client(
             session, locker, auth_subject.subject

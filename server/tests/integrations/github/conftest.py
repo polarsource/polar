@@ -80,7 +80,7 @@ def create_github_repository(
         full_name=f"org/{name}",
         private=private,
         # dummy values
-        license_=None,
+        license_=None,  # pyright: ignore
         forks=0,
         permissions=types.RepositoryPropPermissions(
             admin=True,
@@ -266,8 +266,8 @@ def create_github_user() -> types.SimpleUser:
     )
 
 
-def create_github_user_webhooks() -> types.SimpleUserWebhooks:
-    return types.SimpleUserWebhooks(
+def create_github_user_webhooks() -> types.SimpleUser:
+    return types.SimpleUser(
         login="birkjernstrom",
         id=281715,
         node_id="MDQ6VXNlcjI4MTcxNQ==",

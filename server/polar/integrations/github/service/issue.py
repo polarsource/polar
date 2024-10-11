@@ -483,7 +483,7 @@ class GithubIssueService(IssueService):
         repository: Repository,
         github_labels: list[types.Label]
         | list[types.WebhookIssuesLabeledPropIssuePropLabelsItems]
-        | list[types.WebhookIssuesUnlabeledPropIssuePropLabelsItems],
+        | list[types.WebhooksIssuePropLabelsItems],
     ) -> Issue:
         labels = [label.model_dump(mode="json") for label in github_labels]
         issue.labels = labels

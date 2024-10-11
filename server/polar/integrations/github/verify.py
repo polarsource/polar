@@ -17,6 +17,7 @@ async def verify_app_configuration() -> None:
     client = get_app_client()
     app = await client.rest.apps.async_get_authenticated()
 
+    assert app.parsed_data is not None
     permissions = app.parsed_data.permissions
     events = app.parsed_data.events
 

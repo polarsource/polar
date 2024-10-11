@@ -37,7 +37,6 @@ from githubkit.versions.latest.models import (
     ReviewRequestedIssueEvent,
     ReviewRequestRemovedIssueEvent,
     SimpleUser,
-    SimpleUserWebhooks,
     StateChangeIssueEvent,
     UnlabeledIssueEvent,
     UserInstallationsGetResponse200,
@@ -69,7 +68,6 @@ from githubkit.versions.latest.models import (
     WebhookIssuesTransferredPropChangesPropNewRepository,
     WebhookIssuesUnassigned,
     WebhookIssuesUnlabeled,
-    WebhookIssuesUnlabeledPropIssuePropLabelsItems,
     WebhookOrganizationMemberAdded,
     WebhookOrganizationMemberRemoved,
     WebhookOrganizationRenamed,
@@ -79,6 +77,7 @@ from githubkit.versions.latest.models import (
     WebhookRepositoryEdited,
     WebhookRepositoryRenamed,
     WebhookRepositoryTransferred,
+    WebhooksIssuePropLabelsItems,
 )
 from pydantic import TypeAdapter
 
@@ -198,7 +197,6 @@ __all__ = [
     "ReviewRequestedIssueEvent",
     "ReviewRequestRemovedIssueEvent",
     "SimpleUser",
-    "SimpleUserWebhooks",
     "StateChangeIssueEvent",
     "UnlabeledIssueEvent",
     "UserInstallationsGetResponse200",
@@ -230,7 +228,6 @@ __all__ = [
     "WebhookIssuesTransferredPropChangesPropNewRepository",
     "WebhookIssuesUnassigned",
     "WebhookIssuesUnlabeled",
-    "WebhookIssuesUnlabeledPropIssuePropLabelsItems",
     "WebhookOrganizationMemberAdded",
     "WebhookOrganizationMemberRemoved",
     "WebhookOrganizationRenamed",
@@ -240,4 +237,5 @@ __all__ = [
     "WebhookRepositoryEdited",
     "WebhookRepositoryRenamed",
     "WebhookRepositoryTransferred",
+    "WebhooksIssuePropLabelsItems",
 ]

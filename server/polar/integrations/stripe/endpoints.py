@@ -39,7 +39,9 @@ async def enqueue(event: stripe.Event) -> None:
 
 
 @router.get("/refresh", name="integrations.stripe.refresh")
-def stripe_connect_refresh(return_path: str | None = Query(None)) -> RedirectResponse:
+async def stripe_connect_refresh(
+    return_path: str | None = Query(None),
+) -> RedirectResponse:
     if return_path is None:
         raise HTTPException(404)
     return RedirectResponse(settings.generate_frontend_url(return_path))

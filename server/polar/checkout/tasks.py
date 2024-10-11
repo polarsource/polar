@@ -3,9 +3,9 @@ import uuid
 from polar.exceptions import PolarTaskError
 from polar.worker import (
     AsyncSessionMaker,
+    CronTrigger,
     JobContext,
     PolarWorkerContext,
-    interval,
     task,
 )
 
@@ -23,7 +23,10 @@ async def handle_free_success(
         await checkout_service.handle_free_success(session, checkout_id)
 
 
-@interval(minute={0, 15, 30, 45})
+@task(
+    "checkout.expire_open_checkouts",
+    cron_trigger=CronTrigger.from_crontab("0,15,30,45 * * * *"),
+)
 async def expire_open_checkouts(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         await checkout_service.expire_open_checkouts(session)

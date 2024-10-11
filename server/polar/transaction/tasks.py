@@ -8,9 +8,9 @@ from polar.exceptions import PolarTaskError
 from polar.kit.money import get_cents_in_dollar_string
 from polar.worker import (
     AsyncSessionMaker,
+    CronTrigger,
     JobContext,
     PolarWorkerContext,
-    interval,
     task,
 )
 
@@ -30,7 +30,7 @@ class PayoutDoesNotExist(TransactionTaskError):
         super().__init__(message)
 
 
-@interval(hour=0, minute=0)
+@task("processor_fee.sync_stripe_fees", cron_trigger=CronTrigger(hour=0, minute=0))
 async def sync_stripe_fees(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         await processor_fee_transaction_service.sync_stripe_fees(session)
@@ -77,7 +77,7 @@ async def payout_created(
         await webhook.execute()
 
 
-@interval(minute=15)
+@task("payout.trigger_stripe_payouts", cron_trigger=CronTrigger(minute=15))
 async def trigger_stripe_payouts(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         await payout_transaction_service.trigger_stripe_payouts(session)

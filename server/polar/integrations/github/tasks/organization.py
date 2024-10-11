@@ -5,11 +5,11 @@ import structlog
 from polar.integrations.github.tasks.utils import github_rate_limit_retry
 from polar.worker import (
     AsyncSessionMaker,
+    CronTrigger,
     JobContext,
     PolarWorkerContext,
     QueueName,
     enqueue_job,
-    interval,
     task,
 )
 
@@ -18,10 +18,9 @@ from ..service.organization import github_organization as github_organization_se
 log = structlog.get_logger()
 
 
-@interval(
-    hour=10,
-    minute=19,
-    second=0,
+@task(
+    "github.organization.cron_org_metadata",
+    cron_trigger=CronTrigger(hour=10, minute=19, second=0),
 )
 async def cron_org_metadata(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:

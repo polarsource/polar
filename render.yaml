@@ -27,6 +27,8 @@ services:
     domains:
       - api.polar.sh
     envVars:
+      - key: WEB_CONCURRENCY
+        value: 2
       - key: FORWARDED_ALLOW_IPS
         value: '*'
       - key: POLAR_ALLOWED_HOSTS
@@ -154,6 +156,8 @@ services:
     domains:
       - sandbox-api.polar.sh
     envVars:
+      - key: WEB_CONCURRENCY
+        value: 2
       - key: FORWARDED_ALLOW_IPS
         value: '*'
       - key: POLAR_ALLOWED_HOSTS

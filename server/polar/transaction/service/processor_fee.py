@@ -30,7 +30,7 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.account
     if "billing" in description:
         return ProcessorFeeType.subscription
-    if "automatic tax" in description:
+    if "automatic tax" in description or "tax api calculation" in description:
         return ProcessorFeeType.tax
     if "invoicing" in description or "post payment invoices" in description:
         return ProcessorFeeType.invoice

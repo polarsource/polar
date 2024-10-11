@@ -415,7 +415,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         elif isinstance(price, ProductPriceCustom):
             currency = price.price_currency
             if amount is None:
-                amount = price.preset_amount
+                amount = price.preset_amount or 1000
         elif isinstance(price, ProductPriceFree):
             amount = None
             currency = None

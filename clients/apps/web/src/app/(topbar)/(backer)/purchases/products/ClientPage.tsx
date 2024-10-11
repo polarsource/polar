@@ -137,7 +137,7 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
           </div>
         </div>
         <Link href={`/purchases/products/${order.id}`}>
-          <Button size="sm">View Purchase</Button>
+          <Button size="sm">View Order</Button>
         </Link>
       </div>
       <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 text-sm">

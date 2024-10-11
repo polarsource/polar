@@ -4,6 +4,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { useOrganization } from '@/hooks/queries'
 import { Organization, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -25,6 +26,8 @@ export const CustomerPortal = ({
   subscriptions,
   orders,
 }: CustomerPortalProps) => {
+  const router = useRouter()
+
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-y-12">
@@ -120,40 +123,32 @@ export const CustomerPortal = ({
                   )
                 },
               },
-              /*  {
+              {
                 accessorKey: 'context',
                 enableSorting: false,
-                header: () => <></>,
-                cell: () => {
+                header: ({ column }) => (
+                  <DataTableColumnHeader
+                    className="flex flex-row justify-end"
+                    column={column}
+                    title="Actions"
+                  />
+                ),
+                cell: ({ row }) => {
                   return (
                     <div className="flex flex-row justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          className="focus:outline-none"
-                          asChild
-                        >
-                          <Button
-                            className={
-                              'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                            }
-                            size="icon"
-                            variant="secondary"
-                          >
-                            <MoreVertOutlined fontSize="inherit" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="dark:bg-polar-800 bg-gray-50 shadow-lg"
-                        >
-                          <DropdownMenuItem>View Benefits</DropdownMenuItem>
-                          <DropdownMenuItem>Generate Invoice</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Link
+                        href={
+                          row.original.product.is_recurring
+                            ? `/purchases/subscriptions/${row.original.id}`
+                            : `/purchases/products/${row.original.id}`
+                        }
+                      >
+                        <Button size="sm">View Order</Button>
+                      </Link>
                     </div>
                   )
                 },
-              }, */
+              },
             ]}
           />
         </div>

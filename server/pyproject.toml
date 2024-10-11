@@ -66,7 +66,7 @@ textual = "^0.82.0"
 halo = "^0.0.31"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.6.0"
+mypy = "^1.11"
 pytest = "<9"
 pytest-sugar = "^1.0.0"
 typer = "^0.12.5"
@@ -127,7 +127,7 @@ target-version = "py311"
 
 [tool.mypy]
 ignore_missing_imports = true
-plugins = ["pydantic.mypy", "polar.integrations.github.mypy"]
+plugins = ["pydantic.mypy", "polar/integrations/github/mypy_plugin.py"]
 warn_redundant_casts = true
 warn_unused_ignores = true
 disallow_any_generics = true

@@ -1,4 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { isCrawler } from '@/utils/crawlers'
 import { ResponseError } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -6,6 +7,13 @@ export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   const api = getServerSideAPI()
+
+  const userAgent = request.headers.get('user-agent')
+  if (userAgent && isCrawler(userAgent)) {
+    return new NextResponse(null, {
+      status: 204,
+    })
+  }
 
   const searchParams = request.nextUrl.searchParams
   const priceId = searchParams.get('price') as string

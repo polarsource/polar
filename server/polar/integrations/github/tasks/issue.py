@@ -6,11 +6,11 @@ import structlog
 from polar.integrations.github.client import get_app_installation_client
 from polar.worker import (
     AsyncSessionMaker,
+    CronTrigger,
     JobContext,
     PolarWorkerContext,
     QueueName,
     enqueue_job,
-    interval,
     task,
 )
 
@@ -55,7 +55,11 @@ async def issue_sync(
             )
 
 
-@interval(hour=1, minute=0)
+@task(
+    "github.issue.sync.cron_refresh_issues",
+    cron_trigger=CronTrigger(hour=1, minute=0),
+    cron_trigger_queue=QueueName.github_crawl,
+)
 @github_rate_limit_retry
 async def cron_refresh_issues(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:

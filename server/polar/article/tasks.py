@@ -13,9 +13,9 @@ from polar.models.article import ArticleByline
 from polar.user.service.user import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
+    CronTrigger,
     JobContext,
     PolarWorkerContext,
-    interval,
     task,
 )
 
@@ -115,7 +115,7 @@ async def articles_send_to_user(
         )
 
 
-@interval(second=0)
+@task("articles.send_scheduled", cron_trigger=CronTrigger(second=0))
 async def articles_send_scheduled(
     ctx: JobContext,
 ) -> None:
@@ -125,7 +125,7 @@ async def articles_send_scheduled(
             await article_service.enqueue_send(session, article)
 
 
-@interval(second=0)
+@task("articles.release_paid_subscribers_only", cron_trigger=CronTrigger(second=0))
 async def articles_release_paid_subscribers_only(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
         await article_service.release_paid_subscribers_only(session)

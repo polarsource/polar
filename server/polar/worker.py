@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import contextvars
 import functools
@@ -9,11 +10,13 @@ from typing import Any, ParamSpec, TypeAlias, TypedDict, TypeVar, cast
 
 import logfire
 import structlog
-from arq import cron, func
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from arq import func
 from arq.connections import ArqRedis, RedisSettings
 from arq.connections import create_pool as arq_create_pool
 from arq.cron import CronJob
-from arq.typing import OptionType, SecondsTimedelta, WeekdayOptionType
+from arq.typing import SecondsTimedelta
 from arq.worker import Function
 from pydantic import BaseModel
 
@@ -186,6 +189,49 @@ class WorkerSettingsGitHubCrawl(WorkerSettings):
         exit_stack.close()
 
 
+class CronTasksScheduler:
+    _cron_tasks: list[tuple[str, CronTrigger, QueueName]] = []
+
+    @staticmethod
+    def add_task(task: str, cron_trigger: CronTrigger, queue_name: QueueName) -> None:
+        CronTasksScheduler._cron_tasks.append((task, cron_trigger, queue_name))
+
+    def __init__(self) -> None:
+        self._loop = asyncio.get_event_loop()
+        self._arq_pool: ArqRedis | None = None
+
+    def run(self) -> None:
+        main_task = self._loop.create_task(self._main())
+        try:
+            self._loop.run_until_complete(main_task)
+        except asyncio.CancelledError:
+            pass
+
+    async def _main(self) -> None:
+        self._arq_pool = await arq_create_pool(WorkerSettings.redis_settings)
+        scheduler = AsyncIOScheduler()
+        for task, cron_trigger, queue_name in CronTasksScheduler._cron_tasks:
+            scheduler.add_job(
+                self._schedule_task,
+                trigger=cron_trigger,
+                name=task,
+                args=(task, queue_name.value),
+            )
+        scheduler.start()
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            scheduler.shutdown()
+        finally:
+            await self._arq_pool.close()
+
+    async def _schedule_task(self, task: str, queue_name: QueueName) -> None:
+        if self._arq_pool is None:
+            raise RuntimeError("The scheduler is not running")
+        await self._arq_pool.enqueue_job(task, _queue_name=str(queue_name))
+
+
 @contextlib.asynccontextmanager
 async def lifespan() -> AsyncIterator[ArqRedis]:
     arq_pool = await arq_create_pool(WorkerSettings.redis_settings)
@@ -290,6 +336,8 @@ def task(
     timeout: SecondsTimedelta | None = None,
     keep_result_forever: bool | None = None,
     max_tries: int | None = None,
+    cron_trigger: CronTrigger | None = None,
+    cron_trigger_queue: QueueName = QueueName.default,
 ) -> Callable[
     [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
 ]:
@@ -311,40 +359,8 @@ def task(
         WorkerSettings.functions.append(new_task)
         WorkerSettingsGitHubCrawl.functions.append(new_task)
 
-        return wrapped
-
-    return decorator
-
-
-def interval(
-    *,
-    month: OptionType = None,
-    day: OptionType = None,
-    weekday: WeekdayOptionType = None,
-    hour: OptionType = None,
-    minute: OptionType = None,
-    second: OptionType = 0,
-) -> Callable[
-    [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
-]:
-    def decorator(
-        f: Callable[Params, Awaitable[ReturnValue]],
-    ) -> Callable[Params, Awaitable[ReturnValue]]:
-        wrapped = task_hooks(f)
-
-        new_cron = cron(
-            wrapped,  # type: ignore
-            month=month,
-            day=day,
-            weekday=weekday,
-            hour=hour,
-            minute=minute,
-            second=second,
-            run_at_startup=False,
-        )
-
-        # All crontabs are running on the "default" worker
-        WorkerSettings.cron_jobs.append(new_cron)
+        if cron_trigger is not None:
+            CronTasksScheduler.add_task(name, cron_trigger, cron_trigger_queue)
 
         return wrapped
 
@@ -374,4 +390,5 @@ __all__ = [
     "AsyncSessionMaker",
     "ArqRedis",
     "QueueName",
+    "CronTrigger",
 ]

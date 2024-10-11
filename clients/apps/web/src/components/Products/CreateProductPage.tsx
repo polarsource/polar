@@ -19,9 +19,12 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { CheckoutInfo } from '../Checkout/CheckoutInfo'
+import { createCheckoutPreview } from '../Customization/utils'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
+import { productCreateToProduct } from './utils'
 
 export interface CreateProductPageProps {
   organization: Organization
@@ -72,6 +75,15 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   const createProduct = useCreateProduct(organization.id)
   const updateBenefits = useUpdateProductBenefits(organization.id)
+
+  const createdProduct = watch()
+  const reconciledProduct = productCreateToProduct(
+    organization.id,
+    createdProduct,
+    enabledBenefitIds
+      .map((id) => organizationBenefits.find((b) => b.id === id))
+      .filter(Boolean) as BenefitPublicInner[],
+  )
 
   const onSubmit = useCallback(
     async (productCreate: ProductCreate & ProductFullMediasMixin) => {
@@ -150,7 +162,22 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   }, [newProduct, saveDraft])
 
   return (
-    <DashboardBody title="Create Product" className="gap-y-16">
+    <DashboardBody
+      title="Create Product"
+      className="gap-y-16"
+      contextView={
+        <div className="flex h-full flex-col justify-between p-8 py-12">
+          <CheckoutInfo
+            className="md:w-full md:p-0"
+            organization={organization}
+            checkout={createCheckoutPreview(
+              reconciledProduct,
+              reconciledProduct.prices[0],
+            )}
+          />
+        </div>
+      }
+    >
       <div className="flex flex-col gap-y-8 divide-y">
         <Form {...form}>
           <form

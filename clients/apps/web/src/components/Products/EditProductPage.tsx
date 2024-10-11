@@ -26,6 +26,7 @@ import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
+import { productUpdateToProduct } from './utils'
 
 export interface EditProductPageProps {
   organization: Organization
@@ -57,10 +58,19 @@ export const EditProductPage = ({
 
   const [isLoading, setLoading] = useState(false)
 
-  const { handleSubmit, setError } = form
+  const { handleSubmit, setError, watch } = form
 
   const updateProduct = useUpdateProduct(organization?.id)
   const updateBenefits = useUpdateProductBenefits(organization.id)
+
+  const updatedProduct = watch()
+  const reconciledProduct = productUpdateToProduct(
+    updatedProduct,
+    enabledBenefitIds
+      .map((id) => organizationBenefits.find((b) => b.id === id))
+      .filter(Boolean) as BenefitPublicInner[],
+    product,
+  )
 
   const onSubmit = useCallback(
     async (productUpdate: ProductUpdate & ProductFullMediasMixin) => {
@@ -174,7 +184,10 @@ export const EditProductPage = ({
             <CheckoutInfo
               className="md:w-full md:p-0"
               organization={organization}
-              checkout={createCheckoutPreview(product, product?.prices[0])}
+              checkout={createCheckoutPreview(
+                reconciledProduct,
+                reconciledProduct.prices[0],
+              )}
             />
           </div>
           {organization.profile_settings?.enabled && (

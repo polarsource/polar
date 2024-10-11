@@ -11,13 +11,13 @@ from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
 from polar.worker import CronTasksScheduler, WorkerSettings, WorkerSettingsGitHubCrawl
 
+configure_sentry()
+configure_logfire("worker")
+configure_logging(logfire=True)
+
 
 def _run_scheduler() -> None:
     from polar import tasks  # noqa
-
-    configure_sentry()
-    configure_logfire("worker")
-    configure_logging(logfire=True)
 
     pid = multiprocessing.current_process().pid
     structlog.contextvars.bind_contextvars(pid=pid)
@@ -28,10 +28,6 @@ def _run_scheduler() -> None:
 
 def _run_worker(settings_cls: type[WorkerSettings]) -> None:
     from polar import tasks, receivers  # noqa
-
-    configure_sentry()
-    configure_logfire("worker")
-    configure_logging(logfire=True)
 
     pid = multiprocessing.current_process().pid
     queue = settings_cls.queue_name

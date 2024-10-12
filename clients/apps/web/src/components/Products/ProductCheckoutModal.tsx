@@ -22,7 +22,7 @@ export const ProductCheckoutModal = ({
       <h1 className="text-xl">{product.name}</h1>
       <div className="flex flex-col gap-y-6">
         {product.prices.map((price) => (
-          <div className="flex flex-col gap-y-2">
+          <div key={price.id} className="flex flex-col gap-y-2">
             <span className="text-sm font-medium">
               {price.type === 'recurring'
                 ? price.recurring_interval === 'month'
@@ -31,7 +31,6 @@ export const ProductCheckoutModal = ({
                 : 'Checkout URL'}
             </span>
             <CopyToClipboardInput
-              key={price.id}
               value={new URL(
                 `${CONFIG.PRODUCT_LINK_BASE_URL}${price.id}`,
               ).toString()}

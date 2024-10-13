@@ -96,14 +96,14 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
         ) : null}
       </div>
     ) : undefined
-  }, [selectedBenefit, benefitProducts])
+  }, [selectedBenefit, benefitProducts, organization])
 
   return (
     <DashboardBody contextView={selectedBenefitContextView}>
       <div className="flex flex-row items-start gap-x-16">
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between">
-            <h2 className="text-lg font-medium">Benefits</h2>
+            <h2 className="text-lg font-medium">Overview</h2>
             <Button wrapperClassNames="gap-x-2" onClick={toggle}>
               <AddOutlined fontSize="inherit" />
               <span>New Benefit</span>

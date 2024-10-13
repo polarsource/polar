@@ -70,7 +70,7 @@ const DashboardTopbar = () => {
                   isCurrent ? 'text-black dark:text-white' : '',
                 )}
               >
-                {path}
+                {path.split('-').join(' ')}
               </Link>
             )
 

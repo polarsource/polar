@@ -41,6 +41,7 @@ import {
   UsersLicenseKeysApi,
   UsersOrdersApi,
   UsersSubscriptionsApi,
+  LicenseKeysApi,
 } from '.'
 
 export class PolarAPI {
@@ -60,6 +61,7 @@ export class PolarAPI {
   public readonly integrationsGitHub: IntegrationsGithubApi
   public readonly integrationsGitHubRepositoryBenefit: IntegrationsGithubRepositoryBenefitApi
   public readonly issues: IssuesApi
+  public readonly licenseKeys: LicenseKeysApi
   public readonly magicLink: MagicLinkApi
   public readonly metrics: MetricsApi
   public readonly notifications: NotificationsApi
@@ -104,6 +106,7 @@ export class PolarAPI {
     this.integrationsGitHubRepositoryBenefit =
       new IntegrationsGithubRepositoryBenefitApi(config)
     this.issues = new IssuesApi(config)
+    this.licenseKeys = new LicenseKeysApi(config)
     this.magicLink = new MagicLinkApi(config)
     this.metrics = new MetricsApi(config)
     this.notifications = new NotificationsApi(config)

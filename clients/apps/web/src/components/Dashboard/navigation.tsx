@@ -1,6 +1,7 @@
 import { Organization } from '@polar-sh/sdk'
 
 import {
+  AllInclusiveOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
   DraftsOutlined,
@@ -159,17 +160,26 @@ const generalRoutesList = (org: Organization): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
     },
     if: true,
+  },
+  {
+    id: 'benefits',
+    title: 'Benefits',
+    icon: <AllInclusiveOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/benefits`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
+    },
+    if: true,
     subs: [
       {
-        title: 'Catalog',
-        link: `/dashboard/${org.slug}/products`,
+        title: 'Overview',
+        link: `/dashboard/${org.slug}/benefits`,
       },
       {
-        title: 'Benefits',
-        link: `/dashboard/${org.slug}/products/benefits`,
+        title: 'License Keys',
+        link: `/dashboard/${org.slug}/benefits/license-keys`,
       },
-    ],
-  },
+    ]},
   {
     id: 'org-sales',
     title: 'Sales',

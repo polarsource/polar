@@ -217,13 +217,7 @@ const AccessTokensSettings = () => {
                             : `${field.value.length} scopes`}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="flex w-80 flex-col gap-2">
-                      <Button
-                        onClick={onToggleAll}
-                        variant={!allSelected ? 'default' : 'destructive'}
-                      >
-                        {!allSelected ? 'Select All' : 'Unselect All'}
-                      </Button>
+                    <PopoverContent className="flex max-h-96 w-80 flex-col gap-2 overflow-y-auto">
                       {Object.values(AvailableScope).map((scope) => (
                         <FormField
                           key={scope}
@@ -260,6 +254,14 @@ const AccessTokensSettings = () => {
                           }}
                         />
                       ))}
+                      <Button
+                        className="mt-4"
+                        onClick={onToggleAll}
+                        variant={!allSelected ? 'default' : 'destructive'}
+                        size="sm"
+                      >
+                        {!allSelected ? 'Select All' : 'Unselect All'}
+                      </Button>
                     </PopoverContent>
                   </Popover>
                 )}

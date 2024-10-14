@@ -1,6 +1,9 @@
+import os
 from uuid import UUID
 
-from fastapi import Depends, Query
+from fastapi import BackgroundTasks, Depends, Query
+from fastapi.responses import FileResponse
+from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -79,6 +82,26 @@ async def list(
         ],
         count,
         pagination,
+    )
+
+
+@router.get("/export", summary="Export Articles")
+async def export(
+    auth_subject: auth.ArticlesWrite,
+    background_tasks: BackgroundTasks,
+    organization_id: UUID4 = Query(),
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> FileResponse:
+    """Export organization articles."""
+    zip_file = await article_service.export(
+        session, organization_id, auth_subject, authz
+    )
+    background_tasks.add_task(os.remove, zip_file)
+    return FileResponse(
+        zip_file,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=articles.zip"},
     )
 
 

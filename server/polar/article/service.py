@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import re
+import tempfile
 import uuid
+import zipfile
 from collections.abc import Sequence
 from datetime import datetime
 from operator import and_, or_
 from uuid import UUID
 
+import httpx
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from slugify import slugify
 from sqlalchemy import Select, desc, false, func, nullsfirst, select, true, update
@@ -20,7 +24,12 @@ from polar.auth.models import (
 )
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
-from polar.exceptions import BadRequest, NotPermitted, PolarRequestValidationError
+from polar.exceptions import (
+    BadRequest,
+    NotPermitted,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
@@ -30,6 +39,7 @@ from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.resolver import get_payload_organization
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
@@ -455,6 +465,67 @@ class ArticleService(ResourceServiceReader[Article]):
         )
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
+
+    async def export(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        auth_subject: AuthSubject[User | Organization],
+        authz: Authz,
+    ) -> str:
+        organization = await organization_service.get_by_id(
+            session, auth_subject, organization_id
+        )
+        if organization is None or not await authz.can(
+            auth_subject.subject, AccessType.write, organization
+        ):
+            raise ResourceNotFound()
+
+        statement = self._get_readable_articles_statement(auth_subject).where(
+            Article.organization_id == organization.id
+        )
+        results = await session.stream(statement)
+
+        zip_file = tempfile.NamedTemporaryFile(delete=False, delete_on_close=False)
+        async with httpx.AsyncClient() as client:
+            with zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED) as archive:
+                async for result in results.unique():
+                    article, _ = result._tuple()
+                    frontmatter_dict = {
+                        "title": article.title,
+                        "slug": article.slug,
+                        "created_at": article.created_at.isoformat(),
+                    }
+                    if article.og_description is not None:
+                        frontmatter_dict["og_description"] = article.og_description
+                    if article.og_image_url is not None:
+                        image_filename = article.og_image_url.split("/")[-1]
+                        async with client.stream("GET", article.og_image_url) as stream:
+                            stream.raise_for_status()
+                            archive.writestr(
+                                f"articles/{article.slug}/{image_filename}",
+                                await stream.aread(),
+                            )
+                        frontmatter_dict["og_image_url"] = f"./{image_filename}"
+
+                    # Find images hosted on Vercel and download them
+                    body = article.body
+                    pattern = r"https://7vk6rcnylug0u6hg\.public\.blob\.vercel-storage\.com/([^)]+)"
+                    for match in re.finditer(pattern, body):
+                        async with client.stream("GET", match.group(0)) as stream:
+                            stream.raise_for_status()
+                            archive.writestr(
+                                f"articles/{article.slug}/{match.group(1)}",
+                                await stream.aread(),
+                            )
+                        body = body.replace(match.group(0), f"./{match.group(1)}")
+
+                    frontmatter = f"""---\n{"\n".join(f"{k}: {v}" for k, v in frontmatter_dict.items())}\n---\n\n"""
+                    content = f"{frontmatter}{body}"
+                    archive.writestr(
+                        f"articles/{article.slug}/{article.slug}.md", content
+                    )
+        return zip_file.name
 
     def _get_readable_articles_statement(
         self, auth_subject: AuthSubject[Subject], *, include_hidden: bool = True

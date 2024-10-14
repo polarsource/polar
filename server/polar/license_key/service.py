@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import Select, and_, func, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
@@ -494,7 +494,13 @@ class LicenseKeyService(
         return key
 
     def _get_select_base(self) -> Select[tuple[LicenseKey]]:
-        return select(LicenseKey).where(LicenseKey.deleted_at.is_(None))
+        return (
+            select(LicenseKey)
+            .options(
+                joinedload(LicenseKey.user),
+            )
+            .where(LicenseKey.deleted_at.is_(None))
+        )
 
 
 license_key = LicenseKeyService(LicenseKey)

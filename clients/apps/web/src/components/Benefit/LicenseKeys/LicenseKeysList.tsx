@@ -6,6 +6,7 @@ import {
   SortingState,
 } from '@tanstack/react-table'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,
@@ -72,6 +73,34 @@ export const LicenseKeysList = ({
       cell: (props) => (
         <FormattedDateTime datetime={props.getValue() as string} />
       ),
+    },
+    {
+      accessorKey: 'user',
+      sortingFn: (a, b) => {
+        return a.original.user.public_name.localeCompare(
+          b.original.user.public_name,
+        )
+      },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="User" />
+      ),
+      cell: ({ row: { original: licenseKey } }) => {
+        return (
+          <div className="flex flex-row items-center gap-x-3">
+            <Avatar
+              className="h-10 w-10"
+              avatar_url={licenseKey.user.avatar_url}
+              name={licenseKey.user.public_name}
+            />
+            <div className="flex flex-col">
+              <span className="text-sm">{licenseKey.user.public_name}</span>
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                {licenseKey.user.email}
+              </span>
+            </div>
+          </div>
+        )
+      },
     },
   ]
 

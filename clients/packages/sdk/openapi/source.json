@@ -8489,8 +8489,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "free_subscription",
-                                "donation",
                                 "paid_subscription",
+                                "donation",
                                 "order"
                             ],
                             "title": "Customer Types"
@@ -25406,10 +25406,8 @@
                         "format": "uuid4",
                         "title": "Organization Id"
                     },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
+                    "user": {
+                        "$ref": "#/components/schemas/LicenseKeyUser"
                     },
                     "benefit_id": {
                         "type": "string",
@@ -25492,7 +25490,7 @@
                 "required": [
                     "id",
                     "organization_id",
-                    "user_id",
+                    "user",
                     "benefit_id",
                     "key",
                     "display_key",
@@ -25572,6 +25570,42 @@
                 },
                 "type": "object",
                 "title": "LicenseKeyUpdate"
+            },
+            "LicenseKeyUser": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "public_name": {
+                        "type": "string",
+                        "title": "Public Name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "public_name",
+                    "email",
+                    "avatar_url"
+                ],
+                "title": "LicenseKeyUser"
             },
             "LicenseKeyValidate": {
                 "properties": {
@@ -25662,10 +25696,8 @@
                         "format": "uuid4",
                         "title": "Organization Id"
                     },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
+                    "user": {
+                        "$ref": "#/components/schemas/LicenseKeyUser"
                     },
                     "benefit_id": {
                         "type": "string",
@@ -25755,7 +25787,7 @@
                 "required": [
                     "id",
                     "organization_id",
-                    "user_id",
+                    "user",
                     "benefit_id",
                     "key",
                     "display_key",
@@ -36218,10 +36250,8 @@
                         "format": "uuid4",
                         "title": "Organization Id"
                     },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
+                    "user": {
+                        "$ref": "#/components/schemas/LicenseKeyUser"
                     },
                     "benefit_id": {
                         "type": "string",
@@ -36314,7 +36344,7 @@
                 "required": [
                     "id",
                     "organization_id",
-                    "user_id",
+                    "user",
                     "benefit_id",
                     "key",
                     "display_key",

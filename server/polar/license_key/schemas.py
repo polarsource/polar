@@ -58,10 +58,17 @@ class LicenseKeyDeactivate(Schema):
     activation_id: UUID4
 
 
+class LicenseKeyUser(Schema):
+    id: UUID4
+    public_name: str
+    email: str
+    avatar_url: str | None
+
+
 class LicenseKeyRead(Schema):
     id: UUID4
     organization_id: UUID4
-    user_id: UUID4
+    user: LicenseKeyUser
     benefit_id: BenefitID
     key: str
     display_key: str

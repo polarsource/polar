@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import contextvars
 import functools
+import random
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import datetime
@@ -378,6 +379,35 @@ async def AsyncSessionMaker(ctx: JobContext) -> AsyncIterator[AsyncSession]:
             raise
         else:
             await session.commit()
+
+
+def compute_backoff(
+    attempts: int,
+    *,
+    factor: int = 5,  # 5 seconds
+    max_backoff: int = 7 * 86400,  # 7 days
+    max_exponent: int = 32,
+) -> int:
+    """
+    Compute an exponential backoff value based on some number of attempts.
+
+    Args:
+        attempts: The number of attempts so far.
+        factor: The exponential factor to use in seconds.
+        max_backoff: The maximum backoff value in seconds
+        max_exponent: The maximum exponent to use.
+
+    Returns:
+        The computed backoff value in seconds.
+    """
+    exponent = min(attempts, max_exponent)
+    backoff = min(factor * 2**exponent, max_backoff)
+
+    # Randomize the backoff value to avoid thundering herd problems.
+    backoff /= 2
+    backoff = int(backoff + random.uniform(0, backoff))
+
+    return backoff
 
 
 __all__ = [

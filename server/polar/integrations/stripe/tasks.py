@@ -1,7 +1,10 @@
+import functools
 import uuid
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar, cast
 
 import stripe
+import stripe as stripe_lib
 import structlog
 from arq import Retry
 
@@ -14,6 +17,7 @@ from polar.integrations.stripe.schemas import (
     PaymentIntentSuccessWebhook,
     ProductType,
 )
+from polar.logging import Logger
 from polar.order.service import NotAnOrderInvoice
 from polar.order.service import (
     SubscriptionDoesNotExist as OrderSubscriptionDoesNotExist,
@@ -44,14 +48,40 @@ from polar.transaction.service.payout import (
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    compute_backoff,
+    task,
+)
 
 from .service import stripe as stripe_service
 
-log = structlog.get_logger()
+log: Logger = structlog.get_logger()
 
-MAX_RETRIES = 5
-DELAY = 10
+MAX_RETRIES = 10
+
+Params = ParamSpec("Params")
+ReturnValue = TypeVar("ReturnValue")
+
+
+def stripe_api_connection_error_retry(
+    func: Callable[Params, Awaitable[ReturnValue]],
+) -> Callable[Params, Awaitable[ReturnValue]]:
+    @functools.wraps(func)
+    async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
+        try:
+            return await func(*args, **kwargs)
+        except stripe_lib.APIConnectionError as e:
+            ctx = cast(JobContext, args[0])
+            job_try = ctx["job_try"]
+            log.debug(
+                "Retry after Stripe API connection error", e=str(e), job_try=job_try
+            )
+            raise Retry(compute_backoff(job_try)) from e
+
+    return wrapper
 
 
 class StripeTaskError(PolarTaskError): ...
@@ -68,6 +98,7 @@ class UnsetAccountOnPayoutEvent(StripeTaskError):
 
 
 @task("stripe.webhook.account.updated")
+@stripe_api_connection_error_retry
 async def account_updated(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -80,6 +111,7 @@ async def account_updated(
 
 
 @task("stripe.webhook.payment_intent.succeeded")
+@stripe_api_connection_error_retry
 async def payment_intent_succeeded(
     ctx: JobContext,
     event: dict[str, Any],
@@ -151,6 +183,7 @@ async def payment_intent_succeeded(
 
 
 @task("stripe.webhook.payment_intent.payment_failed")
+@stripe_api_connection_error_retry
 async def payment_intent_payment_failed(
     ctx: JobContext,
     event: dict[str, Any],
@@ -172,6 +205,7 @@ async def payment_intent_payment_failed(
 
 
 @task("stripe.webhook.charge.succeeded")
+@stripe_api_connection_error_retry
 async def charge_succeeded(
     ctx: JobContext,
     event: dict[str, Any],  # stripe.Event
@@ -191,12 +225,13 @@ async def charge_succeeded(
                 # Retry because we might not have been able to handle other events
                 # triggering the creation of Pledge and Subscription
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(DELAY ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 
 
 @task("stripe.webhook.charge.refunded")
+@stripe_api_connection_error_retry
 async def charge_refunded(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -216,6 +251,7 @@ async def charge_refunded(
 
 
 @task("stripe.webhook.charge.dispute.created")
+@stripe_api_connection_error_retry
 async def charge_dispute_created(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -231,7 +267,7 @@ async def charge_dispute_created(
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle charge.succeeded yet!
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(DELAY ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 
@@ -246,6 +282,7 @@ async def charge_dispute_created(
 
 
 @task("stripe.webhook.charge.dispute.funds_reinstated")
+@stripe_api_connection_error_retry
 async def charge_dispute_funds_reinstated(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -259,6 +296,7 @@ async def charge_dispute_funds_reinstated(
 
 
 @task("stripe.webhook.customer.subscription.created")
+@stripe_api_connection_error_retry
 async def customer_subscription_created(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -273,6 +311,7 @@ async def customer_subscription_created(
 
 
 @task("stripe.webhook.customer.subscription.updated")
+@stripe_api_connection_error_retry
 async def customer_subscription_updated(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -289,12 +328,13 @@ async def customer_subscription_updated(
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(DELAY ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 
 
 @task("stripe.webhook.customer.subscription.deleted")
+@stripe_api_connection_error_retry
 async def customer_subscription_deleted(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -311,12 +351,13 @@ async def customer_subscription_deleted(
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(DELAY ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 
 
 @task("stripe.webhook.invoice.paid")
+@stripe_api_connection_error_retry
 async def invoice_paid(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
@@ -333,7 +374,7 @@ async def invoice_paid(
                 # so we might not have been able to handle subscription.created
                 # or charge.succeeded yet!
                 if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(DELAY ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
             except NotAnOrderInvoice:
@@ -342,6 +383,7 @@ async def invoice_paid(
 
 
 @task("stripe.webhook.payout.paid")
+@stripe_api_connection_error_retry
 async def payout_paid(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:

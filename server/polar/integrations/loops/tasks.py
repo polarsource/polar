@@ -3,10 +3,12 @@ from typing import Unpack
 import httpx
 from arq import Retry
 
-from polar.worker import JobContext, PolarWorkerContext, task
+from polar.worker import JobContext, PolarWorkerContext, compute_backoff, task
 
 from .client import Properties
 from .client import client as loops_client
+
+MAX_RETRIES = 10
 
 
 @task("loops.update_contact")
@@ -20,9 +22,8 @@ async def loops_update_contact(
     try:
         await loops_client.update_contact(email, id, **properties)
     except httpx.HTTPError as e:
-        MAX_RETRIES = 5
         if ctx["job_try"] <= MAX_RETRIES:
-            raise Retry(2 ** ctx["job_try"]) from e
+            raise Retry(compute_backoff(ctx["job_try"])) from e
         else:
             raise
 
@@ -38,8 +39,7 @@ async def loops_send_event(
     try:
         await loops_client.send_event(email, event_name, **properties)
     except httpx.HTTPError as e:
-        MAX_RETRIES = 5
         if ctx["job_try"] <= MAX_RETRIES:
-            raise Retry(2 ** ctx["job_try"]) from e
+            raise Retry(compute_backoff(ctx["job_try"])) from e
         else:
             raise

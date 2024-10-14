@@ -18,7 +18,12 @@ from polar.models.webhook_endpoint import (
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.tasks import _webhook_event_send, allowed_url, webhook_event_send
+from polar.webhook.tasks import (
+    MAX_RETRIES,
+    _webhook_event_send,
+    allowed_url,
+    webhook_event_send,
+)
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.database import SaveFixture
 
@@ -166,8 +171,8 @@ async def test_webhook_delivery_500(
     # then
     session.expunge_all()
 
-    # fails 4 times
-    for job_try in range(5):
+    # failures
+    for job_try in range(MAX_RETRIES):
         with pytest.raises(Retry):
             job_context["job_try"] = job_try
             await _webhook_event_send(
@@ -176,8 +181,8 @@ async def test_webhook_delivery_500(
                 webhook_event_id=event.id,
             )
 
-    # does not raise on the 5th attempt
-    job_context["job_try"] = 5
+    # does not raise on last attempt
+    job_context["job_try"] = MAX_RETRIES + 1
     await _webhook_event_send(
         session=session,
         ctx=job_context,
@@ -212,8 +217,8 @@ async def test_webhook_delivery_http_error(
     # then
     session.expunge_all()
 
-    # fails 4 times
-    for job_try in range(5):
+    # failures
+    for job_try in range(MAX_RETRIES):
         with pytest.raises(Retry):
             job_context["job_try"] = job_try
             await _webhook_event_send(
@@ -222,8 +227,8 @@ async def test_webhook_delivery_http_error(
                 webhook_event_id=event.id,
             )
 
-    # does not raise on the 5th attempt
-    job_context["job_try"] = 5
+    # does not raise on last attempt
+    job_context["job_try"] = MAX_RETRIES + 1
     await _webhook_event_send(
         session=session,
         ctx=job_context,

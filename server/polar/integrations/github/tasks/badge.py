@@ -8,6 +8,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    compute_backoff,
     enqueue_job,
     task,
 )
@@ -17,7 +18,7 @@ from .utils import get_external_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
-BADGE_UPDATE_MAX_RETRIES = 5
+BADGE_UPDATE_MAX_RETRIES = 10
 
 
 @task("github.badge.embed_on_issue")
@@ -56,7 +57,7 @@ async def embed_badge(
                 )
             except httpx.HTTPError as e:
                 if ctx["job_try"] <= BADGE_UPDATE_MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 
@@ -96,7 +97,7 @@ async def update_on_issue(
                 )
             except httpx.HTTPError as e:
                 if ctx["job_try"] <= BADGE_UPDATE_MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 
@@ -137,7 +138,7 @@ async def remove_badge(
                 )
             except httpx.HTTPError as e:
                 if ctx["job_try"] <= BADGE_UPDATE_MAX_RETRIES:
-                    raise Retry(2 ** ctx["job_try"]) from e
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
                 else:
                     raise
 

@@ -428,7 +428,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     session,
                     customer_email,
                     signup_attribution=UserSignupAttribution(
-                        intent="order",
+                        intent="subscription",
                         subscription=subscription.id,
                     ),
                 )

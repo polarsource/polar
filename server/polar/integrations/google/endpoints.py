@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
@@ -43,7 +44,7 @@ async def google_authorize(
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
 ) -> RedirectResponse:
-    state = {}
+    state: dict[str, Any] = {}
 
     state["return_to"] = return_to
 

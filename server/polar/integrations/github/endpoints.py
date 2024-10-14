@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -95,7 +96,7 @@ async def github_authorize(
     signup_attribution: UserSignupAttributionQuery,
     payment_intent_id: str | None = None,
 ) -> RedirectResponse:
-    state = {}
+    state: dict[str, Any] = {}
     if payment_intent_id:
         state["payment_intent_id"] = payment_intent_id
 

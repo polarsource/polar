@@ -14,14 +14,19 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    compute_backoff,
+    task,
+)
 
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
 
-MAX_RETRIES = 5
-DELAY = 10
+MAX_RETRIES = 10
 
 
 @task("webhook_event.send")
@@ -131,7 +136,7 @@ async def _webhook_event_send(
             event.succeeded = False
         # Retry
         else:
-            raise Retry(DELAY ** ctx["job_try"]) from e
+            raise Retry(compute_backoff(ctx["job_try"])) from e
     # Success
     else:
         delivery.succeeded = True

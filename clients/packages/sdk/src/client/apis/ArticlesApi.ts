@@ -40,6 +40,10 @@ export interface ArticlesApiEmailUnsubscribeRequest {
     articleSubscriptionId: string;
 }
 
+export interface ArticlesApiExportRequest {
+    organizationId: string;
+}
+
 export interface ArticlesApiGetRequest {
     id: string;
 }
@@ -200,6 +204,57 @@ export class ArticlesApi extends runtime.BaseAPI {
      */
     async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.emailUnsubscribeRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Export organization articles.
+     * Export Articles
+     */
+    async exportRaw(requestParameters: ArticlesApiExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['organizationId'] == null) {
+            throw new runtime.RequiredError(
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling export().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/articles/export`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Export organization articles.
+     * Export Articles
+     */
+    async export(requestParameters: ArticlesApiExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.exportRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**

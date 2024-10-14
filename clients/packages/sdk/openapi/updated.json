@@ -8412,10 +8412,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
-                                "order",
                                 "donation",
-                                "paid_subscription"
+                                "paid_subscription",
+                                "order",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -9553,6 +9553,64 @@
                 ],
                 "x-speakeasy-group": "articles",
                 "x-speakeasy-name-override": "create"
+            }
+        },
+        "/v1/articles/export": {
+            "get": {
+                "tags": [
+                    "articles"
+                ],
+                "summary": "Export Articles",
+                "description": "Export organization articles.",
+                "operationId": "export",
+                "security": [
+                    {
+                        "oidc": [
+                            "articles:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Organization Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "export"
             }
         },
         "/v1/articles/{id}": {

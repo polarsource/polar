@@ -19,7 +19,6 @@ services:
       - "${POLAR_POSTGRES_PORT}:${POLAR_POSTGRES_PORT}"
     expose:
       - ${POLAR_POSTGRES_PORT}
-    restart: always
     healthcheck:
       test:
         [

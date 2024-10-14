@@ -11,11 +11,6 @@ export default async function Page({
     return_to?: string
   }
 }) {
-  const restParams = new URLSearchParams(rest)
-  const returnTo = return_to
-    ? `${return_to || ''}?${restParams.toString()}`
-    : undefined
-
   const api = getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api)
 
@@ -47,7 +42,9 @@ export default async function Page({
               </label>
               <Input name="org-name" autoFocus />
             </div> */}
-            <Login returnTo={returnTo} />
+            <Login returnTo={return_to} returnParams={rest} signup={{
+              intent: 'creator',
+            }}/>
           </div>
         </div>
         <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">

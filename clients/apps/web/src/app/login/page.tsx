@@ -12,10 +12,6 @@ export default async function Page({
     return_to?: string
   }
 }) {
-  const restParams = new URLSearchParams(rest)
-  const returnTo = return_to
-    ? `${return_to || ''}?${restParams.toString()}`
-    : undefined
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
       <div className="flex w-full max-w-md flex-col justify-between gap-8 p-16">
@@ -29,7 +25,7 @@ export default async function Page({
             </h2>
           </div>
         </div>
-        <Login returnTo={returnTo} />
+        <Login returnTo={return_to} returnParams={rest} />
       </div>
     </div>
   )

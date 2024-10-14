@@ -13,7 +13,6 @@ from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
-from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
@@ -56,6 +55,7 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
+from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
@@ -304,6 +304,22 @@ class OrderService(ResourceServiceReader[Order]):
                 raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
             user = await user_service.get(session, subscription.user_id)
 
+        # Create Order
+        tax = invoice.tax or 0
+        order = Order(
+            # Generate ID upfront for user attribution
+            id=Order.generate_id(),
+            amount=invoice.total - tax,
+            tax_amount=tax,
+            currency=invoice.currency,
+            stripe_invoice_id=invoice.id,
+            product=product,
+            product_price=product_price,
+            subscription=subscription,
+            checkout=checkout,
+            user_metadata=checkout.user_metadata if checkout is not None else {},
+        )
+
         # Get or create customer user
         assert invoice.customer is not None
         stripe_customer_id = get_expandable_id(invoice.customer)
@@ -313,8 +329,20 @@ class OrderService(ResourceServiceReader[Order]):
             )
             if user is None:
                 assert invoice.customer_email is not None
+                signup_attribution = UserSignupAttribution(
+                    intent="purchase",
+                    order=order.id,
+                )
+                if order.subscription:
+                    signup_attribution = UserSignupAttribution(
+                        intent="subscription",
+                        subscription=order.subscription.id,
+                    )
+
                 user = await user_service.get_by_email_or_signup(
-                    session, invoice.customer_email, signup_type=UserSignupType.backer
+                    session,
+                    invoice.customer_email,
+                    signup_attribution=signup_attribution,
                 )
 
         # Take the chance to update Stripe customer ID and email marketing
@@ -322,20 +350,7 @@ class OrderService(ResourceServiceReader[Order]):
         await loops_service.user_update(user, isBacker=True)
         session.add(user)
 
-        # Create Order
-        tax = invoice.tax or 0
-        order = Order(
-            amount=invoice.total - tax,
-            tax_amount=tax,
-            currency=invoice.currency,
-            stripe_invoice_id=invoice.id,
-            user=user,
-            product=product,
-            product_price=product_price,
-            subscription=subscription,
-            checkout=checkout,
-            user_metadata=checkout.user_metadata if checkout is not None else {},
-        )
+        order.user = user
         session.add(order)
         await session.flush()
 

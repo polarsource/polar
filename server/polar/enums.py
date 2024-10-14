@@ -6,12 +6,6 @@ class Platforms(StrEnum):
     github = "github"
 
 
-class UserSignupType(StrEnum):
-    maintainer = "maintainer"
-    backer = "backer"
-    imported = "imported"
-
-
 class PaymentProcessor(StrEnum):
     stripe = "stripe"
 

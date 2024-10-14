@@ -6866,10 +6866,10 @@ export interface LicenseKeyRead {
     organization_id: string;
     /**
      * 
-     * @type {string}
+     * @type {LicenseKeyUser}
      * @memberof LicenseKeyRead
      */
-    user_id: string;
+    user: LicenseKeyUser;
     /**
      * The benefit ID.
      * @type {string}
@@ -6987,6 +6987,37 @@ export interface LicenseKeyUpdate {
 /**
  * 
  * @export
+ * @interface LicenseKeyUser
+ */
+export interface LicenseKeyUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyUser
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyUser
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyUser
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyUser
+     */
+    avatar_url: string | null;
+}
+/**
+ * 
+ * @export
  * @interface LicenseKeyValidate
  */
 export interface LicenseKeyValidate {
@@ -7053,10 +7084,10 @@ export interface LicenseKeyWithActivations {
     organization_id: string;
     /**
      * 
-     * @type {string}
+     * @type {LicenseKeyUser}
      * @memberof LicenseKeyWithActivations
      */
-    user_id: string;
+    user: LicenseKeyUser;
     /**
      * The benefit ID.
      * @type {string}
@@ -16224,10 +16255,10 @@ export interface ValidatedLicenseKey {
     organization_id: string;
     /**
      * 
-     * @type {string}
+     * @type {LicenseKeyUser}
      * @memberof ValidatedLicenseKey
      */
-    user_id: string;
+    user: LicenseKeyUser;
     /**
      * The benefit ID.
      * @type {string}

@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -30,6 +32,10 @@ class MagicLink(RecordModel):
     )
 
     source: Mapped[str] = mapped_column(String, nullable=True)
+
+    signup_attribution: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
 
     @declared_attr
     def user(cls) -> Mapped[User | None]:

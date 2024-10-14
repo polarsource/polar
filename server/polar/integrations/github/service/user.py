@@ -2,7 +2,6 @@ from typing import Any
 
 import structlog
 
-from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
@@ -13,6 +12,7 @@ from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.user.oauth_service import oauth_account_service
+from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import UserService
 from polar.worker import enqueue_job
 
@@ -118,6 +118,7 @@ class GithubUserService(UserService):
         github_user: GithubUser,
         github_email: GithubEmail,
         tokens: OAuthAccessToken,
+        signup_attribution: UserSignupAttribution | None = None,
     ) -> User:
         email, email_verified = github_email
         new_user = User(
@@ -125,6 +126,7 @@ class GithubUserService(UserService):
             email=email,
             email_verified=email_verified,
             avatar_url=github_user.avatar_url,
+            signup_attribution=signup_attribution,
             oauth_accounts=[
                 OAuthAccount(
                     platform=OAuthPlatform.github,
@@ -138,6 +140,7 @@ class GithubUserService(UserService):
                 )
             ],
         )
+
         session.add(new_user)
         await session.commit()
 
@@ -212,7 +215,7 @@ class GithubUserService(UserService):
         locker: Locker,
         *,
         tokens: OAuthAccessToken,
-        signup_type: UserSignupType | None = None,
+        signup_attribution: UserSignupAttribution | None = None,
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
@@ -222,12 +225,13 @@ class GithubUserService(UserService):
             tokens=tokens,
             client=client,
             authenticated=authenticated,
+            signup_attribution=signup_attribution,
         )
 
         posthog.user_event(user, "user", event_name, "done")
 
         if signup:
-            await loops_service.user_signup(user, signup_type, gitHubConnected=True)
+            await loops_service.user_signup(user, gitHubConnected=True)
         else:
             await loops_service.user_update(user, gitHubConnected=True)
         return user
@@ -239,6 +243,7 @@ class GithubUserService(UserService):
         tokens: OAuthAccessToken,
         client: GitHub[TokenAuthStrategy],
         authenticated: GithubUser,
+        signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, str, bool]:
         # Check if we have an existing user with this GitHub account
         existing_user_by_id = await self.get_user_by_github_id(
@@ -285,6 +290,7 @@ class GithubUserService(UserService):
             github_user=authenticated,
             github_email=github_email,
             tokens=tokens,
+            signup_attribution=signup_attribution,
         )
         posthog.user_event(user, "user", "github_oauth_signed_up", "done")
         return (user, "signed_up", True)

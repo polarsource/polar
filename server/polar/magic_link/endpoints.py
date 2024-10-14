@@ -30,16 +30,21 @@ async def request_magic_link(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     magic_link, token = await magic_link_service.request(
-        session, magic_link_request.email, source="user_login"
+        session,
+        magic_link_request.email,
+        source="user_login",
+        signup_attribution=magic_link_request.attribution,
     )
 
     await magic_link_service.send(
         magic_link,
         token,
         base_url=str(settings.generate_frontend_url("/login/magic-link/authenticate")),
-        extra_url_params={"return_to": magic_link_request.return_to}
-        if magic_link_request.return_to
-        else {},
+        extra_url_params=(
+            {"return_to": magic_link_request.return_to}
+            if magic_link_request.return_to
+            else {}
+        ),
     )
 
 

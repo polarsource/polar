@@ -68,6 +68,8 @@ def _validate_email_dns(email: str) -> str:
         return email
 
 
+UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
+
 EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
 
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]

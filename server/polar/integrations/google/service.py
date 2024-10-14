@@ -5,13 +5,13 @@ from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import OAuth2Token
 
 from polar.config import settings
-from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.user.oauth_service import oauth_account_service
+from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
@@ -58,7 +58,7 @@ class GoogleService:
         session: AsyncSession,
         *,
         token: OAuth2Token,
-        signup_type: UserSignupType | None = None,
+        signup_attribution: UserSignupAttribution | None = None,
     ) -> User:
         google_profile = await self._get_profile(token["access_token"])
         user = await user_service.get_by_oauth_account(
@@ -103,12 +103,14 @@ class GoogleService:
             email_verified=google_profile["email_verified"],
             avatar_url=google_profile["picture"],
             oauth_accounts=[oauth_account],
+            signup_attribution=signup_attribution,
         )
+
         session.add(user)
         await session.flush()
 
         enqueue_job("user.on_after_signup", user_id=user.id)
-        await loops_service.user_signup(user, signup_type)
+        await loops_service.user_signup(user)
 
         return user
 

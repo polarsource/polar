@@ -67,3 +67,7 @@ class RecordModel(TimestampedModel):
             id_value = insp.identity[0]
             return f"{self.__class__.__name__}(id={id_value!r})"
         return f"{self.__class__.__name__}(id=None)"
+
+    @classmethod
+    def generate_id(cls) -> UUID:
+        return generate_uuid()

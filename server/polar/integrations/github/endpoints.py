@@ -21,7 +21,6 @@ from polar.auth.service import AuthService
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.context import ExecutionContext
-from polar.enums import UserSignupType
 from polar.exceptions import (
     InternalServerError,
     NotPermitted,
@@ -43,6 +42,7 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.reward.service import reward_service
+from polar.user.schemas.user import UserSignupAttribution, UserSignupAttributionQuery
 from polar.worker import enqueue_job
 
 from . import types
@@ -92,8 +92,8 @@ async def github_authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
+    signup_attribution: UserSignupAttributionQuery,
     payment_intent_id: str | None = None,
-    user_signup_type: UserSignupType | None = None,
 ) -> RedirectResponse:
     state = {}
     if payment_intent_id:
@@ -101,8 +101,10 @@ async def github_authorize(
 
     state["return_to"] = return_to
 
-    if user_signup_type:
-        state["user_signup_type"] = user_signup_type
+    if signup_attribution:
+        state["signup_attribution"] = signup_attribution.model_dump_json(
+            exclude_unset=True
+        )
 
     if is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
@@ -148,9 +150,12 @@ async def github_callback(
         raise OAuthCallbackError("Invalid token data", return_to=return_to) from e
 
     state_user_id = state_data.get("user_id")
-    state_user_type = UserSignupType.backer
-    if state_data.get("user_signup_type") == UserSignupType.maintainer:
-        state_user_type = UserSignupType.maintainer
+
+    state_signup_attribution = state_data.get("signup_attribution")
+    if state_signup_attribution:
+        state_signup_attribution = UserSignupAttribution.model_validate_json(
+            state_signup_attribution
+        )
 
     try:
         if (
@@ -163,7 +168,10 @@ async def github_callback(
             )
         else:
             user = await github_user.login_or_signup(
-                session, locker, tokens=tokens, signup_type=state_user_type
+                session,
+                locker,
+                tokens=tokens,
+                signup_attribution=state_signup_attribution,
             )
 
     except GithubUserServiceError as e:

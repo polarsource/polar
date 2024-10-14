@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -14,10 +15,12 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
 from polar.kit.db.models import RecordModel
+from polar.kit.schemas import Schema
 
 from .account import Account
 
@@ -127,6 +130,24 @@ class User(RecordModel):
         nullable=True,
         default=None,
     )
+
+    meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    @property
+    def signup_attribution(self) -> dict[str, Any]:
+        return self.meta.get("signup", {})
+
+    @signup_attribution.setter
+    def signup_attribution(self, value: dict[str, Any] | Schema | None) -> None:
+        if not value:
+            return
+
+        meta = self.meta or {}
+        if isinstance(value, Schema):
+            value = value.model_dump(exclude_unset=True)
+
+        meta["signup"] = value
+        self.meta = meta
 
     def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:
         return next(

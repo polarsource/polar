@@ -18,6 +18,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.postgres import AsyncSession
+from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import user as user_service
 
 from .schemas import (
@@ -189,16 +190,6 @@ class PaymentIntentService:
         email = intent["receipt_email"]
         amount = intent["amount"]
 
-        user_id = metadata.user_id
-
-        # Create an account automatically for anonymous pledges
-        if user_id is None:
-            user = await user_service.get_by_email_or_signup(session, email)
-            user_id = user.id
-        else:
-            user = cast(User, await user_service.get(session, user_id))
-        await loops_service.user_update(user, isBacker=True)
-
         state = (
             PledgeState.created
             if intent["status"] == "succeeded"
@@ -206,6 +197,8 @@ class PaymentIntentService:
         )
 
         pledge = Pledge(
+            # Generate ID upfront for user attribution
+            id=Pledge.generate_id(),
             payment_id=payment_intent_id,
             issue=issue,
             to_repository=issue.repository,
@@ -216,10 +209,28 @@ class PaymentIntentService:
             fee=0,
             state=state,
             type=PledgeType.pay_upfront,
-            by_user_id=user_id,
             by_organization_id=None,
             on_behalf_of_organization_id=metadata.on_behalf_of_organization_id,
         )
+
+        user_id = metadata.user_id
+
+        # Create an account automatically for anonymous pledges
+        if user_id is None:
+            user = await user_service.get_by_email_or_signup(
+                session,
+                email,
+                signup_attribution=UserSignupAttribution(
+                    intent="pledge",
+                    pledge=pledge.id,
+                ),
+            )
+            user_id = user.id
+        else:
+            user = cast(User, await user_service.get(session, user_id))
+        await loops_service.user_update(user, isBacker=True)
+
+        pledge.by_user_id = user.id
         session.add(pledge)
         await session.flush()
 

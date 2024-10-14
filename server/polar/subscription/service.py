@@ -18,7 +18,7 @@ from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
-from polar.enums import SubscriptionRecurringInterval, UserSignupType
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -53,6 +53,7 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import sql
 from polar.posthog import posthog
+from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
@@ -378,7 +379,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # New subscription
         if subscription is None:
-            subscription = Subscription(user=None)
+            subscription = Subscription(
+                # Generate ID upfront for user attribution
+                id=Subscription.generate_id(),
+                user=None,
+            )
 
         subscription.stripe_subscription_id = stripe_subscription.id
         subscription.status = SubscriptionStatus(stripe_subscription.status)
@@ -420,8 +425,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 user = await user_service.get(session, uuid.UUID(user_id))
             if user is None:
                 user = await user_service.get_by_email_or_signup(
-                    session, customer_email, signup_type=UserSignupType.backer
+                    session,
+                    customer_email,
+                    signup_attribution=UserSignupAttribution(
+                        intent="order",
+                        subscription=subscription.id,
+                    ),
                 )
+
         subscription.user = user
 
         # Take the chance to update Stripe customer ID and email marketing

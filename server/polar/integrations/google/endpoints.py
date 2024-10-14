@@ -48,9 +48,7 @@ async def google_authorize(
     state["return_to"] = return_to
 
     if signup_attribution:
-        state["signup_attribution"] = signup_attribution.model_dump_json(
-            exclude_unset=True
-        )
+        state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
     if is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
@@ -96,7 +94,7 @@ async def google_callback(
 
     state_signup_attribution = state_data.get("signup_attribution")
     if state_signup_attribution:
-        state_signup_attribution = UserSignupAttribution.model_validate_json(
+        state_signup_attribution = UserSignupAttribution.model_validate(
             state_signup_attribution
         )
 

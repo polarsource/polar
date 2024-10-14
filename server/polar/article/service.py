@@ -510,15 +510,15 @@ class ArticleService(ResourceServiceReader[Article]):
 
                     # Find images hosted on Vercel and download them
                     body = article.body
-                    pattern = r"https://7vk6rcnylug0u6hg\.public\.blob\.vercel-storage\.com/([^)]+)"
-                    for match in re.finditer(pattern, body):
-                        async with client.stream("GET", match.group(0)) as stream:
+                    pattern = r"(https://7vk6rcnylug0u6hg\.public\.blob\.vercel-storage\.com/(.+))\)$"
+                    for match in re.finditer(pattern, body, re.MULTILINE):
+                        async with client.stream("GET", match.group(1)) as stream:
                             stream.raise_for_status()
                             archive.writestr(
-                                f"articles/{article.slug}/{match.group(1)}",
+                                f"articles/{article.slug}/{match.group(2)}",
                                 await stream.aread(),
                             )
-                        body = body.replace(match.group(0), f"./{match.group(1)}")
+                        body = body.replace(match.group(0), f"./{match.group(2)}")
 
                     frontmatter = f"""---\n{"\n".join(f"{k}: {v}" for k, v in frontmatter_dict.items())}\n---\n\n"""
                     content = f"{frontmatter}{body}"

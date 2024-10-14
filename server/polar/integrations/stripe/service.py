@@ -434,7 +434,7 @@ class StripeService:
     async def update_subscription_price(
         self, id: str, *, old_price: str, new_price: str
     ) -> stripe_lib.Subscription:
-        subscription = stripe_lib.Subscription.retrieve(id)
+        subscription = await stripe_lib.Subscription.retrieve_async(id)
 
         old_items = subscription["items"]
         new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []

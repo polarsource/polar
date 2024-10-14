@@ -46,9 +46,10 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
         hide={hideModal}
         modalContent={
           <AuthModal
-            return_to={`/dashboard/create`}
-            params={slug ? { slug, auto: 'true' } : {}}
-            type="signup"
+            returnParams={slug ? { slug, auto: 'true' } : {}}
+            signup={{
+              intent: 'creator'
+            }}
           />
         }
         className="lg:w-full lg:max-w-[480px]"

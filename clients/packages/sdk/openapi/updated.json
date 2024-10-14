@@ -2536,22 +2536,6 @@
                         }
                     },
                     {
-                        "name": "user_signup_type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/UserSignupType"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "User Signup Type"
-                        }
-                    },
-                    {
                         "name": "return_to",
                         "in": "query",
                         "required": false,
@@ -2565,6 +2549,22 @@
                                 }
                             ],
                             "title": "Return To"
+                        }
+                    },
+                    {
+                        "name": "attribution",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Attribution"
                         }
                     }
                 ],
@@ -16073,22 +16073,6 @@
                 ],
                 "parameters": [
                     {
-                        "name": "user_signup_type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/UserSignupType"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "User Signup Type"
-                        }
-                    },
-                    {
                         "name": "return_to",
                         "in": "query",
                         "required": false,
@@ -16102,6 +16086,22 @@
                                 }
                             ],
                             "title": "Return To"
+                        }
+                    },
+                    {
+                        "name": "attribution",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Attribution"
                         }
                     }
                 ],
@@ -25821,6 +25821,16 @@
                             }
                         ],
                         "title": "Return To"
+                    },
+                    "attribution": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/UserSignupAttribution"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "type": "object",
@@ -34964,14 +34974,133 @@
                 ],
                 "title": "UserSetAccount"
             },
-            "UserSignupType": {
-                "type": "string",
-                "enum": [
-                    "maintainer",
-                    "backer",
-                    "imported"
-                ],
-                "title": "UserSignupType"
+            "UserSignupAttribution": {
+                "properties": {
+                    "intent": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "creator",
+                                    "pledge",
+                                    "donation",
+                                    "purchase",
+                                    "subscription",
+                                    "newsletter_subscription"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Intent"
+                    },
+                    "order": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order"
+                    },
+                    "subscription": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription"
+                    },
+                    "pledge": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Pledge"
+                    },
+                    "donation": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Donation"
+                    },
+                    "path": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Path"
+                    },
+                    "host": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Host"
+                    },
+                    "utm_source": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Utm Source"
+                    },
+                    "utm_medium": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Utm Medium"
+                    },
+                    "utm_campaign": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Utm Campaign"
+                    }
+                },
+                "type": "object",
+                "title": "UserSignupAttribution"
             },
             "UserStripePortalSession": {
                 "properties": {

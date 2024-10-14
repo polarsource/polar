@@ -6,7 +6,7 @@ import {
   IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
   IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
   IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
-  MagicLinkApiMagicLinkAuthenticateRequest,
+  MagicLinkApiMagicLinkAuthenticateRequest
 } from '@polar-sh/sdk'
 
 export const getGitHubAuthorizeURL = (
@@ -19,8 +19,8 @@ export const getGitHubAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  if (params.userSignupType !== undefined) {
-    searchParams.set('user_signup_type', params.userSignupType)
+  if (params.attribution !== undefined) {
+    searchParams.set('attribution', params.attribution)
   }
   return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
@@ -32,8 +32,8 @@ export const getGoogleAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  if (params.userSignupType !== undefined) {
-    searchParams.set('user_signup_type', params.userSignupType)
+  if (params.attribution !== undefined) {
+    searchParams.set('attribution', params.attribution)
   }
   return `${getServerURL()}/v1/integrations/google/authorize?${searchParams}`
 }

@@ -6,7 +6,7 @@ import {
   ClockIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
-import { Issue, Organization, UserSignupType } from '@polar-sh/sdk'
+import { Issue, Organization } from '@polar-sh/sdk'
 import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -210,7 +210,6 @@ const NotLoggedInBanner = () => {
         text="Continue with GitHub"
         fullWidth={true}
         returnTo={pathname || '/funding'}
-        userSignupType={UserSignupType.BACKER}
       />
     </div>
   )

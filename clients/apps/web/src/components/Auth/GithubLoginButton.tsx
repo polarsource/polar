@@ -1,26 +1,28 @@
 'use client'
 
 import { getGitHubAuthorizeURL } from '@/utils/auth'
-import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
+import { UserSignupAttribution } from '@polar-sh/sdk'
 
 const GithubLoginButton = (props: {
   className?: string
   returnTo?: string
-  userSignupType?: UserSignupType
+  signup?: UserSignupAttribution,
   size?: 'large' | 'small'
   fullWidth?: boolean
   posthogProps?: object
   text: string
 }) => {
   const search = useSearchParams()
+  const signup = props.signup
+
   const authorizeURL = getGitHubAuthorizeURL({
     paymentIntentId: search?.get('payment_intent_id') ?? undefined,
     returnTo: props.returnTo,
-    userSignupType: props.userSignupType,
+    attribution: JSON.stringify(signup),
   })
 
   const largeStyle = 'p-2.5 px-5 text-md space-x-3'

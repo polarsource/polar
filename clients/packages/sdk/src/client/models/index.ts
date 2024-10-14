@@ -7866,6 +7866,12 @@ export interface MagicLinkRequest {
      * @memberof MagicLinkRequest
      */
     return_to?: string | null;
+    /**
+     * 
+     * @type {UserSignupAttribution}
+     * @memberof MagicLinkRequest
+     */
+    attribution?: UserSignupAttribution | null;
 }
 /**
  * 
@@ -16000,17 +16006,87 @@ export interface UserSetAccount {
      */
     account_id: string;
 }
-
 /**
  * 
  * @export
+ * @interface UserSignupAttribution
  */
-export const UserSignupType = {
-    MAINTAINER: 'maintainer',
-    BACKER: 'backer',
-    IMPORTED: 'imported'
+export interface UserSignupAttribution {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    intent?: UserSignupAttributionIntentEnum | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    order?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    subscription?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    pledge?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    donation?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    path?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    host?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    utm_source?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    utm_medium?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSignupAttribution
+     */
+    utm_campaign?: string | null;
+}
+
+
+/**
+ * @export
+ */
+export const UserSignupAttributionIntentEnum = {
+    CREATOR: 'creator',
+    PLEDGE: 'pledge',
+    DONATION: 'donation',
+    PURCHASE: 'purchase',
+    SUBSCRIPTION: 'subscription',
+    NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription'
 } as const;
-export type UserSignupType = typeof UserSignupType[keyof typeof UserSignupType];
+export type UserSignupAttributionIntentEnum = typeof UserSignupAttributionIntentEnum[keyof typeof UserSignupAttributionIntentEnum];
 
 /**
  * 

@@ -68,7 +68,7 @@ const LandingPageTopbar = () => {
       <Modal
         isShown={isModalShown}
         hide={hideModal}
-        modalContent={<AuthModal type="login" />}
+        modalContent={<AuthModal />}
         className="lg:w-full lg:max-w-[480px]"
       />
     </div>

@@ -40,7 +40,7 @@ const TopbarRight = ({
           <Modal
             isShown={isModalShown}
             hide={hideModal}
-            modalContent={<AuthModal type="login" return_to={loginReturnTo} />}
+            modalContent={<AuthModal returnTo={loginReturnTo} />}
             className="lg:w-full lg:max-w-[480px]"
           />
         </>

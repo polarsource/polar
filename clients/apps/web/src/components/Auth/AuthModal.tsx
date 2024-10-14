@@ -1,27 +1,24 @@
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import LogoIcon from '../Brand/LogoIcon'
+import { UserSignupAttribution } from '@polar-sh/sdk'
 import Login from './Login'
 
 interface AuthModalProps {
-  return_to?: string
-  params?: Record<string, string>
-  type?: 'signup' | 'login'
+  returnTo?: string
+  returnParams?: Record<string, string>
+  signup?: UserSignupAttribution
 }
 
 export const AuthModal = ({
-  return_to,
-  params,
-  type = 'login',
+  returnTo,
+  returnParams,
+  signup,
 }: AuthModalProps) => {
-  const restParams = new URLSearchParams(params)
-  const returnTo = return_to
-    ? `${return_to || ''}?${restParams.toString()}`
-    : undefined
-
-  const title = type === 'signup' ? 'Sign Up' : 'Sign In'
+  const isSignup = signup !== undefined
+  const title = isSignup ? 'Sign Up' : 'Sign In'
 
   const copy =
-    type === 'signup' ? (
+    isSignup ? (
       <p className="dark:text-polar-500 text-xl text-gray-500">
         Join thousands of developers getting paid to code on their passions
       </p>
@@ -38,7 +35,7 @@ export const AuthModal = ({
         </div>
 
         <div className="flex flex-col gap-y-12">
-          <Login returnTo={returnTo} />
+          <Login returnTo={returnTo} returnParams={returnParams} signup={signup} />
         </div>
       </div>
     </ShadowBox>

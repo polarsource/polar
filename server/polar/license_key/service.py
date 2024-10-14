@@ -96,7 +96,7 @@ class LicenseKeyService(
     ) -> LicenseKey | None:
         query = self._get_select_base().where(LicenseKey.id == id)
         result = await session.execute(query)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def get_by_grant_or_raise(
         self,
@@ -114,7 +114,7 @@ class LicenseKeyService(
             LicenseKey.benefit_id == benefit_id,
         )
         result = await session.execute(query)
-        key = result.scalar_one_or_none()
+        key = result.unique().scalar_one_or_none()
         if not key:
             raise ResourceNotFound()
         return key

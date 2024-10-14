@@ -24633,6 +24633,11 @@
                         "format": "uuid4",
                         "title": "Organization Id"
                     },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/LicenseKeyUser"
                     },
@@ -24717,6 +24722,7 @@
                 "required": [
                     "id",
                     "organization_id",
+                    "user_id",
                     "user",
                     "benefit_id",
                     "key",
@@ -24923,6 +24929,11 @@
                         "format": "uuid4",
                         "title": "Organization Id"
                     },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/LicenseKeyUser"
                     },
@@ -25014,6 +25025,7 @@
                 "required": [
                     "id",
                     "organization_id",
+                    "user_id",
                     "user",
                     "benefit_id",
                     "key",
@@ -35281,6 +35293,11 @@
                         "format": "uuid4",
                         "title": "Organization Id"
                     },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
                     "user": {
                         "$ref": "#/components/schemas/LicenseKeyUser"
                     },
@@ -35375,6 +35392,7 @@
                 "required": [
                     "id",
                     "organization_id",
+                    "user_id",
                     "user",
                     "benefit_id",
                     "key",

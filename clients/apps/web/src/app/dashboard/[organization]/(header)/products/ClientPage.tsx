@@ -10,7 +10,6 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { CONFIG } from '@/utils/config'
 import {
   AddOutlined,
   HiveOutlined,
@@ -219,13 +218,6 @@ const ProductListItem = ({
   const onCopyPriceID = (price: ProductPrice) => {
     if (typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(price.id)
-    }
-  }
-
-  const onGenerateCheckoutUrl = (price: ProductPrice) => {
-    const url = new URL(`${CONFIG.PRODUCT_LINK_BASE_URL}${price.id}`)
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(url.toString())
     }
   }
 

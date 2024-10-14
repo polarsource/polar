@@ -12,6 +12,7 @@ import {
   useTrafficTopReferrers,
 } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { getServerURL } from '@/utils/api'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import {
@@ -148,12 +149,20 @@ const ClientPage = () => {
                     3. We&apos;ll sunset it entirely once migrations are done
                   </li>
                 </ol>
-                <Link
-                  href={`https://github.com/orgs/polarsource/discussions/3998`}
-                  target="_blank"
-                >
-                  <Button>Learn more</Button>
-                </Link>
+                <div className="flex flex-row gap-x-2">
+                  <Link
+                    href={`https://github.com/orgs/polarsource/discussions/3998`}
+                    target="_blank"
+                  >
+                    <Button>Learn more</Button>
+                  </Link>
+                  <Link
+                    href={`${getServerURL()}/api/v1/articles/export?organization_id=${org.id}`}
+                    target="_blank"
+                  >
+                    <Button>Export posts</Button>
+                  </Link>
+                </div>
               </ShadowBox>
 
               {showPosts ? (

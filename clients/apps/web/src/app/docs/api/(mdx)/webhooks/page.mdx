@@ -54,6 +54,12 @@ Once a webhook is configured, you will have access to a delivery overview page. 
 ![Delivery](./delivery.light.png)
 ![Delivery](./delivery.dark.png)
 
+<BrowserCallout type="NOTE">
+  If we hit an error while trying to reach your endpoint, whether it is a
+  temporary network error or a bug, we'll retry to send the event up to **10
+  times** with an exponential backoff.
+</BrowserCallout>
+
 ## Verify signature
 
 Requests sent to your webhook endpoint will include a signature so you can verify that the request is truly coming from Polar.

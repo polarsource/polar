@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { api } from '@/utils/api'
-import { defaultRetry } from './retry'
 import { LicenseKeysApiListRequest } from '@polar-sh/sdk'
+import { defaultRetry } from './retry'
 
 interface GetLicenseKeysRequest {
   licenseKeyId?: string
@@ -19,17 +19,19 @@ export const useLicenseKey = ({ licenseKeyId }: GetLicenseKeysRequest) =>
     enabled: !!licenseKeyId,
   })
 
-  export const useOrganizationLicenseKeys = ({
-    organizationId,
-    page,
-    limit
-  }: LicenseKeysApiListRequest) => useQuery({
+export const useOrganizationLicenseKeys = ({
+  organizationId,
+  page,
+  limit,
+}: LicenseKeysApiListRequest) =>
+  useQuery({
     queryKey: ['license_keys', 'organization', organizationId, { page, limit }],
-    queryFn: () => api.licenseKeys.list({
-      organizationId,
-      page,
-      limit
-    }),
+    queryFn: () =>
+      api.licenseKeys.list({
+        organizationId,
+        page,
+        limit,
+      }),
     retry: defaultRetry,
-    enabled: !!organizationId
+    enabled: !!organizationId,
   })

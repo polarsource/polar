@@ -6866,6 +6866,12 @@ export interface LicenseKeyRead {
     organization_id: string;
     /**
      * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    user_id: string;
+    /**
+     * 
      * @type {LicenseKeyUser}
      * @memberof LicenseKeyRead
      */
@@ -7082,6 +7088,12 @@ export interface LicenseKeyWithActivations {
      * @memberof LicenseKeyWithActivations
      */
     organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    user_id: string;
     /**
      * 
      * @type {LicenseKeyUser}
@@ -16253,6 +16265,12 @@ export interface ValidatedLicenseKey {
      * @memberof ValidatedLicenseKey
      */
     organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    user_id: string;
     /**
      * 
      * @type {LicenseKeyUser}

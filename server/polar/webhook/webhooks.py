@@ -27,6 +27,7 @@ from polar.models import (
     Subscription,
     User,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.order.schemas import Order as OrderSchema
 from polar.organization.schemas import Organization as OrganizationSchema
@@ -43,6 +44,9 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.order_created], Order]
     | tuple[Literal[WebhookEventType.subscription_created], Subscription]
     | tuple[Literal[WebhookEventType.subscription_updated], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_active], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
     | tuple[Literal[WebhookEventType.pledge_created], Pledge]
@@ -315,11 +319,168 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         return json.dumps(payload)
 
 
-class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
+class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
     """
-    Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.
+    Base class for subscription updated payloads.
+    """
 
-    **Discord & Slack support:** On cancellation
+    type: (
+        Literal[WebhookEventType.subscription_updated]
+        | Literal[WebhookEventType.subscription_active]
+        | Literal[WebhookEventType.subscription_canceled]
+        | Literal[WebhookEventType.subscription_revoked]
+    )
+    data: SubscriptionSchema
+
+    def _get_active_discord_payload(self, target: User | Organization) -> str:
+        fields = self._get_discord_fields(target)
+        payload: DiscordPayload = {
+            "content": "Subscription is now active.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Active Subscription",
+                        "description": "Subscription is now active.",
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_active_slack_payload(self, target: User | Organization) -> str:
+        fields = self._get_slack_fields(target)
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription is now active.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription is now active.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_canceled_discord_payload(self, target: User | Organization) -> str:
+        fields = self._get_discord_fields(target)
+        if self.data.cancel_at_period_end:
+            ends_at = format_date(self.data.current_period_end, locale="en_US")
+        else:
+            ends_at = format_date(self.data.ended_at, locale="en_US")
+        fields.append({"name": "Ends At", "value": ends_at})
+
+        payload: DiscordPayload = {
+            "content": "Subscription has been canceled.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Canceled Subscription",
+                        "description": "Subscription has been canceled.",
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_canceled_slack_payload(self, target: User | Organization) -> str:
+        fields = self._get_slack_fields(target)
+        if self.data.cancel_at_period_end:
+            ends_at = format_date(self.data.current_period_end, locale="en_US")
+        else:
+            ends_at = format_date(self.data.ended_at, locale="en_US")
+        fields.append({"type": "mrkdwn", "text": f"*Ends At*\n{ends_at}"})
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has been canceled.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has been canceled.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_revoked_discord_payload(self, target: User | Organization) -> str:
+        payload: DiscordPayload = {
+            "content": "Subscription has been revoked.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Revoked Subscription",
+                        "description": "Subscription has been revoked.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_revoked_slack_payload(self, target: User | Organization) -> str:
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has been revoked.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has been revoked.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_discord_fields(
+        self, target: User | Organization
+    ) -> list[DiscordEmbedField]:
+        amount_display = self.data.get_amount_display()
+        fields: list[DiscordEmbedField] = [
+            {"name": "Product", "value": self.data.product.name},
+            {"name": "Amount", "value": amount_display},
+            {"name": "Customer", "value": self.data.user.email},
+            {"name": "Status", "value": self.data.status},
+        ]
+        return fields
+
+    def _get_slack_fields(self, target: User | Organization) -> list[SlackText]:
+        amount_display = self.data.get_amount_display()
+        fields: list[SlackText] = [
+            {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
+            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
+            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
+            {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
+        ]
+        return fields
+
+
+class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a new subscription is updated. This event fires if the subscription is canceled, both immediately and if the subscription is canceled at the end of the current period.
+
+    **Discord & Slack support:** On cancellation and revocation
     """
 
     type: Literal[WebhookEventType.subscription_updated]
@@ -329,80 +490,109 @@ class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
 
+        if self.data.status in [
+            SubscriptionStatus.past_due,
+            SubscriptionStatus.canceled,
+            SubscriptionStatus.unpaid,
+        ]:
+            return self._get_revoked_discord_payload(target)
+
         # Avoid to send notifications for subscription renewals (not interesting)
         # TODO: Notify about upgrades and downgrades
         if not self.data.cancel_at_period_end and not self.data.ended_at:
             raise SkipEvent(self.type, WebhookFormat.discord)
 
-        amount_display = self.data.get_amount_display()
-
-        if self.data.cancel_at_period_end:
-            ends_at = format_date(self.data.current_period_end, locale="en_US")
-        else:
-            ends_at = format_date(self.data.ended_at, locale="en_US")
-
-        fields: list[DiscordEmbedField] = [
-            {"name": "Product", "value": self.data.product.name},
-            {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.user.email},
-            {"name": "Status", "value": self.data.status},
-            {"name": "Ends At", "value": ends_at},
-        ]
-        payload: DiscordPayload = {
-            "content": "Subscription has been cancelled.",
-            "embeds": [
-                get_branded_discord_embed(
-                    {
-                        "title": "Cancelled Subscription",
-                        "description": "Subscription has been cancelled.",
-                        "fields": fields,
-                    }
-                )
-            ],
-        }
-
-        return json.dumps(payload)
+        return self._get_canceled_discord_payload(target)
 
     def get_slack_payload(self, target: User | Organization) -> str:
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        if self.data.status in [
+            SubscriptionStatus.past_due,
+            SubscriptionStatus.canceled,
+            SubscriptionStatus.unpaid,
+        ]:
+            return self._get_revoked_discord_payload(target)
 
         # Avoid to send notifications for subscription renewals (not interesting)
         # TODO: Notify about upgrades and downgrades
         if not self.data.cancel_at_period_end and not self.data.ended_at:
             raise SkipEvent(self.type, WebhookFormat.slack)
 
-        amount_display = self.data.get_amount_display()
+        return self._get_canceled_slack_payload(target)
 
-        if self.data.cancel_at_period_end:
-            ends_at = format_date(self.data.current_period_end, locale="en_US")
-        else:
-            ends_at = format_date(self.data.ended_at, locale="en_US")
 
-        fields: list[SlackText] = [
-            {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
-            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
-            {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
-            {"type": "mrkdwn", "text": f"*Ends At*\n{ends_at}"},
-        ]
-        payload: SlackPayload = get_branded_slack_payload(
-            {
-                "text": "Subscription has been cancelled.",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "Subscription has been cancelled.",
-                        },
-                        "fields": fields,
-                    }
-                ],
-            }
-        )
+class WebhookSubscriptionActivePayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription becomes active,
+    whether because it's a new paid subscription or because payment was recovered.
 
-        return json.dumps(payload)
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_active]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_active_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_active_slack_payload(target)
+
+
+class WebhookSubscriptionCanceledPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription is canceled by the user.
+    They might still have access until the end of the current period.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_canceled]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_canceled_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_canceled_slack_payload(target)
+
+
+class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription is revoked, the user looses access immediately.
+    Happens when the subscription is canceled, or payment is past due.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_revoked]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_revoked_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_revoked_slack_payload(target)
 
 
 class WebhookProductCreatedPayload(BaseWebhookPayload):
@@ -643,6 +833,9 @@ WebhookPayload = Annotated[
     | WebhookOrderCreatedPayload
     | WebhookSubscriptionCreatedPayload
     | WebhookSubscriptionUpdatedPayload
+    | WebhookSubscriptionActivePayload
+    | WebhookSubscriptionCanceledPayload
+    | WebhookSubscriptionRevokedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload
     | WebhookPledgeCreatedPayload

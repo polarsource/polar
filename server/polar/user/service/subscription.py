@@ -105,7 +105,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             if active:
                 statement = statement.where(Subscription.active.is_(True))
             else:
-                statement = statement.where(Subscription.canceled.is_(True))
+                statement = statement.where(Subscription.revoked.is_(True))
 
         if query is not None:
             statement = statement.where(

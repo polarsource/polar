@@ -194,7 +194,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             if active:
                 statement = statement.where(Subscription.active.is_(True))
             else:
-                statement = statement.where(Subscription.canceled.is_(True))
+                statement = statement.where(Subscription.revoked.is_(True))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

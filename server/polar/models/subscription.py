@@ -129,16 +129,16 @@ class Subscription(MetadataMixin, RecordModel):
         )
 
     @hybrid_property
-    def canceled(self) -> bool:
+    def revoked(self) -> bool:
         return self.status in [
             SubscriptionStatus.past_due,
             SubscriptionStatus.canceled,
             SubscriptionStatus.unpaid,
         ]
 
-    @canceled.inplace.expression
+    @revoked.inplace.expression
     @classmethod
-    def _canceled_expression(cls) -> ColumnElement[bool]:
+    def _revoked_expression(cls) -> ColumnElement[bool]:
         return type_coerce(
             cls.status.in_(
                 [

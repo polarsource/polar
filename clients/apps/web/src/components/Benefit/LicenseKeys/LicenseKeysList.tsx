@@ -48,17 +48,25 @@ export const LicenseKeysList = ({
     {
       id: 'status',
       accessorKey: 'status',
-      enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row: { original: licenseKey } }) => {
+        return <span className="capitalize">{licenseKey.status}</span>
+      },
+    },
+    {
+      id: 'usage',
+      accessorKey: 'usage',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Usage" />
+      ),
+      cell: ({ row: { original: licenseKey } }) => {
         return (
           <div className="flex flex-row gap-x-2">
-            <span className="capitalize">{licenseKey.status}</span>
             {typeof licenseKey.limit_usage === 'number' && (
-              <span className="dark:text-polar-500 text-gray-500">
-                ({licenseKey.usage}/{licenseKey.limit_usage})
+              <span>
+                {licenseKey.usage}/{licenseKey.limit_usage}
               </span>
             )}
           </div>
@@ -66,15 +74,42 @@ export const LicenseKeysList = ({
       },
     },
     {
-      accessorKey: 'expires_at',
+      id: 'validations',
+      accessorKey: 'validations',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Expiry date" />
+        <DataTableColumnHeader column={column} title="Validations" />
       ),
-      cell: (props) => (
-        <FormattedDateTime datetime={props.getValue() as string} />
+      cell: ({ row: { original: licenseKey } }) => (
+        <span>{licenseKey.validations}</span>
       ),
     },
     {
+      id: 'last_validated_at',
+      accessorKey: 'last_validated_at',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Validated At" />
+      ),
+      cell: ({ getValue, row: { original: licenseKey } }) =>
+        licenseKey.last_validated_at ? (
+          <FormattedDateTime datetime={getValue() as string} />
+        ) : (
+          <span className="dark:text-polar-500 text-gray-500">
+            Never Validated
+          </span>
+        ),
+    },
+    {
+      id: 'expires_at',
+      accessorKey: 'expires_at',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Expiry Date" />
+      ),
+      cell: ({ getValue }) => (
+        <FormattedDateTime datetime={getValue() as string} />
+      ),
+    },
+    {
+      id: 'user',
       accessorKey: 'user',
       sortingFn: (a, b) => {
         return a.original.user.public_name.localeCompare(

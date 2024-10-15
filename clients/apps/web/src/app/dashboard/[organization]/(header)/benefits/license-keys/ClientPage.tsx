@@ -6,6 +6,7 @@ import { useOrganizationLicenseKeys } from '@/hooks/queries'
 import {
   DataTablePaginationState,
   DataTableSortingState,
+  getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
 import { Organization } from '@polar-sh/sdk'
@@ -23,6 +24,7 @@ export const ClientPage = ({
 }) => {
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organizationId: organization.id,
+    ...getAPIParams(pagination, sorting),
   })
 
   const getSearchParams = (

@@ -424,7 +424,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             if user_id is not None:
                 user = await user_service.get(session, uuid.UUID(user_id))
             if user is None:
-                user = await user_service.get_by_email_or_signup(
+                user, _ = await user_service.get_by_email_or_signup(
                     session,
                     customer_email,
                     signup_attribution=UserSignupAttribution(

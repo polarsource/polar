@@ -91,7 +91,9 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
             to_email_addr=magic_link.user_email, subject=subject, html_content=body
         )
 
-    async def authenticate(self, session: AsyncSession, token: str) -> User:
+    async def authenticate(
+        self, session: AsyncSession, token: str
+    ) -> tuple[User, bool]:
         token_hash = get_token_hash(token, secret=settings.SECRET)
         magic_link = await self._get_valid_magic_link_by_token_hash(session, token_hash)
 
@@ -104,9 +106,10 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
                 magic_link.signup_attribution
             )
 
+        is_signup = False
         user = magic_link.user
         if user is None:
-            user = await user_service.get_by_email_or_signup(
+            user, is_signup = await user_service.get_by_email_or_signup(
                 session,
                 magic_link.user_email,
                 signup_attribution=signup_attribution,
@@ -117,7 +120,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
 
         await session.delete(magic_link)
 
-        return user
+        return (user, is_signup)
 
     async def delete_expired(self, session: AsyncSession) -> None:
         statement = delete(MagicLink).where(MagicLink.expires_at < utc_now())

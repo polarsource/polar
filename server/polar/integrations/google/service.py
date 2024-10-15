@@ -59,7 +59,7 @@ class GoogleService:
         *,
         token: OAuth2Token,
         signup_attribution: UserSignupAttribution | None = None,
-    ) -> User:
+    ) -> tuple[User, bool]:
         google_profile = await self._get_profile(token["access_token"])
         user = await user_service.get_by_oauth_account(
             session, OAuthPlatform.google, google_profile["id"]
@@ -73,7 +73,7 @@ class GoogleService:
             oauth_account.expires_at = token["expires_at"]
             oauth_account.account_username = google_profile["email"]
             session.add(oauth_account)
-            return user
+            return (user, False)
 
         oauth_account = OAuthAccount(
             platform=OAuthPlatform.google,
@@ -91,7 +91,7 @@ class GoogleService:
             if google_profile["email_verified"]:
                 user.oauth_accounts.append(oauth_account)
                 session.add(user)
-                return user
+                return (user, False)
             else:
                 # For security reasons, don't link if the email is not verified
                 raise CannotLinkUnverifiedEmailError(google_profile["email"])
@@ -110,9 +110,10 @@ class GoogleService:
         await session.flush()
 
         enqueue_job("user.on_after_signup", user_id=user.id)
+
         await loops_service.user_signup(user)
 
-        return user
+        return (user, True)
 
     async def link_user(
         self,

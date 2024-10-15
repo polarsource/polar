@@ -12,7 +12,6 @@ from polar.logging import Logger
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, sql
-from polar.posthog import posthog
 from polar.user.schemas.user import UserSignupAttribution
 from polar.worker import enqueue_job
 
@@ -89,7 +88,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         email: str,
         *,
         signup_attribution: UserSignupAttribution | None = None,
-    ) -> User:
+    ) -> tuple[User, bool]:
         user = await self.get_by_email(session, email)
         signup = False
         if user is None:
@@ -102,7 +101,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
             await loops_service.user_signup(user)
         else:
             await loops_service.user_update(user)
-        return user
+        return (user, signup)
 
     async def signup_by_email(
         self,
@@ -120,8 +119,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         session.add(user)
         await session.commit()
 
-        posthog.identify(user)
-        posthog.user_event(user, "user", "signed_up", "done")
         log.info("user signed up by email", user_id=user.id, email=email)
 
         enqueue_job("user.on_after_signup", user_id=user.id)

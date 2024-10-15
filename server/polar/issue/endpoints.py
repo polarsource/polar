@@ -25,6 +25,7 @@ from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.schemas import OrganizationID
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
+from polar.redis import Redis, get_redis
 from polar.repository.service import repository as repository_service
 from polar.routing import APIRouter
 from polar.user_organization.service import (
@@ -195,11 +196,12 @@ async def get_body(
 async def for_you(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
     locker: Locker = Depends(get_locker),
 ) -> ListResource[IssueSchema]:
     issues = await github_issue_service.list_issues_from_starred(
-        session, locker, sessionmaker, auth_subject.subject
+        session, redis, locker, sessionmaker, auth_subject.subject
     )
 
     # get loaded
@@ -412,6 +414,7 @@ async def add_polar_badge(
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Issue:
     issue = await issue_service.get(session, id)
     if not issue:
@@ -431,7 +434,7 @@ async def add_polar_badge(
         raise ResourceNotFound()
 
     issue = await github_issue_service.add_polar_label(
-        session, external_org, repo, issue
+        session, redis, external_org, repo, issue
     )
 
     # get for return
@@ -452,6 +455,7 @@ async def remove_polar_badge(
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Issue:
     issue = await issue_service.get(session, id)
     if not issue:
@@ -471,7 +475,7 @@ async def remove_polar_badge(
         raise ResourceNotFound()
 
     issue = await github_issue_service.remove_polar_label(
-        session, external_org, repo, issue
+        session, redis, external_org, repo, issue
     )
 
     # get for return
@@ -547,6 +551,7 @@ async def badge_with_message(
     badge_message: IssueUpdateBadgeMessage,
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
     authz: Authz = Depends(Authz.authz),
 ) -> Issue:
     issue = await issue_service.get(session, id)
@@ -572,6 +577,7 @@ async def badge_with_message(
 
     await github_issue_service.embed_badge(
         session,
+        redis,
         external_organization=external_org,
         repository=repo,
         issue=issue,

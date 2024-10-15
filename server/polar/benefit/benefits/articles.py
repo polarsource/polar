@@ -10,7 +10,6 @@ from polar.locker import Locker
 from polar.models import ArticlesSubscription, Benefit, BenefitGrant, Organization, User
 from polar.models.benefit import BenefitArticles, BenefitArticlesProperties, BenefitType
 from polar.models.benefit_grant import BenefitGrantArticlesProperties
-from polar.redis import redis
 
 from .base import BenefitServiceProtocol
 
@@ -113,7 +112,7 @@ class BenefitArticlesService(
 
     @contextlib.asynccontextmanager
     async def _acquire_lock(self, user: User) -> AsyncGenerator[None, None]:
-        async with Locker(redis).lock(
+        async with Locker(self.redis).lock(
             f"articles-{user.id}", timeout=1, blocking_timeout=2
         ):
             yield

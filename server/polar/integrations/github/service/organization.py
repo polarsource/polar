@@ -21,6 +21,7 @@ from polar.logging import Logger
 from polar.models import ExternalOrganization, User
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 
 from .. import client as github
 from .. import types
@@ -67,6 +68,7 @@ class GithubOrganizationService(ExternalOrganizationService):
     async def install(
         self,
         session: AsyncSession,
+        redis: Redis,
         locker: Locker,
         authz: Authz,
         user: User,
@@ -111,7 +113,7 @@ class GithubOrganizationService(ExternalOrganizationService):
             )
 
         external_organization = await self.create_or_update_from_installation(
-            session, installation
+            session, redis, installation
         )
         if (
             external_organization.organization_id is not None
@@ -138,7 +140,7 @@ class GithubOrganizationService(ExternalOrganizationService):
         return external_organization
 
     async def create_or_update_from_installation(
-        self, session: AsyncSession, installation: types.Installation
+        self, session: AsyncSession, redis: Redis, installation: types.Installation
     ) -> ExternalOrganization:
         account = installation.account
         if account is None:
@@ -167,9 +169,9 @@ class GithubOrganizationService(ExternalOrganizationService):
             organization.deleted_at = None
             session.add(organization)
 
-        await self.populate_org_metadata(session, organization)
+        await self.populate_org_metadata(session, redis, organization)
 
-        await github_repository.install_for_organization(session, organization)
+        await github_repository.install_for_organization(session, redis, organization)
 
         return organization
 
@@ -226,12 +228,14 @@ class GithubOrganizationService(ExternalOrganizationService):
             await session.commit()
 
     async def populate_org_metadata(
-        self, session: AsyncSession, org: ExternalOrganization
+        self, session: AsyncSession, redis: Redis, org: ExternalOrganization
     ) -> None:
         if not org.installation_id:
             return None
 
-        client = github.get_app_installation_client(org.safe_installation_id)
+        client = github.get_app_installation_client(
+            org.safe_installation_id, redis=redis
+        )
         if org.is_personal:
             return await self._populate_github_user_metadata(session, client, org)
 

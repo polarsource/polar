@@ -10,6 +10,7 @@ from polar.models.benefit import (
 )
 from polar.models.benefit_grant import BenefitGrantAdsProperties
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
 
@@ -18,6 +19,7 @@ from tests.fixtures.random_objects import create_benefit
 @pytest.mark.skip_db_asserts
 async def test_grant(
     session: AsyncSession,
+    redis: Redis,
     save_fixture: SaveFixture,
     user: User,
     organization: Organization,
@@ -34,7 +36,7 @@ async def test_grant(
     properties: BenefitGrantAdsProperties = {"advertisement_campaign_id": "CAMPAIGN_ID"}
     grant = BenefitGrant(user=user, benefit=benefit, properties=properties)
 
-    benefit_ads_service = BenefitAdsService(session)
+    benefit_ads_service = BenefitAdsService(session, redis)
     updated_properties = await benefit_ads_service.grant(
         benefit, user, cast(BenefitGrantAdsProperties, grant.properties)
     )

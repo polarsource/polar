@@ -33,6 +33,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
+from polar.redis import Redis
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import (
@@ -149,6 +150,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def grant_benefit(
         self,
         session: AsyncSession,
+        redis: Redis,
         user: User,
         benefit: Benefit,
         *,
@@ -166,7 +168,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             return grant
 
         previous_properties = grant.properties
-        benefit_service = get_benefit_service(benefit.type, session)
+        benefit_service = get_benefit_service(benefit.type, session, redis)
         try:
             properties = await benefit_service.grant(
                 benefit,
@@ -209,6 +211,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def revoke_benefit(
         self,
         session: AsyncSession,
+        redis: Redis,
         user: User,
         benefit: Benefit,
         *,
@@ -233,7 +236,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             session, benefit, user
         )
         if len(other_grants) < 2:
-            benefit_service = get_benefit_service(benefit.type, session)
+            benefit_service = get_benefit_service(benefit.type, session, redis)
             properties = await benefit_service.revoke(
                 benefit,
                 user,
@@ -300,10 +303,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def enqueue_benefit_grant_updates(
         self,
         session: AsyncSession,
+        redis: Redis,
         benefit: Benefit,
         previous_properties: BenefitProperties,
     ) -> None:
-        benefit_service = get_benefit_service(benefit.type, session)
+        benefit_service = get_benefit_service(benefit.type, session, redis)
         if not await benefit_service.requires_update(benefit, previous_properties):
             return
 
@@ -314,6 +318,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def update_benefit_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         grant: BenefitGrant,
         *,
         attempt: int = 1,
@@ -328,7 +333,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         assert user is not None
 
         previous_properties = grant.properties
-        benefit_service = get_benefit_service(benefit.type, session)
+        benefit_service = get_benefit_service(benefit.type, session, redis)
         try:
             properties = await benefit_service.grant(
                 benefit,
@@ -366,6 +371,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def delete_benefit_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         grant: BenefitGrant,
         *,
         attempt: int = 1,
@@ -381,7 +387,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         assert user is not None
 
         previous_properties = grant.properties
-        benefit_service = get_benefit_service(benefit.type, session)
+        benefit_service = get_benefit_service(benefit.type, session, redis)
         properties = await benefit_service.revoke(
             benefit,
             user,

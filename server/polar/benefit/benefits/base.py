@@ -8,6 +8,7 @@ from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
 )
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 
 
 class BenefitServiceError(PolarError): ...
@@ -81,9 +82,11 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
     """
 
     session: AsyncSession
+    redis: Redis
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, redis: Redis) -> None:
         self.session = session
+        self.redis = redis
 
     async def grant(
         self,

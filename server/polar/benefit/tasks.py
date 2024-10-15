@@ -14,6 +14,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    get_worker_redis,
     task,
 )
 
@@ -109,7 +110,12 @@ async def benefit_grant(
 
         try:
             await benefit_grant_service.grant_benefit(
-                session, user, benefit, attempt=ctx["job_try"], **resolved_scope
+                session,
+                get_worker_redis(ctx),
+                user,
+                benefit,
+                attempt=ctx["job_try"],
+                **resolved_scope,
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -143,7 +149,12 @@ async def benefit_revoke(
 
         try:
             await benefit_grant_service.revoke_benefit(
-                session, user, benefit, attempt=ctx["job_try"], **resolved_scope
+                session,
+                get_worker_redis(ctx),
+                user,
+                benefit,
+                attempt=ctx["job_try"],
+                **resolved_scope,
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -171,7 +182,7 @@ async def benefit_update(
 
         try:
             await benefit_grant_service.update_benefit_grant(
-                session, benefit_grant, attempt=ctx["job_try"]
+                session, get_worker_redis(ctx), benefit_grant, attempt=ctx["job_try"]
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -196,7 +207,7 @@ async def benefit_delete(
 
         try:
             await benefit_grant_service.delete_benefit_grant(
-                session, benefit_grant, attempt=ctx["job_try"]
+                session, get_worker_redis(ctx), benefit_grant, attempt=ctx["job_try"]
             )
         except BenefitRetriableError as e:
             log.warning(

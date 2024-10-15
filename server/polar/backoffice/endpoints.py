@@ -20,6 +20,7 @@ from polar.models.pledge_transaction import PledgeTransaction as PledgeTransacti
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.repository.service import repository as repository_service
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
@@ -201,6 +202,7 @@ async def manage_badge(
     badge: BackofficeBadge,
     auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> BackofficeBadgeResponse:
     external_org = await external_organization_service.get_by_name(
         session, Platforms.github, badge.org_slug
@@ -233,6 +235,7 @@ async def manage_badge(
     if badge.action == "remove":
         issue = await github_issue.remove_polar_label(
             session,
+            redis,
             organization=external_org,
             repository=repo,
             issue=issue,
@@ -241,6 +244,7 @@ async def manage_badge(
     else:
         issue = await github_issue.add_polar_label(
             session,
+            redis,
             organization=external_org,
             repository=repo,
             issue=issue,

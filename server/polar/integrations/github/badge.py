@@ -6,6 +6,7 @@ from githubkit import AppInstallationAuthStrategy, GitHub
 from polar.config import settings
 from polar.kit import template
 from polar.models import ExternalOrganization, Issue, Organization, Repository
+from polar.redis import Redis
 
 from . import client as github
 from . import types
@@ -191,9 +192,10 @@ class GithubBadge:
         github.ensure_expected_response(updated)
         return updated.parsed_data
 
-    async def embed(self) -> None:
+    async def embed(self, redis: Redis) -> None:
         client = github.get_app_installation_client(
-            self.external_organization.safe_installation_id
+            self.external_organization.safe_installation_id,
+            redis=redis,
         )
 
         body = await self.get_current_body(client)
@@ -208,9 +210,9 @@ class GithubBadge:
         log.info("github.badge.embed.embedded", issue_id=self.issue.id)
         return None
 
-    async def remove(self) -> None:
+    async def remove(self, redis: Redis) -> None:
         client = github.get_app_installation_client(
-            self.external_organization.safe_installation_id
+            self.external_organization.safe_installation_id, redis=redis
         )
 
         body = await self.get_current_body(client)

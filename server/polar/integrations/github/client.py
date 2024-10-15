@@ -22,6 +22,7 @@ from polar.integrations.github.cache import RedisCache
 from polar.locker import Locker
 from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.user.oauth_service import oauth_account_service
 
 from .types import AppPermissionsType
@@ -208,7 +209,9 @@ def get_polar_client() -> GitHub[TokenAuthStrategy]:
     return get_client(settings.GITHUB_POLAR_USER_ACCESS_TOKEN)
 
 
-def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
+def get_app_client(
+    redis: Redis, app: GitHubApp = GitHubApp.polar
+) -> GitHub[AppAuthStrategy]:
     if app == GitHubApp.polar:
         return GitHub(
             AppAuthStrategy(
@@ -216,7 +219,7 @@ def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
                 private_key=settings.GITHUB_APP_PRIVATE_KEY,
                 client_id=settings.GITHUB_CLIENT_ID,
                 client_secret=settings.GITHUB_CLIENT_SECRET,
-                cache=RedisCache(app),
+                cache=RedisCache(app, redis),
             )
         )
     elif app == GitHubApp.repository_benefit:
@@ -226,7 +229,7 @@ def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
                 private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
                 client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
                 client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-                cache=RedisCache(app),
+                cache=RedisCache(app, redis),
             )
         )
 
@@ -234,6 +237,7 @@ def get_app_client(app: GitHubApp = GitHubApp.polar) -> GitHub[AppAuthStrategy]:
 def get_app_installation_client(
     installation_id: int,
     *,
+    redis: Redis,
     permissions: AppPermissionsType | Unset = UNSET,
     app: GitHubApp = GitHubApp.polar,
 ) -> GitHub[AppInstallationAuthStrategy]:
@@ -253,7 +257,7 @@ def get_app_installation_client(
                 client_secret=settings.GITHUB_CLIENT_SECRET,
                 installation_id=installation_id,
                 permissions=permissions,
-                cache=RedisCache(app),
+                cache=RedisCache(app, redis),
             )
         )
     elif app == GitHubApp.repository_benefit:
@@ -265,7 +269,7 @@ def get_app_installation_client(
                 client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
                 installation_id=installation_id,
                 permissions=permissions,
-                cache=RedisCache(app),
+                cache=RedisCache(app, redis),
             )
         )
 

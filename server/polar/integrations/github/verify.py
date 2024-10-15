@@ -1,6 +1,7 @@
 import structlog
 
 from polar.config import settings
+from polar.redis import create_redis
 
 from .client import get_app_client
 
@@ -14,8 +15,9 @@ async def verify_app_configuration() -> None:
         )
         return
 
-    client = get_app_client()
-    app = await client.rest.apps.async_get_authenticated()
+    async with create_redis() as redis:
+        client = get_app_client(redis)
+        app = await client.rest.apps.async_get_authenticated()
 
     assert app.parsed_data is not None
     permissions = app.parsed_data.permissions

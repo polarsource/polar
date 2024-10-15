@@ -9,13 +9,9 @@ from httpx import AsyncClient
 
 from polar.benefit.schemas import BenefitDownloadablesCreateProperties
 from polar.file.schemas import FileRead
-from polar.models import (
-    File,
-    Organization,
-    Product,
-    User,
-)
+from polar.models import File, Organization, Product, User
 from polar.postgres import AsyncSession, sql
+from polar.redis import Redis
 from polar.user.schemas.downloadables import DownloadableRead
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
@@ -44,6 +40,7 @@ class TestDownloadablesEndpoints:
     async def test_revoked_404s(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -53,6 +50,7 @@ class TestDownloadablesEndpoints:
     ) -> None:
         benefit, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -74,7 +72,7 @@ class TestDownloadablesEndpoints:
         polar_download_url = downloadable["file"]["download"]["url"]
 
         # Revoke the benefit
-        await TestDownloadable.run_revoke_task(session, benefit, user)
+        await TestDownloadable.run_revoke_task(session, redis, benefit, user)
 
         # Polar download endpoint will now 404
         response = await client.get(polar_download_url, follow_redirects=False)
@@ -84,6 +82,7 @@ class TestDownloadablesEndpoints:
     async def test_wrong_token_404s(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -93,6 +92,7 @@ class TestDownloadablesEndpoints:
     ) -> None:
         benefit, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -113,7 +113,7 @@ class TestDownloadablesEndpoints:
         downloadable = downloadable_list[0]
 
         # Revoke the benefit
-        await TestDownloadable.run_revoke_task(session, benefit, user)
+        await TestDownloadable.run_revoke_task(session, redis, benefit, user)
 
         # Polar download endpoint will now 404
         response = await client.get(
@@ -125,6 +125,7 @@ class TestDownloadablesEndpoints:
     async def test_expired_token_410s(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -134,6 +135,7 @@ class TestDownloadablesEndpoints:
     ) -> None:
         benefit, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -169,6 +171,7 @@ class TestDownloadablesEndpoints:
     async def test_signatureless_url_403s(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -178,6 +181,7 @@ class TestDownloadablesEndpoints:
     ) -> None:
         _, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -215,6 +219,7 @@ class TestDownloadablesEndpoints:
     async def test_polar_disabled_file_vanishes(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -224,6 +229,7 @@ class TestDownloadablesEndpoints:
     ) -> None:
         _, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -264,6 +270,7 @@ class TestDownloadablesEndpoints:
     async def test_download(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -273,6 +280,7 @@ class TestDownloadablesEndpoints:
     ) -> None:
         _, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,

@@ -1,5 +1,4 @@
-import asyncio
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import pytest
@@ -11,22 +10,7 @@ from polar.auth.dependencies import get_auth_subject
 from polar.auth.models import AuthSubject, Subject
 from polar.checkout.ip_geolocation import _get_client_dependency
 from polar.postgres import AsyncSession, get_db_session
-
-# We used to use anyio, but it was causing garbage collection issues
-# with SQLAlchemy (known issue - https://stackoverflow.com/a/74221652)
-#
-# However, since we're using asyncio, it's clearer and cleaner to use it
-# throughout vs. anyio with an asyncio backend. We need to setup the
-# event loop though as per:
-# https://pytest-asyncio.readthedocs.io/en/latest/reference/fixtures.html
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    yield loop
-    loop.close()
+from polar.redis import Redis, get_redis
 
 
 @pytest_asyncio.fixture
@@ -34,8 +18,10 @@ async def client(
     request: pytest.FixtureRequest,
     auth_subject: AuthSubject[Subject],
     session: AsyncSession,
+    redis: Redis,
 ) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_session] = lambda: session
+    app.dependency_overrides[get_redis] = lambda: redis
     app.dependency_overrides[get_auth_subject] = lambda: auth_subject
     app.dependency_overrides[_get_client_dependency] = lambda: None
 

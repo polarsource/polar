@@ -1,6 +1,7 @@
 from typing import Any
 
 import structlog
+from fastapi import Depends
 from githubkit import GitHub
 
 from polar.enums import Platforms
@@ -12,8 +13,7 @@ from polar.integrations.github.client import (
 from polar.logging import Logger
 from polar.models import ExternalOrganization, Issue, Repository
 from polar.models.external_organization import NotInstalledExternalOrganization
-from polar.redis import Redis
-from polar.redis import redis as redis_client
+from polar.redis import Redis, get_redis
 
 log: Logger = structlog.get_logger()
 
@@ -67,7 +67,7 @@ class IssueBodyRenderer:
     ) -> str:
         try:
             client: GitHub[Any] = get_app_installation_client(
-                external_organization.safe_installation_id
+                external_organization.safe_installation_id, redis=self.redis
             )
         except NotInstalledExternalOrganization:
             client = get_polar_client()
@@ -81,5 +81,5 @@ class IssueBodyRenderer:
         return response.content.decode()
 
 
-def get_issue_body_renderer() -> IssueBodyRenderer:
-    return IssueBodyRenderer(redis_client)
+def get_issue_body_renderer(redis: Redis = Depends(get_redis)) -> IssueBodyRenderer:
+    return IssueBodyRenderer(redis)

@@ -730,6 +730,7 @@ async def test_webhook_opened_with_label(
 
     embed_mock.assert_called_once_with(
         ANY,  # session
+        ANY,  # redis
         external_organization=ANY,
         repository=ANY,
         issue=ANY,
@@ -790,6 +791,7 @@ async def test_webhook_labeled_remove_badge_body(
     # add badge
     embed_mock.assert_called_once_with(
         ANY,  # session
+        ANY,  # redis
         external_organization=ANY,
         repository=ANY,
         issue=ANY,
@@ -822,6 +824,7 @@ async def test_webhook_labeled_remove_badge_body(
 
     embed_mock.assert_called_once_with(
         ANY,  # session
+        ANY,  # redis
         external_organization=ANY,
         repository=ANY,
         issue=ANY,

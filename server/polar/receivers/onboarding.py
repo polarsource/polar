@@ -32,6 +32,7 @@ async def on_issue_synced(hook: SyncedHook) -> None:
         },
         organization_id=hook.organization.id,
         run_in_worker=False,
+        redis=hook.redis,
     )
 
 
@@ -51,6 +52,7 @@ async def on_issue_sync_completed(
         },
         organization_id=hook.organization.id,
         run_in_worker=False,
+        redis=hook.redis,
     )
 
 
@@ -72,6 +74,7 @@ async def on_issue_updated(hook: IssueHook) -> None:
         },
         organization_id=hook.issue.organization_id,
         run_in_worker=False,
+        redis=hook.redis,
     )
 
 

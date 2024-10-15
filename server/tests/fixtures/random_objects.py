@@ -70,27 +70,27 @@ async def create_organization(
     return organization
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def organization_second(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture
 async def organization_blocked(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture, blocked_at=utc_now())
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def pledging_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture, name_prefix="pledging_org")
 
@@ -176,7 +176,7 @@ async def create_repository(
     return repository
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def issue(
     save_fixture: SaveFixture,
     external_organization: ExternalOrganization,
@@ -185,7 +185,7 @@ async def issue(
     return await create_issue(save_fixture, external_organization, repository)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def issue_linked(
     save_fixture: SaveFixture,
     external_organization_linked: ExternalOrganization,
@@ -253,7 +253,7 @@ async def create_user_github_oauth(
     return oauth_account
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def user_github_oauth(
     save_fixture: SaveFixture,
     user: User,
@@ -261,7 +261,7 @@ async def user_github_oauth(
     return await create_user_github_oauth(save_fixture, user)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def user(
     save_fixture: SaveFixture,
 ) -> User:
@@ -283,7 +283,7 @@ async def create_user(
     return user
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def user_second(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
@@ -295,7 +295,7 @@ async def user_second(save_fixture: SaveFixture) -> User:
     return user
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture
 async def user_blocked(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
@@ -369,7 +369,7 @@ async def create_user_pledge(
     return pledge
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def pledge(
     save_fixture: SaveFixture,
     external_organization: ExternalOrganization,
@@ -386,7 +386,7 @@ async def pledge(
     )
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def pledge_linked(
     save_fixture: SaveFixture,
     external_organization_linked: ExternalOrganization,
@@ -403,7 +403,7 @@ async def pledge_linked(
     )
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def pledge_by_user(
     save_fixture: SaveFixture,
     external_organization: ExternalOrganization,
@@ -430,7 +430,7 @@ async def pledge_by_user(
     return pledge
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def user_organization(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -444,7 +444,7 @@ async def user_organization(
     return user_organization
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def user_organization_second(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -458,7 +458,7 @@ async def user_organization_second(
     return user_organization
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture
 async def user_organization_blocked(
     save_fixture: SaveFixture,
     organization_blocked: Organization,
@@ -1003,7 +1003,7 @@ async def create_benefit_grant(
     return grant
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def article(
     save_fixture: SaveFixture,
     organization: Organization,

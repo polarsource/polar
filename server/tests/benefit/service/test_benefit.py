@@ -25,6 +25,7 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, Organization, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
@@ -214,7 +215,11 @@ class TestGetById:
 class TestUserCreate:
     @pytest.mark.auth
     async def test_user_missing_organization(
-        self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        authz: Authz,
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -229,12 +234,16 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, authz, create_schema, auth_subject
+                session, redis, authz, create_schema, auth_subject
             )
 
     @pytest.mark.auth
     async def test_user_not_existing_organization(
-        self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        authz: Authz,
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -249,7 +258,7 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, authz, create_schema, auth_subject
+                session, redis, authz, create_schema, auth_subject
             )
 
     @pytest.mark.auth
@@ -257,6 +266,7 @@ class TestUserCreate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         organization: Organization,
     ) -> None:
@@ -273,7 +283,7 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, authz, create_schema, auth_subject
+                session, redis, authz, create_schema, auth_subject
             )
 
     @pytest.mark.auth
@@ -281,6 +291,7 @@ class TestUserCreate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         user: User,
         organization: Organization,
@@ -298,7 +309,7 @@ class TestUserCreate:
         session.expunge_all()
 
         benefit = await benefit_service.user_create(
-            session, authz, create_schema, auth_subject
+            session, redis, authz, create_schema, auth_subject
         )
         assert benefit.organization_id == organization.id
 
@@ -307,6 +318,7 @@ class TestUserCreate:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
     ) -> None:
         create_schema = BenefitCustomCreate(
@@ -322,7 +334,7 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, authz, create_schema, auth_subject
+                session, redis, authz, create_schema, auth_subject
             )
 
     @pytest.mark.auth
@@ -331,6 +343,7 @@ class TestUserCreate:
         auth_subject: AuthSubject[User],
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
@@ -362,7 +375,7 @@ class TestUserCreate:
 
         with pytest.raises(BenefitPropertiesValidationError):
             await benefit_service.user_create(
-                session, authz, create_schema, auth_subject
+                session, redis, authz, create_schema, auth_subject
             )
 
 
@@ -373,6 +386,7 @@ class TestUserUpdate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         benefit_organization: Benefit,
     ) -> None:
@@ -393,6 +407,7 @@ class TestUserUpdate:
         with pytest.raises(NotPermitted):
             await benefit_service.user_update(
                 session,
+                redis,
                 authz,
                 benefit_organization_loaded,
                 update_schema,
@@ -407,6 +422,7 @@ class TestUserUpdate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         benefit_organization: Benefit,
         auth_subject: AuthSubject[User | Organization],
@@ -432,7 +448,12 @@ class TestUserUpdate:
         assert benefit_organization_loaded
 
         updated_benefit = await benefit_service.user_update(
-            session, authz, benefit_organization_loaded, update_schema, auth_subject
+            session,
+            redis,
+            authz,
+            benefit_organization_loaded,
+            update_schema,
+            auth_subject,
         )
         assert updated_benefit.description == "Description update"
 

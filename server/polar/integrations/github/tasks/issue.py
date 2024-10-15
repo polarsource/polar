@@ -11,6 +11,7 @@ from polar.worker import (
     PolarWorkerContext,
     QueueName,
     enqueue_job,
+    get_worker_redis,
     task,
 )
 
@@ -48,6 +49,7 @@ async def issue_sync(
 
             await github_issue.sync_issue(
                 session,
+                get_worker_redis(ctx),
                 org=organization,
                 repo=repository,
                 issue=issue,
@@ -74,7 +76,9 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
                 )
                 continue
 
-            client = get_app_installation_client(org.safe_installation_id)
+            client = get_app_installation_client(
+                org.safe_installation_id, redis=get_worker_redis(ctx)
+            )
             try:
                 rate_limit = await github_api.get_rate_limit(client)
             except Exception as e:

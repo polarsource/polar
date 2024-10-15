@@ -12,6 +12,7 @@ from polar.models import (
 )
 from polar.models.downloadable import DownloadableStatus
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
 
@@ -23,6 +24,7 @@ class TestDownloadblesBenefit:
     async def test_grant_one(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -31,6 +33,7 @@ class TestDownloadblesBenefit:
     ) -> None:
         _, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -53,6 +56,7 @@ class TestDownloadblesBenefit:
     async def test_grant_multiple(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -67,6 +71,7 @@ class TestDownloadblesBenefit:
 
         _, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -91,6 +96,7 @@ class TestDownloadblesBenefit:
     async def test_grant_unless_archived(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -100,6 +106,7 @@ class TestDownloadblesBenefit:
     ) -> None:
         _, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -129,6 +136,7 @@ class TestDownloadblesBenefit:
     async def test_revoke_one(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -137,6 +145,7 @@ class TestDownloadblesBenefit:
     ) -> None:
         benefit, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -160,7 +169,7 @@ class TestDownloadblesBenefit:
         assert downloadable.status == DownloadableStatus.granted
         assert downloadable.file_id == uploaded_logo_jpg.id
 
-        await TestDownloadable.run_revoke_task(session, benefit, user)
+        await TestDownloadable.run_revoke_task(session, redis, benefit, user)
 
         # Now revoked
         updated_downloadables = await TestDownloadable.get_user_downloadables(
@@ -177,6 +186,7 @@ class TestDownloadblesBenefit:
     async def test_revoke_multiple(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -190,6 +200,7 @@ class TestDownloadblesBenefit:
         ]
         benefit, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -210,7 +221,7 @@ class TestDownloadblesBenefit:
             assert grant.file_id == file.id
             assert grant.status == DownloadableStatus.granted
 
-        await TestDownloadable.run_revoke_task(session, benefit, user)
+        await TestDownloadable.run_revoke_task(session, redis, benefit, user)
 
         # Now revoked
         revoked_downloadables = await TestDownloadable.get_user_downloadables(
@@ -226,6 +237,7 @@ class TestDownloadblesBenefit:
     async def test_archive_grant_retroactively(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -245,6 +257,7 @@ class TestDownloadblesBenefit:
         )
         benefit, granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -269,7 +282,7 @@ class TestDownloadblesBenefit:
         await session.flush()
 
         _, updated_granted = await TestDownloadable.run_grant_task(
-            session, benefit, user
+            session, redis, benefit, user
         )
 
         assert len(updated_granted["files"]) == 2
@@ -295,6 +308,7 @@ class TestDownloadblesBenefit:
     async def test_archive_for_new_users(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         user_second: User,
@@ -309,6 +323,7 @@ class TestDownloadblesBenefit:
         ]
         benefit, user_granted = await TestDownloadable.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -341,6 +356,7 @@ class TestDownloadblesBenefit:
         # Since they subscribe after the 2nd file was archived
         _, user_second_granted = await TestDownloadable.create_grant(
             session,
+            redis,
             save_fixture,
             benefit,
             user=user_second,

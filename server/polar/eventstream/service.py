@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.postgres import AsyncSession
-from polar.redis import Redis, redis
+from polar.redis import Redis
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -62,6 +62,7 @@ async def publish(
     checkout_client_secret: str | None = None,
     *,
     run_in_worker: bool = True,
+    redis: Redis | None = None,
 ) -> None:
     receivers = Receivers(
         user_id=user_id,
@@ -78,6 +79,8 @@ async def publish(
     if run_in_worker:
         enqueue_job("eventstream.publish", event, channels)
     else:
+        if redis is None:
+            raise RuntimeError("Redis instance is required when run_in_worker is False")
         await send_event(redis, event, channels)
 
 
@@ -88,6 +91,7 @@ async def publish_members(
     organization_id: UUID,
     *,
     run_in_worker: bool = True,
+    redis: Redis | None = None,
 ) -> None:
     members = await user_organization_service.list_by_org(
         session, org_id=organization_id
@@ -105,4 +109,8 @@ async def publish_members(
         if run_in_worker:
             enqueue_job("eventstream.publish", event, channels)
         else:
+            if redis is None:
+                raise RuntimeError(
+                    "Redis instance is required when run_in_worker is False"
+                )
             await send_event(redis, event, channels)

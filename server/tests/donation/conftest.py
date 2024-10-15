@@ -336,7 +336,7 @@ class DonationSender:
         )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def donation_sender(
     job_context: JobContext,
     organization: Organization,

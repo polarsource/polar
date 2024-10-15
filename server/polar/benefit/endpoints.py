@@ -11,6 +11,7 @@ from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth
@@ -150,12 +151,13 @@ async def create(
     benefit_create: BenefitCreate = Body(..., discriminator="type"),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Benefit:
     """
     Create a benefit.
     """
     benefit = await benefit_service.user_create(
-        session, authz, benefit_create, auth_subject
+        session, redis, authz, benefit_create, auth_subject
     )
 
     posthog.auth_subject_event(
@@ -188,6 +190,7 @@ async def update(
     auth_subject: auth.BenefitsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Benefit:
     """
     Update a benefit.
@@ -209,7 +212,7 @@ async def update(
     )
 
     return await benefit_service.user_update(
-        session, authz, benefit, benefit_update, auth_subject
+        session, redis, authz, benefit, benefit_update, auth_subject
     )
 
 

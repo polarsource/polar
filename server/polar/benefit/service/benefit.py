@@ -25,6 +25,7 @@ from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import sql
+from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 
 from ..benefits import get_benefit_service
@@ -132,6 +133,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
     async def user_create(
         self,
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         create_schema: BenefitCreate,
         auth_subject: AuthSubject[User | Organization],
@@ -161,7 +163,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         except AttributeError:
             is_tax_applicable = create_schema.type.is_tax_applicable()
 
-        benefit_service = get_benefit_service(create_schema.type, session)
+        benefit_service = get_benefit_service(create_schema.type, session, redis)
         properties = await benefit_service.validate_properties(
             auth_subject,
             create_schema.properties.model_dump(mode="json", by_alias=True),
@@ -195,6 +197,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
     async def user_update(
         self,
         session: AsyncSession,
+        redis: Redis,
         authz: Authz,
         benefit: Benefit,
         update_schema: BenefitUpdate,
@@ -211,7 +214,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         properties_update: BaseModel | None = getattr(update_schema, "properties", None)
         if properties_update is not None:
-            benefit_service = get_benefit_service(benefit.type, session)
+            benefit_service = get_benefit_service(benefit.type, session, redis)
             update_dict["properties"] = await benefit_service.validate_properties(
                 auth_subject,
                 properties_update.model_dump(mode="json", by_alias=True),
@@ -224,7 +227,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         session.add(benefit)
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
-            session, benefit, previous_properties
+            session, redis, benefit, previous_properties
         )
 
         if benefit.organization:

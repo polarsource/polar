@@ -9,6 +9,7 @@ from githubkit import Paginator
 from polar.kit.hook import Hook
 from polar.models import ExternalOrganization, Issue, Repository
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.repository.hooks import SyncCompletedHook, SyncedHook
 
 from .. import types
@@ -24,6 +25,7 @@ class GitHubPaginatedService:
     async def store_paginated_resource(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         paginator: Paginator[types.Issue] | Paginator[types.PullRequestSimple],
         store_resource_method: Callable[..., Coroutine[Any, Any, Issue | None]],
@@ -73,6 +75,7 @@ class GitHubPaginatedService:
                         organization=organization,
                         record=record,
                         synced=synced,
+                        redis=redis,
                     )
                 )
 
@@ -90,6 +93,7 @@ class GitHubPaginatedService:
                     repository=repository,
                     organization=organization,
                     synced=synced,
+                    redis=redis,
                 )
             )
 

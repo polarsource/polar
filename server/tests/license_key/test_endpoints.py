@@ -14,6 +14,7 @@ from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
 from polar.models import Organization, Product, User, UserOrganization
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
@@ -38,6 +39,7 @@ class TestLicenseKeyEndpoints:
     async def test_get_unauthorized_401(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -46,6 +48,7 @@ class TestLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -68,6 +71,7 @@ class TestLicenseKeyEndpoints:
     async def test_get_authorized(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -77,6 +81,7 @@ class TestLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -102,6 +107,7 @@ class TestLicenseKeyEndpoints:
     async def test_update(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -111,6 +117,7 @@ class TestLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -148,6 +155,7 @@ class TestLicenseKeyEndpoints:
     async def test_list(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User | Organization],
@@ -158,6 +166,7 @@ class TestLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -168,6 +177,7 @@ class TestLicenseKeyEndpoints:
         )
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -198,6 +208,7 @@ class TestLicenseKeyEndpoints:
     async def test_get_activation(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -207,6 +218,7 @@ class TestLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,

@@ -10,6 +10,7 @@ from polar.worker import (
     PolarWorkerContext,
     compute_backoff,
     enqueue_job,
+    get_worker_redis,
     task,
 )
 
@@ -49,6 +50,7 @@ async def embed_badge(
             try:
                 await github_issue.embed_badge(
                     session,
+                    get_worker_redis(ctx),
                     external_organization=external_organization,
                     repository=repository,
                     issue=issue,
@@ -90,6 +92,7 @@ async def update_on_issue(
             try:
                 await github_issue.update_embed_badge(
                     session,
+                    get_worker_redis(ctx),
                     external_organization=external_organization,
                     repository=repository,
                     issue=issue,
@@ -130,6 +133,7 @@ async def remove_badge(
             try:
                 await github_issue.remove_badge(
                     session,
+                    get_worker_redis(ctx),
                     external_organization=external_organization,
                     repository=repository,
                     issue=issue,

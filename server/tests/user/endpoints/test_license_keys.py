@@ -14,6 +14,7 @@ from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
 from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
 
@@ -24,6 +25,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_validate(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -32,6 +34,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -95,6 +98,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_validate_expiration(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -104,6 +108,7 @@ class TestUserLicenseKeyEndpoints:
         now = utc_now()
         _, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -136,6 +141,7 @@ class TestUserLicenseKeyEndpoints:
 
         _, granted_with_ttl_day = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -169,6 +175,7 @@ class TestUserLicenseKeyEndpoints:
 
         _, granted_with_ttl_month = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -214,6 +221,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_validate_usage(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -222,6 +230,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -277,6 +286,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_validate_activation(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -285,6 +295,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -339,6 +350,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_validate_conditions(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -347,6 +359,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -404,6 +417,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_activation(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -412,6 +426,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -447,6 +462,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_unnecessary_activation(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -455,6 +471,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -481,6 +498,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_too_many_activations(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -489,6 +507,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,
@@ -532,6 +551,7 @@ class TestUserLicenseKeyEndpoints:
     async def test_deactivation(
         self,
         session: AsyncSession,
+        redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
@@ -540,6 +560,7 @@ class TestUserLicenseKeyEndpoints:
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
+            redis,
             save_fixture,
             user=user,
             organization=organization,

@@ -16,6 +16,7 @@ from polar.logging import Logger
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 
 log: Logger = structlog.get_logger()
 
@@ -183,19 +184,20 @@ class GitHubRepositoryBenefitUserService:
 
     async def list_orgs_with_billing_plans(
         self,
+        redis: Redis,
         oauth: OAuthAccount,
         installations: list[types.Installation],
     ) -> list[GitHubInvitesBenefitOrganization]:
         res: list[GitHubInvitesBenefitOrganization] = []
 
         for i in installations:
-            if b := await self.get_billing_plan(oauth, i):
+            if b := await self.get_billing_plan(redis, oauth, i):
                 res.append(b)
 
         return res
 
     async def get_billing_plan(
-        self, oauth: OAuthAccount, installation: types.Installation
+        self, redis: Redis, oauth: OAuthAccount, installation: types.Installation
     ) -> GitHubInvitesBenefitOrganization | None:
         if installation.account is None:
             return None
@@ -219,6 +221,7 @@ class GitHubRepositoryBenefitUserService:
             try:
                 org_client = github.get_app_installation_client(
                     installation.id,
+                    redis=redis,
                     app=github.GitHubApp.repository_benefit,
                 )
                 org_response = await org_client.rest.orgs.async_get(
@@ -288,11 +291,14 @@ class GitHubRepositoryBenefitUserService:
 
     async def get_repository_installation(
         self,
+        redis: Redis,
         *,
         owner: str,
         name: str,
     ) -> types.Installation | None:
-        app_client = github.get_app_client(app=github.GitHubApp.repository_benefit)
+        app_client = github.get_app_client(
+            redis, app=github.GitHubApp.repository_benefit
+        )
 
         repo_install = await app_client.rest.apps.async_get_repo_installation(
             owner, name
@@ -304,11 +310,14 @@ class GitHubRepositoryBenefitUserService:
     async def user_has_access_to_repository(
         self,
         oauth: OAuthAccount,
+        redis: Redis,
         *,
         owner: str,
         name: str,
     ) -> bool:
-        installation = await self.get_repository_installation(owner=owner, name=name)
+        installation = await self.get_repository_installation(
+            redis, owner=owner, name=name
+        )
         if not installation:
             raise GitHubRepositoryBenefitNoAccess()
 

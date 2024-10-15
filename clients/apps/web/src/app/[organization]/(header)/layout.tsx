@@ -41,7 +41,7 @@ export default async function Layout({
           size={50}
         />
 
-        <TopbarRight authenticatedUser={authenticatedUser} />
+        <TopbarRight authenticatedUser={authenticatedUser} storefrontOrg={organization} />
       </div>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-grow flex-col items-center">

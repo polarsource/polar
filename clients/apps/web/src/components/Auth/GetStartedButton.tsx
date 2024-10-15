@@ -4,6 +4,7 @@ import { KeyboardArrowRight } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Organization } from '@polar-sh/sdk'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { AuthModal } from './AuthModal'
@@ -11,20 +12,26 @@ import { AuthModal } from './AuthModal'
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   orgSlug?: string
-  flywheel?: boolean
+  storefrontOrg?: Organization
 }
 
 const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   text: _text,
   wrapperClassNames,
   orgSlug: slug,
-  flywheel,
+  storefrontOrg,
   size = 'lg',
   ...props
 }) => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const text = _text || 'Get Started'
-  flywheel = flywheel !== undefined ? flywheel : false
+
+  let signup = {}
+  if (storefrontOrg?.id) {
+    signup = {
+      from_storefront: storefrontOrg.id,
+    }
+  }
 
   return (
     <>
@@ -52,7 +59,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
             returnParams={slug ? { slug, auto: 'true' } : {}}
             signup={{
               intent: 'creator',
-              flywheel
+              ...signup
             }}
           />
         }

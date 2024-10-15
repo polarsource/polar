@@ -53,7 +53,7 @@ class AccountLinkedToAnotherUserError(GoogleServiceError):
 
 
 class GoogleService:
-    async def login_or_signup(
+    async def get_updated_or_create(
         self,
         session: AsyncSession,
         *,

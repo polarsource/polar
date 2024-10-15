@@ -110,7 +110,7 @@ async def google_callback(
                 session, user=auth_subject.subject, token=token_data
             )
         else:
-            user, is_signup = await google_service.login_or_signup(
+            user, is_signup = await google_service.get_updated_or_create(
                 session,
                 token=token_data,
                 signup_attribution=state_signup_attribution,

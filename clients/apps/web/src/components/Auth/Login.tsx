@@ -4,6 +4,7 @@ import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
 import GoogleLoginButton from './GoogleLoginButton'
+import { captureEvent, type EventName } from '@/utils/posthog'
 import { UserSignupAttribution } from '@polar-sh/sdk'
 import { useSearchParams, usePathname } from 'next/navigation'
 
@@ -20,7 +21,10 @@ const Login = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
+  let eventName: EventName = 'user:login:view'
   if (signup) {
+    eventName = 'user:signup:view'
+
     if (!returnTo) {
       returnTo = `/dashboard/create`
     }
@@ -58,6 +62,8 @@ const Login = ({
 
     loginProps = { returnTo, ...loginProps }
   }
+
+  captureEvent(eventName, loginProps)
 
   return (
     <div className="flex flex-col gap-y-4">

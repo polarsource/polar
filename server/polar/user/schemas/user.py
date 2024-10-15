@@ -89,6 +89,8 @@ class UserSignupAttribution(Schema):
     pledge: UUID4ToStr | None = None
     donation: UUID4ToStr | None = None
 
+    flywheel: bool | None = None
+
     # Website source
     path: str | None = None
     host: str | None = None

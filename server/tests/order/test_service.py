@@ -19,6 +19,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.order import OrderBillingReason
 from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.order.service import (
@@ -274,6 +275,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product.prices[0]
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
+        assert order.billing_reason == invoice.billing_reason
 
         held_balance = await held_balance_service.get_by(
             session, organization_id=product.organization_id
@@ -322,6 +324,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product.prices[0]
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
+        assert order.billing_reason == invoice.billing_reason
 
     async def test_subscription_only_proration(
         self,
@@ -355,6 +358,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product.prices[0]
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
+        assert order.billing_reason == invoice.billing_reason
 
     async def test_subscription_with_account(
         self,
@@ -404,6 +408,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product.prices[0]
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
+        assert order.billing_reason == invoice.billing_reason
 
         transaction_service_mock.create_balance_from_charge.assert_called_once()
         assert (
@@ -487,6 +492,7 @@ class TestCreateOrderFromStripe:
         assert order.product == product_one_time
         assert order.product_price == product_one_time.prices[0]
         assert order.subscription is None
+        assert order.billing_reason == OrderBillingReason.purchase
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",
@@ -562,6 +568,7 @@ class TestCreateOrderFromStripe:
         assert order.product == product_one_time_custom_price
         assert order.product_price == product_one_time_custom_price.prices[0]
         assert order.subscription is None
+        assert order.billing_reason == OrderBillingReason.purchase
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",
@@ -607,6 +614,7 @@ class TestCreateOrderFromStripe:
         assert order.product == product_one_time_free_price
         assert order.product_price == product_one_time_free_price.prices[0]
         assert order.subscription is None
+        assert order.billing_reason == OrderBillingReason.purchase
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification", order_id=order.id
@@ -678,6 +686,7 @@ class TestCreateOrderFromStripe:
         assert order.product == product_one_time
         assert order.product_price == product_one_time.prices[0]
         assert order.subscription is None
+        assert order.billing_reason == OrderBillingReason.purchase
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",

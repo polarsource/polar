@@ -266,8 +266,6 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             subscription.recurring_interval = price.recurring_interval
         session.add(subscription)
 
-        await subscription_service.after_subscription_updated(session, subscription)
-
         return subscription
 
     async def cancel(
@@ -290,8 +288,6 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         session.add(subscription)
-
-        await subscription_service.after_subscription_updated(session, subscription)
 
         return subscription
 

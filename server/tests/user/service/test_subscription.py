@@ -164,7 +164,7 @@ class TestUpdate:
         )
 
         assert isinstance(new_price, ProductPriceFixed)
-        assert updated_subscription.product_id == product_second.id
+        assert updated_subscription.product == product_second
         assert updated_subscription.price == new_price
         assert updated_subscription.amount == new_price.price_amount
         assert updated_subscription.recurring_interval == new_price.recurring_interval

@@ -477,45 +477,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_created
         )
-
-    async def after_subscription_updated(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        await self._send_webhook(
-            session, subscription, WebhookEventType.subscription_updated
-        )
-
-    async def _send_webhook(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        event_type: Literal[WebhookEventType.subscription_created]
-        | Literal[WebhookEventType.subscription_updated],
-    ) -> None:
-        # load full subscription with relations
-        full_subscription = await self.get(session, subscription.id)
-        assert full_subscription
-
-        # mypy 1.9 is does not allow us to do
-        #    event = (event_type, subscription)
-        # directly, even if it could have...
-        event: WebhookTypeObject | None = None
-        match event_type:
-            case WebhookEventType.subscription_created:
-                event = (event_type, full_subscription)
-            case WebhookEventType.subscription_updated:
-                event = (event_type, full_subscription)
-
-        # subscription events for subscribing user
-        if subscribing_user := await user_service.get(session, subscription.user_id):
-            await webhook_service.send(session, target=subscribing_user, we=event)
-
-        # subscribed to org
-        if tier := await product_service.get_loaded(session, subscription.product_id):
-            if subscribed_to_org := await organization_service.get(
-                session, tier.organization_id
-            ):
-                await webhook_service.send(session, target=subscribed_to_org, we=event)
+        if subscription.active:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_active
+            )
 
     async def update_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
@@ -526,6 +491,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription.id)
+
+        previous_status = subscription.status
+        previous_cancel_at_period_end = subscription.cancel_at_period_end
 
         subscription.status = SubscriptionStatus(stripe_subscription.status)
         subscription.current_period_start = _from_timestamp(
@@ -561,7 +529,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         await self.enqueue_benefits_grants(session, subscription)
 
-        await self.after_subscription_updated(session, subscription)
+        await self._after_subscription_updated(
+            session, subscription, previous_status, previous_cancel_at_period_end
+        )
 
         if (
             subscription.active
@@ -575,6 +545,56 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             await self.send_cancellation_email(session, subscription)
 
         return subscription
+
+    async def _after_subscription_updated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        previous_status: SubscriptionStatus,
+        previous_cancel_at_period_end: bool,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_updated
+        )
+        if subscription.active and not SubscriptionStatus.is_active(previous_status):
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_active
+            )
+        if subscription.revoked and not SubscriptionStatus.is_revoked(previous_status):
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_revoked
+            )
+        if subscription.cancel_at_period_end and not previous_cancel_at_period_end:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_canceled
+            )
+
+    async def _send_webhook(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        event_type: Literal[WebhookEventType.subscription_created]
+        | Literal[WebhookEventType.subscription_updated]
+        | Literal[WebhookEventType.subscription_active]
+        | Literal[WebhookEventType.subscription_canceled]
+        | Literal[WebhookEventType.subscription_revoked],
+    ) -> None:
+        # load full subscription with relations
+        full_subscription = await self.get(session, subscription.id)
+        assert full_subscription
+
+        event = cast(WebhookTypeObject, (event_type, full_subscription))
+
+        # subscription events for subscribing user
+        if subscribing_user := await user_service.get(session, subscription.user_id):
+            await webhook_service.send(session, target=subscribing_user, we=event)
+
+        # subscribed to org
+        if tier := await product_service.get_loaded(session, subscription.product_id):
+            if subscribed_to_org := await organization_service.get(
+                session, tier.organization_id
+            ):
+                await webhook_service.send(session, target=subscribed_to_org, we=event)
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

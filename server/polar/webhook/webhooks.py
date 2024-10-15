@@ -478,9 +478,13 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
 class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
-    Sent when a new subscription is updated. This event fires if the subscription is canceled, both immediately and if the subscription is canceled at the end of the current period.
+    Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
 
-    **Discord & Slack support:** On cancellation and revocation
+    If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.
+
+    To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+
+    **Discord & Slack support:** On cancellation and revocation. Renewals are skipped.
     """
 
     type: Literal[WebhookEventType.subscription_updated]
@@ -490,11 +494,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
 
-        if self.data.status in [
-            SubscriptionStatus.past_due,
-            SubscriptionStatus.canceled,
-            SubscriptionStatus.unpaid,
-        ]:
+        if SubscriptionStatus.is_revoked(self.data.status):
             return self._get_revoked_discord_payload(target)
 
         # Avoid to send notifications for subscription renewals (not interesting)
@@ -508,11 +508,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
-        if self.data.status in [
-            SubscriptionStatus.past_due,
-            SubscriptionStatus.canceled,
-            SubscriptionStatus.unpaid,
-        ]:
+        if SubscriptionStatus.is_revoked(self.data.status):
             return self._get_revoked_discord_payload(target)
 
         # Avoid to send notifications for subscription renewals (not interesting)

@@ -19,7 +19,7 @@ from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
-stripe_http_client = stripe_lib.HTTPXClient()
+stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
 

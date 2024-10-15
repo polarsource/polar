@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -11,12 +12,22 @@ if TYPE_CHECKING:
     from polar.models import Checkout, Product, ProductPrice, Subscription, User
 
 
+class OrderBillingReason(StrEnum):
+    purchase = "purchase"
+    subscription_create = "subscription_create"
+    subscription_cycle = "subscription_cycle"
+    subscription_update = "subscription_update"
+
+
 class Order(MetadataMixin, RecordModel):
     __tablename__ = "orders"
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    billing_reason: Mapped[OrderBillingReason] = mapped_column(
+        String, nullable=False, index=True
+    )
     stripe_invoice_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user_id: Mapped[UUID] = mapped_column(

@@ -3,6 +3,7 @@ from pydantic import UUID4, Field
 
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.models.order import OrderBillingReason
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
@@ -11,6 +12,7 @@ class OrderBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     amount: int
     tax_amount: int
     currency: str
+    billing_reason: OrderBillingReason
 
     user_id: UUID4
     product_id: UUID4

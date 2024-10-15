@@ -72,7 +72,16 @@ export default async function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin={''}
         />
-        <link href="/favicon.png" rel="icon"></link>
+        <link
+          href="/favicon.png"
+          rel="icon"
+          media="(prefers-color-scheme: dark)"
+        ></link>
+        <link
+          href="/favicon-dark.png"
+          rel="icon"
+          media="(prefers-color-scheme: light)"
+        ></link>
       </head>
 
       <body

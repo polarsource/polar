@@ -5,11 +5,13 @@ import React, { useCallback } from 'react'
 interface SubscriptionTierRecurringIntervalSwitchProps {
   value: SubscriptionRecurringInterval
   onChange: (value: SubscriptionRecurringInterval) => void
+  tabsListClassName?: string
+  tabsTriggerClassName?: string
 }
 
 const SubscriptionTierRecurringIntervalSwitch: React.FC<
   SubscriptionTierRecurringIntervalSwitchProps
-> = ({ value: value, onChange }) => {
+> = ({ value: value, onChange, tabsListClassName, tabsTriggerClassName }) => {
   const onValueChange = useCallback(
     (newValue: string) => {
       if (newValue === value) return
@@ -20,11 +22,19 @@ const SubscriptionTierRecurringIntervalSwitch: React.FC<
 
   return (
     <Tabs onValueChange={onValueChange} value={value}>
-      <TabsList>
-        <TabsTrigger value={SubscriptionRecurringInterval.MONTH} size="small">
+      <TabsList className={tabsListClassName}>
+        <TabsTrigger
+          className={tabsTriggerClassName}
+          value={SubscriptionRecurringInterval.MONTH}
+          size="small"
+        >
           Monthly Billing
         </TabsTrigger>
-        <TabsTrigger value={SubscriptionRecurringInterval.YEAR} size="small">
+        <TabsTrigger
+          className={tabsTriggerClassName}
+          value={SubscriptionRecurringInterval.YEAR}
+          size="small"
+        >
           Yearly Billing
         </TabsTrigger>
       </TabsList>

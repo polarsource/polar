@@ -6137,6 +6137,66 @@
         ]
       }
     },
+    "/v1/articles/export": {
+      "get": {
+        "tags": [
+          "articles",
+          "documented",
+          "featured"
+        ],
+        "summary": "Export Articles",
+        "description": "Export organization articles.",
+        "operationId": "articles:export",
+        "security": [
+          {
+            "oidc": [
+              "articles:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "articles",
+        "x-speakeasy-name-override": "export"
+      }
+    },
     "/v1/articles/{id}": {
       "get": {
         "tags": [
@@ -13307,13 +13367,124 @@
     "subscription.updated": {
       "post": {
         "summary": "subscription.updated",
-        "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.\n\n**Discord & Slack support:** On cancellation",
+        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.\n\nTo listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.\n\n**Discord & Slack support:** On cancellation and revocation. Renewals are skipped.",
         "operationId": "_endpointsubscription_updated_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebhookSubscriptionUpdatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "subscription.active": {
+      "post": {
+        "summary": "subscription.active",
+        "description": "Sent when a subscription becomes active,\nwhether because it's a new paid subscription or because payment was recovered.\n\n**Discord & Slack support:** Full",
+        "operationId": "_endpointsubscription_active_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionActivePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "subscription.canceled": {
+      "post": {
+        "summary": "subscription.canceled",
+        "description": "Sent when a subscription is canceled by the user.\nThey might still have access until the end of the current period.\n\n**Discord & Slack support:** Full",
+        "operationId": "_endpointsubscription_canceled_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionCanceledPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "subscription.revoked": {
+      "post": {
+        "summary": "subscription.revoked",
+        "description": "Sent when a subscription is revoked, the user looses access immediately.\nHappens when the subscription is canceled, or payment is past due.\n\n**Discord & Slack support:** Full",
+        "operationId": "_endpointsubscription_revoked_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionRevokedPayload"
               }
             }
           },
@@ -20434,6 +20605,9 @@
             "format": "uuid4",
             "title": "User Id"
           },
+          "user": {
+            "$ref": "#/components/schemas/LicenseKeyUser"
+          },
           "benefit_id": {
             "type": "string",
             "format": "uuid4",
@@ -20516,6 +20690,7 @@
           "id",
           "organization_id",
           "user_id",
+          "user",
           "benefit_id",
           "key",
           "display_key",
@@ -20595,6 +20770,42 @@
         },
         "type": "object",
         "title": "LicenseKeyUpdate"
+      },
+      "LicenseKeyUser": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "public_name": {
+            "type": "string",
+            "title": "Public Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "public_name",
+          "email",
+          "avatar_url"
+        ],
+        "title": "LicenseKeyUser"
       },
       "LicenseKeyValidate": {
         "properties": {
@@ -20690,6 +20901,9 @@
             "format": "uuid4",
             "title": "User Id"
           },
+          "user": {
+            "$ref": "#/components/schemas/LicenseKeyUser"
+          },
           "benefit_id": {
             "type": "string",
             "format": "uuid4",
@@ -20779,6 +20993,7 @@
           "id",
           "organization_id",
           "user_id",
+          "user",
           "benefit_id",
           "key",
           "display_key",
@@ -22275,6 +22490,9 @@
             "type": "string",
             "title": "Currency"
           },
+          "billing_reason": {
+            "$ref": "#/components/schemas/OrderBillingReason"
+          },
           "user_id": {
             "type": "string",
             "format": "uuid4",
@@ -22343,6 +22561,7 @@
           "amount",
           "tax_amount",
           "currency",
+          "billing_reason",
           "user_id",
           "product_id",
           "product_price_id",
@@ -22354,6 +22573,16 @@
           "subscription"
         ],
         "title": "Order"
+      },
+      "OrderBillingReason": {
+        "type": "string",
+        "enum": [
+          "purchase",
+          "subscription_create",
+          "subscription_cycle",
+          "subscription_update"
+        ],
+        "title": "OrderBillingReason"
       },
       "OrderInvoice": {
         "properties": {
@@ -28787,6 +29016,9 @@
             "format": "uuid4",
             "title": "User Id"
           },
+          "user": {
+            "$ref": "#/components/schemas/LicenseKeyUser"
+          },
           "benefit_id": {
             "type": "string",
             "format": "uuid4",
@@ -28879,6 +29111,7 @@
           "id",
           "organization_id",
           "user_id",
+          "user",
           "benefit_id",
           "key",
           "display_key",
@@ -29477,6 +29710,9 @@
           "order.created",
           "subscription.created",
           "subscription.updated",
+          "subscription.active",
+          "subscription.canceled",
+          "subscription.revoked",
           "product.created",
           "product.updated",
           "benefit.created",
@@ -29632,6 +29868,50 @@
         "title": "WebhookProductUpdatedPayload",
         "description": "Sent when a product is updated.\n\n**Discord & Slack support:** Basic"
       },
+      "WebhookSubscriptionActivePayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "subscription.active"
+            ],
+            "const": "subscription.active",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Subscription"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookSubscriptionActivePayload",
+        "description": "Sent when a subscription becomes active,\nwhether because it's a new paid subscription or because payment was recovered.\n\n**Discord & Slack support:** Full"
+      },
+      "WebhookSubscriptionCanceledPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "subscription.canceled"
+            ],
+            "const": "subscription.canceled",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Subscription"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookSubscriptionCanceledPayload",
+        "description": "Sent when a subscription is canceled by the user.\nThey might still have access until the end of the current period.\n\n**Discord & Slack support:** Full"
+      },
       "WebhookSubscriptionCreatedPayload": {
         "properties": {
           "type": {
@@ -29654,6 +29934,28 @@
         "title": "WebhookSubscriptionCreatedPayload",
         "description": "Sent when a new subscription is created.\n\n**Discord & Slack support:** Full"
       },
+      "WebhookSubscriptionRevokedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "subscription.revoked"
+            ],
+            "const": "subscription.revoked",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Subscription"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookSubscriptionRevokedPayload",
+        "description": "Sent when a subscription is revoked, the user looses access immediately.\nHappens when the subscription is canceled, or payment is past due.\n\n**Discord & Slack support:** Full"
+      },
       "WebhookSubscriptionUpdatedPayload": {
         "properties": {
           "type": {
@@ -29674,7 +29976,7 @@
           "data"
         ],
         "title": "WebhookSubscriptionUpdatedPayload",
-        "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.\n\n**Discord & Slack support:** On cancellation"
+        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.\n\nTo listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.\n\n**Discord & Slack support:** On cancellation and revocation. Renewals are skipped."
       },
       "polar__checkout__legacy__schemas__Checkout": {
         "properties": {

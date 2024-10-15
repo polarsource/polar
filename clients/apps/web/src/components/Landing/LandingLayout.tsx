@@ -12,6 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import { captureEvent } from '@/utils/posthog'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
@@ -49,6 +50,11 @@ export default function Layout({ children }: PropsWithChildren) {
 const LandingPageTopbar = () => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
+  const onLoginClick = () => {
+    captureEvent('user:login:click')
+    showModal()
+  }
+
   return (
     <div className="relative flex flex-row items-center justify-between bg-transparent">
       <TopbarNavigation />
@@ -63,7 +69,7 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <Button onClick={showModal}>Login</Button>
+        <Button onClick={onLoginClick}>Login</Button>
       </div>
       <Modal
         isShown={isModalShown}

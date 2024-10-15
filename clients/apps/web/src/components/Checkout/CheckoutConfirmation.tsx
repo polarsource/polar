@@ -128,14 +128,6 @@ export const CheckoutConfirmation = ({
     }
   }, [email, router, organization, sendMagicLink])
 
-  // Temporary fix for when we miss SSE events
-  useEffect(() => {
-    if (status === CheckoutStatus.CONFIRMED) {
-      const timer = setTimeout(() => updateCheckout(), 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [status, updateCheckout])
-
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-sm flex-col gap-y-8">

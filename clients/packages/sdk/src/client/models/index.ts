@@ -16065,6 +16065,12 @@ export interface UserSignupAttribution {
     donation?: string | null;
     /**
      * 
+     * @type {boolean}
+     * @memberof UserSignupAttribution
+     */
+    flywheel?: boolean | null;
+    /**
+     * 
      * @type {string}
      * @memberof UserSignupAttribution
      */

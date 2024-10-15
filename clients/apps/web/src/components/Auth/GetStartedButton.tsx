@@ -11,17 +11,20 @@ import { AuthModal } from './AuthModal'
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   orgSlug?: string
+  flywheel?: boolean
 }
 
 const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   text: _text,
   wrapperClassNames,
   orgSlug: slug,
+  flywheel,
   size = 'lg',
   ...props
 }) => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const text = _text || 'Get Started'
+  flywheel = flywheel !== undefined ? flywheel : false
 
   return (
     <>
@@ -48,7 +51,8 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
           <AuthModal
             returnParams={slug ? { slug, auto: 'true' } : {}}
             signup={{
-              intent: 'creator'
+              intent: 'creator',
+              flywheel
             }}
           />
         }

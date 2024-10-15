@@ -36,7 +36,9 @@ const TopbarRight = ({
           <Button onClick={showModal} variant="secondary">
             Login
           </Button>
-          <GetStartedButton size="default" />
+
+          <GetStartedButton size="default" text="Sell with Polar" flywheel={true} />
+
           <Modal
             isShown={isModalShown}
             hide={hideModal}

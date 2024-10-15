@@ -8412,10 +8412,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "free_subscription",
                                 "paid_subscription",
                                 "order",
-                                "donation",
-                                "free_subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -35056,6 +35056,17 @@
                             }
                         ],
                         "title": "Donation"
+                    },
+                    "flywheel": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Flywheel"
                     },
                     "path": {
                         "anyOf": [

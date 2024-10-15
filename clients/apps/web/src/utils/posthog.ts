@@ -6,7 +6,12 @@ import { Properties, posthog } from 'posthog-js'
 //
 // ${Category}:${Noun}:${Verb}
 //
-type Category = 'posts' | 'subscriptions' | 'benefits'
+type Category =
+  | 'articles'
+  | 'benefits'
+  | 'subscriptions'
+  | 'user'
+  | 'organizations'
 
 type Noun = string
 
@@ -27,6 +32,9 @@ type Verb =
   | 'fail'
   | 'generate'
   | 'send'
+  | 'archive'
+  | 'done'
+
 
 type EventName = `${Category}:${Noun}:${Verb}`
 

@@ -217,7 +217,7 @@ class PaymentIntentService:
 
         # Create an account automatically for anonymous pledges
         if user_id is None:
-            user, _ = await user_service.get_by_email_or_signup(
+            user, _ = await user_service.get_by_email_or_create(
                 session,
                 email,
                 signup_attribution=UserSignupAttribution(

@@ -357,7 +357,7 @@ class OrderService(ResourceServiceReader[Order]):
                         subscription=order.subscription.id,
                     )
 
-                user, _ = await user_service.get_by_email_or_signup(
+                user, _ = await user_service.get_by_email_or_create(
                     session,
                     invoice.customer_email,
                     signup_attribution=signup_attribution,

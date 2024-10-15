@@ -91,7 +91,7 @@ async def anonymous_pledge_migration(
                         )
                     )
                 else:
-                    user = await user_service.signup_by_email(session, user_email)
+                    user = await user_service.create_by_email(session, user_email)
                     typer.echo(
                         typer.style(
                             (

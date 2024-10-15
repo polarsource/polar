@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
 from sqlalchemy import (
@@ -32,6 +32,30 @@ class SubscriptionStatus(StrEnum):
     past_due = "past_due"
     canceled = "canceled"
     unpaid = "unpaid"
+
+    @classmethod
+    def incomplete_statuses(cls) -> set[Self]:
+        return {cls.incomplete, cls.incomplete_expired}  # type: ignore
+
+    @classmethod
+    def active_statuses(cls) -> set[Self]:
+        return {cls.trialing, cls.active}  # type: ignore
+
+    @classmethod
+    def revoked_statuses(cls) -> set[Self]:
+        return {cls.past_due, cls.canceled, cls.unpaid}  # type: ignore
+
+    @classmethod
+    def is_incomplete(cls, status: Self) -> bool:
+        return status in cls.incomplete_statuses()
+
+    @classmethod
+    def is_active(cls, status: Self) -> bool:
+        return status in cls.active_statuses()
+
+    @classmethod
+    def is_revoked(cls, status: Self) -> bool:
+        return status in cls.revoked_statuses()
 
 
 class Subscription(MetadataMixin, RecordModel):
@@ -111,42 +135,29 @@ class Subscription(MetadataMixin, RecordModel):
         )
 
     def is_incomplete(self) -> bool:
-        return self.status in [
-            SubscriptionStatus.incomplete,
-            SubscriptionStatus.incomplete_expired,
-        ]
+        return SubscriptionStatus.is_incomplete(self.status)
 
     @hybrid_property
     def active(self) -> bool:
-        return self.status in [SubscriptionStatus.trialing, SubscriptionStatus.active]
+        return SubscriptionStatus.is_active(self.status)
 
     @active.inplace.expression
     @classmethod
     def _active_expression(cls) -> ColumnElement[bool]:
         return type_coerce(
-            cls.status.in_([SubscriptionStatus.trialing, SubscriptionStatus.active]),
+            cls.status.in_(SubscriptionStatus.active_statuses()),
             Boolean,
         )
 
     @hybrid_property
     def revoked(self) -> bool:
-        return self.status in [
-            SubscriptionStatus.past_due,
-            SubscriptionStatus.canceled,
-            SubscriptionStatus.unpaid,
-        ]
+        return SubscriptionStatus.is_revoked(self.status)
 
     @revoked.inplace.expression
     @classmethod
     def _revoked_expression(cls) -> ColumnElement[bool]:
         return type_coerce(
-            cls.status.in_(
-                [
-                    SubscriptionStatus.past_due,
-                    SubscriptionStatus.canceled,
-                    SubscriptionStatus.unpaid,
-                ]
-            ),
+            cls.status.in_(SubscriptionStatus.revoked_statuses()),
             Boolean,
         )
 

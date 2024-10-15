@@ -12,6 +12,7 @@ from polar.integrations.stripe.schemas import (
     PledgePaymentIntentMetadata,
 )
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
 from polar.models.organization import Organization
 from polar.models.user import User
@@ -555,6 +556,11 @@ class StripeService:
     async def create_customer(
         self, **params: Unpack[stripe_lib.Customer.CreateParams]
     ) -> stripe_lib.Customer:
+        if settings.USE_TEST_CLOCK:
+            test_clock = await stripe_lib.test_helpers.TestClock.create_async(
+                frozen_time=int(utc_now().timestamp())
+            )
+            params["test_clock"] = test_clock.id
         return await stripe_lib.Customer.create_async(**params)
 
     async def update_customer(

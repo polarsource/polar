@@ -88,8 +88,7 @@ class UserSignupAttribution(Schema):
     subscription: UUID4ToStr | None = None
     pledge: UUID4ToStr | None = None
     donation: UUID4ToStr | None = None
-
-    flywheel: bool | None = None
+    from_storefront: UUID4ToStr | None = None
 
     # Website source
     path: str | None = None

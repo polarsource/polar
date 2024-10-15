@@ -168,7 +168,7 @@ async def github_callback(
                 session, user=auth_subject.subject, tokens=tokens
             )
         else:
-            user, is_signup = await github_user.login_or_signup(
+            user, is_signup = await github_user.get_updated_or_create(
                 session,
                 locker,
                 tokens=tokens,

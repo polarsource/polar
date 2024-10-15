@@ -110,7 +110,7 @@ class GithubUserService(UserService):
             "updated_at": github_user.updated_at.isoformat(),
         }
 
-    async def signup(
+    async def create(
         self,
         session: AsyncSession,
         *,
@@ -143,13 +143,13 @@ class GithubUserService(UserService):
         session.add(new_user)
         await session.commit()
 
-        log.info("github.user.signup", user_id=new_user.id, username=github_user.login)
+        log.info("github.user.create", user_id=new_user.id, username=github_user.login)
 
         enqueue_job("user.on_after_signup", user_id=new_user.id)
 
         return new_user
 
-    async def login(
+    async def get_updated(
         self,
         session: AsyncSession,
         *,
@@ -202,13 +202,13 @@ class GithubUserService(UserService):
         session.add(oauth_account)
 
         log.info(
-            "github.user.login",
+            "github.user.update",
             user_id=user.id,
             username=user.username,
         )
         return user
 
-    async def login_or_signup(
+    async def get_updated_or_create(
         self,
         session: AsyncSession,
         locker: Locker,
@@ -219,7 +219,7 @@ class GithubUserService(UserService):
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
 
-        user, signup = await self._login_or_signup_create_user(
+        user, created = await self._get_updated_or_create(
             session,
             tokens=tokens,
             client=client,
@@ -227,14 +227,15 @@ class GithubUserService(UserService):
             signup_attribution=signup_attribution,
         )
 
-        if signup:
+        if created:
+            # Will be updated & removed soon
             await loops_service.user_signup(user, gitHubConnected=True)
         else:
             await loops_service.user_update(user, gitHubConnected=True)
 
-        return (user, signup)
+        return (user, created)
 
-    async def _login_or_signup_create_user(
+    async def _get_updated_or_create(
         self,
         session: AsyncSession,
         *,
@@ -248,7 +249,7 @@ class GithubUserService(UserService):
             session, id=authenticated.id
         )
         if existing_user_by_id:
-            user = await self.login(
+            user = await self.get_updated(
                 session,
                 github_user=authenticated,
                 user=existing_user_by_id,
@@ -266,7 +267,7 @@ class GithubUserService(UserService):
         if existing_user_by_email:
             # Automatically link if email is verified
             if email_verified:
-                user = await self.login(
+                user = await self.get_updated(
                     session,
                     github_user=authenticated,
                     user=existing_user_by_email,
@@ -280,7 +281,7 @@ class GithubUserService(UserService):
                 raise CannotLinkUnverifiedEmailError(email)
 
         # New user
-        user = await self.signup(
+        user = await self.create(
             session,
             github_user=authenticated,
             github_email=github_email,

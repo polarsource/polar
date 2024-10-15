@@ -86,7 +86,7 @@ async def test_authenticate_valid_token(
     client: AsyncClient, user: User, mocker: MockerFixture
 ) -> None:
     magic_link_service_mock = mocker.patch.object(
-        magic_link_service, "authenticate", new=AsyncMock(return_value=user)
+        magic_link_service, "authenticate", new=AsyncMock(return_value=(user, False))
     )
 
     response = await client.post("/v1/magic_link/authenticate", data={"token": "TOKEN"})

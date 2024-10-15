@@ -9697,6 +9697,12 @@ export interface Order {
     currency: string;
     /**
      * 
+     * @type {OrderBillingReason}
+     * @memberof Order
+     */
+    billing_reason: OrderBillingReason;
+    /**
+     * 
      * @type {string}
      * @memberof Order
      */
@@ -9750,6 +9756,21 @@ export interface Order {
      */
     subscription: OrderSubscription | null;
 }
+
+
+
+/**
+ * 
+ * @export
+ */
+export const OrderBillingReason = {
+    PURCHASE: 'purchase',
+    SUBSCRIPTION_CREATE: 'subscription_create',
+    SUBSCRIPTION_CYCLE: 'subscription_cycle',
+    SUBSCRIPTION_UPDATE: 'subscription_update'
+} as const;
+export type OrderBillingReason = typeof OrderBillingReason[keyof typeof OrderBillingReason];
+
 /**
  * @type OrderIDFilter
  * Filter by order ID.
@@ -16927,6 +16948,9 @@ export const WebhookEventType = {
     ORDER_CREATED: 'order.created',
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',
+    SUBSCRIPTION_ACTIVE: 'subscription.active',
+    SUBSCRIPTION_CANCELED: 'subscription.canceled',
+    SUBSCRIPTION_REVOKED: 'subscription.revoked',
     PRODUCT_CREATED: 'product.created',
     PRODUCT_UPDATED: 'product.updated',
     BENEFIT_CREATED: 'benefit.created',
@@ -17165,6 +17189,70 @@ export interface WebhookResponse {
     job_id?: string | null;
 }
 /**
+ * Sent when a subscription becomes active,
+ * whether because it's a new paid subscription or because payment was recovered.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookSubscriptionActivePayload
+ */
+export interface WebhookSubscriptionActivePayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionActivePayload
+     */
+    type: WebhookSubscriptionActivePayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionActivePayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionActivePayloadTypeEnum = {
+    SUBSCRIPTION_ACTIVE: 'subscription.active'
+} as const;
+export type WebhookSubscriptionActivePayloadTypeEnum = typeof WebhookSubscriptionActivePayloadTypeEnum[keyof typeof WebhookSubscriptionActivePayloadTypeEnum];
+
+/**
+ * Sent when a subscription is canceled by the user.
+ * They might still have access until the end of the current period.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookSubscriptionCanceledPayload
+ */
+export interface WebhookSubscriptionCanceledPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionCanceledPayload
+     */
+    type: WebhookSubscriptionCanceledPayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionCanceledPayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionCanceledPayloadTypeEnum = {
+    SUBSCRIPTION_CANCELED: 'subscription.canceled'
+} as const;
+export type WebhookSubscriptionCanceledPayloadTypeEnum = typeof WebhookSubscriptionCanceledPayloadTypeEnum[keyof typeof WebhookSubscriptionCanceledPayloadTypeEnum];
+
+/**
  * Sent when a new subscription is created.
  * 
  * **Discord & Slack support:** Full
@@ -17196,9 +17284,45 @@ export const WebhookSubscriptionCreatedPayloadTypeEnum = {
 export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscriptionCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionCreatedPayloadTypeEnum];
 
 /**
- * Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.
+ * Sent when a subscription is revoked, the user looses access immediately.
+ * Happens when the subscription is canceled, or payment is past due.
  * 
- * **Discord & Slack support:** On cancellation
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookSubscriptionRevokedPayload
+ */
+export interface WebhookSubscriptionRevokedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionRevokedPayload
+     */
+    type: WebhookSubscriptionRevokedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionRevokedPayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionRevokedPayloadTypeEnum = {
+    SUBSCRIPTION_REVOKED: 'subscription.revoked'
+} as const;
+export type WebhookSubscriptionRevokedPayloadTypeEnum = typeof WebhookSubscriptionRevokedPayloadTypeEnum[keyof typeof WebhookSubscriptionRevokedPayloadTypeEnum];
+
+/**
+ * Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
+ * 
+ * If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.
+ * 
+ * To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+ * 
+ * **Discord & Slack support:** On cancellation and revocation. Renewals are skipped.
  * @export
  * @interface WebhookSubscriptionUpdatedPayload
  */

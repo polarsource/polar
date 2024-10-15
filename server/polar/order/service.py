@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 import stripe as stripe_lib
+import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
@@ -23,6 +24,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.logging import Logger
 from polar.models import (
     Checkout,
     HeldBalance,
@@ -34,6 +36,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.order import OrderBillingReason
 from polar.models.product_price import ProductPriceType
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
@@ -60,6 +63,8 @@ from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
+
+log: Logger = structlog.get_logger()
 
 
 class OrderError(PolarError): ...
@@ -293,6 +298,8 @@ class OrderService(ResourceServiceReader[Order]):
 
         user: User | None = None
 
+        billing_reason: OrderBillingReason = OrderBillingReason.purchase
+
         # Get subscription if applicable
         subscription: Subscription | None = None
         if invoice.subscription is not None:
@@ -303,6 +310,16 @@ class OrderService(ResourceServiceReader[Order]):
             if subscription is None:
                 raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
             user = await user_service.get(session, subscription.user_id)
+            if invoice.billing_reason is not None:
+                try:
+                    billing_reason = OrderBillingReason(invoice.billing_reason)
+                except ValueError as e:
+                    log.error(
+                        "Unknown billing reason, fallback to 'subscription_cycle'",
+                        invoice_id=invoice.id,
+                        billing_reason=invoice.billing_reason,
+                    )
+                    billing_reason = OrderBillingReason.subscription_cycle
 
         # Create Order
         tax = invoice.tax or 0
@@ -312,6 +329,7 @@ class OrderService(ResourceServiceReader[Order]):
             amount=invoice.total - tax,
             tax_amount=tax,
             currency=invoice.currency,
+            billing_reason=billing_reason,
             stripe_invoice_id=invoice.id,
             product=product,
             product_price=product_price,

@@ -44,6 +44,7 @@ from polar.models.benefit_grant import (
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.donation import Donation
 from polar.models.issue import Issue
+from polar.models.order import OrderBillingReason
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import HasPriceCurrency, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
@@ -635,6 +636,7 @@ async def create_order(
     amount: int = 1000,
     tax_amount: int = 0,
     stripe_invoice_id: str = "INVOICE_ID",
+    billing_reason: OrderBillingReason = OrderBillingReason.purchase,
     created_at: datetime | None = None,
 ) -> Order:
     order = Order(
@@ -642,6 +644,7 @@ async def create_order(
         amount=amount,
         tax_amount=tax_amount,
         currency="usd",
+        billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
         user=user,
         product=product,

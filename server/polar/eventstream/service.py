@@ -1,14 +1,19 @@
 from typing import Any
 from uuid import UUID
 
+import structlog
 from pydantic import BaseModel
 
 from polar.kit.utils import generate_uuid
+from polar.logging import Logger
 from polar.postgres import AsyncSession
-from polar.redis import redis
+from polar.redis import Redis, redis
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
+
+log: Logger = structlog.get_logger()
 
 
 class Receivers(BaseModel):
@@ -41,10 +46,12 @@ class Event(BaseModel):
     payload: dict[str, Any]
 
 
-async def send(event: Event, channels: list[str]) -> None:
-    event_json = event.model_dump_json()
+async def send_event(redis: Redis, event_json: str, channels: list[str]) -> None:
     for channel in channels:
         await redis.publish(channel, event_json)
+    log.debug(
+        "Published event to eventstream", event_json=event_json, channels=channels
+    )
 
 
 async def publish(
@@ -53,6 +60,8 @@ async def publish(
     user_id: UUID | None = None,
     organization_id: UUID | None = None,
     checkout_client_secret: str | None = None,
+    *,
+    run_in_worker: bool = True,
 ) -> None:
     receivers = Receivers(
         user_id=user_id,
@@ -64,8 +73,12 @@ async def publish(
         id=generate_uuid(),
         key=key,
         payload=payload,
-    )
-    await send(event, channels)
+    ).model_dump_json()
+
+    if run_in_worker:
+        enqueue_job("eventstream.publish", event, channels)
+    else:
+        await send_event(redis, event, channels)
 
 
 async def publish_members(
@@ -73,6 +86,8 @@ async def publish_members(
     key: str,
     payload: dict[str, Any],
     organization_id: UUID,
+    *,
+    run_in_worker: bool = True,
 ) -> None:
     members = await user_organization_service.list_by_org(
         session, org_id=organization_id
@@ -85,5 +100,9 @@ async def publish_members(
             id=generate_uuid(),
             key=key,
             payload=payload,
-        )
-        await send(event, channels)
+        ).model_dump_json()
+
+        if run_in_worker:
+            enqueue_job("eventstream.publish", event, channels)
+        else:
+            await send_event(redis, event, channels)

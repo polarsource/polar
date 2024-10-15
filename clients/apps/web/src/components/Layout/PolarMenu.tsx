@@ -5,6 +5,7 @@ import { useLoginLink } from '@/hooks/login'
 import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { captureEvent } from '@/utils/posthog'
 import Button from 'polarkit/components/ui/atoms/button'
 import GetStartedButton from '../Auth/GetStartedButton'
 
@@ -31,6 +32,10 @@ const PolarMenu = ({
       : userOrganizations?.[0]?.slug
   }`
 
+  const onLoginClick = () => {
+    captureEvent('user:login:click')
+  }
+
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">
       {authenticatedUser ? (
@@ -54,6 +59,7 @@ const PolarMenu = ({
           <GetStartedButton size="sm" text="Sell with Polar" storefrontOrg={organization} />
           <Link
             href={loginLink}
+            onClick={onLoginClick}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
           >
             Login

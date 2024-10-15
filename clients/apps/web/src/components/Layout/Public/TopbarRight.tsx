@@ -9,6 +9,7 @@ import Popover from '@/components/Notifications/Popover'
 import { UserRead, Organization } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import { captureEvent } from '@/utils/posthog'
 
 const TopbarRight = ({
   authenticatedUser,
@@ -20,6 +21,11 @@ const TopbarRight = ({
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/purchases'
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+
+  const onLoginClick = () => {
+    captureEvent('user:login:click')
+    showModal()
+  }
 
   return (
     <>
@@ -35,7 +41,7 @@ const TopbarRight = ({
         </div>
       ) : (
         <>
-          <Button onClick={showModal} variant="secondary">
+          <Button onClick={onLoginClick} variant="secondary">
             Login
           </Button>
 

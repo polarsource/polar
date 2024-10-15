@@ -180,9 +180,6 @@ export default function Page() {
           {pathname && (
             <GithubLoginButton
               returnTo={pathname}
-              posthogProps={{
-                view: 'Github Installation Page',
-              }}
               text="Continue with GitHub"
             />
           )}

@@ -17,11 +17,6 @@ services:
     plan: standard
     preDeployCommand: "poetry run task pre_deploy"
     region: ohio
-    scaling:
-      maxInstances: 3
-      minInstances: 1
-      targetCPUPercent: 50
-      targetMemoryPercent: 75
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
     domains:

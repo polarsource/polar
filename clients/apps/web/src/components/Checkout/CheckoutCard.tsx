@@ -4,6 +4,7 @@ import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasIntervals } from '@/utils/product'
+import { AttachMoneyOutlined } from '@mui/icons-material'
 import {
   CheckoutPublic,
   CheckoutUpdatePublic,
@@ -98,7 +99,7 @@ export const CheckoutCard = ({
                 ) : (
                   <Form {...form}>
                     <form
-                      className="flex flex-row items-start gap-2"
+                      className="flex w-full flex-row items-center gap-2"
                       onSubmit={handleSubmit(onAmountChangeSubmit)}
                     >
                       <FormField
@@ -121,14 +122,19 @@ export const CheckoutCard = ({
                         }}
                         render={({ field }) => {
                           return (
-                            <FormItem>
+                            <FormItem className="w-full">
                               <MoneyInput
-                                className="rounded-lg p-8 text-4xl font-light"
+                                className="text-md dark:border-polar-600"
                                 name={field.name}
                                 value={field.value || undefined}
                                 onChange={field.onChange}
                                 placeholder={0}
-                                preSlot={<span className="text-2xl">$</span>}
+                                preSlot={
+                                  <AttachMoneyOutlined
+                                    className="text-lg"
+                                    fontSize="inherit"
+                                  />
+                                }
                                 disabled={field.disabled}
                               />
                               <FormMessage />
@@ -139,17 +145,14 @@ export const CheckoutCard = ({
                       {!updatingAmount && (
                         <Button
                           type="button"
+                          size="lg"
                           onClick={() => setUpdatingAmount(true)}
-                          className="rounded-lg p-8 text-lg"
                         >
                           Change
                         </Button>
                       )}
                       {updatingAmount && (
-                        <Button
-                          type="submit"
-                          className="rounded-lg p-8 text-lg"
-                        >
+                        <Button type="submit" size="lg">
                           Submit
                         </Button>
                       )}

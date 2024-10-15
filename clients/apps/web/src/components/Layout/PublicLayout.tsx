@@ -7,9 +7,11 @@ const PublicLayout = ({
   children,
   wide,
   className,
+  footer = true,
 }: PropsWithChildren<{
   wide?: boolean
   className?: string
+  footer?: boolean
 }>) => {
   return (
     <EmptyLayout>
@@ -22,7 +24,7 @@ const PublicLayout = ({
       >
         {children}
       </div>
-      <Footer wide={wide} />
+      {footer && <Footer wide={wide} />}
     </EmptyLayout>
   )
 }

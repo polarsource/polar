@@ -17,13 +17,21 @@ const CheckoutProductInfo = ({
 }: CheckoutProductInfoProps) => {
   return (
     <>
-      <Link href={organizationPageLink(organization)}>
+      {organization.profile_settings?.enabled ? (
+        <Link href={organizationPageLink(organization)}>
+          <Avatar
+            className="md:h-16 md:w-16"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
+        </Link>
+      ) : (
         <Avatar
           className="md:h-16 md:w-16"
           avatar_url={organization.avatar_url}
           name={organization.name}
         />
-      </Link>
+      )}
       <h1 className="text-3xl">{product.name}</h1>
       {product.medias.length > 0 && (
         <Slideshow

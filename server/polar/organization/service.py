@@ -32,6 +32,7 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
+from polar.posthog import posthog
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -151,6 +152,17 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         enqueue_job("organization.created", organization_id=organization.id)
 
+        posthog.auth_subject_event(
+            auth_subject,
+            "organizations",
+            "create",
+            "done",
+            {
+                "id": organization.id,
+                "name": organization.name,
+                "slug": organization.slug,
+            },
+        )
         return organization
 
     async def update(

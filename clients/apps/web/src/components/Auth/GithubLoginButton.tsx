@@ -14,7 +14,6 @@ const GithubLoginButton = (props: {
   signup?: UserSignupAttribution,
   size?: 'large' | 'small'
   fullWidth?: boolean
-  posthogProps?: object
   text: string
 }) => {
   const search = useSearchParams()

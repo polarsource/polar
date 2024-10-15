@@ -75,9 +75,6 @@ const Login = ({
           text="Continue with GitHub"
           size="large"
           fullWidth
-          posthogProps={{
-            view: 'Login Page',
-          }}
           {...loginProps}
         />
         <GoogleLoginButton {...loginProps} />

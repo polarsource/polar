@@ -38,6 +38,11 @@ import {
 import { useContext, useMemo, useState } from 'react'
 
 export default function ClientPage() {
+  const {
+    isShown: isCheckoutModalShown,
+    hide: hideCheckoutModal,
+    show: showCheckoutModal,
+  } = useModal()
   const { organization: org } = useContext(MaintainerOrganizationContext)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>()
@@ -68,13 +73,15 @@ export default function ClientPage() {
               />
             </div>
             <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
-              {org.profile_settings?.enabled && (
+              {org.profile_settings?.enabled ? (
                 <Link
                   href={`/${org.slug}/products/${selectedProduct.id}`}
                   target="_blank"
                 >
                   <Button>View Product Page</Button>
                 </Link>
+              ) : (
+                <Button onClick={showCheckoutModal}>Checkout URL</Button>
               )}
               <Link
                 href={`/dashboard/${org.slug}/products/${selectedProduct.id}`}
@@ -82,6 +89,12 @@ export default function ClientPage() {
                 <Button variant="secondary">Edit Product</Button>
               </Link>
             </div>
+            <Modal
+              className="lg:w-full lg:max-w-[480px]"
+              isShown={isCheckoutModalShown}
+              hide={hideCheckoutModal}
+              modalContent={<ProductCheckoutModal product={selectedProduct} />}
+            />
           </div>
         ) : undefined
       }

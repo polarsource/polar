@@ -22,9 +22,11 @@ import { useForm } from 'react-hook-form'
 import { CheckoutInfo } from '../Checkout/CheckoutInfo'
 import { createCheckoutPreview } from '../Customization/utils'
 import { DashboardBody } from '../Layout/DashboardLayout'
+import { Modal } from '../Modal'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
+import { ProductCheckoutModal } from './ProductCheckoutModal'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 import { productUpdateToProduct } from './utils'
 
@@ -37,6 +39,12 @@ export const EditProductPage = ({
   organization,
   product,
 }: EditProductPageProps) => {
+  const {
+    isShown: isCheckoutModalShown,
+    hide: hideCheckoutModal,
+    show: showCheckoutModal,
+  } = useModal()
+
   const router = useRouter()
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
@@ -190,16 +198,27 @@ export const EditProductPage = ({
               )}
             />
           </div>
-          {organization.profile_settings?.enabled && (
-            <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
-              <Link
-                href={`/${organization.slug}/products/${product.id}`}
-                target="_blank"
-              >
-                <Button>View Product Page</Button>
-              </Link>
-            </div>
-          )}
+
+          <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
+            {organization.profile_settings?.enabled ? (
+              <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
+                <Link
+                  href={`/${organization.slug}/products/${product.id}`}
+                  target="_blank"
+                >
+                  <Button>View Product Page</Button>
+                </Link>
+              </div>
+            ) : (
+              <Button onClick={showCheckoutModal}>Checkout URL</Button>
+            )}
+          </div>
+          <Modal
+            className="lg:w-full lg:max-w-[480px]"
+            isShown={isCheckoutModalShown}
+            hide={hideCheckoutModal}
+            modalContent={<ProductCheckoutModal product={product} />}
+          />
         </div>
       }
     >

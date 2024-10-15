@@ -31,6 +31,7 @@ async def on_issue_synced(hook: SyncedHook) -> None:
             "repository_id": hook.repository.id,
         },
         organization_id=hook.organization.id,
+        run_in_worker=False,
     )
 
 
@@ -49,6 +50,7 @@ async def on_issue_sync_completed(
             "repository_id": hook.repository.id,
         },
         organization_id=hook.organization.id,
+        run_in_worker=False,
     )
 
 
@@ -69,6 +71,7 @@ async def on_issue_updated(hook: IssueHook) -> None:
             "repository_id": hook.issue.repository_id,
         },
         organization_id=hook.issue.organization_id,
+        run_in_worker=False,
     )
 
 

@@ -105,11 +105,12 @@ async def google_callback(
             and state_user_id is not None
             and auth_subject.subject.id == uuid.UUID(state_user_id)
         ):
+            is_signup = False
             user = await google_service.link_user(
                 session, user=auth_subject.subject, token=token_data
             )
         else:
-            user = await google_service.login_or_signup(
+            user, is_signup = await google_service.login_or_signup(
                 session,
                 token=token_data,
                 signup_attribution=state_signup_attribution,
@@ -117,7 +118,11 @@ async def google_callback(
     except GoogleServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
 
-    posthog.identify(user)
+    # Event tracking last to ensure business critical data is stored first
+    if is_signup:
+        posthog.user_signup(user, "google")
+    else:
+        posthog.user_login(user, "google")
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

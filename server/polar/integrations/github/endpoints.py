@@ -163,11 +163,12 @@ async def github_callback(
             and state_user_id is not None
             and auth_subject.subject.id == UUID(state_user_id)
         ):
+            is_signup = False
             user = await github_user.link_existing_user(
                 session, user=auth_subject.subject, tokens=tokens
             )
         else:
-            user = await github_user.login_or_signup(
+            user, is_signup = await github_user.login_or_signup(
                 session,
                 locker,
                 tokens=tokens,
@@ -193,8 +194,11 @@ async def github_callback(
         benefit_type=BenefitType.github_repository,
     )
 
-    posthog.identify(user)
-    posthog.auth_subject_event(auth_subject, "user", "github_oauth_login", "done")
+    # Event tracking last to ensure business critical data is stored first
+    if is_signup:
+        posthog.user_signup(user, "github")
+    else:
+        posthog.user_login(user, "github")
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

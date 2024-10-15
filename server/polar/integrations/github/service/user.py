@@ -10,7 +10,6 @@ from polar.locker import Locker
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
-from polar.posthog import posthog
 from polar.user.oauth_service import oauth_account_service
 from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import UserService
@@ -216,11 +215,11 @@ class GithubUserService(UserService):
         *,
         tokens: OAuthAccessToken,
         signup_attribution: UserSignupAttribution | None = None,
-    ) -> User:
+    ) -> tuple[User, bool]:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
 
-        user, event_name, signup = await self._login_or_signup_create_user(
+        user, signup = await self._login_or_signup_create_user(
             session,
             tokens=tokens,
             client=client,
@@ -228,13 +227,12 @@ class GithubUserService(UserService):
             signup_attribution=signup_attribution,
         )
 
-        posthog.user_event(user, "user", event_name, "done")
-
         if signup:
             await loops_service.user_signup(user, gitHubConnected=True)
         else:
             await loops_service.user_update(user, gitHubConnected=True)
-        return user
+
+        return (user, signup)
 
     async def _login_or_signup_create_user(
         self,
@@ -244,7 +242,7 @@ class GithubUserService(UserService):
         client: GitHub[TokenAuthStrategy],
         authenticated: GithubUser,
         signup_attribution: UserSignupAttribution | None = None,
-    ) -> tuple[User, str, bool]:
+    ) -> tuple[User, bool]:
         # Check if we have an existing user with this GitHub account
         existing_user_by_id = await self.get_user_by_github_id(
             session, id=authenticated.id
@@ -257,9 +255,7 @@ class GithubUserService(UserService):
                 tokens=tokens,
                 client=client,
             )
-            posthog.user_event(user, "user", "github_oauth_logged_in", "done")
-
-            return (user, "logged_in", False)
+            return (user, False)
 
         # Fetch user email
         github_email = await self.fetch_authenticated_user_primary_email(client=client)
@@ -277,8 +273,7 @@ class GithubUserService(UserService):
                     tokens=tokens,
                     client=client,
                 )
-                posthog.user_event(user, "user", "github_oauth_logged_in", "done")
-                return (user, "logged_in", False)
+                return (user, False)
 
             else:
                 # For security reasons, don't link if the email is not verified
@@ -292,8 +287,7 @@ class GithubUserService(UserService):
             tokens=tokens,
             signup_attribution=signup_attribution,
         )
-        posthog.user_event(user, "user", "github_oauth_signed_up", "done")
-        return (user, "signed_up", True)
+        return (user, True)
 
     async def link_existing_user(
         self, session: AsyncSession, *, user: User, tokens: OAuthAccessToken
@@ -343,8 +337,6 @@ class GithubUserService(UserService):
         user.username = github_user.login
         user.avatar_url = github_user.avatar_url
         session.add(user)
-
-        posthog.user_event(user, "user", "github_oauth_link_existing_user", "done")
 
         return user
 

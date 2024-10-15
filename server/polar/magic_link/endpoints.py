@@ -60,13 +60,17 @@ async def authenticate_magic_link(
         return RedirectResponse(return_to, 303)
 
     try:
-        user = await magic_link_service.authenticate(session, token)
+        user, is_signup = await magic_link_service.authenticate(session, token)
     except MagicLinkError as e:
         raise PolarRedirectionError(
             e.message, e.status_code, return_to=return_to
         ) from e
 
-    posthog.auth_subject_event(auth_subject, "user", "magic_link_verified", "submit")
+    # Event tracking last to ensure business critical data is stored first
+    if is_signup:
+        posthog.user_signup(user, "ml")
+    else:
+        posthog.user_login(user, "ml")
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

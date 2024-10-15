@@ -162,6 +162,16 @@ class Service:
             },
         )
 
+    def user_login(self, user: User, method: Literal["github", "google", "ml"]) -> None:
+        self.identify(user)
+        self.user_event(user, "user", "login", "done", {"method": method})
+
+    def user_signup(
+        self, user: User, method: Literal["github", "google", "ml"]
+    ) -> None:
+        self.identify(user)
+        self.user_event(user, "user", "signup", "done", {"method": method})
+
     def _get_common_properties(self) -> dict[str, Any]:
         return {
             "_environment": settings.ENV,

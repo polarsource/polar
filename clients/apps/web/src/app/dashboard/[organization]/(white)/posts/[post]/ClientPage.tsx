@@ -109,13 +109,13 @@ const ClientPage = () => {
       if (e.metaKey || e.ctrlKey) {
         if (e.key === 's') {
           e.preventDefault()
-          captureEvent('posts:edit_cmd_s:submit')
+          captureEvent('articles:edit_cmd_s:submit')
           handleSave()
         }
 
         if (e.key === 'p') {
           e.preventDefault()
-          captureEvent('posts:edit_cmd_p:view')
+          captureEvent('articles:edit_cmd_p:view')
           if (tab === 'preview') {
             setTab('edit')
           } else {
@@ -152,11 +152,11 @@ const ClientPage = () => {
 
     if (tab === 'settings') {
       handleSave(false)
-      captureEvent('posts:edit_tab_settings:view')
+      captureEvent('articles:edit_tab_settings:view')
     } else if (tab === 'edit') {
-      captureEvent('posts:edit_tab_edit:view')
+      captureEvent('articles:edit_tab_edit:view')
     } else if (tab === 'preview') {
-      captureEvent('posts:edit_tab_preview:view')
+      captureEvent('articles:edit_tab_preview:view')
     }
   }
 

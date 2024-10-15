@@ -62,6 +62,8 @@ export const useAuth = (): {
 export const useLogout = () => {
   const func = useCallback(async () => {
     // polar.sh logout
+    posthog.capture('user:logout:done')
+    posthog.reset()
     window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
     return
   }, [])

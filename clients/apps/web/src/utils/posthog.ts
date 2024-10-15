@@ -36,7 +36,7 @@ type Verb =
   | 'done'
 
 
-type EventName = `${Category}:${Noun}:${Verb}`
+export type EventName = `${Category}:${Noun}:${Verb}`
 
 export const captureEvent = (event: EventName, properties?: Properties) => {
   posthog.capture(event, properties)

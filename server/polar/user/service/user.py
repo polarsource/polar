@@ -82,7 +82,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
 
-    async def get_by_email_or_signup(
+    async def get_by_email_or_create(
         self,
         session: AsyncSession,
         email: str,
@@ -90,20 +90,20 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, bool]:
         user = await self.get_by_email(session, email)
-        signup = False
+        created = False
         if user is None:
-            user = await self.signup_by_email(
+            user = await self.create_by_email(
                 session, email, signup_attribution=signup_attribution
             )
-            signup = True
+            created = True
 
-        if signup:
+        if created:
             await loops_service.user_signup(user)
         else:
             await loops_service.user_update(user)
-        return (user, signup)
+        return (user, created)
 
-    async def signup_by_email(
+    async def create_by_email(
         self,
         session: AsyncSession,
         email: str,
@@ -119,7 +119,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         session.add(user)
         await session.commit()
 
-        log.info("user signed up by email", user_id=user.id, email=email)
+        log.info("user.create", user_id=user.id, email=email)
 
         enqueue_job("user.on_after_signup", user_id=user.id)
 

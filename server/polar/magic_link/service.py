@@ -109,14 +109,18 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         is_signup = False
         user = magic_link.user
         if user is None:
-            user, is_signup = await user_service.get_by_email_or_signup(
+            user, is_signup = await user_service.get_by_email_or_create(
                 session,
                 magic_link.user_email,
                 signup_attribution=signup_attribution,
             )
 
-        user.email_verified = True
-        session.add(user)
+        # Mark email as verified & set is_signup for the first time programmatic
+        # users from orders, subscriptions & pledges signin (unverified before).
+        if not user.email_verified:
+            is_signup = True
+            user.email_verified = True
+            session.add(user)
 
         await session.delete(magic_link)
 

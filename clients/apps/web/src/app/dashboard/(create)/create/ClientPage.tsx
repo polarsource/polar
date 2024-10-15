@@ -21,6 +21,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { captureEvent } from '@/utils/posthog'
 import slugify from 'slugify'
 
 export default function ClientPage({
@@ -48,6 +49,10 @@ export default function ClientPage({
   } = form
   const createOrganization = useCreateOrganization()
   const [editedSlug, setEditedSlug] = useState(false)
+
+  useEffect(() => {
+    captureEvent('organizations:create:view')
+  }, [])
 
   useEffect(() => {
     if (validationErrors) {
@@ -95,10 +100,12 @@ export default function ClientPage({
 
   const onSubmit = async (data: { name: string; slug: string }) => {
     try {
-      const organization = await createOrganization.mutateAsync({
+      const params = {
         ...data,
         slug: slug as string,
-      })
+      }
+      captureEvent('organizations:create:submit', params)
+      const organization = await createOrganization.mutateAsync(params)
 
       await revalidate(`organizations:${organization.id}`)
       await revalidate(`organizations:${organization.slug}`)

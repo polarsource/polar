@@ -19,7 +19,7 @@ export default async function Layout({
   } catch (e) {}
 
   return (
-    <PublicLayout className="gap-y-0 py-6 md:py-12" wide>
+    <PublicLayout className="gap-y-0 py-6 md:py-12" wide footer={false}>
       <div className="relative flex flex-row items-center justify-end gap-x-6">
         <BrandingMenu
           className="absolute left-1/2 -translate-x-1/2"

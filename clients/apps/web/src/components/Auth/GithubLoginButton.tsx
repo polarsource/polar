@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import { UserSignupAttribution } from '@polar-sh/sdk'
+import { captureEvent, type EventName } from '@/utils/posthog'
 
 const GithubLoginButton = (props: {
   className?: string
@@ -25,11 +26,22 @@ const GithubLoginButton = (props: {
     attribution: JSON.stringify(signup),
   })
 
+  const onClick = () => {
+    let eventName: EventName = 'user:login:submit'
+    if (signup) {
+      eventName = 'user:signup:submit'
+    }
+
+    captureEvent(eventName, {
+      method: 'github'
+    })
+  }
+
   const largeStyle = 'p-2.5 px-5 text-md space-x-3'
   const smallStyle = 'p-2 px-4 text-sm space-x-2'
 
   return (
-    <Link href={authorizeURL}>
+    <Link href={authorizeURL} onClick={onClick}>
       <Button
         wrapperClassNames={twMerge(
           props.size === 'large' ? largeStyle : smallStyle,

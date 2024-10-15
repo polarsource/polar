@@ -7,6 +7,7 @@ import GoogleLoginButton from './GoogleLoginButton'
 import { captureEvent, type EventName } from '@/utils/posthog'
 import { UserSignupAttribution } from '@polar-sh/sdk'
 import { useSearchParams, usePathname } from 'next/navigation'
+import { useEffect } from 'react'
 
 const Login = ({
   returnTo,
@@ -63,7 +64,9 @@ const Login = ({
     loginProps = { returnTo, ...loginProps }
   }
 
-  captureEvent(eventName, loginProps)
+  useEffect(() => {
+    captureEvent(eventName, loginProps)
+  }, [])
 
   return (
     <div className="flex flex-col gap-y-4">

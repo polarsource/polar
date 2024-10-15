@@ -51,7 +51,7 @@ const PolarMenu = ({
         </div>
       ) : (
         <>
-          <GetStartedButton size="sm" text="Sell with Polar" flywheel={true} />
+          <GetStartedButton size="sm" text="Sell with Polar" storefrontOrg={organization} />
           <Link
             href={loginLink}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"

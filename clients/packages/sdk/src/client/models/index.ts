@@ -16065,10 +16065,10 @@ export interface UserSignupAttribution {
     donation?: string | null;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof UserSignupAttribution
      */
-    flywheel?: boolean | null;
+    from_storefront?: string | null;
     /**
      * 
      * @type {string}

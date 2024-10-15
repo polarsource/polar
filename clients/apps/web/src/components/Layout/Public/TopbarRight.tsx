@@ -6,14 +6,16 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/Popover'
-import { UserRead } from '@polar-sh/sdk'
+import { UserRead, Organization } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 
 const TopbarRight = ({
   authenticatedUser,
+  storefrontOrg,
 }: {
   authenticatedUser?: UserRead
+  storefrontOrg?: Organization
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/purchases'
@@ -37,7 +39,7 @@ const TopbarRight = ({
             Login
           </Button>
 
-          <GetStartedButton size="default" text="Sell with Polar" flywheel={true} />
+          <GetStartedButton size="default" text="Sell with Polar" storefrontOrg={storefrontOrg} />
 
           <Modal
             isShown={isModalShown}

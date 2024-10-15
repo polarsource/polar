@@ -7,15 +7,17 @@ from uuid import UUID
 
 import pytest
 import pytest_asyncio
+from pydantic_core import Url
 from pytest_mock import MockerFixture
 from sqlalchemy import Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from polar.kit.db.postgres import AsyncSession
+from polar.config import settings
+from polar.kit.db.postgres import AsyncSession, create_async_engine
 from polar.kit.utils import generate_uuid
 from polar.models import Model
-from polar.postgres import create_async_engine
 
 
 class TestModel(Model):
@@ -28,14 +30,43 @@ class TestModel(Model):
     str_column: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
 
+def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
+    return str(
+        Url.build(
+            scheme=f"postgresql+{driver}",
+            username=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PWD,
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            path=f"{settings.POSTGRES_DATABASE}_{worker_id}",
+        )
+    )
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
-async def initialize_test_database() -> None:
-    engine = create_async_engine("app")
+async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
+    sync_database_url = get_database_url(worker_id, "psycopg2")
+
+    if database_exists(sync_database_url):
+        drop_database(sync_database_url)
+
+    create_database(sync_database_url)
+
+    engine = create_async_engine(
+        dsn=get_database_url(worker_id),
+        application_name=f"test_{worker_id}",
+        pool_size=settings.DATABASE_POOL_SIZE,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    )
+
     async with engine.begin() as conn:
-        await conn.run_sync(Model.metadata.drop_all)
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Model.metadata.create_all)
     await engine.dispose()
+
+    yield
+
+    drop_database(sync_database_url)
 
 
 polar_directory = Path(__file__).parent.parent.parent / "polar"
@@ -76,10 +107,16 @@ def session_commit_spy(
 
 @pytest_asyncio.fixture
 async def session(
+    worker_id: str,
     mocker: MockerFixture,
     request: pytest.FixtureRequest,
 ) -> AsyncIterator[AsyncSession]:
-    engine = create_async_engine("app")
+    engine = create_async_engine(
+        dsn=get_database_url(worker_id),
+        application_name=f"test_{worker_id}",
+        pool_size=settings.DATABASE_POOL_SIZE,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    )
     connection = await engine.connect()
     transaction = await connection.begin()
 
@@ -94,6 +131,7 @@ async def session(
 
     await transaction.rollback()
     await connection.close()
+    await engine.dispose()
 
     skip_db_assert_marker = request.node.get_closest_marker("skip_db_asserts")
     if skip_db_assert_marker is not None:
@@ -107,8 +145,6 @@ async def session(
     # This is to ensure that we don't rely on the existing state in the Session
     # from creating the tests.
     expunge_spy.assert_called()
-
-    await engine.dispose()
 
 
 SaveFixture = Callable[[Model], Coroutine[None, None, None]]

@@ -76,16 +76,6 @@ jobs:
         ports:
           - 5432:5432
 
-      redis:
-        image: redislabs/redismod
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
       minio:
         image: bitnami/minio:2024.5.28
         ports:
@@ -153,4 +143,4 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: poetry run pytest
+        run: poetry run pytest -n auto --no-cov

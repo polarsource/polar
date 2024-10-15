@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import mimetypes
+from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ import pytest
 import pytest_asyncio
 from botocore.config import Config
 from httpx import AsyncClient, Response
+from minio import Minio
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -248,8 +250,8 @@ class TestFile:
         return completed
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def empty_test_bucket() -> None:
+@pytest.fixture(scope="session", autouse=True)
+def empty_test_bucket(worker_id: str) -> Iterable[Any]:
     if not settings.S3_ENDPOINT_URL:
         raise RuntimeError("S3_ENDPOINT_URL not set")
 
@@ -258,6 +260,18 @@ async def empty_test_bucket() -> None:
 
     if not settings.S3_FILES_BUCKET_NAME.startswith("testing"):
         raise RuntimeError("S3_FILES_BUCKET_NAME not a test bucket")
+
+    bucket_name = f"{settings.S3_FILES_BUCKET_NAME}-{worker_id}"
+    client = Minio(
+        endpoint=settings.S3_ENDPOINT_URL.lstrip("http://"),
+        access_key=settings.MINIO_USER,
+        secret_key=settings.MINIO_PWD,
+        secure=False,
+    )
+
+    if client.bucket_exists(bucket_name):
+        client.remove_bucket(bucket_name)
+    client.make_bucket(bucket_name)
 
     s3 = boto3.resource(
         "s3",
@@ -270,8 +284,12 @@ async def empty_test_bucket() -> None:
         ),
     )
 
-    bucket = s3.Bucket(settings.S3_FILES_BUCKET_NAME)
+    bucket = s3.Bucket(bucket_name)
+
+    yield bucket
+
     bucket.object_versions.delete()
+    client.remove_bucket(bucket_name)
 
 
 async def uploaded_fixture(

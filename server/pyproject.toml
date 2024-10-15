@@ -84,11 +84,15 @@ types-requests = "^2.31.0.10"
 boto3-stubs = {extras = ["s3"], version = "^1.35.10"}
 freezegun = "^1.5.1"
 fakeredis = "^2.25.1"
+pytest-xdist = {extras = ["psutil"], version = "^3.6.1"}
+sqlalchemy-utils = "^0.41.2"
+minio = "^7.2.9"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
 worker = { cmd = "watchfiles 'python -m run_worker' polar", help = "run worker" }
-test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && coverage report -m", help = "run all tests" }
+test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
+test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
@@ -105,7 +109,7 @@ asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
-concurrency = ["greenlet"]
+concurrency = ["thread", "greenlet"]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github.com/nedbat/coveragepy/issues/831

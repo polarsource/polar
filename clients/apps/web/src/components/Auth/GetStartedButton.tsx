@@ -8,6 +8,8 @@ import { Organization } from '@polar-sh/sdk'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { AuthModal } from './AuthModal'
+import { captureEvent } from '@/utils/posthog'
+import { useCallback } from 'react'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
@@ -33,6 +35,11 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
     }
   }
 
+  const onClick = useCallback(() => {
+    captureEvent('user:signup:click', signup)
+    showModal()
+  }, [signup])
+
   return (
     <>
       <Button
@@ -41,7 +48,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
           wrapperClassNames,
         )}
         size={size}
-        onClick={showModal}
+        onClick={onClick}
         {...props}
       >
         <div>{text}</div>

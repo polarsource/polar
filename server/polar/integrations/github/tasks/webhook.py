@@ -10,14 +10,14 @@ from polar.exceptions import PolarTaskError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.models import ExternalOrganization, Issue
 from polar.postgres import AsyncSession
-from polar.redis import redis
+from polar.redis import Redis
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    get_worker_redis,
     task,
 )
 
@@ -131,12 +131,11 @@ async def organizations_renamed(
 @github_rate_limit_retry
 async def repositories_changed(
     session: AsyncSession,
+    redis: Redis,
     event: types.WebhookInstallationRepositoriesAdded
     | types.WebhookInstallationRepositoriesRemoved
     | types.WebhookInstallationCreated,
 ) -> None:
-    locker = Locker(redis)
-
     with ExecutionContext(is_during_installation=True):
         removed: Sequence[
             types.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
@@ -149,15 +148,14 @@ async def repositories_changed(
         )
 
         await get_or_create_org_from_installation(
-            session,
-            event.installation,
-            removed,
+            session, redis, event.installation, removed
         )
 
 
 @github_rate_limit_retry
 async def get_or_create_org_from_installation(
     session: AsyncSession,
+    redis: Redis,
     installation: types.Installation,
     removed: Sequence[
         types.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
@@ -166,13 +164,15 @@ async def get_or_create_org_from_installation(
     ],
 ) -> ExternalOrganization:
     organization = await service.github_organization.create_or_update_from_installation(
-        session, installation
+        session, redis, installation
     )
 
     if removed:
         await remove_repositories(session, removed)
 
-    await service.github_repository.install_for_organization(session, organization)
+    await service.github_repository.install_for_organization(
+        session, redis, organization
+    )
 
     return organization
 
@@ -209,7 +209,7 @@ async def repositories_added(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
-            await repositories_changed(session, parsed)
+            await repositories_changed(session, get_worker_redis(ctx), parsed)
 
 
 @task(name="github.webhook.installation_repositories.removed")
@@ -226,7 +226,7 @@ async def repositories_removed(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
-            await repositories_changed(session, parsed)
+            await repositories_changed(session, get_worker_redis(ctx), parsed)
 
 
 @task(name="github.webhook.public")
@@ -427,6 +427,7 @@ async def repository_transferred(
 
 async def handle_issue(
     session: AsyncSession,
+    redis: Redis,
     scope: str,
     action: str,
     event: types.WebhookIssuesOpened
@@ -455,7 +456,11 @@ async def handle_issue(
         )
 
     issue = await service.github_issue.store(
-        session, data=event.issue, organization=organization, repository=repository
+        session,
+        redis,
+        data=event.issue,
+        organization=organization,
+        repository=repository,
     )
 
     if not issue:
@@ -518,11 +523,15 @@ async def issue_opened(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
-            issue = await handle_issue(session, scope, action, parsed)
+            issue = await handle_issue(
+                session, get_worker_redis(ctx), scope, action, parsed
+            )
 
             # Add badge if has label
             if issue.has_pledge_badge_label:
-                await update_issue_embed(session, issue=issue, embed=True)
+                await update_issue_embed(
+                    session, get_worker_redis(ctx), issue=issue, embed=True
+                )
 
 
 @task("github.webhook.issues.reopened")
@@ -540,11 +549,15 @@ async def issue_reopened(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
-            issue = await handle_issue(session, scope, action, parsed)
+            issue = await handle_issue(
+                session, get_worker_redis(ctx), scope, action, parsed
+            )
 
             # Add badge if has label
             if issue.has_pledge_badge_label:
-                await update_issue_embed(session, issue=issue, embed=True)
+                await update_issue_embed(
+                    session, get_worker_redis(ctx), issue=issue, embed=True
+                )
 
 
 @task("github.webhook.issues.edited")
@@ -562,11 +575,15 @@ async def issue_edited(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
-            issue = await handle_issue(session, scope, action, parsed)
+            issue = await handle_issue(
+                session, get_worker_redis(ctx), scope, action, parsed
+            )
 
             # Add badge if has label
             if issue.has_pledge_badge_label:
-                await update_issue_embed(session, issue=issue, embed=True)
+                await update_issue_embed(
+                    session, get_worker_redis(ctx), issue=issue, embed=True
+                )
 
 
 @task("github.webhook.issues.closed")
@@ -584,7 +601,7 @@ async def issue_closed(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
-            await handle_issue(session, scope, action, parsed)
+            await handle_issue(session, get_worker_redis(ctx), scope, action, parsed)
 
 
 @task("github.webhook.issues.deleted")
@@ -603,7 +620,7 @@ async def issue_deleted(
 
         async with AsyncSessionMaker(ctx) as session:
             # Save last known version
-            await handle_issue(session, scope, action, parsed)
+            await handle_issue(session, get_worker_redis(ctx), scope, action, parsed)
 
             # Mark as deleted
             issue = await service.github_issue.get_by_external_id(
@@ -648,7 +665,9 @@ async def issue_labeled(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
-            await issue_labeled_async(session, scope, action, parsed)
+            await issue_labeled_async(
+                session, get_worker_redis(ctx), scope, action, parsed
+            )
 
 
 @task("github.webhook.issues.unlabeled")
@@ -666,11 +685,14 @@ async def issue_unlabeled(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionMaker(ctx) as session:
-            await issue_labeled_async(session, scope, action, parsed)
+            await issue_labeled_async(
+                session, get_worker_redis(ctx), scope, action, parsed
+            )
 
 
 async def update_issue_embed(
     session: AsyncSession,
+    redis: Redis,
     *,
     issue: Issue,
     embed: bool = False,
@@ -690,6 +712,7 @@ async def update_issue_embed(
     if embed:
         res = await service.github_issue.embed_badge(
             session,
+            redis,
             external_organization=external_org,
             repository=repo,
             issue=issue,
@@ -711,6 +734,7 @@ async def update_issue_embed(
     # However, we need to first update `remove_badge` to return a true bool
     return await service.github_issue.remove_badge(
         session,
+        redis,
         external_organization=external_org,
         repository=repo,
         issue=issue,
@@ -721,6 +745,7 @@ async def update_issue_embed(
 
 async def issue_labeled_async(
     session: AsyncSession,
+    redis: Redis,
     scope: str,
     action: str,
     event: types.WebhookIssuesLabeled | types.WebhookIssuesUnlabeled,
@@ -757,7 +782,7 @@ async def issue_labeled_async(
         and event.label.name.lower() == repository.pledge_badge_label.lower()
     ):
         await update_issue_embed(
-            session, issue=issue, embed=issue.has_pledge_badge_label
+            session, redis, issue=issue, embed=issue.has_pledge_badge_label
         )
 
 
@@ -851,7 +876,7 @@ async def installation_created(
 
         async with AsyncSessionMaker(ctx) as session:
             # repositories_changed also installs the organization
-            await repositories_changed(session, event)
+            await repositories_changed(session, get_worker_redis(ctx), event)
 
 
 @task("github.webhook.installation.new_permissions_accepted")
@@ -875,8 +900,7 @@ async def installation_new_permissions_accepted(
         async with AsyncSessionMaker(ctx) as session:
             external_organization = (
                 await service.github_organization.create_or_update_from_installation(
-                    session,
-                    event.installation,
+                    session, get_worker_redis(ctx), event.installation
                 )
             )
 

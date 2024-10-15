@@ -21,6 +21,7 @@ from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .service import github_oauth_client, github_repository_benefit_user_service
@@ -135,6 +136,7 @@ async def user_callback(
 async def user_repositories(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> GitHubInvitesBenefitRepositories:
     oauth = await github_repository_benefit_user_service.get_oauth_account(
         session, auth_subject.subject
@@ -145,7 +147,7 @@ async def user_repositories(
     )
 
     orgs = await github_repository_benefit_user_service.list_orgs_with_billing_plans(
-        oauth, installations
+        redis, oauth, installations
     )
 
     repos = await github_repository_benefit_user_service.list_repositories(

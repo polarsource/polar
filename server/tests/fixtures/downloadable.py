@@ -10,6 +10,7 @@ from polar.models.benefit import BenefitDownloadables, BenefitType
 from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, sql
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -23,6 +24,7 @@ class TestDownloadable:
     async def create_benefit_and_grant(
         cls,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         user: User,
         organization: Organization,
@@ -37,6 +39,7 @@ class TestDownloadable:
         )
         return await cls.create_grant(
             session,
+            redis,
             save_fixture,
             cast(BenefitDownloadables, benefit),
             user=user,
@@ -47,6 +50,7 @@ class TestDownloadable:
     async def create_grant(
         cls,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         benefit: BenefitDownloadables,
         user: User,
@@ -64,21 +68,29 @@ class TestDownloadable:
             benefit,
             subscription=subscription,
         )
-        return await cls.run_grant_task(session, benefit, user)
+        return await cls.run_grant_task(session, redis, benefit, user)
 
     @classmethod
     async def run_grant_task(
-        cls, session: AsyncSession, benefit: BenefitDownloadables, user: User
+        cls,
+        session: AsyncSession,
+        redis: Redis,
+        benefit: BenefitDownloadables,
+        user: User,
     ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
-        service = BenefitDownloadablesService(session)
+        service = BenefitDownloadablesService(session, redis)
         granted = await service.grant(benefit, user, {})
         return benefit, granted
 
     @classmethod
     async def run_revoke_task(
-        cls, session: AsyncSession, benefit: BenefitDownloadables, user: User
+        cls,
+        session: AsyncSession,
+        redis: Redis,
+        benefit: BenefitDownloadables,
+        user: User,
     ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
-        service = BenefitDownloadablesService(session)
+        service = BenefitDownloadablesService(session, redis)
         revoked = await service.revoke(benefit, user, {})
         return benefit, revoked
 

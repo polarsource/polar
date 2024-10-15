@@ -32,6 +32,7 @@ from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_external_organization,
@@ -980,6 +981,7 @@ async def test_month_range() -> None:
 @pytest.mark.auth
 async def test_pledge_states(
     session: AsyncSession,
+    redis: Redis,
     save_fixture: SaveFixture,
     subtests: Any,
     mocker: MockerFixture,
@@ -1209,7 +1211,7 @@ async def test_pledge_states(
                 # this is not 100% realistic, but it's good enough
                 issue.state = Issue.State.CLOSED
                 await save_fixture(issue)
-                await issue_upserted.call(IssueHook(session, issue))
+                await issue_upserted.call(IssueHook(session, redis, issue))
 
             async def confirm_solved() -> None:
                 response = await client.post(
@@ -1280,7 +1282,7 @@ async def test_pledge_states(
                 # this is not 100% realistic, but it's good enough
                 issue.state = Issue.State.CLOSED
                 await save_fixture(issue)
-                await issue_upserted.call(IssueHook(session, issue))
+                await issue_upserted.call(IssueHook(session, redis, issue))
 
             assert notifications_sent == tc.expected_post_close_notifications
 

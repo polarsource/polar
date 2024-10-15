@@ -14,6 +14,7 @@ from polar.integrations.github.service import (
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import ExternalOrganization, Issue, Repository
 from polar.postgres import AsyncSession, create_async_engine, sql
+from polar.redis import create_redis
 from polar.worker import QueueName, enqueue_job
 from polar.worker import lifespan as worker_lifespan
 
@@ -152,8 +153,11 @@ async def get_permissions(org_name: str) -> None:
         if not org.installation_id:
             raise RuntimeError(f"Organization {org_name} not installed")
 
-        client = github.get_app_installation_client(org.installation_id)
-        authed = await client.rest.apps.async_get_authenticated()
+        async with create_redis() as redis:
+            client = github.get_app_installation_client(
+                org.installation_id, redis=redis
+            )
+            authed = await client.rest.apps.async_get_authenticated()
         print(str(authed.content))
 
 

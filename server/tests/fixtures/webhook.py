@@ -68,7 +68,7 @@ class TestWebhookFactory:
         )
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture
 async def github_webhook(
     client: AsyncClient,
 ) -> AsyncGenerator[TestWebhookFactory, None]:

@@ -6,6 +6,7 @@ from polar.enums import Platforms
 from polar.logging import Logger
 from polar.models import ExternalOrganization, Repository
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.repository.schemas import RepositoryCreate, RepositoryGitHubUpdate
 from polar.repository.service import RepositoryService
 from polar.worker import QueueName, enqueue_job
@@ -41,9 +42,12 @@ class GithubRepositoryService(RepositoryService):
     async def install_for_organization(
         self,
         session: AsyncSession,
+        redis: Redis,
         organization: ExternalOrganization,
     ) -> Sequence[Repository] | None:
-        client = github.get_app_installation_client(organization.safe_installation_id)
+        client = github.get_app_installation_client(
+            organization.safe_installation_id, redis=redis
+        )
 
         instances = []
 

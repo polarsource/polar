@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlparse
 from uuid import UUID
 
 import boto3
+import pytest
 import pytest_asyncio
 from botocore.config import Config
 from httpx import AsyncClient, Response
@@ -247,7 +248,7 @@ class TestFile:
         return completed
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def empty_test_bucket() -> None:
     if not settings.S3_ENDPOINT_URL:
         raise RuntimeError("S3_ENDPOINT_URL not set")
@@ -284,17 +285,17 @@ async def uploaded_fixture(
     return completed
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture
 def logo_png() -> TestFile:
     return TestFile("logo.png")
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture
 def non_ascii_file_name() -> TestFile:
     return TestFile("étonnante-🦄.png")
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def uploaded_logo_png(
     client: AsyncClient,
     auth_subject: AuthSubject[User],
@@ -305,12 +306,12 @@ async def uploaded_logo_png(
     return await uploaded_fixture(client, user_organization.organization_id, img)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture
 def logo_jpg() -> TestFile:
     return TestFile("logo.jpg")
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def uploaded_logo_jpg(
     client: AsyncClient,
     auth_subject: AuthSubject[User],
@@ -321,6 +322,6 @@ async def uploaded_logo_jpg(
     return await uploaded_fixture(client, user_organization.organization_id, img)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture
 def logo_zip() -> TestFile:
     return TestFile("logo.zip")

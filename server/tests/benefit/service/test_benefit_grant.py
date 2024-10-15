@@ -11,18 +11,13 @@ from polar.benefit.service.benefit_grant import (
 from polar.benefit.service.benefit_grant import (  # type: ignore[attr-defined]
     notification_service,
 )
-from polar.models import (
-    Benefit,
-    BenefitGrant,
-    Product,
-    Subscription,
-    User,
-)
+from polar.models import Benefit, BenefitGrant, Product, Subscription, User
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
 )
 from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -48,6 +43,7 @@ class TestGrantBenefit:
     async def test_not_existing_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
@@ -59,7 +55,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert grant.subscription_id == subscription.id
@@ -72,6 +68,7 @@ class TestGrantBenefit:
     async def test_existing_grant_not_granted(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -89,7 +86,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.grant_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -99,6 +96,7 @@ class TestGrantBenefit:
     async def test_existing_grant_already_granted(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -117,7 +115,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.grant_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -127,6 +125,7 @@ class TestGrantBenefit:
     async def test_precondition_error(
         self,
         session: AsyncSession,
+        redis: Redis,
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
@@ -138,7 +137,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert not grant.is_granted
@@ -146,6 +145,7 @@ class TestGrantBenefit:
     async def test_default_properties_value(
         self,
         session: AsyncSession,
+        redis: Redis,
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
@@ -159,7 +159,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert grant.properties == {}
@@ -170,6 +170,7 @@ class TestRevokeBenefit:
     async def test_not_existing_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         subscription: Subscription,
         user: User,
         benefit_organization: Benefit,
@@ -179,7 +180,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.revoke_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert grant.subscription_id == subscription.id
@@ -190,6 +191,7 @@ class TestRevokeBenefit:
     async def test_existing_grant_not_revoked(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -210,7 +212,7 @@ class TestRevokeBenefit:
         await save_fixture(grant)
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -221,6 +223,7 @@ class TestRevokeBenefit:
     async def test_existing_grant_already_revoked(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -239,7 +242,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -249,6 +252,7 @@ class TestRevokeBenefit:
     async def test_several_benefit_grants(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -275,7 +279,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, user, benefit_organization, subscription=subscription
+            session, redis, user, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == first_grant.id
@@ -364,6 +368,7 @@ class TestEnqueueBenefitGrantUpdates:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
@@ -376,7 +381,7 @@ class TestEnqueueBenefitGrantUpdates:
         session.expunge_all()
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
-            session, benefit_organization, {}
+            session, redis, benefit_organization, {}
         )
 
         enqueue_job_mock.assert_not_called()
@@ -385,6 +390,7 @@ class TestEnqueueBenefitGrantUpdates:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -417,7 +423,7 @@ class TestEnqueueBenefitGrantUpdates:
         session.expunge_all()
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
-            session, benefit_organization, {}
+            session, redis, benefit_organization, {}
         )
 
         enqueue_job_mock.assert_called_once_with(
@@ -429,6 +435,7 @@ class TestEnqueueBenefitGrantUpdates:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -457,7 +464,7 @@ class TestEnqueueBenefitGrantUpdates:
         session.expunge_all()
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
-            session, benefit_organization, {}
+            session, redis, benefit_organization, {}
         )
 
         enqueue_job_mock.assert_not_called()
@@ -468,6 +475,7 @@ class TestUpdateBenefitGrant:
     async def test_revoked_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -483,7 +491,9 @@ class TestUpdateBenefitGrant:
         # then
         session.expunge_all()
 
-        updated_grant = await benefit_grant_service.update_benefit_grant(session, grant)
+        updated_grant = await benefit_grant_service.update_benefit_grant(
+            session, redis, grant
+        )
 
         assert updated_grant.id == grant.id
         benefit_service_mock.grant.assert_not_called()
@@ -491,6 +501,7 @@ class TestUpdateBenefitGrant:
     async def test_granted_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -516,7 +527,7 @@ class TestUpdateBenefitGrant:
         assert grant_loaded
 
         updated_grant = await benefit_grant_service.update_benefit_grant(
-            session, grant_loaded
+            session, redis, grant_loaded
         )
 
         assert updated_grant.id == grant.id
@@ -528,6 +539,7 @@ class TestUpdateBenefitGrant:
     async def test_precondition_error(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -550,7 +562,7 @@ class TestUpdateBenefitGrant:
         assert grant_loaded
 
         updated_grant = await benefit_grant_service.update_benefit_grant(
-            session, grant_loaded
+            session, redis, grant_loaded
         )
 
         assert not updated_grant.is_granted
@@ -601,6 +613,7 @@ class TestDeleteBenefitGrant:
     async def test_revoked_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -616,7 +629,9 @@ class TestDeleteBenefitGrant:
         # then
         session.expunge_all()
 
-        updated_grant = await benefit_grant_service.delete_benefit_grant(session, grant)
+        updated_grant = await benefit_grant_service.delete_benefit_grant(
+            session, redis, grant
+        )
 
         assert updated_grant.id == grant.id
         benefit_service_mock.revoke.assert_not_called()
@@ -624,6 +639,7 @@ class TestDeleteBenefitGrant:
     async def test_granted_grant(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
         user: User,
@@ -644,7 +660,7 @@ class TestDeleteBenefitGrant:
         assert grant_loaded
 
         updated_grant = await benefit_grant_service.delete_benefit_grant(
-            session, grant_loaded
+            session, redis, grant_loaded
         )
 
         assert updated_grant.id == grant.id

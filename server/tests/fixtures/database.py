@@ -12,7 +12,7 @@ from sqlalchemy import Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
 
-from polar.kit.db.postgres import AsyncEngine, AsyncSession
+from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import generate_uuid
 from polar.models import Model
 from polar.postgres import create_async_engine
@@ -28,19 +28,14 @@ class TestModel(Model):
     str_column: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
 
-@pytest_asyncio.fixture(scope="session")
-async def engine() -> AsyncIterator[AsyncEngine]:
+@pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
+async def initialize_test_database() -> None:
     engine = create_async_engine("app")
-    yield engine
-    await engine.dispose()
-
-
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def initialize_test_database(engine: AsyncEngine) -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Model.metadata.drop_all)
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Model.metadata.create_all)
+    await engine.dispose()
 
 
 polar_directory = Path(__file__).parent.parent.parent / "polar"
@@ -81,10 +76,10 @@ def session_commit_spy(
 
 @pytest_asyncio.fixture
 async def session(
-    engine: AsyncEngine,
     mocker: MockerFixture,
     request: pytest.FixtureRequest,
 ) -> AsyncIterator[AsyncSession]:
+    engine = create_async_engine("app")
     connection = await engine.connect()
     transaction = await connection.begin()
 
@@ -112,6 +107,8 @@ async def session(
     # This is to ensure that we don't rely on the existing state in the Session
     # from creating the tests.
     expunge_spy.assert_called()
+
+    await engine.dispose()
 
 
 SaveFixture = Callable[[Model], Coroutine[None, None, None]]

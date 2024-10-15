@@ -5,6 +5,7 @@ from polar.worker import (
     AsyncSessionMaker,
     JobContext,
     PolarWorkerContext,
+    get_worker_redis,
     task,
 )
 
@@ -27,7 +28,7 @@ async def sync_repositories(
                 raise Exception("organization not found")
 
             await service.github_repository.install_for_organization(
-                session, organization
+                session, get_worker_redis(ctx), organization
             )
 
 
@@ -48,6 +49,7 @@ async def sync_repository_issues(
             )
             await service.github_issue.sync_issues(
                 session,
+                get_worker_redis(ctx),
                 organization=organization,
                 repository=repository,
                 crawl_with_installation_id=crawl_with_installation_id,

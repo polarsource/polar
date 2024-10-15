@@ -42,6 +42,7 @@ from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.redis import Redis, get_redis
 from polar.reward.service import reward_service
 from polar.user.schemas.user import UserSignupAttribution, UserSignupAttributionQuery
 from polar.worker import enqueue_job
@@ -280,6 +281,7 @@ async def check_organization_permissions(
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> None:
     external_organization = await github_organization.get(session, id)
 
@@ -294,7 +296,7 @@ async def check_organization_permissions(
     if external_organization.installation_id is None:
         raise NotPermitted()
 
-    app_client = github.get_app_client()
+    app_client = github.get_app_client(redis)
     app_client.rest.meta.get
     try:
         await app_client.rest.apps.async_create_installation_access_token(
@@ -313,6 +315,7 @@ async def get_organization_billing_plan(
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
     locker: Locker = Depends(get_locker),
 ) -> OrganizationBillingPlan:
     external_organization = await github_organization.get(session, id)
@@ -342,7 +345,7 @@ async def get_organization_billing_plan(
             raise ResourceNotFound()
 
         org_client = github.get_app_installation_client(
-            external_organization.installation_id
+            external_organization.installation_id, redis=redis
         )
         org_response = await org_client.rest.orgs.async_get(external_organization.name)
         plan = org_response.parsed_data.plan
@@ -371,10 +374,11 @@ async def install(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
+    redis: Redis = Depends(get_redis),
 ) -> ExternalOrganization:
     with ExecutionContext(is_during_installation=True):
         external_organization = await github_organization.install(
-            session, locker, authz, auth_subject.subject, installation_create
+            session, redis, locker, authz, auth_subject.subject, installation_create
         )
 
         posthog.auth_subject_event(

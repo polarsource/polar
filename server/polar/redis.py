@@ -1,6 +1,9 @@
+import contextlib
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, cast
 
 import redis.asyncio as _async_redis
+from fastapi import Request
 
 from polar.config import settings
 
@@ -8,25 +11,21 @@ from polar.config import settings
 # Redis is generic at type checking, but not at runtime...
 if TYPE_CHECKING:
     Redis = _async_redis.Redis[str]
-    ConnectionPool = _async_redis.ConnectionPool[_async_redis.Connection]
 else:
     Redis = _async_redis.Redis
-    ConnectionPool = _async_redis.ConnectionPool
 
 
-def create_async_connection_pool() -> ConnectionPool:
-    return _async_redis.ConnectionPool.from_url(
-        settings.redis_url, decode_responses=True
+@contextlib.asynccontextmanager
+async def create_redis() -> AsyncGenerator[Redis, None]:
+    redis = cast(
+        Redis, _async_redis.Redis.from_url(settings.redis_url, decode_responses=True)
     )
+    yield redis
+    await redis.close()
 
 
-async_pool = create_async_connection_pool()
+async def get_redis(request: Request) -> Redis:
+    return request.state.redis
 
 
-def get_redis() -> Redis:
-    return cast(Redis, _async_redis.Redis(connection_pool=async_pool))
-
-
-redis = get_redis()
-
-__all__ = ["redis", "Redis"]
+__all__ = ["create_redis", "Redis"]

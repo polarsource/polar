@@ -4,21 +4,26 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
+import pytest_asyncio
 from arq import ArqRedis
 
-from polar.kit.db.postgres import AsyncEngine, AsyncSession, AsyncSessionMaker
+from polar.kit.db.postgres import AsyncSession, AsyncSessionMaker
 from polar.kit.utils import utc_now
+from polar.postgres import create_async_engine
+from polar.redis import Redis
 from polar.worker import JobContext, PolarWorkerContext
 
 
-@pytest.fixture
-def job_context(engine: AsyncEngine, session: AsyncSession) -> JobContext:
+@pytest_asyncio.fixture
+async def job_context(session: AsyncSession, redis: Redis) -> AsyncIterator[JobContext]:
+    engine = create_async_engine("worker")
+
     @contextlib.asynccontextmanager
     async def sessionmaker() -> AsyncIterator[AsyncSession]:
         yield session
 
-    return {
-        "redis": ArqRedis(),
+    yield {
+        "redis": ArqRedis(redis.connection_pool),
         "async_engine": engine,
         "async_sessionmaker": cast(AsyncSessionMaker, sessionmaker),
         "job_id": "fake_job_id",
@@ -28,6 +33,8 @@ def job_context(engine: AsyncEngine, session: AsyncSession) -> JobContext:
         "exit_stack": contextlib.ExitStack(),
         "logfire_span": MagicMock(),
     }
+
+    await engine.dispose()
 
 
 @pytest.fixture

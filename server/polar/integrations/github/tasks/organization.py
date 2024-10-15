@@ -10,6 +10,7 @@ from polar.worker import (
     PolarWorkerContext,
     QueueName,
     enqueue_job,
+    get_worker_redis,
     task,
 )
 
@@ -51,4 +52,6 @@ async def populate_org_metadata(
                 organization_id=organization_id,
             )
 
-            await github_organization_service.populate_org_metadata(session, org)
+            await github_organization_service.populate_org_metadata(
+                session, get_worker_redis(ctx), org
+            )

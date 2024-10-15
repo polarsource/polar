@@ -83,6 +83,7 @@ types-python-slugify = "^8.0.0.3"
 types-requests = "^2.31.0.10"
 boto3-stubs = {extras = ["s3"], version = "^1.35.10"}
 freezegun = "^1.5.1"
+fakeredis = "^2.25.1"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
@@ -101,6 +102,7 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = ["auth", "http_auto_expunge", "skip_db_asserts", "override_current_user"]
 asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 concurrency = ["greenlet"]

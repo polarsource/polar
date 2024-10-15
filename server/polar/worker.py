@@ -34,6 +34,7 @@ from polar.kit.db.postgres import (
 from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import generate_correlation_id
 from polar.postgres import create_async_engine
+from polar.redis import Redis
 
 log = structlog.get_logger()
 
@@ -56,6 +57,10 @@ class JobContext(WorkerContext):
     score: int
     exit_stack: contextlib.ExitStack
     logfire_span: logfire.LogfireSpan
+
+
+def get_worker_redis(ctx: WorkerContext) -> Redis:
+    return cast(Redis, ctx["redis"])
 
 
 class PolarWorkerContext(BaseModel):

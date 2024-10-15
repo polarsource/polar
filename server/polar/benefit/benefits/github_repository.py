@@ -273,6 +273,7 @@ class BenefitGitHubRepositoryService(
         has_access = (
             await github_repository_benefit_user_service.user_has_access_to_repository(
                 oauth,
+                self.redis,
                 owner=repository_owner,
                 name=repository_name,
             )
@@ -292,6 +293,7 @@ class BenefitGitHubRepositoryService(
 
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
+                self.redis,
                 owner=repository_owner,
                 name=repository_name,
             )
@@ -312,7 +314,7 @@ class BenefitGitHubRepositoryService(
             "github-benefit-personal-org", user.posthog_distinct_id
         ):
             plan = await github_repository_benefit_user_service.get_billing_plan(
-                oauth, installation
+                self.redis, oauth, installation
             )
             if not plan or plan.is_personal:
                 raise BenefitPropertiesValidationError(
@@ -429,7 +431,7 @@ class BenefitGitHubRepositoryService(
             installation_id = organization.installation_id
             assert installation_id is not None
             return github.get_app_installation_client(
-                installation_id, app=github.GitHubApp.polar
+                installation_id, redis=self.redis, app=github.GitHubApp.polar
             )
 
         # New integration, using the "Repository Benefit" GitHub App
@@ -439,10 +441,10 @@ class BenefitGitHubRepositoryService(
         repository_name = benefit.properties["repository_name"]
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
-                owner=repository_owner, name=repository_name
+                self.redis, owner=repository_owner, name=repository_name
             )
         )
         assert installation is not None
         return github.get_app_installation_client(
-            installation.id, app=github.GitHubApp.repository_benefit
+            installation.id, redis=self.redis, app=github.GitHubApp.repository_benefit
         )

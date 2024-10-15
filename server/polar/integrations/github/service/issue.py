@@ -29,7 +29,7 @@ from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import ExternalOrganization, Issue, Organization, Repository
 from polar.models.user import User
-from polar.redis import redis
+from polar.redis import Redis
 from polar.repository.hooks import (
     repository_issue_synced,
     repository_issues_sync_completed,
@@ -54,6 +54,7 @@ class GithubIssueService(IssueService):
     async def store(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         data: types.WebhookIssuesOpenedPropIssue
         | types.WebhookIssuesEditedPropIssue
@@ -67,6 +68,7 @@ class GithubIssueService(IssueService):
     ) -> Issue | None:
         records = await self.store_many(
             session,
+            redis,
             data=[data],
             organization=organization,
             repository=repository,
@@ -79,6 +81,7 @@ class GithubIssueService(IssueService):
     async def store_many(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         data: list[
             types.WebhookIssuesOpenedPropIssue
@@ -151,7 +154,7 @@ class GithubIssueService(IssueService):
         # TODO: migrate away from this hook!
         if autocommit:
             for record in records:
-                await issue_upserted.call(IssueHook(session, record))
+                await issue_upserted.call(IssueHook(session, redis, record))
 
         return records
 
@@ -173,6 +176,7 @@ class GithubIssueService(IssueService):
     async def embed_badge(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         external_organization: ExternalOrganization,
         repository: Repository,
@@ -201,7 +205,7 @@ class GithubIssueService(IssueService):
             issue=issue,
             organization=organization,
         )
-        await badge.embed()
+        await badge.embed(redis)
 
         stmt = (
             sql.update(Issue)
@@ -221,6 +225,7 @@ class GithubIssueService(IssueService):
     async def remove_badge(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         external_organization: ExternalOrganization,
         repository: Repository,
@@ -250,7 +255,7 @@ class GithubIssueService(IssueService):
             organization=organization,
         )
         # TODO: Abort unless not successful
-        await badge.remove()
+        await badge.remove(redis)
 
         stmt = (
             sql.update(Issue)
@@ -270,6 +275,7 @@ class GithubIssueService(IssueService):
     async def update_embed_badge(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         external_organization: ExternalOrganization,
         repository: Repository,
@@ -290,7 +296,7 @@ class GithubIssueService(IssueService):
             issue=issue,
             organization=organization,
         )
-        await badge.embed()
+        await badge.embed(redis)
 
         stmt = (
             sql.update(Issue)
@@ -308,6 +314,7 @@ class GithubIssueService(IssueService):
     async def sync_issue(
         self,
         session: AsyncSession,
+        redis: Redis,
         org: ExternalOrganization,
         repo: Repository,
         issue: Issue,
@@ -320,7 +327,7 @@ class GithubIssueService(IssueService):
             else org.safe_installation_id
         )
 
-        client = github.get_app_installation_client(installation_id)
+        client = github.get_app_installation_client(installation_id, redis=redis)
 
         log.info("github.sync_issue", issue_id=issue.id)
 
@@ -387,7 +394,11 @@ class GithubIssueService(IssueService):
 
             if do_upsert:
                 await self.store(
-                    session, data=res.parsed_data, organization=org, repository=repo
+                    session,
+                    redis,
+                    data=res.parsed_data,
+                    organization=org,
+                    repository=repo,
                 )
 
             # Save etag
@@ -498,11 +509,14 @@ class GithubIssueService(IssueService):
     async def add_polar_label(
         self,
         session: AsyncSession,
+        redis: Redis,
         organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
     ) -> Issue:
-        client = github.get_app_installation_client(organization.safe_installation_id)
+        client = github.get_app_installation_client(
+            organization.safe_installation_id, redis=redis
+        )
 
         labels = await client.rest.issues.async_add_labels(
             organization.name,
@@ -518,11 +532,14 @@ class GithubIssueService(IssueService):
     async def remove_polar_label(
         self,
         session: AsyncSession,
+        redis: Redis,
         organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
     ) -> Issue:
-        client = github.get_app_installation_client(organization.safe_installation_id)
+        client = github.get_app_installation_client(
+            organization.safe_installation_id, redis=redis
+        )
 
         labels = await client.rest.issues.async_remove_label(
             organization.name,
@@ -633,6 +650,7 @@ class GithubIssueService(IssueService):
     async def sync_issues(
         self,
         session: AsyncSession,
+        redis: Redis,
         *,
         organization: ExternalOrganization,
         repository: Repository,
@@ -660,7 +678,7 @@ class GithubIssueService(IssueService):
             else organization.safe_installation_id
         )
 
-        client = github.get_app_installation_client(installation_id)
+        client = github.get_app_installation_client(installation_id, redis=redis)
 
         paginator: Paginator[types.Issue] = client.paginate(
             client.rest.issues.async_list_for_repo,
@@ -673,6 +691,7 @@ class GithubIssueService(IssueService):
         )
         synced, errors = await github_paginated_service.store_paginated_resource(
             session,
+            redis,
             paginator=paginator,
             store_resource_method=github_issue.store,
             organization=organization,
@@ -687,6 +706,7 @@ class GithubIssueService(IssueService):
     async def list_issues_from_starred(
         self,
         session: AsyncSession,
+        redis: Redis,
         locker: Locker,
         sessionmaker: AsyncSessionMaker,
         user: User,
@@ -723,7 +743,7 @@ class GithubIssueService(IssueService):
             if r.private:
                 continue
 
-            jobs.append(recommended_in_repo(sessionmaker, r, client))
+            jobs.append(recommended_in_repo(sessionmaker, redis, r, client))
 
         # collect the results from each coroutine
         results: list[list[Issue]] = await asyncio.gather(*jobs)
@@ -776,7 +796,10 @@ class GithubIssueService(IssueService):
 
 
 async def recommended_in_repo(
-    sessionmaker: AsyncSessionMaker, r: types.Repository, client: GitHub[Any]
+    sessionmaker: AsyncSessionMaker,
+    redis: Redis,
+    r: types.Repository,
+    client: GitHub[Any],
 ) -> list[Issue]:
     # this job runs in it's own thread/job, making sure to create our own db session
     async with sessionmaker() as session:
@@ -821,6 +844,7 @@ async def recommended_in_repo(
 
             issue = await github_issue.store(
                 session,
+                redis,
                 data=i,
                 organization=org,
                 repository=repo,

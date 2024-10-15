@@ -168,10 +168,19 @@ class Service:
         }
 
     def _get_user_properties(self, user: User) -> dict[str, Any]:
-        return {
+        user_data = {
             "username": user.username,
             "email": user.email,
         }
+
+        signup = {}
+        signup_attribution = user.signup_attribution
+        if signup_attribution:
+            for key, value in signup_attribution.items():
+                signup[f"signup_{key}"] = value
+
+        user_data.update(signup)
+        return user_data
 
 
 posthog = Service()

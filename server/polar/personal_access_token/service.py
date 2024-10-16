@@ -11,6 +11,7 @@ from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import TokenType
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -83,6 +84,9 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         )
         session.add(personal_access_token)
         await session.flush()
+
+        user = auth_subject.subject
+        await loops_service.user_created_personal_access_token(user)
 
         return personal_access_token, token
 

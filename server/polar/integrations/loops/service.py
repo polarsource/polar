@@ -83,6 +83,18 @@ class Loops:
         )
         enqueue_job("loops.send_event", user.email, "Product Created", **properties)
 
+    async def user_created_personal_access_token(
+        self,
+        user: User,
+    ) -> None:
+        properties = self.get_updated_user_properties(
+            user,
+            {
+                "userPatCreated": True,
+            },
+        )
+        enqueue_job("loops.send_event", user.email, "User PAT Created", **properties)
+
 
 loops = Loops()
 

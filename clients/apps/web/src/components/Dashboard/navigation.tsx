@@ -80,7 +80,7 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
 }
 
 const useResolveRoutes = (
-  routesResolver: (posthog: PolarHog, org: Organization) => Route[],
+  routesResolver: (org: Organization, posthog?: PolarHog) => Route[],
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
@@ -88,7 +88,7 @@ const useResolveRoutes = (
   const posthog = usePostHog()
 
   return useMemo(() => {
-    return routesResolver(posthog, org)
+    return routesResolver(org, posthog)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
   }, [org, path, allowAll, routesResolver])
@@ -143,7 +143,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (posthog: PolarHog, org: Organization): Route[] => [
+const generalRoutesList = (org: Organization, posthog?: PolarHog): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -153,7 +153,7 @@ const generalRoutesList = (posthog: PolarHog, org: Organization): Route[] => [
       currentRoute === `/dashboard/${org.slug}`,
     if: true,
   },
-  ...(posthog.isFeatureEnabled('customer_management')
+  ...(posthog?.isFeatureEnabled('customer_management')
     ? [
         {
           id: 'new-products',
@@ -302,8 +302,8 @@ const communityRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (posthog: PolarHog, org: Organization): Route[] => [
-  ...generalRoutesList(posthog, org),
+const dashboardRoutesList = (org: Organization, posthog?: PolarHog): Route[] => [
+  ...generalRoutesList(org, posthog),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...organizationRoutesList(org),

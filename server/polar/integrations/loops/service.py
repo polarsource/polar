@@ -1,6 +1,6 @@
 from typing import Unpack
 
-from polar.models import Organization, Product, User
+from polar.models import Organization, User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -70,10 +70,9 @@ class Loops:
             "loops.send_event", user.email, "Organization Created", **properties
         )
 
-    async def user_product_created(
+    async def user_created_product(
         self,
         user: User,
-        product: Product,
     ) -> None:
         properties = self.get_updated_user_properties(
             user,

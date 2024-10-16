@@ -508,7 +508,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         await self._send_webhook(session, product, WebhookEventType.product_created)
         if is_user(auth_subject):
             user = auth_subject.subject
-            await loops_service.user_product_created(user, product)
+            await loops_service.user_created_product(user)
 
     async def _after_product_updated(
         self, session: AsyncSession, product: Product

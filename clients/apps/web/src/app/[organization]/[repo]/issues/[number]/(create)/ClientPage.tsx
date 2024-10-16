@@ -37,12 +37,12 @@ const ClientPage = ({
   useEffect(() => {
     if (issue) {
       posthog.capture('storefront:issues:page:view', {
-        'organization_id': organization.id,
-        'organization_name': organization.slug,
-        'repository_id': issue.repository.id,
-        'repository_name': issue.repository.name,
-        'issue_id': issue.id,
-        'issue_number': issue.number,
+        organization_id: organization.id,
+        organization_name: organization.slug,
+        repository_id: issue.repository.id,
+        repository_name: issue.repository.name,
+        issue_id: issue.id,
+        issue_number: issue.number,
       })
     }
   }, [issue, organization])

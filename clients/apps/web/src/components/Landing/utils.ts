@@ -416,5 +416,7 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<Product> = {
       organization_id: '123',
     },
   ],
+  medias: [],
   created_at: new Date().toDateString(),
+  is_recurring: true,
 }

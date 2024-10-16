@@ -7,6 +7,7 @@ import { API } from './API'
 import { Benefits } from './Benefits'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
+import { StorefrontSection } from './Storefront'
 
 export default function Page() {
   return (
@@ -21,6 +22,9 @@ export const PageContent = () => {
     <>
       <Section className="flex flex-col gap-y-24 md:py-24">
         <Hero />
+      </Section>
+      <StorefrontSection />
+      <Section className="flex flex-col gap-y-24 md:py-24">
         <Benefits />
         <Separator />
         <MerchantOfRecord />

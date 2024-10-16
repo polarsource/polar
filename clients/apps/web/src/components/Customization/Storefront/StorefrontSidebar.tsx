@@ -352,7 +352,7 @@ export const StorefrontSidebar = () => {
         </h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           {storefrontEnabled
-            ? 'Disables the storefront and only allows checkouts via API and Checkout URLs'
+            ? 'Disables the storefront and only allows checkouts via API and Checkout Links'
             : 'Publish your very own Polar Storefront and drive traffic to your products'}
         </p>
         <Button

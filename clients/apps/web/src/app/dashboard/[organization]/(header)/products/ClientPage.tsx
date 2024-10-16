@@ -81,7 +81,7 @@ export default function ClientPage() {
                   <Button>View Product Page</Button>
                 </Link>
               ) : (
-                <Button onClick={showCheckoutModal}>Checkout URL</Button>
+                <Button onClick={showCheckoutModal}>Checkout Link</Button>
               )}
               <Link
                 href={`/dashboard/${org.slug}/products/${selectedProduct.id}`}
@@ -287,7 +287,7 @@ const ProductListItem = ({
                 showCheckoutModal()
               })}
             >
-              Generate Checkout URL
+              Generate Checkout Link
             </DropdownMenuItem>
             {product.prices.length > 0 && (
               <>

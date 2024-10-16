@@ -383,6 +383,7 @@ class ProductPriceBase(TimestampedSchema):
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."
     )
+    product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
 
 class ProductPriceFixedBase(ProductPriceBase):

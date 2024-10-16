@@ -503,7 +503,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         return statement
 
     async def _after_product_created(
-        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization],product: Product
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
         if is_user(auth_subject):

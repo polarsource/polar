@@ -95,6 +95,18 @@ class Loops:
         )
         enqueue_job("loops.send_event", user.email, "User PAT Created", **properties)
 
+    async def user_enabled_storefront(
+        self,
+        user: User,
+    ) -> None:
+        properties = self.get_updated_user_properties(
+            user,
+            {
+                "storefrontEnabled": True,
+            },
+        )
+        enqueue_job("loops.send_event", user.email, "Storefront Enabled", **properties)
+
 
 loops = Loops()
 

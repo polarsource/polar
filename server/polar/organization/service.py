@@ -181,13 +181,18 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 
+        enabled_storefront = False
         if update_schema.profile_settings is not None:
+            storefront_enabled_before = organization.storefront_enabled
             organization.profile_settings = {
                 **organization.profile_settings,
                 **update_schema.profile_settings.model_dump(
                     mode="json", exclude_unset=True
                 ),
             }
+            enabled_storefront = (
+                organization.storefront_enabled and not storefront_enabled_before
+            )
 
         if update_schema.feature_settings is not None:
             organization.feature_settings = {
@@ -208,6 +213,10 @@ class OrganizationService(ResourceServiceReader[Organization]):
         session.add(organization)
 
         await self._after_update(session, organization)
+
+        if enabled_storefront and is_user(auth_subject):
+            user = auth_subject.subject
+            await loops_service.user_enabled_storefront(user)
 
         return organization
 

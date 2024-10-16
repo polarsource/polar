@@ -141,6 +141,11 @@ class Organization(RecordModel):
     #
 
     @property
+    def storefront_enabled(self) -> bool:
+        enabled = self.profile_settings.get("storefront_enabled", False)
+        return enabled
+
+    @property
     def polar_site_url(self) -> str:
         return f"{settings.FRONTEND_BASE_URL}/{self.slug}"
 

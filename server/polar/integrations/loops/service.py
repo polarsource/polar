@@ -69,23 +69,6 @@ class Loops:
             "loops.send_event", user.email, "Organization Created", **properties
         )
 
-    async def repository_installed_on_organization(
-        self, session: AsyncSession, *, organization: Organization
-    ) -> None:
-        for organization_user in await user_organization_service.list_by_org(
-            session, organization.id
-        ):
-            user = organization_user.user
-            enqueue_job(
-                "loops.send_event",
-                user.email,
-                "Repository Installed",
-                userId=str(user.id),
-                isMaintainer=True,
-                organizationInstalled=True,
-                repositoryInstalled=True,
-            )
-
     async def issue_badged(self, session: AsyncSession, *, issue: Issue) -> None:
         for organization_user in await user_organization_service.list_by_org(
             session, issue.organization_id

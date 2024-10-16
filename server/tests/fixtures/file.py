@@ -13,8 +13,8 @@ import pytest
 import pytest_asyncio
 from botocore.config import Config
 from httpx import AsyncClient, Response
-from minio import Minio
 
+from minio import Minio
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.file.s3 import S3_SERVICES

@@ -16,6 +16,7 @@ EventCategory = Literal[
     "subscriptions",
     "user",
     "organizations",
+    "issues",
 ]
 EventNoun = str
 EventVerb = Literal[
@@ -36,11 +37,16 @@ EventVerb = Literal[
     "send",
     "archive",
     "done",
+    "open",
+    "close",
 ]
 
 
 def _build_event_key(category: EventCategory, noun: EventNoun, verb: EventVerb) -> str:
-    return f"{category}:{noun}:{verb}"
+    # Surface is interesting in the client-side implementation to determine
+    # which product area the customer engaged with. For programmatic & async
+    # operations on the backend we hardcode all of them to `backend`.
+    return f"backend:{category}:{noun}:{verb}"
 
 
 class Service:
@@ -84,8 +90,6 @@ class Service:
         verb: EventVerb,
         properties: dict[str, Any] | None = None,
     ) -> None:
-        event = f"{category}:{noun}:{verb}"
-
         if is_user(auth_subject):
             self.user_event(auth_subject.subject, category, noun, verb, properties)
         elif is_organization(auth_subject):

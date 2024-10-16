@@ -1,4 +1,4 @@
-from typing import Unpack
+from typing import Any, Unpack
 
 from polar.models import Issue, Organization, User
 from polar.postgres import AsyncSession
@@ -11,25 +11,39 @@ from .client import Properties
 
 
 class Loops:
+    def get_user_base_properties(self, user: User) -> dict[str, Any]:
+        signup_intent = user.signup_attribution.get("intent")
+        return {
+            "userGroup": "creator",
+            "signupIntent": signup_intent,
+        }
+
     async def user_signup(
         self,
         user: User,
         **properties: Unpack[Properties],
     ) -> None:
+        # Only create contacts for creators on signup.
+        # Others can be created later on upon first creator events (flywheel)
+        signup_intent = user.signup_attribution.get("intent")
+        if signup_intent != "creator":
+            return
+
+        user_properties = self.get_user_base_properties(user)
         properties = {
-            "isMaintainer": False,
-            "isBacker": False,
-            "gitHubConnected": False,
+            "userId": str(user.id),
             "organizationInstalled": False,
             "repositoryInstalled": False,
             "issueBadged": False,
-            "userId": str(user.id),
             **properties,
         }
-        enqueue_job("loops.send_event", user.email, "User Signed Up", **properties)
+        user_properties.update(properties)
+        enqueue_job("loops.send_event", user.email, "User Signed Up", **user_properties)
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
-        enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
+        user_properties = self.get_user_base_properties(user)
+        user_properties.update(properties)
+        enqueue_job("loops.update_contact", user.email, str(user.id), **user_properties)
 
     async def organization_installed(
         self, session: AsyncSession, *, user: User

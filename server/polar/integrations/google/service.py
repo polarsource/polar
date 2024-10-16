@@ -6,7 +6,6 @@ from httpx_oauth.oauth2 import OAuth2Token
 
 from polar.config import settings
 from polar.exceptions import PolarError
-from polar.integrations.loops.service import loops as loops_service
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
@@ -110,8 +109,6 @@ class GoogleService:
         await session.flush()
 
         enqueue_job("user.on_after_signup", user_id=user.id)
-
-        await loops_service.user_signup(user)
 
         return (user, True)
 

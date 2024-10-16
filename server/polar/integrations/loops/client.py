@@ -11,6 +11,7 @@ log: Logger = structlog.get_logger()
 
 
 class Properties(TypedDict, total=False):
+    # Loops default properties
     firstName: str
     lastName: str
     notes: str
@@ -19,9 +20,13 @@ class Properties(TypedDict, total=False):
     userId: str
     subscribed: bool
     createdAt: str
-    isBacker: bool
-    isMaintainer: bool
-    gitHubConnected: bool
+
+    # Polar custom properties
+    signupIntent: str
+    emailLogin: bool
+    githubLogin: bool
+    googleLogin: bool
+
     firstOrganizationName: str
     organizationInstalled: bool
     repositoryInstalled: bool
@@ -36,15 +41,17 @@ class LoopsClient:
             headers={"Authorization": f"Bearer {api_key}"},
             # Set a MockTransport if API key is None
             # Basically, we disable Loops request.
-            transport=httpx.MockTransport(lambda _: httpx.Response(200))
-            if api_key is None
-            else None,
+            transport=(
+                httpx.MockTransport(lambda _: httpx.Response(200))
+                if api_key is None
+                else None
+            ),
         )
 
     async def update_contact(
         self, email: str, id: str, **properties: Unpack[Properties]
     ) -> None:
-        log.debug("update contact on Loops", email=email, id=id, **properties)
+        log.debug("loops.contact.update", email=email, id=id, **properties)
 
         response = await self.client.post(
             "/contacts/update", json={"email": email, "userId": id, **properties}
@@ -54,9 +61,7 @@ class LoopsClient:
     async def send_event(
         self, email: str, event_name: str, **properties: Unpack[Properties]
     ) -> None:
-        log.debug(
-            "send event to Loops", email=email, event_name=event_name, **properties
-        )
+        log.debug("loops.events.send", email=email, event_name=event_name, **properties)
 
         response = await self.client.post(
             "/events/send", json={"email": email, "eventName": event_name, **properties}

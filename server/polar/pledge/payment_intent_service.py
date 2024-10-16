@@ -6,7 +6,6 @@ import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.service_pledge import pledge_stripe_service
@@ -228,7 +227,6 @@ class PaymentIntentService:
             user_id = user.id
         else:
             user = cast(User, await user_service.get(session, user_id))
-        await loops_service.user_update(user, isBacker=True)
 
         pledge.by_user_id = user.id
         session.add(pledge)

@@ -6,6 +6,7 @@ from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo
 from polar.openapi import IN_DEVELOPMENT_ONLY
@@ -69,8 +70,10 @@ async def authenticate_magic_link(
     # Event tracking last to ensure business critical data is stored first
     if is_signup:
         posthog.user_signup(user, "ml")
+        await loops_service.user_signup(user, emailLogin=True)
     else:
         posthog.user_login(user, "ml")
+        await loops_service.user_update(user, emailLogin=True)
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

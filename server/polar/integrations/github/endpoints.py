@@ -33,6 +33,7 @@ from polar.external_organization.schemas import (
 )
 from polar.external_organization.schemas import ExternalOrganizationID
 from polar.integrations.github import client as github
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
 from polar.locker import Locker, get_locker
@@ -197,8 +198,10 @@ async def github_callback(
     # Event tracking last to ensure business critical data is stored first
     if is_signup:
         posthog.user_signup(user, "github")
+        await loops_service.user_signup(user, githubLogin=True)
     else:
         posthog.user_login(user, "github")
+        await loops_service.user_update(user, githubLogin=True)
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

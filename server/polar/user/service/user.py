@@ -6,7 +6,6 @@ from sqlalchemy import func
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarError
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
 from polar.logging import Logger
 from polar.models import OAuthAccount, User
@@ -97,10 +96,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
             )
             created = True
 
-        if created:
-            await loops_service.user_signup(user)
-        else:
-            await loops_service.user_update(user)
         return (user, created)
 
     async def create_by_email(

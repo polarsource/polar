@@ -16,7 +16,6 @@ from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -365,7 +364,6 @@ class OrderService(ResourceServiceReader[Order]):
 
         # Take the chance to update Stripe customer ID and email marketing
         user.stripe_customer_id = stripe_customer_id
-        await loops_service.user_update(user, isBacker=True)
         session.add(user)
 
         order.user = user

@@ -48,7 +48,7 @@ class Loops:
         properties = self.get_updated_user_properties(user, properties)
         enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
 
-    async def add_user_organization(
+    async def user_organization_added(
         self,
         session: AsyncSession,
         *,

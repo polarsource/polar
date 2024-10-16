@@ -39,7 +39,13 @@ def instrument_fastapi(app: FastAPI) -> None:
     if settings.is_testing():
         return
 
-    logfire.instrument_fastapi(app)
+    logfire.instrument_fastapi(
+        app,
+        excluded_urls=(
+            "/healthz$",
+            "/readyz$",
+        ),
+    )
 
 
 def instrument_sqlalchemy(engine: Engine) -> None:

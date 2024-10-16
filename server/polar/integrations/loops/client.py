@@ -27,6 +27,10 @@ class Properties(TypedDict, total=False):
     githubLogin: bool
     googleLogin: bool
 
+    organizationCreated: bool
+    organizationSlug: str
+    organizationCount: int
+
     firstOrganizationName: str
     organizationInstalled: bool
     repositoryInstalled: bool

@@ -55,6 +55,7 @@ export const PRODUCT_PREVIEW: Product = {
       is_archived: false,
       created_at: new Date().toDateString(),
       modified_at: new Date().toDateString(),
+      product_id: '123',
     },
   ],
   name: 'My Saas Pro Tier',
@@ -112,6 +113,7 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: Product = {
       is_archived: false,
       created_at: new Date().toDateString(),
       modified_at: new Date().toDateString(),
+      product_id: '123',
     },
   ],
   name: 'My Saas Pro Tier',
@@ -245,5 +247,6 @@ export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
     is_archived: false,
     created_at: new Date().toDateString(),
     modified_at: new Date().toDateString(),
+    product_id: '123',
   },
 }

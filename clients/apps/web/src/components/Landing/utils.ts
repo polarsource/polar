@@ -33,6 +33,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
+        product_id: '123',
       },
     ],
     benefits: [
@@ -84,6 +85,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
+        product_id: '123',
       },
     ],
     benefits: [
@@ -186,6 +188,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         price_currency: 'usd',
         type: 'one_time',
         is_archived: false,
+        product_id: '123',
       },
     ],
   },
@@ -207,6 +210,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
+        product_id: '123',
       },
     ],
     benefits: [
@@ -268,6 +272,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
+        product_id: '123',
       },
     ],
     benefits: [
@@ -319,6 +324,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
+        product_id: '123',
       },
     ],
     benefits: [
@@ -372,6 +378,7 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<Product> = {
       type: 'recurring',
       recurring_interval: 'month',
       is_archived: false,
+      product_id: '123',
     },
   ],
   benefits: [

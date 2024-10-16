@@ -151,6 +151,7 @@ const product_price: ProductPrice = {
   price_amount: 4000,
   price_currency: 'usd',
   is_archived: false,
+  product_id: product.id,
 }
 
 const order: TransactionOrder = {

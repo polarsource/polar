@@ -63,12 +63,12 @@ const PaymentForm = ({
   useEffect(() => {
     if (havePaymentMethod) {
       posthog.capture('storefront:issues:pledge_form:done', {
-        'organization_id': organization.id,
-        'organization_name': organization.slug,
-        'repository_id': repository.id,
-        'repository_name': repository.name,
-        'issue_id': issue.id,
-        'issue_number': issue.number,
+        organization_id: organization.id,
+        organization_name: organization.slug,
+        repository_id: repository.id,
+        repository_name: repository.name,
+        issue_id: issue.id,
+        issue_number: issue.number,
       })
     }
   }, [
@@ -86,39 +86,39 @@ const PaymentForm = ({
       case 'succeeded':
       case 'processing':
         posthog.capture('storefront:issues:pledge_payment:done', {
-          'status': paymentIntent.status,
-          'organization_id': organization.id,
-          'organization_name': organization.slug,
-          'repository_id': repository.id,
-          'repository_name': repository.name,
-          'issue_id': issue.id,
-          'issue_number': issue.number,
+          status: paymentIntent.status,
+          organization_id: organization.id,
+          organization_name: organization.slug,
+          repository_id: repository.id,
+          repository_name: repository.name,
+          issue_id: issue.id,
+          issue_number: issue.number,
         })
         onSuccess(paymentIntent)
         break
 
       case 'requires_payment_method':
         posthog.capture('storefront:issues:pledge_payment:fail', {
-          'status': paymentIntent.status,
-          'organization_id': organization.id,
-          'organization_name': organization.slug,
-          'repository_id': repository.id,
-          'repository_name': repository.name,
-          'issue_id': issue.id,
-          'issue_number': issue.number,
+          status: paymentIntent.status,
+          organization_id: organization.id,
+          organization_name: organization.slug,
+          repository_id: repository.id,
+          repository_name: repository.name,
+          issue_id: issue.id,
+          issue_number: issue.number,
         })
         setErrorMessage('Payment failed. Please try another payment method.')
         break
 
       default:
         posthog.capture('storefront:issues:pledge_payment:fail', {
-          'status': paymentIntent.status,
-          'organization_id': organization.id,
-          'organization_name': organization.slug,
-          'repository_id': repository.id,
-          'repository_name': repository.name,
-          'issue_id': issue.id,
-          'issue_number': issue.number,
+          status: paymentIntent.status,
+          organization_id: organization.id,
+          organization_name: organization.slug,
+          repository_id: repository.id,
+          repository_name: repository.name,
+          issue_id: issue.id,
+          issue_number: issue.number,
         })
         setErrorMessage('Something went wrong.')
         break
@@ -161,12 +161,12 @@ const PaymentForm = ({
     }
 
     posthog.capture('storefront:issues:pledge_form:submit', {
-      'organization_id': organization.id,
-      'organization_name': organization.slug,
-      'repository_id': repository.id,
-      'repository_name': repository.name,
-      'issue_id': issue.id,
-      'issue_number': issue.number,
+      organization_id: organization.id,
+      organization_name: organization.slug,
+      repository_id: repository.id,
+      repository_name: repository.name,
+      issue_id: issue.id,
+      issue_number: issue.number,
     })
 
     setSyncing(true)
@@ -180,12 +180,12 @@ const PaymentForm = ({
       .then(({ paymentIntent, error }) => {
         if (!paymentIntent) {
           posthog.capture('storefront:issues:pledge_payment:fail', {
-            'organization_id': organization.id,
-            'organization_name': organization.slug,
-            'repository_id': repository.id,
-            'repository_name': repository.name,
-            'issue_id': issue.id,
-            'issue_number': issue.number,
+            organization_id: organization.id,
+            organization_name: organization.slug,
+            repository_id: repository.id,
+            repository_name: repository.name,
+            issue_id: issue.id,
+            issue_number: issue.number,
           })
 
           if (error && error.message) {

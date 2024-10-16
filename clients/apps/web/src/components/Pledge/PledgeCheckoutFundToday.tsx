@@ -218,13 +218,13 @@ const PledgeCheckoutFundToday = ({
   const onAmountChange = (amount: number) => {
     if (formState.amount === organization.pledge_minimum_amount) {
       posthog.capture('storefront:issues:pledge_amount:update', {
-        'amount': amount,
-        'organization_id': issue.repository.organization.id,
-        'organization_name': issue.repository.organization.name,
-        'repository_id': issue.repository.id,
-        'repository_name': issue.repository.name,
-        'issue_id': issue.id,
-        'issue_number': issue.number,
+        amount,
+        organization_id: issue.repository.organization.id,
+        organization_name: issue.repository.organization.name,
+        repository_id: issue.repository.id,
+        repository_name: issue.repository.name,
+        issue_id: issue.id,
+        issue_number: issue.number,
       })
     }
 
@@ -253,12 +253,12 @@ const PledgeCheckoutFundToday = ({
 
     if (formState.email === '') {
       posthog.capture('storefront:issues:pledge_email:update', {
-        'organization_id': issue.repository.organization.id,
-        'organization_name': issue.repository.organization.name,
-        'repository_id': issue.repository.id,
-        'repository_name': issue.repository.name,
-        'issue_id': issue.id,
-        'issue_number': issue.number,
+        organization_id: issue.repository.organization.id,
+        organization_name: issue.repository.organization.name,
+        repository_id: issue.repository.id,
+        repository_name: issue.repository.name,
+        issue_id: issue.id,
+        issue_number: issue.number,
       })
     }
 

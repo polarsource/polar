@@ -411,7 +411,7 @@ class TestCreate:
         assert checkout.customer_tax_id_number == "FR61954506077"
 
     @pytest.mark.auth
-    async def test_valid_success_url(
+    async def test_valid_success_url_with_interpolation(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -435,6 +435,33 @@ class TestCreate:
         assert (
             checkout.success_url
             == f"https://example.com/success?checkout_id={checkout.id}"
+        )
+
+    @pytest.mark.auth
+    async def test_valid_success_url_with_invalid_interpolation_variable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                success_url=Url(
+                    "https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}"
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert (
+            checkout.success_url
+            == "https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}"
         )
 
     async def test_silent_calculate_tax_error(

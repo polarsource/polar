@@ -117,7 +117,10 @@ class Checkout(MetadataMixin, RecordModel):
             return settings.generate_frontend_url(
                 f"/checkout/{self.client_secret}/confirmation"
             )
-        return self._success_url.format(CHECKOUT_ID=self.id)
+        try:
+            return self._success_url.format(CHECKOUT_ID=self.id)
+        except KeyError:
+            return self._success_url
 
     @success_url.setter
     def success_url(self, value: str | None) -> None:

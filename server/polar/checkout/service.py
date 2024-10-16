@@ -38,6 +38,7 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
     Checkout,
+    CheckoutLink,
     Organization,
     Product,
     ProductPriceCustom,
@@ -456,6 +457,83 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             pass
 
         session.add(checkout)
+
+        await session.flush()
+        await self._after_checkout_created(session, checkout)
+
+        return checkout
+
+    async def checkout_link_create(
+        self,
+        session: AsyncSession,
+        checkout_link: CheckoutLink,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
+        ip_address: str | None = None,
+    ) -> Checkout:
+        price = checkout_link.product_price
+
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": price.id,
+                    }
+                ]
+            )
+
+        product = price.product
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is archived.",
+                        "input": price.id,
+                    }
+                ]
+            )
+
+        product = cast(Product, await product_service.get_loaded(session, product.id))
+
+        amount = None
+        currency = None
+        if isinstance(price, ProductPriceFixed):
+            amount = price.price_amount
+            currency = price.price_currency
+        elif isinstance(price, ProductPriceCustom):
+            currency = price.price_currency
+            if amount is None:
+                amount = price.preset_amount or 1000
+        elif isinstance(price, ProductPriceFree):
+            amount = None
+            currency = None
+
+        checkout = Checkout(
+            client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
+            amount=amount,
+            currency=currency,
+            product=product,
+            product_price=price,
+            customer_ip_address=ip_address,
+            payment_processor=checkout_link.payment_processor,
+            success_url=checkout_link.success_url,
+            user_metadata=checkout_link.user_metadata,
+        )
+        session.add(checkout)
+
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
+
+        try:
+            checkout = await self._update_checkout_tax(session, checkout)
+        # Swallow incomplete tax calculation error: require it only on confirm
+        except TaxCalculationError:
+            pass
 
         await session.flush()
         await self._after_checkout_created(session, checkout)

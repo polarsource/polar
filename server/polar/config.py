@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     # working Github badges in development.
     FRONTEND_BASE_URL: str = "http://127.0.0.1:3000"
     FRONTEND_DEFAULT_RETURN_PATH: str = "/"
+    CHECKOUT_BASE_URL: str = (
+        "http://127.0.0.1:8000/v1/checkout-links/{client_secret}/redirect"
+    )
 
     # Auth cookie
     AUTH_COOKIE_KEY: str = "polar_session"

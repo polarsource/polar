@@ -140,6 +140,10 @@ class Checkout(MetadataMixin, RecordModel):
     def is_payment_required(self) -> bool:
         return not isinstance(self.product_price, ProductPriceFree)
 
+    @property
+    def url(self) -> str:
+        return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
+
 
 @event.listens_for(Checkout, "before_update")
 def check_expiration(

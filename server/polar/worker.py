@@ -46,6 +46,7 @@ _jobs_to_enqueue = contextvars.ContextVar[list[JobToEnqueue]](
 
 class WorkerContext(TypedDict):
     redis: ArqRedis
+    raw_redis: Redis
     async_engine: AsyncEngine
     async_sessionmaker: AsyncSessionMakerType
 
@@ -60,7 +61,7 @@ class JobContext(WorkerContext):
 
 
 def get_worker_redis(ctx: WorkerContext) -> Redis:
-    return cast(Redis, ctx["redis"])
+    return cast(Redis, ctx["raw_redis"])
 
 
 class PolarWorkerContext(BaseModel):
@@ -91,14 +92,25 @@ class WorkerSettings:
         instrument_sqlalchemy(async_engine.sync_engine)
         instrument_httpx()
 
+        # Create a dedicated Redis instance instead of sharing the ARQ one,
+        # because we need to have decode_responses=True.
+        redis = Redis.from_url(settings.redis_url, decode_responses=True)
+
         ctx.update(
-            {"async_engine": async_engine, "async_sessionmaker": async_sessionmaker}
+            {
+                "async_engine": async_engine,
+                "async_sessionmaker": async_sessionmaker,
+                "raw_redis": redis,
+            }
         )
 
     @staticmethod
     async def on_shutdown(ctx: WorkerContext) -> None:
         engine = ctx["async_engine"]
         await engine.dispose()
+
+        redis = ctx["raw_redis"]
+        await redis.close()
 
         log.info("polar.worker.shutdown")
 

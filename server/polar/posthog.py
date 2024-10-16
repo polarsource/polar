@@ -181,6 +181,7 @@ class Service:
         user_data = {
             "username": user.username,
             "email": user.email,
+            "verified": user.email_verified,
         }
 
         signup = {}

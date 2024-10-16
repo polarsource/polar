@@ -46,6 +46,7 @@ class GitHubPaginatedService:
 
             record = await store_resource_method(
                 session,
+                redis,
                 data=data,
                 organization=organization,
                 repository=repository,

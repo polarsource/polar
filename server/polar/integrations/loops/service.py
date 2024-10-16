@@ -1,6 +1,6 @@
 from typing import Unpack
 
-from polar.models import Issue, Organization, User
+from polar.models import Organization, User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -68,22 +68,6 @@ class Loops:
         enqueue_job(
             "loops.send_event", user.email, "Organization Created", **properties
         )
-
-    async def issue_badged(self, session: AsyncSession, *, issue: Issue) -> None:
-        for organization_user in await user_organization_service.list_by_org(
-            session, issue.organization_id
-        ):
-            user = organization_user.user
-            enqueue_job(
-                "loops.send_event",
-                user.email,
-                "Issue Badged",
-                userId=str(user.id),
-                isMaintainer=True,
-                organizationInstalled=True,
-                repositoryInstalled=True,
-                issueBadged=True,
-            )
 
 
 loops = Loops()

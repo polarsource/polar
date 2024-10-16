@@ -17,6 +17,7 @@ from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.file.service import file as file_service
+from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -222,7 +223,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         await session.flush()
         await session.refresh(product, {"prices"})
 
-        await self._after_product_created(session, product)
+        await self._after_product_created(session, auth_subject, product)
 
         return product
 
@@ -502,9 +503,12 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         return statement
 
     async def _after_product_created(
-        self, session: AsyncSession, product: Product
+        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization],product: Product
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            await loops_service.user_product_created(user, product)
 
     async def _after_product_updated(
         self, session: AsyncSession, product: Product

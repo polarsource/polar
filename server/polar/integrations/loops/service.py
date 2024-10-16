@@ -1,6 +1,6 @@
 from typing import Unpack
 
-from polar.models import Organization, User
+from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -49,7 +49,11 @@ class Loops:
         enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
 
     async def add_user_organization(
-        self, session: AsyncSession, *, organization: Organization, user: User
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        organization: Organization,
     ) -> None:
         user_organizations = await user_organization_service.list_by_user_id(
             session, user.id
@@ -65,6 +69,19 @@ class Loops:
         enqueue_job(
             "loops.send_event", user.email, "Organization Created", **properties
         )
+
+    async def user_product_created(
+        self,
+        user: User,
+        product: Product,
+    ) -> None:
+        properties = self.get_updated_user_properties(
+            user,
+            {
+                "productCreated": True,
+            },
+        )
+        enqueue_job("loops.send_event", user.email, "Product Created", **properties)
 
 
 loops = Loops()

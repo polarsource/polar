@@ -31,6 +31,8 @@ class Properties(TypedDict, total=False):
     organizationSlug: str
     organizationCount: int
 
+    productCreated: bool
+
     accountType: AccountType
 
 

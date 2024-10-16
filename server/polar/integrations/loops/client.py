@@ -32,6 +32,7 @@ class Properties(TypedDict, total=False):
     organizationCount: int
 
     productCreated: bool
+    userPatCreated: bool
 
     accountType: AccountType
 

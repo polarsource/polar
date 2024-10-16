@@ -210,7 +210,7 @@ export const EditProductPage = ({
                 </Link>
               </div>
             ) : (
-              <Button onClick={showCheckoutModal}>Checkout URL</Button>
+              <Button onClick={showCheckoutModal}>Checkout Link</Button>
             )}
           </div>
           <Modal

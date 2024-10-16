@@ -13,10 +13,20 @@ class MetadataMixin:
 
 
 _MAXIMUM_KEYS = 50
+_MINIMUM_KEY_LENGTH = 1
 _MAXIMUM_KEY_LENGTH = 40
+_MINIMUM_VALUE_LENGTH = 1
 _MAXIMUM_VALUE_LENGTH = 500
-_MetadataKey = Annotated[str, StringConstraints(max_length=_MAXIMUM_KEY_LENGTH)]
-_MetadataValue = Annotated[str, StringConstraints(max_length=_MAXIMUM_VALUE_LENGTH)]
+_MetadataKey = Annotated[
+    str,
+    StringConstraints(min_length=_MINIMUM_KEY_LENGTH, max_length=_MAXIMUM_KEY_LENGTH),
+]
+_MetadataValue = Annotated[
+    str,
+    StringConstraints(
+        min_length=_MINIMUM_VALUE_LENGTH, max_length=_MAXIMUM_VALUE_LENGTH
+    ),
+]
 _description = inspect.cleandoc(
     f"""
     Key-value object allowing you to store additional information.

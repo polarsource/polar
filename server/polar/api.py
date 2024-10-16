@@ -8,6 +8,7 @@ from polar.backoffice.endpoints import router as backoffice_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout.legacy.endpoints import router as checkout_legacy_router
+from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.donation.endpoints import router as donations_router
 from polar.eventstream.endpoints import router as stream_router
@@ -120,3 +121,5 @@ router.include_router(metrics_router)
 router.include_router(google_router)
 # /license-keys
 router.include_router(license_key_router)
+# /checkout-links
+router.include_router(checkout_link_router)

@@ -21,6 +21,7 @@ from polar.models import (
     Article,
     Benefit,
     Checkout,
+    CheckoutLink,
     ExternalOrganization,
     Order,
     Organization,
@@ -906,6 +907,29 @@ async def create_checkout(
     )
     await save_fixture(checkout)
     return checkout
+
+
+async def create_checkout_link(
+    save_fixture: SaveFixture,
+    *,
+    price: ProductPrice,
+    payment_processor: PaymentProcessor = PaymentProcessor.stripe,
+    client_secret: str | None = None,
+    success_url: str | None = None,
+    user_metadata: dict[str, Any] = {},
+) -> CheckoutLink:
+    checkout_link = CheckoutLink(
+        payment_processor=payment_processor,
+        client_secret=client_secret
+        or rstr(
+            "CHECKOUT_CLIENT_SECRET",
+        ),
+        success_url=success_url,
+        product_price=price,
+        user_metadata=user_metadata,
+    )
+    await save_fixture(checkout_link)
+    return checkout_link
 
 
 @pytest_asyncio.fixture

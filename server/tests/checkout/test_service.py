@@ -48,6 +48,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_checkout,
+    create_checkout_link,
     create_product_price_fixed,
     create_user,
 )
@@ -671,6 +672,60 @@ class TestClientCreate:
         )
 
         assert checkout.customer is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestCheckoutLinkCreate:
+    async def test_archived_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        price = await create_product_price_fixed(
+            save_fixture,
+            product=product_one_time,
+            type=ProductPriceType.one_time,
+            is_archived=True,
+        )
+        checkout_link = await create_checkout_link(save_fixture, price=price)
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.checkout_link_create(session, checkout_link)
+
+    async def test_archived_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        product_one_time.is_archived = True
+        await save_fixture(product_one_time)
+        checkout_link = await create_checkout_link(
+            save_fixture, price=product_one_time.prices[0]
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.checkout_link_create(session, checkout_link)
+
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            price=price,
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product_price == price
+        assert checkout.product == product_one_time
+        assert checkout.success_url == "https://example.com/success"
+        assert checkout.user_metadata == {"key": "value"}
 
 
 @pytest.mark.asyncio

@@ -1,9 +1,8 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress, computed_field
+from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress
 
-from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
 from polar.kit.metadata import (
@@ -136,6 +135,9 @@ class CheckoutBase(IDSchema, TimestampedSchema):
             "the checkout session from the client."
         )
     )
+    url: str = Field(
+        description="URL where the customer can access the checkout session."
+    )
     expires_at: datetime = Field(
         description="Expiration date and time of the checkout session."
     )
@@ -164,11 +166,6 @@ class CheckoutBase(IDSchema, TimestampedSchema):
     customer_tax_id: str | None = Field(validation_alias="customer_tax_id_number")
 
     payment_processor_metadata: dict[str, Any]
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def url(self) -> str:
-        return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
 
 
 class Checkout(MetadataOutputMixin, CheckoutBase):

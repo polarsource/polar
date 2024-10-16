@@ -26,8 +26,15 @@ class Loops:
             user,
             event="User Signed Up",
             properties={
+                # Set login method in `properties` to override defaults (False)
+                "emailLogin": False,
+                "githubLogin": False,
+                "googleLogin": False,
                 "organizationCreated": False,
                 "organizationCount": 0,
+                "productCreated": False,
+                "userPatCreated": False,
+                "storefrontEnabled": False,
                 **properties,
             },
         )

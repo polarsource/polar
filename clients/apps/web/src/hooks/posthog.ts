@@ -91,7 +91,7 @@ export const usePostHog = (): PolarHog => {
   }
 
   const logout = () => {
-    posthog?.capture('user:logout:done')
+    capture('global:user:logout:done')
     posthog?.reset()
   }
 

@@ -33,6 +33,7 @@ class Properties(TypedDict, total=False):
 
     productCreated: bool
     userPatCreated: bool
+    storefrontEnabled: bool
 
     accountType: AccountType
 

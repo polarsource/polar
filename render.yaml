@@ -291,6 +291,8 @@ envVarGroups:
         value: production
       - key: POLAR_FRONTEND_BASE_URL
         value: https://polar.sh
+      - key: POLAR_CHECKOUT_BASE_URL
+        value: https://buy.polar.sh/{client_secret}
       - key: POLAR_GITHUB_APP_NAMESPACE
         value: polar-sh
       - key: POLAR_GITHUB_BADGE_EMBED
@@ -404,6 +406,8 @@ envVarGroups:
         value: sandbox
       - key: POLAR_FRONTEND_BASE_URL
         value: https://sandbox.polar.sh
+      - key: POLAR_CHECKOUT_BASE_URL
+        value: https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect
       - key: POLAR_GITHUB_APP_NAMESPACE
         value: polar-sandbox
       - key: POLAR_GITHUB_BADGE_EMBED

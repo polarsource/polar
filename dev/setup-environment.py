@@ -234,6 +234,7 @@ def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> N
                 ]
             ),
             "POLAR_FRONTEND_BASE_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
+            "POLAR_CHECKOUT_BASE_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}/v1/checkout-links/{{client_secret}}/redirect",
             "POLAR_AUTH_COOKIE_DOMAIN": f"{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
         }
     if github_app is not None:

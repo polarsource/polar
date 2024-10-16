@@ -31,10 +31,6 @@ class Properties(TypedDict, total=False):
     organizationSlug: str
     organizationCount: int
 
-    firstOrganizationName: str
-    organizationInstalled: bool
-    repositoryInstalled: bool
-    issueBadged: bool
     accountType: AccountType
 
 

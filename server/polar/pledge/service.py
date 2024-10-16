@@ -31,7 +31,6 @@ from polar.funding.funding_schema import Funding
 from polar.funding.schemas import PledgesSummary as FundingPledgesSummary
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.integrations.github.service.user import github_user as github_user_service
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.integrations.stripe.service_pledge import pledge_stripe_service
 from polar.issue.schemas import ConfirmIssueSplit
@@ -1060,8 +1059,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         session.add(pledge)
         await session.flush()
-
-        await loops_service.user_update(authenticated_user, isBacker=True)
 
         await pledge_created.call(PledgeHook(session, pledge))
 

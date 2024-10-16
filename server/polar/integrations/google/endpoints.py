@@ -11,6 +11,7 @@ from polar.auth.models import is_user
 from polar.auth.service import AuthService
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
 from polar.openapi import IN_DEVELOPMENT_ONLY
@@ -121,8 +122,10 @@ async def google_callback(
     # Event tracking last to ensure business critical data is stored first
     if is_signup:
         posthog.user_signup(user, "google")
+        await loops_service.user_signup(user, googleLogin=True)
     else:
         posthog.user_login(user, "google")
+        await loops_service.user_update(user, googleLogin=True)
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

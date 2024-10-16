@@ -20,7 +20,6 @@ from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
@@ -437,7 +436,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Take the chance to update Stripe customer ID and email marketing
         user.stripe_customer_id = customer_id
-        await loops_service.user_update(user, isBacker=True)
         session.add(user)
 
         session.add(subscription)

@@ -4,7 +4,6 @@ import structlog
 
 from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.extensions.sqlalchemy import sql
 from polar.locker import Locker
 from polar.models import OAuthAccount, User
@@ -226,13 +225,6 @@ class GithubUserService(UserService):
             authenticated=authenticated,
             signup_attribution=signup_attribution,
         )
-
-        if created:
-            # Will be updated & removed soon
-            await loops_service.user_signup(user, gitHubConnected=True)
-        else:
-            await loops_service.user_update(user, gitHubConnected=True)
-
         return (user, created)
 
     async def _get_updated_or_create(

@@ -8,7 +8,7 @@ import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Issue, Organization, Pledger, RewardsSummary } from '@polar-sh/sdk'
 import { Banner } from 'polarkit/components/ui/molecules'
-import posthog from 'posthog-js'
+import { usePostHog } from '@/hooks/posthog'
 import { useEffect, useState } from 'react'
 
 const ClientPage = ({
@@ -26,6 +26,7 @@ const ClientPage = ({
   gotoURL?: string
   rewards?: RewardsSummary
 }) => {
+  const posthog = usePostHog()
   useTrafficRecordPageView({ organization })
 
   const [amount, setAmount] = useState(0)
@@ -35,13 +36,13 @@ const ClientPage = ({
 
   useEffect(() => {
     if (issue) {
-      posthog.capture('Pledge page shown', {
-        'Organization ID': organization.id,
-        'Organization Name': organization.slug,
-        'Repository ID': issue.repository.id,
-        'Repository Name': issue.repository.name,
-        'Issue ID': issue.id,
-        'Issue Number': issue.number,
+      posthog.capture('storefront:issues:page:view', {
+        'organization_id': organization.id,
+        'organization_name': organization.slug,
+        'repository_id': issue.repository.id,
+        'repository_name': issue.repository.name,
+        'issue_id': issue.id,
+        'issue_number': issue.number,
       })
     }
   }, [issue, organization])

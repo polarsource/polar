@@ -38,12 +38,14 @@ import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
 import PublicRewardsSetting from './UpfrontRewards'
+import { usePostHog } from '@/hooks/posthog'
 
 const isIssueBadged = (issue: Issue): boolean => {
   return issue.pledge_badge_currently_embedded
 }
 
 export const AddBadgeButton = (props: { issue: Issue }) => {
+  const posthog = usePostHog()
   const [isBadged, setBadged] = useState<boolean>(isIssueBadged(props.issue))
 
   const remove = useIssueRemovePolarBadge()
@@ -66,7 +68,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
         toggle()
       })
 
-    posthog.capture('add-issue-badge', {
+    posthog.capture('dashboard:issues:badge:add', {
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
@@ -82,7 +84,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
         setBadged(false)
       })
 
-    posthog.capture('remove-issue-badge', {
+    posthog.capture('dashboard:issues:badge:remove', {
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
@@ -111,7 +113,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
       },
     })
 
-    posthog.capture('badge-with-comment', {
+    posthog.capture('dashboard:issues:badge_comment:add', {
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
@@ -126,10 +128,11 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
       funding_goal: amount,
     })
 
-    posthog.capture('set-issue-funding-goal', {
+    posthog.capture('dashboard:issues:badge_goal:add', {
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
+      funding_goal: amount
     })
   }
 
@@ -288,6 +291,7 @@ const PostCommentForm = (props: {
   user: UserRead
   onAddComment: (message: string) => Promise<void>
 }) => {
+  const posthog = usePostHog()
   const [message, setMessage] = useState(
     'You can pledge behind and help support this effort using Polar.sh',
   )
@@ -301,7 +305,7 @@ const PostCommentForm = (props: {
     setIsLoading(false)
     setPosted(true)
 
-    posthog.capture('posted-issue-comment', {
+    posthog.capture('dashboard:issues:github_reward_comment:submit', {
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
@@ -455,7 +459,7 @@ const PromoteTab = (props: {
   const [embed, setEmbed] = useState(embeds[0])
 
   const onCopy = (id: string) => {
-    posthog.capture('copy-to-clipboard', {
+    posthog.capture('dashboard:issues:badge_copy_promotion:click', {
       value: id,
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,

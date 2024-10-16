@@ -8,7 +8,7 @@ import { useAlertIfUnsaved } from '@/hooks/editor'
 import { useArticleBySlug, useUpdateArticle } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
-import { captureEvent } from '@/utils/posthog'
+import { usePostHog } from '@/hooks/posthog'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
 import { ArticleVisibility } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -20,6 +20,7 @@ import { Banner } from 'polarkit/components/ui/molecules'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 const ClientPage = () => {
+  const posthog = usePostHog()
   const params = useParams()
   const orgContext = useContext(MaintainerOrganizationContext)
   const post = useArticleBySlug(
@@ -109,13 +110,13 @@ const ClientPage = () => {
       if (e.metaKey || e.ctrlKey) {
         if (e.key === 's') {
           e.preventDefault()
-          captureEvent('articles:edit_cmd_s:submit')
+          posthog.capture('dashboard:articles:edit_cmd_s:submit')
           handleSave()
         }
 
         if (e.key === 'p') {
           e.preventDefault()
-          captureEvent('articles:edit_cmd_p:view')
+          posthog.capture('dashboard:articles:edit_cmd_p:view')
           if (tab === 'preview') {
             setTab('edit')
           } else {
@@ -152,11 +153,11 @@ const ClientPage = () => {
 
     if (tab === 'settings') {
       handleSave(false)
-      captureEvent('articles:edit_tab_settings:view')
+      posthog.capture('dashboard:articles:edit_tab_settings:view')
     } else if (tab === 'edit') {
-      captureEvent('articles:edit_tab_edit:view')
+      posthog.capture('dashboard:articles:edit_tab_edit:view')
     } else if (tab === 'preview') {
-      captureEvent('articles:edit_tab_preview:view')
+      posthog.capture('dashboard:articles:edit_tab_preview:view')
     }
   }
 

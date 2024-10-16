@@ -5,7 +5,7 @@ import { useLoginLink } from '@/hooks/login'
 import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { captureEvent } from '@/utils/posthog'
+import { usePostHog } from '@/hooks/posthog'
 import Button from 'polarkit/components/ui/atoms/button'
 import GetStartedButton from '../Auth/GetStartedButton'
 
@@ -18,6 +18,7 @@ const PolarMenu = ({
   userOrganizations: Organization[]
   organization?: Organization
 }) => {
+  const posthog = usePostHog()
   const loginLink = useLoginLink()
 
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
@@ -33,7 +34,7 @@ const PolarMenu = ({
   }`
 
   const onLoginClick = () => {
-    captureEvent('user:login:click')
+    posthog.capture('global:user:login:click')
   }
 
   return (

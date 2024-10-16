@@ -4,10 +4,10 @@ import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
 import GoogleLoginButton from './GoogleLoginButton'
-import { captureEvent, type EventName } from '@/utils/posthog'
 import { UserSignupAttribution } from '@polar-sh/sdk'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
+import { usePostHog, type EventName } from '@/hooks/posthog'
 
 const Login = ({
   returnTo,
@@ -18,13 +18,15 @@ const Login = ({
   returnParams?: Record<string, string>
   signup?: UserSignupAttribution
 }) => {
+  const posthog = usePostHog()
+
   let loginProps = {}
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  let eventName: EventName = 'user:login:view'
+  let eventName: EventName = 'global:user:login:view'
   if (signup) {
-    eventName = 'user:signup:view'
+    eventName = 'global:user:signup:view'
 
     if (!returnTo) {
       returnTo = `/dashboard/create`
@@ -65,7 +67,7 @@ const Login = ({
   }
 
   useEffect(() => {
-    captureEvent(eventName, loginProps)
+    posthog.capture(eventName, loginProps)
   }, [])
 
   return (

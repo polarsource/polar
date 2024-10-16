@@ -26,12 +26,12 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import { getCentsInDollarString } from 'polarkit/lib/money'
-import posthog from 'posthog-js'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import OrganizationSelect from './OrganizationSelect'
 import PaymentForm from './PaymentForm'
 import { generateRedirectURL, prettyCardName, validateEmail } from './payment'
+import { usePostHog } from '@/hooks/posthog'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -55,6 +55,7 @@ const PledgeCheckoutFundToday = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
+  const posthog = usePostHog()
   const [polarPaymentIntent, setPolarPaymentIntent] =
     useState<PledgeStripePaymentIntentMutationResponse | null>(null)
 
@@ -216,14 +217,14 @@ const PledgeCheckoutFundToday = ({
 
   const onAmountChange = (amount: number) => {
     if (formState.amount === organization.pledge_minimum_amount) {
-      posthog.capture('Pledge amount changed', {
-        Amount: amount,
-        'Organization ID': issue.repository.organization.id,
-        'Organization Name': issue.repository.organization.name,
-        'Repository ID': issue.repository.id,
-        'Repository Name': issue.repository.name,
-        'Issue ID': issue.id,
-        'Issue Number': issue.number,
+      posthog.capture('storefront:issues:pledge_amount:update', {
+        'amount': amount,
+        'organization_id': issue.repository.organization.id,
+        'organization_name': issue.repository.organization.name,
+        'repository_id': issue.repository.id,
+        'repository_name': issue.repository.name,
+        'issue_id': issue.id,
+        'issue_number': issue.number,
       })
     }
 
@@ -251,13 +252,13 @@ const PledgeCheckoutFundToday = ({
     const newEmail = event.target.value
 
     if (formState.email === '') {
-      posthog.capture('Pledge email entered', {
-        'Organization ID': issue.repository.organization.id,
-        'Organization Name': issue.repository.organization.name,
-        'Repository ID': issue.repository.id,
-        'Repository Name': issue.repository.name,
-        'Issue ID': issue.id,
-        'Issue Number': issue.number,
+      posthog.capture('storefront:issues:pledge_email:update', {
+        'organization_id': issue.repository.organization.id,
+        'organization_name': issue.repository.organization.name,
+        'repository_id': issue.repository.id,
+        'repository_name': issue.repository.name,
+        'issue_id': issue.id,
+        'issue_number': issue.number,
       })
     }
 

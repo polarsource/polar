@@ -6,14 +6,15 @@ import Link from 'next/link'
 import { ShadowListGroup } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import OAuthSettingsBase from '../Settings/OAuth/OAuthSettings'
-import { captureEvent } from '@/utils/posthog'
+import { usePostHog } from '@/hooks/posthog'
 
 const OAuthSettings = () => {
+  const posthog = usePostHog()
   const { currentUser } = useAuth()
   const loginLink = useLoginLink()
 
   const onLoginClick = () => {
-    captureEvent('user:login:click')
+    posthog.capture('global:user:login:click')
   }
 
   if (!currentUser) {

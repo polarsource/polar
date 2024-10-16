@@ -1,4 +1,4 @@
-from typing import Any, Unpack
+from typing import Unpack
 
 from polar.models import Issue, Organization, User
 from polar.postgres import AsyncSession
@@ -11,12 +11,17 @@ from .client import Properties
 
 
 class Loops:
-    def get_user_base_properties(self, user: User) -> dict[str, Any]:
+    def get_updated_user_properties(
+        self, user: User, properties: Properties
+    ) -> Properties:
         signup_intent = user.signup_attribution.get("intent")
-        return {
+        updated: Properties = {
+            "userId": str(user.id),
             "userGroup": "creator",
-            "signupIntent": signup_intent,
+            "signupIntent": signup_intent or "",
         }
+        updated.update(properties)
+        return updated
 
     async def user_signup(
         self,
@@ -29,36 +34,39 @@ class Loops:
         if signup_intent != "creator":
             return
 
-        user_properties = self.get_user_base_properties(user)
-        properties = {
-            "userId": str(user.id),
-            "organizationInstalled": False,
-            "repositoryInstalled": False,
-            "issueBadged": False,
-            **properties,
-        }
-        user_properties.update(properties)
-        enqueue_job("loops.send_event", user.email, "User Signed Up", **user_properties)
+        properties = self.get_updated_user_properties(
+            user,
+            {
+                "organizationCreated": False,
+                "organizationCount": 0,
+                "organizationInstalled": False,
+                "repositoryInstalled": False,
+                "issueBadged": False,
+                **properties,
+            },
+        )
+        enqueue_job("loops.send_event", user.email, "User Signed Up", **properties)
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
-        user_properties = self.get_user_base_properties(user)
-        user_properties.update(properties)
-        enqueue_job("loops.update_contact", user.email, str(user.id), **user_properties)
+        properties = self.get_updated_user_properties(user, properties)
+        enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
 
-    async def organization_installed(
-        self, session: AsyncSession, *, user: User
+    async def add_user_organization(
+        self, session: AsyncSession, *, organization: Organization, user: User
     ) -> None:
-        organization_users = await user_organization_service.list_by_user_id(
+        user_organizations = await user_organization_service.list_by_user_id(
             session, user.id
         )
+        properties = self.get_updated_user_properties(
+            user,
+            {
+                "organizationCreated": True,
+                "organizationSlug": organization.slug,
+                "organizationCount": len(user_organizations),
+            },
+        )
         enqueue_job(
-            "loops.send_event",
-            user.email,
-            "Organization Installed",
-            userId=str(user.id),
-            isMaintainer=True,
-            organizationInstalled=True,
-            firstOrganizationName=organization_users[0].organization.slug,
+            "loops.send_event", user.email, "Organization Created", **properties
         )
 
     async def repository_installed_on_organization(

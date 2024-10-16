@@ -12,7 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
-import { captureEvent } from '@/utils/posthog'
+import { usePostHog } from '@/hooks/posthog'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
@@ -48,10 +48,11 @@ export default function Layout({ children }: PropsWithChildren) {
 }
 
 const LandingPageTopbar = () => {
+  const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
   const onLoginClick = () => {
-    captureEvent('user:login:click')
+    posthog.capture('global:user:login:click')
     showModal()
   }
 

@@ -8,8 +8,8 @@ import { Organization } from '@polar-sh/sdk'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { AuthModal } from './AuthModal'
-import { captureEvent } from '@/utils/posthog'
 import { useCallback } from 'react'
+import { usePostHog } from '@/hooks/posthog'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
@@ -25,6 +25,8 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   size = 'lg',
   ...props
 }) => {
+  const posthog = usePostHog()
+
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const text = _text || 'Get Started'
 
@@ -36,7 +38,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   }
 
   const onClick = useCallback(() => {
-    captureEvent('user:signup:click', signup)
+    posthog.capture('global:user:signup:click', signup)
     showModal()
   }, [signup])
 

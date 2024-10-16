@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import { UserSignupAttribution } from '@polar-sh/sdk'
-import { captureEvent, type EventName } from '@/utils/posthog'
+import { usePostHog, type EventName } from '@/hooks/posthog'
 
 const GithubLoginButton = (props: {
   className?: string
@@ -16,6 +16,8 @@ const GithubLoginButton = (props: {
   fullWidth?: boolean
   text: string
 }) => {
+  const posthog = usePostHog()
+
   const search = useSearchParams()
   const signup = props.signup
 
@@ -26,12 +28,12 @@ const GithubLoginButton = (props: {
   })
 
   const onClick = () => {
-    let eventName: EventName = 'user:login:submit'
+    let eventName: EventName = 'global:user:login:submit'
     if (signup) {
-      eventName = 'user:signup:submit'
+      eventName = 'global:user:signup:submit'
     }
 
-    captureEvent(eventName, {
+    posthog.capture(eventName, {
       method: 'github'
     })
   }

@@ -1,6 +1,6 @@
 // app/banner.js
 'use client'
-import { usePostHog } from 'posthog-js/react'
+import { usePostHog } from '@/hooks/posthog'
 import { useEffect, useState } from 'react'
 
 export function cookieConsentGiven() {
@@ -23,7 +23,7 @@ export function CookieConsent() {
 
   useEffect(() => {
     if (consentGiven !== '') {
-      posthog.set_config({
+      posthog.client.set_config({
         persistence: consentGiven === 'yes' ? 'localStorage+cookie' : 'memory',
       })
     }

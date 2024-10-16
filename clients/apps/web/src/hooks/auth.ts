@@ -3,7 +3,7 @@ import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
-import posthog from 'posthog-js'
+import { usePostHog } from '@/hooks/posthog'
 import { useCallback, useContext, useEffect } from 'react'
 
 export const useAuth = (): {
@@ -13,6 +13,7 @@ export const useAuth = (): {
   userOrganizations: Organization[]
   setUserOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>
 } => {
+  const posthog = usePostHog()
   const {
     user: currentUser,
     setUser: setCurrentUser,
@@ -35,16 +36,7 @@ export const useAuth = (): {
         username: currentUser.username,
       })
 
-      try {
-        const posthogId = `user:${currentUser.id}`
-        if (posthog.get_distinct_id() !== posthogId) {
-          posthog.identify(posthogId, {
-            username: currentUser.username,
-            email: currentUser.email,
-          })
-        }
-        // Handle case where PostHog is not initialized
-      } catch {}
+      posthog.identify(currentUser)
     } else {
       Sentry.setUser(null)
     }
@@ -60,10 +52,11 @@ export const useAuth = (): {
 }
 
 export const useLogout = () => {
+  const posthog = usePostHog()
+
   const func = useCallback(async () => {
     // polar.sh logout
-    posthog.capture('user:logout:done')
-    posthog.reset()
+    posthog.logout()
     window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
     return
   }, [])

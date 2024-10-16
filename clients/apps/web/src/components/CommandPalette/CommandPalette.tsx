@@ -20,6 +20,7 @@ import {
 } from './commands/useCommands'
 import { APIContainer } from './containers/APIContainer'
 import { GlobalContainer } from './containers/GlobalContainer'
+import { usePostHog } from '@/hooks/posthog'
 
 export interface CommandPaletteProps {
   organization?: Organization
@@ -27,15 +28,12 @@ export interface CommandPaletteProps {
 }
 
 export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
+  const posthog = usePostHog()
   useEffect(() => {
-    posthog.capture('Command Palette Invoked', {
-      'Page URL': window.location.href,
-    })
+    posthog.capture('global:user:cmdk:open')
 
     return () => {
-      posthog.capture('Command Palette Closed', {
-        'Page URL': window.location.href,
-      })
+      posthog.capture('global:user:cmdk:close')
     }
   }, [])
 

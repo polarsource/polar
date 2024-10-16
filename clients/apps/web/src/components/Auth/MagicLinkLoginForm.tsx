@@ -14,7 +14,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { captureEvent, type EventName } from '@/utils/posthog'
+import { usePostHog, type EventName } from '@/hooks/posthog'
 
 interface MagicLinkLoginFormProps {
   returnTo?: string
@@ -29,15 +29,16 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
   const sendMagicLink = useSendMagicLink()
+  const posthog = usePostHog()
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setLoading(true)
-    let eventName: EventName = 'user:login:submit'
+    let eventName: EventName = 'global:user:login:submit'
     if (signup) {
-      eventName = 'user:signup:submit'
+      eventName = 'global:user:signup:submit'
     }
 
-    captureEvent(eventName, {
+    posthog.capture(eventName, {
       method: 'ml'
     })
 

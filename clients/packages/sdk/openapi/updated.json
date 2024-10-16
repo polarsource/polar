@@ -8412,10 +8412,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
-                                "order",
                                 "paid_subscription",
-                                "free_subscription"
+                                "order",
+                                "free_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -12566,12 +12566,8 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Benefit"
-                                        }
-                                    ],
-                                    "title": "Response Benefits:Create"
+                                    "$ref": "#/components/schemas/Benefit",
+                                    "title": "Benefit"
                                 }
                             }
                         }
@@ -12638,12 +12634,8 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Benefit"
-                                        }
-                                    ],
-                                    "title": "Response Benefits:Get"
+                                    "$ref": "#/components/schemas/Benefit",
+                                    "title": "Benefit"
                                 }
                             }
                         }
@@ -12750,12 +12742,8 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Benefit"
-                                        }
-                                    ],
-                                    "title": "Response Benefits:Update"
+                                    "$ref": "#/components/schemas/Benefit",
+                                    "title": "Benefit"
                                 }
                             }
                         }
@@ -15854,7 +15842,6 @@
                         "schema": {
                             "type": "string",
                             "format": "date",
-                            "minimum": "2023-01-01",
                             "description": "Start date.",
                             "title": "Start Date"
                         },
@@ -15877,13 +15864,8 @@
                         "in": "query",
                         "required": true,
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Interval"
-                                }
-                            ],
-                            "description": "Interval between two timestamps.",
-                            "title": "Interval"
+                            "$ref": "#/components/schemas/Interval",
+                            "description": "Interval between two timestamps."
                         },
                         "description": "Interval between two timestamps."
                     },
@@ -16656,6 +16638,474 @@
                 ],
                 "x-speakeasy-group": "license_keys",
                 "x-speakeasy-name-override": "get_activation"
+            }
+        },
+        "/v1/checkout-links/": {
+            "get": {
+                "tags": [
+                    "checkout-links"
+                ],
+                "summary": "List Checkout Links",
+                "description": "List checkout links.",
+                "operationId": "list",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkout_links:read",
+                            "checkout_links:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
+                        },
+                        "description": "Filter by product ID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CheckoutLinkSortProperty"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_CheckoutLink_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "checkout-links",
+                "x-speakeasy-name-override": "list"
+            },
+            "post": {
+                "tags": [
+                    "checkout-links"
+                ],
+                "summary": "Create Checkout Link",
+                "description": "Create a checkout link.",
+                "operationId": "create",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkout_links:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutLinkCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Checkout link created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutLink"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkout-links",
+                "x-speakeasy-name-override": "create"
+            }
+        },
+        "/v1/checkout-links/{id}": {
+            "get": {
+                "tags": [
+                    "checkout-links"
+                ],
+                "summary": "Get Checkout Link",
+                "description": "Get a checkout link by ID.",
+                "operationId": "get",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkout_links:read",
+                            "checkout_links:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The checkout link ID.",
+                            "title": "Id"
+                        },
+                        "description": "The checkout link ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutLink"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Checkout link not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkout-links",
+                "x-speakeasy-name-override": "get"
+            },
+            "patch": {
+                "tags": [
+                    "checkout-links"
+                ],
+                "summary": "Update Checkout Link",
+                "description": "Update a checkout link.",
+                "operationId": "update",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkout_links:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The checkout link ID.",
+                            "title": "Id"
+                        },
+                        "description": "The checkout link ID."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutLinkUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout link updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutLink"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Checkout link not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkout-links",
+                "x-speakeasy-name-override": "update"
+            },
+            "delete": {
+                "tags": [
+                    "checkout-links"
+                ],
+                "summary": "Delete Checkout Link",
+                "description": "Delete a checkout link.",
+                "operationId": "delete",
+                "security": [
+                    {
+                        "oidc": [
+                            "checkout_links:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The checkout link ID.",
+                            "title": "Id"
+                        },
+                        "description": "The checkout link ID."
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Checkout link deleted."
+                    },
+                    "404": {
+                        "description": "Checkout link not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "checkout-links",
+                "x-speakeasy-name-override": "delete"
             }
         }
     },
@@ -17648,20 +18098,12 @@
                         "description": "The ID of the organization owning the article. **Required unless you use an organization token.**"
                     },
                     "byline": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ArticleByline"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/ArticleByline",
                         "description": "If the user or organization should be credited in the byline.",
                         "default": "organization"
                     },
                     "visibility": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ArticleVisibility"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/ArticleVisibility",
                         "default": "private"
                     },
                     "paid_subscribers_only": {
@@ -18196,6 +18638,8 @@
                     "user:read",
                     "organizations:read",
                     "organizations:write",
+                    "checkout_links:read",
+                    "checkout_links:write",
                     "checkouts:read",
                     "checkouts:write",
                     "products:read",
@@ -18336,19 +18780,11 @@
                         "title": "Currency"
                     },
                     "state": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeState"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeState",
                         "description": "Current state of the pledge"
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeType",
                         "description": "Type of pledge"
                     },
                     "refunded_at": {
@@ -18378,11 +18814,7 @@
                         "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
                     },
                     "issue": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Issue",
                         "description": "The issue that the pledge was made towards"
                     },
                     "pledger": {
@@ -18510,11 +18942,7 @@
             "BackofficeReward": {
                 "properties": {
                     "pledge": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Pledge"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Pledge",
                         "description": "The pledge that the reward was split from"
                     },
                     "user": {
@@ -19137,11 +19565,7 @@
                         "description": "The ID of the benefit."
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/BenefitType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/BenefitType",
                         "description": "The type of the benefit."
                     },
                     "description": {
@@ -21258,11 +21682,7 @@
                         "title": "Properties"
                     },
                     "benefit": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Benefit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Benefit",
                         "title": "Benefit"
                     },
                     "previous_properties": {
@@ -21943,11 +22363,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -22012,6 +22428,190 @@
                 "title": "CheckoutCreatePublic",
                 "description": "Create a new checkout session from a client."
             },
+            "CheckoutLink": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Metadata"
+                    },
+                    "payment_processor": {
+                        "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
+                        "description": "Payment processor used."
+                    },
+                    "client_secret": {
+                        "type": "string",
+                        "title": "Client Secret",
+                        "description": "Client secret used to access the checkout link."
+                    },
+                    "success_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment."
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout."
+                    },
+                    "product_price": {
+                        "$ref": "#/components/schemas/ProductPrice"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "readOnly": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "metadata",
+                    "payment_processor",
+                    "client_secret",
+                    "success_url",
+                    "product_price_id",
+                    "product_price",
+                    "url"
+                ],
+                "title": "CheckoutLink",
+                "description": "Checkout link data."
+            },
+            "CheckoutLinkCreate": {
+                "properties": {
+                    "metadata": {
+                        "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 500
+                        },
+                        "type": "object",
+                        "maxProperties": 50,
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                    },
+                    "payment_processor": {
+                        "type": "string",
+                        "enum": [
+                            "stripe"
+                        ],
+                        "const": "stripe",
+                        "title": "Payment Processor",
+                        "description": "Payment processor to use. Currently only Stripe is supported."
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to checkout."
+                    },
+                    "success_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "payment_processor",
+                    "product_price_id"
+                ],
+                "title": "CheckoutLinkCreate",
+                "description": "Schema to create a new checkout link."
+            },
+            "CheckoutLinkSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at"
+                ],
+                "title": "CheckoutLinkSortProperty"
+            },
+            "CheckoutLinkUpdate": {
+                "properties": {
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "string",
+                                    "maxLength": 500
+                                },
+                                "type": "object",
+                                "maxProperties": 50
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                    },
+                    "success_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+                    }
+                },
+                "type": "object",
+                "title": "CheckoutLinkUpdate",
+                "description": "Schema to update an existing checkout link."
+            },
             "CheckoutPublic": {
                 "properties": {
                     "created_at": {
@@ -22040,25 +22640,22 @@
                         "description": "The ID of the object."
                     },
                     "payment_processor": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
                         "description": "Payment processor used."
                     },
                     "status": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CheckoutStatus"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/CheckoutStatus",
                         "description": "Status of the checkout session."
                     },
                     "client_secret": {
                         "type": "string",
                         "title": "Client Secret",
                         "description": "Client secret used to update and complete the checkout session from the client."
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "description": "URL where the customer can access the checkout session."
                     },
                     "expires_at": {
                         "type": "string",
@@ -22189,11 +22786,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -22221,11 +22814,6 @@
                     },
                     "product_price": {
                         "$ref": "#/components/schemas/ProductPrice"
-                    },
-                    "url": {
-                        "type": "string",
-                        "title": "Url",
-                        "readOnly": true
                     }
                 },
                 "type": "object",
@@ -22236,6 +22824,7 @@
                     "payment_processor",
                     "status",
                     "client_secret",
+                    "url",
                     "expires_at",
                     "success_url",
                     "amount",
@@ -22253,8 +22842,7 @@
                     "customer_tax_id",
                     "payment_processor_metadata",
                     "product",
-                    "product_price",
-                    "url"
+                    "product_price"
                 ],
                 "title": "CheckoutPublic",
                 "description": "Checkout session data retrieved using the client secret."
@@ -22335,11 +22923,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -22463,11 +23047,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -24153,11 +24733,7 @@
                         "title": "Id"
                     },
                     "platform": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Platforms"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Platforms",
                         "description": "Issue platform (currently always GitHub)"
                     },
                     "number": {
@@ -24293,11 +24869,7 @@
                         "$ref": "#/components/schemas/Funding"
                     },
                     "repository": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Repository"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Repository",
                         "description": "The repository that the issue is in"
                     },
                     "upfront_split_to_contributors": {
@@ -25136,11 +25708,7 @@
                 "properties": {
                     "items": {
                         "items": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Benefit"
-                                }
-                            ],
+                            "$ref": "#/components/schemas/Benefit",
                             "title": "Benefit"
                         },
                         "type": "array",
@@ -25156,6 +25724,26 @@
                     "pagination"
                 ],
                 "title": "ListResource[Benefit]"
+            },
+            "ListResource_CheckoutLink_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/CheckoutLink"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "ListResource[CheckoutLink]"
             },
             "ListResource_Checkout_": {
                 "properties": {
@@ -26734,11 +27322,7 @@
                         "description": "Human-readable name for the metric."
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricType",
                         "description": "Type of the metric, useful to know the unit or format of the value."
                     }
                 },
@@ -26899,43 +27483,23 @@
             "MetricsIntervalsLimits": {
                 "properties": {
                     "hour": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the hour interval."
                     },
                     "day": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the day interval."
                     },
                     "week": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the week interval."
                     },
                     "month": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the month interval."
                     },
                     "year": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the year interval."
                     }
                 },
@@ -26959,11 +27523,7 @@
                         "description": "Minimum date to get metrics."
                     },
                     "intervals": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalsLimits"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalsLimits",
                         "description": "Limits for each interval."
                     }
                 },
@@ -26986,11 +27546,7 @@
                         "description": "List of data for each timestamp."
                     },
                     "metrics": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Metrics"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Metrics",
                         "description": "Information about the returned metrics."
                     }
                 },
@@ -27191,7 +27747,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -27353,7 +27909,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -27474,7 +28030,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -29430,19 +29986,11 @@
                         "title": "Currency"
                     },
                     "state": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeState"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeState",
                         "description": "Current state of the pledge"
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeType",
                         "description": "Type of pledge"
                     },
                     "refunded_at": {
@@ -29472,11 +30020,7 @@
                         "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
                     },
                     "issue": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Issue",
                         "description": "The issue that the pledge was made towards"
                     },
                     "pledger": {
@@ -30501,6 +31045,12 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product owning the price."
+                    },
                     "price_currency": {
                         "type": "string",
                         "title": "Price Currency",
@@ -30559,6 +31109,7 @@
                     "id",
                     "amount_type",
                     "is_archived",
+                    "product_id",
                     "price_currency",
                     "minimum_amount",
                     "maximum_amount",
@@ -30687,6 +31238,12 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product owning the price."
+                    },
                     "price_currency": {
                         "type": "string",
                         "title": "Price Currency",
@@ -30714,6 +31271,7 @@
                     "id",
                     "amount_type",
                     "is_archived",
+                    "product_id",
                     "price_currency",
                     "price_amount",
                     "type"
@@ -30803,6 +31361,12 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product owning the price."
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -30820,6 +31384,7 @@
                     "id",
                     "amount_type",
                     "is_archived",
+                    "product_id",
                     "type"
                 ],
                 "title": "ProductPriceOneTimeFree",
@@ -30913,6 +31478,12 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product owning the price."
+                    },
                     "price_currency": {
                         "type": "string",
                         "title": "Price Currency",
@@ -30964,11 +31535,7 @@
                         "description": "The type of the price."
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -30979,6 +31546,7 @@
                     "id",
                     "amount_type",
                     "is_archived",
+                    "product_id",
                     "price_currency",
                     "minimum_amount",
                     "maximum_amount",
@@ -31029,6 +31597,12 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product owning the price."
+                    },
                     "price_currency": {
                         "type": "string",
                         "title": "Price Currency",
@@ -31049,11 +31623,7 @@
                         "description": "The type of the price."
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31064,6 +31634,7 @@
                     "id",
                     "amount_type",
                     "is_archived",
+                    "product_id",
                     "price_currency",
                     "price_amount",
                     "type",
@@ -31105,11 +31676,7 @@
                         "default": "usd"
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31163,6 +31730,12 @@
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
                     },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product owning the price."
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -31173,11 +31746,7 @@
                         "description": "The type of the price."
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31188,6 +31757,7 @@
                     "id",
                     "amount_type",
                     "is_archived",
+                    "product_id",
                     "type",
                     "recurring_interval"
                 ],
@@ -31213,11 +31783,7 @@
                         "title": "Amount Type"
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31859,11 +32425,7 @@
             "Reward": {
                 "properties": {
                     "pledge": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Pledge"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Pledge",
                         "description": "The pledge that the reward was split from"
                     },
                     "user": {
@@ -32245,6 +32807,8 @@
                     "web_default",
                     "organizations:read",
                     "organizations:write",
+                    "checkout_links:read",
+                    "checkout_links:write",
                     "checkouts:read",
                     "checkouts:write",
                     "products:read",
@@ -32591,11 +33155,7 @@
             "SummaryPledge": {
                 "properties": {
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeType",
                         "description": "Type of pledge"
                     },
                     "pledger": {
@@ -35606,11 +36166,7 @@
                         "title": "Type"
                     },
                     "data": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Benefit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Benefit",
                         "title": "Benefit"
                     }
                 },
@@ -35699,11 +36255,7 @@
                         "title": "Type"
                     },
                     "data": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Benefit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Benefit",
                         "title": "Benefit"
                     }
                 },
@@ -35804,11 +36356,7 @@
                         "description": "Whether the delivery was successful."
                     },
                     "webhook_event": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/WebhookEvent"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/WebhookEvent",
                         "description": "The webhook event sent by this delivery."
                     }
                 },
@@ -35881,11 +36429,7 @@
                         ]
                     },
                     "format": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/WebhookFormat"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/WebhookFormat",
                         "description": "The format of the webhook payload."
                     },
                     "user_id": {
@@ -35949,11 +36493,7 @@
                         ]
                     },
                     "format": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/WebhookFormat"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/WebhookFormat",
                         "description": "The format of the webhook payload."
                     },
                     "secret": {
@@ -36025,11 +36565,7 @@
                     "format": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/WebhookFormat"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/WebhookFormat",
                                 "description": "The format of the webhook payload."
                             },
                             {
@@ -36599,25 +37135,22 @@
                         "description": "The ID of the object."
                     },
                     "payment_processor": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
                         "description": "Payment processor used."
                     },
                     "status": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CheckoutStatus"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/CheckoutStatus",
                         "description": "Status of the checkout session."
                     },
                     "client_secret": {
                         "type": "string",
                         "title": "Client Secret",
                         "description": "Client secret used to update and complete the checkout session from the client."
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "description": "URL where the customer can access the checkout session."
                     },
                     "expires_at": {
                         "type": "string",
@@ -36748,11 +37281,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -36781,11 +37310,6 @@
                         },
                         "type": "object",
                         "title": "Metadata"
-                    },
-                    "url": {
-                        "type": "string",
-                        "title": "Url",
-                        "readOnly": true
                     }
                 },
                 "type": "object",
@@ -36796,6 +37320,7 @@
                     "payment_processor",
                     "status",
                     "client_secret",
+                    "url",
                     "expires_at",
                     "success_url",
                     "amount",
@@ -36812,8 +37337,7 @@
                     "customer_billing_address",
                     "customer_tax_id",
                     "payment_processor_metadata",
-                    "metadata",
-                    "url"
+                    "metadata"
                 ],
                 "title": "Checkout",
                 "description": "Checkout session data retrieved using an access token."
@@ -36898,11 +37422,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {

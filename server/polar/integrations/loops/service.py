@@ -39,9 +39,6 @@ class Loops:
             {
                 "organizationCreated": False,
                 "organizationCount": 0,
-                "organizationInstalled": False,
-                "repositoryInstalled": False,
-                "issueBadged": False,
                 **properties,
             },
         )

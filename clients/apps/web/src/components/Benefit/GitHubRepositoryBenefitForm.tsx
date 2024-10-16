@@ -3,7 +3,7 @@ import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/ho
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
-import { isFeatureEnabled } from '@/utils/feature-flags'
+import { usePostHog } from '@/hooks/posthog'
 import { RefreshOutlined } from '@mui/icons-material'
 import {
   BenefitGitHubRepositoryCreate,
@@ -135,6 +135,7 @@ const GitHubRepositoryBenefitFormForDeprecatedPolarApp = () => {
 export const GitHubRepositoryBenefitForm = ({
   update = false,
 }: GitHubRepositoryBenefitFormProps) => {
+  const posthog = usePostHog()
   const {
     control,
     watch,
@@ -144,7 +145,7 @@ export const GitHubRepositoryBenefitForm = ({
     clearErrors,
   } = useFormContext<BenefitGitHubRepositoryCreate>()
 
-  const canConfigurePersonalOrg = isFeatureEnabled(
+  const canConfigurePersonalOrg = posthog.isFeatureEnabled(
     'github-benefit-personal-org',
   )
 

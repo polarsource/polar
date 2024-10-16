@@ -1,5 +1,6 @@
 'use client'
 
+import { CONFIG } from '@/utils/config'
 import { Properties, PostHog } from 'posthog-js'
 import { usePostHog as useOfficialPostHog} from 'posthog-js/react'
 import { UserRead } from '@polar-sh/sdk'
@@ -58,6 +59,7 @@ export interface PolarHog {
   client: PostHog
   capture: (event: EventName, properties?: Properties) => void
   identify: (user: UserRead) => void
+  isFeatureEnabled: (key: string) => boolean
   logout: () => void
 }
 
@@ -80,6 +82,14 @@ export const usePostHog = (): PolarHog => {
     }
   }
 
+  const isFeatureEnabled = (key: string): boolean => {
+    if (CONFIG.ENVIRONMENT == 'development') {
+      return true
+    }
+
+    return posthog?.isFeatureEnabled(key) || false
+  }
+
   const logout = () => {
     posthog?.capture('user:logout:done')
     posthog?.reset()
@@ -89,6 +99,7 @@ export const usePostHog = (): PolarHog => {
     client: posthog,
     capture,
     identify,
+    isFeatureEnabled,
     logout
   }
 }

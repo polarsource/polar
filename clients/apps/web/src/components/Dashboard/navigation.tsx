@@ -1,6 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { isFeatureEnabled } from '@/utils/feature-flags'
+import { usePostHog, PolarHog } from '@/hooks/posthog'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
@@ -80,14 +80,15 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
 }
 
 const useResolveRoutes = (
-  routesResolver: (org: Organization) => Route[],
+  routesResolver: (posthog: PolarHog, org: Organization) => Route[],
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
+  const posthog = usePostHog()
 
   return useMemo(() => {
-    return routesResolver(org)
+    return routesResolver(posthog, org)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
   }, [org, path, allowAll, routesResolver])
@@ -142,7 +143,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (org: Organization): Route[] => [
+const generalRoutesList = (posthog: PolarHog, org: Organization): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -152,7 +153,7 @@ const generalRoutesList = (org: Organization): Route[] => [
       currentRoute === `/dashboard/${org.slug}`,
     if: true,
   },
-  ...(isFeatureEnabled('customer_management')
+  ...(posthog.isFeatureEnabled('customer_management')
     ? [
         {
           id: 'new-products',
@@ -301,8 +302,8 @@ const communityRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (org: Organization): Route[] => [
-  ...generalRoutesList(org),
+const dashboardRoutesList = (posthog: PolarHog, org: Organization): Route[] => [
+  ...generalRoutesList(posthog, org),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...organizationRoutesList(org),

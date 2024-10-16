@@ -42,6 +42,7 @@ import {
   UsersOrdersApi,
   UsersSubscriptionsApi,
   LicenseKeysApi,
+  CheckoutLinksApi,
 } from '.'
 
 export class PolarAPI {
@@ -52,6 +53,7 @@ export class PolarAPI {
   public readonly backoffice: BackofficeApi
   public readonly legacyCheckouts: CheckoutsApi
   public readonly checkouts: CheckoutsCustomApi
+  public readonly checkoutLinks: CheckoutLinksApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly donations: DonationsApi
@@ -96,6 +98,7 @@ export class PolarAPI {
     this.backoffice = new BackofficeApi(config)
     this.legacyCheckouts = new CheckoutsApi(config)
     this.checkouts = new CheckoutsCustomApi(config)
+    this.checkoutLinks = new CheckoutLinksApi(config)
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
     this.donations = new DonationsApi(config)

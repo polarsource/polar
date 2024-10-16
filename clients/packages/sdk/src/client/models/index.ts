@@ -1193,7 +1193,7 @@ export interface ArticleCreate {
      */
     organization_id?: string | null;
     /**
-     * If the user or organization should be credited in the byline.
+     * 
      * @type {ArticleByline}
      * @memberof ArticleCreate
      */
@@ -1611,6 +1611,8 @@ export const AvailableScope = {
     USERREAD: 'user:read',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
+    CHECKOUT_LINKSREAD: 'checkout_links:read',
+    CHECKOUT_LINKSWRITE: 'checkout_links:write',
     CHECKOUTSREAD: 'checkouts:read',
     CHECKOUTSWRITE: 'checkouts:write',
     PRODUCTSREAD: 'products:read',
@@ -1772,13 +1774,13 @@ export interface BackofficePledge {
      */
     currency: string;
     /**
-     * Current state of the pledge
+     * 
      * @type {PledgeState}
      * @memberof BackofficePledge
      */
     state: PledgeState;
     /**
-     * Type of pledge
+     * 
      * @type {PledgeType}
      * @memberof BackofficePledge
      */
@@ -1796,7 +1798,7 @@ export interface BackofficePledge {
      */
     scheduled_payout_at?: string | null;
     /**
-     * The issue that the pledge was made towards
+     * 
      * @type {Issue}
      * @memberof BackofficePledge
      */
@@ -1871,7 +1873,7 @@ export interface BackofficePledge {
  */
 export interface BackofficeReward {
     /**
-     * The pledge that the reward was split from
+     * 
      * @type {Pledge}
      * @memberof BackofficeReward
      */
@@ -2408,7 +2410,7 @@ export interface BenefitBase {
      */
     id: string;
     /**
-     * The type of the benefit.
+     * 
      * @type {BenefitType}
      * @memberof BenefitBase
      */
@@ -4690,7 +4692,7 @@ export interface CheckoutConfirmStripe {
      */
     customer_email?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutConfirmStripe
      */
@@ -4728,6 +4730,150 @@ export interface CheckoutCreatePublic {
     customer_email?: string | null;
 }
 /**
+ * Checkout link data.
+ * @export
+ * @interface CheckoutLink
+ */
+export interface CheckoutLink {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CheckoutLink
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {PolarEnumsPaymentProcessor}
+     * @memberof CheckoutLink
+     */
+    payment_processor: PolarEnumsPaymentProcessor;
+    /**
+     * Client secret used to access the checkout link.
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    client_secret: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    success_url: string | null;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    product_price_id: string;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof CheckoutLink
+     */
+    product_price: ProductPrice;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    readonly url: string;
+}
+
+
+/**
+ * Schema to create a new checkout link.
+ * @export
+ * @interface CheckoutLinkCreate
+ */
+export interface CheckoutLinkCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof CheckoutLinkCreate
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * Payment processor to use. Currently only Stripe is supported.
+     * @type {string}
+     * @memberof CheckoutLinkCreate
+     */
+    payment_processor: CheckoutLinkCreatePaymentProcessorEnum;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutLinkCreate
+     */
+    product_price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkCreate
+     */
+    success_url?: string | null;
+}
+
+
+/**
+ * @export
+ */
+export const CheckoutLinkCreatePaymentProcessorEnum = {
+    STRIPE: 'stripe'
+} as const;
+export type CheckoutLinkCreatePaymentProcessorEnum = typeof CheckoutLinkCreatePaymentProcessorEnum[keyof typeof CheckoutLinkCreatePaymentProcessorEnum];
+
+
+/**
+ * 
+ * @export
+ */
+export const CheckoutLinkSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at'
+} as const;
+export type CheckoutLinkSortProperty = typeof CheckoutLinkSortProperty[keyof typeof CheckoutLinkSortProperty];
+
+/**
+ * Schema to update an existing checkout link.
+ * @export
+ * @interface CheckoutLinkUpdate
+ */
+export interface CheckoutLinkUpdate {
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CheckoutLinkUpdate
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkUpdate
+     */
+    success_url?: string | null;
+}
+/**
  * Checkout session data retrieved using the client secret.
  * @export
  * @interface CheckoutPublic
@@ -4752,13 +4898,13 @@ export interface CheckoutPublic {
      */
     id: string;
     /**
-     * Payment processor used.
+     * 
      * @type {PolarEnumsPaymentProcessor}
      * @memberof CheckoutPublic
      */
     payment_processor: PolarEnumsPaymentProcessor;
     /**
-     * Status of the checkout session.
+     * 
      * @type {CheckoutStatus}
      * @memberof CheckoutPublic
      */
@@ -4769,6 +4915,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     client_secret: string;
+    /**
+     * URL where the customer can access the checkout session.
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    url: string;
     /**
      * Expiration date and time of the checkout session.
      * @type {string}
@@ -4848,7 +5000,7 @@ export interface CheckoutPublic {
      */
     customer_ip_address: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutPublic
      */
@@ -4877,12 +5029,6 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     product_price: ProductPrice;
-    /**
-     * 
-     * @type {string}
-     * @memberof CheckoutPublic
-     */
-    readonly url: string;
 }
 
 
@@ -4944,7 +5090,7 @@ export interface CheckoutUpdate {
      */
     customer_email?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutUpdate
      */
@@ -5005,7 +5151,7 @@ export interface CheckoutUpdatePublic {
      */
     customer_email?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutUpdatePublic
      */
@@ -6442,7 +6588,7 @@ export interface Issue {
      */
     id: string;
     /**
-     * Issue platform (currently always GitHub)
+     * 
      * @type {Platforms}
      * @memberof Issue
      */
@@ -6538,7 +6684,7 @@ export interface Issue {
      */
     funding: Funding;
     /**
-     * The repository that the issue is in
+     * 
      * @type {Repository}
      * @memberof Issue
      */
@@ -7294,6 +7440,25 @@ export interface ListResourceCheckout {
      * 
      * @type {Pagination}
      * @memberof ListResourceCheckout
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceCheckoutLink
+ */
+export interface ListResourceCheckoutLink {
+    /**
+     * 
+     * @type {Array<CheckoutLink>}
+     * @memberof ListResourceCheckoutLink
+     */
+    items: Array<CheckoutLink>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCheckoutLink
      */
     pagination: Pagination;
 }
@@ -8872,7 +9037,7 @@ export interface Metric {
      */
     display_name: string;
     /**
-     * Type of the metric, useful to know the unit or format of the value.
+     * 
      * @type {MetricType}
      * @memberof Metric
      */
@@ -9063,31 +9228,31 @@ export interface MetricsIntervalLimit {
  */
 export interface MetricsIntervalsLimits {
     /**
-     * Limits for the hour interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     hour: MetricsIntervalLimit;
     /**
-     * Limits for the day interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     day: MetricsIntervalLimit;
     /**
-     * Limits for the week interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     week: MetricsIntervalLimit;
     /**
-     * Limits for the month interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     month: MetricsIntervalLimit;
     /**
-     * Limits for the year interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
@@ -9106,7 +9271,7 @@ export interface MetricsLimits {
      */
     min_date: string;
     /**
-     * Limits for each interval.
+     * 
      * @type {MetricsIntervalsLimits}
      * @memberof MetricsLimits
      */
@@ -9125,7 +9290,7 @@ export interface MetricsResponse {
      */
     periods: Array<MetricPeriod>;
     /**
-     * Information about the returned metrics.
+     * 
      * @type {Metrics}
      * @memberof MetricsResponse
      */
@@ -11050,13 +11215,13 @@ export interface Pledge {
      */
     currency: string;
     /**
-     * Current state of the pledge
+     * 
      * @type {PledgeState}
      * @memberof Pledge
      */
     state: PledgeState;
     /**
-     * Type of pledge
+     * 
      * @type {PledgeType}
      * @memberof Pledge
      */
@@ -11074,7 +11239,7 @@ export interface Pledge {
      */
     scheduled_payout_at?: string | null;
     /**
-     * The issue that the pledge was made towards
+     * 
      * @type {Issue}
      * @memberof Pledge
      */
@@ -11612,13 +11777,13 @@ export interface PolarCheckoutSchemasCheckout {
      */
     id: string;
     /**
-     * Payment processor used.
+     * 
      * @type {PolarEnumsPaymentProcessor}
      * @memberof PolarCheckoutSchemasCheckout
      */
     payment_processor: PolarEnumsPaymentProcessor;
     /**
-     * Status of the checkout session.
+     * 
      * @type {CheckoutStatus}
      * @memberof PolarCheckoutSchemasCheckout
      */
@@ -11629,6 +11794,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     client_secret: string;
+    /**
+     * URL where the customer can access the checkout session.
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    url: string;
     /**
      * Expiration date and time of the checkout session.
      * @type {string}
@@ -11708,7 +11879,7 @@ export interface PolarCheckoutSchemasCheckout {
      */
     customer_ip_address: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof PolarCheckoutSchemasCheckout
      */
@@ -11731,12 +11902,6 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     metadata: { [key: string]: string; };
-    /**
-     * 
-     * @type {string}
-     * @memberof PolarCheckoutSchemasCheckout
-     */
-    readonly url: string;
 }
 
 
@@ -11793,7 +11958,7 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      */
     customer_ip_address?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
@@ -12243,6 +12408,12 @@ export interface ProductPriceOneTimeCustom {
      */
     is_archived: boolean;
     /**
+     * The ID of the product owning the price.
+     * @type {string}
+     * @memberof ProductPriceOneTimeCustom
+     */
+    product_id: string;
+    /**
      * The currency.
      * @type {string}
      * @memberof ProductPriceOneTimeCustom
@@ -12389,6 +12560,12 @@ export interface ProductPriceOneTimeFixed {
      */
     is_archived: boolean;
     /**
+     * The ID of the product owning the price.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFixed
+     */
+    product_id: string;
+    /**
      * The currency.
      * @type {string}
      * @memberof ProductPriceOneTimeFixed
@@ -12511,6 +12688,12 @@ export interface ProductPriceOneTimeFree {
      */
     is_archived: boolean;
     /**
+     * The ID of the product owning the price.
+     * @type {string}
+     * @memberof ProductPriceOneTimeFree
+     */
+    product_id: string;
+    /**
      * The type of the price.
      * @type {string}
      * @memberof ProductPriceOneTimeFree
@@ -12615,6 +12798,12 @@ export interface ProductPriceRecurringCustom {
      */
     is_archived: boolean;
     /**
+     * The ID of the product owning the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringCustom
+     */
+    product_id: string;
+    /**
      * The currency.
      * @type {string}
      * @memberof ProductPriceRecurringCustom
@@ -12645,7 +12834,7 @@ export interface ProductPriceRecurringCustom {
      */
     type: ProductPriceRecurringCustomTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringCustom
      */
@@ -12706,6 +12895,12 @@ export interface ProductPriceRecurringFixed {
      */
     is_archived: boolean;
     /**
+     * The ID of the product owning the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringFixed
+     */
+    product_id: string;
+    /**
      * The currency.
      * @type {string}
      * @memberof ProductPriceRecurringFixed
@@ -12724,7 +12919,7 @@ export interface ProductPriceRecurringFixed {
      */
     type: ProductPriceRecurringFixedTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFixed
      */
@@ -12779,7 +12974,7 @@ export interface ProductPriceRecurringFixedCreate {
      */
     price_currency?: string;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFixedCreate
      */
@@ -12840,13 +13035,19 @@ export interface ProductPriceRecurringFree {
      */
     is_archived: boolean;
     /**
+     * The ID of the product owning the price.
+     * @type {string}
+     * @memberof ProductPriceRecurringFree
+     */
+    product_id: string;
+    /**
      * The type of the price.
      * @type {string}
      * @memberof ProductPriceRecurringFree
      */
     type: ProductPriceRecurringFreeTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFree
      */
@@ -12889,7 +13090,7 @@ export interface ProductPriceRecurringFreeCreate {
      */
     amount_type: ProductPriceRecurringFreeCreateAmountTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFreeCreate
      */
@@ -13483,7 +13684,7 @@ export type ResponseUsersBenefitsGet = { type: 'ads' } & BenefitAdsSubscriber | 
  */
 export interface Reward {
     /**
-     * The pledge that the reward was split from
+     * 
      * @type {Pledge}
      * @memberof Reward
      */
@@ -13842,6 +14043,8 @@ export const Scope = {
     WEB_DEFAULT: 'web_default',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
+    CHECKOUT_LINKSREAD: 'checkout_links:read',
+    CHECKOUT_LINKSWRITE: 'checkout_links:write',
     CHECKOUTSREAD: 'checkouts:read',
     CHECKOUTSWRITE: 'checkouts:write',
     PRODUCTSREAD: 'products:read',
@@ -14133,7 +14336,7 @@ export interface SubscriptionUser {
  */
 export interface SummaryPledge {
     /**
-     * Type of pledge
+     * 
      * @type {PledgeType}
      * @memberof SummaryPledge
      */
@@ -16728,7 +16931,7 @@ export interface WebhookDelivery {
      */
     succeeded: boolean;
     /**
-     * The webhook event sent by this delivery.
+     * 
      * @type {WebhookEvent}
      * @memberof WebhookDelivery
      */
@@ -16796,7 +16999,7 @@ export interface WebhookEndpoint {
      */
     url: string;
     /**
-     * The format of the webhook payload.
+     * 
      * @type {WebhookFormat}
      * @memberof WebhookEndpoint
      */
@@ -16835,7 +17038,7 @@ export interface WebhookEndpointCreate {
      */
     url: string;
     /**
-     * The format of the webhook payload.
+     * 
      * @type {WebhookFormat}
      * @memberof WebhookEndpointCreate
      */
@@ -16874,7 +17077,7 @@ export interface WebhookEndpointUpdate {
      */
     url?: string | null;
     /**
-     * The format of the webhook payload.
+     * 
      * @type {WebhookFormat}
      * @memberof WebhookEndpointUpdate
      */

@@ -1,7 +1,9 @@
 import argparse
 import multiprocessing
 import os
+import signal
 from logging import Logger
+from types import FrameType
 
 import structlog
 from arq import run_worker as arq_run_worker
@@ -63,13 +65,19 @@ def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> None:
         processes.append(github_worker_process)
     logger.debug(f"Triggered {github_worker_num} GitHub worker processes")
 
+    def handle_signal(signum: int, frame: FrameType | None) -> None:
+        logger.info(f"Received signal {signum}, shutting down worker processes")
+        for process in processes:
+            process.terminate()
+
+    signal.signal(signal.SIGTERM, handle_signal)
+    signal.signal(signal.SIGINT, handle_signal)
+
     try:
         for process in processes:
             process.join()
     except KeyboardInterrupt:
-        logger.info("Shutting down worker processes")
-        for process in processes:
-            process.terminate()
+        handle_signal(signal.SIGINT, None)
 
 
 if __name__ == "__main__":

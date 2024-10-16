@@ -114,7 +114,18 @@ const nextConfig = {
       ...(ENVIRONMENT === 'production'
         ? [
           {
-            source: '/:id*',
+            source: '/:client_secret(polar_cl_.*)',
+            destination: 'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
+            has: [
+              {
+                type: 'host',
+                value: 'buy.polar.sh',
+              },
+            ],
+            permanent: false,
+          },
+          {
+            source: '/:id',
             destination: 'https://polar.sh/api/checkout?price=:id*',
             has: [
               {

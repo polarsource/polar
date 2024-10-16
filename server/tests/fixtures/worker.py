@@ -24,6 +24,7 @@ async def job_context(session: AsyncSession, redis: Redis) -> AsyncIterator[JobC
 
     yield {
         "redis": ArqRedis(redis.connection_pool),
+        "raw_redis": redis,
         "async_engine": engine,
         "async_sessionmaker": cast(AsyncSessionMaker, sessionmaker),
         "job_id": "fake_job_id",

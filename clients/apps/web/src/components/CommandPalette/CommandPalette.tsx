@@ -8,7 +8,6 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
-import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo } from 'react'
 import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { CommandItem } from './CommandItem'

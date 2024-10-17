@@ -16,22 +16,32 @@ If the storefront is enabled on your organization, your customers can directly g
 ![Checkout from storefront](./storefront.light.png)
 ![Checkout from storefront](./storefront.dark.png)
 
-## From a URL
+## From a Link
 
-From `Products` in your dashboard, click on the ellipsis `…` button in front of your product and click on `Copy Checkout URL`.
+From `Products` in your dashboard, click on the ellipsis `…` button in front of your product and click on `Generate Checkout Link`.
 
-You'll get an URL you can share with your customers so they can directly buy your product.
+![Generate a Checkout Link](./checkout_link.light.png)
+![Generate a Checkout Link](./checkout_link.dark.png)
 
-![Get a Checkout URL](./checkout_url.light.png)
-![Get a Checkout URL](./checkout_url.dark.png)
+A modal will appear where you'll be able to configure your link.
 
-<BrowserCallout type="NOTE">
-  For subscription products with both a monthly and yearly pricing, you'll have
-  the choice between two variants.
+For subscription products with both a monthly and yearly pricing, you'll have to select the price you want to display.
 
-The customer can always switch to the billing interval from the checkout page.
+Optionally, you can set a `Success URL`: after a successful checkout, your customer will be redirected to that URL. You can add the query parameter `checkout_id={CHECKOUT_ID}` to retrieve the Checkout ID from that URL.
 
+Optionally, you can also add `Metadata`: this is a key-value object allowing you to store additional information which may be useful for you when handling the order. This metadata will be copied to the generated Checkout object and, if the checkout succeeds, to the resulting Order and/or Subscription.
+
+Click on `Generate link` to generate your link. It'll be automatically copied to your clipboard.
+
+![Generate a Checkout Link modal](./checkout_link_modal.light.png)
+![Generate a Checkout Link modal](./checkout_link_modal.dark.png)
+
+<BrowserCallout type="TIP">
+  Previously generated links will be displayed in this modal as well. Click on
+  it to edit the success URL or metadata.
 </BrowserCallout>
+
+Now, all you need is to share this link with your customers, for example on your website or social media.
 
 ## From the API
 
@@ -50,25 +60,25 @@ The API will return you an object containing all the information about the sessi
 Here is an example of an Express application using our [JavaScript SDK](/docs/api/sdk#quickstart):
 
 ```ts
-import { Polar } from "@polar-sh/sdk";
-import express, { Request, Response } from 'express';
+import { Polar } from '@polar-sh/sdk'
+import express, { Request, Response } from 'express'
 
-const app = express();
-const port = 3000;
+const app = express()
+const port = 3000
 const polar = new Polar({
-    accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
-});
+  accessToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
+})
 
 app.get('/checkout', async (req: Request, res: Response) => {
-    const checkout = await polar.checkouts.custom.create({
-        productPriceId: "00000000-0000-0000-0000-000000000000",
-    });
-    res.redirect(checkout.url);
-});
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+  })
+  res.redirect(checkout.url)
+})
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-});
+  console.log(`Server is running on http://localhost:${port}`)
+})
 ```
 
 ### Optional: set a success URL
@@ -77,32 +87,34 @@ By default, the customer will be redirected to a Polar success page. You can cus
 
 ```ts
 app.get('/checkout', async (req: Request, res: Response) => {
-    const checkout = await polar.checkouts.custom.create({
-        productPriceId: "00000000-0000-0000-0000-000000000000",
-        successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`
-    });
-    res.redirect(checkout.url);
-});
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+    successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
+  })
+  res.redirect(checkout.url)
+})
 
 app.get('/success', async (req: Request, res: Response) => {
-    const checkoutId = req.query.checkout_id;
-    if (!checkoutId) {
-        return res.status(400).send('Missing checkout_id');
-    }
-    const checkout = await polar.checkouts.custom.get(checkoutId);
+  const checkoutId = req.query.checkout_id
+  if (!checkoutId) {
+    return res.status(400).send('Missing checkout_id')
+  }
+  const checkout = await polar.checkouts.custom.get(checkoutId)
 
-    if (checkout.status === 'succeeded') {
-        return res.send('<html><body><h1>Thank you!</h1></body></html>');
-    }
+  if (checkout.status === 'succeeded') {
+    return res.send('<html><body><h1>Thank you!</h1></body></html>')
+  }
 
-    if (checkout.status === 'confirmed') {
-        return res.send('<html><body><h1>Please wait while we process the payment...</h1></body></html>');
-    }
+  if (checkout.status === 'confirmed') {
+    return res.send(
+      '<html><body><h1>Please wait while we process the payment...</h1></body></html>',
+    )
+  }
 
-    if (checkout.status === 'failed') {
-        return res.send('<html><body><h1>An error occured!</h1></body></html>');
-    }
-});
+  if (checkout.status === 'failed') {
+    return res.send('<html><body><h1>An error occured!</h1></body></html>')
+  }
+})
 ```
 
 Notice how you can pass the `{CHECKOUT_ID}` token to your URL: Polar will automatically replace it with the actual Checkout session ID. This allows you to retrieve the Checkout object easily on the success page.
@@ -113,42 +125,45 @@ In your app, it's probable you already know the customer or are in a specific st
 
 ```ts
 app.get('/checkout', async (req: Request, res: Response) => {
-    const checkout = await polar.checkouts.custom.create({
-        productPriceId: "00000000-0000-0000-0000-000000000000",
-        successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
-        metadata: {
-            userId: 'MY_USER_ID',
-        }
-    });
-    res.redirect(checkout.url);
-});
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+    successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
+    metadata: {
+      userId: 'MY_USER_ID',
+    },
+  })
+  res.redirect(checkout.url)
+})
 
 app.get('/success', async (req: Request, res: Response) => {
-    const checkoutId = req.query.checkout_id;
-    if (!checkoutId) {
-        return res.status(400).send('Missing checkout_id');
-    }
-    const checkout = await polar.checkouts.custom.get(checkoutId);
-    const userId = checkout.metadata['userId'];
+  const checkoutId = req.query.checkout_id
+  if (!checkoutId) {
+    return res.status(400).send('Missing checkout_id')
+  }
+  const checkout = await polar.checkouts.custom.get(checkoutId)
+  const userId = checkout.metadata['userId']
 
-    if (checkout.status === 'succeeded') {
-        return res.send(`<html><body><h1>Thank you ${userId}!</h1></body></html>`);
-    }
+  if (checkout.status === 'succeeded') {
+    return res.send(`<html><body><h1>Thank you ${userId}!</h1></body></html>`)
+  }
 
-    if (checkout.status === 'confirmed') {
-        return res.send('<html><body><h1>Please wait while we process the payment...</h1></body></html>');
-    }
+  if (checkout.status === 'confirmed') {
+    return res.send(
+      '<html><body><h1>Please wait while we process the payment...</h1></body></html>',
+    )
+  }
 
-    if (checkout.status === 'failed') {
-        return res.send('<html><body><h1>An error occured!</h1></body></html>');
-    }
-});
+  if (checkout.status === 'failed') {
+    return res.send('<html><body><h1>An error occured!</h1></body></html>')
+  }
+})
 ```
 
 <BrowserCallout type="TIP">
   The metadata you set on Checkout are **automatically copied** to the Order and/or Subscription that are created from that session.
 
-  It means that if you listen to new orders and subscriptions from webhooks, you'll get that metadata directly. Besides, they also have a `checkout_id` reference to the origin Checkout, so you can retrieve it if needed.
+It means that if you listen to new orders and subscriptions from webhooks, you'll get that metadata directly. Besides, they also have a `checkout_id` reference to the origin Checkout, so you can retrieve it if needed.
+
 </BrowserCallout>
 
 ### Optional: prefill customer information
@@ -157,16 +172,16 @@ If you already know your customer, you can prefill some of the fields to speed-u
 
 ```ts
 app.get('/checkout', async (req: Request, res: Response) => {
-    const checkout = await polar.checkouts.custom.create({
-        productPriceId: "00000000-0000-0000-0000-000000000000",
-        successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
-        customerEmail: 'user@example.com',
-        customerName: 'John Doe',
-        customerIpAddress: req.ip,
-        metadata: {
-            userId: 'MY_USER_ID',
-        }
-    });
-    res.redirect(checkout.url);
-});
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+    successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
+    customerEmail: 'user@example.com',
+    customerName: 'John Doe',
+    customerIpAddress: req.ip,
+    metadata: {
+      userId: 'MY_USER_ID',
+    },
+  })
+  res.redirect(checkout.url)
+})
 ```

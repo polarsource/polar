@@ -1,6 +1,6 @@
 from typing import Unpack
 
-from polar.models import Organization, User
+from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -43,13 +43,7 @@ class Loops:
         properties = self.get_updated_user_properties(user, properties)
         enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
 
-    async def user_organization_added(
-        self,
-        session: AsyncSession,
-        *,
-        user: User,
-        organization: Organization,
-    ) -> None:
+    async def user_organization_added(self, session: AsyncSession, user: User) -> None:
         user_organizations = await user_organization_service.list_by_user_id(
             session, user.id
         )
@@ -58,15 +52,15 @@ class Loops:
             event="Organization Created",
             properties={
                 "organizationCreated": True,
-                "organizationSlug": organization.slug,
+                # Always use the first organization.
+                # Loops contacts are 1:1 with users vs. organizations so we can
+                # only keep reference to one (main) organization to link to etc.
+                "organizationSlug": user_organizations[0].organization.slug,
                 "organizationCount": len(user_organizations),
             },
         )
 
-    async def user_created_product(
-        self,
-        user: User,
-    ) -> None:
+    async def user_created_product(self, user: User) -> None:
         await self.enqueue_event(
             user,
             event="Product Created",
@@ -75,10 +69,7 @@ class Loops:
             },
         )
 
-    async def user_created_personal_access_token(
-        self,
-        user: User,
-    ) -> None:
+    async def user_created_personal_access_token(self, user: User) -> None:
         await self.enqueue_event(
             user,
             event="User PAT Created",
@@ -87,10 +78,7 @@ class Loops:
             },
         )
 
-    async def user_enabled_storefront(
-        self,
-        user: User,
-    ) -> None:
+    async def user_enabled_storefront(self, user: User) -> None:
         await self.enqueue_event(
             user,
             event="Storefront Enabled",

@@ -307,9 +307,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
             await session.execute(stmt)
             await session.flush()
         finally:
-            await loops_service.user_organization_added(
-                session, organization=organization, user=user
-            )
+            await loops_service.user_organization_added(session, user)
 
     async def set_account(
         self,

@@ -147,7 +147,7 @@ const BaseCheckoutForm = ({
   }, [watch, debouncedWatcher])
 
   return (
-    <div className="flex flex-col justify-between gap-y-24 md:w-1/2 md:p-20">
+    <div className="flex flex-col justify-between gap-y-24 md:p-20">
       <div className="flex flex-col gap-y-12">
         <h1 className="text-2xl">Checkout</h1>
         <Form {...form}>

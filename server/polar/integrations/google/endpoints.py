@@ -125,7 +125,7 @@ async def google_callback(
         await loops_service.user_signup(user, googleLogin=True)
     else:
         posthog.user_login(user, "google")
-        await loops_service.user_update(user, googleLogin=True)
+        await loops_service.user_update(session, user, googleLogin=True)
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

@@ -86,7 +86,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         await session.flush()
 
         user = auth_subject.subject
-        await loops_service.user_created_personal_access_token(user)
+        await loops_service.user_created_personal_access_token(session, user)
 
         return personal_access_token, token
 

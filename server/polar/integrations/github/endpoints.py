@@ -201,7 +201,7 @@ async def github_callback(
         await loops_service.user_signup(user, githubLogin=True)
     else:
         posthog.user_login(user, "github")
-        await loops_service.user_update(user, githubLogin=True)
+        await loops_service.user_update(session, user, githubLogin=True)
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

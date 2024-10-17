@@ -384,8 +384,9 @@ async def install(
     redis: Redis = Depends(get_redis),
 ) -> ExternalOrganization:
     with ExecutionContext(is_during_installation=True):
+        user = auth_subject.subject
         external_organization = await github_organization.install(
-            session, redis, locker, authz, auth_subject.subject, installation_create
+            session, redis, locker, authz, user, installation_create
         )
 
         posthog.auth_subject_event(
@@ -398,6 +399,7 @@ async def install(
                 "external_organization_id": external_organization.id,
             },
         )
+        await loops_service.user_installed_github_organization(user)
 
         return external_organization
 

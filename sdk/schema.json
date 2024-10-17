@@ -13207,6 +13207,539 @@
           }
         ]
       }
+    },
+    "/v1/checkout-links/": {
+      "get": {
+        "tags": [
+          "checkout-links",
+          "documented"
+        ],
+        "summary": "List Checkout Links",
+        "description": "List checkout links.",
+        "operationId": "checkout-links:list",
+        "security": [
+          {
+            "oidc": [
+              "checkout_links:read",
+              "checkout_links:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The product ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/products",
+                    "resourceName": "Product",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The product ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/products",
+                      "resourceName": "Product",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ProductID Filter",
+              "description": "Filter by product ID."
+            },
+            "description": "Filter by product ID."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CheckoutLinkSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "-created_at"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource_CheckoutLink_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-group": "checkout-links",
+        "x-speakeasy-name-override": "list",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "list",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "list",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.checkout_links.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.next()\n        if res is None:\n            break"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "checkout-links",
+          "documented"
+        ],
+        "summary": "Create Checkout Link",
+        "description": "Create a checkout link.",
+        "operationId": "checkout-links:create",
+        "security": [
+          {
+            "oidc": [
+              "checkout_links:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutLinkCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Checkout link created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutLink"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "checkout-links",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "create",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    productPriceId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "create",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.checkout_links.create(request={\n    \"payment_processor\": polar_sdk.CheckoutLinkCreatePaymentProcessor.STRIPE,\n    \"product_price_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+          }
+        ]
+      }
+    },
+    "/v1/checkout-links/{id}": {
+      "get": {
+        "tags": [
+          "checkout-links",
+          "documented"
+        ],
+        "summary": "Get Checkout Link",
+        "description": "Get a checkout link by ID.",
+        "operationId": "checkout-links:get",
+        "security": [
+          {
+            "oidc": [
+              "checkout_links:read",
+              "checkout_links:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The checkout link ID.",
+              "title": "Id"
+            },
+            "description": "The checkout link ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutLink"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout link not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "checkout-links",
+        "x-speakeasy-name-override": "get",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "get",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "get",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.checkout_links.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "checkout-links",
+          "documented"
+        ],
+        "summary": "Update Checkout Link",
+        "description": "Update a checkout link.",
+        "operationId": "checkout-links:update",
+        "security": [
+          {
+            "oidc": [
+              "checkout_links:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The checkout link ID.",
+              "title": "Id"
+            },
+            "description": "The checkout link ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutLinkUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout link updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutLink"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout link not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "checkout-links",
+        "x-speakeasy-name-override": "update",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "update",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.update({\n    id: \"<value>\",\n    checkoutLinkUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "update",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.checkout_links.update(id=\"<value>\", checkout_link_update={})\n\nif res is not None:\n    # handle response\n    pass"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "checkout-links",
+          "documented"
+        ],
+        "summary": "Delete Checkout Link",
+        "description": "Delete a checkout link.",
+        "operationId": "checkout-links:delete",
+        "security": [
+          {
+            "oidc": [
+              "checkout_links:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The checkout link ID.",
+              "title": "Id"
+            },
+            "description": "The checkout link ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Checkout link deleted."
+          },
+          "404": {
+            "description": "Checkout link not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "checkout-links",
+        "x-speakeasy-name-override": "delete",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "delete",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.checkoutLinks.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "delete",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.checkout_links.delete(id=\"<value>\")\n\n# Use the SDK ..."
+          }
+        ]
+      }
     }
   },
   "webhooks": {
@@ -18309,6 +18842,192 @@
         "title": "CheckoutConfirmStripe",
         "description": "Confirm a checkout session using a Stripe confirmation token."
       },
+      "CheckoutLink": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "payment_processor": {
+            "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
+            "description": "Payment processor used."
+          },
+          "client_secret": {
+            "type": "string",
+            "title": "Client Secret",
+            "description": "Client secret used to access the checkout link."
+          },
+          "success_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Url",
+            "description": "URL where the customer will be redirected after a successful payment."
+          },
+          "product_price_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout."
+          },
+          "product_price": {
+            "$ref": "#/components/schemas/ProductPrice"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "metadata",
+          "payment_processor",
+          "client_secret",
+          "success_url",
+          "product_price_id",
+          "product_price",
+          "url"
+        ],
+        "title": "CheckoutLink",
+        "description": "Checkout link data."
+      },
+      "CheckoutLinkCreate": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "payment_processor": {
+            "type": "string",
+            "enum": [
+              "stripe"
+            ],
+            "const": "stripe",
+            "title": "Payment Processor",
+            "description": "Payment processor to use. Currently only Stripe is supported."
+          },
+          "product_price_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout."
+          },
+          "success_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Url",
+            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+          }
+        },
+        "type": "object",
+        "required": [
+          "payment_processor",
+          "product_price_id"
+        ],
+        "title": "CheckoutLinkCreate",
+        "description": "Schema to create a new checkout link."
+      },
+      "CheckoutLinkSortProperty": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "-created_at"
+        ],
+        "title": "CheckoutLinkSortProperty"
+      },
+      "CheckoutLinkUpdate": {
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "type": "object",
+                "maxProperties": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "success_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Url",
+            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+          }
+        },
+        "type": "object",
+        "title": "CheckoutLinkUpdate",
+        "description": "Schema to update an existing checkout link."
+      },
       "CheckoutPublic": {
         "properties": {
           "created_at": {
@@ -18348,6 +19067,11 @@
             "type": "string",
             "title": "Client Secret",
             "description": "Client secret used to update and complete the checkout session from the client."
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "URL where the customer can access the checkout session."
           },
           "expires_at": {
             "type": "string",
@@ -18506,11 +19230,6 @@
           },
           "product_price": {
             "$ref": "#/components/schemas/ProductPrice"
-          },
-          "url": {
-            "type": "string",
-            "title": "Url",
-            "readOnly": true
           }
         },
         "type": "object",
@@ -18521,6 +19240,7 @@
           "payment_processor",
           "status",
           "client_secret",
+          "url",
           "expires_at",
           "success_url",
           "amount",
@@ -18538,8 +19258,7 @@
           "customer_tax_id",
           "payment_processor_metadata",
           "product",
-          "product_price",
-          "url"
+          "product_price"
         ],
         "title": "CheckoutPublic",
         "description": "Checkout session data retrieved using the client secret."
@@ -18644,7 +19363,8 @@
               {
                 "additionalProperties": {
                   "type": "string",
-                  "maxLength": 500
+                  "maxLength": 500,
+                  "minLength": 1
                 },
                 "type": "object",
                 "maxProperties": 50
@@ -21046,6 +21766,26 @@
         ],
         "title": "ListResource[Benefit]"
       },
+      "ListResource_CheckoutLink_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CheckoutLink"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[CheckoutLink]"
+      },
       "ListResource_Checkout_": {
         "properties": {
           "items": {
@@ -21905,7 +22645,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+            "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
           },
           "client_name": {
             "type": "string",
@@ -22067,7 +22807,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+            "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
           },
           "client_name": {
             "type": "string",
@@ -22188,7 +22928,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+            "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
           },
           "client_name": {
             "type": "string",
@@ -24432,6 +25172,12 @@
             "title": "Is Archived",
             "description": "Whether the price is archived and no longer available."
           },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
           "price_currency": {
             "type": "string",
             "title": "Price Currency",
@@ -24490,6 +25236,7 @@
           "id",
           "amount_type",
           "is_archived",
+          "product_id",
           "price_currency",
           "minimum_amount",
           "maximum_amount",
@@ -24618,6 +25365,12 @@
             "title": "Is Archived",
             "description": "Whether the price is archived and no longer available."
           },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
           "price_currency": {
             "type": "string",
             "title": "Price Currency",
@@ -24645,6 +25398,7 @@
           "id",
           "amount_type",
           "is_archived",
+          "product_id",
           "price_currency",
           "price_amount",
           "type"
@@ -24734,6 +25488,12 @@
             "title": "Is Archived",
             "description": "Whether the price is archived and no longer available."
           },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
           "type": {
             "type": "string",
             "enum": [
@@ -24751,6 +25511,7 @@
           "id",
           "amount_type",
           "is_archived",
+          "product_id",
           "type"
         ],
         "title": "ProductPriceOneTimeFree",
@@ -24844,6 +25605,12 @@
             "title": "Is Archived",
             "description": "Whether the price is archived and no longer available."
           },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
           "price_currency": {
             "type": "string",
             "title": "Price Currency",
@@ -24906,6 +25673,7 @@
           "id",
           "amount_type",
           "is_archived",
+          "product_id",
           "price_currency",
           "minimum_amount",
           "maximum_amount",
@@ -24956,6 +25724,12 @@
             "title": "Is Archived",
             "description": "Whether the price is archived and no longer available."
           },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
           "price_currency": {
             "type": "string",
             "title": "Price Currency",
@@ -24987,6 +25761,7 @@
           "id",
           "amount_type",
           "is_archived",
+          "product_id",
           "price_currency",
           "price_amount",
           "type",
@@ -25082,6 +25857,12 @@
             "title": "Is Archived",
             "description": "Whether the price is archived and no longer available."
           },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the product owning the price."
+          },
           "type": {
             "type": "string",
             "enum": [
@@ -25103,6 +25884,7 @@
           "id",
           "amount_type",
           "is_archived",
+          "product_id",
           "type",
           "recurring_interval"
         ],
@@ -26170,6 +26952,8 @@
           "web_default",
           "organizations:read",
           "organizations:write",
+          "checkout_links:read",
+          "checkout_links:write",
           "checkouts:read",
           "checkouts:write",
           "products:read",
@@ -29972,6 +30756,11 @@
             "title": "Client Secret",
             "description": "Client secret used to update and complete the checkout session from the client."
           },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "URL where the customer can access the checkout session."
+          },
           "expires_at": {
             "type": "string",
             "format": "date-time",
@@ -30130,11 +30919,6 @@
             },
             "type": "object",
             "title": "Metadata"
-          },
-          "url": {
-            "type": "string",
-            "title": "Url",
-            "readOnly": true
           }
         },
         "type": "object",
@@ -30145,6 +30929,7 @@
           "payment_processor",
           "status",
           "client_secret",
+          "url",
           "expires_at",
           "success_url",
           "amount",
@@ -30161,8 +30946,7 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
-          "metadata",
-          "url"
+          "metadata"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."
@@ -30172,7 +30956,8 @@
           "metadata": {
             "additionalProperties": {
               "type": "string",
-              "maxLength": 500
+              "maxLength": 500,
+              "minLength": 1
             },
             "type": "object",
             "maxProperties": 50,

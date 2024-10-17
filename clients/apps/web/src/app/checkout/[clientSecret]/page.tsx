@@ -1,4 +1,5 @@
 import { Checkout } from '@/components/Checkout/Checkout'
+import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getCheckoutByClientSecret } from '@/utils/checkout'
 import { getOrganizationById } from '@/utils/organization'
@@ -7,9 +8,12 @@ import { redirect } from 'next/navigation'
 
 export default async function Page({
   params: { clientSecret },
+  searchParams: { embed: _embed, theme },
 }: {
   params: { clientSecret: string }
+  searchParams: { embed?: string; theme?: 'light' | 'dark' }
 }) {
+  const embed = _embed === 'true'
   const api = getServerSideAPI()
 
   const checkout = await getCheckoutByClientSecret(api, clientSecret)
@@ -22,5 +26,15 @@ export default async function Page({
     api,
     checkout.product.organization_id,
   )
-  return <Checkout organization={organization} checkout={checkout} />
+
+  return (
+    <CheckoutLayout embed={embed} theme={theme}>
+      <Checkout
+        organization={organization}
+        checkout={checkout}
+        theme={theme}
+        embed={embed}
+      />
+    </CheckoutLayout>
+  )
 }

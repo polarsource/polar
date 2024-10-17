@@ -19,11 +19,15 @@ import { CheckoutInfo } from './CheckoutInfo'
 export interface CheckoutProps {
   organization: Organization
   checkout: CheckoutPublic
+  embed?: boolean
+  theme?: 'light' | 'dark'
 }
 
 export const Checkout = ({
   checkout: _checkout,
   organization,
+  embed,
+  theme,
 }: CheckoutProps) => {
   const [checkout, setCheckout] = useState(_checkout)
   const form = useForm<CheckoutUpdatePublic>({
@@ -95,6 +99,8 @@ export const Checkout = ({
           checkout={checkout}
           onCheckoutUpdate={onCheckoutUpdate}
           onCheckoutConfirm={onCheckoutConfirm}
+          theme={theme}
+          embed={embed}
         />
       </FormProvider>
     </ShadowBoxOnMd>

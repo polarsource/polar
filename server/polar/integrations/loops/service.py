@@ -1,5 +1,6 @@
 from typing import Unpack
 
+from polar.enums import AccountType
 from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -103,6 +104,21 @@ class Loops:
             event="User PAT Created",
             properties={
                 "userPatCreated": True,
+            },
+        )
+
+    async def user_created_account(
+        self, session: AsyncSession, user: User, accountType: AccountType
+    ) -> None:
+        is_creator = await self.is_creator(session, user)
+        if not is_creator:
+            return
+
+        await self.enqueue_event(
+            user,
+            event="User Finance Account Created",
+            properties={
+                "accountType": accountType,
             },
         )
 

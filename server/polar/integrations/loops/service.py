@@ -60,6 +60,15 @@ class Loops:
             },
         )
 
+    async def user_badged_github_issue(self, user: User) -> None:
+        await self.enqueue_event(
+            user,
+            event="GitHub Issue Badged",
+            properties={
+                "githubIssueBadged": True,
+            },
+        )
+
     #####################################################################
     # USER EVENTS: We have to check `is_creator`
     #####################################################################
@@ -88,6 +97,7 @@ class Loops:
                 "userPatCreated": False,
                 "storefrontEnabled": False,
                 "githubOrgInstalled": False,
+                "githubIssueBadged": False,
                 **properties,
             },
         )

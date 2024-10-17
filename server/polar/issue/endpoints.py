@@ -15,6 +15,7 @@ from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import Forbidden, get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
+from polar.integrations.loops.service import loops as loops_service
 from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
@@ -416,11 +417,12 @@ async def add_polar_badge(
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> Issue:
+    user = auth_subject.subject
     issue = await issue_service.get(session, id)
     if not issue:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, issue):
+    if not await authz.can(user, AccessType.write, issue):
         raise Unauthorized()
 
     external_org = await external_organization_service.get_linked(
@@ -442,6 +444,7 @@ async def add_polar_badge(
     if not issue_ret:
         raise ResourceNotFound()
 
+    await loops_service.user_badged_github_issue(user)
     return issue_ret
 
 

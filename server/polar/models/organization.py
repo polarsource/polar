@@ -142,8 +142,7 @@ class Organization(RecordModel):
 
     @property
     def storefront_enabled(self) -> bool:
-        enabled = self.profile_settings.get("storefront_enabled", False)
-        return enabled
+        return self.profile_settings.get("enabled", False)
 
     @property
     def polar_site_url(self) -> str:

@@ -10,7 +10,9 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import ShadowBox, {
+  ShadowBoxOnMd,
+} from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { CheckoutForm } from './CheckoutForm'
@@ -86,15 +88,19 @@ export const Checkout = ({
     [checkout, setError],
   )
 
+  const ShadowBoxComponent = embed ? ShadowBox : ShadowBoxOnMd
+
   return (
-    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 flex w-full max-w-7xl flex-col gap-y-24 divide-transparent overflow-hidden md:flex-row md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
+    <ShadowBoxComponent className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-24 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
       <FormProvider {...form}>
-        <CheckoutInfo
-          className="md:dark:bg-polar-900 md:bg-white"
-          organization={organization}
-          checkout={checkout}
-          onCheckoutUpdate={onCheckoutUpdate}
-        />
+        {!embed && (
+          <CheckoutInfo
+            className="md:dark:bg-polar-900 md:bg-white"
+            organization={organization}
+            checkout={checkout}
+            onCheckoutUpdate={onCheckoutUpdate}
+          />
+        )}
         <CheckoutForm
           checkout={checkout}
           onCheckoutUpdate={onCheckoutUpdate}
@@ -103,6 +109,6 @@ export const Checkout = ({
           embed={embed}
         />
       </FormProvider>
-    </ShadowBoxOnMd>
+    </ShadowBoxComponent>
   )
 }

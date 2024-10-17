@@ -202,6 +202,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 ),
             }
 
+        donations_enabled_before = organization.donations_enabled
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -214,9 +215,16 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         await self._after_update(session, organization)
 
-        if enabled_storefront and is_user(auth_subject):
-            user = auth_subject.subject
-            await loops_service.user_enabled_storefront(user)
+        if not is_user(auth_subject):
+            return organization
+
+        await loops_service.user_updated_organization(
+            auth_subject.subject,
+            enabled_storefront=enabled_storefront,
+            enabled_donations=(
+                organization.donations_enabled and not donations_enabled_before
+            ),
+        )
 
         return organization
 

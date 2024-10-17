@@ -112,7 +112,9 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         else:
             raise AccountServiceError("Unknown account type")
 
-        await loops_service.user_update(admin, accountType=account.account_type)
+        await loops_service.user_update(
+            session, admin, accountType=account.account_type
+        )
 
         return account
 

@@ -11,37 +11,9 @@ from .client import Properties
 
 
 class Loops:
-    async def user_signup(
-        self,
-        user: User,
-        **properties: Unpack[Properties],
-    ) -> None:
-        # Only create contacts for creators on signup.
-        # Others can be created later on upon first creator events (flywheel)
-        signup_intent = user.signup_attribution.get("intent")
-        if signup_intent != "creator":
-            return
-
-        await self.enqueue_event(
-            user,
-            event="User Signed Up",
-            properties={
-                # Set login method in `properties` to override defaults (False)
-                "emailLogin": False,
-                "githubLogin": False,
-                "googleLogin": False,
-                "organizationCreated": False,
-                "organizationCount": 0,
-                "productCreated": False,
-                "userPatCreated": False,
-                "storefrontEnabled": False,
-                **properties,
-            },
-        )
-
-    async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
-        properties = self.get_updated_user_properties(user, properties)
-        enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
+    #####################################################################
+    # CREATOR-ONLY EVENTS: We can skip `is_creator` check on all below
+    #####################################################################
 
     async def user_organization_added(self, session: AsyncSession, user: User) -> None:
         user_organizations = await user_organization_service.list_by_user_id(
@@ -69,15 +41,6 @@ class Loops:
             },
         )
 
-    async def user_created_personal_access_token(self, user: User) -> None:
-        await self.enqueue_event(
-            user,
-            event="User PAT Created",
-            properties={
-                "userPatCreated": True,
-            },
-        )
-
     async def user_enabled_storefront(self, user: User) -> None:
         await self.enqueue_event(
             user,
@@ -86,6 +49,77 @@ class Loops:
                 "storefrontEnabled": True,
             },
         )
+
+    #####################################################################
+    # USER EVENTS: We have to check `is_creator`
+    #####################################################################
+
+    async def user_signup(
+        self,
+        user: User,
+        **properties: Unpack[Properties],
+    ) -> None:
+        # Only create contacts for creators on signup.
+        # Others can be created later on upon first creator events (flywheel)
+        if not user.had_creator_signup_intent:
+            return
+
+        await self.enqueue_event(
+            user,
+            event="User Signed Up",
+            properties={
+                # Set login method in `properties` to override defaults (False)
+                "emailLogin": False,
+                "githubLogin": False,
+                "googleLogin": False,
+                "organizationCreated": False,
+                "organizationCount": 0,
+                "productCreated": False,
+                "userPatCreated": False,
+                "storefrontEnabled": False,
+                **properties,
+            },
+        )
+
+    async def user_update(
+        self, session: AsyncSession, user: User, **properties: Unpack[Properties]
+    ) -> None:
+        is_creator = await self.is_creator(session, user)
+        if not is_creator:
+            return
+
+        properties = self.get_updated_user_properties(user, properties)
+        enqueue_job("loops.update_contact", user.email, str(user.id), **properties)
+
+    async def user_created_personal_access_token(
+        self, session: AsyncSession, user: User
+    ) -> None:
+        is_creator = await self.is_creator(session, user)
+        if not is_creator:
+            return
+
+        await self.enqueue_event(
+            user,
+            event="User PAT Created",
+            properties={
+                "userPatCreated": True,
+            },
+        )
+
+    #####################################################################
+    # HELPERS
+    #####################################################################
+
+    async def is_creator(self, session: AsyncSession, user: User) -> bool:
+        if user.had_creator_signup_intent:
+            return True
+
+        user_organization_count = (
+            await user_organization_service.get_user_organization_count(
+                session, user.id
+            )
+        )
+        return user_organization_count > 0
 
     def get_updated_user_properties(
         self, user: User, properties: Properties

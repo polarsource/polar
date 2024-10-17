@@ -73,7 +73,7 @@ async def authenticate_magic_link(
         await loops_service.user_signup(user, emailLogin=True)
     else:
         posthog.user_login(user, "ml")
-        await loops_service.user_update(user, emailLogin=True)
+        await loops_service.user_update(session, user, emailLogin=True)
 
     return AuthService.generate_login_cookie_response(
         request=request, user=user, return_to=return_to

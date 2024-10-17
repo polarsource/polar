@@ -16,8 +16,8 @@ import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighli
 import Markdown from 'markdown-to-jsx'
 import { notFound } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { Parameters } from '../../../../components/Documentation/Parameters'
-import { resolveEndpointMetadata } from '../../../../components/Documentation/openapi'
+import { Parameters } from '../../../../../components/Documentation/Parameters'
+import { resolveEndpointMetadata } from '../../../../../components/Documentation/openapi'
 
 export const dynamicParams = false
 

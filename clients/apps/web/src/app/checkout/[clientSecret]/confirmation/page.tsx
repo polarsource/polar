@@ -1,4 +1,5 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
+import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getCheckoutByClientSecret } from '@/utils/checkout'
 import { getOrganizationById } from '@/utils/organization'
@@ -7,8 +8,10 @@ import { redirect } from 'next/navigation'
 
 export default async function Page({
   params: { clientSecret },
+  searchParams: { embed, theme },
 }: {
   params: { clientSecret: string }
+  searchParams: { embed?: string; theme?: 'light' | 'dark' }
 }) {
   const api = getServerSideAPI()
 
@@ -23,6 +26,8 @@ export default async function Page({
     checkout.product.organization_id,
   )
   return (
-    <CheckoutConfirmation checkout={checkout} organization={organization} />
+    <CheckoutLayout embed={embed === 'true'} theme={theme}>
+      <CheckoutConfirmation checkout={checkout} organization={organization} />
+    </CheckoutLayout>
   )
 }

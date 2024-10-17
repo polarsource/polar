@@ -66,6 +66,16 @@ Requests sent to your webhook endpoint will include a signature so you can verif
 
 As it follows the [Standard Webhooks](https://www.standardwebhooks.com/) specification, you can use one of their libraries to verify the signature: https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries
 
+If you use the `standard-webhooks` library, you can verify the signature like this using Node.js:
+
+```javascript
+  import { Webhook } from "standardwebhooks"
+
+  const webhookSecret = Buffer.from(env.POLAR_WEBHOOK_SECRET).toString('base64');
+  const wh = new Webhook(webhookSecret);
+  const payload = wh.verify(requestBody, webhookHeaders)
+```
+
 ## Webhook Events
 
 Events are detailed in the dedicated [Events](/docs/api/webhooks/events) section.

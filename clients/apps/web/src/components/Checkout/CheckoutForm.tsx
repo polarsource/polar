@@ -1,5 +1,6 @@
 'use client'
 
+import { CONFIG } from '@/utils/config'
 import {
   CheckoutConfirmStripe,
   CheckoutPublic,
@@ -19,7 +20,6 @@ import {
   StripeError,
 } from '@stripe/stripe-js'
 import debounce from 'lodash.debounce'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import CountryPicker from 'polarkit/components/ui/atoms/countrypicker'
@@ -461,6 +461,8 @@ interface CheckoutFormProps {
   checkout: CheckoutPublic
   onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   onCheckoutConfirm?: (body: CheckoutConfirmStripe) => Promise<CheckoutPublic>
+  theme?: 'light' | 'dark'
+  embed?: boolean
 }
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
@@ -468,9 +470,22 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const router = useRouter()
   const { setError } = useFormContext<CheckoutUpdatePublic>()
-  const { checkout, onCheckoutUpdate, onCheckoutConfirm } = props
-  const { resolvedTheme } = useTheme()
+  const { checkout, onCheckoutUpdate, onCheckoutConfirm, theme, embed } = props
   const [loading, setLoading] = useState(false)
+
+  const onSuccess = useCallback(
+    async (url: string) => {
+      const parsedURL = new URL(url)
+      if (embed && url.startsWith(CONFIG.FRONTEND_BASE_URL)) {
+        parsedURL.searchParams.set('embed', 'true')
+        if (theme) {
+          parsedURL.searchParams.set('theme', theme)
+        }
+      }
+      router.push(parsedURL.toString())
+    },
+    [router],
+  )
 
   const onSubmit = async (
     data: CheckoutUpdatePublic,
@@ -491,7 +506,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         setLoading(false)
         return
       }
-      await router.push(updatedCheckout.success_url)
+      await onSuccess(updatedCheckout.success_url)
       return
     }
 
@@ -576,7 +591,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       }
     }
 
-    await router.push(updatedCheckout.success_url)
+    await onSuccess(updatedCheckout.success_url)
   }
 
   return (
@@ -606,44 +621,40 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         appearance: {
           rules: {
             '.Label': {
-              color: resolvedTheme === 'dark' ? 'white' : 'black',
+              color: theme === 'dark' ? 'white' : 'black',
               fontWeight: '500',
               fontSize: '14px',
               marginBottom: '8px',
             },
             '.PickerItem': {
               padding: '12px',
-              backgroundColor:
-                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
-              color: resolvedTheme === 'dark' ? '#E5E5E1' : '#181A1F',
+              backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
               boxShadow: 'none',
               borderColor: 'transparent',
             },
             '.PickerItem--selected': {
-              backgroundColor:
-                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
               borderColor: '#0062FF',
               borderWidth: '2px',
             },
             '.PickerItem--selected:hover': {
-              backgroundColor:
-                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
             },
             '.Input': {
               padding: '12px',
-              backgroundColor:
-                resolvedTheme === 'dark' ? 'rgb(28 28 34)' : 'white',
-              color: resolvedTheme === 'dark' ? '#E5E5E1' : '#181A1F',
+              backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
-              borderColor: resolvedTheme === 'dark' ? 'transparent' : '#EEE',
+              borderColor: theme === 'dark' ? 'transparent' : '#EEE',
             },
             '.Input:focus': {
-              borderColor: resolvedTheme === 'dark' ? '#4667CA' : '#A5C2EB',
+              borderColor: theme === 'dark' ? '#4667CA' : '#A5C2EB',
             },
             '.Tab': {
               backgroundColor: 'transparent',
-              borderColor: resolvedTheme === 'dark' ? '#353641' : '#EEE',
+              borderColor: theme === 'dark' ? '#353641' : '#EEE',
             },
           },
           variables: {
@@ -651,7 +662,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             fontFamily: '"Inter var", Inter, sans-serif',
             fontSizeBase: '0.875rem',
             spacingGridRow: '18px',
-            colorDanger: resolvedTheme === 'dark' ? '#F17878' : '#E64D4D',
+            colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
           },
         },
         fonts: [

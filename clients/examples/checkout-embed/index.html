@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout Embed Example</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-default.min.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>My Product</h1>
+    <button class="primary"
+      data-polar-checkout="http://127.0.0.1:8000/v1/checkout-links/polar_cl_PObwzcKQTmPHVuCZFcJGOqZFdIPTwnjMNWtSCH2PbWA/redirect"
+      data-polar-checkout-theme="light">
+      Purchase (light mode)
+    </button>
+    <button class="secondary"
+      data-polar-checkout="http://127.0.0.1:8000/v1/checkout-links/polar_cl_PObwzcKQTmPHVuCZFcJGOqZFdIPTwnjMNWtSCH2PbWA/redirect"
+      data-polar-checkout-theme="dark">
+      Purchase (dark mode)
+    </button>
+    <script src="http://127.0.0.1:3000/embed.js" defer></script>
+  </div>
+</body>
+
+</html>

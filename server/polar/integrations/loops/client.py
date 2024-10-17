@@ -39,6 +39,7 @@ class Properties(TypedDict, total=False):
 
     # Issue Funding
     githubOrgInstalled: bool
+    githubIssueBadged: bool
 
 
 class LoopsClient:

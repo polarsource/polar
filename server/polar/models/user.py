@@ -150,7 +150,7 @@ class User(RecordModel):
         self.meta = meta
 
     @property
-    def had_creator_signup_intent(self) -> None:
+    def had_creator_signup_intent(self) -> bool:
         return self.signup_attribution.get("intent") == "creator"
 
     def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:

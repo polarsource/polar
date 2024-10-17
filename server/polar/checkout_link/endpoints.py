@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, Path, Query, Request
+from fastapi.datastructures import URL
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
@@ -173,4 +174,8 @@ async def redirect(
         session, checkout_link, ip_geolocation_client, ip_address
     )
 
-    return RedirectResponse(checkout.url)
+    # Add the query parameters from the request to the URL
+    checkout_url = URL(checkout.url)
+    checkout_url = checkout_url.include_query_params(**request.query_params)
+
+    return RedirectResponse(checkout_url)

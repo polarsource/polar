@@ -1,12 +1,10 @@
 import '../styles/globals.scss'
 
-import { CookieConsent } from '@/components/Privacy/CookieConsent'
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { Organization, UserRead } from '@polar-sh/sdk'
-import { SpeedInsights } from '@vercel/speed-insights/next'
 import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
@@ -14,7 +12,6 @@ import { twMerge } from 'tailwind-merge'
 import {
   PolarPostHogProvider,
   PolarQueryClientProvider,
-  PolarThemeProvider,
   PolarToploaderProvider,
 } from './providers'
 
@@ -86,7 +83,7 @@ export default async function RootLayout({
 
       <body
         className={twMerge(
-          `dark:bg-polar-950 h-full bg-gray-100 [font-feature-settings:'ss03','zero'] md:h-screen dark:text-white`,
+          `bg-transparent [font-feature-settings:'ss03','zero']`,
           GeistSans.className,
         )}
       >
@@ -95,20 +92,16 @@ export default async function RootLayout({
           userOrganizations={userOrganizations}
         >
           <PolarPostHogProvider>
-            <PolarThemeProvider>
-              <PolarToploaderProvider>
-                <PolarQueryClientProvider>
-                  <>
-                    <SandboxBanner />
-                    {children}
-                    <CookieConsent />
-                  </>
-                </PolarQueryClientProvider>
-              </PolarToploaderProvider>
-            </PolarThemeProvider>
+            <PolarToploaderProvider>
+              <PolarQueryClientProvider>
+                <>
+                  <SandboxBanner />
+                  {children}
+                </>
+              </PolarQueryClientProvider>
+            </PolarToploaderProvider>
           </PolarPostHogProvider>
         </UserContextProvider>
-        <SpeedInsights />
       </body>
     </html>
   )

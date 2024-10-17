@@ -58,7 +58,7 @@ const buildOpenAPIMetadata = (schema) => {
 }
 
 const buildDocsMetadata = async () => {
-  const docsPath = path.resolve(baseURL, '../../src/app/docs')
+  const docsPath = path.resolve(baseURL, '../../src/app/(main)/docs')
 
   const mdxPredicate = (file) => file.name.endsWith('.mdx')
 

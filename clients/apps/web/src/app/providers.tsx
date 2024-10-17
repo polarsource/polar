@@ -57,7 +57,12 @@ export function PolarThemeProvider({
     : undefined
 
   return (
-    <ThemeProvider forcedTheme={forcedTheme} attribute="class">
+    <ThemeProvider
+      defaultTheme="system"
+      enableSystem
+      attribute="class"
+      forcedTheme={forcedTheme}
+    >
       {children}
     </ThemeProvider>
   )

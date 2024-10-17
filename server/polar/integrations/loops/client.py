@@ -37,6 +37,9 @@ class Properties(TypedDict, total=False):
 
     accountType: AccountType
 
+    # Issue Funding
+    githubOrgInstalled: bool
+
 
 class LoopsClient:
     def __init__(self, api_key: str | None) -> None:

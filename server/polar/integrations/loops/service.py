@@ -51,6 +51,15 @@ class Loops:
             },
         )
 
+    async def user_installed_github_organization(self, user: User) -> None:
+        await self.enqueue_event(
+            user,
+            event="GitHub Organization Installed",
+            properties={
+                "githubOrgInstalled": True,
+            },
+        )
+
     #####################################################################
     # USER EVENTS: We have to check `is_creator`
     #####################################################################
@@ -78,6 +87,7 @@ class Loops:
                 "productCreated": False,
                 "userPatCreated": False,
                 "storefrontEnabled": False,
+                "githubOrgInstalled": False,
                 **properties,
             },
         )

@@ -23,7 +23,8 @@ export const useCommandPaletteTrigger = (onTrigger: () => void): void => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       const controlKeyPressed = isMac(navigator) ? e.metaKey : e.ctrlKey
-      if (e.key === KEY && controlKeyPressed) {
+      if (e.key.toLowerCase() === KEY && controlKeyPressed) {
+        e.preventDefault()
         onTrigger()
       }
     }

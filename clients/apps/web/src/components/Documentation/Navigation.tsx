@@ -379,6 +379,15 @@ export const MainNavigation = () => {
   )
 }
 
+export const GuidesNavigation = () => {
+  return (
+    <div>
+      <NavigationHeadline>Guides</NavigationHeadline>
+      <NavigationItem href="/docs/guides/nextjs">Next.js</NavigationItem>
+    </div>
+  )
+}
+
 export const SupportNavigation = () => {
   return (
     <div>
@@ -463,20 +472,20 @@ export const DocumentationPageSidebar = ({
         </li>
         <li>
           <NavigationItem
-            icon={<TerminalOutlined fontSize="inherit" />}
-            href="/docs/api"
-            active={() => activeSection === 'api'}
-          >
-            API Reference
-          </NavigationItem>
-        </li>
-        <li className="hidden">
-          <NavigationItem
             icon={<DescriptionOutlined fontSize="inherit" />}
             href="/docs/guides"
             active={() => activeSection === 'guides'}
           >
             Guides
+          </NavigationItem>
+        </li>
+        <li>
+          <NavigationItem
+            icon={<TerminalOutlined fontSize="inherit" />}
+            href="/docs/api"
+            active={() => activeSection === 'api'}
+          >
+            API Reference
           </NavigationItem>
         </li>
         <li>

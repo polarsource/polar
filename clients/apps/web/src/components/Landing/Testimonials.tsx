@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Section } from './Section'
 
-const testamonials = [
+const testimonials = [
   {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
@@ -78,7 +78,7 @@ const testamonials = [
   },
 ]
 
-export const Testamonials = () => {
+export const Testimonials = () => {
   return (
     <Section className="flex-col items-center gap-y-24">
       <h3 className="text-center text-2xl leading-snug md:text-5xl">
@@ -87,29 +87,29 @@ export const Testamonials = () => {
       <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border">
         <Link
           className="dark:hover:bg-polar-900 flex flex-col items-center gap-y-12 p-12 transition-colors hover:bg-gray-100"
-          href={testamonials[0].link}
+          href={testimonials[0].link}
           target="_blank"
         >
           <div className="flex flex-col gap-y-4 text-center text-xl md:w-2/3">
-            {testamonials[0].text}
+            {testimonials[0].text}
           </div>
           <div className="flex flex-col items-center gap-y-4">
             <Avatar
               className="h-16 w-16"
-              avatar_url={testamonials[0].avatar}
-              name={testamonials[0].name}
+              avatar_url={testimonials[0].avatar}
+              name={testimonials[0].name}
             />
 
             <div className="flex flex-col items-center text-sm">
-              <span>{testamonials[0].name}</span>
+              <span>{testimonials[0].name}</span>
               <span className="dark:text-polar-500 text-gray-500">
-                {testamonials[0].company}
+                {testimonials[0].company}
               </span>
             </div>
           </div>
         </Link>
         <div className="flex flex-col divide-y md:flex-row md:divide-x md:divide-y-0">
-          {testamonials.slice(1).map((testamonial) => (
+          {testimonials.slice(1).map((testamonial) => (
             <Link
               key={testamonial.name}
               className="dark:hover:bg-polar-900 group relative flex flex-col transition-colors hover:bg-gray-100 md:w-1/3"

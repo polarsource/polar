@@ -1,7 +1,7 @@
 import { Hero } from '@/components/Landing/Hero/Hero'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Monetization } from '@/components/Landing/Monetization'
-import { Testamonials } from '@/components/Landing/Testamonials'
+import { Testimonials } from '@/components/Landing/Testimonials'
 import { Separator } from 'polarkit/components/ui/separator'
 import { API } from './API'
 import { Benefits } from './Benefits'
@@ -30,7 +30,7 @@ export const PageContent = () => {
       <Pricing />
       <API />
 
-      <Testamonials />
+      <Testimonials />
     </>
   )
 }

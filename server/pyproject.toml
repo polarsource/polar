@@ -80,7 +80,7 @@ pytest-recording = "^0.13.1"
 respx = "^0.21.1"
 pytest-cov = "^5.0.0"
 types-python-slugify = "^8.0.0.3"
-types-requests = "^2.31.0.10"
+types-requests = "^2.32.0.20241016"
 boto3-stubs = {extras = ["s3"], version = "^1.35.10"}
 freezegun = "^1.5.1"
 fakeredis = "^2.25.1"

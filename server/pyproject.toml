@@ -11,7 +11,7 @@ fastapi = "^0.115.2"
 uvicorn = {version = "^0.31.1", extras = ["standard"]}
 asyncpg = "^0.29.0"
 alembic = "^1.9.2"
-sqlalchemy = { extras = ["asyncio"], version = "^2.0.34" }
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
 greenlet = "^3.1.1"
 structlog = "^24.4.0"
 githubkit = "0.11.13"

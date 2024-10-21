@@ -22,7 +22,7 @@ export const MerchantOfRecord = () => {
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex w-full max-w-sm flex-col gap-y-6">
             <h3 className="text-3xl font-medium leading-tight">
-              Leave upsales, billing and international taxes to us.
+              Leave upsales, billing and international taxes to us
             </h3>
           </div>
           <ul className="dark:text-polar-200 flex flex-col gap-y-2">

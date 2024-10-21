@@ -62,7 +62,7 @@ apscheduler = "^3.10.4"
 optional = true
 
 [tool.poetry.group.backoffice.dependencies]
-textual = "^0.82.0"
+textual = "^0.83.0"
 halo = "^0.0.31"
 
 [tool.poetry.group.dev.dependencies]

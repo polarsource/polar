@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
 
 from polar.authz.service import Authz
@@ -5,6 +7,7 @@ from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Product
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -15,6 +18,7 @@ from . import auth
 from .schemas import Product as ProductSchema
 from .schemas import ProductBenefitsUpdate, ProductCreate, ProductID, ProductUpdate
 from .service.product import product as product_service
+from .sorting import ProductSortProperty
 
 router = APIRouter(
     prefix="/products", tags=["products", APITag.documented, APITag.featured]
@@ -26,13 +30,21 @@ ProductNotFound = {
 }
 
 
+ListSorting = Annotated[
+    list[Sorting[ProductSortProperty]],
+    Depends(SortingGetter(ProductSortProperty, ["-created_at"])),
+]
+
+
 @router.get("/", summary="List Products", response_model=ListResource[ProductSchema])
 async def list(
     pagination: PaginationParamsQuery,
+    sorting: ListSorting,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
     organization_id: MultipleQueryFilter[OrganizationID] = Query(
         title="OrganizationID Filter", description="Filter by organization ID."
     ),
+    query: str | None = Query(None, description="Filter by product name."),
     is_archived: bool | None = Query(None, description="Filter on archived products."),
     is_recurring: bool | None = Query(
         None,
@@ -54,10 +66,12 @@ async def list(
         session,
         auth_subject,
         organization_id=organization_id,
+        query=query,
         is_archived=is_archived,
         is_recurring=is_recurring,
         benefit_id=benefit_id,
         pagination=pagination,
+        sorting=sorting,
     )
 
     return ListResource.from_paginated_results(

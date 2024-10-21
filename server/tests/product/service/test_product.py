@@ -34,6 +34,7 @@ from polar.product.schemas import (
     ProductUpdate,
 )
 from polar.product.service.product import product as product_service
+from polar.product.sorting import ProductSortProperty
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -212,6 +213,7 @@ class TestList:
             auth_subject,
             organization_id=[organization.id],
             pagination=PaginationParams(1, 10),
+            sorting=[(ProductSortProperty.created_at, False)],
         )
 
         assert count == 2
@@ -335,6 +337,7 @@ class TestList:
             organization_id=[organization.id],
             benefit_id=[benefit_organization.id],
             pagination=PaginationParams(1, 10),
+            sorting=[(ProductSortProperty.created_at, False)],
         )
 
         assert count == 2

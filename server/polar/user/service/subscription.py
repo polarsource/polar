@@ -26,6 +26,7 @@ from polar.models import (
 )
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
+from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.subscription.service import subscription as subscription_service
 
@@ -214,7 +215,8 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
                 ]
             )
 
-        product = price.product
+        product = await product_service.get_loaded(session, price.product_id)
+        assert product is not None
         if product.is_archived:
             raise PolarRequestValidationError(
                 [

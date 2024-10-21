@@ -1,8 +1,33 @@
+interface EmbedCheckoutMessageLoaded {
+  event: 'loaded'
+}
+
+interface EmbedCheckoutMessageClose {
+  event: 'close'
+}
+
+interface EmbedCheckoutMessageSuccess {
+  event: 'success'
+  successURL: string
+  redirect: boolean
+}
+
+type EmbedCheckoutMessage =
+  | EmbedCheckoutMessageLoaded
+  | EmbedCheckoutMessageClose
+  | EmbedCheckoutMessageSuccess
+
+const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
+
 class EmbedCheckout {
   private iframe: HTMLIFrameElement
 
   constructor(iframe: HTMLIFrameElement) {
     this.iframe = iframe
+  }
+
+  static postMessage(message: EmbedCheckoutMessage) {
+    window.parent.postMessage({ ...message, type: POLAR_CHECKOUT_EVENT }, '*')
   }
 
   static async create(
@@ -85,11 +110,19 @@ class EmbedCheckout {
 
     return new Promise(function (resolve) {
       window.addEventListener('message', function (event) {
-        if (event.data === 'polarCheckoutLoaded') {
+        if (event.data.type !== POLAR_CHECKOUT_EVENT) {
+          return
+        }
+        const data = event.data as EmbedCheckoutMessage
+        if (data.event === 'loaded') {
           document.body.removeChild(loaderContainer)
           resolve(embedCheckout)
-        } else if (event.data === 'polarCheckoutClose') {
+        } else if (data.event === 'close') {
           embedCheckout.close()
+        } else if (data.event === 'success') {
+          if (data.redirect) {
+            window.location.href = data.successURL
+          }
         }
       })
     })

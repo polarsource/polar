@@ -1,12 +1,13 @@
 {
-  "name": "checkout-embed",
+  "name": "@examples/checkout-embed",
   "version": "1.0.0",
   "description": "Polar embedded checkout example",
   "private": true,
   "scripts": {
-    "start": "http-server . -p 3030"
+    "dev": "http-server . -p 3030"
   },
   "dependencies": {
+    "@polar-sh/checkout": "workspace:*",
     "http-server": "^14.1.1"
   }
 }

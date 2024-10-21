@@ -2,7 +2,7 @@
   "private": true,
   "name": "polar",
   "scripts": {
-    "build": "turbo run build --filter=!astro-example",
+    "build": "turbo run build --filter=!astro-example --filter=!@examples/checkout-embed",
     "dev": "turbo run dev",
     "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
@@ -21,7 +21,7 @@
     "prettier": "^3.3.3",
     "prettier-plugin-organize-imports": "^3.2.3",
     "prettier-plugin-tailwindcss": "^0.5.14",
-    "turbo": "^2.1.1"
+    "turbo": "^2.2.1"
   },
   "resolutions": {
     "sharp": "0.33.3"

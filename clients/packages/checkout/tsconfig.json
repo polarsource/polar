@@ -1,0 +1,11 @@
+{
+  "extends": "tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["esnext", "dom"],
+    "target": "es6"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

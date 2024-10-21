@@ -11,6 +11,7 @@ import {
   DescriptionOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
+  NorthEastOutlined,
   ShortTextOutlined,
   SupportOutlined,
   TerminalOutlined,
@@ -385,6 +386,15 @@ export const GuidesNavigation = () => {
       <NavigationHeadline>Guides</NavigationHeadline>
       <NavigationItem href="/docs/guides/nextjs">Next.js</NavigationItem>
       <NavigationItem href="/docs/guides/express">Express.js</NavigationItem>
+      <NavigationItem href="/docs/guides/checkouts">
+        Checkouts & Payment Links
+      </NavigationItem>
+      <NavigationItem
+        href="/docs/api/webhooks"
+        icon={<NorthEastOutlined fontSize="inherit" />}
+      >
+        Webhooks
+      </NavigationItem>
     </div>
   )
 }

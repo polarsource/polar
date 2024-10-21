@@ -1,5 +1,5 @@
 import { AttachMoneyOutlined } from '@mui/icons-material'
-import { ChangeEvent, FocusEvent, useCallback, useState } from 'react'
+import { ChangeEvent, FocusEvent, useCallback, useState, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
 
@@ -42,6 +42,12 @@ const MoneyInput = (props: Props) => {
   const [internalValue, setInternalValue] = useState<string | undefined>(
     value ? (value / 100).toFixed(2) : undefined,
   )
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setInternalValue((value / 100).toFixed(2))
+    }
+  }, [value])
 
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {

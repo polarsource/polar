@@ -141,7 +141,7 @@ export const ProductCheckoutModal = ({
   )
 
   return (
-    <ShadowBox className="flex flex-col gap-y-12">
+    <ShadowBox className="flex flex-col gap-y-8 overflow-y-auto">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-xl font-medium">Checkout Link</h3>
         <p className="dark:text-polar-500 text-gray-500">
@@ -151,13 +151,14 @@ export const ProductCheckoutModal = ({
       </div>
       <h1 className="text-xl">{product.name}</h1>
       {checkoutLinks && checkoutLinks.items.length > 0 && (
-        <List className="max-h-[200px] overflow-y-scroll">
+        <List size="small" className="max-h-[200px] overflow-y-scroll">
           {checkoutLinks.items.map((checkoutLink) => (
             <ListItem
               className="whitespace-nowrap p-2 text-xs"
               key={checkoutLink.id}
               selected={selectedLink?.id === checkoutLink.id}
               onSelect={() => onSelectLink(checkoutLink)}
+              size="small"
             >
               {checkoutLink.url}
             </ListItem>
@@ -204,8 +205,13 @@ export const ProductCheckoutModal = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Success URL</FormLabel>
+                <p className="dark:text-polar-500 text-xs text-gray-500">{`Include "checkout_id={CHECKOUT_ID}" as query parameter if you want to receive the checkout ID in the callback`}</p>
                 <FormControl>
-                  <Input {...field} value={field.value || ''} />
+                  <Input
+                    placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
+                    {...field}
+                    value={field.value || ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

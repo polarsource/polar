@@ -25,7 +25,7 @@ export const GuideCard = ({
 
   return (
     <Card className="flex flex-col">
-      <CardHeader className="pb-0">{iconComponent}</CardHeader>
+      {icon && <CardHeader className="pb-0">{iconComponent}</CardHeader>}
       <CardContent className="flex h-full flex-col gap-y-4 py-8">
         <h3 className="my-0">{title}</h3>
         <p className="dark:text-polar-500 mb-0 text-sm text-gray-500">

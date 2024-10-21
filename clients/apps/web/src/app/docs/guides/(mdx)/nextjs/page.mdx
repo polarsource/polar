@@ -150,7 +150,7 @@ export default async function Page() {
 
 ## Generating Polar Checkout Sessions
 
-Next up, we need to create a checkout endpoint to handle the creation of checkout sessions. This endpoint will be responsible for creating a new checkout session, redirecting the user to the Polar Checkout page & redirect back to a configured success page.
+Next up, we need to create a checkout endpoint to handle the creation of checkout sessions. This endpoint will be responsible for creating a new checkout session, redirecting the user to the Polar Checkout page & redirect back to a configured confirmation page.
 
 Go ahead and create a new GET route in Next.js.
 
@@ -162,13 +162,13 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
 	const url = new URL(req.url);
 	const productPriceId = url.searchParams.get("priceId") ?? "";
-    // Polar will replace {CHECKOUT_ID} with the actual checkout ID upon a successful checkout
-	const successUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}/success?checkout_id={CHECKOUT_ID}`;
+    // Polar will replace {CHECKOUT_ID} with the actual checkout ID upon a confirmed checkout
+	const confirmationUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}/confirmation?checkout_id={CHECKOUT_ID}`;
 
 	try {
 		const result = await api.checkouts.custom.create({
 			productPriceId,
-			successUrl,
+			successUrl: confirmationUrl,
 		});
 
 		return NextResponse.redirect(result.url);
@@ -181,12 +181,12 @@ export async function GET(req: NextRequest) {
 
 We can now easily create a checkout session & redirect there by creating a link to `/checkout?priceId={priceId}`. Just like we did in the `ProductCard` component.
 
-### Handling the Success Page
+### Handling the Confirmation Page
 
-Create a new page in Next.js to handle the success page. This is where the user will be redirected to after the Polar checkout session is done.
+Create a new page in Next.js to handle the confirmation page. This is where the user will be redirected to after the Polar checkout session is done & checkout is confirmed.
 
 ```tsx
-// src/app/success/page.tsx
+// src/app/confirmation/page.tsx
 export default function Page({
 	searchParams: { checkout_id },
 }: {
@@ -320,7 +320,7 @@ The cancellation of a subscription is handled by the `subscription.canceled` eve
 
 ### Notifying the client about the event
 
-If you're building a real-time application, you might want to notify the client about the event. On the success-page, you can listen for the `checkout.updated` event and update the UI accordingly when it reaches the succeeded status.
+If you're building a real-time application, you might want to notify the client about the event. On the confirmation-page, you can listen for the `checkout.updated` event and update the UI accordingly when it reaches the succeeded status.
 
 ## Conclusion
 

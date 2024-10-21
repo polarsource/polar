@@ -1,6 +1,7 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
+import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import {
   CheckoutConfirmStripe,
   CheckoutPublic,
@@ -475,13 +476,26 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const onSuccess = useCallback(
     async (url: string) => {
       const parsedURL = new URL(url)
-      if (embed && url.startsWith(CONFIG.FRONTEND_BASE_URL)) {
-        parsedURL.searchParams.set('embed', 'true')
-        if (theme) {
-          parsedURL.searchParams.set('theme', theme)
+      const isInternalURL = url.startsWith(CONFIG.FRONTEND_BASE_URL)
+
+      if (isInternalURL) {
+        if (embed) {
+          parsedURL.searchParams.set('embed', 'true')
+          if (theme) {
+            parsedURL.searchParams.set('theme', theme)
+          }
         }
       }
-      router.push(parsedURL.toString())
+
+      PolarEmbedCheckout.postMessage({
+        event: 'success',
+        successURL: parsedURL.toString(),
+        redirect: !isInternalURL,
+      })
+
+      if (isInternalURL || !embed) {
+        router.push(parsedURL.toString())
+      }
     },
     [router, embed, theme],
   )

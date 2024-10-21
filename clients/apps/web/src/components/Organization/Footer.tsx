@@ -66,7 +66,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
           <div className="flex flex-col gap-y-4">
             <h3 className="text-lg dark:text-white">Community</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://discord.gg/STfRufb32V">
+              <FooterLink href="https://discord.gg/Pnhfz3UThd">
                 Join our Discord
               </FooterLink>
               <FooterLink href="https://github.com/polarsource">

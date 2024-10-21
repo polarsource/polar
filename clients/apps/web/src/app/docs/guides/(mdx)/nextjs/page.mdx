@@ -8,6 +8,8 @@ In this guide, we'll show you how to integrate Polar with Next.js.
 Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data. <a href="https://sandbox.polar.sh/start" target='_blank'>You can find the Sandbox environment here.</a>
 </BrowserCallout>
 
+[A complete code-example of this guide can be found on GitHub](https://github.com/polarsource/polar-next).
+
 ## Install the Polar JavaScript SDK
 
 To get started, you need to install the Polar JavaScript SDK. You can do this by running the following command:
@@ -319,6 +321,12 @@ The cancellation of a subscription is handled by the `subscription.canceled` eve
 ### Notifying the client about the event
 
 If you're building a real-time application, you might want to notify the client about the event. On the success-page, you can listen for the `checkout.updated` event and update the UI accordingly when it reaches the succeeded status.
+
+## Conclusion
+
+[A complete code-example of this guide can be found on GitHub](https://github.com/polarsource/polar-next).
+
+If you have issues or need support, feel free to join [our Discord](https://discord.gg/Pnhfz3UThd).
 
 export const metadata = {
     title: 'Polar with Next.js',

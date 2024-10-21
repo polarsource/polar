@@ -87,7 +87,7 @@ You get a personal page on Polar that you can easily promote Posts, Subscription
 
 We don't think it makes any sense to offer customization abilities to our audience; setting up custom color hex codes, templates etc like other creator platforms. Instead, we're building everything on our public API & offering SDKs (JS first - beta). Since we believe you'd rather integrate it directly on your site, docs and/or services.
 
-Our goal is that the developer page, e.g \`polar.sh/polarsource\`, should be a living example of an API/SDK integration that you can cherry-pick components from. We'd love to hear from you and your use case and work together to ensure we support it - [join our Discord](https://discord.gg/AVgbMhTtBq) to chat about it.
+Our goal is that the developer page, e.g \`polar.sh/polarsource\`, should be a living example of an API/SDK integration that you can cherry-pick components from. We'd love to hear from you and your use case and work together to ensure we support it - [join our Discord](https://discord.gg/Pnhfz3UThd) to chat about it.
 
 In the meantime, don't hesitate to checkout our:
 - [Public Polar API](https://api.polar.sh/redoc)
@@ -117,7 +117,7 @@ How is this funded?
 <hr />
 Phew. That's all. This is our biggest update since launching Polar and a big step towards our long-term vision of building a platform for developers to get more funding to even building independent businesses around their initiatives.
 
-As always, don't hesitate to share your feedback, thoughts or requests on [GitHub](https://github.com/polarsource/polar) or chat with us directly on [Discord](https://discord.gg/AVgbMhTtBq). We're here to serve fellow developers!
+As always, don't hesitate to share your feedback, thoughts or requests on [GitHub](https://github.com/polarsource/polar) or chat with us directly on [Discord](https://discord.gg/Pnhfz3UThd). We're here to serve fellow developers!
 
 All our best,
 Birk, Gustav, Francois & Emil @ Polar`

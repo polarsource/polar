@@ -19,7 +19,7 @@ interface PaginationProps extends PropsWithChildren {
   siblingCount?: number
   onPageChange: (page: number) => void
   className?: string
-  currentURL: ReadonlyURLSearchParams
+  currentURL: ReadonlyURLSearchParams | URLSearchParams
 }
 
 const Pagination = ({ children, ...paginatorProps }: PaginationProps) => {

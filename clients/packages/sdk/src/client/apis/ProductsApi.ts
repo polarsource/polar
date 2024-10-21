@@ -23,6 +23,7 @@ import type {
   Product,
   ProductBenefitsUpdate,
   ProductCreate,
+  ProductSortProperty,
   ProductUpdate,
   ResourceNotFound,
 } from '../models/index';
@@ -37,11 +38,13 @@ export interface ProductsApiGetRequest {
 
 export interface ProductsApiListRequest {
     organizationId: OrganizationIDFilter1;
+    query?: string;
     isArchived?: boolean;
     isRecurring?: boolean;
     benefitId?: BenefitIDFilter1;
     page?: number;
     limit?: number;
+    sorting?: Array<ProductSortProperty>;
 }
 
 export interface ProductsApiUpdateRequest {
@@ -166,6 +169,10 @@ export class ProductsApi extends runtime.BaseAPI {
             queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
+        }
+
         if (requestParameters['isArchived'] != null) {
             queryParameters['is_archived'] = requestParameters['isArchived'];
         }
@@ -184,6 +191,10 @@ export class ProductsApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

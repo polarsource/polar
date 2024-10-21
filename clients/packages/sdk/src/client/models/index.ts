@@ -13176,6 +13176,25 @@ export interface ProductRecurringCreate {
      */
     organization_id?: string | null;
 }
+
+/**
+ * 
+ * @export
+ */
+export const ProductSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    NAME: 'name',
+    NAME2: '-name',
+    PRICE_TYPE: 'price_type',
+    PRICE_TYPE2: '-price_type',
+    PRICE_AMOUNT_TYPE: 'price_amount_type',
+    PRICE_AMOUNT_TYPE2: '-price_amount_type',
+    PRICE_AMOUNT: 'price_amount',
+    PRICE_AMOUNT2: '-price_amount'
+} as const;
+export type ProductSortProperty = typeof ProductSortProperty[keyof typeof ProductSortProperty];
+
 /**
  * Schema to update a product.
  * @export

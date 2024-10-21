@@ -8412,10 +8412,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
                                 "order",
                                 "free_subscription",
-                                "donation"
+                                "donation",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -13721,6 +13721,24 @@
                         "description": "Filter by organization ID."
                     },
                     {
+                        "name": "query",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product name.",
+                            "title": "Query"
+                        },
+                        "description": "Filter by product name."
+                    },
+                    {
                         "name": "is_archived",
                         "in": "query",
                         "required": false,
@@ -13819,6 +13837,30 @@
                             "title": "Limit"
                         },
                         "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductSortProperty"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
                     }
                 ],
                 "responses": {
@@ -22519,7 +22561,8 @@
                     "metadata": {
                         "additionalProperties": {
                             "type": "string",
-                            "maxLength": 500
+                            "maxLength": 500,
+                            "minLength": 1
                         },
                         "type": "object",
                         "maxProperties": 50,
@@ -22580,7 +22623,8 @@
                             {
                                 "additionalProperties": {
                                     "type": "string",
-                                    "maxLength": 500
+                                    "maxLength": 500,
+                                    "minLength": 1
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -22947,7 +22991,8 @@
                             {
                                 "additionalProperties": {
                                     "type": "string",
-                                    "maxLength": 500
+                                    "maxLength": 500,
+                                    "minLength": 1
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -31894,6 +31939,22 @@
                 "title": "ProductRecurringCreate",
                 "description": "Schema to create a recurring product, i.e. a subscription."
             },
+            "ProductSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "name",
+                    "-name",
+                    "price_type",
+                    "-price_type",
+                    "price_amount_type",
+                    "-price_amount_type",
+                    "price_amount",
+                    "-price_amount"
+                ],
+                "title": "ProductSortProperty"
+            },
             "ProductUpdate": {
                 "properties": {
                     "name": {
@@ -37347,7 +37408,8 @@
                     "metadata": {
                         "additionalProperties": {
                             "type": "string",
-                            "maxLength": 500
+                            "maxLength": 500,
+                            "minLength": 1
                         },
                         "type": "object",
                         "maxProperties": 50,

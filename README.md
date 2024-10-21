@@ -26,7 +26,7 @@
 
 
 <p align="center">
-  <a href="https://discord.gg/STfRufb32V">
+  <a href="https://discord.gg/Pnhfz3UThd">
     <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
   </a>
 
@@ -56,7 +56,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 ## Roadmap, Issues & Feature Requests
 **🎯 Upcoming milestones.** [Checkout what we're building towards](https://github.com/polarsource/polar/issues/3242)
 
-**💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/STfRufb32V)
+**💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/Pnhfz3UThd)
 
 **🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues)
 

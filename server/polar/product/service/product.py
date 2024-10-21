@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
-from sqlalchemy import Select, and_, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, func, or_, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -22,6 +22,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
+from polar.kit.sorting import Sorting
 from polar.models import (
     Benefit,
     Organization,
@@ -29,9 +30,14 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
-    ProductPriceFixed,
     User,
     UserOrganization,
+)
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceType,
 )
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
@@ -45,6 +51,7 @@ from ..schemas import (
     ProductCreate,
     ProductUpdate,
 )
+from ..sorting import ProductSortProperty
 
 
 class ProductError(PolarError): ...
@@ -60,10 +67,14 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         auth_subject: AuthSubject[Subject],
         *,
         organization_id: Sequence[uuid.UUID],
+        query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
+        sorting: list[Sorting[ProductSortProperty]] = [
+            (ProductSortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[Product], int]:
         statement = self._get_readable_product_statement(auth_subject).join(
             ProductPrice,
@@ -77,7 +88,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     ProductPrice.is_archived.is_(False),
                     ProductPrice.deleted_at.is_(None),
                 )
-                .order_by(ProductPriceFixed.price_amount.asc())
+                .order_by(ProductPrice.created_at.asc())
                 .limit(1)
                 .scalar_subquery()
             ),
@@ -85,6 +96,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         )
 
         statement = statement.where(Product.organization_id.in_(organization_id))
+
+        if query is not None:
+            statement = statement.where(Product.name.ilike(f"%{query}%"))
 
         if is_archived is not None:
             statement = statement.where(Product.is_archived.is_(is_archived))
@@ -99,10 +113,65 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                 .options(contains_eager(Product.product_benefits))
             )
 
-        statement = statement.order_by(
-            ProductPriceFixed.price_amount.asc(),
-            Product.created_at,
-        )
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == ProductSortProperty.created_at:
+                order_by_clauses.append(clause_function(Product.created_at))
+            elif criterion == ProductSortProperty.product_name:
+                order_by_clauses.append(clause_function(Product.name))
+            elif criterion == ProductSortProperty.price_type:
+                order_by_clauses.append(
+                    clause_function(
+                        case(
+                            (ProductPrice.type == ProductPriceType.one_time, 1),
+                            (ProductPrice.type == ProductPriceType.recurring, 2),
+                        )
+                    )
+                )
+            elif criterion == ProductSortProperty.price_amount_type:
+                order_by_clauses.append(
+                    clause_function(
+                        case(
+                            (
+                                ProductPrice.amount_type == ProductPriceAmountType.free,
+                                1,
+                            ),
+                            (
+                                ProductPrice.amount_type
+                                == ProductPriceAmountType.custom,
+                                2,
+                            ),
+                            (
+                                ProductPrice.amount_type
+                                == ProductPriceAmountType.fixed,
+                                3,
+                            ),
+                        )
+                    )
+                )
+            elif criterion == ProductSortProperty.price_amount:
+                order_by_clauses.append(
+                    clause_function(
+                        case(
+                            (
+                                ProductPrice.amount_type == ProductPriceAmountType.free,
+                                -2,
+                            ),
+                            (
+                                ProductPrice.amount_type
+                                == ProductPriceAmountType.custom,
+                                func.coalesce(ProductPriceCustom.minimum_amount, -1),
+                            ),
+                            (
+                                ProductPrice.amount_type
+                                == ProductPriceAmountType.fixed,
+                                ProductPriceFixed.price_amount,
+                            ),
+                        )
+                    )
+                )
+        statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
             selectinload(Product.product_medias),

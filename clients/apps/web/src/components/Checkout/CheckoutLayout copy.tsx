@@ -1,4 +1,5 @@
 import { PolarThemeProvider } from '@/app/providers'
+import React from 'react'
 import PublicLayout from '../Layout/PublicLayout'
 import CheckoutEmbedLayout from './Embed/CheckoutEmbedLayout'
 

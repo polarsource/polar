@@ -147,9 +147,8 @@ const BaseCheckoutForm = ({
   }, [watch, debouncedWatcher])
 
   return (
-    <div className="flex flex-col justify-between gap-y-24 md:p-20">
+    <div className="flex flex-col justify-between gap-y-24">
       <div className="flex flex-col gap-y-12">
-        <h1 className="text-2xl">Checkout</h1>
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -484,7 +483,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       }
       router.push(parsedURL.toString())
     },
-    [router],
+    [router, embed, theme],
   )
 
   const onSubmit = async (

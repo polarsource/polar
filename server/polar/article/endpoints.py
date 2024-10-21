@@ -26,9 +26,7 @@ from .schemas import (
 )
 from .service import article_service
 
-router = APIRouter(
-    prefix="/articles", tags=["articles", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/articles", tags=["articles", APITag.documented])
 
 
 ArticleNotFound = {

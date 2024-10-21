@@ -5,11 +5,18 @@ import { createCheckoutPreview } from '@/components/Customization/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
+import Pagination from '@/components/Pagination/Pagination'
 import { ProductCheckoutModal } from '@/components/Products/ProductCheckoutModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import {
+  DataTablePaginationState,
+  DataTableSortingState,
+  serializeSearchParams,
+  sortingStateToQueryParam,
+} from '@/utils/datatable'
 import {
   AddOutlined,
   HiveOutlined,
@@ -24,6 +31,7 @@ import {
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
@@ -35,27 +43,54 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useContext, useMemo, useState } from 'react'
+import { useCallback, useContext, useState } from 'react'
 
-export default function ClientPage() {
+export default function ClientPage({
+  pagination,
+  sorting,
+  query,
+}: {
+  pagination: DataTablePaginationState
+  sorting: DataTableSortingState
+  query: string | undefined
+}) {
   const {
     isShown: isCheckoutModalShown,
     hide: hideCheckoutModal,
     show: showCheckoutModal,
   } = useModal()
   const { organization: org } = useContext(MaintainerOrganizationContext)
-  const [searchQuery, setSearchQuery] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>()
 
-  const products = useProducts(org.id)
-
-  const filteredProducts = useMemo(
-    () =>
-      products.data?.items.filter((product) =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [products, searchQuery],
+  const router = useRouter()
+  const pathname = usePathname()
+  const onPageChange = useCallback(
+    (page: number) => {
+      const searchParams = serializeSearchParams(pagination, sorting)
+      searchParams.set('page', page.toString())
+      if (query) {
+        searchParams.set('query', query)
+      }
+      router.push(`${pathname}?${searchParams}`)
+    },
+    [pagination, router, sorting, pathname],
   )
+
+  const onQueryChange = useCallback(
+    (query: string) => {
+      const searchParams = serializeSearchParams(pagination, sorting)
+      searchParams.set('query', query)
+      router.push(`${pathname}?${searchParams}`)
+    },
+    [pagination, router, sorting, pathname],
+  )
+
+  const products = useProducts(org.id, {
+    query,
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sorting: sortingStateToQueryParam(sorting),
+  })
 
   return (
     <DashboardBody
@@ -105,8 +140,8 @@ export default function ClientPage() {
             className="w-full max-w-64"
             preSlot={<Search fontSize="small" />}
             placeholder="Search Products"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
           />
           <Link href={`/dashboard/${org.slug}/products/new`}>
             <Button role="link" wrapperClassNames="gap-x-2">
@@ -115,18 +150,26 @@ export default function ClientPage() {
             </Button>
           </Link>
         </div>
-        {(filteredProducts?.length ?? 0) > 0 ? (
-          <List size="small">
-            {filteredProducts?.map((product) => (
-              <ProductListItem
-                key={product.id}
-                organization={org}
-                product={product}
-                onSelect={setSelectedProduct}
-                selected={selectedProduct?.id === product.id}
-              />
-            ))}
-          </List>
+        {products.data && products.data.items.length > 0 ? (
+          <Pagination
+            currentPage={pagination.pageIndex + 1}
+            pageSize={pagination.pageSize}
+            totalCount={products.data?.pagination.total_count || 0}
+            currentURL={serializeSearchParams(pagination, sorting)}
+            onPageChange={onPageChange}
+          >
+            <List size="small">
+              {products.data.items.map((product) => (
+                <ProductListItem
+                  key={product.id}
+                  organization={org}
+                  product={product}
+                  onSelect={setSelectedProduct}
+                  selected={selectedProduct?.id === product.id}
+                />
+              ))}
+            </List>
+          </Pagination>
         ) : (
           <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
             <HiveOutlined
@@ -162,6 +205,7 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   return (
     <div className="flex aspect-square h-8 flex-col items-center justify-center text-center">
       {coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={coverUrl}
           alt={product.name}

@@ -13,7 +13,7 @@ export type DataTableSearchParams = {
   sorting?: string[] | string
 }
 
-const sortingStateToQueryParam = <S extends string>(
+export const sortingStateToQueryParam = <S extends string>(
   state: DataTableSortingState,
 ): S[] => {
   return state.map(({ id, desc }) => `${desc ? '-' : ''}${id}` as S)

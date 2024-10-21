@@ -14,7 +14,7 @@ export const TableOfContents = ({
   return (
     <div
       id="toc"
-      className="flex w-full flex-shrink-0 flex-col md:sticky md:top-12 md:w-64"
+      className="flex w-full flex-shrink-0 flex-col md:sticky md:top-36 md:w-64"
     >
       <nav className="hidden w-full flex-col gap-y-4 md:flex">
         <h3 className="text-black dark:text-white">On this page</h3>

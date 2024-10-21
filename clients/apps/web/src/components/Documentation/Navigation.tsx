@@ -459,7 +459,10 @@ export const DocumentationPageSidebar = ({
   return (
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
       <div className="-mx-3 hidden flex-col gap-y-12 md:flex">
-        <CommandPaletteTrigger className="w-full" onClick={show} />
+        <CommandPaletteTrigger
+          className="dark:bg-polar-800 w-full bg-white"
+          onClick={show}
+        />
       </div>
       <ul className="flex flex-col">
         <li>

@@ -10,11 +10,13 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import { useTheme } from 'next-themes'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
+import { CheckoutCard } from './CheckoutCard'
 import { CheckoutForm } from './CheckoutForm'
 import { CheckoutInfo } from './CheckoutInfo'
 
@@ -37,6 +39,7 @@ export const Checkout = ({
     shouldUnregister: true,
   })
   const { setError } = form
+  const { resolvedTheme } = useTheme()
 
   const onCheckoutUpdate = useCallback(
     async (body: CheckoutUpdatePublic): Promise<CheckoutPublic> => {
@@ -88,27 +91,46 @@ export const Checkout = ({
     [checkout, setError],
   )
 
-  const ShadowBoxComponent = embed ? ShadowBox : ShadowBoxOnMd
-
-  return (
-    <ShadowBoxComponent className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-24 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
-      <FormProvider {...form}>
-        {!embed && (
-          <CheckoutInfo
-            className="md:dark:bg-polar-900 md:bg-white"
-            organization={organization}
+  if (embed) {
+    return (
+      <ShadowBox className="flex flex-col gap-y-12">
+        <FormProvider {...form}>
+          <CheckoutCard
             checkout={checkout}
             onCheckoutUpdate={onCheckoutUpdate}
           />
-        )}
-        <CheckoutForm
+          <CheckoutForm
+            checkout={checkout}
+            onCheckoutUpdate={onCheckoutUpdate}
+            onCheckoutConfirm={onCheckoutConfirm}
+            theme={theme}
+            embed={embed}
+          />
+        </FormProvider>
+      </ShadowBox>
+    )
+  }
+
+  return (
+    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-24 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
+      <FormProvider {...form}>
+        <CheckoutInfo
+          className="md:dark:bg-polar-900 md:bg-white"
+          organization={organization}
           checkout={checkout}
           onCheckoutUpdate={onCheckoutUpdate}
-          onCheckoutConfirm={onCheckoutConfirm}
-          theme={theme}
-          embed={embed}
         />
+        <div className="md:p-20">
+          <h1 className="text-2xl">Checkout</h1>
+          <CheckoutForm
+            checkout={checkout}
+            onCheckoutUpdate={onCheckoutUpdate}
+            onCheckoutConfirm={onCheckoutConfirm}
+            theme={theme || (resolvedTheme as 'light' | 'dark')}
+            embed={embed}
+          />
+        </div>
       </FormProvider>
-    </ShadowBoxComponent>
+    </ShadowBoxOnMd>
   )
 }

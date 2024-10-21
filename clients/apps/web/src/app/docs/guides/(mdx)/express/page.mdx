@@ -1,0 +1,190 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
+# Integrating Polar with Express.js
+
+In this guide, we'll show you how to integrate Polar with Express.js.
+
+<BrowserCallout type="TIP">
+Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data. <a href="https://sandbox.polar.sh/start" target='_blank'>You can find the Sandbox environment here.</a>
+</BrowserCallout>
+
+## Install the Polar JavaScript SDK
+
+To get started, you need to install the Polar JavaScript SDK. You can do this by running the following command:
+
+```bash
+pnpm install @polar-sh/sdk
+```
+
+## Setting up environment variables
+
+#### Polar Access Token
+
+To authenticate with Polar, you need create an access token, and supply it to Node.js using a `POLAR_ACCESS_TOKEN` environment variable.
+<a href="https://polar.sh/settings" target='_blank'>You can create a personal access token on the Polar account settings page.</a>
+
+#### Polar Organization ID
+
+Products are tied to organizations, not your personal account. You need to supply the organization ID to Node.js using a `POLAR_ORGANIZATION_ID` environment variable.
+Organization IDs for a given organization can be found on the organization's settings page.
+
+```bash
+# .env
+POLAR_ACCESS_TOKEN="polar_pat..."
+POLAR_ORGANIZATION_ID="********-****-****-****-************"
+```
+
+## Configuring a Polar API Client
+
+To interact with the Polar API, you need to create a new instance of the `Polar` class. This class uses the provided access token to authenticate with the Polar API.
+
+```typescript
+// src/polar.ts
+import { Polar } from "@polar-sh/sdk"
+
+export const api = new Polar({
+    accessToken: process.env.POLAR_ACCESS_TOKEN!,
+    server: 'sandbox' // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+})
+```
+
+Remember to replace `sandbox` with `production` when you're ready to switch to the production environment.
+
+## Checkout Sessions
+
+The first step is to [create a Checkout session](/docs/api/v1/checkouts/custom/post). For this you'll need at least your **Product Price ID**.
+
+<BrowserCallout type="TIP">
+  You can retrieve your Product Price ID from `Products` in your dashboard,
+  click on the ellipsis `…` button in front of your product and click on `Copy
+  Price ID`.
+</BrowserCallout>
+
+The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
+
+```ts
+import { Polar } from '@polar-sh/sdk'
+import express, { Request, Response } from 'express'
+
+const app = express()
+const port = 3000
+const polar = new Polar({
+  accessToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
+})
+
+app.get('/checkout', async (req: Request, res: Response) => {
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+  })
+  res.redirect(checkout.url)
+})
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`)
+})
+```
+
+## Set a success URL
+
+By default, the customer will be redirected to a Polar success page. You can customize this so they are redirected to an URL in your application.
+
+```ts
+app.get('/checkout', async (req: Request, res: Response) => {
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+    successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
+  })
+  res.redirect(checkout.url)
+})
+
+app.get('/success', async (req: Request, res: Response) => {
+  const checkoutId = req.query.checkout_id
+  if (!checkoutId) {
+    return res.status(400).send('Missing checkout_id')
+  }
+  const checkout = await polar.checkouts.custom.get(checkoutId)
+
+  if (checkout.status === 'succeeded') {
+    return res.send('<html><body><h1>Thank you!</h1></body></html>')
+  }
+
+  if (checkout.status === 'confirmed') {
+    return res.send(
+      '<html><body><h1>Please wait while we process the payment...</h1></body></html>',
+    )
+  }
+
+  if (checkout.status === 'failed') {
+    return res.send('<html><body><h1>An error occured!</h1></body></html>')
+  }
+})
+```
+
+Notice how you can pass the `{CHECKOUT_ID}` token to your URL: Polar will automatically replace it with the actual Checkout session ID. This allows you to retrieve the Checkout object easily on the success page.
+
+## Reconciliation with your app
+
+In your app, it's probable you already know the customer or are in a specific state you don't want to lose during the checkout process. For this, you can pass **arbitrary metadata** to the Checkout object. This way, when you retrieve the Checkout on your success page (or through a [webhook](/docs/api/webhooks)), you can read the metadata and link with your own application state.
+
+```ts
+app.get('/checkout', async (req: Request, res: Response) => {
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+    successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
+    metadata: {
+      userId: 'MY_USER_ID',
+    },
+  })
+  res.redirect(checkout.url)
+})
+
+app.get('/success', async (req: Request, res: Response) => {
+  const checkoutId = req.query.checkout_id
+  if (!checkoutId) {
+    return res.status(400).send('Missing checkout_id')
+  }
+  const checkout = await polar.checkouts.custom.get(checkoutId)
+  const userId = checkout.metadata['userId']
+
+  if (checkout.status === 'succeeded') {
+    return res.send(`<html><body><h1>Thank you ${userId}!</h1></body></html>`)
+  }
+
+  if (checkout.status === 'confirmed') {
+    return res.send(
+      '<html><body><h1>Please wait while we process the payment...</h1></body></html>',
+    )
+  }
+
+  if (checkout.status === 'failed') {
+    return res.send('<html><body><h1>An error occured!</h1></body></html>')
+  }
+})
+```
+
+<BrowserCallout type="TIP">
+  The metadata you set on Checkout are **automatically copied** to the Order and/or Subscription that are created from that session.
+
+It means that if you listen to new orders and subscriptions from webhooks, you'll get that metadata directly. Besides, they also have a `checkout_id` reference to the origin Checkout, so you can retrieve it if needed.
+
+</BrowserCallout>
+
+## Prefill customer information
+
+If you already know your customer, you can prefill some of the fields to speed-up the process. You can also provide their IP address, so we can automatically guess their billing country and have VAT computed directly on first load.
+
+```ts
+app.get('/checkout', async (req: Request, res: Response) => {
+  const checkout = await polar.checkouts.custom.create({
+    productPriceId: '00000000-0000-0000-0000-000000000000',
+    successUrl: `${req.protocol}://${req.get('host')}/success?checkout_id={CHECKOUT_ID}`,
+    customerEmail: 'user@example.com',
+    customerName: 'John Doe',
+    customerIpAddress: req.ip,
+    metadata: {
+      userId: 'MY_USER_ID',
+    },
+  })
+  res.redirect(checkout.url)
+})
+```

@@ -5,6 +5,7 @@ import { Testimonials } from '@/components/Landing/Testimonials'
 import { Separator } from 'polarkit/components/ui/separator'
 import { API } from './API'
 import { Benefits } from './Benefits'
+import { GetStarted } from './GetStarted'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
 
@@ -25,6 +26,8 @@ export const PageContent = () => {
         <Separator />
         <MerchantOfRecord />
         <Monetization />
+        <Separator />
+        <GetStarted />
       </Section>
 
       <Pricing />

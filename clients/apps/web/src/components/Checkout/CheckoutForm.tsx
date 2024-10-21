@@ -39,6 +39,7 @@ import { useFormContext, WatchObserver } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
 import AmountLabel from '../Shared/AmountLabel'
+import { CloseOutlined } from '@mui/icons-material'
 
 const DetailRow = ({
   title,
@@ -146,6 +147,8 @@ const BaseCheckoutForm = ({
     const subscription = watch(debouncedWatcher)
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
+
+  const [showTaxId, setShowTaxID] = useState(false);
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -342,29 +345,48 @@ const BaseCheckoutForm = ({
                     )}
                   </FormItem>
 
-                  <FormField
-                    control={control}
-                    name="customer_tax_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex flex-row items-center justify-between">
-                          <FormLabel>Tax ID</FormLabel>
-                          <span className="dark:text-polar-500 text-xs text-gray-500">
-                            Optional
-                          </span>
-                        </div>
-                        <FormControl>
-                          <Input
-                            type="text"
-                            autoComplete="off"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!showTaxId && (
+                    <button
+                      onClick={() => {setShowTaxID(true)}}
+                      className='w-full flex justify-end'
+                    >
+                      <span className='text-xs text-blue font-medium' >Add Tax ID</span>
+                    </button>
+                  )}
+
+                  {showTaxId && (
+                    <FormField
+                      control={control}
+                      name="customer_tax_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex flex-row items-center justify-between">
+                            <FormLabel>Tax ID</FormLabel>
+                            <span className="dark:text-polar-500 text-xs text-gray-500">
+                              Optional
+                            </span>
+                          </div>
+                          <FormControl>
+                            <div className='relative flex'>
+                              <Input
+                                type="text"
+                                autoComplete="off"
+                                {...field}
+                                value={field.value || ''}
+                              />
+                              <button
+                                onClick={() => {setShowTaxID(false)}}
+                                className="absolute right-2 top-2 text-gray-400 hover:text-gray-200"
+                              >
+                                <CloseOutlined className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   {/*
               <FormField
                 control={control}

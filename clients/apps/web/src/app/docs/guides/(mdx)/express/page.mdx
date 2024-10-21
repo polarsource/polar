@@ -188,3 +188,26 @@ app.get('/checkout', async (req: Request, res: Response) => {
   res.redirect(checkout.url)
 })
 ```
+
+export const metadata = {
+    title: 'Polar with Express.js',
+    description: 'Integrate Polar with Express.js',
+    openGraph: {
+        title: 'Polar with Express.js',
+        description: 'Integrate Polar with Express.js',
+        siteName: 'Polar',
+    },
+    twitter: {
+        images: [
+            {
+                url: `https://polar.sh/assets/brand/polar_og.jpg`,
+                width: 1200,
+                height: 630,
+                alt: `Polar`,
+            },
+        ],
+        card: 'summary_large_image',
+        title: 'Polar with Express.js',
+        description: 'Integrate Polar with Express.js',
+    },
+}

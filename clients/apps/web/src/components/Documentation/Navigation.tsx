@@ -384,6 +384,7 @@ export const GuidesNavigation = () => {
     <div>
       <NavigationHeadline>Guides</NavigationHeadline>
       <NavigationItem href="/docs/guides/nextjs">Next.js</NavigationItem>
+      <NavigationItem href="/docs/guides/express">Express.js</NavigationItem>
     </div>
   )
 }

@@ -1,10 +1,25 @@
+import { GuideCard } from './GuideCard'
+
 # Guides
 
 Polar is built to be flexible and easy to integrate with your existing systems. In this section, you'll find guides on how to integrate Polar with various technologies and services.
 
 ## Framework Guides
 
-- [Integrating Polar with Next.js](/docs/guides/nextjs)
+<div className='grid md:grid-cols-2 grid-cols-1 gap-8'>
+    <GuideCard
+        icon='nextjs'
+        title='Integrating Polar with Next.js'
+        description='Learn how to integrate Polar with Next.js'
+        href='/docs/guides/nextjs'
+    />
+    <GuideCard
+        icon='express'
+        title='Integrating Polar with Express.js'
+        description='Integrate Polar with ease using Express.js'
+        href='/docs/guides/express'
+    />
+</div>
 
 export const metadata = {
     title: 'Guides',

@@ -2,16 +2,7 @@ import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
 
 # Integrating Polar with Next.js
 
-In this guide, we'll show you how to integrate Polar with Next.js. 
-
-We'll cover the following concepts:
-
-- [Installing the Polar JavaScript SDK](#install-the-polar-javascript-sdk)
-- [Setting up environment variables](#setting-up-environment-variables)
-- [Configuring a Polar API Client](#configuring-a-polar-api-client)
-- [Fetching Polar Products for display](#fetching-polar-products-for-display)
-- [Generating Polar Checkout Sessions](#generating-polar-checkout-sessions)
-- [Handling Polar Webhooks](#handling-polar-webhooks)
+In this guide, we'll show you how to integrate Polar with Next.js.
 
 <BrowserCallout type="TIP">
 Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data. <a href="https://sandbox.polar.sh/start" target='_blank'>You can find the Sandbox environment here.</a>
@@ -328,55 +319,6 @@ The cancellation of a subscription is handled by the `subscription.canceled` eve
 ### Notifying the client about the event
 
 If you're building a real-time application, you might want to notify the client about the event. On the success-page, you can listen for the `checkout.updated` event and update the UI accordingly when it reaches the succeeded status.
-
-#### Supabase Realtime Example
-
-If you're using Supabase, you can use the Realtime feature to send events from the server to the client.
-
-```tsx
-// src/app/success/page.tsx
-'use client'
-import { useEffect, useState } from "react";
-
-export default function Page({
-    searchParams: { checkout_id },
-}: {
-    searchParams: {
-        checkout_id: string;
-    };
-}) {
-    const [checkout, setCheckout] = useState<Checkout | null>(null);
-
-    useEffect(() => {
-        const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-
-        // Listen to inserts
-        const subscription = supabase
-            .channel('checkouts')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'checkouts' }, setCheckout)
-            .subscribe()
-
-        return () => {
-            subscription.unsubscribe();
-        }
-    }, []);
-
-    return (
-        <div>
-            {checkout.status === 'succeeded' ? (
-                <div>
-                    <h1>Checkout successful!</h1>
-                    <p>Order ID: {checkout.order_id}</p>
-                </div>
-            ) : (
-                <div>
-                    <h1>Thank you! Your checkout is now being processed.</h1>
-                </div>
-            )}
-        </div>
-    )
-}
-```
 
 export const metadata = {
     title: 'Polar with Next.js',

@@ -3916,13 +3916,13 @@ files = [
 
 [[package]]
 name = "textual"
-version = "0.82.0"
+version = "0.84.0"
 description = "Modern Text User Interface framework"
 optional = false
 python-versions = "<4.0.0,>=3.8.1"
 files = [
-    {file = "textual-0.82.0-py3-none-any.whl", hash = "sha256:4ce00dc898fab3a829aa835071f4e8284aad57f13870e871d0ac516cc34b3645"},
-    {file = "textual-0.82.0.tar.gz", hash = "sha256:db93a2bb3ba9fdb2a536272cd5c8144c9c9682df0370a99361b670c6191b0a4d"},
+    {file = "textual-0.84.0-py3-none-any.whl", hash = "sha256:1457d2cb66ba4ea46812355f31adbb4b693424a94e69d052e4affe1dc410ec96"},
+    {file = "textual-0.84.0.tar.gz", hash = "sha256:fb89717960fea7a539823fa264252f7be1c84844e4b8d27360e6d4edb36846a8"},
 ]
 
 [package.dependencies]
@@ -4655,4 +4655,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "1ad9763dcad3d8633e76d19604b008173c4f452a1809661ea5e6faf39d427f00"
+content-hash = "186a9ea57ce80d286ca32a545d3fb561eaa302da17a1441fc12b060c43ae83f2"

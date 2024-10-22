@@ -11,17 +11,15 @@
 <body>
   <div class="container">
     <h1>My Product</h1>
-    <button class="primary"
-      data-polar-checkout="http://127.0.0.1:8000/v1/checkout-links/polar_cl_yYLI006a9u-SCxFtqEEmv9heHMxM53T6kW8ydFA4rMs/redirect"
-      data-polar-checkout-theme="light">
+    <a href="http://127.0.0.1:8000/v1/checkout-links/polar_cl_yYLI006a9u-SCxFtqEEmv9heHMxM53T6kW8ydFA4rMs/redirect"
+      data-polar-checkout data-polar-checkout-theme="light" role="button" class="primary">
       Purchase (light mode)
-    </button>
-    <button class="secondary"
-      data-polar-checkout="http://127.0.0.1:8000/v1/checkout-links/polar_cl_yYLI006a9u-SCxFtqEEmv9heHMxM53T6kW8ydFA4rMs/redirect"
-      data-polar-checkout-theme="dark">
+    </a>
+    <a href="http://127.0.0.1:8000/v1/checkout-links/polar_cl_yYLI006a9u-SCxFtqEEmv9heHMxM53T6kW8ydFA4rMs/redirect"
+      data-polar-checkout data-polar-checkout-theme="dark" role="button" class="secondary">
       Purchase (dark mode)
-    </button>
-    <script src="node_modules/@polar-sh/checkout/dist/embed.global.js" defer></script>
+    </a>
+    <script src="node_modules/@polar-sh/checkout/dist/embed.global.js" defer data-auto></script>
   </div>
 </body>
 

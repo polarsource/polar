@@ -83,7 +83,7 @@ export default async function RootLayout({
 
       <body
         className={twMerge(
-          `bg-transparent [font-feature-settings:'ss03','zero']`,
+          `[font-feature-settings:'ss03','zero']`,
           GeistSans.className,
         )}
       >

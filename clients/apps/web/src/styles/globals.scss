@@ -99,7 +99,7 @@
   .dark {
     --background: 233 10% 9%;
     --foreground: 233 10% 36%;
-    
+
     --card: 233 10% 9%;
     --card-foreground: 231 17% 100%;
 
@@ -132,7 +132,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
 }
 

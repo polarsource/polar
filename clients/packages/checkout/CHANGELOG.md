@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.1
+
+### Patch Changes
+
+- 7ccc8a8: Bump to make CI and tagging back on track
+
 ## 0.1.0
 
 ### Minor Changes

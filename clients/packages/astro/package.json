@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/astro",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Upload Astro content to Polar.sh",
   "repository": "https://github.com/polarsource/polar",
   "homepage": "https://polar.sh",

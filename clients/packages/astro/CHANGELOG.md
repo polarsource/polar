@@ -1,5 +1,11 @@
 # @polar-sh/astro
 
+## 2.0.1
+
+### Patch Changes
+
+- 7ccc8a8: Bump to make CI and tagging back on track
+
 ## 1.0.0
 
 ### Patch Changes

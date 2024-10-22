@@ -84,7 +84,7 @@ export default function ClientPage({
   const debouncedQueryChange = useDebouncedCallback(
     (query: string) => {
       const searchParams = serializeSearchParams(pagination, sorting)
-      if (query?.length) {
+      if (query) {
         searchParams.set('query', query)
       } else {
         searchParams.delete('query')

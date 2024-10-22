@@ -496,9 +496,6 @@ importers:
 
   packages/checkout:
     devDependencies:
-      '@changesets/cli':
-        specifier: ^2.27.9
-        version: 2.27.9
       terser:
         specifier: ^5.36.0
         version: 5.36.0

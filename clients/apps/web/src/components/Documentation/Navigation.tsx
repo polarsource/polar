@@ -384,8 +384,12 @@ export const GuidesNavigation = () => {
   return (
     <div>
       <NavigationHeadline>Guides</NavigationHeadline>
-      <NavigationItem href="/docs/guides/nextjs">Next.js</NavigationItem>
-      <NavigationItem href="/docs/guides/express">Express.js</NavigationItem>
+      <NavigationItem href="/docs/guides/nextjs">
+        Integrate with Next.js
+      </NavigationItem>
+      <NavigationItem href="/docs/guides/node">
+        Integrate with Node.js & Express
+      </NavigationItem>
       <NavigationItem href="/docs/guides/checkouts">
         Checkouts & Payment Links
       </NavigationItem>
@@ -393,7 +397,7 @@ export const GuidesNavigation = () => {
         href="/docs/api/webhooks"
         icon={<NorthEastOutlined fontSize="inherit" />}
       >
-        Webhooks
+        Setting up Webhooks
       </NavigationItem>
     </div>
   )

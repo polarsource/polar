@@ -1,17 +1,31 @@
+/**
+ * Message sent to the parent window when the embedded checkout is fully loaded.
+ */
 interface EmbedCheckoutMessageLoaded {
   event: 'loaded'
 }
 
+/**
+ * Message sent to the parent window when the embedded checkout needs to be closed.
+ */
 interface EmbedCheckoutMessageClose {
   event: 'close'
 }
 
+/**
+ * Message sent to the parent window when the checkout is successfully completed.
+ *
+ * If `redirect` is set to `true`, the parent window should redirect to the `successURL`.
+ */
 interface EmbedCheckoutMessageSuccess {
   event: 'success'
   successURL: string
   redirect: boolean
 }
 
+/**
+ * Represents an embedded checkout message.
+ */
 type EmbedCheckoutMessage =
   | EmbedCheckoutMessageLoaded
   | EmbedCheckoutMessageClose
@@ -19,6 +33,9 @@ type EmbedCheckoutMessage =
 
 const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
 
+/**
+ * Represents an embedded checkout instance.
+ */
 class EmbedCheckout {
   private iframe: HTMLIFrameElement
   private backdrop: HTMLDivElement
@@ -28,10 +45,23 @@ class EmbedCheckout {
     this.backdrop = backdrop
   }
 
+  /**
+   * Send a embed checkout event to the parent window.
+   * @param message
+   */
   static postMessage(message: EmbedCheckoutMessage): void {
     window.parent.postMessage({ ...message, type: POLAR_CHECKOUT_EVENT }, '*')
   }
 
+  /**
+   * Create a new embedded checkout instance by injecting an iframe into the DOM.
+   *
+   * @param url A Checkout Link.
+   * @param theme The theme of the embedded checkout. Defaults to `light`.
+
+   * @returns A promise that resolves to an instance of EmbedCheckout.
+   * The promise resolves when the embedded checkout is fully loaded.
+   */
   static async create(
     url: string,
     theme?: 'light' | 'dark',
@@ -124,6 +154,38 @@ class EmbedCheckout {
     })
   }
 
+  /**
+   * Initialize embedded checkout triggers.
+   *
+   * This method will add a click event listener to all elements with the `data-polar-checkout` attribute.
+   * The Checkout Link is either the `href` attribute for a link element or the value of `data-polar-checkout` attribute.
+   *
+   * The theme can be optionally set using the `data-polar-checkout-theme` attribute.
+   *
+   * @example
+   * ```html
+   * <a href="https://buy.polar.sh/polar_cl_123" data-polar-checkout data-polar-checkout-theme="dark">Checkout</a>
+   * ```
+   */
+  static init(): void {
+    const checkoutElements = document.querySelectorAll('[data-polar-checkout]')
+    checkoutElements.forEach((checkoutElement) => {
+      checkoutElement.addEventListener('click', (e) => {
+        e.preventDefault()
+        const url =
+          checkoutElement.getAttribute('href') ||
+          (checkoutElement.getAttribute('data-polar-checkout') as string)
+        const theme = checkoutElement.getAttribute(
+          'data-polar-checkout-theme',
+        ) as 'light' | 'dark' | undefined
+        EmbedCheckout.create(url, theme)
+      })
+    })
+  }
+
+  /**
+   * Close the embedded checkout.
+   */
   public close(): void {
     document.body.removeChild(this.iframe)
     document.body.removeChild(this.backdrop)
@@ -147,23 +209,9 @@ if (typeof window !== 'undefined') {
 
 if (typeof document !== 'undefined') {
   const currentScript = document.currentScript as HTMLScriptElement | null
-  if (currentScript && currentScript.hasAttribute('data-auto')) {
+  if (currentScript && currentScript.hasAttribute('data-auto-init')) {
     document.addEventListener('DOMContentLoaded', async () => {
-      const checkoutElements = document.querySelectorAll(
-        '[data-polar-checkout]',
-      )
-      checkoutElements.forEach((checkoutElement) => {
-        checkoutElement.addEventListener('click', (e) => {
-          e.preventDefault()
-          const url =
-            checkoutElement.getAttribute('href') ||
-            (checkoutElement.getAttribute('data-polar-checkout') as string)
-          const theme = checkoutElement.getAttribute(
-            'data-polar-checkout-theme',
-          ) as 'light' | 'dark' | undefined
-          EmbedCheckout.create(url, theme)
-        })
-      })
+      EmbedCheckout.init()
     })
   }
 }

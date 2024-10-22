@@ -1,10 +1,14 @@
-name: Publish @polar-sh/checkout
+name: Release @polar-sh/checkout
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     defaults:
@@ -33,5 +37,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Publish
-        run: pnpm -C packages/checkout publish-package
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: pnpm -C packages/checkout run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

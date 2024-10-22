@@ -5827,8 +5827,7 @@
       "get": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "List Articles",
         "description": "List articles.",
@@ -6069,8 +6068,7 @@
       "post": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Create Article",
         "description": "Create an article.",
@@ -6141,8 +6139,7 @@
       "get": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Export Articles",
         "description": "Export organization articles.",
@@ -6213,8 +6210,7 @@
       "get": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Get Article",
         "description": "Get an article by ID.",
@@ -6302,8 +6298,7 @@
       "patch": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Update Article",
         "description": "Update an article.",
@@ -6410,8 +6405,7 @@
       "delete": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Delete Article",
         "description": "Delete an article.",
@@ -6503,8 +6497,7 @@
       "get": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Get Article Receivers Count",
         "description": "Get number of potential receivers for an article.",
@@ -6583,8 +6576,7 @@
       "post": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Send Article Preview",
         "description": "Send an article preview by email.",
@@ -6691,8 +6683,7 @@
       "post": {
         "tags": [
           "articles",
-          "documented",
-          "featured"
+          "documented"
         ],
         "summary": "Send Article",
         "description": "Send an article by email to all subscribers.",
@@ -10172,6 +10163,24 @@
             "description": "Filter by organization ID."
           },
           {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by product name.",
+              "title": "Query"
+            },
+            "description": "Filter by product name."
+          },
+          {
             "name": "is_archived",
             "in": "query",
             "required": false,
@@ -10270,6 +10279,30 @@
               "title": "Limit"
             },
             "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "-created_at"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
           }
         ],
         "responses": {
@@ -26020,6 +26053,22 @@
         ],
         "title": "ProductRecurringCreate",
         "description": "Schema to create a recurring product, i.e. a subscription."
+      },
+      "ProductSortProperty": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "-created_at",
+          "name",
+          "-name",
+          "price_type",
+          "-price_type",
+          "price_amount_type",
+          "-price_amount_type",
+          "price_amount",
+          "-price_amount"
+        ],
+        "title": "ProductSortProperty"
       },
       "ProductUpdate": {
         "properties": {

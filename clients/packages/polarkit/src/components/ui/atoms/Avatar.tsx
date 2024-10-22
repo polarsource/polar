@@ -14,11 +14,10 @@ const Avatar = ({
   width?: number | undefined
 }) => {
   if (avatar_url) {
-    {
-      /* eslint-disable-next-line @next/next/no-img-element */
-    }
     return (
+      /* eslint-disable-next-line @next/next/no-img-element */
       <img
+        alt={name}
         src={avatar_url}
         className={twMerge(
           'dark:bg-polar-900 dark:border-polar-700 h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-gray-50',

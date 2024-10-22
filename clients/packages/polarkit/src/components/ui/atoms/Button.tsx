@@ -139,4 +139,6 @@ export const RawButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   },
 )
 
+RawButton.displayName = 'RawButton'
+
 export type { ButtonProps }

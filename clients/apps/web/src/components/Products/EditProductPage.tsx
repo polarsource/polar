@@ -22,8 +22,8 @@ import { useForm } from 'react-hook-form'
 import { CheckoutInfo } from '../Checkout/CheckoutInfo'
 import { createCheckoutPreview } from '../Customization/utils'
 import { DashboardBody } from '../Layout/DashboardLayout'
-import { Modal } from '../Modal'
 import { ConfirmModal } from '../Modal/ConfirmModal'
+import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import { ProductCheckoutModal } from './ProductCheckoutModal'
@@ -210,11 +210,10 @@ export const EditProductPage = ({
                 </Link>
               </div>
             ) : (
-              <Button onClick={showCheckoutModal}>Checkout Link</Button>
+              <Button onClick={showCheckoutModal}>Share</Button>
             )}
           </div>
-          <Modal
-            className="lg:w-full lg:max-w-[480px]"
+          <InlineModal
             isShown={isCheckoutModalShown}
             hide={hideCheckoutModal}
             modalContent={<ProductCheckoutModal product={product} />}

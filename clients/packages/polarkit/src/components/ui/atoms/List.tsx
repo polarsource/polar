@@ -22,6 +22,8 @@ export const List = ({ children, className, size = 'default' }: ListProps) => {
 
 export interface ListItemProps extends PropsWithChildren {
   className?: string
+  inactiveClassName?: string
+  selectedClassName?: string
   children: React.ReactNode
   selected?: boolean
   onSelect?: () => void
@@ -30,6 +32,8 @@ export interface ListItemProps extends PropsWithChildren {
 
 export const ListItem = ({
   className,
+  inactiveClassName,
+  selectedClassName,
   children,
   selected,
   onSelect,
@@ -42,6 +46,7 @@ export const ListItem = ({
         selected
           ? 'dark:bg-polar-800 bg-gray-100'
           : 'dark:hover:bg-polar-800 hover:bg-gray-100',
+        selected ? selectedClassName : inactiveClassName,
         onSelect && 'cursor-pointer',
         size === 'default' ? 'px-6 py-4' : 'px-4 py-2',
         className,

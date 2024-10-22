@@ -3,7 +3,7 @@
 import { CheckoutInfo } from '@/components/Checkout/CheckoutInfo'
 import { createCheckoutPreview } from '@/components/Customization/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Modal } from '@/components/Modal'
+import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { ProductCheckoutModal } from '@/components/Products/ProductCheckoutModal'
@@ -134,7 +134,7 @@ export default function ClientPage({
                   <Button>View Product Page</Button>
                 </Link>
               ) : (
-                <Button onClick={showCheckoutModal}>Checkout Link</Button>
+                <Button onClick={showCheckoutModal}>Share</Button>
               )}
               <Link
                 href={`/dashboard/${org.slug}/products/${selectedProduct.id}`}
@@ -142,8 +142,7 @@ export default function ClientPage({
                 <Button variant="secondary">Edit Product</Button>
               </Link>
             </div>
-            <Modal
-              className="lg:w-full lg:max-w-[480px]"
+            <InlineModal
               isShown={isCheckoutModalShown}
               hide={hideCheckoutModal}
               modalContent={<ProductCheckoutModal product={selectedProduct} />}
@@ -316,6 +315,13 @@ const ProductListItem = ({
             <ProductPrices prices={product.prices} />
           )}
         </span>
+        <Button
+          size="sm"
+          variant={selected ? 'default' : 'secondary'}
+          onClick={showCheckoutModal}
+        >
+          Share
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none" asChild>
             <Button
@@ -397,8 +403,7 @@ const ProductListItem = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <Modal
-        className="lg:w-full lg:max-w-[480px]"
+      <InlineModal
         isShown={isCheckoutModalShown}
         hide={hideCheckoutModal}
         modalContent={<ProductCheckoutModal product={product} />}

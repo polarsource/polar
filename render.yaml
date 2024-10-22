@@ -249,7 +249,8 @@ databases:
   - name: db
     databaseName: polar_cpit
     user: polar_cpit_user
-    plan: standard
+    plan: basic-1gb
+    diskSizeGB: 10
     region: ohio
     postgresMajorVersion: "15"
     readReplicas:

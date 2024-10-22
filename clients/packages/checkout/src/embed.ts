@@ -81,13 +81,17 @@ class EmbedCheckout {
     // Add keyframes for spin animation
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
-    @keyframes polar-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-    }
-  `
+      @keyframes polar-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      body.polar-no-scroll {
+        overflow: hidden;
+      }
+    `
     document.head.appendChild(styleSheet)
 
+    document.body.classList.add('polar-no-scroll')
     loader.appendChild(spinner)
     loaderContainer.appendChild(loader)
     document.body.appendChild(loaderContainer)
@@ -130,6 +134,7 @@ class EmbedCheckout {
 
   public close(): void {
     document.body.removeChild(this.iframe)
+    document.body.classList.remove('polar-no-scroll')
   }
 }
 

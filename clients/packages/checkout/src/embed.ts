@@ -26,7 +26,7 @@ class EmbedCheckout {
     this.iframe = iframe
   }
 
-  static postMessage(message: EmbedCheckoutMessage) {
+  static postMessage(message: EmbedCheckoutMessage): void {
     window.parent.postMessage({ ...message, type: POLAR_CHECKOUT_EVENT }, '*')
   }
 
@@ -108,8 +108,8 @@ class EmbedCheckout {
 
     const embedCheckout = new EmbedCheckout(iframe)
 
-    return new Promise(function (resolve) {
-      window.addEventListener('message', function (event) {
+    return new Promise((resolve) => {
+      window.addEventListener('message', (event) => {
         if (event.data.type !== POLAR_CHECKOUT_EVENT) {
           return
         }
@@ -128,7 +128,7 @@ class EmbedCheckout {
     })
   }
 
-  public close() {
+  public close(): void {
     document.body.removeChild(this.iframe)
   }
 }
@@ -141,21 +141,33 @@ declare global {
   }
 }
 
-window.Polar = {
-  EmbedCheckout,
+if (typeof window !== 'undefined') {
+  window.Polar = {
+    EmbedCheckout,
+  }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const checkoutElements = document.querySelectorAll('[data-polar-checkout]')
-  checkoutElements.forEach((checkoutElement) => {
-    checkoutElement.addEventListener('click', function () {
-      const url = checkoutElement.getAttribute('data-polar-checkout') as string
-      const theme = checkoutElement.getAttribute(
-        'data-polar-checkout-theme',
-      ) as 'light' | 'dark' | undefined
-      EmbedCheckout.create(url, theme)
+if (typeof document !== 'undefined') {
+  const currentScript = document.currentScript as HTMLScriptElement | null
+  if (currentScript && currentScript.hasAttribute('data-auto')) {
+    document.addEventListener('DOMContentLoaded', async () => {
+      const checkoutElements = document.querySelectorAll(
+        '[data-polar-checkout]',
+      )
+      checkoutElements.forEach((checkoutElement) => {
+        checkoutElement.addEventListener('click', (e) => {
+          e.preventDefault()
+          const url =
+            checkoutElement.getAttribute('href') ||
+            (checkoutElement.getAttribute('data-polar-checkout') as string)
+          const theme = checkoutElement.getAttribute(
+            'data-polar-checkout-theme',
+          ) as 'light' | 'dark' | undefined
+          EmbedCheckout.create(url, theme)
+        })
+      })
     })
-  })
-})
+  }
+}
 
 export { EmbedCheckout as PolarEmbedCheckout }

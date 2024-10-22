@@ -21,9 +21,11 @@ const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
 
 class EmbedCheckout {
   private iframe: HTMLIFrameElement
+  private backdrop: HTMLDivElement
 
-  constructor(iframe: HTMLIFrameElement) {
+  constructor(iframe: HTMLIFrameElement, backdrop: HTMLDivElement) {
     this.iframe = iframe
+    this.backdrop = backdrop
   }
 
   static postMessage(message: EmbedCheckoutMessage): void {
@@ -34,32 +36,33 @@ class EmbedCheckout {
     url: string,
     theme?: 'light' | 'dark',
   ): Promise<EmbedCheckout> {
-    // Add embed=true query parameter
-    const parsedURL = new URL(url)
-    parsedURL.searchParams.set('embed', 'true')
-    if (theme) {
-      parsedURL.searchParams.set('theme', theme)
-    }
-    const embedURL = parsedURL.toString()
+    const styleSheet = document.createElement('style')
+    styleSheet.innerText = `
+      .polar-loader-spinner {
+        width: 20px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: ${theme === 'dark' ? '#000' : '#fff'};
+        box-shadow: 0 0 0 0 ${theme === 'dark' ? '#fff' : '#000'};
+        animation: polar-loader-spinner-animation 1s infinite;
+      }
+      @keyframes polar-loader-spinner-animation {
+        100% {box-shadow: 0 0 0 30px #0000}
+      }
+      body.polar-no-scroll {
+        overflow: hidden;
+      }
+    `
+    document.head.appendChild(styleSheet)
 
-    // Create loader container
-    const loaderContainer = document.createElement('div')
-    loaderContainer.style.position = 'fixed'
-    loaderContainer.style.top = '0'
-    loaderContainer.style.left = '0'
-    loaderContainer.style.width = '100%'
-    loaderContainer.style.height = '100%'
-    loaderContainer.style.zIndex = '999'
-
-    // Create loader backdrop
+    // Create backdrop
     const backdrop = document.createElement('div')
     backdrop.style.position = 'absolute'
     backdrop.style.top = '0'
     backdrop.style.left = '0'
     backdrop.style.width = '100%'
     backdrop.style.height = '100%'
-    backdrop.style.backgroundColor = 'hsl(233 10% 3% / 0.5)'
-    loaderContainer.appendChild(backdrop)
+    backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'
 
     // Create loader
     const loader = document.createElement('div')
@@ -71,30 +74,21 @@ class EmbedCheckout {
 
     // Create spinning icon
     const spinner = document.createElement('div')
-    spinner.style.border = '8px solid hsl(233, 10%, 7%)'
-    spinner.style.borderTop = '8px solid hsl(233, 10%, 85%)'
-    spinner.style.borderRadius = '50%'
-    spinner.style.width = '32px'
-    spinner.style.height = '32px'
-    spinner.style.animation = 'polar-spin 2s linear infinite'
-
-    // Add keyframes for spin animation
-    const styleSheet = document.createElement('style')
-    styleSheet.innerText = `
-      @keyframes polar-spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      body.polar-no-scroll {
-        overflow: hidden;
-      }
-    `
-    document.head.appendChild(styleSheet)
-
-    document.body.classList.add('polar-no-scroll')
+    spinner.className = 'polar-loader-spinner'
     loader.appendChild(spinner)
-    loaderContainer.appendChild(loader)
-    document.body.appendChild(loaderContainer)
+
+    // Insert into the DOM
+    document.body.classList.add('polar-no-scroll')
+    document.body.appendChild(backdrop)
+    document.body.appendChild(loader)
+
+    // Add embed=true query parameter
+    const parsedURL = new URL(url)
+    parsedURL.searchParams.set('embed', 'true')
+    if (theme) {
+      parsedURL.searchParams.set('theme', theme)
+    }
+    const embedURL = parsedURL.toString()
 
     // Create iframe
     const iframe = document.createElement('iframe')
@@ -106,11 +100,9 @@ class EmbedCheckout {
     iframe.style.height = '100%'
     iframe.style.border = 'none'
     iframe.style.zIndex = '1000'
-
-    // Append iframe to the body
     document.body.appendChild(iframe)
 
-    const embedCheckout = new EmbedCheckout(iframe)
+    const embedCheckout = new EmbedCheckout(iframe, backdrop)
 
     return new Promise((resolve) => {
       window.addEventListener('message', (event) => {
@@ -119,7 +111,7 @@ class EmbedCheckout {
         }
         const data = event.data as EmbedCheckoutMessage
         if (data.event === 'loaded') {
-          document.body.removeChild(loaderContainer)
+          document.body.removeChild(loader)
           resolve(embedCheckout)
         } else if (data.event === 'close') {
           embedCheckout.close()
@@ -134,6 +126,7 @@ class EmbedCheckout {
 
   public close(): void {
     document.body.removeChild(this.iframe)
+    document.body.removeChild(this.backdrop)
     document.body.classList.remove('polar-no-scroll')
   }
 }

@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsup src/embed.ts --format cjs,esm,iife --dts --watch",
     "build": "tsup src/embed.ts --format cjs,esm,iife --dts --sourcemap --minify terser",
-    "publish-package": "turbo run build lint test && changeset version && changeset publish"
+    "release": "turbo run build lint test && changeset publish"
   },
   "exports": {
     "./embed": {

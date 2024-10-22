@@ -82,8 +82,6 @@ export const ProductCheckoutModal = ({
     [reset],
   )
 
-  const [newLinkSuccess, setNewLinkSuccess] = useState(false)
-
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
     useCreateCheckoutLink()
   const { mutateAsync: updateCheckoutLink, isPending: isUpdatePending } =
@@ -105,12 +103,10 @@ export const ProductCheckoutModal = ({
             id: selectedLink.id,
             body,
           })
-          setNewLinkSuccess(false)
         } else {
           checkoutLink = await createCheckoutLink({ body })
           setSelectedLink(checkoutLink)
           navigator.clipboard.writeText(checkoutLink.url)
-          setNewLinkSuccess(true)
         }
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -182,7 +178,7 @@ export const ProductCheckoutModal = ({
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
-          {product.prices.length > 1 && (
+          {!selectedLink && product.prices.length > 1 && (
             <FormField
               control={control}
               name="product_price_id"
@@ -302,13 +298,6 @@ export const ProductCheckoutModal = ({
           >
             {selectedLink ? 'Update Link' : 'Generate Link'}
           </Button>
-          {newLinkSuccess && selectedLink && (
-            <Input
-              value={selectedLink.url}
-              readOnly
-              className="border border-green-100 dark:border-green-900"
-            />
-          )}
         </form>
       </Form>
     </div>

@@ -9,6 +9,11 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "web",
-    "@examples/checkout-embed"
+    "astro-example",
+    "@examples/checkout-embed",
+    "eslint-config-custom",
+    "eslint-plugin-polar-rules",
+    "polarkit",
+    "@polar-sh/sdk"
   ]
 }

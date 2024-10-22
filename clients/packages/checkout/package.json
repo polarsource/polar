@@ -7,8 +7,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "tsup src/embed.ts --format cjs,esm,iife --dts --watch",
-    "build": "tsup src/embed.ts --format cjs,esm,iife --dts --sourcemap --minify terser",
-    "release": "turbo run build lint test && changeset publish"
+    "build": "tsup src/embed.ts --format cjs,esm,iife --dts --sourcemap --minify terser"
   },
   "exports": {
     "./embed": {

@@ -1,4 +1,4 @@
-name: Release @polar-sh/checkout
+name: Release packages
 
 on:
   push:
@@ -42,8 +42,7 @@ jobs:
         uses: changesets/action@v1
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm run release
-          cwd: ${{ github.workspace }}/clients/packages/checkout
+          publish: pnpm run release-packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

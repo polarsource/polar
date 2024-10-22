@@ -1,5 +1,13 @@
 # @polar-sh/checkout
 
+## 0.1.2
+
+### Patch Changes
+
+- ef574b4: - Prevent background page from scrolling while checkout is shown
+  - Tweak backdrop and loader
+  - Add a method to run initialization logic manually
+
 ## 0.1.1
 
 ### Patch Changes

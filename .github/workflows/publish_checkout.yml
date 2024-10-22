@@ -34,4 +34,4 @@ jobs:
         run: pnpm install
 
       - name: Publish
-        run: pnpm -C packages/checkout publish
+        run: pnpm -C packages/checkout publish-package

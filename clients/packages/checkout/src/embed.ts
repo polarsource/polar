@@ -40,7 +40,7 @@ class EmbedCheckout {
   private iframe: HTMLIFrameElement
   private backdrop: HTMLDivElement
 
-  constructor(iframe: HTMLIFrameElement, backdrop: HTMLDivElement) {
+  public constructor(iframe: HTMLIFrameElement, backdrop: HTMLDivElement) {
     this.iframe = iframe
     this.backdrop = backdrop
   }
@@ -49,7 +49,7 @@ class EmbedCheckout {
    * Send a embed checkout event to the parent window.
    * @param message
    */
-  static postMessage(message: EmbedCheckoutMessage): void {
+  public static postMessage(message: EmbedCheckoutMessage): void {
     window.parent.postMessage({ ...message, type: POLAR_CHECKOUT_EVENT }, '*')
   }
 
@@ -62,7 +62,7 @@ class EmbedCheckout {
    * @returns A promise that resolves to an instance of EmbedCheckout.
    * The promise resolves when the embedded checkout is fully loaded.
    */
-  static async create(
+  public static async create(
     url: string,
     theme?: 'light' | 'dark',
   ): Promise<EmbedCheckout> {
@@ -167,19 +167,17 @@ class EmbedCheckout {
    * <a href="https://buy.polar.sh/polar_cl_123" data-polar-checkout data-polar-checkout-theme="dark">Checkout</a>
    * ```
    */
-  static init(): void {
+  public static init(): void {
     const checkoutElements = document.querySelectorAll('[data-polar-checkout]')
     checkoutElements.forEach((checkoutElement) => {
-      checkoutElement.addEventListener('click', (e) => {
-        e.preventDefault()
-        const url =
-          checkoutElement.getAttribute('href') ||
-          (checkoutElement.getAttribute('data-polar-checkout') as string)
-        const theme = checkoutElement.getAttribute(
-          'data-polar-checkout-theme',
-        ) as 'light' | 'dark' | undefined
-        EmbedCheckout.create(url, theme)
-      })
+      checkoutElement.removeEventListener(
+        'click',
+        EmbedCheckout.checkoutElementClickHandler,
+      )
+      checkoutElement.addEventListener(
+        'click',
+        EmbedCheckout.checkoutElementClickHandler,
+      )
     })
   }
 
@@ -190,6 +188,19 @@ class EmbedCheckout {
     document.body.removeChild(this.iframe)
     document.body.removeChild(this.backdrop)
     document.body.classList.remove('polar-no-scroll')
+  }
+
+  private static async checkoutElementClickHandler(e: Event) {
+    e.preventDefault()
+    const checkoutElement = e.target as HTMLElement
+    const url =
+      checkoutElement.getAttribute('href') ||
+      (checkoutElement.getAttribute('data-polar-checkout') as string)
+    const theme = checkoutElement.getAttribute('data-polar-checkout-theme') as
+      | 'light'
+      | 'dark'
+      | undefined
+    EmbedCheckout.create(url, theme)
   }
 }
 

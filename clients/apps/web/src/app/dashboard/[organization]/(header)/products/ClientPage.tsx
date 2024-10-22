@@ -10,6 +10,7 @@ import { ProductCheckoutModal } from '@/components/Products/ProductCheckoutModal
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
+import useDebouncedCallback from '@/hooks/utils'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   DataTablePaginationState,
@@ -48,7 +49,7 @@ import { useCallback, useContext, useState } from 'react'
 export default function ClientPage({
   pagination,
   sorting,
-  query,
+  query: _query,
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
@@ -61,28 +62,45 @@ export default function ClientPage({
   } = useModal()
   const { organization: org } = useContext(MaintainerOrganizationContext)
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>()
+  const [query, setQuery] = useState(_query)
 
   const router = useRouter()
   const pathname = usePathname()
+
   const onPageChange = useCallback(
     (page: number) => {
       const searchParams = serializeSearchParams(pagination, sorting)
       searchParams.set('page', page.toString())
       if (query) {
         searchParams.set('query', query)
+      } else {
+        searchParams.delete('query')
       }
-      router.push(`${pathname}?${searchParams}`)
+      router.replace(`${pathname}?${searchParams}`)
     },
     [pagination, router, sorting, pathname],
   )
 
-  const onQueryChange = useCallback(
+  const debouncedQueryChange = useDebouncedCallback(
     (query: string) => {
       const searchParams = serializeSearchParams(pagination, sorting)
-      searchParams.set('query', query)
-      router.push(`${pathname}?${searchParams}`)
+      if (query?.length) {
+        searchParams.set('query', query)
+      } else {
+        searchParams.delete('query')
+      }
+      router.replace(`${pathname}?${searchParams}`)
     },
-    [pagination, router, sorting, pathname],
+    500,
+    [pagination, sorting, query, router, pathname],
+  )
+
+  const onQueryChange = useCallback(
+    (query: string) => {
+      setQuery(query)
+      debouncedQueryChange(query)
+    },
+    [debouncedQueryChange],
   )
 
   const products = useProducts(org.id, {

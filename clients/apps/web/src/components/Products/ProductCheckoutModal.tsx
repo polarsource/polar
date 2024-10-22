@@ -12,7 +12,9 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import {
@@ -22,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   Form,
   FormControl,
@@ -141,7 +142,7 @@ export const ProductCheckoutModal = ({
   )
 
   return (
-    <ShadowBox className="flex flex-col gap-y-8 overflow-y-auto">
+    <div className="flex flex-col gap-y-8 overflow-y-auto p-12">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-xl font-medium">Checkout Link</h3>
         <p className="dark:text-polar-500 text-gray-500">
@@ -151,18 +152,28 @@ export const ProductCheckoutModal = ({
       </div>
       <h1 className="text-xl">{product.name}</h1>
       {checkoutLinks && checkoutLinks.items.length > 0 && (
-        <List size="small" className="max-h-[200px] overflow-y-scroll">
-          {checkoutLinks.items.map((checkoutLink) => (
-            <ListItem
-              className="whitespace-nowrap p-2 text-xs"
-              key={checkoutLink.id}
-              selected={selectedLink?.id === checkoutLink.id}
-              onSelect={() => onSelectLink(checkoutLink)}
-              size="small"
-            >
-              {checkoutLink.url}
-            </ListItem>
-          ))}
+        <List size="small">
+          {checkoutLinks.items.map((checkoutLink) => {
+            const url = new URL(checkoutLink.url)
+            return (
+              <ListItem
+                size="small"
+                className="justify-between gap-x-6 whitespace-nowrap px-4 py-3 text-sm"
+                inactiveClassName="dark:text-polar-500 text-gray-500"
+                selectedClassName="text-black dark:text-white"
+                key={checkoutLink.id}
+                selected={selectedLink?.id === checkoutLink.id}
+                onSelect={() => onSelectLink(checkoutLink)}
+              >
+                <ProductPriceLabel price={checkoutLink.product_price} />
+                {checkoutLink.success_url && (
+                  <Pill color="blue" className="truncate">
+                    {url.host}
+                  </Pill>
+                )}
+              </ListItem>
+            )
+          })}
         </List>
       )}
 
@@ -283,8 +294,13 @@ export const ProductCheckoutModal = ({
               </Button>
             </div>
           </FormItem>
-          <Button type="submit" loading={isCreatePending || isUpdatePending}>
-            {selectedLink ? 'Update link' : 'Generate link'}
+          {selectedLink && <CopyToClipboardInput value={selectedLink?.url} />}
+          <Button
+            className="self-start"
+            type="submit"
+            loading={isCreatePending || isUpdatePending}
+          >
+            {selectedLink ? 'Update Link' : 'Generate Link'}
           </Button>
           {newLinkSuccess && selectedLink && (
             <Input
@@ -295,6 +311,6 @@ export const ProductCheckoutModal = ({
           )}
         </form>
       </Form>
-    </ShadowBox>
+    </div>
   )
 }

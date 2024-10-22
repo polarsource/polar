@@ -485,14 +485,17 @@ class OrderService(ResourceServiceReader[Order]):
             session, product.organization_id
         )
 
-        transfer_amount = order.amount
-
         # Retrieve the payment transaction and link it to the order
         payment_transaction = await balance_transaction_service.get_by(
             session, type=TransactionType.payment, charge_id=charge_id
         )
         if payment_transaction is None:
             raise PaymentTransactionForChargeDoesNotExist(charge_id)
+
+        # Make sure to take the amount from the payment transaction and not the order
+        # Orders invoices may apply customer balances which won't reflect the actual payment amount
+        transfer_amount = payment_transaction.amount
+
         payment_transaction.order = order
         session.add(payment_transaction)
 

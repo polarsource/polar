@@ -425,7 +425,7 @@ class TestCreateOrderFromStripe:
         )
         assert (
             transaction_service_mock.create_balance_from_charge.call_args[1]["amount"]
-            == invoice_total
+            == payment_transaction.amount
         )
 
         platform_fee_transaction_service_mock.create_fees_reversal_balances.assert_called_once()

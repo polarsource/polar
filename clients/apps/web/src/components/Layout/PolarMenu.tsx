@@ -63,7 +63,7 @@ const PolarMenu = ({
             onClick={onLoginClick}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            Login
+            Log in
           </Link>
         </>
       )}

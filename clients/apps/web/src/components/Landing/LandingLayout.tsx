@@ -71,7 +71,7 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <Button onClick={onLoginClick} variant="secondary">Open Dashboard</Button>
+        <Button onClick={onLoginClick} variant="secondary">Log in</Button>
         <GetStartedButton className="px-3" size="default" />
       </div>
       <Modal

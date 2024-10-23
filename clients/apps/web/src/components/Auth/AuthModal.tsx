@@ -15,7 +15,7 @@ export const AuthModal = ({
   signup,
 }: AuthModalProps) => {
   const isSignup = signup !== undefined
-  const title = isSignup ? 'Sign Up' : 'Sign In'
+  const title = isSignup ? 'Sign Up' : 'Log In'
 
   const copy =
     isSignup ? (

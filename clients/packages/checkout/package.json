@@ -6,8 +6,8 @@
   "type": "module",
   "version": "0.1.2",
   "scripts": {
-    "dev": "tsup src/embed.ts --format cjs,esm,iife --dts --watch",
-    "build": "tsup src/embed.ts --format cjs,esm,iife --dts --sourcemap --minify terser"
+    "dev": "tsup --watch",
+    "build": "tsup --minify terser --sourcemap"
   },
   "exports": {
     "./embed": {

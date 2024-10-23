@@ -22,6 +22,7 @@ from polar.models import ExternalOrganization, User
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.worker import QueueName, enqueue_job
 
 from .. import client as github
 from .. import types
@@ -244,8 +245,10 @@ class GithubOrganizationService(ExternalOrganizationService):
     async def sync_installed(self, session: AsyncSession, redis: Redis) -> None:
         external_organizations = await self.list_installed(session)
         for external_organization in external_organizations:
-            await github_repository.install_for_organization(
-                session, redis, external_organization
+            enqueue_job(
+                "github.repo.sync.repositories",
+                external_organization.id,
+                queue_name=QueueName.github_crawl,
             )
 
     async def _populate_github_org_metadata(

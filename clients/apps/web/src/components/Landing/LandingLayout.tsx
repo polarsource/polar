@@ -70,7 +70,7 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <Button onClick={onLoginClick}>Login</Button>
+        <Button onClick={onLoginClick} variant="secondary">Open Dashboard</Button>
       </div>
       <Modal
         isShown={isModalShown}

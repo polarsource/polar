@@ -60,7 +60,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     const link = await api.accounts.dashboardLink({
       id: account.id,
     })
-    window.location.href = link.url
+    window.open(link.url, '_blank');
   }
 
   return (

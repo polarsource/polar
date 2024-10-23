@@ -38,11 +38,9 @@ type EmbedCheckoutMessage =
  */
 class EmbedCheckout {
   private iframe: HTMLIFrameElement
-  private backdrop: HTMLDivElement
 
-  public constructor(iframe: HTMLIFrameElement, backdrop: HTMLDivElement) {
+  public constructor(iframe: HTMLIFrameElement) {
     this.iframe = iframe
-    this.backdrop = backdrop
   }
 
   /**
@@ -92,22 +90,13 @@ class EmbedCheckout {
     `
     document.head.appendChild(styleSheet)
 
-    // Create backdrop
-    const backdrop = document.createElement('div')
-    backdrop.style.position = 'absolute'
-    backdrop.style.top = '0'
-    backdrop.style.left = '0'
-    backdrop.style.width = '100%'
-    backdrop.style.height = '100%'
-    backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'
-
     // Create loader
     const loader = document.createElement('div')
     loader.style.position = 'absolute'
     loader.style.top = '50%'
     loader.style.left = '50%'
     loader.style.transform = 'translate(-50%, -50%)'
-    loader.style.zIndex = '1000'
+    loader.style.zIndex = '2147483647'
 
     // Create spinning icon
     const spinner = document.createElement('div')
@@ -116,7 +105,6 @@ class EmbedCheckout {
 
     // Insert into the DOM
     document.body.classList.add('polar-no-scroll')
-    document.body.appendChild(backdrop)
     document.body.appendChild(loader)
 
     // Add query parameters to the Checkout Link
@@ -137,10 +125,11 @@ class EmbedCheckout {
     iframe.style.width = '100%'
     iframe.style.height = '100%'
     iframe.style.border = 'none'
-    iframe.style.zIndex = '1000'
+    iframe.style.zIndex = '2147483647'
+    iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'
     document.body.appendChild(iframe)
 
-    const embedCheckout = new EmbedCheckout(iframe, backdrop)
+    const embedCheckout = new EmbedCheckout(iframe)
 
     return new Promise((resolve) => {
       window.addEventListener('message', (event) => {
@@ -198,7 +187,6 @@ class EmbedCheckout {
    */
   public close(): void {
     document.body.removeChild(this.iframe)
-    document.body.removeChild(this.backdrop)
     document.body.classList.remove('polar-no-scroll')
   }
 

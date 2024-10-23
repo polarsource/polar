@@ -51,7 +51,7 @@ export const Hero = () => {
                 <input
                   autoFocus={!isPhone}
                   className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
-                  placeholder="product-name"
+                  placeholder="storename"
                   value={slug}
                   onChange={(e) => setSlug(slugify(e.target.value))}
                 />

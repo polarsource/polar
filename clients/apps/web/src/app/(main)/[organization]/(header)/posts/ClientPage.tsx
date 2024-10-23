@@ -4,7 +4,6 @@ import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { useIsOrganizationMember } from '@/hooks'
 import { useListArticles } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
-import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StickyNote2Outlined } from '@mui/icons-material'
 import {
   Article,
@@ -25,8 +24,6 @@ const ClientPage = ({
   pinnedArticles: ListResourceArticle
   articles: ListResourceArticle
 }) => {
-  useTrafficRecordPageView({ organization })
-
   const isMember = useIsOrganizationMember(organization)
   const posts = useListArticles({
     organizationId: organization.id,

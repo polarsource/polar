@@ -5,19 +5,12 @@ import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
-import {
-  useListArticles,
-  useTrafficStatistics,
-  useTrafficTopReferrers,
-} from '@/hooks/queries'
+import { useListArticles } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { getServerURL } from '@/utils/api'
-import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import {
   ArrowForward,
-  ArrowForwardOutlined,
   DraftsOutlined,
   LanguageOutlined,
 } from '@mui/icons-material'
@@ -25,33 +18,11 @@ import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import { Card } from 'polarkit/components/ui/atoms/card'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
-
-const startOfMonth = new Date()
-startOfMonth.setUTCHours(0, 0, 0, 0)
-startOfMonth.setUTCDate(1)
-
-const startOfMonthThreeMonthsAgo = new Date()
-startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
-startOfMonthThreeMonthsAgo.setUTCDate(1)
-startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 2)
-
-const today = new Date()
-
-function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
-  if (idx !== undefined) {
-    return arr[idx]
-  }
-  if (arr.length === 0) {
-    return undefined
-  }
-  return arr[arr.length - 1]
-}
 
 const ClientPage = () => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
@@ -74,32 +45,6 @@ const ClientPage = () => {
 
   const showPosts = infinitePosts.length > 0 && posts.isFetched
   const showNoPostsYet = infinitePosts.length === 0 && posts.isFetched
-
-  const trafficStatistics = useTrafficStatistics({
-    organizationId: org.id,
-    startDate: startOfMonthThreeMonthsAgo,
-    endDate: startOfMonth,
-    interval: 'month',
-  })
-
-  const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
-    number | undefined
-  >()
-
-  const currentTraffic =
-    idxOrLast(trafficStatistics.data?.periods || [], hoveredPeriodIndex)
-      ?.views ?? 0
-
-  const referrers = useTrafficTopReferrers({
-    organizationId: org.id,
-    startDate: startOfMonthThreeMonthsAgo,
-    endDate: today,
-    limit: 5,
-  })
-
-  const prettyReferrerrs = (referrers.data?.items ?? []).map((r) => {
-    return { ...r, prettyURL: prettyReferrerURL(r) }
-  })
 
   if (!org.feature_settings?.articles_enabled) {
     return (
@@ -188,64 +133,6 @@ const ClientPage = () => {
                   </div>
                 </div>
               ) : null}
-            </div>
-          </div>
-          <div className="lx:overflow-auto flex w-full max-w-[360px] flex-col gap-y-8 overflow-hidden xl:sticky xl:top-8 xl:w-fit xl:flex-shrink-0">
-            <h3 className="text-lg font-medium text-gray-950 dark:text-white">
-              Analytics
-            </h3>
-            <div className="flex w-full overflow-x-auto md:overflow-hidden">
-              <div className="flex flex-row gap-6 md:overflow-hidden xl:flex-col xl:px-0">
-                {trafficStatistics.data && (
-                  <Card className="md:min-w-inherit flex w-full min-w-[360px] flex-col gap-y-6 self-stretch p-6">
-                    <div className="flex w-full flex-row items-center justify-between">
-                      <h3 className="text-sm font-medium">Views</h3>
-                      <span className="text-right text-sm">
-                        {currentTraffic.toLocaleString()}
-                      </span>
-                    </div>
-                    <Chart
-                      y="views"
-                      axisYOptions={{
-                        ticks: 'month',
-                        label: null,
-                      }}
-                      data={trafficStatistics.data.periods.map((d) => ({
-                        ...d,
-                        parsedStartDate: new Date(d.start_date),
-                      }))}
-                      onDataIndexHover={setHoveredPeriodIndex}
-                      hoveredIndex={hoveredPeriodIndex}
-                    />
-                  </Card>
-                )}
-                {prettyReferrerrs && prettyReferrerrs.length > 0 && (
-                  <Card className="justify-top  md:min-w-inherit flex w-full min-w-[300px] flex-col items-start gap-y-3 self-stretch overflow-hidden p-6">
-                    <div className="flex w-full flex-row items-center justify-between">
-                      <h3 className="text-sm font-medium">Top Referrers</h3>
-                    </div>
-
-                    {prettyReferrerrs.map(({ referrer, views, prettyURL }) => (
-                      <div
-                        key={referrer}
-                        className="flex w-full flex-row items-center justify-between gap-x-4 text-sm lg:gap-x-8"
-                      >
-                        <span className="truncate text-gray-600">
-                          {prettyURL}
-                        </span>
-                        <span>{views.toLocaleString()}</span>
-                      </div>
-                    ))}
-                    <Link
-                      className="mt-2 flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      href={`/dashboard/${org.slug}/posts/analytics`}
-                    >
-                      <span>View Analytics</span>
-                      <ArrowForwardOutlined fontSize="inherit" />
-                    </Link>
-                  </Card>
-                )}
-              </div>
             </div>
           </div>
         </div>

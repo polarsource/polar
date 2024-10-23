@@ -5,10 +5,9 @@ import FAQ from '@/components/Pledge/FAQ'
 import HowItWorks from '@/components/Pledge/HowItWorks'
 import IssueCard from '@/components/Pledge/IssueCard'
 import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
-import { useTrafficRecordPageView } from '@/utils/traffic'
+import { usePostHog } from '@/hooks/posthog'
 import { Issue, Organization, Pledger, RewardsSummary } from '@polar-sh/sdk'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { usePostHog } from '@/hooks/posthog'
 import { useEffect, useState } from 'react'
 
 const ClientPage = ({
@@ -27,7 +26,6 @@ const ClientPage = ({
   rewards?: RewardsSummary
 }) => {
   const posthog = usePostHog()
-  useTrafficRecordPageView({ organization })
 
   const [amount, setAmount] = useState(0)
   const onAmountChange = (amount: number) => {

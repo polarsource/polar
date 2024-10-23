@@ -40,7 +40,6 @@ from .product_price import (
 )
 from .repository import Repository
 from .subscription import Subscription
-from .traffic import Traffic
 from .transaction import Transaction
 from .user import OAuthAccount, User
 from .user_notification import UserNotification
@@ -91,7 +90,6 @@ __all__ = [
     "ProductPriceFree",
     "Repository",
     "Subscription",
-    "Traffic",
     "Transaction",
     "User",
     "UserNotification",

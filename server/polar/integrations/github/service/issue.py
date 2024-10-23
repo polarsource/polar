@@ -10,6 +10,7 @@ import structlog
 from githubkit import GitHub, Paginator
 from githubkit.exception import RequestFailed
 from sqlalchemy import asc, or_
+from sqlalchemy.orm import contains_eager
 
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
@@ -306,6 +307,44 @@ class GithubIssueService(IssueService):
         await session.commit()
 
         return True
+
+    async def sync_missing_badges(self, session: AsyncSession, redis: Redis) -> None:
+        statement = (
+            sql.select(Issue)
+            .join(
+                ExternalOrganization, ExternalOrganization.id == Issue.organization_id
+            )
+            .join(Organization, Organization.id == ExternalOrganization.organization_id)
+            .join(Repository, Repository.id == Issue.repository_id)
+            .options(
+                contains_eager(Issue.organization).contains_eager(
+                    ExternalOrganization.organization
+                ),
+                contains_eager(Issue.repository),
+            )
+            .where(
+                Issue.has_pledge_badge_label.is_(True),
+                Issue.pledge_badge_currently_embedded.is_(False),
+                ExternalOrganization.deleted_at.is_(None),
+                ExternalOrganization.installation_id.is_not(None),
+                ExternalOrganization.installation_suspended_at.is_(None),
+            )
+        )
+        issues = await session.stream_scalars(statement)
+        async for issue in issues:
+            repository = issue.repository
+            external_organization = issue.organization
+            organization = external_organization.organization
+            if organization is not None:
+                await self.embed_badge(
+                    session,
+                    redis,
+                    external_organization=external_organization,
+                    repository=repository,
+                    issue=issue,
+                    organization=organization,
+                    triggered_from_label=True,
+                )
 
     async def sync_issue(
         self,

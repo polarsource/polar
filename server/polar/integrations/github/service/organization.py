@@ -241,6 +241,13 @@ class GithubOrganizationService(ExternalOrganizationService):
 
         return await self._populate_github_org_metadata(session, client, org)
 
+    async def sync_installed(self, session: AsyncSession, redis: Redis) -> None:
+        external_organizations = await self.list_installed(session)
+        for external_organization in external_organizations:
+            await github_repository.install_for_organization(
+                session, redis, external_organization
+            )
+
     async def _populate_github_org_metadata(
         self,
         session: AsyncSession,

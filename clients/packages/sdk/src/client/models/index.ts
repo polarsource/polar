@@ -7851,25 +7851,6 @@ export interface ListResourceSubscription {
 /**
  * 
  * @export
- * @interface ListResourceTrafficReferrer
- */
-export interface ListResourceTrafficReferrer {
-    /**
-     * 
-     * @type {Array<TrafficReferrer>}
-     * @memberof ListResourceTrafficReferrer
-     */
-    items: Array<TrafficReferrer>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceTrafficReferrer
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceTransaction
  */
 export interface ListResourceTransaction {
@@ -14536,113 +14517,6 @@ export const TokenResponseTokenTypeEnum = {
 } as const;
 export type TokenResponseTokenTypeEnum = typeof TokenResponseTokenTypeEnum[keyof typeof TokenResponseTokenTypeEnum];
 
-/**
- * 
- * @export
- * @interface TrackPageView
- */
-export interface TrackPageView {
-    /**
-     * 
-     * @type {string}
-     * @memberof TrackPageView
-     */
-    location_href: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TrackPageView
-     */
-    article_id?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof TrackPageView
-     */
-    organization_id?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof TrackPageView
-     */
-    referrer?: string | null;
-}
-/**
- * 
- * @export
- * @interface TrackPageViewResponse
- */
-export interface TrackPageViewResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof TrackPageViewResponse
-     */
-    ok: boolean;
-}
-/**
- * 
- * @export
- * @interface TrafficReferrer
- */
-export interface TrafficReferrer {
-    /**
-     * 
-     * @type {string}
-     * @memberof TrafficReferrer
-     */
-    referrer: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof TrafficReferrer
-     */
-    views: number;
-}
-/**
- * 
- * @export
- * @interface TrafficStatistics
- */
-export interface TrafficStatistics {
-    /**
-     * 
-     * @type {Array<TrafficStatisticsPeriod>}
-     * @memberof TrafficStatistics
-     */
-    periods: Array<TrafficStatisticsPeriod>;
-}
-/**
- * 
- * @export
- * @interface TrafficStatisticsPeriod
- */
-export interface TrafficStatisticsPeriod {
-    /**
-     * 
-     * @type {string}
-     * @memberof TrafficStatisticsPeriod
-     */
-    start_date: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TrafficStatisticsPeriod
-     */
-    end_date: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof TrafficStatisticsPeriod
-     */
-    views: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TrafficStatisticsPeriod
-     */
-    article_id: string | null;
-}
 /**
  * 
  * @export

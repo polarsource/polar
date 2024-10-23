@@ -34,7 +34,6 @@ export * from './ProductsApi';
 export * from './RepositoriesApi';
 export * from './RewardsApi';
 export * from './SubscriptionsApi';
-export * from './TrafficApi';
 export * from './TransactionsApi';
 export * from './UsersApi';
 export * from './UsersAdvertisementsApi';

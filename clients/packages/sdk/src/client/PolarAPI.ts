@@ -31,7 +31,6 @@ import {
   RepositoriesApi,
   RewardsApi,
   SubscriptionsApi,
-  TrafficApi,
   TransactionsApi,
   UsersApi,
   WebhooksApi,
@@ -78,7 +77,6 @@ export class PolarAPI {
   public readonly repositories: RepositoriesApi
   public readonly rewards: RewardsApi
   public readonly subscriptions: SubscriptionsApi
-  public readonly traffic: TrafficApi
   public readonly transactions: TransactionsApi
   public readonly usersAdvertisements: UsersAdvertisementsApi
   public readonly users: UsersApi
@@ -124,7 +122,6 @@ export class PolarAPI {
     this.repositories = new RepositoriesApi(config)
     this.rewards = new RewardsApi(config)
     this.subscriptions = new SubscriptionsApi(config)
-    this.traffic = new TrafficApi(config)
     this.transactions = new TransactionsApi(config)
     this.usersAdvertisements = new UsersAdvertisementsApi(config)
     this.users = new UsersApi(config)

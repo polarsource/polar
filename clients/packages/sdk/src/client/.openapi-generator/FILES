@@ -32,7 +32,6 @@ apis/ProductsApi.ts
 apis/RepositoriesApi.ts
 apis/RewardsApi.ts
 apis/SubscriptionsApi.ts
-apis/TrafficApi.ts
 apis/TransactionsApi.ts
 apis/UsersAdvertisementsApi.ts
 apis/UsersApi.ts

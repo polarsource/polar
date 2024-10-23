@@ -1,12 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { issue, issueBodyHTML, pledger } from '@/utils/testdata'
+import { issue, issueBodyHTML, org, pledger } from '@/utils/testdata'
 import IssueCard from './IssueCard'
 
 const meta: Meta<typeof IssueCard> = {
   title: 'Organisms/IssueCard',
   component: IssueCard,
   args: {
+    organization: org,
     issue: issue,
     htmlBody: issueBodyHTML,
     pledgers: [pledger],

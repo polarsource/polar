@@ -60,7 +60,7 @@ export const Hero = () => {
             </div>
           </div>
           <p className="hidden dark:text-polar-500 text-balance text-xs text-gray-500 md:block">
-            We only earn once you do - 4% + 40¢ per transaction.
+            We only earn when you do - 4% + 40¢ per transaction.
           </p>
         </div>
       </div>

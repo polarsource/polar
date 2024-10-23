@@ -33,10 +33,10 @@ export const Hero = () => {
           </h1>
           <div className="flex flex-col items-center xl:w-2/3">
             <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
-              Focus on shipping your product - leave international taxes, upsales &amp; billing to us.
+              As your merchant of record, we&apos;ll handle international taxes, upsales &amp; billing.
             </p>
             <p className="hidden dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500 md:block">
-              Polar is a merchant of record trusted by thousands of developers &amp; startups.
+              Trusted by thousands of software developers &amp; startups.
             </p>
           </div>
         </div>

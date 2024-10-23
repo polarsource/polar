@@ -43,7 +43,7 @@ const TopbarRight = ({
       ) : (
         <>
           <Button onClick={onLoginClick} variant="secondary">
-            Login
+            Log in
           </Button>
 
           <GetStartedButton size="default" text="Sell with Polar" storefrontOrg={storefrontOrg} />

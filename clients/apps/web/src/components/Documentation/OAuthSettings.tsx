@@ -23,7 +23,7 @@ const OAuthSettings = () => {
         <div className="flex flex-col items-center gap-4 p-4">
           <div>You must be logged in to manage your OAuth clients.</div>
           <Link href={loginLink} onClick={onLoginClick}>
-            <Button type="button">Login</Button>
+            <Button type="button">Log in</Button>
           </Link>
         </div>
       </ShadowListGroup>

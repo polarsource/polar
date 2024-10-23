@@ -176,7 +176,7 @@ export default function Page() {
     return (
       <LoadingScreen animate={false}>
         <div className="flex flex-col items-center space-y-2">
-          <p>Login to continue</p>
+          <p>Log in to continue</p>
           {pathname && (
             <GithubLoginButton
               returnTo={pathname}

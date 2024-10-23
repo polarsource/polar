@@ -2,7 +2,7 @@ import Login from '@/components/Auth/Login'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Login to Polar',
+  title: 'Log in to Polar',
 }
 
 export default async function Page({

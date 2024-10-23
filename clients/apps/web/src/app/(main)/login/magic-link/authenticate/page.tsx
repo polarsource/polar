@@ -30,7 +30,7 @@ export default function Page({
         </div>
         <input type="hidden" name="token" value={token} />
         <Button fullWidth size="lg" type="submit">
-          Login
+          Log in
         </Button>
       </div>
     </form>

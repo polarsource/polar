@@ -12566,12 +12566,8 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Benefit"
-                                        }
-                                    ],
-                                    "title": "Response Benefits:Create"
+                                    "$ref": "#/components/schemas/Benefit",
+                                    "title": "Benefit"
                                 }
                             }
                         }
@@ -12638,12 +12634,8 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Benefit"
-                                        }
-                                    ],
-                                    "title": "Response Benefits:Get"
+                                    "$ref": "#/components/schemas/Benefit",
+                                    "title": "Benefit"
                                 }
                             }
                         }
@@ -12750,12 +12742,8 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/Benefit"
-                                        }
-                                    ],
-                                    "title": "Response Benefits:Update"
+                                    "$ref": "#/components/schemas/Benefit",
+                                    "title": "Benefit"
                                 }
                             }
                         }
@@ -15896,7 +15884,6 @@
                         "schema": {
                             "type": "string",
                             "format": "date",
-                            "minimum": "2023-01-01",
                             "description": "Start date.",
                             "title": "Start Date"
                         },
@@ -15919,13 +15906,8 @@
                         "in": "query",
                         "required": true,
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Interval"
-                                }
-                            ],
-                            "description": "Interval between two timestamps.",
-                            "title": "Interval"
+                            "$ref": "#/components/schemas/Interval",
+                            "description": "Interval between two timestamps."
                         },
                         "description": "Interval between two timestamps."
                     },
@@ -18158,20 +18140,12 @@
                         "description": "The ID of the organization owning the article. **Required unless you use an organization token.**"
                     },
                     "byline": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ArticleByline"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/ArticleByline",
                         "description": "If the user or organization should be credited in the byline.",
                         "default": "organization"
                     },
                     "visibility": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ArticleVisibility"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/ArticleVisibility",
                         "default": "private"
                     },
                     "paid_subscribers_only": {
@@ -18848,19 +18822,11 @@
                         "title": "Currency"
                     },
                     "state": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeState"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeState",
                         "description": "Current state of the pledge"
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeType",
                         "description": "Type of pledge"
                     },
                     "refunded_at": {
@@ -18890,11 +18856,7 @@
                         "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
                     },
                     "issue": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Issue",
                         "description": "The issue that the pledge was made towards"
                     },
                     "pledger": {
@@ -19022,11 +18984,7 @@
             "BackofficeReward": {
                 "properties": {
                     "pledge": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Pledge"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Pledge",
                         "description": "The pledge that the reward was split from"
                     },
                     "user": {
@@ -19649,11 +19607,7 @@
                         "description": "The ID of the benefit."
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/BenefitType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/BenefitType",
                         "description": "The type of the benefit."
                     },
                     "description": {
@@ -21770,11 +21724,7 @@
                         "title": "Properties"
                     },
                     "benefit": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Benefit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Benefit",
                         "title": "Benefit"
                     },
                     "previous_properties": {
@@ -22455,11 +22405,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -22559,11 +22505,7 @@
                         "title": "Metadata"
                     },
                     "payment_processor": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
                         "description": "Payment processor used."
                     },
                     "client_secret": {
@@ -22742,19 +22684,11 @@
                         "description": "The ID of the object."
                     },
                     "payment_processor": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
                         "description": "Payment processor used."
                     },
                     "status": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CheckoutStatus"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/CheckoutStatus",
                         "description": "Status of the checkout session."
                     },
                     "client_secret": {
@@ -22777,6 +22711,18 @@
                         "type": "string",
                         "title": "Success Url",
                         "description": "URL where the customer will be redirected after a successful payment."
+                    },
+                    "embed_origin": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Embed Origin",
+                        "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
                     },
                     "amount": {
                         "anyOf": [
@@ -22896,11 +22842,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -22941,6 +22883,7 @@
                     "url",
                     "expires_at",
                     "success_url",
+                    "embed_origin",
                     "amount",
                     "tax_amount",
                     "currency",
@@ -23037,11 +22980,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -23166,11 +23105,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -24856,11 +24791,7 @@
                         "title": "Id"
                     },
                     "platform": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Platforms"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Platforms",
                         "description": "Issue platform (currently always GitHub)"
                     },
                     "number": {
@@ -24996,11 +24927,7 @@
                         "$ref": "#/components/schemas/Funding"
                     },
                     "repository": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Repository"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Repository",
                         "description": "The repository that the issue is in"
                     },
                     "upfront_split_to_contributors": {
@@ -25839,11 +25766,7 @@
                 "properties": {
                     "items": {
                         "items": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Benefit"
-                                }
-                            ],
+                            "$ref": "#/components/schemas/Benefit",
                             "title": "Benefit"
                         },
                         "type": "array",
@@ -27457,11 +27380,7 @@
                         "description": "Human-readable name for the metric."
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricType",
                         "description": "Type of the metric, useful to know the unit or format of the value."
                     }
                 },
@@ -27622,43 +27541,23 @@
             "MetricsIntervalsLimits": {
                 "properties": {
                     "hour": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the hour interval."
                     },
                     "day": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the day interval."
                     },
                     "week": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the week interval."
                     },
                     "month": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the month interval."
                     },
                     "year": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalLimit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalLimit",
                         "description": "Limits for the year interval."
                     }
                 },
@@ -27682,11 +27581,7 @@
                         "description": "Minimum date to get metrics."
                     },
                     "intervals": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/MetricsIntervalsLimits"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/MetricsIntervalsLimits",
                         "description": "Limits for each interval."
                     }
                 },
@@ -27709,11 +27604,7 @@
                         "description": "List of data for each timestamp."
                     },
                     "metrics": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Metrics"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Metrics",
                         "description": "Information about the returned metrics."
                     }
                 },
@@ -30153,19 +30044,11 @@
                         "title": "Currency"
                     },
                     "state": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeState"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeState",
                         "description": "Current state of the pledge"
                     },
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeType",
                         "description": "Type of pledge"
                     },
                     "refunded_at": {
@@ -30195,11 +30078,7 @@
                         "description": "When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."
                     },
                     "issue": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Issue",
                         "description": "The issue that the pledge was made towards"
                     },
                     "pledger": {
@@ -31714,11 +31593,7 @@
                         "description": "The type of the price."
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31806,11 +31681,7 @@
                         "description": "The type of the price."
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31863,11 +31734,7 @@
                         "default": "usd"
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31937,11 +31804,7 @@
                         "description": "The type of the price."
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -31978,11 +31841,7 @@
                         "title": "Amount Type"
                     },
                     "recurring_interval": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionRecurringInterval"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/SubscriptionRecurringInterval",
                         "description": "The recurring interval of the price."
                     }
                 },
@@ -32640,11 +32499,7 @@
             "Reward": {
                 "properties": {
                     "pledge": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Pledge"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Pledge",
                         "description": "The pledge that the reward was split from"
                     },
                     "user": {
@@ -33374,11 +33229,7 @@
             "SummaryPledge": {
                 "properties": {
                     "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/PledgeType"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/PledgeType",
                         "description": "Type of pledge"
                     },
                     "pledger": {
@@ -36389,11 +36240,7 @@
                         "title": "Type"
                     },
                     "data": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Benefit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Benefit",
                         "title": "Benefit"
                     }
                 },
@@ -36482,11 +36329,7 @@
                         "title": "Type"
                     },
                     "data": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/Benefit"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/Benefit",
                         "title": "Benefit"
                     }
                 },
@@ -36587,11 +36430,7 @@
                         "description": "Whether the delivery was successful."
                     },
                     "webhook_event": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/WebhookEvent"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/WebhookEvent",
                         "description": "The webhook event sent by this delivery."
                     }
                 },
@@ -36664,11 +36503,7 @@
                         ]
                     },
                     "format": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/WebhookFormat"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/WebhookFormat",
                         "description": "The format of the webhook payload."
                     },
                     "user_id": {
@@ -36732,11 +36567,7 @@
                         ]
                     },
                     "format": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/WebhookFormat"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/WebhookFormat",
                         "description": "The format of the webhook payload."
                     },
                     "secret": {
@@ -36808,11 +36639,7 @@
                     "format": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/WebhookFormat"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/WebhookFormat",
                                 "description": "The format of the webhook payload."
                             },
                             {
@@ -37382,19 +37209,11 @@
                         "description": "The ID of the object."
                     },
                     "payment_processor": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/polar__enums__PaymentProcessor"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
                         "description": "Payment processor used."
                     },
                     "status": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CheckoutStatus"
-                            }
-                        ],
+                        "$ref": "#/components/schemas/CheckoutStatus",
                         "description": "Status of the checkout session."
                     },
                     "client_secret": {
@@ -37417,6 +37236,18 @@
                         "type": "string",
                         "title": "Success Url",
                         "description": "URL where the customer will be redirected after a successful payment."
+                    },
+                    "embed_origin": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Embed Origin",
+                        "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
                     },
                     "amount": {
                         "anyOf": [
@@ -37536,11 +37367,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {
@@ -37582,6 +37409,7 @@
                     "url",
                     "expires_at",
                     "success_url",
+                    "embed_origin",
                     "amount",
                     "tax_amount",
                     "currency",
@@ -37682,11 +37510,7 @@
                     "customer_billing_address": {
                         "anyOf": [
                             {
-                                "allOf": [
-                                    {
-                                        "$ref": "#/components/schemas/Address"
-                                    }
-                                ],
+                                "$ref": "#/components/schemas/Address",
                                 "description": "Billing address of the customer."
                             },
                             {

@@ -35,28 +35,33 @@ export const Hero = () => {
             <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
               Focus on shipping your product - leave international taxes, upsales &amp; billing to us.
             </p>
-            <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
-              Polar is a merchant of record trusted by thousands of developers.
+            <p className="hidden dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500 md:block">
+              Polar is a merchant of record trusted by thousands of developers &amp; startups.
             </p>
           </div>
         </div>
-        <div className="z-20 flex flex-row items-center gap-x-4">
-          <div
-            className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
-            role="form"
-          >
-            <div className="flex flex-row items-center gap-x-0.5">
-              <span>polar.sh/</span>
-              <input
-                autoFocus={!isPhone}
-                className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
-                placeholder="my-organization"
-                value={slug}
-                onChange={(e) => setSlug(slugify(e.target.value))}
-              />
+        <div className="flex flex-col items-center gap-y-4">
+          <div className="z-20 flex flex-row items-center gap-x-4">
+            <div
+              className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
+              role="form"
+            >
+              <div className="flex flex-row items-center gap-x-0.5">
+                <span>polar.sh/</span>
+                <input
+                  autoFocus={!isPhone}
+                  className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
+                  placeholder="product-name"
+                  value={slug}
+                  onChange={(e) => setSlug(slugify(e.target.value))}
+                />
+              </div>
+              <GetStartedButton className="px-3" orgSlug={slug} size="default" text="Start for free" />
             </div>
-            <GetStartedButton className="px-3" orgSlug={slug} size="default" />
           </div>
+          <p className="hidden dark:text-polar-500 text-balance text-xs text-gray-500 md:block">
+            Up and running in two minutes. We only earn once you do - 4% + 40¢ per transaction.
+          </p>
         </div>
       </div>
       <div>

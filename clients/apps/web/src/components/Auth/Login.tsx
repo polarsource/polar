@@ -83,7 +83,7 @@ const Login = ({
         <LabeledSeparator label="Or" />
         <MagicLinkLoginForm {...loginProps} />
       </div>
-      <div className="dark:text-polar-500 text-sm text-gray-400">
+      <div className="dark:text-polar-500 mt-6 text-center text-xs text-gray-400">
         By using Polar you agree to our{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
@@ -91,14 +91,13 @@ const Login = ({
         >
           Terms of Service
         </a>{' '}
-        and understand our{' '}
+        and {' '}
         <a
           className="dark:text-polar-300 text-gray-600"
           href="https://polar.sh/legal/privacy"
         >
           Privacy Policy
         </a>
-        .
       </div>
     </div>
   )

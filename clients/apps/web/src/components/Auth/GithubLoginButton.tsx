@@ -48,7 +48,6 @@ const GithubLoginButton = (props: {
           props.size === 'large' ? largeStyle : smallStyle,
           props.className,
         )}
-        variant="secondary"
         className={twMerge(props.size == 'large' && 'text-md p-5')}
         fullWidth={props.fullWidth}
       >

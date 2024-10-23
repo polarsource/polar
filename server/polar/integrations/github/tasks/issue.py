@@ -112,3 +112,13 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
                     _defer_by=random.randint(0, 60 * 5),
                     queue_name=QueueName.github_crawl,
                 )
+
+
+@task("github.issue.sync_missing_badges")
+@github_rate_limit_retry
+async def issue_sync_missing_badges(
+    ctx: JobContext, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            await github_issue.sync_missing_badges(session, get_worker_redis(ctx))

@@ -55,3 +55,16 @@ async def populate_org_metadata(
             await github_organization_service.populate_org_metadata(
                 session, get_worker_redis(ctx), org
             )
+
+
+@task("github.organization.sync_installed")
+@github_rate_limit_retry
+async def organization_sync_installed(
+    ctx: JobContext,
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            await github_organization_service.sync_installed(
+                session, get_worker_redis(ctx)
+            )

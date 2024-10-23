@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
 
 export const Hero = () => {
@@ -28,41 +29,42 @@ export const Hero = () => {
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
         <div className="z-20 flex flex-col items-center gap-y-8">
-          <h1 className="text-balance text-5xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
-            Sell digital products &amp; subscriptions in minutes
+          <h1 className="text-balance text-3xl !leading-tight text-gray-950 md:text-5xl dark:text-white">
+            Sell SaaS and digital products in minutes
           </h1>
           <div className="flex flex-col items-center xl:w-2/3">
             <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
-              As your merchant of record, we&apos;ll handle international taxes, upsales &amp; billing.
+              Leave international taxes to us as your merchant of record.
             </p>
-            <p className="hidden dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500 md:block">
-              Trusted by thousands of software developers &amp; startups.
+            <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
+              20%+ lower fees vs. alternatives.
             </p>
           </div>
         </div>
-        <div className="flex flex-col items-center gap-y-4">
+        <div className="flex flex-col items-center gap-y-8">
           <div className="z-20 flex flex-row items-center gap-x-4">
             <div
               className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
               role="form"
             >
               <div className="flex flex-row items-center gap-x-0.5">
-                <span className="text-xl">polar.sh/</span>
+                <span className="md:text-xl">polar.sh/</span>
                 <input
                   autoFocus={!isPhone}
-                  className="w-44 border-none border-transparent bg-transparent p-0 text-xl focus:border-transparent focus:ring-0"
+                  className="w-44 border-none border-transparent bg-transparent p-0 md:text-xl focus:border-transparent focus:ring-0"
                   placeholder="storename"
                   value={slug}
                   onChange={(e) => setSlug(slugify(e.target.value))}
                 />
               </div>
-              <GetStartedButton className="px-3" orgSlug={slug} size="lg" text="Start for free" wrapperClassNames="text-lg px-4" />
+              <GetStartedButton className="px-3" orgSlug={slug} size="lg" text="Start for free" wrapperClassNames="md:text-lg md:px-4" />
             </div>
           </div>
-          <p className="hidden dark:text-polar-500 text-balance text-xs text-gray-500 md:block">
-            We only earn when you do - 4% + 40¢ per transaction.
-          </p>
         </div>
+        <p className="dark:text-polar-500 text-balance text-gray-500">
+          <span className="text-polar-300">♥️ Trusted by thousands of developers</span> &amp; {' '}
+          <Link href="https://github.com/polarsource/polar" target="_blank" className="underline cursor-pointer">built open source</Link>
+        </p>
       </div>
       <div>
         <video

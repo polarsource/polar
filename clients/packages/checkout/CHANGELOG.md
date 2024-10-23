@@ -1,5 +1,12 @@
 # @polar-sh/checkout
 
+## 0.1.3
+
+### Patch Changes
+
+- e67a4cb: Implement security mechanism to avoid XSS vulnerabilities
+- 4bb3bb3: prevent `init()` from wiring the click event listener several times
+
 ## 0.1.2
 
 ### Patch Changes

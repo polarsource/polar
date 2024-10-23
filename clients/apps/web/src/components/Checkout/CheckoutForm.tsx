@@ -487,11 +487,16 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         }
       }
 
-      PolarEmbedCheckout.postMessage({
-        event: 'success',
-        successURL: parsedURL.toString(),
-        redirect: !isInternalURL,
-      })
+      if (checkout.embed_origin) {
+        PolarEmbedCheckout.postMessage(
+          {
+            event: 'success',
+            successURL: parsedURL.toString(),
+            redirect: !isInternalURL,
+          },
+          checkout.embed_origin,
+        )
+      }
 
       if (isInternalURL || !embed) {
         router.push(parsedURL.toString())

@@ -170,6 +170,7 @@ export const createCheckoutPreview = (
     payment_processor_metadata: {},
     url: '/checkout/CLIENT_SECRET',
     success_url: '/checkout/CLIENT_SECRET/confirmation',
+    embed_origin: null,
   }
 }
 
@@ -199,6 +200,7 @@ export const CHECKOUT_PREVIEW: CheckoutPublic = {
   payment_processor_metadata: {},
   url: '/checkout/CLIENT_SECRET',
   success_url: '/checkout/CLIENT_SECRET/confirmation',
+  embed_origin: null,
 }
 
 export const ORDER_PREVIEW: UserOrder = {

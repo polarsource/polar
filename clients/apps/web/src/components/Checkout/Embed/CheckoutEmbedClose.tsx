@@ -2,15 +2,21 @@
 
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
+import { CheckoutPublic } from '@polar-sh/sdk'
 import { useCallback } from 'react'
 
-interface CheckoutEmbedCloseProps {}
+interface CheckoutEmbedCloseProps {
+  checkout: CheckoutPublic
+}
 
 const CheckoutEmbedClose: React.FC<
   React.PropsWithChildren<CheckoutEmbedCloseProps>
-> = () => {
+> = ({ checkout }) => {
   const onClose = useCallback(() => {
-    PolarEmbedCheckout.postMessage({ event: 'close' })
+    if (!checkout.embed_origin) {
+      return
+    }
+    PolarEmbedCheckout.postMessage({ event: 'close' }, checkout.embed_origin)
   }, [])
 
   return (

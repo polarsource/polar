@@ -8,6 +8,9 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer
 
 from polar.config import settings
+from polar.integrations.github.service.repository import (
+    github_repository as github_repository_service,
+)
 from polar.issue.service import issue as issue_service
 from polar.models import ExternalOrganization, Organization, Repository
 from polar.worker import enqueue_job, flush_enqueued_jobs
@@ -24,6 +27,7 @@ class RepositoriesListScreen(Screen[None]):
         ("ctrl+g", "open_in_github", "Open in GitHub"),
         ("ctrl+p", "open_in_polar", "Open in Polar"),
         ("ctrl+b", "rebadge_issues", "Rebadge issues"),
+        ("ctrl+s", "resync_issues", "Resync issues"),
     ]
 
     repositories: dict[str, Repository] = {}
@@ -98,6 +102,22 @@ class RepositoriesListScreen(Screen[None]):
             timeout=5,
         )
 
+    def action_resync_issues(self) -> None:
+        table = self.query_one(DataTable)
+        cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
+        row_key = cell_key.row_key.value
+        if row_key is None:
+            return
+
+        repository = self.repositories[row_key]
+        self.resync_issues(repository)
+
+        self.app.notify(
+            "The repository issues will be resynced.",
+            title=f"Resyncing {repository.name} issues...",
+            timeout=5,
+        )
+
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         row_key = event.row_key.value
         if row_key is None:
@@ -158,6 +178,16 @@ class RepositoriesListScreen(Screen[None]):
                 title="Repository issues rebadged",
                 timeout=5,
             )
+        await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
+
+    @work(exclusive=True)
+    async def resync_issues(self, repository: Repository) -> None:
+        await github_repository_service.enqueue_sync(repository)
+        self.app.notify(
+            "Repositority sync enqueued.",
+            title=f"{repository.name} have been queued to be resynced",
+            timeout=5,
+        )
         await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
 
     def _set_sub_title(self) -> None:

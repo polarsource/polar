@@ -388,6 +388,12 @@ export const GuidesNavigation = () => {
         Integrate with Node.js & Express
       </NavigationItem>
       <NavigationItem href="/docs/guides/checkout">Checkout</NavigationItem>
+      <NavigationItem href="/docs/guides/checkouts">
+        Checkouts & Payment Links
+      </NavigationItem>
+      <NavigationItem href="/docs/guides/figma">
+        Monetizing your Figma plugin
+      </NavigationItem>
       <NavigationItem
         href="/docs/api/webhooks"
         icon={<NorthEastOutlined fontSize="inherit" />}

@@ -1,0 +1,45 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
+# Monetizing your Figma plugin
+
+In this guide, we'll walk you through the process of monetizing your Figma plugin using the Polar SDK.
+
+### Prerequisites
+
+- A Figma account
+- A Polar account
+- A Figma plugin
+
+## Creating a product with License Key Benefit
+
+The best way to monetize your Figma plugin is to use a License Key Benefit. This benefit type allows you to sell access to your plugin to users.
+
+The flow would look something like this:
+
+1. User installs your plugin
+2. User gets a prompt to enter their license key
+3. User buys a license key from your Polar product page
+4. User adds the license key to your plugin
+5. User can now use your plugin & you've made a few bucks!
+
+### Creating a product
+
+Head over to your Polar dashboard and click on **Products** in the sidebar. Then click on **New Product**. Fill in the details for your product.
+
+### Adding the License Key Benefit
+
+Once you've entered product details and pricing information, you'll see a section for **Benefits**. Expand the License Key tab & press **Create New**.
+
+This will expand the License Key modal, where you can configure the license key settings. Configure how the license key should be used in your plugin.
+
+Perfect! You've now created a product, which grants an associated license key to the customer.
+
+## Configure a personal access token
+
+In order to use the Polar SDK, you'll need to configure a personal access token. This token will be used to authenticate your plugin when it requests information from Polar.
+
+To create a personal access token, click on your profile dropdown in the top right corner of the Polar dashboard and select **Account** or press [here](https://polar.sh/settings). 
+
+<BrowserCallout type="CAUTION">
+It's important that you keep this token secret at all times, as it grants access to your Polar account.
+</BrowserCallout>

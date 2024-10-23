@@ -1,3 +1,5 @@
+const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
+
 /**
  * Message sent to the parent window when the embedded checkout is fully loaded.
  */
@@ -30,8 +32,6 @@ type EmbedCheckoutMessage =
   | EmbedCheckoutMessageLoaded
   | EmbedCheckoutMessageClose
   | EmbedCheckoutMessageSuccess
-
-const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
 
 /**
  * Represents an embedded checkout instance.
@@ -136,6 +136,10 @@ class EmbedCheckout {
 
     return new Promise((resolve) => {
       window.addEventListener('message', (event) => {
+        // @ts-ignore
+        if (!__POLAR_ALLOWED_ORIGINS__.split(',').includes(event.origin)) {
+          return
+        }
         if (event.data.type !== POLAR_CHECKOUT_EVENT) {
           return
         }

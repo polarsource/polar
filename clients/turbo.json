@@ -35,7 +35,8 @@
     "NEXT_PUBLIC_SENTRY_DSN",
     "SENTRY_PROJECT",
     "SENTRY_ORG",
-    "POLAR_AUTH_COOKIE_KEY"
+    "POLAR_AUTH_COOKIE_KEY",
+    "POLAR_ALLOWED_ORIGINS"
   ],
   "tasks": {
     "build": {

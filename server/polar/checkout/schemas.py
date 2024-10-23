@@ -146,6 +146,11 @@ class CheckoutBase(IDSchema, TimestampedSchema):
             "URL where the customer will be redirected after a successful payment."
         )
     )
+    embed_origin: str | None = Field(
+        description="When checkout is embedded, "
+        "represents the Origin of the page embedding the checkout. "
+        "Used as a security measure to send messages only to the embedding page."
+    )
     amount: Amount | None
     tax_amount: int | None = Field(description="Computed tax amount to pay in cents.")
     currency: str | None = Field(description="Currency code of the checkout session.")

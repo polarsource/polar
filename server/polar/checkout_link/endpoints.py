@@ -159,6 +159,7 @@ async def redirect(
     request: Request,
     client_secret: CheckoutLinkClientSecret,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
+    embed_origin: str | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     """Use a checkout link to create a checkout session and redirect to it."""
@@ -171,11 +172,14 @@ async def redirect(
 
     ip_address = request.client.host if request.client else None
     checkout = await checkout_service.checkout_link_create(
-        session, checkout_link, ip_geolocation_client, ip_address
+        session, checkout_link, embed_origin, ip_geolocation_client, ip_address
     )
 
     # Add the query parameters from the request to the URL
     checkout_url = URL(checkout.url)
-    checkout_url = checkout_url.include_query_params(**request.query_params)
+    query_params = {
+        k: v for k, v in request.query_params.items() if k not in {"embed_origin"}
+    }
+    checkout_url = checkout_url.include_query_params(**query_params)
 
     return RedirectResponse(checkout_url)

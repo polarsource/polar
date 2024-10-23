@@ -81,7 +81,7 @@ class WorkerSettings:
     cron_jobs: list[CronJob] = []
     queue_name: str = QueueName.default.value
 
-    redis_settings = RedisSettings().from_dsn(settings.redis_url)
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
 
     @staticmethod
     async def on_startup(ctx: WorkerContext) -> None:
@@ -151,6 +151,8 @@ class WorkerSettingsGitHubCrawl(WorkerSettings):
     queue_name: str = QueueName.github_crawl.value
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
+
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
 
     @staticmethod
     async def on_startup(ctx: WorkerContext) -> None:

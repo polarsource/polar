@@ -1,4 +1,4 @@
-import { issue, pledgePublicAPI, user } from '@/utils/testdata'
+import { issue, org, pledgePublicAPI, user } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
 import Split, { Contributor } from './Split'
 
@@ -37,6 +37,7 @@ export const Default: Story = {
   args: {
     pledges: [pledgePublicAPI, pledgePublicAPI, pledgePublicAPI],
     contributors: contributors,
+    organization: org,
     issue: issue,
     shares: [
       {

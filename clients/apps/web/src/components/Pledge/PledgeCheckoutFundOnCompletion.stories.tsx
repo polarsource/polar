@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 
 import { UserContextProvider } from '@/providers/auth'
-import { issue } from '@/utils/testdata'
+import { issue, org } from '@/utils/testdata'
 
 const meta: Meta<typeof PledgeCheckoutFundOnCompletion> = {
   title: 'Organisms/PledgeCheckoutFundOnCompletion',
@@ -31,5 +31,6 @@ type Story = StoryObj<typeof PledgeCheckoutFundOnCompletion>
 export const Default: Story = {
   args: {
     issue: issue,
+    organization: org,
   },
 }

@@ -1193,7 +1193,7 @@ export interface ArticleCreate {
      */
     organization_id?: string | null;
     /**
-     * If the user or organization should be credited in the byline.
+     * 
      * @type {ArticleByline}
      * @memberof ArticleCreate
      */
@@ -1774,13 +1774,13 @@ export interface BackofficePledge {
      */
     currency: string;
     /**
-     * Current state of the pledge
+     * 
      * @type {PledgeState}
      * @memberof BackofficePledge
      */
     state: PledgeState;
     /**
-     * Type of pledge
+     * 
      * @type {PledgeType}
      * @memberof BackofficePledge
      */
@@ -1798,7 +1798,7 @@ export interface BackofficePledge {
      */
     scheduled_payout_at?: string | null;
     /**
-     * The issue that the pledge was made towards
+     * 
      * @type {Issue}
      * @memberof BackofficePledge
      */
@@ -1873,7 +1873,7 @@ export interface BackofficePledge {
  */
 export interface BackofficeReward {
     /**
-     * The pledge that the reward was split from
+     * 
      * @type {Pledge}
      * @memberof BackofficeReward
      */
@@ -2410,7 +2410,7 @@ export interface BenefitBase {
      */
     id: string;
     /**
-     * The type of the benefit.
+     * 
      * @type {BenefitType}
      * @memberof BenefitBase
      */
@@ -4692,7 +4692,7 @@ export interface CheckoutConfirmStripe {
      */
     customer_email?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutConfirmStripe
      */
@@ -4760,7 +4760,7 @@ export interface CheckoutLink {
      */
     metadata: { [key: string]: string; };
     /**
-     * Payment processor used.
+     * 
      * @type {PolarEnumsPaymentProcessor}
      * @memberof CheckoutLink
      */
@@ -4898,13 +4898,13 @@ export interface CheckoutPublic {
      */
     id: string;
     /**
-     * Payment processor used.
+     * 
      * @type {PolarEnumsPaymentProcessor}
      * @memberof CheckoutPublic
      */
     payment_processor: PolarEnumsPaymentProcessor;
     /**
-     * Status of the checkout session.
+     * 
      * @type {CheckoutStatus}
      * @memberof CheckoutPublic
      */
@@ -4933,6 +4933,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     success_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    embed_origin: string | null;
     /**
      * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
@@ -5000,7 +5006,7 @@ export interface CheckoutPublic {
      */
     customer_ip_address: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutPublic
      */
@@ -5090,7 +5096,7 @@ export interface CheckoutUpdate {
      */
     customer_email?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutUpdate
      */
@@ -5151,7 +5157,7 @@ export interface CheckoutUpdatePublic {
      */
     customer_email?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof CheckoutUpdatePublic
      */
@@ -6588,7 +6594,7 @@ export interface Issue {
      */
     id: string;
     /**
-     * Issue platform (currently always GitHub)
+     * 
      * @type {Platforms}
      * @memberof Issue
      */
@@ -6684,7 +6690,7 @@ export interface Issue {
      */
     funding: Funding;
     /**
-     * The repository that the issue is in
+     * 
      * @type {Repository}
      * @memberof Issue
      */
@@ -9037,7 +9043,7 @@ export interface Metric {
      */
     display_name: string;
     /**
-     * Type of the metric, useful to know the unit or format of the value.
+     * 
      * @type {MetricType}
      * @memberof Metric
      */
@@ -9228,31 +9234,31 @@ export interface MetricsIntervalLimit {
  */
 export interface MetricsIntervalsLimits {
     /**
-     * Limits for the hour interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     hour: MetricsIntervalLimit;
     /**
-     * Limits for the day interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     day: MetricsIntervalLimit;
     /**
-     * Limits for the week interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     week: MetricsIntervalLimit;
     /**
-     * Limits for the month interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
     month: MetricsIntervalLimit;
     /**
-     * Limits for the year interval.
+     * 
      * @type {MetricsIntervalLimit}
      * @memberof MetricsIntervalsLimits
      */
@@ -9271,7 +9277,7 @@ export interface MetricsLimits {
      */
     min_date: string;
     /**
-     * Limits for each interval.
+     * 
      * @type {MetricsIntervalsLimits}
      * @memberof MetricsLimits
      */
@@ -9290,7 +9296,7 @@ export interface MetricsResponse {
      */
     periods: Array<MetricPeriod>;
     /**
-     * Information about the returned metrics.
+     * 
      * @type {Metrics}
      * @memberof MetricsResponse
      */
@@ -11215,13 +11221,13 @@ export interface Pledge {
      */
     currency: string;
     /**
-     * Current state of the pledge
+     * 
      * @type {PledgeState}
      * @memberof Pledge
      */
     state: PledgeState;
     /**
-     * Type of pledge
+     * 
      * @type {PledgeType}
      * @memberof Pledge
      */
@@ -11239,7 +11245,7 @@ export interface Pledge {
      */
     scheduled_payout_at?: string | null;
     /**
-     * The issue that the pledge was made towards
+     * 
      * @type {Issue}
      * @memberof Pledge
      */
@@ -11777,13 +11783,13 @@ export interface PolarCheckoutSchemasCheckout {
      */
     id: string;
     /**
-     * Payment processor used.
+     * 
      * @type {PolarEnumsPaymentProcessor}
      * @memberof PolarCheckoutSchemasCheckout
      */
     payment_processor: PolarEnumsPaymentProcessor;
     /**
-     * Status of the checkout session.
+     * 
      * @type {CheckoutStatus}
      * @memberof PolarCheckoutSchemasCheckout
      */
@@ -11812,6 +11818,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     success_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    embed_origin: string | null;
     /**
      * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
@@ -11879,7 +11891,7 @@ export interface PolarCheckoutSchemasCheckout {
      */
     customer_ip_address: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof PolarCheckoutSchemasCheckout
      */
@@ -11958,7 +11970,7 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      */
     customer_ip_address?: string | null;
     /**
-     * Billing address of the customer.
+     * 
      * @type {Address}
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
@@ -12834,7 +12846,7 @@ export interface ProductPriceRecurringCustom {
      */
     type: ProductPriceRecurringCustomTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringCustom
      */
@@ -12919,7 +12931,7 @@ export interface ProductPriceRecurringFixed {
      */
     type: ProductPriceRecurringFixedTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFixed
      */
@@ -12974,7 +12986,7 @@ export interface ProductPriceRecurringFixedCreate {
      */
     price_currency?: string;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFixedCreate
      */
@@ -13047,7 +13059,7 @@ export interface ProductPriceRecurringFree {
      */
     type: ProductPriceRecurringFreeTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFree
      */
@@ -13090,7 +13102,7 @@ export interface ProductPriceRecurringFreeCreate {
      */
     amount_type: ProductPriceRecurringFreeCreateAmountTypeEnum;
     /**
-     * The recurring interval of the price.
+     * 
      * @type {SubscriptionRecurringInterval}
      * @memberof ProductPriceRecurringFreeCreate
      */
@@ -13703,7 +13715,7 @@ export type ResponseUsersBenefitsGet = { type: 'ads' } & BenefitAdsSubscriber | 
  */
 export interface Reward {
     /**
-     * The pledge that the reward was split from
+     * 
      * @type {Pledge}
      * @memberof Reward
      */
@@ -14355,7 +14367,7 @@ export interface SubscriptionUser {
  */
 export interface SummaryPledge {
     /**
-     * Type of pledge
+     * 
      * @type {PledgeType}
      * @memberof SummaryPledge
      */
@@ -16950,7 +16962,7 @@ export interface WebhookDelivery {
      */
     succeeded: boolean;
     /**
-     * The webhook event sent by this delivery.
+     * 
      * @type {WebhookEvent}
      * @memberof WebhookDelivery
      */
@@ -17018,7 +17030,7 @@ export interface WebhookEndpoint {
      */
     url: string;
     /**
-     * The format of the webhook payload.
+     * 
      * @type {WebhookFormat}
      * @memberof WebhookEndpoint
      */
@@ -17057,7 +17069,7 @@ export interface WebhookEndpointCreate {
      */
     url: string;
     /**
-     * The format of the webhook payload.
+     * 
      * @type {WebhookFormat}
      * @memberof WebhookEndpointCreate
      */
@@ -17096,7 +17108,7 @@ export interface WebhookEndpointUpdate {
      */
     url?: string | null;
     /**
-     * The format of the webhook payload.
+     * 
      * @type {WebhookFormat}
      * @memberof WebhookEndpointUpdate
      */

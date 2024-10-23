@@ -54,6 +54,7 @@ class Checkout(MetadataMixin, RecordModel):
     _success_url: Mapped[str | None] = mapped_column(
         "success_url", String, nullable=True, default=None
     )
+    embed_origin: Mapped[str | None] = mapped_column(String, nullable=True)
 
     amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)

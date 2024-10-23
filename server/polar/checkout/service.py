@@ -467,6 +467,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self,
         session: AsyncSession,
         checkout_link: CheckoutLink,
+        embed_origin: str | None = None,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
@@ -518,6 +519,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency=currency,
             product=product,
             product_price=price,
+            embed_origin=embed_origin,
             customer_ip_address=ip_address,
             payment_processor=checkout_link.payment_processor,
             success_url=checkout_link.success_url,

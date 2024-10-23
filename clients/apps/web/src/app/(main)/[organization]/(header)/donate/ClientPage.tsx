@@ -1,5 +1,4 @@
 'use client'
-import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Issue, Organization } from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import Checkout from './Checkout'
@@ -13,8 +12,6 @@ const ClientPage = ({
   defaultAmount: number
   issue: Issue | undefined
 }) => {
-  useTrafficRecordPageView({ organization: organization })
-
   if (!organization.donations_enabled) {
     return (
       <div className="w-full pt-8 text-center text-gray-500">

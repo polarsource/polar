@@ -14,7 +14,6 @@ import { useUpdateProject } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
-import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { ArrowForward } from '@mui/icons-material'
 import {
@@ -51,8 +50,6 @@ const ClientPage = ({
     () => userOrganizations?.some((org) => org.id === organization.id),
     [organization, userOrganizations],
   )
-
-  useTrafficRecordPageView({ organization })
 
   const updateProjectMutation = useUpdateProject()
 

@@ -4,6 +4,7 @@ import { Section } from '@/components/Landing/Section'
 import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
+import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -71,6 +72,7 @@ const LandingPageTopbar = () => {
       />
       <div className="flex flex-row items-center gap-x-4">
         <Button onClick={onLoginClick} variant="secondary">Open Dashboard</Button>
+        <GetStartedButton className="px-3" size="default" />
       </div>
       <Modal
         isShown={isModalShown}

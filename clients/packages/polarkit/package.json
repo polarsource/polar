@@ -80,7 +80,7 @@
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
-    "@storybook/react": "^8.0.1",
+    "@storybook/react": "^8.3.6",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@types/react-timeago": "^4.1.3",

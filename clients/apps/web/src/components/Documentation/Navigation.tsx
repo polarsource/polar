@@ -393,6 +393,9 @@ export const GuidesNavigation = () => {
       <NavigationItem href="/docs/guides/checkouts">
         Checkouts & Payment Links
       </NavigationItem>
+      <NavigationItem href="/docs/guides/figma">
+        Monetizing your Figma plugin
+      </NavigationItem>
       <NavigationItem
         href="/docs/api/webhooks"
         icon={<NorthEastOutlined fontSize="inherit" />}

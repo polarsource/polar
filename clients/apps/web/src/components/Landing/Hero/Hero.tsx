@@ -56,7 +56,7 @@ export const Hero = () => {
                   onChange={(e) => setSlug(slugify(e.target.value))}
                 />
               </div>
-              <GetStartedButton className="px-3" orgSlug={slug} size="default" text="Start for free" />
+              <GetStartedButton className="px-3" orgSlug={slug} size="lg" text="Start for free" />
             </div>
           </div>
           <p className="hidden dark:text-polar-500 text-balance text-xs text-gray-500 md:block">

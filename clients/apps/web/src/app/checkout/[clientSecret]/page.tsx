@@ -28,7 +28,7 @@ export default async function Page({
   )
 
   return (
-    <CheckoutLayout embed={embed} theme={theme}>
+    <CheckoutLayout checkout={checkout} embed={embed} theme={theme}>
       <Checkout
         organization={organization}
         checkout={checkout}

@@ -48,9 +48,16 @@ class EmbedCheckout {
   /**
    * Send a embed checkout event to the parent window.
    * @param message
+   * @param targetOrigin
    */
-  public static postMessage(message: EmbedCheckoutMessage): void {
-    window.parent.postMessage({ ...message, type: POLAR_CHECKOUT_EVENT }, '*')
+  public static postMessage(
+    message: EmbedCheckoutMessage,
+    targetOrigin: string,
+  ): void {
+    window.parent.postMessage(
+      { ...message, type: POLAR_CHECKOUT_EVENT },
+      targetOrigin,
+    )
   }
 
   /**
@@ -112,9 +119,10 @@ class EmbedCheckout {
     document.body.appendChild(backdrop)
     document.body.appendChild(loader)
 
-    // Add embed=true query parameter
+    // Add query parameters to the Checkout Link
     const parsedURL = new URL(url)
     parsedURL.searchParams.set('embed', 'true')
+    parsedURL.searchParams.set('embed_origin', window.location.origin)
     if (theme) {
       parsedURL.searchParams.set('theme', theme)
     }

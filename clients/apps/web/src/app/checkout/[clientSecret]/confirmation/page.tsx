@@ -26,7 +26,7 @@ export default async function Page({
     checkout.product.organization_id,
   )
   return (
-    <CheckoutLayout embed={embed === 'true'} theme={theme}>
+    <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
       <CheckoutConfirmation checkout={checkout} organization={organization} />
     </CheckoutLayout>
   )

@@ -29,12 +29,14 @@ export const Hero = () => {
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
         <div className="z-20 flex flex-col items-center gap-y-8">
           <h1 className="text-balance text-5xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
-            Launch SaaS, Products & Memberships in minutes
+            Sell digital products &amp; subscriptions in minutes
           </h1>
-          <div className="flex flex-col items-center gap-y-4 xl:w-2/3">
+          <div className="flex flex-col items-center xl:w-2/3">
             <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
-              Merchant of Record - Leave upsales, billing and international
-              taxes to us.
+              Focus on shipping your product - leave international taxes, upsales &amp; billing to us.
+            </p>
+            <p className="dark:text-polar-400 text-balance text-xl leading-relaxed text-gray-500">
+              Polar is a merchant of record trusted by thousands of developers.
             </p>
           </div>
         </div>

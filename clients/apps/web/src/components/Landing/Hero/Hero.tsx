@@ -47,16 +47,16 @@ export const Hero = () => {
               role="form"
             >
               <div className="flex flex-row items-center gap-x-0.5">
-                <span>polar.sh/</span>
+                <span className="text-xl">polar.sh/</span>
                 <input
                   autoFocus={!isPhone}
-                  className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0"
+                  className="w-44 border-none border-transparent bg-transparent p-0 text-xl focus:border-transparent focus:ring-0"
                   placeholder="storename"
                   value={slug}
                   onChange={(e) => setSlug(slugify(e.target.value))}
                 />
               </div>
-              <GetStartedButton className="px-3" orgSlug={slug} size="lg" text="Start for free" />
+              <GetStartedButton className="px-3" orgSlug={slug} size="lg" text="Start for free" wrapperClassNames="text-lg px-4" />
             </div>
           </div>
           <p className="hidden dark:text-polar-500 text-balance text-xs text-gray-500 md:block">

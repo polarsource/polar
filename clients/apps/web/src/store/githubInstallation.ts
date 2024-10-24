@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand'
 
 interface GitHubInstallation {
+  installAfterGitHubAuthentication: boolean | undefined
   organizationId: string | undefined
 }
 
@@ -14,6 +15,7 @@ export const createGitHubInstallationSlice: StateCreator<
   GitHubInstallationSlice
 > = (set) => ({
   gitHubInstallation: {
+    installAfterGitHubAuthentication: undefined,
     organizationId: undefined,
   },
   setGitHubInstallation: (gitHubInstallation) => {
@@ -23,7 +25,10 @@ export const createGitHubInstallationSlice: StateCreator<
   },
   clearGitHubInstallation: () => {
     set({
-      gitHubInstallation: { organizationId: undefined },
+      gitHubInstallation: {
+        installAfterGitHubAuthentication: undefined,
+        organizationId: undefined,
+      },
     })
   },
 })

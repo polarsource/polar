@@ -45,6 +45,7 @@ def construct_stripe_invoice(
     id: str = "INVOICE_ID",
     total: int = 12000,
     tax: int = 2000,
+    amount_paid: int | None = None,
     charge_id: str | None = "CHARGE_ID",
     subscription_id: str | None = "SUBSCRIPTION_ID",
     subscription_details: dict[str, Any] | None = None,
@@ -58,6 +59,7 @@ def construct_stripe_invoice(
             "id": id,
             "total": total,
             "tax": tax,
+            "amount_paid": total if amount_paid is None else amount_paid,
             "currency": "usd",
             "charge": charge_id,
             "subscription": subscription_id,
@@ -440,6 +442,32 @@ class TestCreateOrderFromStripe:
             "order.discord_notification",
             order_id=order.id,
         )
+
+    async def test_subscription_applied_balance(
+        self, session: AsyncSession, subscription: Subscription, product: Product
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id,
+            amount_paid=0,
+            charge_id=None,
+            lines=[
+                ("PRICE_1", True, None),
+                ("PRICE_2", True, None),
+            ],
+            subscription_details={
+                "metadata": {"product_price_id": str(product.prices[0].id)}
+            },
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.user.id == subscription.user_id
+        assert order.product == product
+        assert order.product_price == product.prices[0]
+        assert order.subscription == subscription
+        assert order.user.stripe_customer_id == invoice.customer
+        assert order.billing_reason == invoice.billing_reason
 
     async def test_one_time_product(
         self,

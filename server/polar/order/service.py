@@ -370,8 +370,11 @@ class OrderService(ResourceServiceReader[Order]):
         session.add(order)
         await session.flush()
 
-        # Create the transactions balances for the order, if not a free order
-        if invoice.total > 0:
+        # Create the transactions balances for the order, if payment was actually made
+        # Payment can be skipped in two cases:
+        # * The invoice total is zero, like a free product (obviously)
+        # * A balance was applied to the invoice, generally because customer has a credit after a subscription downgrade
+        if invoice.amount_paid > 0:
             charge_id = get_expandable_id(invoice.charge) if invoice.charge else None
             # With Polar Checkout, we mark the order paid out-of-band,
             # so we need to retrieve the charge manually from metadata

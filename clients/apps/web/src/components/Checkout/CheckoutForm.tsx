@@ -524,7 +524,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         router.push(parsedURL.toString())
       }
     },
-    [router, embed, theme],
+    [router, embed, theme, checkout],
   )
 
   const onSubmit = async (

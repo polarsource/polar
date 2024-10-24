@@ -1,4 +1,5 @@
 import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import CheckoutEmbedExample from './CheckoutEmbedExample'
 
 export const metadata = {
   title: 'Checkout',
@@ -40,14 +41,14 @@ Every product-page has a checkout form inline where users can purchase your prod
 
 ## Checkout Links
 
-![Checkout Links](./checkout_link.light.png)
-![Checkout Links](./checkout_link.dark.png)
-
 Checkouts Links are an easy way to sell your products: you just need to share this URL on your website or social media for customers to start a checkout.
 
 Checkout Links can be created by pressing the "context-menu" button on the Products Overview Page. This will open a modal where you can select price and optionally set a success URL.
 
 You can also optionally set `Metadata`: this is a key-value object allowing you to store additional information which may be useful for you when handling the order. This metadata will be copied to the generated Checkout object and, if the checkout succeeds, to the resulting Order and/or Subscription.
+
+![Checkout Links](./checkout_link.light.png)
+![Checkout Links](./checkout_link.dark.png)
 
 <BrowserCallout type="TIP">
   Previously generated links will be displayed in this modal as well. Click on
@@ -66,9 +67,9 @@ You can either copy and paste or code snippet to get up and running in a second 
 
 The code snippet can be used on any website or CMS that allows you to insert HTML.
 
-First, create a [Checkout Link](#checkout-links) as described in the previous section.
+First, create a [Checkout Link](#checkout-links) as described in the previous section. The code snippet can directly be copied from there by clicking on `Copy Embed Code`.
 
-Then, copy and paste this snippet where you want to show the Checkout link:
+The snippet looks like this:
 
 ```html
 <a
@@ -78,10 +79,14 @@ Then, copy and paste this snippet where you want to show the Checkout link:
 >
   Purchase
 </a>
-<script src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js" defer data-auto-init></script
+<script
+  src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js"
+  defer
+  data-auto-init
+></script>
 ```
 
-This will display a `Purchase` link which will open an inline checkout when clicked.
+This will display a `Purchase` link which will open an inline checkout when clicked, like the following: <CheckoutEmbedExample />
 
 <BrowserCallout type="TIP">
   You can style the trigger element any way you want, as long as you keep the

@@ -319,9 +319,6 @@ export const MainNavigation = () => {
               Sponsorship Placement
             </NavigationItem>
           </NavigationSection>
-          <NavigationItem href="/docs/products/checkout">
-            Checkout
-          </NavigationItem>
         </div>
       </div>
 
@@ -390,9 +387,7 @@ export const GuidesNavigation = () => {
       <NavigationItem href="/docs/guides/node">
         Integrate with Node.js & Express
       </NavigationItem>
-      <NavigationItem href="/docs/guides/checkouts">
-        Checkouts & Payment Links
-      </NavigationItem>
+      <NavigationItem href="/docs/guides/checkout">Checkout</NavigationItem>
       <NavigationItem
         href="/docs/api/webhooks"
         icon={<NorthEastOutlined fontSize="inherit" />}

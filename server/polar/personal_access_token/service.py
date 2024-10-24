@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, select, update
+from sqlalchemy import Select, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
@@ -61,7 +61,12 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             .options(joinedload(PersonalAccessToken.user))
         )
         if not expired:
-            statement = statement.where(PersonalAccessToken.expires_at > utc_now())
+            statement = statement.where(
+                or_(
+                    PersonalAccessToken.expires_at.is_(None),
+                    PersonalAccessToken.expires_at > utc_now(),
+                )
+            )
 
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
@@ -79,7 +84,9 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             **create_schema.model_dump(exclude={"scopes", "expires_in"}),
             token=token_hash,
             user_id=auth_subject.subject.id,
-            expires_at=utc_now() + create_schema.expires_in,
+            expires_at=utc_now() + create_schema.expires_in
+            if create_schema.expires_in
+            else None,
             scope=" ".join(create_schema.scopes),
         )
         session.add(personal_access_token)

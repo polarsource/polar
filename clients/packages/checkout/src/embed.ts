@@ -33,18 +33,34 @@ type EmbedCheckoutMessage =
   | EmbedCheckoutMessageClose
   | EmbedCheckoutMessageSuccess
 
+const isEmbedCheckoutMessage = (
+  message: any,
+): message is EmbedCheckoutMessage => {
+  return message.type === POLAR_CHECKOUT_EVENT
+}
+
 /**
  * Represents an embedded checkout instance.
  */
 class EmbedCheckout {
   private iframe: HTMLIFrameElement
+  private loader: HTMLDivElement
+  private loaded: boolean
+  private eventTarget: EventTarget
 
-  public constructor(iframe: HTMLIFrameElement) {
+  public constructor(iframe: HTMLIFrameElement, loader: HTMLDivElement) {
     this.iframe = iframe
+    this.loader = loader
+    this.loaded = false
+    this.eventTarget = new EventTarget()
+    this.initWindowListener()
+    this.addEventListener('loaded', this.loadedListener.bind(this))
+    this.addEventListener('close', this.closeListener.bind(this))
+    this.addEventListener('success', this.successListener.bind(this))
   }
 
   /**
-   * Send a embed checkout event to the parent window.
+   * Send an embed checkout event to the parent window.
    * @param message
    * @param targetOrigin
    */
@@ -97,6 +113,7 @@ class EmbedCheckout {
     loader.style.left = '50%'
     loader.style.transform = 'translate(-50%, -50%)'
     loader.style.zIndex = '2147483647'
+    loader.style.colorScheme = 'auto'
 
     // Create spinning icon
     const spinner = document.createElement('div')
@@ -127,30 +144,13 @@ class EmbedCheckout {
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'
+    iframe.style.colorScheme = 'auto'
     document.body.appendChild(iframe)
 
-    const embedCheckout = new EmbedCheckout(iframe)
-
+    const embedCheckout = new EmbedCheckout(iframe, loader)
     return new Promise((resolve) => {
-      window.addEventListener('message', (event) => {
-        // @ts-ignore
-        if (!__POLAR_ALLOWED_ORIGINS__.split(',').includes(event.origin)) {
-          return
-        }
-        if (event.data.type !== POLAR_CHECKOUT_EVENT) {
-          return
-        }
-        const data = event.data as EmbedCheckoutMessage
-        if (data.event === 'loaded') {
-          document.body.removeChild(loader)
-          resolve(embedCheckout)
-        } else if (data.event === 'close') {
-          embedCheckout.close()
-        } else if (data.event === 'success') {
-          if (data.redirect) {
-            window.location.href = data.successURL
-          }
-        }
+      embedCheckout.addEventListener('loaded', () => resolve(embedCheckout), {
+        once: true,
       })
     })
   }
@@ -190,6 +190,57 @@ class EmbedCheckout {
     document.body.classList.remove('polar-no-scroll')
   }
 
+  /**
+   * Add an event listener to the embedded checkout events.
+   *
+   * @param type
+   * @param listener
+   */
+  public addEventListener(
+    type: 'loaded',
+    listener: (event: CustomEvent<EmbedCheckoutMessageLoaded>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: 'close',
+    listener: (event: CustomEvent<EmbedCheckoutMessageClose>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: 'success',
+    listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: string,
+    listener: any,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
+    this.eventTarget.addEventListener(type, listener, options)
+  }
+
+  /**
+   * Remove an event listener from the embedded checkout events.
+   *
+   * @param type
+   * @param listener
+   */
+  public removeEventListener(
+    type: 'loaded',
+    listener: (event: CustomEvent<EmbedCheckoutMessageLoaded>) => void,
+  ): void
+  public removeEventListener(
+    type: 'close',
+    listener: (event: CustomEvent<EmbedCheckoutMessageClose>) => void,
+  ): void
+  public removeEventListener(
+    type: 'success',
+    listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
+  ): void
+  public removeEventListener(type: string, listener: any): void {
+    this.eventTarget.removeEventListener(type, listener)
+  }
+
   private static async checkoutElementClickHandler(e: Event) {
     e.preventDefault()
     const checkoutElement = e.target as HTMLElement
@@ -201,6 +252,66 @@ class EmbedCheckout {
       | 'dark'
       | undefined
     EmbedCheckout.create(url, theme)
+  }
+
+  /**
+   * Default listener for the `loaded` event.
+   *
+   * This listener will remove the loader spinner when the embedded checkout is fully loaded.
+   */
+  private loadedListener(event: CustomEvent<EmbedCheckoutMessageLoaded>): void {
+    if (event.defaultPrevented || this.loaded) {
+      return
+    }
+    document.body.removeChild(this.loader)
+    this.loaded = true
+  }
+
+  /**
+   * Default listener for the `close` event.
+   *
+   * This listener will call the `close` method to remove the embedded checkout from the DOM.
+   */
+  private closeListener(event: CustomEvent<EmbedCheckoutMessageClose>): void {
+    if (event.defaultPrevented) {
+      return
+    }
+    this.close()
+  }
+
+  /**
+   * Default listener for the `success` event.
+   *
+   * This listener will redirect the parent window to the `successURL` if `redirect` is set to `true`.
+   */
+  private successListener(
+    event: CustomEvent<EmbedCheckoutMessageSuccess>,
+  ): void {
+    if (event.defaultPrevented) {
+      return
+    }
+    if (event.detail.redirect) {
+      window.location.href = event.detail.successURL
+    }
+  }
+
+  /**
+   * Initialize the window message listener to receive messages from the embedded checkout
+   * and re-dispatch them as events for the embedded checkout instance.
+   */
+  private initWindowListener(): void {
+    window.addEventListener('message', ({ data, origin }) => {
+      // @ts-ignore
+      if (!__POLAR_ALLOWED_ORIGINS__.split(',').includes(origin)) {
+        return
+      }
+      if (!isEmbedCheckoutMessage(data)) {
+        return
+      }
+      this.eventTarget.dispatchEvent(
+        new CustomEvent(data.event, { detail: data, cancelable: true }),
+      )
+    })
   }
 }
 

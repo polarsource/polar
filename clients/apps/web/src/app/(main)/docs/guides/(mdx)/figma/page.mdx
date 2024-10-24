@@ -17,7 +17,7 @@ The best way to monetize your Figma plugin is to use a License Key Benefit. This
 The flow would look something like this:
 
 1. User installs your plugin
-2. User gets a prompt to enter their license key
+2. User gets a prompt to enter a license key
 3. User buys a license key from your Polar product page
 4. User adds the license key to your plugin
 5. User can now use your plugin & you've made a few bucks!
@@ -34,12 +34,123 @@ This will expand the License Key modal, where you can configure the license key 
 
 Perfect! You've now created a product, which grants an associated license key to the customer.
 
-## Configure a personal access token
+### Installing the Polar SDK
 
-In order to use the Polar SDK, you'll need to configure a personal access token. This token will be used to authenticate your plugin when it requests information from Polar.
+Go to your Figma plugin code and install the Polar SDK.
 
-To create a personal access token, click on your profile dropdown in the top right corner of the Polar dashboard and select **Account** or press [here](https://polar.sh/settings). 
+```bash
+npm install @polar-sh/sdk
+```
 
-<BrowserCallout type="CAUTION">
-It's important that you keep this token secret at all times, as it grants access to your Polar account.
-</BrowserCallout>
+Once installed, you can import the SDK into your plugin code.
+
+```typescript
+import { Polar } from '@polar-sh/sdk'
+```
+
+#### Configuring the Polar SDK Client
+
+You instantiate the Polar SDK client with your personal access token.
+
+```typescript
+import { Polar } from '@polar-sh/sdk'
+
+const polar = new Polar({
+  token: 'YOUR_PERSONAL_ACCESS_TOKEN',
+})
+```
+
+### UI
+
+Go ahead and add an input field to your Figma plugin UI where users can enter their license key. 
+
+```tsx
+import { useState, useCallback } from 'react'
+
+const client = new Polar({
+    server: 'production'
+})
+
+const LicenseKeyInput = ({ client }: { client: Polar }) => {
+    const [licenseKey, setLicenseKey] = useState('')
+
+    return (
+        <div>
+            <input 
+                type="text" 
+                value={licenseKey} 
+                onChange={(e) => setLicenseKey(e.target.value)} 
+                placeholder="Enter license key"
+            />
+            <button>Add</button>
+        </div>
+    )
+}
+```
+
+#### Activate License Key
+
+In case you've setup license keys to have a maximum amount of activation
+instances, e.g associated Figma Accounts. You'll then need to create an activation
+instance prior to validating license keys.
+
+**No activation limit?** You can skip this - and just validate the license key.
+
+```tsx
+const LicenseKeyInput = ({ client }: { client: Polar }) => {
+    const [licenseKey, setLicenseKey] = useState('')
+
+    const activateLicenseKey = useCallback(async () => {
+        const activation = await client.users.licenseKeys.activate({
+            key: licenseKey,
+            organizationId: '<your-organization-id>',
+            label: 'figma-username-123', // Set a label to associate with this specific activation.
+            conditions: { major_version: 1 }, // Optional custom conditions to validate against in the future, e.g IP, mac address, major version etc.
+            meta: { ip: '84.19.145.194' } // Metadata to store for the user's activation.
+        })
+    }, [client, licenseKey])
+
+    return (
+        <div>
+            <input 
+                type="text" 
+                value={licenseKey} 
+                onChange={(e) => setLicenseKey(e.target.value)} 
+                placeholder="Enter license key"
+            />
+            <button onClick={activateLicenseKey}>Add</button>
+        </div>
+    )
+}
+```
+
+#### Validate License Key
+
+If you don't have an activation limit, you need to validate the license key instead of activating it.
+
+```tsx
+const LicenseKeyInput = ({ client }: { client: Polar }) => {
+    const [licenseKey, setLicenseKey] = useState('')
+
+    const activateLicenseKey = useCallback(async () => {
+        const validation = await client.users.licenseKeys.validate({
+            key: licenseKey,
+            organizationId: '<your-organization-id>'
+        })
+    }, [client, licenseKey])
+
+    return (
+        <div>
+            <input 
+                type="text" 
+                value={licenseKey} 
+                onChange={(e) => setLicenseKey(e.target.value)} 
+                placeholder="Enter license key"
+            />
+            <button onClick={activateLicenseKey}>Add</button>
+        </div>
+    )
+}
+```
+
+

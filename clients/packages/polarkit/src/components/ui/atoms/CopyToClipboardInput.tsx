@@ -6,9 +6,11 @@ import Input from './Input'
 const CopyToClipboardInput = ({
   value,
   onCopy,
+  buttonLabel,
 }: {
   value: string
   onCopy?: () => void
+  buttonLabel?: string
 }) => {
   const [isCopied, setIsCopied] = useState(false)
 
@@ -42,7 +44,7 @@ const CopyToClipboardInput = ({
         {isCopied ? (
           <CheckOutlined className="text-sm" fontSize="inherit" />
         ) : (
-          'Copy'
+          buttonLabel || 'Copy'
         )}
       </Button>
     </div>

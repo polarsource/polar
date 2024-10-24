@@ -4,6 +4,7 @@ import {
   useUpdateCheckoutLink,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import { ClearOutlined } from '@mui/icons-material'
 import {
   CheckoutLink,
@@ -27,12 +28,13 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -81,6 +83,15 @@ export const ProductCheckoutModal = ({
     },
     [reset],
   )
+  const embedSnippet = useMemo(() => {
+    if (!selectedLink) return ''
+    return `
+<a href="${selectedLink.url}" data-polar-checkout data-polar-checkout-theme="light">
+  Purchase
+</a>
+<script src="${CONFIG.CHECKOUT_EMBED_SCRIPT_SRC}" defer data-auto-init></script>
+  `.trim()
+  }, [selectedLink])
 
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
     useCreateCheckoutLink()
@@ -212,7 +223,6 @@ export const ProductCheckoutModal = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Success URL</FormLabel>
-                <p className="dark:text-polar-500 text-xs text-gray-500">{`Include "checkout_id={CHECKOUT_ID}" as query parameter if you want to receive the checkout ID in the callback`}</p>
                 <FormControl>
                   <Input
                     placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
@@ -220,6 +230,13 @@ export const ProductCheckoutModal = ({
                     value={field.value || ''}
                   />
                 </FormControl>
+                <FormDescription>
+                  Include{' '}
+                  <code>
+                    {'{'}CHECKOUT_ID{'}'}
+                  </code>{' '}
+                  to receive the Checkout ID on success.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -290,7 +307,18 @@ export const ProductCheckoutModal = ({
               </Button>
             </div>
           </FormItem>
-          {selectedLink && <CopyToClipboardInput value={selectedLink?.url} />}
+          {selectedLink && (
+            <div className="flex flex-col items-center gap-2">
+              <CopyToClipboardInput
+                value={selectedLink.url}
+                buttonLabel="Copy Link"
+              />
+              <CopyToClipboardInput
+                value={embedSnippet}
+                buttonLabel="Copy Embed Code"
+              />
+            </div>
+          )}
           <Button
             className="self-start"
             type="submit"

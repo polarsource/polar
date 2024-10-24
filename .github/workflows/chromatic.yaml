@@ -35,7 +35,7 @@ jobs:
 
       - name: Build SDK
         working-directory: ./clients
-        run: pnpm turbo run build --filter=@polar-sh/sdk
+        run: pnpm turbo run build --filter=@polar-sh/*
 
       - name: Publish to Chromatic
         uses: chromaui/action@v11

@@ -1,5 +1,12 @@
 # @polar-sh/checkout
 
+## 0.1.4
+
+### Patch Changes
+
+- 6421c8d: - Fix backdrop not correctly rendered with forced dark schemes
+  - Improve internals for events handling
+
 ## 0.1.3
 
 ### Patch Changes

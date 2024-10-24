@@ -142,8 +142,8 @@ export const ProductCheckoutModal = ({
       <div className="flex flex-col gap-y-2">
         <h3 className="text-xl font-medium">Checkout Link</h3>
         <p className="dark:text-polar-500 text-gray-500">
-          Generate a product-link which you can share to your customers or
-          integrate in your own product
+          Generate a link which you can share to your customers or integrate in
+          your own product
         </p>
       </div>
       <h1 className="text-xl">{product.name}</h1>

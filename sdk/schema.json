@@ -19117,6 +19117,18 @@
             "title": "Success Url",
             "description": "URL where the customer will be redirected after a successful payment."
           },
+          "embed_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Origin",
+            "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
+          },
           "amount": {
             "anyOf": [
               {
@@ -19276,6 +19288,7 @@
           "url",
           "expires_at",
           "success_url",
+          "embed_origin",
           "amount",
           "tax_amount",
           "currency",
@@ -30821,6 +30834,18 @@
             "title": "Success Url",
             "description": "URL where the customer will be redirected after a successful payment."
           },
+          "embed_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Origin",
+            "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
+          },
           "amount": {
             "anyOf": [
               {
@@ -30981,6 +31006,7 @@
           "url",
           "expires_at",
           "success_url",
+          "embed_origin",
           "amount",
           "tax_amount",
           "currency",

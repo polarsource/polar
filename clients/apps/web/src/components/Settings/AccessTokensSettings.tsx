@@ -65,8 +65,19 @@ const AccessToken = (
           <div className="gap-y flex flex-col">
             <h3 className="text-md">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              Expires on{' '}
-              <FormattedDateTime datetime={props.expires_at} dateStyle="long" />{' '}
+              {props.expires_at ? (
+                <>
+                  Expires on{' '}
+                  <FormattedDateTime
+                    datetime={props.expires_at}
+                    dateStyle="long"
+                  />
+                </>
+              ) : (
+                <span className="text-red-500 dark:text-red-400">
+                  Never expires
+                </span>
+              )}{' '}
               —{' '}
               {props.last_used_at ? (
                 <>
@@ -134,15 +145,25 @@ const AccessTokensSettings = () => {
   const [createdToken, setCreatedToken] =
     useState<PersonalAccessTokenCreateResponse>()
 
-  const form = useForm<PersonalAccessTokenCreate>({
+  const form = useForm<
+    PersonalAccessTokenCreate & { expires_in: string | null | 'no-expiration' }
+  >({
     defaultValues: { scopes: [] },
   })
   const { control, handleSubmit, reset } = form
   const [allSelected, setSelectAll] = useState(false)
 
   const onCreate = useCallback(
-    async (data: PersonalAccessTokenCreate) => {
-      const created = await createToken.mutateAsync(data)
+    async (
+      data: PersonalAccessTokenCreate & {
+        expires_in: string | null | 'no-expiration'
+      },
+    ) => {
+      const created = await createToken.mutateAsync({
+        ...data,
+        expires_in:
+          data.expires_in === 'no-expiration' ? null : data.expires_in,
+      })
       setCreatedToken(created)
       reset({ scopes: [] })
       createToken.reset()
@@ -209,7 +230,7 @@ const AccessTokensSettings = () => {
                 render={({ field }) => (
                   <Popover>
                     <PopoverTrigger asChild className="w-1/4">
-                      <Button variant="outline">
+                      <Button variant="secondary">
                         {field.value.length === 0
                           ? 'Select scopes'
                           : field.value.length === 1
@@ -273,7 +294,7 @@ const AccessTokensSettings = () => {
                 render={({ field }) => (
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    defaultValue={field.value || ''}
                   >
                     <SelectTrigger className="w-1/4">
                       <SelectValue placeholder="Expiration" />
@@ -284,6 +305,11 @@ const AccessTokensSettings = () => {
                           {days} days
                         </SelectItem>
                       ))}
+                      <SelectItem value="no-expiration">
+                        <span className="text-red-500 dark:text-red-400">
+                          No expiration
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 )}

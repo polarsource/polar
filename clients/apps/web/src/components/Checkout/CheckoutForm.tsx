@@ -1,6 +1,7 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
+import { CloseOutlined } from '@mui/icons-material'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import {
   CheckoutConfirmStripe,
@@ -39,7 +40,6 @@ import { useFormContext, WatchObserver } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
 import AmountLabel from '../Shared/AmountLabel'
-import { CloseOutlined } from '@mui/icons-material'
 
 const DetailRow = ({
   title,
@@ -148,7 +148,7 @@ const BaseCheckoutForm = ({
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 
-  const [showTaxId, setShowTaxID] = useState(false);
+  const [showTaxId, setShowTaxID] = useState(false)
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -346,12 +346,14 @@ const BaseCheckoutForm = ({
                   </FormItem>
 
                   {!showTaxId && (
-                    <button
-                      onClick={() => {setShowTaxID(true)}}
-                      className='w-full flex justify-end'
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={() => setShowTaxID(true)}
+                      className="flex w-full justify-end text-xs hover:no-underline"
                     >
-                      <span className='text-xs text-blue font-medium' >Add Tax ID</span>
-                    </button>
+                      Add Tax ID
+                    </Button>
                   )}
 
                   {showTaxId && (
@@ -362,12 +364,9 @@ const BaseCheckoutForm = ({
                         <FormItem>
                           <div className="flex flex-row items-center justify-between">
                             <FormLabel>Tax ID</FormLabel>
-                            <span className="dark:text-polar-500 text-xs text-gray-500">
-                              Optional
-                            </span>
                           </div>
                           <FormControl>
-                            <div className='relative flex'>
+                            <div className="relative flex items-center gap-2">
                               <Input
                                 type="text"
                                 autoComplete="off"
@@ -375,8 +374,9 @@ const BaseCheckoutForm = ({
                                 value={field.value || ''}
                               />
                               <button
-                                onClick={() => {setShowTaxID(false)}}
-                                className="absolute right-2 top-2 text-gray-400 hover:text-gray-200"
+                                type="button"
+                                onClick={() => setShowTaxID(false)}
+                                className="text-gray-400 hover:text-gray-200"
                               >
                                 <CloseOutlined className="h-4 w-4" />
                               </button>

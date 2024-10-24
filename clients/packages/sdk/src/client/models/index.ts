@@ -11073,7 +11073,7 @@ export interface PersonalAccessToken {
      * @type {string}
      * @memberof PersonalAccessToken
      */
-    expires_at: string;
+    expires_at: string | null;
     /**
      * 
      * @type {string}
@@ -11104,7 +11104,7 @@ export interface PersonalAccessTokenCreate {
      * @type {string}
      * @memberof PersonalAccessTokenCreate
      */
-    expires_in?: string;
+    expires_in?: string | null;
     /**
      * 
      * @type {Array<AvailableScope>}

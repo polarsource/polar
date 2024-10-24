@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -62,6 +64,57 @@ class TestListOrders:
 
         json = response.json()
         assert json["pagination"]["total_count"] == len(orders)
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestGetOrder:
+    async def test_anonymous(self, client: AsyncClient, orders: list[Order]) -> None:
+        response = await client.get(f"/v1/orders/{orders[0].id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/orders/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_user_not_organization_member(
+        self, client: AsyncClient, orders: list[Order]
+    ) -> None:
+        response = await client.get(f"/v1/orders/{orders[0].id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.orders_read}),
+    )
+    async def test_user_valid(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        response = await client.get(f"/v1/orders/{orders[0].id}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(orders[0].id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
+    )
+    async def test_organization(self, client: AsyncClient, orders: list[Order]) -> None:
+        response = await client.get(f"/v1/orders/{orders[0].id}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(orders[0].id)
 
 
 @pytest.mark.asyncio

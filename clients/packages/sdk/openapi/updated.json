@@ -8412,9 +8412,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "order",
                                 "free_subscription",
                                 "paid_subscription",
-                                "order",
                                 "donation"
                             ],
                             "title": "Customer Types"
@@ -29590,8 +29590,15 @@
                         "title": "Scopes"
                     },
                     "expires_at": {
-                        "type": "string",
-                        "format": "date-time",
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Expires At"
                     },
                     "comment": {
@@ -29630,10 +29637,16 @@
                         "title": "Comment"
                     },
                     "expires_in": {
-                        "type": "string",
-                        "format": "duration",
-                        "title": "Expires In",
-                        "default": "P30D"
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "duration"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Expires In"
                     },
                     "scopes": {
                         "items": {

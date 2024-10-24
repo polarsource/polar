@@ -301,8 +301,12 @@ class EmbedCheckout {
    */
   private initWindowListener(): void {
     window.addEventListener('message', ({ data, origin }) => {
-      // @ts-ignore
-      if (!__POLAR_ALLOWED_ORIGINS__.split(',').includes(origin)) {
+      if (
+        // @ts-ignore
+        !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
+          .split(',')
+          .includes(origin)
+      ) {
         return
       }
       if (!isEmbedCheckoutMessage(data)) {

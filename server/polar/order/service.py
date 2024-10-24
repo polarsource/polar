@@ -213,7 +213,7 @@ class OrderService(ResourceServiceReader[Order]):
         )
 
         result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def get_order_invoice_url(self, order: Order) -> str:
         if order.stripe_invoice_id is None:

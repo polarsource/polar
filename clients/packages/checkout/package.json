@@ -4,7 +4,7 @@
   "author": "Polar",
   "license": "Apache-2.0",
   "type": "module",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup --minify terser --sourcemap"

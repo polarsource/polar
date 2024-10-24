@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.5
+
+### Patch Changes
+
+- fabadac: Tweak authorized origins variable name
+
 ## 0.1.4
 
 ### Patch Changes

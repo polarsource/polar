@@ -51,6 +51,9 @@ let defaults = {
   APPLE_DOMAIN_ASSOCIATION:
     process.env.NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION ||
     '<Replace with Apple Pay Domain Association from Stripe>',
+  CHECKOUT_EMBED_SCRIPT_SRC:
+    process.env.NEXT_PUBLIC_CHECKOUT_EMBED_SCRIPT_SRC ||
+    'node_modules/@polar-sh/checkout/dist/embed.global.js',
 }
 
 export const CONFIG = {

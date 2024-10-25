@@ -176,6 +176,9 @@ class CheckoutBase(IDSchema, TimestampedSchema):
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
+    product: Product
+    product_price: ProductPrice
+
 
 class CheckoutPublic(CheckoutBase):
     """Checkout session data retrieved using the client secret."""

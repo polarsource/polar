@@ -1,3 +1,4 @@
+import uuid
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -39,6 +40,40 @@ async def checkout_open(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, price=product_one_time.prices[0])
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestGet:
+    async def test_anonymous(
+        self, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.get(f"{API_PREFIX}/{checkout_open.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(f"{API_PREFIX}/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"{API_PREFIX}/{checkout_open.id}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(checkout_open.id)
+        assert "metadata" in json
+        assert "product" in json
+        assert "product_price" in json
 
 
 @pytest.mark.asyncio

@@ -198,7 +198,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             Checkout.id == id
         )
         result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def create(
         self,
@@ -708,7 +708,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout_id: uuid.UUID,
         payment_intent: stripe_lib.PaymentIntent,
     ) -> Checkout:
-        checkout = await self.get(session, checkout_id)
+        checkout = await self.get(
+            session,
+            checkout_id,
+            options=(
+                joinedload(Checkout.product).joinedload(Product.product_medias),
+                joinedload(Checkout.product_price),
+            ),
+        )
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -836,7 +843,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def handle_free_success(
         self, session: AsyncSession, checkout_id: uuid.UUID
     ) -> Checkout:
-        checkout = await self.get(session, checkout_id)
+        checkout = await self.get(
+            session,
+            checkout_id,
+            options=(
+                joinedload(Checkout.product).joinedload(Product.product_medias),
+                joinedload(Checkout.product_price),
+            ),
+        )
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -1226,7 +1240,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             select(Checkout)
             .where(Checkout.deleted_at.is_(None))
             .join(Checkout.product)
-            .options(contains_eager(Checkout.product))
+            .options(
+                contains_eager(Checkout.product).joinedload(Product.product_medias)
+            )
         )
 
         if is_user(auth_subject):

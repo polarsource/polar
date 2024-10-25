@@ -214,7 +214,7 @@ module.exports = {
     require('@tailwindcss/typography'),
 
     // Striped backgrounds
-    function ({ addUtilities, theme }) {
+    function ({ addUtilities, theme, addVariant }) {
       const utilities = {
         '.bg-stripes': {
           backgroundImage:
@@ -242,6 +242,8 @@ module.exports = {
       }
 
       addUtilities(utilities)
+
+      addVariant('not-last', '&:not(:last-child)')
     },
   ],
 }

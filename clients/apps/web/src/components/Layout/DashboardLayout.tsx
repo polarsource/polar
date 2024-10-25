@@ -88,7 +88,12 @@ const DashboardSidebar = () => {
   )
 }
 
-const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
+const DashboardLayout = (
+  props: PropsWithChildren<{
+    breadcrumb?: React.ReactNode
+    className?: string
+  }>,
+) => {
   const { organization } = useContext(MaintainerOrganizationContext)
   return (
     <DashboardProvider organization={organization}>
@@ -103,7 +108,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
             props.className,
           )}
         >
-          <DashboardTopbar />
+          <DashboardTopbar breadcrumb={props.breadcrumb} />
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
           <main className="relative flex min-h-0 w-full flex-grow flex-col">
             {props.children}

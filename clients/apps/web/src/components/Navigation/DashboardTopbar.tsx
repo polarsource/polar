@@ -4,14 +4,11 @@ import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback, useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
+import React, { useContext } from 'react'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import TopbarRight from '../Layout/Public/TopbarRight'
-import { isUUID } from './utils'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -42,59 +39,17 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
-const DashboardTopbar = () => {
+const DashboardTopbar = ({ breadcrumb }: { breadcrumb?: React.ReactNode }) => {
   const { currentUser } = useAuth()
 
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const pathname = usePathname()
-
-  const Breadcrumbs = useCallback(() => {
-    return (
-      <div className="flex flex-row items-center gap-x-0.5 font-mono text-xs">
-        {pathname
-          .split('/')
-          .filter(Boolean)
-          .flatMap((path, index, arr) => {
-            const href = arr.slice(0, index + 1).join('/')
-            const normalizePath = !isUUID(path) && path !== org.slug
-            const isCurrent = index === arr.length - 1
-
-            const link = (
-              <Link
-                key={path}
-                href={`/${href}`}
-                className={twMerge(
-                  'dark:text-polar-500 dark:hover:bg-polar-800 flex flex-row items-center justify-center rounded-md px-2 py-1 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
-                  normalizePath ? 'capitalize' : 'lowercase',
-                  isCurrent ? 'text-black dark:text-white' : '',
-                )}
-              >
-                {path.split('-').join(' ')}
-              </Link>
-            )
-
-            return arr.length - 1 !== index
-              ? [
-                  link,
-                  <span
-                    key={path + 'sep'}
-                    className="dark:text-polar-500 text-gray-500"
-                  >
-                    /
-                  </span>,
-                ]
-              : link
-          })}
-      </div>
-    )
-  }, [pathname])
 
   return (
     <div className="hidden w-full flex-col md:flex">
       <div className="flex w-full flex-row items-center justify-between gap-x-8">
         <div className="hidden w-full flex-grow flex-row items-center gap-x-8 md:flex">
-          <Breadcrumbs />
+          {breadcrumb}
         </div>
         <div className="flex flex-row items-center gap-x-6">
           {org.profile_settings?.enabled ? (

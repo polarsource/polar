@@ -1,4 +1,11 @@
-import { Product, SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import {
+  PolarAPI,
+  Product,
+  ResponseError,
+  SubscriptionRecurringInterval,
+} from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
+import { cache } from 'react'
 
 export const hasIntervals = (product: Product): [boolean, boolean, boolean] => {
   const hasMonthInterval = product.prices.some(
@@ -15,3 +22,24 @@ export const hasIntervals = (product: Product): [boolean, boolean, boolean] => {
 
   return [hasMonthInterval, hasYearInterval, hasBothIntervals]
 }
+
+const _getProductById = async (api: PolarAPI, id: string): Promise<Product> => {
+  try {
+    return await api.products.get(
+      {
+        id,
+      },
+      {
+        cache: 'no-store',
+      },
+    )
+  } catch (err) {
+    if (err instanceof ResponseError && err.response.status === 404) {
+      notFound()
+    }
+    throw err
+  }
+}
+
+// Tell React to memoize it for the duration of the request
+export const getProductById = cache(_getProductById)

@@ -79,12 +79,12 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[p.organization_id for p in products],
             pagination=PaginationParams(1, 10),
+            organization_id=[products[0].organization_id],
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 2
+        assert len(results) == 2
 
     @pytest.mark.auth
     async def test_user(
@@ -100,12 +100,12 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[p.organization_id for p in products],
             pagination=PaginationParams(1, 10),
+            organization_id=[products[0].organization_id],
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 2
+        assert len(results) == 2
 
     @pytest.mark.auth
     async def test_user_organization(
@@ -121,12 +121,12 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[p.organization_id for p in products],
             pagination=PaginationParams(1, 10),
+            organization_id=[products[0].organization_id],
         )
 
-        assert count == 3
-        assert len(results) == 3
+        assert count == 2
+        assert len(results) == 2
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
@@ -139,10 +139,7 @@ class TestList:
         session.expunge_all()
 
         results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[p.organization_id for p in products],
-            pagination=PaginationParams(1, 10),
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == 2
@@ -174,7 +171,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[organization.id],
+            organization_id=[recurring_product.organization_id],
             is_recurring=True,
             pagination=PaginationParams(1, 10),
         )
@@ -186,7 +183,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[organization.id],
+            organization_id=[recurring_product.organization_id],
             is_recurring=False,
             pagination=PaginationParams(1, 10),
         )
@@ -241,7 +238,7 @@ class TestList:
             session,
             get_auth_subject(Anonymous()),
             is_archived=False,
-            organization_id=[organization.id],
+            organization_id=[archived_product.organization_id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -249,7 +246,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
-            organization_id=[organization.id],
+            organization_id=[archived_product.organization_id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -260,7 +257,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[user_organization.organization_id],
+            organization_id=[archived_product.organization_id],
             is_archived=False,
             pagination=PaginationParams(1, 10),
         )
@@ -269,7 +266,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[user_organization.organization_id],
+            organization_id=[archived_product.organization_id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 1
@@ -295,7 +292,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[organization.id],
+            organization_id=[archived_product.organization_id],
             is_archived=False,
             pagination=PaginationParams(1, 10),
         )
@@ -304,7 +301,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[organization.id],
+            organization_id=[archived_product.organization_id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -413,7 +410,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[user_organization.organization_id],
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 8),  # page 1, limit 8
         )
         assert 20 == count
@@ -421,7 +418,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[user_organization.organization_id],
+            organization_id=[organization.id],
             pagination=PaginationParams(2, 8),  # page 2, limit 8
         )
         assert 20 == count
@@ -429,7 +426,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=[user_organization.organization_id],
+            organization_id=[organization.id],
             pagination=PaginationParams(3, 8),  # page 3, limit 8
         )
         assert 20 == count

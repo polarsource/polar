@@ -41,8 +41,13 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
-    organization_id: MultipleQueryFilter[OrganizationID] = Query(
-        title="OrganizationID Filter", description="Filter by organization ID."
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None,
+        title="OrganizationID Filter",
+        description=(
+            "Filter by organization ID. "
+            "**Required unless you use an organization token.**"
+        ),
     ),
     query: str | None = Query(None, description="Filter by product name."),
     is_archived: bool | None = Query(None, description="Filter on archived products."),

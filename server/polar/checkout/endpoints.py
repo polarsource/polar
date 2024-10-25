@@ -168,6 +168,7 @@ async def client_get(
     response_model=CheckoutPublic,
     status_code=201,
     include_in_schema=IN_DEVELOPMENT_ONLY,
+    deprecated=True,
 )
 async def client_create(
     request: Request,

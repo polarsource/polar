@@ -70,12 +70,28 @@ class LoopsClient:
         self._handle_response(response)
 
     async def send_event(
-        self, email: str, event_name: str, **properties: Unpack[Properties]
+        self,
+        email: str,
+        event_name: str,
+        event_properties: dict[str, str | int | bool] | None = None,
+        **contact_properties: Unpack[Properties],
     ) -> None:
-        log.debug("loops.events.send", email=email, event_name=event_name, **properties)
+        log.debug(
+            "loops.events.send",
+            email=email,
+            event_name=event_name,
+            event_properties=event_properties,
+            **contact_properties,
+        )
 
         response = await self.client.post(
-            "/events/send", json={"email": email, "eventName": event_name, **properties}
+            "/events/send",
+            json={
+                "email": email,
+                "eventName": event_name,
+                "eventProperties": event_properties or {},
+                **contact_properties,
+            },
         )
         self._handle_response(response)
 

@@ -7,12 +7,7 @@ from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, func, or_
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import (
-    AuthSubject,
-    Subject,
-    is_organization,
-    is_user,
-)
+from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
@@ -66,7 +61,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         session: AsyncSession,
         auth_subject: AuthSubject[Subject],
         *,
-        organization_id: Sequence[uuid.UUID],
+        organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -95,7 +90,19 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             isouter=True,
         )
 
-        statement = statement.where(Product.organization_id.in_(organization_id))
+        if organization_id is not None:
+            statement = statement.where(Product.organization_id.in_(organization_id))
+        elif not is_organization(auth_subject):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "missing",
+                        "loc": ("query", "organization_id"),
+                        "msg": "Field is required.",
+                        "input": None,
+                    }
+                ]
+            )
 
         if query is not None:
             statement = statement.where(Product.name.ilike(f"%{query}%"))

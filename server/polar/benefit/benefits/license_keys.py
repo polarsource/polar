@@ -26,6 +26,8 @@ class BenefitLicenseKeysService(
         BenefitGrantLicenseKeysProperties,
     ]
 ):
+    should_revoke_individually = True
+
     async def grant(
         self,
         benefit: BenefitLicenseKeys,

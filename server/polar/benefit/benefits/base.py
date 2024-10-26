@@ -84,6 +84,8 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
     session: AsyncSession
     redis: Redis
 
+    should_revoke_individually: bool = False
+
     def __init__(self, session: AsyncSession, redis: Redis) -> None:
         self.session = session
         self.redis = redis

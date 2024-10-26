@@ -230,13 +230,15 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         previous_properties = grant.properties
 
-        # Check if the user has other grants (from other purchases) for this benefit
-        # If yes, don't call the revoke logic, just mark the grant as revoked
+        benefit_service = get_benefit_service(benefit.type, session, redis)
+        # Call the revoke logic in two cases:
+        # * If the service requires grants to be revoked individually
+        # * If there is only one grant remaining for this benefit,
+        #   so the benefit remains if other grants exist via other purchases
         other_grants = await self._get_granted_by_benefit_and_user(
             session, benefit, user
         )
-        if len(other_grants) < 2:
-            benefit_service = get_benefit_service(benefit.type, session, redis)
+        if benefit_service.should_revoke_individually or len(other_grants) < 2:
             properties = await benefit_service.revoke(
                 benefit,
                 user,

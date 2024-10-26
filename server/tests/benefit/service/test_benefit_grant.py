@@ -31,6 +31,7 @@ from tests.fixtures.random_objects import (
 @pytest.fixture(autouse=True)
 def benefit_service_mock(mocker: MockerFixture) -> MagicMock:
     service_mock = MagicMock(spec=BenefitServiceProtocol)
+    service_mock.should_revoke_individually = False
     service_mock.grant.return_value = {}
     service_mock.revoke.return_value = {}
     mock = mocker.patch("polar.benefit.service.benefit_grant.get_benefit_service")
@@ -285,6 +286,47 @@ class TestRevokeBenefit:
         assert updated_grant.id == first_grant.id
         assert updated_grant.is_revoked
         benefit_service_mock.revoke.assert_not_called()
+
+    async def test_several_benefit_grants_should_individual_revoke(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        user: User,
+        benefit_organization: Benefit,
+        benefit_service_mock: MagicMock,
+        product: Product,
+    ) -> None:
+        benefit_service_mock.should_revoke_individually = True
+        benefit_service_mock.revoke.return_value = {"message": "ok"}
+
+        first_grant = await create_benefit_grant(
+            save_fixture, user, benefit_organization, subscription=subscription
+        )
+        first_grant.set_granted()
+        await save_fixture(first_grant)
+
+        second_subscription = await create_subscription(
+            save_fixture, product=product, user=user
+        )
+        second_grant = await create_benefit_grant(
+            save_fixture, user, benefit_organization, subscription=second_subscription
+        )
+        second_grant.set_granted()
+        await save_fixture(second_grant)
+
+        # then
+        session.expunge_all()
+
+        updated_grant = await benefit_grant_service.revoke_benefit(
+            session, redis, user, benefit_organization, subscription=subscription
+        )
+
+        assert updated_grant.id == first_grant.id
+        assert updated_grant.is_revoked
+        assert updated_grant.properties == {"message": "ok"}
+        benefit_service_mock.revoke.assert_called_once()
 
 
 @pytest.mark.asyncio

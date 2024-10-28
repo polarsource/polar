@@ -6,8 +6,9 @@ from typing import Annotated, Any, Literal, assert_never, get_args
 
 from babel.dates import format_date
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from makefun import with_signature
-from pydantic import ConfigDict, Discriminator, TypeAdapter
+from pydantic import Discriminator, TypeAdapter
 
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
@@ -152,11 +153,6 @@ class BaseWebhookPayload(Schema):
         )
 
         return json.dumps(payload)
-
-    model_config = ConfigDict(
-        # IMPORTANT: this ensures FastAPI doesn't generate `-Input` for output schemas
-        json_schema_mode_override="serialization",
-    )
 
 
 class WebhookCheckoutCreatedPayload(BaseWebhookPayload):
@@ -848,6 +844,24 @@ WebhookPayload = Annotated[
 WebhookPayloadTypeAdapter: TypeAdapter[WebhookPayload] = TypeAdapter(WebhookPayload)
 
 
+class WebhookAPIRoute(APIRoute):
+    """
+    Since FastAPI documents webhook through API routes with a body field,
+    we might be in a situation where it generates `-Input` and `-Output` variants
+    of the schemas because it sees them as "input" schemas.
+
+    But we don't want that.
+
+    The trick here is to force the body field to be in "serialization" mode, so we
+    prevent Pydantic to generate the `-Input` and `-Output` variants.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        if self.body_field is not None:
+            self.body_field.mode = "serialization"
+
+
 def document_webhooks(app: FastAPI) -> None:
     def _endpoint(body: Any) -> None: ...
 
@@ -876,4 +890,5 @@ def document_webhooks(app: FastAPI) -> None:
             methods=["POST"],
             summary=event_type,
             description=inspect.getdoc(webhook_schema),
+            route_class_override=WebhookAPIRoute,
         )

@@ -3,7 +3,6 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
-    ConfigDict,
     Discriminator,
     Field,
     TypeAdapter,
@@ -135,9 +134,6 @@ class BenefitDiscordProperties(Schema):
             secret=settings.SECRET,
             type="discord_guild_token",
         )
-
-    # Need to force it for this specific model, don't really understand why
-    model_config = ConfigDict(json_schema_mode_override="serialization")
 
 
 class BenefitDiscordCreateProperties(Schema):

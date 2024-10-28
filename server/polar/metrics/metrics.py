@@ -2,8 +2,9 @@ from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Protocol, cast
 
-from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, func
+from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, case, func
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import Order, Subscription
 
 from .queries import Interval, MetricQuery
@@ -186,7 +187,23 @@ class MonthlyRecurringRevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: Interval
     ) -> ColumnElement[int]:
-        return func.coalesce(func.sum(Subscription.amount), 0)
+        return func.coalesce(
+            func.sum(
+                case(
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.year,
+                        Subscription.amount / 12,
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.month,
+                        Subscription.amount,
+                    ),
+                )
+            ),
+            0,
+        )
 
 
 METRICS: list[type[Metric]] = [

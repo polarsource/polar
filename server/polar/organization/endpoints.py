@@ -343,7 +343,7 @@ async def members(
     members = await user_organization_service.list_by_org(session, id)
 
     return ListResource(
-        items=[OrganizationMember.from_db(m) for m in members],
+        items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
 

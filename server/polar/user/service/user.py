@@ -42,17 +42,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
-    async def get_by_username(
-        self, session: AsyncSession, username: str
-    ) -> User | None:
-        query = sql.select(User).where(
-            User.username == username,
-            User.deleted_at.is_(None),
-            User.blocked_at.is_(None),
-        )
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
     async def get_by_stripe_customer_id(
         self, session: AsyncSession, stripe_customer_id: str
     ) -> User | None:
@@ -105,7 +94,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         signup_attribution: UserSignupAttribution | None = None,
     ) -> User:
         user = User(
-            username=email,
             email=email,
             oauth_accounts=[],
             signup_attribution=signup_attribution,

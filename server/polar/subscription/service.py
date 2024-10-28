@@ -199,7 +199,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == SubscriptionSortProperty.user:
-                order_by_clauses.append(clause_function(User.username))
+                order_by_clauses.append(clause_function(User.email))
             if criterion == SubscriptionSortProperty.status:
                 order_by_clauses.append(
                     clause_function(

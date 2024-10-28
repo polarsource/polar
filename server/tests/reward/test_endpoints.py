@@ -78,7 +78,7 @@ async def test_search(
     assert json["items"][0]["pledge"]["issue"]["id"] == str(pledge_linked.issue_id)
     assert json["items"][1]["pledge"]["issue"]["id"] == str(pledge_linked.issue_id)
 
-    assert json["items"][0]["user"]["username"] == "zegl"
+    assert json["items"][0]["user"]["public_name"] == "zegl"
     assert json["items"][0]["organization"] is None
 
     assert json["items"][1]["user"] is None

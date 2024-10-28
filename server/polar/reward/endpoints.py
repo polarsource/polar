@@ -89,9 +89,11 @@ def to_resource(
 ) -> Reward:
     user = None
     if reward and reward.user:
-        user = User.from_db(reward.user)
+        user = User(
+            public_name=reward.user.public_name, avatar_url=reward.user.avatar_url
+        )
     elif reward.github_username:
-        user = User(username=reward.github_username, avatar_url="x")
+        user = User(public_name=reward.github_username, avatar_url=None)
 
     organization = None
     if reward.organization:
@@ -151,7 +153,7 @@ async def summary(
             rewarded_users_orgs.add(reward.user_id)
             res.append(
                 RewardsSummaryReceiver(
-                    name=reward.user.username_or_email,
+                    name=reward.user.public_name,
                     avatar_url=reward.user.avatar_url,
                 )
             )

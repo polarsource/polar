@@ -54,9 +54,6 @@ class OAuthAccount(RecordModel):
     )
     account_id: Mapped[str] = mapped_column(String(320), nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
-
-    # Usernames are not always unique across a platform. Usernames on GitHub are unique.
-    # Discords usernames are not.
     account_username: Mapped[str | None] = mapped_column(String(320), nullable=True)
 
     user_id: Mapped[UUID] = mapped_column(
@@ -90,7 +87,6 @@ class User(RecordModel):
         ),
     )
 
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
@@ -176,13 +172,6 @@ class User(RecordModel):
         if github_oauth_account is not None and github_oauth_account.account_username:
             return github_oauth_account.account_username
         return self.email[0]
-
-    @property
-    def username_or_email(self) -> str:
-        github_oauth_account = self.get_github_account()
-        if github_oauth_account is not None and github_oauth_account.account_username:
-            return github_oauth_account.account_username
-        return self.email
 
     @property
     def github_username(self) -> str | None:

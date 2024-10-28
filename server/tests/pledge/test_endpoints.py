@@ -89,7 +89,6 @@ async def test_get_pledge_member_sending_org(
     res: PledgeSchema = PledgeSchema.model_validate(response.json())
     assert res.id == pledge.id
     assert res.created_by is not None
-    assert res.created_by.name == pledge_created_by_user.email
 
 
 @pytest.mark.asyncio

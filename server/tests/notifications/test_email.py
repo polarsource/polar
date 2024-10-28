@@ -373,7 +373,7 @@ async def test_TeamAdminMemberPledgedNotification(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         team_name="teamname",
-        team_member_name=predictable_user.username,
+        team_member_name=predictable_user.email,
         pledge_amount="500.00",
         pledge_id=uuid.uuid4(),
     )

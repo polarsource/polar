@@ -65,7 +65,6 @@ class PledgeStripeService:
             issue_id=pledge_issue.id,
             issue_title=pledge_issue.title,
             user_id=user.id,
-            user_username=user.username_or_email,
             user_email=user.email,
         )
 

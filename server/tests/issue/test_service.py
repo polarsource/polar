@@ -279,7 +279,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     assert sorted_pledges[0].id == pledge_issue_3_user.id
     assert sorted_pledges[0].by_user_id is not None
     assert sorted_pledges[0].user is not None
-    assert sorted_pledges[0].user.username is not None
 
     assert sorted_pledges[1].id == pledge_issue_3_org.id
     assert sorted_pledges[1].by_organization_id is not None

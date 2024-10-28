@@ -193,7 +193,7 @@ class MonthlyRecurringRevenueMetric(Metric):
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.year,
-                        Subscription.amount / 12,
+                        func.round(Subscription.amount / 12),
                     ),
                     (
                         Subscription.recurring_interval

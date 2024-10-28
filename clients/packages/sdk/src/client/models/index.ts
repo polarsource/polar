@@ -14554,7 +14554,7 @@ export interface Transaction {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof Transaction
      */
@@ -14707,7 +14707,7 @@ export interface TransactionDetails {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionDetails
      */
@@ -14866,7 +14866,7 @@ export interface TransactionDonation {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionDonation
      */
@@ -14897,7 +14897,7 @@ export interface TransactionEmbedded {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionEmbedded
      */
@@ -15002,7 +15002,7 @@ export interface TransactionExternalOrganization {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionExternalOrganization
      */
@@ -15053,7 +15053,7 @@ export interface TransactionIssue {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionIssue
      */
@@ -15122,7 +15122,7 @@ export interface TransactionIssueReward {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionIssueReward
      */
@@ -15159,7 +15159,7 @@ export interface TransactionOrder {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionOrder
      */
@@ -15202,7 +15202,7 @@ export interface TransactionOrganization {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionOrganization
      */
@@ -15245,7 +15245,7 @@ export interface TransactionPledge {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionPledge
      */
@@ -15284,7 +15284,7 @@ export interface TransactionProduct {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionProduct
      */
@@ -15327,7 +15327,7 @@ export interface TransactionRepository {
      */
     modified_at: string | null;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof TransactionRepository
      */

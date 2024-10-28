@@ -56,51 +56,6 @@ const convert = (schema) => {
   schema.openapi = '3.0.3'
 
   delete schema['webhooks']
-
-  // Hack! Rewrite "-Input" and "-Output" names
-  let inputOutputs = []
-  walk(schema, (key, value) => {
-    if (key.endsWith('-Input') || key.endsWith('-Output')) {
-      inputOutputs.push(key)
-    }
-    return value
-  })
-
-  // Hack! To keep the schema consistent to what FastAPI generated _before_ introducing webhooks to the schema.
-  // For some reason existing models where given "-Input" and "-Output" suffixes, breaking the generated code.
-  walk(schema, (key, value) => {
-    if (value && typeof value === 'string') {
-      if (
-        value.startsWith('#/components/schemas/') &&
-        (value.endsWith('-Input') || value.endsWith('-Output'))
-      ) {
-        const preValue = value
-        value = value.replace('-Input', '').replace('-Output', '')
-        console.log(`S: Rewrote ${preValue} as ${value}`)
-      }
-      return value
-    }
-
-    if (value && typeof value === 'object') {
-      let modValue = value
-
-      for (const name of inputOutputs) {
-        const newName = name.replace('-Input', '').replace('-Output', '')
-
-        if (name in value) {
-          console.log(`O: Rewrote ${name} as ${newName}`)
-          let newValue = { ...modValue }
-          newValue[newName] = modValue[name]
-          newValue[name] = undefined
-          modValue = newValue
-        }
-      }
-
-      return modValue
-    }
-
-    return value
-  })
 }
 
 const walk = (object, callback) => {

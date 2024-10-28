@@ -8412,10 +8412,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
-                                "free_subscription",
                                 "donation",
-                                "order"
+                                "order",
+                                "free_subscription",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -30729,6 +30729,23 @@
                 "title": "ProductOneTimeCreate",
                 "description": "Schema to create a one-time product."
             },
+            "ProductPrice": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                    }
+                }
+            },
             "ProductPriceOneTime": {
                 "oneOf": [
                     {
@@ -31852,6 +31869,104 @@
                     "eyes"
                 ],
                 "title": "Reactions"
+            },
+            "Repository": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "is_private": {
+                        "type": "boolean",
+                        "title": "Is Private"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "examples": [
+                            "MyOrg"
+                        ]
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "stars": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Stars",
+                        "examples": [
+                            1337
+                        ]
+                    },
+                    "license": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "License"
+                    },
+                    "homepage": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Homepage"
+                    },
+                    "profile_settings": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/RepositoryProfileSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Settings for the repository profile"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/ExternalOrganization"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "platform",
+                    "is_private",
+                    "name",
+                    "description",
+                    "stars",
+                    "license",
+                    "homepage",
+                    "profile_settings",
+                    "organization"
+                ],
+                "title": "Repository"
             },
             "RepositoryBadgeSettingsRead": {
                 "properties": {
@@ -33097,7 +33212,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "type": {
                         "$ref": "#/components/schemas/TransactionType"
@@ -33323,7 +33439,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "type": {
                         "$ref": "#/components/schemas/TransactionType"
@@ -33557,7 +33674,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "to_organization": {
                         "anyOf": [
@@ -33603,7 +33721,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "type": {
                         "$ref": "#/components/schemas/TransactionType"
@@ -33762,7 +33881,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "platform": {
                         "$ref": "#/components/schemas/Platforms"
@@ -33816,7 +33936,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "platform": {
                         "$ref": "#/components/schemas/Platforms"
@@ -33885,7 +34006,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "issue_id": {
                         "type": "string",
@@ -33931,7 +34053,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "product": {
                         "$ref": "#/components/schemas/TransactionProduct"
@@ -33987,7 +34110,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "name": {
                         "type": "string",
@@ -34044,7 +34168,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "state": {
                         "$ref": "#/components/schemas/PledgeState"
@@ -34087,7 +34212,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "name": {
                         "type": "string",
@@ -34151,7 +34277,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "platform": {
                         "$ref": "#/components/schemas/Platforms"
@@ -37131,121 +37258,6 @@
                 ],
                 "title": "PaymentProcessor",
                 "description": "Supported payment processors."
-            },
-            "ProductPrice": {
-                "oneOf": [
-                    {
-                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                    },
-                    {
-                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                    }
-                ],
-                "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                    }
-                }
-            },
-            "Repository": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
-                    },
-                    "is_private": {
-                        "type": "boolean",
-                        "title": "Is Private"
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name",
-                        "examples": [
-                            "MyOrg"
-                        ]
-                    },
-                    "description": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Description"
-                    },
-                    "stars": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Stars",
-                        "examples": [
-                            1337
-                        ]
-                    },
-                    "license": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "License"
-                    },
-                    "homepage": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Homepage"
-                    },
-                    "profile_settings": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/RepositoryProfileSettings"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "Settings for the repository profile"
-                    },
-                    "organization": {
-                        "$ref": "#/components/schemas/ExternalOrganization"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "platform",
-                    "is_private",
-                    "name",
-                    "description",
-                    "stars",
-                    "license",
-                    "homepage",
-                    "profile_settings",
-                    "organization"
-                ],
-                "title": "Repository"
             }
         },
         "securitySchemes": {

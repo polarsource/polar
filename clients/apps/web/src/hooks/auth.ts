@@ -1,9 +1,9 @@
+import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
-import { usePostHog } from '@/hooks/posthog'
 import { useCallback, useContext, useEffect } from 'react'
 
 export const useAuth = (): {
@@ -33,7 +33,6 @@ export const useAuth = (): {
       Sentry.setUser({
         id: currentUser.id,
         email: currentUser.email,
-        username: currentUser.username,
       })
 
       posthog.identify(currentUser)

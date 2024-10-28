@@ -30,7 +30,7 @@ const OrganizationSelect = ({
   >(undefined)
 
   const canSelectOrganizations = organizations
-    .filter((o) => o.slug !== currentUser?.username)
+    .filter((o) => o.slug !== currentUser?.email)
     .filter((o) => {
       if (organizationFilter) {
         return organizationFilter(o)
@@ -91,11 +91,7 @@ const OrganizationSelect = ({
               {attributePledgeTo ? (
                 <SelectValue placeholder={`${attributePledgeTo.slug}`} />
               ) : (
-                <SelectValue
-                  placeholder={`Yourself (${
-                    currentUser?.username || currentUser?.email
-                  })`}
-                />
+                <SelectValue placeholder={`Yourself (${currentUser?.email})`} />
               )}
             </SelectTrigger>
 
@@ -113,9 +109,9 @@ const OrganizationSelect = ({
                   <div className="flex items-center space-x-2">
                     <Avatar
                       avatar_url={currentUser.avatar_url}
-                      name={currentUser.username ?? ''}
+                      name={currentUser.email}
                     />
-                    <span>{currentUser.username}</span>
+                    <span>{currentUser.email}</span>
                   </div>
                 </SelectItem>
               ) : null}

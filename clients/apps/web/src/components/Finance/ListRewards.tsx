@@ -5,6 +5,7 @@ import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
 import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/sdk'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
@@ -129,18 +130,14 @@ const List = (props: {
                 {showReceiver && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex items-center gap-1 ">
-                      {t.user?.avatar_url && (
-                        <img
-                          src={t.user?.avatar_url}
+                      {t.user && (
+                        <Avatar
+                          avatar_url={t.user.avatar_url}
+                          name={t.user.public_name}
                           className="h-6 w-6 rounded-full"
                         />
                       )}
-                      <a
-                        href={`https://github.com/${t.user?.username}`}
-                        className="text-blue-500"
-                      >
-                        @{t.user?.username || 'Unknown'}
-                      </a>
+                      @{t.user?.public_name || 'Unknown'}
                     </div>
                   </td>
                 )}
@@ -148,9 +145,10 @@ const List = (props: {
                 {showBacker && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex items-center gap-1 ">
-                      {t.pledge.pledger?.avatar_url && (
-                        <img
-                          src={t.pledge.pledger?.avatar_url}
+                      {t.pledge.pledger && (
+                        <Avatar
+                          avatar_url={t.pledge.pledger.avatar_url}
+                          name={t.pledge.pledger.name}
                           className="h-6 w-6 rounded-full"
                         />
                       )}

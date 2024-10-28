@@ -12,7 +12,7 @@ export const useListTeams = () => {
     // Filter out the users own organization if it exists.
     // This organiztaion can not have extra members, and can not be a "Team".
     const allTeams = allOrganizations.filter(
-      (o) => o.slug !== currentUser?.username,
+      (o) => o.slug !== currentUser?.email,
     )
 
     setTeams(allTeams)

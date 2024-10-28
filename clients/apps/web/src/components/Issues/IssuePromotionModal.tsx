@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks'
+import { usePostHog } from '@/hooks/posthog'
 import {
   useBadgeWithComment,
   useIssueAddComment,
@@ -38,7 +39,6 @@ import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
 import PublicRewardsSetting from './UpfrontRewards'
-import { usePostHog } from '@/hooks/posthog'
 
 const isIssueBadged = (issue: Issue): boolean => {
   return issue.pledge_badge_currently_embedded
@@ -132,7 +132,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
       organization_name: props.issue.repository.organization.name,
       repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
-      funding_goal: amount
+      funding_goal: amount,
     })
   }
 
@@ -316,7 +316,7 @@ const PostCommentForm = (props: {
     <div className="mt-3 flex flex-1 space-x-2">
       {props.user.avatar_url && (
         <Image
-          alt={`Avatar of ${props.user.username}`}
+          alt={`Avatar of ${props.user.email}`}
           src={props.user.avatar_url}
           height={200}
           width={200}
@@ -623,9 +623,9 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                   <Avatar
                     className="h-6 w-6"
                     avatar_url={props.user.avatar_url}
-                    name={props.user.username}
+                    name={props.user.email}
                   />
-                  <div className="text-sm">@{props.user.username}</div>
+                  <div className="text-sm">{props.user.email}</div>
                 </div>
 
                 <MoneyInput

@@ -91,7 +91,7 @@ _If you already have a Polar account setup, you don't need to do anything._
           <div className="flex flex-row items-center gap-4">
             <Avatar
               avatar_url={props.user.avatar_url}
-              name={props.user.username}
+              name={props.user.email}
             />
             <span className="dark:text-polar-200 text-gray-500">
               Comment will be posted on your behalf to issue{' '}

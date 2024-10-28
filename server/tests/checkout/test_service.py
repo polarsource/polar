@@ -673,6 +673,27 @@ class TestClientCreate:
 
         assert checkout.customer is None
 
+    async def test_valid_from_legacy_checkout_link(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(
+                product_price_id=price.id, from_legacy_checkout_link=True
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product_price == price
+        assert checkout.product == product_one_time
+        assert checkout.amount == price.price_amount
+        assert checkout.currency == price.price_currency
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

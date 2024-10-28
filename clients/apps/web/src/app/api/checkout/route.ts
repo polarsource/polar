@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const { url } = await api.checkouts.clientCreate({
       body: {
         product_price_id: priceId,
+        from_legacy_checkout_link: true,
       },
     })
     return new NextResponse(undefined, {

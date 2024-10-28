@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator, Sequence
+from datetime import datetime
 from typing import TypeVar
 
 import pytest_asyncio
@@ -46,8 +47,10 @@ async def create_transaction(
     donation: Donation | None = None,
     charge_id: str | None = None,
     dispute_id: str | None = None,
+    created_at: datetime | None = None,
 ) -> Transaction:
     transaction = Transaction(
+        created_at=created_at,
         type=type,
         processor=PaymentProcessor.stripe,
         currency="usd",

@@ -1,3 +1,4 @@
+import datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -8,7 +9,8 @@ from sqlalchemy import select
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Account, Transaction, User
+from polar.kit.utils import utc_now
+from polar.models import Account, Organization, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payout import (
@@ -22,7 +24,11 @@ from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.transaction.conftest import create_async_iterator
+from tests.transaction.conftest import (
+    create_account,
+    create_async_iterator,
+    create_transaction,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -550,3 +556,51 @@ class TestCreatePayoutFromStripe:
         result = await session.execute(paid_transactions_statement)
         paid_transactions = result.scalars().all()
         assert len(paid_transactions) == len(transactions)
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestTriggerStripePayouts:
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        organization_second: Organization,
+        user_second: User,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.transaction.service.payout.enqueue_job")
+
+        account_1 = await create_account(save_fixture, organization, user)
+        account_2 = await create_account(save_fixture, organization_second, user_second)
+
+        payout_1 = await create_transaction(
+            save_fixture,
+            account=account_1,
+            type=TransactionType.payout,
+            created_at=utc_now() - datetime.timedelta(days=14),
+        )
+        payout_2 = await create_transaction(
+            save_fixture,
+            account=account_1,
+            type=TransactionType.payout,
+            created_at=utc_now() - datetime.timedelta(days=7),
+        )
+        payout_3 = await create_transaction(
+            save_fixture,
+            account=account_2,
+            type=TransactionType.payout,
+            created_at=utc_now() - datetime.timedelta(days=7),
+        )
+
+        await payout_transaction_service.trigger_stripe_payouts(session)
+
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call(
+            "payout.trigger_stripe_payout", payout_id=payout_1.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "payout.trigger_stripe_payout", payout_id=payout_3.id
+        )

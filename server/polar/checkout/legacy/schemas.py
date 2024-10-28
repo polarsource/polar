@@ -1,4 +1,4 @@
-from pydantic import UUID4, AnyHttpUrl, Field
+from pydantic import UUID4, AnyHttpUrl, ConfigDict, Field
 
 from polar.kit.schemas import EmailStrDNS, Schema
 from polar.product.schemas import Product, ProductPrice
@@ -45,3 +45,8 @@ class Checkout(Schema):
     customer_name: str | None
     product: Product
     product_price: ProductPrice
+
+    model_config = ConfigDict(
+        # IMPORTANT: this ensures FastAPI doesn't generate `-Input` for output schemas
+        json_schema_mode_override="serialization",
+    )

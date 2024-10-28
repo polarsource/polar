@@ -465,20 +465,21 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         await self._after_checkout_created(session, checkout)
 
         # Send a depreciation event to the organization's members
-        user_organizations = await user_organization_service.list_by_org(
-            session, product.organization_id
-        )
-        for user_organization in user_organizations:
-            enqueue_job(
-                "loops.send_event",
-                user_organization.user.email,
-                "deprecated_checkout_link",
-                event_properties={
-                    "product": product.name,
-                    "product_price_id": str(price.id),
-                    "organization": product.organization.name,
-                },
+        if checkout_create.from_legacy_checkout_link:
+            user_organizations = await user_organization_service.list_by_org(
+                session, product.organization_id
             )
+            for user_organization in user_organizations:
+                enqueue_job(
+                    "loops.send_event",
+                    user_organization.user.email,
+                    "deprecated_checkout_link_v2",
+                    event_properties={
+                        "product": product.name,
+                        "product_price_id": str(price.id),
+                        "organization": product.organization.name,
+                    },
+                )
 
         return checkout
 

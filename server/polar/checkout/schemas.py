@@ -80,6 +80,7 @@ class CheckoutCreatePublic(Schema):
 
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     customer_email: CustomerEmail | None = None
+    from_legacy_checkout_link: bool = False
 
 
 class CheckoutUpdateBase(Schema):

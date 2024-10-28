@@ -61,6 +61,11 @@ PRODUCTS: dict[str, ProductFixture] = {
             (100_00, ProductPriceType.recurring, SubscriptionRecurringInterval.month)
         ],
     },
+    "yearly_subscription": {
+        "prices": [
+            (1000_00, ProductPriceType.recurring, SubscriptionRecurringInterval.year)
+        ],
+    },
     "free_subscription": {
         "prices": [(ProductPriceType.recurring, SubscriptionRecurringInterval.month)]
     },
@@ -74,6 +79,10 @@ SUBSCRIPTIONS: dict[str, SubscriptionFixture] = {
     "subscription_2": {
         "started_at": date(2024, 6, 1),
         "product": "monthly_subscription",
+    },
+    "subscription_3": {
+        "started_at": date(2024, 1, 1),
+        "product": "yearly_subscription",
     },
 }
 
@@ -96,6 +105,12 @@ ORDERS: dict[str, OrderFixture] = {
         "subscription": "subscription_1",
     },
     "order_4": {
+        "created_at": date(2024, 1, 1),
+        "amount": 1000_00,
+        "product": "yearly_subscription",
+        "subscription": "subscription_3",
+    },
+    "order_5": {
         "created_at": date(2024, 6, 1),
         "amount": 100_00,
         "product": "monthly_subscription",
@@ -214,17 +229,17 @@ class TestGetMetrics:
         )
 
         jan_1 = metrics.periods[0]
-        assert jan_1.orders == 2
-        assert jan_1.revenue == 200_00
-        assert jan_1.average_order_value == 100_00
+        assert jan_1.orders == 3
+        assert jan_1.revenue == 1200_00
+        assert jan_1.average_order_value == 400_00
         assert jan_1.one_time_products == 1
         assert jan_1.one_time_products_revenue == 100_00
-        assert jan_1.new_subscriptions == 1
-        assert jan_1.new_subscriptions_revenue == 100_00
+        assert jan_1.new_subscriptions == 2
+        assert jan_1.new_subscriptions_revenue == 1100_00
         assert jan_1.renewed_subscriptions == 0
         assert jan_1.renewed_subscriptions_revenue == 0
-        assert jan_1.active_subscriptions == 1
-        assert jan_1.monthly_recurring_revenue == 100_00
+        assert jan_1.active_subscriptions == 2
+        assert jan_1.monthly_recurring_revenue == 183_33
 
         feb_1 = metrics.periods[31]
         assert feb_1.orders == 1
@@ -236,8 +251,8 @@ class TestGetMetrics:
         assert feb_1.new_subscriptions_revenue == 0
         assert feb_1.renewed_subscriptions == 1
         assert feb_1.renewed_subscriptions_revenue == 100_00
-        assert feb_1.active_subscriptions == 1
-        assert feb_1.monthly_recurring_revenue == 100_00
+        assert feb_1.active_subscriptions == 2
+        assert feb_1.monthly_recurring_revenue == 183_33
 
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 1
@@ -249,8 +264,8 @@ class TestGetMetrics:
         assert jun_1.new_subscriptions_revenue == 100_00
         assert jun_1.renewed_subscriptions == 0
         assert jun_1.renewed_subscriptions_revenue == 0
-        assert jun_1.active_subscriptions == 2
-        assert jun_1.monthly_recurring_revenue == 200_00
+        assert jun_1.active_subscriptions == 3
+        assert jun_1.monthly_recurring_revenue == 283_33
 
         dec_31 = metrics.periods[-1]
         assert dec_31.orders == 0
@@ -262,8 +277,8 @@ class TestGetMetrics:
         assert dec_31.new_subscriptions_revenue == 0
         assert dec_31.renewed_subscriptions == 0
         assert dec_31.renewed_subscriptions_revenue == 0
-        assert dec_31.active_subscriptions == 2
-        assert dec_31.monthly_recurring_revenue == 200_00
+        assert dec_31.active_subscriptions == 3
+        assert dec_31.monthly_recurring_revenue == 283_33
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_not_authorized(
@@ -454,17 +469,17 @@ class TestGetMetrics:
         assert len(metrics.periods) == 1
 
         period = metrics.periods[0]
-        assert period.orders == 4
-        assert period.revenue == 400_00
-        assert period.average_order_value == 100_00
+        assert period.orders == 5
+        assert period.revenue == 1400_00
+        assert period.average_order_value == 280_00
         assert period.one_time_products == 1
         assert period.one_time_products_revenue == 100_00
-        assert period.new_subscriptions == 2
-        assert period.new_subscriptions_revenue == 300_00
+        assert period.new_subscriptions == 3
+        assert period.new_subscriptions_revenue == 1300_00
         assert period.renewed_subscriptions == 0
         assert period.renewed_subscriptions_revenue == 0
-        assert period.active_subscriptions == 2
-        assert period.monthly_recurring_revenue == 200_00
+        assert period.active_subscriptions == 3
+        assert period.monthly_recurring_revenue == 283_33
 
     @pytest.mark.auth
     async def test_values_free_subscription(

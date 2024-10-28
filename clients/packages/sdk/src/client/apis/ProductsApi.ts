@@ -37,7 +37,7 @@ export interface ProductsApiGetRequest {
 }
 
 export interface ProductsApiListRequest {
-    organizationId: OrganizationIDFilter1;
+    organizationId?: OrganizationIDFilter1;
     query?: string;
     isArchived?: boolean;
     isRecurring?: boolean;
@@ -156,13 +156,6 @@ export class ProductsApi extends runtime.BaseAPI {
      * List Products
      */
     async listRaw(requestParameters: ProductsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceProduct>> {
-        if (requestParameters['organizationId'] == null) {
-            throw new runtime.RequiredError(
-                'organizationId',
-                'Required parameter "organizationId" was null or undefined when calling list().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -221,7 +214,7 @@ export class ProductsApi extends runtime.BaseAPI {
      * List products.
      * List Products
      */
-    async list(requestParameters: ProductsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceProduct> {
+    async list(requestParameters: ProductsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceProduct> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -21,7 +21,7 @@ export default function ClientPage() {
   const members = useListOrganizationMembers(org.id)
 
   const mems = members.data?.items || []
-  const sortedMembers = mems.sort((a, b) => a.name.localeCompare(b.name))
+  const sortedMembers = mems.sort((a, b) => a.email.localeCompare(b.email))
 
   return (
     <DashboardBody>
@@ -41,15 +41,15 @@ export default function ClientPage() {
           </TableHeader>
           <TableBody>
             {sortedMembers.map((m) => (
-              <TableRow key={m.github_username + m.name}>
+              <TableRow key={m.email}>
                 <TableCell className="font-medium ">
                   <div className="inline-flex items-center gap-2">
                     <Avatar
                       className="h-8 w-8"
                       avatar_url={m.avatar_url}
-                      name={m.name}
+                      name={m.email}
                     />
-                    <span className="whitespace-nowrap">{m.name}</span>
+                    <span className="whitespace-nowrap">{m.email}</span>
                   </div>
                 </TableCell>
               </TableRow>

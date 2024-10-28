@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   formatCurrencyAndAmount,
@@ -274,18 +275,23 @@ const Pledges = () => {
                         </div>
                         {r.user && (
                           <>
-                            <img className="h-6 w-6" src={r.user.avatar_url} />
-                            <div className="underline">{r.user.username}</div>
+                            <Avatar
+                              avatar_url={r.user.avatar_url}
+                              name={r.user.public_name}
+                              className="h-6 w-6"
+                            />
+                            <div className="underline">
+                              {r.user.public_name}
+                            </div>
                           </>
                         )}
                         {r.organization && (
                           <>
-                            {r.organization.avatar_url && (
-                              <img
-                                className="h-6 w-6"
-                                src={r.organization.avatar_url}
-                              />
-                            )}
+                            <Avatar
+                              avatar_url={r.organization.avatar_url}
+                              name={r.organization.name}
+                              className="h-6 w-6"
+                            />
                             <div className="underline">
                               {r.organization.name}
                             </div>

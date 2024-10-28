@@ -69,7 +69,6 @@ export const org: Organization = {
 export const user: UserRead = {
   created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
   modified_at: new Date('2023-01-01T09:00:00Z').toISOString(),
-  username: 'zegl',
   email: 'test@example.com',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
   accepted_terms_of_service: true,

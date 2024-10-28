@@ -43,7 +43,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         avatar_url: currentOrg.avatar_url,
       } as const)
     : ({
-        name: loggedUser.username,
+        name: loggedUser.email,
         avatar_url: loggedUser.avatar_url,
       } as const)
 

@@ -424,8 +424,8 @@ export const SelfSummaryFundingGoal: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
         authed_can_admin_sender: true,
@@ -433,8 +433,8 @@ export const SelfSummaryFundingGoal: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
         authed_can_admin_sender: true,
@@ -469,8 +469,8 @@ export const SelfSummaryNoGoal: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
         authed_can_admin_sender: true,
@@ -488,8 +488,8 @@ export const SelfSummaryNoGoal: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
         authed_can_admin_sender: true,
@@ -530,8 +530,8 @@ export const OrganizationPledgeWithCreatedBy: Story = {
         },
         authed_can_admin_sender: true,
         created_by: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
       },
@@ -555,8 +555,8 @@ export const OrganizationPledgeWithInvoice: Story = {
         },
         authed_can_admin_sender: true,
         created_by: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
         hosted_invoice_url: 'http://example.com/',
@@ -570,8 +570,8 @@ export const OrganizationPledgeWithInvoice: Story = {
         },
         authed_can_admin_sender: true,
         created_by: {
-          name: user.username,
-          github_username: user.username,
+          name: user.email,
+          github_username: 'test',
           avatar_url: user.avatar_url,
         },
         hosted_invoice_url: 'http://example.com/',

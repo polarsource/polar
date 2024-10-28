@@ -60,7 +60,7 @@ let all_pledge_states: Pledge[] = Object.values(PledgeState).map(
 const paidRewardUser: Reward = {
   pledge: pledge,
   user: {
-    username: 'petterheterjag',
+    public_name: 'Petter',
     avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
   },
   organization: undefined,

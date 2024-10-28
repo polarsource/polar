@@ -60,7 +60,7 @@ const PublicProfileDropdown = ({
         >
           <Avatar
             className="h-9 w-9"
-            name={loggedUser.username}
+            name={loggedUser.email}
             avatar_url={loggedUser.avatar_url}
           />
         </div>
@@ -78,7 +78,7 @@ const PublicProfileDropdown = ({
             >
               <ListItem current={true}>
                 <Profile
-                  name={loggedUser.username}
+                  name={loggedUser.email}
                   avatar_url={loggedUser.avatar_url}
                 />
               </ListItem>

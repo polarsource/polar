@@ -1,9 +1,9 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
-import { Properties, PostHog } from 'posthog-js'
-import { usePostHog as useOfficialPostHog} from 'posthog-js/react'
 import { UserRead } from '@polar-sh/sdk'
+import { PostHog, Properties } from 'posthog-js'
+import { usePostHog as useOfficialPostHog } from 'posthog-js/react'
 
 // https://posthog.com/product-engineers/5-ways-to-improve-analytics-data#suggested-naming-guide
 
@@ -52,7 +52,6 @@ type Verb =
   | 'open'
   | 'close'
 
-
 export type EventName = `${Surface}:${Category}:${Noun}:${Verb}`
 
 export interface PolarHog {
@@ -76,7 +75,6 @@ export const usePostHog = (): PolarHog => {
     const posthogId = `user:${user.id}`
     if (posthog.get_distinct_id() !== posthogId) {
       posthog.identify(posthogId, {
-        username: user.username,
         email: user.email,
       })
     }
@@ -100,6 +98,6 @@ export const usePostHog = (): PolarHog => {
     capture,
     identify,
     isFeatureEnabled,
-    logout
+    logout,
   }
 }

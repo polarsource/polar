@@ -14,9 +14,9 @@ const AccountAssociations: React.FC<AccountAssociationsProps> = ({
     () =>
       account.users.reduce<string[]>(
         (array, user) =>
-          array.some((value) => value === user.username)
+          array.some((value) => value === user.email)
             ? array
-            : [...array, user.username],
+            : [...array, user.email],
         account.organizations.map(({ name }) => name),
       ),
     [account],

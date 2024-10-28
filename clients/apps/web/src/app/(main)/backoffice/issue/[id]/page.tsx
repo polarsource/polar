@@ -76,7 +76,7 @@ export default function Page({ params }: { params: { id: string } }) {
             </div>
             {r.user && (
               <div>
-                <span className="underline">{r.user.username}</span> [user]
+                <span className="underline">{r.user.public_name}</span> [user]
               </div>
             )}
             {r.organization && (

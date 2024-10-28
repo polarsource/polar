@@ -4728,6 +4728,12 @@ export interface CheckoutCreatePublic {
      * @memberof CheckoutCreatePublic
      */
     customer_email?: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CheckoutCreatePublic
+     */
+    from_legacy_checkout_link?: boolean;
 }
 /**
  * Checkout link data.
@@ -10667,7 +10673,7 @@ export type OrganizationIDFilter = Array<string> | string;
 
 /**
  * @type OrganizationIDFilter1
- * Filter by organization ID.
+ * Filter by organization ID. **Required unless you use an organization token.**
  * @export
  */
 export type OrganizationIDFilter1 = Array<string> | string;
@@ -11895,6 +11901,18 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {Product}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    product: Product;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    product_price: ProductPrice;
 }
 
 

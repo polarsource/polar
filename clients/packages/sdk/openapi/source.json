@@ -8488,10 +8488,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
-                                "free_subscription",
                                 "paid_subscription",
-                                "donation"
+                                "free_subscription",
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -13508,7 +13508,7 @@
                     {
                         "name": "organization_id",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "anyOf": [
                                 {
@@ -13533,12 +13533,15 @@
                                             "displayProperty": "name"
                                         }
                                     }
+                                },
+                                {
+                                    "type": "null"
                                 }
                             ],
                             "title": "OrganizationID Filter",
-                            "description": "Filter by organization ID."
+                            "description": "Filter by organization ID. **Required unless you use an organization token.**"
                         },
-                        "description": "Filter by organization ID."
+                        "description": "Filter by organization ID. **Required unless you use an organization token.**"
                     },
                     {
                         "name": "query",
@@ -23043,6 +23046,11 @@
                             }
                         ],
                         "title": "Customer Email"
+                    },
+                    "from_legacy_checkout_link": {
+                        "type": "boolean",
+                        "title": "From Legacy Checkout Link",
+                        "default": false
                     }
                 },
                 "type": "object",
@@ -23114,7 +23122,7 @@
                         "description": "ID of the product price to checkout."
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "url": {
                         "type": "string",
@@ -23451,7 +23459,7 @@
                         "$ref": "#/components/schemas/Product"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -28976,7 +28984,7 @@
                         "$ref": "#/components/schemas/OrderProduct"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "subscription": {
                         "anyOf": [
@@ -31216,7 +31224,7 @@
                     },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
+                            "$ref": "#/components/schemas/ProductPrice-Output"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -31600,7 +31608,24 @@
                 "title": "ProductOneTimeCreate",
                 "description": "Schema to create a one-time product."
             },
-            "ProductPrice": {
+            "ProductPrice-Input": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                    }
+                }
+            },
+            "ProductPrice-Output": {
                 "oneOf": [
                     {
                         "$ref": "#/components/schemas/ProductPriceRecurring"
@@ -35021,7 +35046,7 @@
                         "$ref": "#/components/schemas/TransactionProduct"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "subscription_id": {
                         "anyOf": [
@@ -35826,7 +35851,7 @@
                         "$ref": "#/components/schemas/UserOrderProduct"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "subscription": {
                         "anyOf": [
@@ -35934,7 +35959,7 @@
                     },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
+                            "$ref": "#/components/schemas/ProductPrice-Output"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -36544,7 +36569,7 @@
                         "$ref": "#/components/schemas/UserSubscriptionProduct"
                     },
                     "price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -36632,7 +36657,7 @@
                     },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
+                            "$ref": "#/components/schemas/ProductPrice-Output"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -37756,7 +37781,7 @@
                         "$ref": "#/components/schemas/Product"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/ProductPrice"
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -38034,6 +38059,12 @@
                         },
                         "type": "object",
                         "title": "Metadata"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/Product"
+                    },
+                    "product_price": {
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -38062,7 +38093,9 @@
                     "customer_billing_address",
                     "customer_tax_id",
                     "payment_processor_metadata",
-                    "metadata"
+                    "metadata",
+                    "product",
+                    "product_price"
                 ],
                 "title": "Checkout",
                 "description": "Checkout session data retrieved using an access token."

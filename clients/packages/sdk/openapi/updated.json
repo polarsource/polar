@@ -8412,10 +8412,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
-                                "free_subscription",
                                 "paid_subscription",
-                                "donation"
+                                "free_subscription",
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -13391,7 +13391,7 @@
                     {
                         "name": "organization_id",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "anyOf": [
                                 {
@@ -13416,12 +13416,15 @@
                                             "displayProperty": "name"
                                         }
                                     }
+                                },
+                                {
+                                    "type": "null"
                                 }
                             ],
                             "title": "OrganizationID Filter",
-                            "description": "Filter by organization ID."
+                            "description": "Filter by organization ID. **Required unless you use an organization token.**"
                         },
-                        "description": "Filter by organization ID."
+                        "description": "Filter by organization ID. **Required unless you use an organization token.**"
                     },
                     {
                         "name": "query",
@@ -22164,6 +22167,11 @@
                             }
                         ],
                         "title": "Customer Email"
+                    },
+                    "from_legacy_checkout_link": {
+                        "type": "boolean",
+                        "title": "From Legacy Checkout Link",
+                        "default": false
                     }
                 },
                 "type": "object",
@@ -30721,23 +30729,6 @@
                 "title": "ProductOneTimeCreate",
                 "description": "Schema to create a one-time product."
             },
-            "ProductPrice": {
-                "oneOf": [
-                    {
-                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                    },
-                    {
-                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                    }
-                ],
-                "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                    }
-                }
-            },
             "ProductPriceOneTime": {
                 "oneOf": [
                     {
@@ -36959,6 +36950,12 @@
                         },
                         "type": "object",
                         "title": "Metadata"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/Product"
+                    },
+                    "product_price": {
+                        "$ref": "#/components/schemas/ProductPrice"
                     }
                 },
                 "type": "object",
@@ -36987,7 +36984,9 @@
                     "customer_billing_address",
                     "customer_tax_id",
                     "payment_processor_metadata",
-                    "metadata"
+                    "metadata",
+                    "product",
+                    "product_price"
                 ],
                 "title": "Checkout",
                 "description": "Checkout session data retrieved using an access token."
@@ -37132,6 +37131,23 @@
                 ],
                 "title": "PaymentProcessor",
                 "description": "Supported payment processors."
+            },
+            "ProductPrice": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                    }
+                }
             },
             "Repository": {
                 "properties": {

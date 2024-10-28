@@ -39,15 +39,15 @@ export POLAR_BACKOFFICE_RENDER_SERVICE_ID=XXX
 Specific dependencies for the backoffice tool lie in the optional `backoffice` group. Make sure to install them:
 
 ```sh
-poetry install --with backoffice
+uv sync --group backoffice
 ```
 
 ## Launch the tool
 
-You can launch the tool by running the following command, assuming Poetry shell environment is enabled:
+You can launch the tool by running the following command:
 
 ```sh
-python -m polar_backoffice
+uv run python -m polar_backoffice
 ```
 
 The tool will automatically connect to the backend server. After a few seconds, you should see the welcome screen.

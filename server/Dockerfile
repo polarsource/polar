@@ -7,13 +7,12 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/server
 
-ADD poetry.lock .
+ADD uv.lock .
 ADD pyproject.toml .
 
 RUN apt-get update && apt-get install -y build-essential redis libpq-dev curl \
-    && pip install --upgrade pip poetry \
-    && poetry config virtualenvs.in-project true \
-    && poetry install --without dev --no-root \
+    && pip install --upgrade pip uv \
+    && uv sync --no-group dev --no-group backoffice --frozen \
     && apt-get autoremove -y build-essential
 
 ADD polar polar
@@ -30,4 +29,4 @@ ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
 ARG RELEASE_VERSION
 ENV RELEASE_VERSION=${RELEASE_VERSION}
 
-CMD ["poetry", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000"]

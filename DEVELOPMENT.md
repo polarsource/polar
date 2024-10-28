@@ -102,10 +102,10 @@ docker compose up -d
 
 **2. Install Python dependencies**
 
-We use [Poetry](https://python-poetry.org/docs/#installation) to manage our Python dependencies. Make sure it's installed on your system.
+We use [uv](https://docs.astral.sh/uv/) to manage our Python dependencies. Make sure it's installed on your system.
 
 ```sh
-poetry install
+uv sync
 ```
 
 ### Setup frontend
@@ -141,7 +141,7 @@ cd server
 **1. Apply the database migrations**
 
 ```sh
-poetry run task db_migrate
+uv run task db_migrate
 ```
 
 > [!NOTE]
@@ -150,11 +150,11 @@ poetry run task db_migrate
 **2. Start server and workers**
 
 ```sh
-poetry run task api
+uv run task api
 ```
 
 ```sh
-poetry run task worker
+uv run task worker
 ```
 
 By default, the API server will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).

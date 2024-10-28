@@ -2,7 +2,7 @@ cask "docker"
 
 # Python dependencies
 brew "pyenv"
-brew "poetry"
+brew "uv"
 
 # TypeScript dependencies
 brew "pnpm"

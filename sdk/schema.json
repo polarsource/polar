@@ -3449,7 +3449,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Repository-Output"
+                  "$ref": "#/components/schemas/Repository"
                 }
               }
             }
@@ -3548,7 +3548,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Repository-Output"
+                  "$ref": "#/components/schemas/Repository"
                 }
               }
             }
@@ -10130,7 +10130,7 @@
           {
             "name": "organization_id",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "anyOf": [
                 {
@@ -10155,12 +10155,15 @@
                       "displayProperty": "name"
                     }
                   }
+                },
+                {
+                  "type": "null"
                 }
               ],
               "title": "OrganizationID Filter",
-              "description": "Filter by organization ID."
+              "description": "Filter by organization ID. **Required unless you use an organization token.**"
             },
-            "description": "Filter by organization ID."
+            "description": "Filter by organization ID. **Required unless you use an organization token.**"
           },
           {
             "name": "query",
@@ -10357,12 +10360,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: [\n      \"<value>\",\n      \"<value>\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.list(organization_id=[\n    \"<value>\",\n    \"<value>\",\n])\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -21026,7 +21029,7 @@
             "$ref": "#/components/schemas/Funding"
           },
           "repository": {
-            "$ref": "#/components/schemas/Repository-Input",
+            "$ref": "#/components/schemas/Repository",
             "description": "The repository that the issue is in"
           },
           "upfront_split_to_contributors": {
@@ -22135,7 +22138,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/Repository-Output"
+              "$ref": "#/components/schemas/Repository"
             },
             "type": "array",
             "title": "Items"
@@ -26281,105 +26284,7 @@
         ],
         "title": "Reactions"
       },
-      "Repository-Input": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "platform": {
-            "$ref": "#/components/schemas/Platforms"
-          },
-          "is_private": {
-            "type": "boolean",
-            "title": "Is Private"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "examples": [
-              "MyOrg"
-            ]
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "stars": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stars",
-            "examples": [
-              1337
-            ]
-          },
-          "license": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "License"
-          },
-          "homepage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Homepage"
-          },
-          "profile_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RepositoryProfileSettings"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Settings for the repository profile"
-          },
-          "organization": {
-            "$ref": "#/components/schemas/ExternalOrganization"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "platform",
-          "is_private",
-          "name",
-          "description",
-          "stars",
-          "license",
-          "homepage",
-          "profile_settings",
-          "organization"
-        ],
-        "title": "Repository"
-      },
-      "Repository-Output": {
+      "Repository": {
         "properties": {
           "id": {
             "type": "string",
@@ -27456,7 +27361,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "type": {
             "$ref": "#/components/schemas/TransactionType"
@@ -27682,7 +27588,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "type": {
             "$ref": "#/components/schemas/TransactionType"
@@ -27916,7 +27823,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "to_organization": {
             "anyOf": [
@@ -27962,7 +27870,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "type": {
             "$ref": "#/components/schemas/TransactionType"
@@ -28121,7 +28030,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "platform": {
             "$ref": "#/components/schemas/Platforms"
@@ -28175,7 +28085,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "platform": {
             "$ref": "#/components/schemas/Platforms"
@@ -28244,7 +28155,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "issue_id": {
             "type": "string",
@@ -28290,7 +28202,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "product": {
             "$ref": "#/components/schemas/TransactionProduct"
@@ -28346,7 +28259,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "name": {
             "type": "string",
@@ -28403,7 +28317,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "state": {
             "$ref": "#/components/schemas/PledgeState"
@@ -28446,7 +28361,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "name": {
             "type": "string",
@@ -28510,7 +28426,8 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "platform": {
             "$ref": "#/components/schemas/Platforms"
@@ -30993,6 +30910,12 @@
             },
             "type": "object",
             "title": "Metadata"
+          },
+          "product": {
+            "$ref": "#/components/schemas/Product"
+          },
+          "product_price": {
+            "$ref": "#/components/schemas/ProductPrice"
           }
         },
         "type": "object",
@@ -31021,7 +30944,9 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
-          "metadata"
+          "metadata",
+          "product",
+          "product_price"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."

@@ -1,35 +1,31 @@
 from pydantic import UUID4
 
 from polar.enums import Platforms
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 from polar.product.schemas import ProductPrice
 
 
-class TransactionExternalOrganization(TimestampedSchema):
-    id: UUID4
+class TransactionExternalOrganization(IDSchema, TimestampedSchema):
     platform: Platforms
     name: str
     avatar_url: str
     is_personal: bool
 
 
-class TransactionRepository(TimestampedSchema):
-    id: UUID4
+class TransactionRepository(IDSchema, TimestampedSchema):
     platform: Platforms
     organization_id: UUID4
     name: str
 
 
-class TransactionUser(Schema):
-    id: UUID4
+class TransactionUser(IDSchema, Schema):
     public_name: str
     avatar_url: str
 
 
-class TransactionIssue(TimestampedSchema):
-    id: UUID4
+class TransactionIssue(IDSchema, TimestampedSchema):
     platform: Platforms
     organization_id: UUID4
     repository_id: UUID4
@@ -40,32 +36,27 @@ class TransactionIssue(TimestampedSchema):
     repository: TransactionRepository
 
 
-class TransactionPledge(TimestampedSchema):
-    id: UUID4
+class TransactionPledge(IDSchema, TimestampedSchema):
     state: PledgeState
     issue: TransactionIssue
 
 
-class TransactionOrganization(TimestampedSchema):
-    id: UUID4
+class TransactionOrganization(IDSchema, TimestampedSchema):
     name: str
     slug: str
     avatar_url: str | None
 
 
-class TransactionDonation(TimestampedSchema):
-    id: UUID4
+class TransactionDonation(IDSchema, TimestampedSchema):
     to_organization: TransactionOrganization | None
 
 
-class TransactionIssueReward(TimestampedSchema):
-    id: UUID4
+class TransactionIssueReward(IDSchema, TimestampedSchema):
     issue_id: UUID4
     share_thousands: int
 
 
-class TransactionProduct(TimestampedSchema):
-    id: UUID4
+class TransactionProduct(IDSchema, TimestampedSchema):
     name: str
     organization_id: UUID4 | None
     organization: TransactionOrganization | None
@@ -74,15 +65,13 @@ class TransactionProduct(TimestampedSchema):
 TransactionProductPrice = ProductPrice
 
 
-class TransactionOrder(TimestampedSchema):
-    id: UUID4
+class TransactionOrder(IDSchema, TimestampedSchema):
     product: TransactionProduct
     product_price: TransactionProductPrice
     subscription_id: UUID4 | None
 
 
-class TransactionEmbedded(TimestampedSchema):
-    id: UUID4
+class TransactionEmbedded(IDSchema, TimestampedSchema):
     type: TransactionType
     processor: PaymentProcessor | None
 

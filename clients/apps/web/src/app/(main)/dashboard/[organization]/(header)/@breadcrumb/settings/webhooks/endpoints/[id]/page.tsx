@@ -1,5 +1,7 @@
 import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { ResponseError, WebhookEndpoint } from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 import {
   BreadcrumbLink,
   BreadcrumbPageParams,
@@ -12,7 +14,17 @@ export default async function BreadcrumbPage({
   params: BreadcrumbPageParams & { id: string }
 }) {
   const api = await getServerSideAPI()
-  const webhook = await api.webhooks.getWebhookEndpoint({ id: params.id })
+
+  let webhook: WebhookEndpoint
+  try {
+    webhook = await api.webhooks.getWebhookEndpoint({ id: params.id })
+  } catch (err) {
+    if (err instanceof ResponseError && err.response.status === 404) {
+      notFound()
+    }
+    throw err
+  }
+
   return (
     <>
       <BreadcrumbSeparator />

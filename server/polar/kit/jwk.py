@@ -17,7 +17,7 @@ def generate_jwks(kid: str, size: int = 2048) -> str:
 TIP_MESSAGE = (
     "If you're in local development, you can generate a JWKS file "
     "by running the following command:\n"
-    "poetry run task generate_dev_jwks"
+    "uv run task generate_dev_jwks"
 )
 
 

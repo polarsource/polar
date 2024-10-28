@@ -10,54 +10,44 @@ jobs:
   linters:
     name: "Server: Linters 📝"
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-        poetry-version: ["1.8.3"]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install poetry
-        run: pipx install poetry
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "poetry"
-
-      - name: 🔧 poetry install
-        working-directory: ./server
-        run: poetry install --no-root
 
       - uses: actions/cache@v4
         with:
           path: |
             server/.mypy_cache
-          key: mypy-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-${{ github.sha }}
+          key: mypy-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            mypy-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-
-            mypy-${{ runner.os }}-${{ matrix.python-version }}-
             mypy-${{ runner.os }}-
             mypy-
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "server/.python-version"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --dev
+
       - name: 🐶 Lint Server (ruff)
         working-directory: ./server
-        run:  poetry run task lint_check
+        run:  uv run task lint_check
 
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
-        run:  poetry run task lint_types
+        run:  uv run task lint_types
 
   test:
     name: "Server: Tests 🐍"
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-        poetry-version: ["1.8.3"]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
 
     services:
@@ -106,41 +96,34 @@ jobs:
           POLICY_FILE: policy.json
         run:  bash github.sh
 
-      - name: Install poetry
-        run: pipx install poetry
-      - uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "poetry"
-      - name: 🔧 poetry install
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "server/.python-version"
+
+      - name: 🔧 uv install
         working-directory: ./server
         run: |
-          poetry install --no-root
-          poetry run task generate_dev_jwks
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            server/.pytest_cache
-          key: pytest-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-${{ github.sha }}
-          restore-keys: |
-            pytest-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-
-            pytest-${{ runner.os }}-${{ matrix.python-version }}-
-            pytest-${{ runner.os }}-
-            pytest-
+          uv sync --dev
+          uv run task generate_dev_jwks
 
       - name: ⚗️ alembic migrate
         working-directory: ./server
         env:
           POLAR_ENV: testing
-        run:  poetry run task db_migrate
+        run: uv run task db_migrate
 
       - name: ⚗️ alembic check
         working-directory: ./server
         env:
           POLAR_ENV: testing
-        run:  poetry run alembic check
+        run: uv run alembic check
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: poetry run pytest -n auto --no-cov
+        run: uv run pytest -n auto --no-cov

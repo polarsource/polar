@@ -605,10 +605,7 @@ async def test_create_issue_rewards_associate_username(
     organization: Organization,
 ) -> None:
     # create user and github auth
-    user = User(
-        username="test_gh_user",
-        email="test_gh_user@polar.sh",
-    )
+    user = User(email="test_gh_user@polar.sh")
     await save_fixture(user)
     oauth = OAuthAccount(
         platform=Platforms.github,

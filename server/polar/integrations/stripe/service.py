@@ -224,7 +224,6 @@ class StripeService:
             return await self.get_customer(user.stripe_customer_id)
 
         customer = await stripe_lib.Customer.create_async(
-            name=user.username_or_email,
             email=user.email,
             metadata={
                 "user_id": str(user.id),

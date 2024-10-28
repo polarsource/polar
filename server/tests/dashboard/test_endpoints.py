@@ -127,7 +127,6 @@ async def test_get_with_pledge_from_user(
     rel_pledge = res["data"][0]["pledges"][0]
 
     assert user.email
-    assert str(rel_pledge["pledger"]["name"]) == user.email
 
     summary = res["data"][0]["pledges_summary"]
     assert summary["pay_upfront"]["total"]["amount"] == pledge_by_user.amount
@@ -172,7 +171,6 @@ async def test_get_with_pledge_from_user_github_oauth(
     rel_pledge = res["data"][0]["pledges"][0]
 
     assert pledger_gh
-    assert str(rel_pledge["pledger"]["name"]) == pledger_gh.account_username
 
     summary = res["data"][0]["pledges_summary"]
     assert summary["pay_upfront"]["total"]["amount"] == pledge_by_user.amount

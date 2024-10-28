@@ -16,7 +16,7 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
         _, user = sub
         if scopes:
             if Scope.openid in scopes:
-                claims.update({"name": user.username})
+                pass
             if Scope.email in scopes:
                 claims.update(
                     {"email": user.email, "email_verified": user.email_verified}

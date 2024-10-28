@@ -1,32 +1,22 @@
 import uuid
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 
 from fastapi import Depends
-from pydantic import UUID4, EmailStr, Field
+from pydantic import UUID4, EmailStr
 
 from polar.auth.scope import Scope
 from polar.kit.schemas import Schema, TimestampedSchema, UUID4ToStr
 from polar.models.user import OAuthPlatform
-from polar.models.user import User as UserModel
 
 
 # Public API
 class User(Schema):
-    username: str
-    avatar_url: str
-
-    @classmethod
-    def from_db(cls, o: UserModel) -> Self:
-        return cls(
-            username=o.username_or_email,
-            # TODO: remove the nullability in the db?
-            avatar_url=o.avatar_url or "",
-        )
+    public_name: str
+    avatar_url: str | None
 
 
 # Private APIs below
 class UserBase(Schema):
-    username: str = Field(..., max_length=50)
     email: EmailStr
     avatar_url: str | None
     account_id: UUID4 | None

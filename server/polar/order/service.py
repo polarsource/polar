@@ -187,7 +187,7 @@ class OrderService(ResourceServiceReader[Order]):
             elif criterion == OrderSortProperty.amount:
                 order_by_clauses.append(clause_function(Order.amount))
             elif criterion == OrderSortProperty.user:
-                order_by_clauses.append(clause_function(OrderUser.username))
+                order_by_clauses.append(clause_function(OrderUser.email))
             elif criterion == OrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
             elif criterion == OrderSortProperty.subscription:

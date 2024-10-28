@@ -50,7 +50,6 @@ class PledgePaymentIntentMetadata(PaymentIntentMetadata):
     anonymous_email: str | None = None
 
     user_id: UUID | None = None
-    user_username: str | None = None
     user_email: str | None = None
     organization_id: UUID | None = None
     organization_name: str | None = None
@@ -66,7 +65,6 @@ class DonationPaymentIntentMetadata(PaymentIntentMetadata):
     to_organization_name: str | None = None
 
     by_user_id: UUID | Literal[""] | None = None
-    by_user_username: str | Literal[""] | None = None
 
     by_organization_id: UUID | Literal[""] | None = None
 

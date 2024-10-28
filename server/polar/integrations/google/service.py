@@ -97,7 +97,6 @@ class GoogleService:
 
         # New user, create it
         user = User(
-            username=google_profile["email"],
             email=google_profile["email"],
             email_verified=google_profile["email_verified"],
             avatar_url=google_profile["picture"],

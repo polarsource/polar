@@ -32,7 +32,7 @@ class Pledger(Schema):
 
         if p.user:
             return cls(
-                name=p.user.username_or_email,
+                name=p.user.public_name,
                 github_username=p.user.github_username,
                 avatar_url=p.user.avatar_url,
             )
@@ -49,7 +49,7 @@ class Pledger(Schema):
     @classmethod
     def from_user(cls, user: User) -> Self:
         return cls(
-            name=user.username_or_email,
+            name=user.public_name,
             github_username=user.github_username,
             avatar_url=user.avatar_url,
         )

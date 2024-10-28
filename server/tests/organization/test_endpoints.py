@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -8,7 +7,6 @@ from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
-from polar.user_organization.schemas import OrganizationMember
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
@@ -186,10 +184,8 @@ async def test_list_members(
 
     assert response.status_code == 200
 
-    items_r: list[dict[str, Any]] = response.json()["items"]
-    items = [OrganizationMember.model_validate(r) for r in items_r]
-
-    assert len(items) == 2
+    json = response.json()
+    assert len(json["items"]) == 2
 
 
 @pytest.mark.asyncio

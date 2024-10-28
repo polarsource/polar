@@ -18,7 +18,7 @@ from polar.app import app
 from polar.auth.scope import SCOPES_SUPPORTED
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
-from polar.kit.db.postgres import Engine, Session
+from polar.kit.db.postgres import Engine, Session, create_sync_engine
 from polar.models import (
     Model,
     OAuth2AuthorizationCode,
@@ -30,8 +30,7 @@ from polar.models import (
 from polar.oauth2.authorization_server import AuthorizationServer
 from polar.oauth2.dependencies import get_authorization_server
 from polar.oauth2.sub_type import SubType
-from polar.postgres import create_sync_engine
-from tests.fixtures.database import SaveFixture
+from tests.fixtures.database import SaveFixture, get_database_url
 
 
 @pytest.fixture(scope="package", autouse=True)
@@ -40,8 +39,13 @@ def authlib_insecure_transport() -> None:
 
 
 @pytest.fixture(scope="package")
-def sync_engine() -> Iterator[Engine]:
-    engine = create_sync_engine("app")
+def sync_engine(worker_id: str) -> Iterator[Engine]:
+    engine = create_sync_engine(
+        dsn=get_database_url(worker_id, driver="psycopg2"),
+        application_name=f"test_sync_{worker_id}",
+        pool_size=settings.DATABASE_POOL_SIZE,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    )
     yield engine
     engine.dispose()
 

@@ -77,7 +77,6 @@ class OAuth2ClientPublic(TimestampedSchema):
 
 class AuthorizeUser(Schema):
     id: UUID4
-    username: str
     email: EmailStr
     avatar_url: str | None
 

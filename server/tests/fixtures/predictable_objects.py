@@ -64,7 +64,6 @@ async def predictable_issue(
 async def predictable_user(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
-        username="foobar",
         email="test@example.com",
     )
     await save_fixture(user)

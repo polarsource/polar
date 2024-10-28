@@ -102,7 +102,7 @@ class Account(RecordModel):
     def get_associations_names(self) -> list[str]:
         associations_names: list[str] = []
         for user in self.users:
-            associations_names.append(user.username_or_email)
+            associations_names.append(user.email)
         for organization in self.organizations:
             associations_names.append(organization.slug)
         return associations_names

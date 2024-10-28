@@ -181,7 +181,7 @@ async def test_authenticate_existing_user(
     save_fixture: SaveFixture,
     generate_magic_link_token: GenerateMagicLinkToken,
 ) -> None:
-    user = User(username="user@example.com", email="user@example.com")
+    user = User(email="user@example.com")
     await save_fixture(user)
 
     # then
@@ -203,7 +203,7 @@ async def test_authenticate_existing_user_unlinked_from_magic_token(
     save_fixture: SaveFixture,
     generate_magic_link_token: GenerateMagicLinkToken,
 ) -> None:
-    user = User(username="user@example.com", email="user@example.com")
+    user = User(email="user@example.com")
     await save_fixture(user)
 
     # then

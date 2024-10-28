@@ -485,7 +485,7 @@ class TestListBy:
         # no name from oauth
         assert r.pledges_summaries.pay_upfront.pledgers[0].github_username is None
         assert r.pledges_summaries.pay_upfront.pledgers[0].name
-        assert "@example.com" in r.pledges_summaries.pay_upfront.pledgers[0].name
+        assert "@example.com" not in r.pledges_summaries.pay_upfront.pledgers[0].name
 
     async def test_sum_user_only_discord_oauth(
         self,
@@ -539,7 +539,7 @@ class TestListBy:
         # no name from oauth
         assert r.pledges_summaries.pay_upfront.pledgers[0].github_username is None
         assert r.pledges_summaries.pay_upfront.pledgers[0].name
-        assert "@example.com" in r.pledges_summaries.pay_upfront.pledgers[0].name
+        assert "@example.com" not in r.pledges_summaries.pay_upfront.pledgers[0].name
 
 
 @pytest.mark.asyncio

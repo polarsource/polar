@@ -85,7 +85,6 @@ async def export(
         yield csv_writer.getrow(
             (
                 "Email",
-                "Name",
                 "Created At",
                 "Active",
                 "Product",
@@ -106,7 +105,6 @@ async def export(
             yield csv_writer.getrow(
                 (
                     sub.user.email,
-                    sub.user.username_or_email,
                     sub.created_at.isoformat(),
                     "true" if sub.active else "false",
                     sub.product.name,

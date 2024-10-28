@@ -137,7 +137,7 @@ async def test_create_pledge_from_created_by_user(
             type=NotificationType.maintainer_pledge_created,
             payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
-                pledger_name=user.email,
+                pledger_name=user.public_name,
                 pledge_amount="123",
                 issue_url=f"https://github.com/{external_organization_linked.name}/{repository_linked.name}/issues/{issue_linked.number}",
                 issue_title=issue_linked.title,

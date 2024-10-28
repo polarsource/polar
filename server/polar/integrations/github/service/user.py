@@ -120,7 +120,6 @@ class GithubUserService(UserService):
     ) -> User:
         email, email_verified = github_email
         new_user = User(
-            username=github_user.login,
             email=email,
             email_verified=email_verified,
             avatar_url=github_user.avatar_url,
@@ -167,7 +166,6 @@ class GithubUserService(UserService):
         except NoPrimaryEmailError:
             pass
 
-        user.username = github_user.login
         user.avatar_url = github_user.avatar_url
         session.add(user)
 
@@ -200,11 +198,7 @@ class GithubUserService(UserService):
         oauth_account.account_username = github_user.login
         session.add(oauth_account)
 
-        log.info(
-            "github.user.update",
-            user_id=user.id,
-            username=user.username,
-        )
+        log.info("github.user.update", user_id=user.id)
         return user
 
     async def get_updated_or_create(
@@ -291,12 +285,6 @@ class GithubUserService(UserService):
 
         account_id = str(github_user.id)
 
-        # Ensure username doesn't already exists
-        # TODO: we can remove this when User.username is dropped
-        existing_user = await self.get_by_username(session, github_user.login)
-        if existing_user is not None and existing_user.id != user.id:
-            raise AccountLinkedToAnotherUserError()
-
         existing_oauth = await oauth_account_service.get_by_platform_and_username(
             session, OAuthPlatform.github, github_user.login
         )
@@ -327,7 +315,6 @@ class GithubUserService(UserService):
         session.add(oauth_account)
 
         # Update User profile
-        user.username = github_user.login
         user.avatar_url = github_user.avatar_url
         session.add(user)
 

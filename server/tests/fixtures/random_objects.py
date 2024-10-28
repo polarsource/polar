@@ -274,7 +274,6 @@ async def create_user(
 ) -> User:
     user = User(
         id=uuid.uuid4(),
-        username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],
@@ -288,7 +287,6 @@ async def create_user(
 async def user_second(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
-        username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
     )
@@ -300,7 +298,6 @@ async def user_second(save_fixture: SaveFixture) -> User:
 async def user_blocked(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
-        username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         blocked_at=utc_now(),

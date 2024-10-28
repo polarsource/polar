@@ -1585,12 +1585,6 @@ export interface AuthorizeUser {
      * @type {string}
      * @memberof AuthorizeUser
      */
-    username: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AuthorizeUser
-     */
     email: string;
     /**
      * 
@@ -10696,13 +10690,7 @@ export interface OrganizationMember {
      * @type {string}
      * @memberof OrganizationMember
      */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationMember
-     */
-    github_username: string | null;
+    email: string;
     /**
      * 
      * @type {string}
@@ -15497,13 +15485,13 @@ export interface User {
      * @type {string}
      * @memberof User
      */
-    username: string;
+    public_name: string;
     /**
      * 
      * @type {string}
      * @memberof User
      */
-    avatar_url: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -15668,12 +15656,6 @@ export type UserAdvertisementSortProperty = typeof UserAdvertisementSortProperty
  * @interface UserBase
  */
 export interface UserBase {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserBase
-     */
-    username: string;
     /**
      * 
      * @type {string}
@@ -16084,12 +16066,6 @@ export interface UserRead {
      * @memberof UserRead
      */
     modified_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserRead
-     */
-    username: string;
     /**
      * 
      * @type {string}

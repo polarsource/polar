@@ -8489,8 +8489,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "donation",
-                                "order",
                                 "free_subscription",
+                                "order",
                                 "paid_subscription"
                             ],
                             "title": "Customer Types"
@@ -19226,10 +19226,6 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
-                    "username": {
-                        "type": "string",
-                        "title": "Username"
-                    },
                     "email": {
                         "type": "string",
                         "format": "email",
@@ -19250,7 +19246,6 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "username",
                     "email",
                     "avatar_url"
                 ],
@@ -29975,20 +29970,9 @@
             },
             "OrganizationMember": {
                 "properties": {
-                    "name": {
+                    "email": {
                         "type": "string",
-                        "title": "Name"
-                    },
-                    "github_username": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Github Username"
+                        "title": "Email"
                     },
                     "avatar_url": {
                         "anyOf": [
@@ -30004,8 +29988,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "github_username",
+                    "email",
                     "avatar_url"
                 ],
                 "title": "OrganizationMember"
@@ -35315,18 +35298,25 @@
             },
             "User": {
                 "properties": {
-                    "username": {
+                    "public_name": {
                         "type": "string",
-                        "title": "Username"
+                        "title": "Public Name"
                     },
                     "avatar_url": {
-                        "type": "string",
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Avatar Url"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "username",
+                    "public_name",
                     "avatar_url"
                 ],
                 "title": "User"
@@ -35554,11 +35544,6 @@
             },
             "UserBase": {
                 "properties": {
-                    "username": {
-                        "type": "string",
-                        "maxLength": 50,
-                        "title": "Username"
-                    },
                     "email": {
                         "type": "string",
                         "format": "email",
@@ -35590,7 +35575,6 @@
                 },
                 "type": "object",
                 "required": [
-                    "username",
                     "email",
                     "avatar_url",
                     "account_id"
@@ -36088,11 +36072,6 @@
                         "title": "Modified At",
                         "description": "Last modification timestamp of the object."
                     },
-                    "username": {
-                        "type": "string",
-                        "maxLength": 50,
-                        "title": "Username"
-                    },
                     "email": {
                         "type": "string",
                         "format": "email",
@@ -36142,7 +36121,6 @@
                 "required": [
                     "created_at",
                     "modified_at",
-                    "username",
                     "email",
                     "avatar_url",
                     "account_id",

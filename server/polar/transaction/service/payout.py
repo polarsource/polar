@@ -534,6 +534,7 @@ class PayoutTransactionService(BaseTransactionService):
     ) -> Sequence[Transaction]:
         statement = (
             select(Transaction)
+            .distinct(Transaction.account_id)
             .where(
                 Transaction.type == TransactionType.payout,
                 Transaction.processor == PaymentProcessor.stripe,
@@ -541,6 +542,7 @@ class PayoutTransactionService(BaseTransactionService):
                 Transaction.created_at < utc_now() - delay,
             )
             .options(joinedload(Transaction.account))
+            .order_by(Transaction.account_id, Transaction.created_at)
         )
         result = await session.execute(statement)
         return result.scalars().all()

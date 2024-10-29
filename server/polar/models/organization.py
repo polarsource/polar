@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from citext import CIText
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -12,7 +11,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -26,7 +25,7 @@ class Organization(RecordModel):
     __table_args__ = (UniqueConstraint("slug"),)
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
-    slug: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
+    slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     account_id: Mapped[UUID | None] = mapped_column(

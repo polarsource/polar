@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from citext import CIText
 from sqlalchemy import (
     Boolean,
     ColumnElement,
@@ -11,6 +10,7 @@ from sqlalchemy import (
     Uuid,
     select,
 )
+from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 class Product(RecordModel):
     __tablename__ = "products"
 
-    name: Mapped[str] = mapped_column(CIText(), nullable=False)
+    name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

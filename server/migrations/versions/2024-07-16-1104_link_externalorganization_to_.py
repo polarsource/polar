@@ -6,7 +6,6 @@ Create Date: 2024-07-16 11:04:12.912639
 
 """
 
-import citext
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
@@ -48,7 +47,7 @@ def upgrade() -> None:
         "organizations",
         "name",
         new_column_name="slug",
-        existing_type=citext.CIText(),
+        existing_type=postgresql.CITEXT(),
         existing_nullable=False,
     )
 
@@ -147,7 +146,7 @@ def downgrade() -> None:
         "organizations",
         "slug",
         new_column_name="name",
-        existing_type=citext.CIText(),
+        existing_type=postgresql.CITEXT(),
         existing_nullable=False,
     )
 

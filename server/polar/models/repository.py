@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from citext import CIText
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
@@ -15,7 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -44,7 +43,7 @@ class Repository(RecordModel):
     def organization(cls) -> Mapped[ExternalOrganization]:
         return relationship(ExternalOrganization, lazy="raise")
 
-    name: Mapped[str] = mapped_column(CIText(), nullable=False)
+    name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     open_issues: Mapped[int | None] = mapped_column(Integer, nullable=True)

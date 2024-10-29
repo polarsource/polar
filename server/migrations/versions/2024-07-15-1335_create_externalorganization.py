@@ -6,7 +6,6 @@ Create Date: 2024-07-15 13:35:18.495080
 
 """
 
-import citext
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
@@ -28,7 +27,7 @@ def upgrade() -> None:
     op.create_table(
         "external_organizations",
         sa.Column("platform", StringEnum(Platforms), nullable=False),
-        sa.Column("name", citext.CIText(), nullable=False),
+        sa.Column("name", postgresql.CITEXT(), nullable=False),
         sa.Column("external_id", sa.BigInteger(), nullable=False),
         sa.Column("avatar_url", sa.String(), nullable=False),
         sa.Column("is_personal", sa.Boolean(), nullable=False),

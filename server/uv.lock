@@ -1190,7 +1190,6 @@ dependencies = [
     { name = "safe-redirect-url" },
     { name = "sentry-sdk", extra = ["fastapi", "sqlalchemy"] },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "sqlalchemy-citext" },
     { name = "sqlalchemy-utils" },
     { name = "sse-starlette" },
     { name = "standardwebhooks" },
@@ -1273,7 +1272,6 @@ requires-dist = [
     { name = "safe-redirect-url", specifier = ">=0.1.1" },
     { name = "sentry-sdk", extras = ["fastapi", "sqlalchemy"], specifier = ">=2.16.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.34" },
-    { name = "sqlalchemy-citext", git = "https://github.com/akolov/sqlalchemy-citext.git?rev=15b3de84730bb4645c83d890a73f5c9b6b289531#15b3de84730bb4645c83d890a73f5c9b6b289531" },
     { name = "sqlalchemy-utils", specifier = ">=0.41.1" },
     { name = "sse-starlette", specifier = ">=2.0.0" },
     { name = "standardwebhooks", specifier = ">=1.0.0" },
@@ -1933,14 +1931,6 @@ wheels = [
 [package.optional-dependencies]
 asyncio = [
     { name = "greenlet" },
-]
-
-[[package]]
-name = "sqlalchemy-citext"
-version = "1.8.0"
-source = { git = "https://github.com/akolov/sqlalchemy-citext.git?rev=15b3de84730bb4645c83d890a73f5c9b6b289531#15b3de84730bb4645c83d890a73f5c9b6b289531" }
-dependencies = [
-    { name = "sqlalchemy" },
 ]
 
 [[package]]

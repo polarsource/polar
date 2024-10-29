@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from citext import CIText
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
@@ -13,7 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import Platforms
@@ -56,7 +55,7 @@ class ExternalOrganization(RecordModel):
         return relationship("Organization", lazy="raise")
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
-    name: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(CITEXT(), nullable=False, unique=True)
     external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     avatar_url: Mapped[str] = mapped_column(String, nullable=False)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)

@@ -392,7 +392,7 @@ export const GuidesNavigation = () => {
         Checkouts & Payment Links
       </NavigationItem>
       <NavigationItem href="/docs/guides/figma">
-        Monetizing your Figma plugin
+        Figma Plugins with License Keys
       </NavigationItem>
       <NavigationItem
         href="/docs/api/webhooks"

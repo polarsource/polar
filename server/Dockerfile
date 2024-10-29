@@ -24,7 +24,4 @@ ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
 ARG RELEASE_VERSION
 ENV RELEASE_VERSION=${RELEASE_VERSION}
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
-
 CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000"]

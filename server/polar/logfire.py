@@ -18,7 +18,6 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     logfire.configure(
         send_to_logfire="if-token-present",
         token=settings.LOGFIRE_TOKEN,
-        project_name=settings.LOGFIRE_PROJECT_NAME,
         service_name=service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
         console=False,

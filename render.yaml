@@ -487,14 +487,10 @@ envVarGroups:
 
   - name: logfire-server
     envVars:
-      - key: POLAR_LOGFIRE_PROJECT_NAME
-        sync: false
       - key: POLAR_LOGFIRE_TOKEN
         sync: false
 
   - name: logfire-worker
     envVars:
-      - key: POLAR_LOGFIRE_PROJECT_NAME
-        sync: false
       - key: POLAR_LOGFIRE_TOKEN
         sync: false

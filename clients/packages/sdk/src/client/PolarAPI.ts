@@ -20,6 +20,7 @@ import {
   IssuesApi,
   MagicLinkApi,
   StorefrontsApi,
+  CustomFieldsApi,
   NotificationsApi,
   Oauth2Api,
   Oauth2ClientsApi,
@@ -54,6 +55,7 @@ export class PolarAPI {
   public readonly legacyCheckouts: CheckoutsApi
   public readonly checkouts: CheckoutsCustomApi
   public readonly checkoutLinks: CheckoutLinksApi
+  public readonly customFields: CustomFieldsApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly donations: DonationsApi
@@ -99,6 +101,7 @@ export class PolarAPI {
     this.legacyCheckouts = new CheckoutsApi(config)
     this.checkouts = new CheckoutsCustomApi(config)
     this.checkoutLinks = new CheckoutLinksApi(config)
+    this.customFields = new CustomFieldsApi(config)
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
     this.donations = new DonationsApi(config)

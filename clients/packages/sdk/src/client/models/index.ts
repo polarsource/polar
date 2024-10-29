@@ -1425,6 +1425,56 @@ export interface Assignee {
     avatar_url: string;
 }
 /**
+ * Schema of a custom field attached to a resource.
+ * @export
+ * @interface AttachedCustomField
+ */
+export interface AttachedCustomField {
+    /**
+     * ID of the custom field.
+     * @type {string}
+     * @memberof AttachedCustomField
+     */
+    custom_field_id: string;
+    /**
+     * 
+     * @type {CustomField}
+     * @memberof AttachedCustomField
+     */
+    custom_field: CustomField;
+    /**
+     * Order of the custom field in the resource.
+     * @type {number}
+     * @memberof AttachedCustomField
+     */
+    order: number;
+    /**
+     * Whether the value is required for this custom field.
+     * @type {boolean}
+     * @memberof AttachedCustomField
+     */
+    required: boolean;
+}
+/**
+ * Schema to attach a custom field to a resource.
+ * @export
+ * @interface AttachedCustomFieldCreate
+ */
+export interface AttachedCustomFieldCreate {
+    /**
+     * ID of the custom field to attach.
+     * @type {string}
+     * @memberof AttachedCustomFieldCreate
+     */
+    custom_field_id: string;
+    /**
+     * Whether the value is required for this custom field.
+     * @type {boolean}
+     * @memberof AttachedCustomFieldCreate
+     */
+    required: boolean;
+}
+/**
  * 
  * @export
  * @interface Author
@@ -1605,6 +1655,8 @@ export const AvailableScope = {
     USERREAD: 'user:read',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
+    CUSTOM_FIELDSREAD: 'custom_fields:read',
+    CUSTOM_FIELDSWRITE: 'custom_fields:write',
     CHECKOUT_LINKSREAD: 'checkout_links:read',
     CHECKOUT_LINKSWRITE: 'checkout_links:write',
     CHECKOUTSREAD: 'checkouts:read',
@@ -4729,6 +4781,12 @@ export interface BylineProfile {
 export interface CheckoutConfirmStripe {
     /**
      * 
+     * @type {object}
+     * @memberof CheckoutConfirmStripe
+     */
+    custom_field_data?: object | null;
+    /**
+     * 
      * @type {string}
      * @memberof CheckoutConfirmStripe
      */
@@ -4940,6 +4998,79 @@ export interface CheckoutLinkUpdate {
     success_url?: string | null;
 }
 /**
+ * Product data for a checkout session.
+ * @export
+ * @interface CheckoutProduct
+ */
+export interface CheckoutProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CheckoutProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutProduct
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof CheckoutProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof CheckoutProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutProduct
+     */
+    description: string | null;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof CheckoutProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof CheckoutProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof CheckoutProduct
+     */
+    organization_id: string;
+    /**
+     * List of prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof CheckoutProduct
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * List of benefits granted by the product.
+     * @type {Array<BenefitPublicInner>}
+     * @memberof CheckoutProduct
+     */
+    benefits: Array<BenefitPublicInner>;
+    /**
+     * List of medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof CheckoutProduct
+     */
+    medias: Array<ProductMediaFileRead>;
+}
+/**
  * Checkout session data retrieved using the client secret.
  * @export
  * @interface CheckoutPublic
@@ -4963,6 +5094,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     id: string;
+    /**
+     * Key-value object storing custom field values.
+     * @type {object}
+     * @memberof CheckoutPublic
+     */
+    custom_field_data?: object;
     /**
      * 
      * @type {PolarEnumsPaymentProcessor}
@@ -5091,10 +5228,10 @@ export interface CheckoutPublic {
     payment_processor_metadata: object;
     /**
      * 
-     * @type {Product}
+     * @type {CheckoutProduct}
      * @memberof CheckoutPublic
      */
-    product: Product;
+    product: CheckoutProduct;
     /**
      * 
      * @type {ProductPrice}
@@ -5107,6 +5244,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     organization: Organization;
+    /**
+     * 
+     * @type {Array<AttachedCustomField>}
+     * @memberof CheckoutPublic
+     */
+    attached_custom_fields: Array<AttachedCustomField>;
 }
 
 
@@ -5143,6 +5286,12 @@ export type CheckoutStatus = typeof CheckoutStatus[keyof typeof CheckoutStatus];
  * @interface CheckoutUpdate
  */
 export interface CheckoutUpdate {
+    /**
+     * 
+     * @type {object}
+     * @memberof CheckoutUpdate
+     */
+    custom_field_data?: object | null;
     /**
      * 
      * @type {string}
@@ -5204,6 +5353,12 @@ export interface CheckoutUpdate {
  * @interface CheckoutUpdatePublic
  */
 export interface CheckoutUpdatePublic {
+    /**
+     * 
+     * @type {object}
+     * @memberof CheckoutUpdatePublic
+     */
+    custom_field_data?: object | null;
     /**
      * 
      * @type {string}
@@ -5348,6 +5503,1129 @@ export interface CurrencyAmount {
      */
     amount: number;
 }
+/**
+ * @type CustomField
+ * 
+ * @export
+ */
+export type CustomField = { type: 'checkbox' } & CustomFieldCheckbox | { type: 'date' } & CustomFieldDate | { type: 'number' } & CustomFieldNumber | { type: 'select' } & CustomFieldSelect | { type: 'text' } & CustomFieldText;
+/**
+ * Schema for a custom field of type checkbox.
+ * @export
+ * @interface CustomFieldCheckbox
+ */
+export interface CustomFieldCheckbox {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldCheckbox
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    type: CustomFieldCheckboxTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    name: string;
+    /**
+     * The ID of the organization owning the custom field.
+     * @type {string}
+     * @memberof CustomFieldCheckbox
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {CustomFieldCheckboxProperties}
+     * @memberof CustomFieldCheckbox
+     */
+    properties: CustomFieldCheckboxProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldCheckboxTypeEnum = {
+    CHECKBOX: 'checkbox'
+} as const;
+export type CustomFieldCheckboxTypeEnum = typeof CustomFieldCheckboxTypeEnum[keyof typeof CustomFieldCheckboxTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomFieldCheckboxProperties
+ */
+export interface CustomFieldCheckboxProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCheckboxProperties
+     */
+    form_label?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCheckboxProperties
+     */
+    form_help_text?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCheckboxProperties
+     */
+    form_placeholder?: string;
+}
+/**
+ * @type CustomFieldCreate
+ * 
+ * @export
+ */
+export type CustomFieldCreate = { type: 'checkbox' } & CustomFieldCreateCheckbox | { type: 'date' } & CustomFieldCreateDate | { type: 'number' } & CustomFieldCreateNumber | { type: 'select' } & CustomFieldCreateSelect | { type: 'text' } & CustomFieldCreateText;
+/**
+ * Schema to create a custom field of type checkbox.
+ * @export
+ * @interface CustomFieldCreateCheckbox
+ */
+export interface CustomFieldCreateCheckbox {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldCreateCheckbox
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCreateCheckbox
+     */
+    type: CustomFieldCreateCheckboxTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldCreateCheckbox
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldCreateCheckbox
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof CustomFieldCreateCheckbox
+     */
+    organization_id?: string | null;
+    /**
+     * 
+     * @type {CustomFieldCheckboxProperties}
+     * @memberof CustomFieldCreateCheckbox
+     */
+    properties: CustomFieldCheckboxProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldCreateCheckboxTypeEnum = {
+    CHECKBOX: 'checkbox'
+} as const;
+export type CustomFieldCreateCheckboxTypeEnum = typeof CustomFieldCreateCheckboxTypeEnum[keyof typeof CustomFieldCreateCheckboxTypeEnum];
+
+/**
+ * Schema to create a custom field of type date.
+ * @export
+ * @interface CustomFieldCreateDate
+ */
+export interface CustomFieldCreateDate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldCreateDate
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCreateDate
+     */
+    type: CustomFieldCreateDateTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldCreateDate
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldCreateDate
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof CustomFieldCreateDate
+     */
+    organization_id?: string | null;
+    /**
+     * 
+     * @type {CustomFieldDateProperties}
+     * @memberof CustomFieldCreateDate
+     */
+    properties: CustomFieldDateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldCreateDateTypeEnum = {
+    DATE: 'date'
+} as const;
+export type CustomFieldCreateDateTypeEnum = typeof CustomFieldCreateDateTypeEnum[keyof typeof CustomFieldCreateDateTypeEnum];
+
+/**
+ * Schema to create a custom field of type number.
+ * @export
+ * @interface CustomFieldCreateNumber
+ */
+export interface CustomFieldCreateNumber {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldCreateNumber
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCreateNumber
+     */
+    type: CustomFieldCreateNumberTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldCreateNumber
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldCreateNumber
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof CustomFieldCreateNumber
+     */
+    organization_id?: string | null;
+    /**
+     * 
+     * @type {CustomFieldNumberProperties}
+     * @memberof CustomFieldCreateNumber
+     */
+    properties: CustomFieldNumberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldCreateNumberTypeEnum = {
+    NUMBER: 'number'
+} as const;
+export type CustomFieldCreateNumberTypeEnum = typeof CustomFieldCreateNumberTypeEnum[keyof typeof CustomFieldCreateNumberTypeEnum];
+
+/**
+ * Schema to create a custom field of type select.
+ * @export
+ * @interface CustomFieldCreateSelect
+ */
+export interface CustomFieldCreateSelect {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldCreateSelect
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCreateSelect
+     */
+    type: CustomFieldCreateSelectTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldCreateSelect
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldCreateSelect
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof CustomFieldCreateSelect
+     */
+    organization_id?: string | null;
+    /**
+     * 
+     * @type {CustomFieldSelectProperties}
+     * @memberof CustomFieldCreateSelect
+     */
+    properties: CustomFieldSelectProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldCreateSelectTypeEnum = {
+    SELECT: 'select'
+} as const;
+export type CustomFieldCreateSelectTypeEnum = typeof CustomFieldCreateSelectTypeEnum[keyof typeof CustomFieldCreateSelectTypeEnum];
+
+/**
+ * Schema to create a custom field of type text.
+ * @export
+ * @interface CustomFieldCreateText
+ */
+export interface CustomFieldCreateText {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be a string with a maximum length of **500 characters**.
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldCreateText
+     */
+    metadata?: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldCreateText
+     */
+    type: CustomFieldCreateTextTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldCreateText
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldCreateText
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof CustomFieldCreateText
+     */
+    organization_id?: string | null;
+    /**
+     * 
+     * @type {CustomFieldTextProperties}
+     * @memberof CustomFieldCreateText
+     */
+    properties: CustomFieldTextProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldCreateTextTypeEnum = {
+    TEXT: 'text'
+} as const;
+export type CustomFieldCreateTextTypeEnum = typeof CustomFieldCreateTextTypeEnum[keyof typeof CustomFieldCreateTextTypeEnum];
+
+/**
+ * Schema for a custom field of type date.
+ * @export
+ * @interface CustomFieldDate
+ */
+export interface CustomFieldDate {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldDate
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    type: CustomFieldDateTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    name: string;
+    /**
+     * The ID of the organization owning the custom field.
+     * @type {string}
+     * @memberof CustomFieldDate
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {CustomFieldDateProperties}
+     * @memberof CustomFieldDate
+     */
+    properties: CustomFieldDateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldDateTypeEnum = {
+    DATE: 'date'
+} as const;
+export type CustomFieldDateTypeEnum = typeof CustomFieldDateTypeEnum[keyof typeof CustomFieldDateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomFieldDateProperties
+ */
+export interface CustomFieldDateProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldDateProperties
+     */
+    form_label?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldDateProperties
+     */
+    form_help_text?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldDateProperties
+     */
+    form_placeholder?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomFieldDateProperties
+     */
+    ge?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomFieldDateProperties
+     */
+    le?: number;
+}
+/**
+ * Schema for a custom field of type number.
+ * @export
+ * @interface CustomFieldNumber
+ */
+export interface CustomFieldNumber {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldNumber
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    type: CustomFieldNumberTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    name: string;
+    /**
+     * The ID of the organization owning the custom field.
+     * @type {string}
+     * @memberof CustomFieldNumber
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {CustomFieldNumberProperties}
+     * @memberof CustomFieldNumber
+     */
+    properties: CustomFieldNumberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldNumberTypeEnum = {
+    NUMBER: 'number'
+} as const;
+export type CustomFieldNumberTypeEnum = typeof CustomFieldNumberTypeEnum[keyof typeof CustomFieldNumberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomFieldNumberProperties
+ */
+export interface CustomFieldNumberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldNumberProperties
+     */
+    form_label?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldNumberProperties
+     */
+    form_help_text?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldNumberProperties
+     */
+    form_placeholder?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomFieldNumberProperties
+     */
+    ge?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomFieldNumberProperties
+     */
+    le?: number;
+}
+/**
+ * Schema for a custom field of type select.
+ * @export
+ * @interface CustomFieldSelect
+ */
+export interface CustomFieldSelect {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldSelect
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    type: CustomFieldSelectTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    name: string;
+    /**
+     * The ID of the organization owning the custom field.
+     * @type {string}
+     * @memberof CustomFieldSelect
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {CustomFieldSelectProperties}
+     * @memberof CustomFieldSelect
+     */
+    properties: CustomFieldSelectProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldSelectTypeEnum = {
+    SELECT: 'select'
+} as const;
+export type CustomFieldSelectTypeEnum = typeof CustomFieldSelectTypeEnum[keyof typeof CustomFieldSelectTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomFieldSelectOption
+ */
+export interface CustomFieldSelectOption {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelectOption
+     */
+    value: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelectOption
+     */
+    label: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomFieldSelectProperties
+ */
+export interface CustomFieldSelectProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelectProperties
+     */
+    form_label?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelectProperties
+     */
+    form_help_text?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldSelectProperties
+     */
+    form_placeholder?: string;
+    /**
+     * 
+     * @type {Array<CustomFieldSelectOption>}
+     * @memberof CustomFieldSelectProperties
+     */
+    options: Array<CustomFieldSelectOption>;
+}
+
+/**
+ * 
+ * @export
+ */
+export const CustomFieldSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    SLUG: 'slug',
+    SLUG2: '-slug',
+    NAME: 'name',
+    NAME2: '-name',
+    TYPE: 'type',
+    TYPE2: '-type'
+} as const;
+export type CustomFieldSortProperty = typeof CustomFieldSortProperty[keyof typeof CustomFieldSortProperty];
+
+/**
+ * Schema for a custom field of type text.
+ * @export
+ * @interface CustomFieldText
+ */
+export interface CustomFieldText {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldText
+     */
+    metadata: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    type: CustomFieldTextTypeEnum;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    slug: string;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    name: string;
+    /**
+     * The ID of the organization owning the custom field.
+     * @type {string}
+     * @memberof CustomFieldText
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {CustomFieldTextProperties}
+     * @memberof CustomFieldText
+     */
+    properties: CustomFieldTextProperties;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldTextTypeEnum = {
+    TEXT: 'text'
+} as const;
+export type CustomFieldTextTypeEnum = typeof CustomFieldTextTypeEnum[keyof typeof CustomFieldTextTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomFieldTextProperties
+ */
+export interface CustomFieldTextProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldTextProperties
+     */
+    form_label?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldTextProperties
+     */
+    form_help_text?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldTextProperties
+     */
+    form_placeholder?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomFieldTextProperties
+     */
+    textarea?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomFieldTextProperties
+     */
+    min_length?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomFieldTextProperties
+     */
+    max_length?: number;
+}
+
+/**
+ * 
+ * @export
+ */
+export const CustomFieldType = {
+    TEXT: 'text',
+    NUMBER: 'number',
+    DATE: 'date',
+    CHECKBOX: 'checkbox',
+    SELECT: 'select'
+} as const;
+export type CustomFieldType = typeof CustomFieldType[keyof typeof CustomFieldType];
+
+/**
+ * @type CustomFieldTypeFilter
+ * Filter by custom field type.
+ * @export
+ */
+export type CustomFieldTypeFilter = Array<CustomFieldType> | CustomFieldType;
+
+/**
+ * @type CustomFieldUpdate
+ * 
+ * @export
+ */
+export type CustomFieldUpdate = { type: 'checkbox' } & CustomFieldUpdateCheckbox | { type: 'date' } & CustomFieldUpdateDate | { type: 'number' } & CustomFieldUpdateNumber | { type: 'select' } & CustomFieldUpdateSelect | { type: 'text' } & CustomFieldUpdateText;
+/**
+ * Schema to update a custom field of type checkbox.
+ * @export
+ * @interface CustomFieldUpdateCheckbox
+ */
+export interface CustomFieldUpdateCheckbox {
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldUpdateCheckbox
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldUpdateCheckbox
+     */
+    name?: string | null;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldUpdateCheckbox
+     */
+    slug?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldUpdateCheckbox
+     */
+    type: CustomFieldUpdateCheckboxTypeEnum;
+    /**
+     * 
+     * @type {CustomFieldCheckboxProperties}
+     * @memberof CustomFieldUpdateCheckbox
+     */
+    properties?: CustomFieldCheckboxProperties | null;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldUpdateCheckboxTypeEnum = {
+    CHECKBOX: 'checkbox'
+} as const;
+export type CustomFieldUpdateCheckboxTypeEnum = typeof CustomFieldUpdateCheckboxTypeEnum[keyof typeof CustomFieldUpdateCheckboxTypeEnum];
+
+/**
+ * Schema to update a custom field of type date.
+ * @export
+ * @interface CustomFieldUpdateDate
+ */
+export interface CustomFieldUpdateDate {
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldUpdateDate
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldUpdateDate
+     */
+    name?: string | null;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldUpdateDate
+     */
+    slug?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldUpdateDate
+     */
+    type: CustomFieldUpdateDateTypeEnum;
+    /**
+     * 
+     * @type {CustomFieldDateProperties}
+     * @memberof CustomFieldUpdateDate
+     */
+    properties?: CustomFieldDateProperties | null;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldUpdateDateTypeEnum = {
+    DATE: 'date'
+} as const;
+export type CustomFieldUpdateDateTypeEnum = typeof CustomFieldUpdateDateTypeEnum[keyof typeof CustomFieldUpdateDateTypeEnum];
+
+/**
+ * Schema to update a custom field of type number.
+ * @export
+ * @interface CustomFieldUpdateNumber
+ */
+export interface CustomFieldUpdateNumber {
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldUpdateNumber
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldUpdateNumber
+     */
+    name?: string | null;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldUpdateNumber
+     */
+    slug?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldUpdateNumber
+     */
+    type: CustomFieldUpdateNumberTypeEnum;
+    /**
+     * 
+     * @type {CustomFieldNumberProperties}
+     * @memberof CustomFieldUpdateNumber
+     */
+    properties?: CustomFieldNumberProperties | null;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldUpdateNumberTypeEnum = {
+    NUMBER: 'number'
+} as const;
+export type CustomFieldUpdateNumberTypeEnum = typeof CustomFieldUpdateNumberTypeEnum[keyof typeof CustomFieldUpdateNumberTypeEnum];
+
+/**
+ * Schema to update a custom field of type select.
+ * @export
+ * @interface CustomFieldUpdateSelect
+ */
+export interface CustomFieldUpdateSelect {
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldUpdateSelect
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldUpdateSelect
+     */
+    name?: string | null;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldUpdateSelect
+     */
+    slug?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldUpdateSelect
+     */
+    type: CustomFieldUpdateSelectTypeEnum;
+    /**
+     * 
+     * @type {CustomFieldSelectProperties}
+     * @memberof CustomFieldUpdateSelect
+     */
+    properties?: CustomFieldSelectProperties | null;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldUpdateSelectTypeEnum = {
+    SELECT: 'select'
+} as const;
+export type CustomFieldUpdateSelectTypeEnum = typeof CustomFieldUpdateSelectTypeEnum[keyof typeof CustomFieldUpdateSelectTypeEnum];
+
+/**
+ * Schema to update a custom field of type text.
+ * @export
+ * @interface CustomFieldUpdateText
+ */
+export interface CustomFieldUpdateText {
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof CustomFieldUpdateText
+     */
+    metadata?: { [key: string]: string; } | null;
+    /**
+     * Name of the custom field.
+     * @type {string}
+     * @memberof CustomFieldUpdateText
+     */
+    name?: string | null;
+    /**
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * @type {string}
+     * @memberof CustomFieldUpdateText
+     */
+    slug?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomFieldUpdateText
+     */
+    type: CustomFieldUpdateTextTypeEnum;
+    /**
+     * 
+     * @type {CustomFieldTextProperties}
+     * @memberof CustomFieldUpdateText
+     */
+    properties?: CustomFieldTextProperties | null;
+}
+
+
+/**
+ * @export
+ */
+export const CustomFieldUpdateTextTypeEnum = {
+    TEXT: 'text'
+} as const;
+export type CustomFieldUpdateTextTypeEnum = typeof CustomFieldUpdateTextTypeEnum[keyof typeof CustomFieldUpdateTextTypeEnum];
+
 /**
  * 
  * @export
@@ -7451,6 +8729,25 @@ export const ListFundingSortBy = {
 } as const;
 export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundingSortBy];
 
+/**
+ * 
+ * @export
+ * @interface ListResource
+ */
+export interface ListResource {
+    /**
+     * 
+     * @type {Array<CustomField>}
+     * @memberof ListResource
+     */
+    items: Array<CustomField>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResource
+     */
+    pagination: Pagination;
+}
 /**
  * 
  * @export
@@ -9927,6 +11224,12 @@ export interface Order {
      */
     metadata: { [key: string]: string; };
     /**
+     * Key-value object storing custom field values.
+     * @type {object}
+     * @memberof Order
+     */
+    custom_field_data?: object;
+    /**
      * 
      * @type {number}
      * @memberof Order
@@ -11743,10 +13046,10 @@ export interface PolarCheckoutLegacySchemasCheckout {
     customer_name: string | null;
     /**
      * 
-     * @type {Product}
+     * @type {CheckoutProduct}
      * @memberof PolarCheckoutLegacySchemasCheckout
      */
-    product: Product;
+    product: CheckoutProduct;
     /**
      * 
      * @type {ProductPrice}
@@ -11809,6 +13112,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     id: string;
+    /**
+     * Key-value object storing custom field values.
+     * @type {object}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    custom_field_data?: object;
     /**
      * 
      * @type {PolarEnumsPaymentProcessor}
@@ -11943,10 +13252,10 @@ export interface PolarCheckoutSchemasCheckout {
     metadata: { [key: string]: string; };
     /**
      * 
-     * @type {Product}
+     * @type {CheckoutProduct}
      * @memberof PolarCheckoutSchemasCheckout
      */
-    product: Product;
+    product: CheckoutProduct;
     /**
      * 
      * @type {ProductPrice}
@@ -11959,6 +13268,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     subscription_id: string | null;
+    /**
+     * 
+     * @type {Array<AttachedCustomField>}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    attached_custom_fields: Array<AttachedCustomField>;
 }
 
 
@@ -11981,6 +13296,12 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
     metadata?: { [key: string]: string; };
+    /**
+     * Key-value object storing custom field values.
+     * @type {object}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    custom_field_data?: object;
     /**
      * Payment processor to use. Currently only Stripe is supported.
      * @type {string}
@@ -12160,23 +13481,29 @@ export interface Product {
      */
     organization_id: string;
     /**
-     * List of available prices for this product.
+     * List of prices for this product.
      * @type {Array<ProductPrice>}
      * @memberof Product
      */
     prices: Array<ProductPrice>;
     /**
-     * The benefits granted by the product.
-     * @type {Array<BenefitPublicInner>}
+     * List of benefits granted by the product.
+     * @type {Array<Benefit>}
      * @memberof Product
      */
-    benefits: Array<BenefitPublicInner>;
+    benefits: Array<Benefit>;
     /**
-     * The medias associated to the product.
+     * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
      * @memberof Product
      */
     medias: Array<ProductMediaFileRead>;
+    /**
+     * List of custom fields attached to the product.
+     * @type {Array<AttachedCustomField>}
+     * @memberof Product
+     */
+    attached_custom_fields: Array<AttachedCustomField>;
 }
 /**
  * Schema to update the benefits granted by a product.
@@ -12418,6 +13745,12 @@ export interface ProductOneTimeCreate {
      * @memberof ProductOneTimeCreate
      */
     medias?: Array<string> | null;
+    /**
+     * List of custom fields to attach.
+     * @type {Array<AttachedCustomFieldCreate>}
+     * @memberof ProductOneTimeCreate
+     */
+    attached_custom_fields?: Array<AttachedCustomFieldCreate>;
     /**
      * The organization ID.
      * @type {string}
@@ -13236,6 +14569,12 @@ export interface ProductRecurringCreate {
      */
     medias?: Array<string> | null;
     /**
+     * List of custom fields to attach.
+     * @type {Array<AttachedCustomFieldCreate>}
+     * @memberof ProductRecurringCreate
+     */
+    attached_custom_fields?: Array<AttachedCustomFieldCreate>;
+    /**
      * The organization ID.
      * @type {string}
      * @memberof ProductRecurringCreate
@@ -13370,6 +14709,12 @@ export interface ProductUpdate {
      * @memberof ProductUpdate
      */
     medias?: Array<string> | null;
+    /**
+     * List of custom fields to attach.
+     * @type {Array<AttachedCustomFieldCreate>}
+     * @memberof ProductUpdate
+     */
+    attached_custom_fields?: Array<AttachedCustomFieldCreate> | null;
 }
 /**
  * @type ProductUpdatePricesInner
@@ -14207,6 +15552,8 @@ export const Scope = {
     WEB_DEFAULT: 'web_default',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
+    CUSTOM_FIELDSREAD: 'custom_fields:read',
+    CUSTOM_FIELDSWRITE: 'custom_fields:write',
     CHECKOUT_LINKSREAD: 'checkout_links:read',
     CHECKOUT_LINKSWRITE: 'checkout_links:write',
     CHECKOUTSREAD: 'checkouts:read',
@@ -14411,6 +15758,12 @@ export interface Subscription {
      * @memberof Subscription
      */
     metadata: { [key: string]: string; };
+    /**
+     * Key-value object storing custom field values.
+     * @type {object}
+     * @memberof Subscription
+     */
+    custom_field_data?: object;
     /**
      * 
      * @type {SubscriptionUser}
@@ -16077,19 +17430,19 @@ export interface UserOrderProduct {
      */
     organization_id: string;
     /**
-     * List of available prices for this product.
+     * List of prices for this product.
      * @type {Array<ProductPrice>}
      * @memberof UserOrderProduct
      */
     prices: Array<ProductPrice>;
     /**
-     * The benefits granted by the product.
+     * List of benefits granted by the product.
      * @type {Array<BenefitPublicInner>}
      * @memberof UserOrderProduct
      */
     benefits: Array<BenefitPublicInner>;
     /**
-     * The medias associated to the product.
+     * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
      * @memberof UserOrderProduct
      */
@@ -16579,19 +17932,19 @@ export interface UserSubscriptionProduct {
      */
     organization_id: string;
     /**
-     * List of available prices for this product.
+     * List of prices for this product.
      * @type {Array<ProductPrice>}
      * @memberof UserSubscriptionProduct
      */
     prices: Array<ProductPrice>;
     /**
-     * The benefits granted by the product.
+     * List of benefits granted by the product.
      * @type {Array<BenefitPublicInner>}
      * @memberof UserSubscriptionProduct
      */
     benefits: Array<BenefitPublicInner>;
     /**
-     * The medias associated to the product.
+     * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
      * @memberof UserSubscriptionProduct
      */

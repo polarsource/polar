@@ -1,10 +1,9 @@
-import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getProductById } from '@/utils/product'
 import {
-  BreadcrumbLink,
   BreadcrumbPageParams,
   BreadcrumbSeparator,
+  CopyableBreadcrumbLink,
 } from '../../Breadcrumb'
 
 export default async function BreadcrumbPage({
@@ -17,12 +16,12 @@ export default async function BreadcrumbPage({
   return (
     <>
       <BreadcrumbSeparator />
-      <BreadcrumbLink
+      <CopyableBreadcrumbLink
         href={`/dashboard/${params.organization}/products/${product.id}`}
+        text={product.id}
       >
         {product.id}
-        <CopyToClipboardButton text={product.id} />
-      </BreadcrumbLink>
+      </CopyableBreadcrumbLink>
     </>
   )
 }

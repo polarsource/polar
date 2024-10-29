@@ -1,11 +1,10 @@
-import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { ResponseError, WebhookEndpoint } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import {
-  BreadcrumbLink,
   BreadcrumbPageParams,
   BreadcrumbSeparator,
+  CopyableBreadcrumbLink,
 } from '../../../../Breadcrumb'
 
 export default async function BreadcrumbPage({
@@ -28,12 +27,12 @@ export default async function BreadcrumbPage({
   return (
     <>
       <BreadcrumbSeparator />
-      <BreadcrumbLink
+      <CopyableBreadcrumbLink
         href={`/dashboard/${params.organization}/settings/webhooks/endpoints/${webhook.id}`}
+        text={webhook.id}
       >
         Webhook {webhook.id}
-        <CopyToClipboardButton text={webhook.id} />
-      </BreadcrumbLink>
+      </CopyableBreadcrumbLink>
     </>
   )
 }

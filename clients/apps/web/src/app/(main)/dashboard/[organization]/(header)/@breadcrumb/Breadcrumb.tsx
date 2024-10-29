@@ -1,3 +1,4 @@
+import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -20,6 +21,19 @@ export const BreadcrumbLink: React.FC<
     >
       {children}
     </Link>
+  )
+}
+
+export const CopyableBreadcrumbLink: React.FC<
+  React.PropsWithChildren<{ href: string; text: string }>
+> = ({ href, text, children }) => {
+  return (
+    <BreadcrumbLink href={href}>
+      <div className="flex flex-row items-center gap-1">
+        {children}
+        <CopyToClipboardButton text={text} />
+      </div>
+    </BreadcrumbLink>
   )
 }
 

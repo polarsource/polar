@@ -1,0 +1,14 @@
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.vscode/
+
+.minio/
+polar_backoffice/
+tests/
+
+ip-geolocation.mmdb
+.env*
+.jkws.json
+.DS_Store

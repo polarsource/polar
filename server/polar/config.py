@@ -143,7 +143,6 @@ class Settings(BaseSettings):
 
     # Logfire
     LOGFIRE_TOKEN: str | None = None
-    LOGFIRE_PROJECT_NAME: str = "polar"
 
     # AWS (File Downloads)
     AWS_ACCESS_KEY_ID: str = "polar-development"

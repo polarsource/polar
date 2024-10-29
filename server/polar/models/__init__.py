@@ -8,6 +8,7 @@ from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
+from .custom_field import CustomField
 from .donation import Donation
 from .downloadable import Downloadable
 from .external_organization import ExternalOrganization
@@ -31,6 +32,7 @@ from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
 from .product import Product
 from .product_benefit import ProductBenefit
+from .product_custom_field import ProductCustomField
 from .product_media import ProductMedia
 from .product_price import (
     ProductPrice,
@@ -59,6 +61,7 @@ __all__ = [
     "BenefitGrant",
     "Checkout",
     "CheckoutLink",
+    "CustomField",
     "Donation",
     "Downloadable",
     "ExternalOrganization",
@@ -83,6 +86,7 @@ __all__ = [
     "PledgeTransaction",
     "Product",
     "ProductBenefit",
+    "ProductCustomField",
     "ProductMedia",
     "ProductPrice",
     "ProductPriceCustom",

@@ -17,6 +17,9 @@ class Scope(StrEnum):
     organizations_read = "organizations:read"
     organizations_write = "organizations:write"
 
+    custom_fields_read = "custom_fields:read"
+    custom_fields_write = "custom_fields:write"
+
     checkout_links_read = "checkout_links:read"
     checkout_links_write = "checkout_links:write"
 

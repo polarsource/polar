@@ -21,7 +21,14 @@ from polar.models.product_price import ProductPriceType
 from .product_price import ProductPrice
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Organization, ProductBenefit, ProductMedia
+    from polar.models import (
+        Benefit,
+        CustomField,
+        Organization,
+        ProductBenefit,
+        ProductCustomField,
+        ProductMedia,
+    )
     from polar.models.file import ProductMediaFile
 
 
@@ -86,6 +93,17 @@ class Product(RecordModel):
 
     medias: AssociationProxy[list["ProductMediaFile"]] = association_proxy(
         "product_medias", "file"
+    )
+
+    product_custom_fields: Mapped[list["ProductCustomField"]] = relationship(
+        lazy="raise",
+        order_by="ProductCustomField.order",
+        cascade="all, delete-orphan",
+        back_populates="product",
+    )
+
+    custom_fields: AssociationProxy[list["CustomField"]] = association_proxy(
+        "product_custom_fields", "custom_field"
     )
 
     @property

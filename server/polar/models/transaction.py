@@ -112,6 +112,11 @@ class ProcessorFeeType(StrEnum):
     It considers an account active if a payout has been made in the month.
     """
 
+    security = "security"
+    """
+    Fee applied for safety and fraud prevention tools.
+    """
+
 
 class PlatformFeeType(StrEnum):
     """

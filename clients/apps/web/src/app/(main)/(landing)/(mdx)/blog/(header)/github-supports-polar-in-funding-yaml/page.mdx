@@ -1,0 +1,61 @@
+---
+title: GitHub Supports Polar in FUNDING.yaml
+slug: github-supports-polar-in-funding-yaml
+created_at: 2024-02-15T10:52:30.601337+00:00
+---
+
+# GitHub Supports Polar in FUNDING.yaml
+
+<iframe src="https://www.youtube.com/embed/nWAci36HdbQ"></iframe>
+
+You can now easily link your Polar page under the "Sponsor this project" section on GitHub - it looks absolutely beautiful 😍
+
+This is huge and all thanks to [@matmair](https://polar.sh/matmair) and our wonderful community! You made this happen, together. We're truly honoured and grateful to serve this amazing community of talented, passionate & kind developers.
+
+## A community united behind the mission
+One week ago, Matthias submitted a community request to GitHub: [Please add polar.sh as a platform option in funding.yaml](https://github.com/orgs/community/discussions/106700)
+
+<blockquote>
+Polar is basically like Patreon but has an amazing integration with GitHub [...] and feels much more native than Patreon or Ko-fi. Plus their source is open on GitHub. [...]
+
+Not affiliated with them in any way, just appreciate how well-executed they work in this vital but slow space.
+</blockquote>
+
+♥️
+
+The post quickly rose to the top of GitHub's community suggestions - thanks to our incredible community and all your upvotes!
+
+Late last night, GitHub responded (on Valentine's no less) quickly that they have now added Polar as a supported funding platform in `FUNDING.yaml`.
+
+**How to set it up**
+- Create or modify `.github/FUNDING.yaml` in your desired repositories
+- Add the following configuration
+
+```yaml
+polar: polarsource
+```
+
+- Replace `polarsource` above with the GitHub username or organization name you have connected with Polar
+
+While you're at it...
+
+## Embed subscribe buttons
+
+We've also shipped an embeddable button for READMEs to promote & showcase your subscribers on Polar.
+
+![subscribe.jpg](./subscribe-wUt7n7AftJA01gZGc8UPkUdGQJqa12.jpg)
+
+You can easily add it with the following code to support light & darkmode.
+- Just make sure to change `polarsource` in the URLs to the GitHub username or organization name you have connected with Polar
+
+```html
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=polarsource&label=Subscribe&darkmode">
+  <img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=polarsource&label=Subscribe">
+</picture>
+```
+
+---------
+
+Using Polar with GitHub has never looked better with these two additions. Subscribe to stay up-to-date with all of the new things we're shipping on our mission to fix open source funding.
+

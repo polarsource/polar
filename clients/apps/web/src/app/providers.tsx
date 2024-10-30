@@ -50,7 +50,7 @@ export function PolarThemeProvider({
   children: React.ReactElement
 }) {
   const pathname = usePathname()
-  const PAGES_WITH_FORCED_DARK_THEME: string[] = ['/', '/careers']
+  const PAGES_WITH_FORCED_DARK_THEME: string[] = ['/']
 
   const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.includes(pathname)
     ? 'dark'

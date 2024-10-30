@@ -1,10 +1,11 @@
 'use client'
 
+import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Section } from '@/components/Landing/Section'
 import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
-import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { usePostHog } from '@/hooks/posthog'
 import { motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -13,7 +14,6 @@ import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
-import { usePostHog } from '@/hooks/posthog'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
@@ -32,11 +32,11 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [pathname])
 
   return (
-    <div className="flex w-full flex-col items-center bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%)] dark:bg-black">
+    <div className="flex w-full flex-col items-center bg-gray-100 dark:bg-black dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%)]">
       <Section
         wrapperClassName={twMerge(
-          'sticky top-0 z-30 transition-colors duration-500',
-          isScrolled ? 'bg-black' : 'bg-transparent',
+          'sticky top-0 z-30 transition-colors duration-500 bg-gray-50',
+          isScrolled ? 'dark:bg-black' : 'dark:bg-transparent',
         )}
         className="py-4 md:py-8"
       >
@@ -71,7 +71,9 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <Button onClick={onLoginClick} variant="secondary">Log in</Button>
+        <Button onClick={onLoginClick} variant="secondary">
+          Log in
+        </Button>
         <GetStartedButton className="px-3" size="default" />
       </div>
       <Modal

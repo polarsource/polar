@@ -633,7 +633,7 @@ async def create_order(
     subscription: Subscription | None = None,
     amount: int = 1000,
     tax_amount: int = 0,
-    stripe_invoice_id: str = "INVOICE_ID",
+    stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
     created_at: datetime | None = None,
 ) -> Order:

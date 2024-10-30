@@ -456,7 +456,7 @@ class TestSyncStripeFees:
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_11",
                     "net": -100,
                     "currency": "usd",
-                    "description": "Connect (2024-01-01 - 2024-01-31): Payout Fee",
+                    "description": "Radar (2024-10-28): Radar for Fraud Teams",
                 },
                 None,
             ),
@@ -464,6 +464,16 @@ class TestSyncStripeFees:
                 {
                     "created": now_timestamp,
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_12",
+                    "net": -100,
+                    "currency": "usd",
+                    "description": "Connect (2024-01-01 - 2024-01-31): Payout Fee",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "created": now_timestamp,
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_13",
                     "net": -200,
                     "currency": "usd",
                     "description": "Connect (2024-01-01 - 2024-01-31): Account Volume Billing",
@@ -485,7 +495,7 @@ class TestSyncStripeFees:
             account_currency="usd",
             account_amount=-200,
             tax_amount=0,
-            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_12",
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_13",
         )
         fee_transaction_13 = Transaction(
             type=TransactionType.processor_fee,
@@ -496,7 +506,7 @@ class TestSyncStripeFees:
             account_currency="usd",
             account_amount=-100,
             tax_amount=0,
-            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_11",
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_12",
         )
         await save_fixture(fee_transaction_12)
         await save_fixture(fee_transaction_13)
@@ -508,7 +518,7 @@ class TestSyncStripeFees:
             session
         )
 
-        assert len(fee_transactions) == 10
+        assert len(fee_transactions) == 11
 
         (
             fee_transaction_1,
@@ -521,6 +531,7 @@ class TestSyncStripeFees:
             fee_transaction_8,
             fee_transaction_9,
             fee_transaction_10,
+            fee_transaction_11,
         ) = fee_transactions
 
         assert fee_transaction_1.type == TransactionType.processor_fee
@@ -565,3 +576,7 @@ class TestSyncStripeFees:
         assert fee_transaction_10.type == TransactionType.processor_fee
         assert fee_transaction_10.processor_fee_type == ProcessorFeeType.payment
         assert fee_transaction_10.amount == -150
+
+        assert fee_transaction_11.type == TransactionType.processor_fee
+        assert fee_transaction_11.processor_fee_type == ProcessorFeeType.security
+        assert fee_transaction_11.amount == -100

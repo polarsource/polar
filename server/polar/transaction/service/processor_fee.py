@@ -37,6 +37,8 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
     # Instant Bank Account Validation for ACH payments
     if "connections verification" in description:
         return ProcessorFeeType.payment
+    if "radar" in description:
+        return ProcessorFeeType.security
     raise UnsupportedStripeFeeType(description)
 
 

@@ -518,7 +518,7 @@ class ArticleService(ResourceServiceReader[Article]):
                                 f"articles/{article.slug}/{match.group(2)}",
                                 await stream.aread(),
                             )
-                        body = body.replace(match.group(0), f"./{match.group(2)}")
+                        body = body.replace(match.group(0), f"./{match.group(2)})")
 
                     frontmatter = f"""---\n{"\n".join(f"{k}: {v}" for k, v in frontmatter_dict.items())}\n---\n\n"""
                     content = f"{frontmatter}{body}"

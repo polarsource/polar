@@ -63,10 +63,14 @@ class NotReadyAccount(PayoutTransactionError):
 
 
 class UnmatchingTransfersAmount(PayoutTransactionError):
-    def __init__(self) -> None:
+    def __init__(self, payout_amount: int, transfers_amount: int) -> None:
+        self.payout_amount = payout_amount
+        self.transfers_amount = transfers_amount
         message = (
             "Can't split the balance transactions into transfers "
-            "equal to the payout amount."
+            "equal to the payout amount. "
+            f"Expected {payout_amount} but got {transfers_amount}. "
+            f"Difference: {payout_amount - transfers_amount}"
         )
         super().__init__(message)
 
@@ -445,7 +449,7 @@ class PayoutTransactionService(BaseTransactionService):
 
         transfers_sum = sum(amount for _, amount, _ in transfers)
         if transfers_sum != -transaction.amount:
-            raise UnmatchingTransfersAmount()
+            raise UnmatchingTransfersAmount(-transaction.amount, transfers_sum)
 
         # If the account currency is different from the transaction currency,
         # Set the account amount to 0 and get the converted amount when making transfers

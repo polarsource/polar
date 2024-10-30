@@ -8,7 +8,8 @@ import remarkGfm from 'remark-gfm'
 import remarkFlexibleToc from 'remark-flexible-toc'
 import { bundledLanguages, createHighlighter } from 'shiki'
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
-
+import remarkFrontmatter from 'remark-frontmatter'
+import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 const POLAR_AUTH_COOKIE_KEY = process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
@@ -334,34 +335,8 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/dependencies(.*)',
-        destination: '/purchases',
-        permanent: false,
-      },
-      {
         source: '/finance',
         destination: '/finance/incoming',
-        permanent: false,
-      },
-      {
-        source: '/issues(.*)',
-        destination: '/dashboard',
-        permanent: false,
-        has: [
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
-        ],
-      },
-      {
-        source: '/promote(.*)',
-        destination: '/dashboard',
-        permanent: false,
-      },
-      {
-        source: '/rewards(.*)',
-        destination: '/finance/rewards',
         permanent: false,
       },
       {
@@ -404,59 +379,14 @@ const nextConfig = {
 
       // Old blog redirects
       {
-        // https://blog.polar.sh/funding-goals-reward-contributors-v1-backer-dashboard-api/
-        source:
-          '/funding-goals-reward-contributors-v1-backer-dashboard-api(.*)',
-        destination:
-          'https://polar.sh/polarsource/posts/funding-goals-reward-contributors-v1-backer-dashboard-api',
+        source: '/polarsource/posts',
+        destination: '/blog',
         permanent: false,
-        has: [
-          {
-            type: 'host',
-            value: 'blog.polar.sh',
-          },
-        ],
       },
-
       {
-        // https://blog.polar.sh/polar-v1-0-lets-fix-open-source-funding/
-        source: '/polar-v1-0-lets-fix-open-source-funding(.*)',
-        destination:
-          'https://polar.sh/polarsource/posts/polar-v1-0-lets-fix-open-source-funding',
+        source: '/polarsource/posts/:path(.*)',
+        destination: '/blog/:path*',
         permanent: false,
-        has: [
-          {
-            type: 'host',
-            value: 'blog.polar.sh',
-          },
-        ],
-      },
-
-      {
-        // https://blog.polar.sh/new-funding-page-method-a-better-backer-experience/
-        source: '/new-funding-page-method-a-better-backer-experience(.*)',
-        destination:
-          'https://polar.sh/polarsource/posts/new-funding-page-method-a-better-backer-experience',
-        permanent: false,
-        has: [
-          {
-            type: 'host',
-            value: 'blog.polar.sh',
-          },
-        ],
-      },
-
-      {
-        // https://blog.polar.sh/introducing-rewards/
-        source: '/introducing-rewards(.*)',
-        destination: 'https://polar.sh/polarsource/posts/introducing-rewards',
-        permanent: false,
-        has: [
-          {
-            type: 'host',
-            value: 'blog.polar.sh',
-          },
-        ],
       },
 
       // Fallback blog redirect
@@ -483,6 +413,9 @@ const createConfig = async () => {
   const withMDX = createMDX({
     options: {
       remarkPlugins: [
+        remarkFrontmatter,
+        // Automatically turns frontmatter into NextJS Metadata
+        (tree, file) => remarkMdxFrontmatter({name: 'metadata'}, tree, file),
         remarkGfm,
         remarkFlexibleToc,
         () => (tree, file) => ({
@@ -511,7 +444,7 @@ const createConfig = async () => {
               children: [],
             },
           ],
-        }),
+        })
       ],
       rehypePlugins: [
         rehypeMdxImportMedia,
@@ -589,3 +522,5 @@ const createConfig = async () => {
 }
 
 export default createConfig
+
+

@@ -28,7 +28,9 @@ class Order(MetadataMixin, RecordModel):
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
         String, nullable=False, index=True
     )
-    stripe_invoice_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    stripe_invoice_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, unique=True
+    )
 
     user_id: Mapped[UUID] = mapped_column(
         Uuid,

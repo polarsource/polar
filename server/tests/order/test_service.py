@@ -42,7 +42,7 @@ from tests.transaction.conftest import create_transaction
 
 def construct_stripe_invoice(
     *,
-    id: str = "INVOICE_ID",
+    id: str | None = "INVOICE_ID",
     total: int = 12000,
     tax: int = 2000,
     amount_paid: int | None = None,
@@ -118,9 +118,17 @@ class TestList:
         product_organization_second: Product,
         user_second: User,
     ) -> None:
-        order = await create_order(save_fixture, product=product, user=user_second)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            user=user_second,
+            stripe_invoice_id="INVOICE_1",
+        )
         await create_order(
-            save_fixture, product=product_organization_second, user=user_second
+            save_fixture,
+            product=product_organization_second,
+            user=user_second,
+            stripe_invoice_id="INVOICE_2",
         )
 
         orders, count = await order_service.list(
@@ -150,10 +158,16 @@ class TestList:
         await save_fixture(user_organization_second_admin)
 
         order_organization = await create_order(
-            save_fixture, product=product, user=user_second
+            save_fixture,
+            product=product,
+            user=user_second,
+            stripe_invoice_id="INVOICE_1",
         )
         order_organization_second = await create_order(
-            save_fixture, product=product_organization_second, user=user_second
+            save_fixture,
+            product=product_organization_second,
+            user=user_second,
+            stripe_invoice_id="INVOICE_2",
         )
 
         # No filter
@@ -187,9 +201,17 @@ class TestList:
         product_organization_second: Product,
         user_second: User,
     ) -> None:
-        order = await create_order(save_fixture, product=product, user=user_second)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            user=user_second,
+            stripe_invoice_id="INVOICE_1",
+        )
         await create_order(
-            save_fixture, product=product_organization_second, user=user_second
+            save_fixture,
+            product=product_organization_second,
+            user=user_second,
+            stripe_invoice_id="INVOICE_2",
         )
 
         orders, count = await order_service.list(

@@ -35,8 +35,8 @@ export default function Layout({ children }: PropsWithChildren) {
     <div className="flex w-full flex-col items-center bg-gray-100 dark:bg-black dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%)]">
       <Section
         wrapperClassName={twMerge(
-          'sticky top-0 z-30 transition-colors duration-500 bg-gray-50',
-          isScrolled ? 'dark:bg-black' : 'dark:bg-transparent',
+          'sticky top-0 z-30 duration-500 transition-colors dark:bg-transparent',
+          isScrolled ? 'dark:bg-black bg-gray-50' : '',
         )}
         className="py-4 md:py-8"
       >

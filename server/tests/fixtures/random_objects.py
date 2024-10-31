@@ -1,6 +1,7 @@
 import random
 import secrets
 import string
+import typing
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
@@ -22,11 +23,13 @@ from polar.models import (
     Benefit,
     Checkout,
     CheckoutLink,
+    CustomField,
     ExternalOrganization,
     Order,
     Organization,
     Product,
     ProductBenefit,
+    ProductCustomField,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -43,6 +46,18 @@ from polar.models.benefit_grant import (
     BenefitGrantScope,
 )
 from polar.models.checkout import CheckoutStatus, get_expires_at
+from polar.models.custom_field import (
+    CustomFieldCheckbox,
+    CustomFieldCheckboxProperties,
+    CustomFieldNumber,
+    CustomFieldNumberProperties,
+    CustomFieldProperties,
+    CustomFieldSelect,
+    CustomFieldSelectProperties,
+    CustomFieldText,
+    CustomFieldTextProperties,
+    CustomFieldType,
+)
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.order import OrderBillingReason
@@ -487,6 +502,67 @@ async def open_collective_account(save_fixture: SaveFixture, user: User) -> Acco
     return account
 
 
+@typing.overload
+async def create_custom_field(
+    save_fixture: SaveFixture,
+    *,
+    type: typing.Literal[CustomFieldType.text],
+    slug: str,
+    organization: Organization,
+    name: str = "Custom Field",
+    properties: CustomFieldTextProperties | None = None,
+) -> CustomFieldText: ...
+@typing.overload
+async def create_custom_field(
+    save_fixture: SaveFixture,
+    *,
+    type: typing.Literal[CustomFieldType.number],
+    slug: str,
+    organization: Organization,
+    name: str = "Custom Field",
+    properties: CustomFieldNumberProperties | None = None,
+) -> CustomFieldNumber: ...
+@typing.overload
+async def create_custom_field(
+    save_fixture: SaveFixture,
+    *,
+    type: typing.Literal[CustomFieldType.checkbox],
+    slug: str,
+    organization: Organization,
+    name: str = "Custom Field",
+    properties: CustomFieldCheckboxProperties | None = None,
+) -> CustomFieldCheckbox: ...
+@typing.overload
+async def create_custom_field(
+    save_fixture: SaveFixture,
+    *,
+    type: typing.Literal[CustomFieldType.select],
+    slug: str,
+    organization: Organization,
+    name: str = "Custom Field",
+    properties: CustomFieldSelectProperties | None = None,
+) -> CustomFieldSelect: ...
+async def create_custom_field(
+    save_fixture: SaveFixture,
+    *,
+    type: CustomFieldType,
+    slug: str,
+    organization: Organization,
+    name: str = "Custom Field",
+    properties: CustomFieldProperties | None = None,
+) -> CustomField:
+    model = type.get_model()
+    custom_field = model(
+        type=type,
+        slug=slug,
+        name=name,
+        properties=properties or {},
+        organization=organization,
+    )
+    await save_fixture(custom_field)
+    return custom_field
+
+
 async def create_product(
     save_fixture: SaveFixture,
     *,
@@ -504,6 +580,7 @@ async def create_product(
         ]
         | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
     ] = [(1000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)],
+    attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
 ) -> Product:
     product = Product(
         name=name,
@@ -515,6 +592,10 @@ async def create_product(
         prices=[],
         product_benefits=[],
         product_medias=[],
+        attached_custom_fields=[
+            ProductCustomField(custom_field=custom_field, required=required, order=i)
+            for i, (custom_field, required) in enumerate(attached_custom_fields)
+        ],
     )
     await save_fixture(product)
 

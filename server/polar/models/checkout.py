@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relatio
 
 from polar.checkout.tax import TaxID, TaxIDType
 from polar.config import settings
+from polar.custom_field.attachment import AttachedCustomFieldMixin
+from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
@@ -36,7 +39,7 @@ class CheckoutStatus(StrEnum):
     failed = "failed"
 
 
-class Checkout(MetadataMixin, RecordModel):
+class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "checkouts"
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(
@@ -163,6 +166,10 @@ class Checkout(MetadataMixin, RecordModel):
     @property
     def url(self) -> str:
         return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
+
+    attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
+        association_proxy("product", "attached_custom_fields")
+    )
 
 
 @event.listens_for(Checkout, "before_update")

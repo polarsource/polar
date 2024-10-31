@@ -3,6 +3,12 @@ from typing import Annotated, Any, Literal
 
 from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress
 
+from polar.custom_field.attachment import AttachedCustomField
+from polar.custom_field.data import (
+    CustomFieldDataInputMixin,
+    CustomFieldDataOutputMixin,
+    OptionalCustomFieldDataInputMixin,
+)
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
 from polar.kit.metadata import (
@@ -60,7 +66,7 @@ SuccessURL = Annotated[
 ]
 
 
-class CheckoutCreate(MetadataInputMixin, Schema):
+class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     """
     Create a new checkout session.
 
@@ -97,7 +103,7 @@ class CheckoutCreatePublic(Schema):
     from_legacy_checkout_link: bool = False
 
 
-class CheckoutUpdateBase(Schema):
+class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):
     product_price_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -141,7 +147,7 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 CheckoutConfirm = CheckoutConfirmStripe
 
 
-class CheckoutBase(IDSchema, TimestampedSchema):
+class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
     status: CheckoutStatus = Field(description="Status of the checkout session.")
     client_secret: str = Field(
@@ -194,6 +200,7 @@ class Checkout(MetadataOutputMixin, CheckoutBase):
     product: Product
     product_price: ProductPrice
     subscription_id: UUID4 | None
+    attached_custom_fields: list[AttachedCustomField]
 
 
 class CheckoutPublic(CheckoutBase):
@@ -202,3 +209,4 @@ class CheckoutPublic(CheckoutBase):
     product: Product
     product_price: ProductPrice
     organization: Organization
+    attached_custom_fields: list[AttachedCustomField]

@@ -1,5 +1,4 @@
 import useDebouncedCallback from '@/hooks/utils'
-import { ArrowForward } from '@mui/icons-material'
 import Link from 'next/link'
 import {
   Popover,
@@ -19,14 +18,13 @@ const PopoverLinkItem = ({
 }) => {
   return (
     <Link
-      className="dark:hover:bg-polar-800 group flex flex-col gap-y-1 rounded-xl px-3 py-2 hover:bg-gray-100"
+      className="dark:hover:bg-polar-600 group flex flex-col gap-y-1 rounded-xl px-3 py-2 transition-colors hover:bg-gray-100"
       href={link}
     >
       <span className="flex flex-row items-center gap-x-2">
-        <ArrowForward fontSize="inherit" />
         <h3 className="text-sm">{title}</h3>
       </span>
-      <span className="dark:text-polar-500 text-sm text-gray-500 group-hover:text-black dark:group-hover:text-white">
+      <span className="dark:text-polar-500 text-sm text-gray-500 transition-colors group-hover:text-black dark:group-hover:text-white">
         {description}
       </span>
     </Link>
@@ -43,7 +41,7 @@ const PlatformPopover = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
-        className="dark:hover:bg-polar-800 dark:data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0 hover:bg-gray-100 data-[state=open]:bg-gray-100"
+        className="dark:hover:bg-polar-700 dark:data-[state=open]:bg-polar-700 rounded-full px-4 py-2 focus-within:outline-0 hover:bg-gray-100 data-[state=open]:bg-gray-100"
         onMouseEnter={() => {
           togglePopover(true)
         }}
@@ -80,6 +78,11 @@ const PlatformPopover = () => {
             <h3 className="ml-3 text-lg">Offer Built-in Benefits</h3>
             <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
+                title="License Keys"
+                description="Sell access to your custom software with License Keys"
+                link="/docs/benefits/license-keys"
+              />
+              <PopoverLinkItem
                 title="Private GitHub Repositories"
                 description="Grant access to private repositories"
                 link="/docs/benefits/github-repositories"
@@ -90,19 +93,9 @@ const PlatformPopover = () => {
                 link="/docs/benefits/discord"
               />
               <PopoverLinkItem
-                title="License Keys"
-                description="Sell access to your custom software with License Keys"
-                link="/docs/benefits/license-keys"
-              />
-              <PopoverLinkItem
                 title="File Downloads"
                 description="Access to exclusive file downloads"
                 link="/docs/benefits/file-downloads"
-              />
-              <PopoverLinkItem
-                title="Advertisements"
-                description="Promote your supporters in READMEs"
-                link="/docs/benefits/ads"
               />
               <PopoverLinkItem
                 title="Custom"
@@ -127,7 +120,7 @@ const DocumentationPopover = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
-        className="dark:hover:bg-polar-800 dark:data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0 hover:bg-gray-100 data-[state=open]:bg-gray-100"
+        className="dark:hover:bg-polar-700 dark:data-[state=open]:bg-polar-700 rounded-full px-4 py-2 focus-within:outline-0 hover:bg-gray-100 data-[state=open]:bg-gray-100"
         onMouseEnter={() => {
           togglePopover(true)
         }}
@@ -147,6 +140,11 @@ const DocumentationPopover = () => {
                 title="Getting Started"
                 description="How-to setup an account and start monetizing"
                 link="/docs"
+              />
+              <PopoverLinkItem
+                title="Guides"
+                description="How-to guides for common use-cases"
+                link="/docs/guides"
               />
               <PopoverLinkItem
                 title="Support"

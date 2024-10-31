@@ -51,26 +51,41 @@ export const Hero = () => {
                 <span className="md:text-xl">polar.sh/</span>
                 <input
                   autoFocus={!isPhone}
-                  className="w-44 border-none border-transparent bg-transparent p-0 md:text-xl focus:border-transparent focus:ring-0"
+                  className="w-44 border-none border-transparent bg-transparent p-0 focus:border-transparent focus:ring-0 md:text-xl"
                   placeholder="storename"
                   value={slug}
                   onChange={(e) => setSlug(slugify(e.target.value))}
                 />
               </div>
-              <GetStartedButton className="px-3" orgSlug={slug} size="lg" text="Start for free" wrapperClassNames="md:text-lg md:px-4" />
+              <GetStartedButton
+                className="px-3"
+                orgSlug={slug}
+                size="lg"
+                text="Start for free"
+                wrapperClassNames="md:text-lg md:px-4"
+              />
             </div>
           </div>
         </div>
         <p className="dark:text-polar-500 text-balance text-gray-500">
-          <span className="text-polar-300">♥️ Trusted by thousands of developers</span> &amp; {' '}
-          <Link href="https://github.com/polarsource/polar" target="_blank" className="underline cursor-pointer">built open source</Link>
+          <span className="text-polar-300">
+            ♥️ Trusted by thousands of developers
+          </span>{' '}
+          &amp;{' '}
+          <Link
+            href="https://github.com/polarsource/polar"
+            target="_blank"
+            className="cursor-pointer underline"
+          >
+            built open source
+          </Link>
         </p>
       </div>
       <div>
         <video
           src="/assets/landing/polar_ui_2.webm"
           width="100%"
-          className="dark:border-polar-700 xl:rounded-4xl aspect-video rounded-2xl border border-gray-200 lg:rounded-3xl"
+          className="dark:border-polar-700 xl:rounded-4xl aspect-[16/9] rounded-2xl border border-gray-200 lg:rounded-3xl"
           autoPlay
           playsInline
           muted

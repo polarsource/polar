@@ -44,6 +44,7 @@ class CustomFieldProperties(TypedDict):
 
 
 class CustomFieldTextProperties(CustomFieldProperties):
+    textarea: NotRequired[bool]
     min_length: NotRequired[PositiveInt]
     max_length: NotRequired[PositiveInt]
 

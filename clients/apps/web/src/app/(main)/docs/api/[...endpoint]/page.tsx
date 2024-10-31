@@ -55,6 +55,11 @@ export async function generateMetadata({
   return {
     title: metadata.operation?.summary ?? endpoint[0],
     description: metadata.operation?.description ?? '',
+    keywords: [
+      ...(metadata.operation?.tags ?? []),
+      metadata.method,
+      metadata.apiEndpointPath,
+    ].join(', '),
   }
 }
 

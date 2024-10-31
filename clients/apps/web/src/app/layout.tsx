@@ -4,6 +4,7 @@ import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
+import { GoogleTagManager } from '@next/third-parties/google'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
@@ -76,7 +77,7 @@ export default async function RootLayout({
           media="(prefers-color-scheme: light)"
         ></link>
       </head>
-
+      <GoogleTagManager gtmId="AW-16748688797" />
       <body
         className={twMerge(
           `[font-feature-settings:'ss03','zero']`,

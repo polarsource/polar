@@ -34,6 +34,7 @@
     "@mui/icons-material": "^5.15.4",
     "@mui/material": "^5.15.4",
     "@next/mdx": "^14.2.8",
+    "@next/third-parties": "^15.0.2",
     "@observablehq/plot": "^0.6.16",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/sdk": "workspace:*",

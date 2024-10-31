@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import Textarea from 'polarkit/components/ui/atoms/textarea'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
@@ -86,6 +87,18 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
   required,
   field,
 }) => {
+  if (customField.properties.textarea) {
+    return (
+      <Textarea
+        {...field}
+        placeholder={customField.properties.form_placeholder}
+        required={required}
+        minLength={customField.properties.min_length}
+        maxLength={customField.properties.max_length}
+      />
+    )
+  }
+
   return (
     <Input
       {...field}

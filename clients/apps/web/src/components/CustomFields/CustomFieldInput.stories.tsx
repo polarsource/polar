@@ -54,6 +54,21 @@ export const TextField: Story = {
   },
 }
 
+export const TextareaField: Story = {
+  ...Default,
+  args: {
+    customField: {
+      ...baseCustomField,
+      type: 'text',
+      properties: {
+        ...baseCustomField.properties,
+        textarea: true,
+      },
+    },
+    required: false,
+  },
+}
+
 export const NumberField: Story = {
   ...Default,
   args: {

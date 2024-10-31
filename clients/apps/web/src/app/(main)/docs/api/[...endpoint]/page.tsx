@@ -14,6 +14,7 @@ import {
 } from '@/components/Documentation/openapi'
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import Markdown from 'markdown-to-jsx'
+import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { Parameters } from '../../../../../components/Documentation/Parameters'
@@ -41,6 +42,20 @@ export async function generateStaticParams(): Promise<
     ],
     [],
   )
+}
+
+export async function generateMetadata({
+  params: { endpoint },
+}: {
+  params: { endpoint: string[] }
+}): Promise<Metadata> {
+  const schema = await fetchSchema()
+  const metadata = resolveEndpointMetadata(endpoint, schema)
+
+  return {
+    title: metadata.operation?.summary ?? endpoint[0],
+    description: metadata.operation?.description ?? '',
+  }
 }
 
 export default async function Page({

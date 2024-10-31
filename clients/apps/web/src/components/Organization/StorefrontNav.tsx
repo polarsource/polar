@@ -34,7 +34,7 @@ export const StorefrontNav = ({
 
   return (
     <>
-      <Tabs className="w-full" value={currentTab}>
+      <Tabs className="w-full md:w-fit" value={currentTab}>
         <TabsList
           className={twMerge(
             'hidden w-full flex-row overflow-x-auto bg-transparent ring-0 sm:flex dark:bg-transparent dark:ring-0',

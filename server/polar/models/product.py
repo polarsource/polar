@@ -23,7 +23,6 @@ from .product_price import ProductPrice
 if TYPE_CHECKING:
     from polar.models import (
         Benefit,
-        CustomField,
         Organization,
         ProductBenefit,
         ProductCustomField,
@@ -95,15 +94,11 @@ class Product(RecordModel):
         "product_medias", "file"
     )
 
-    product_custom_fields: Mapped[list["ProductCustomField"]] = relationship(
+    attached_custom_fields: Mapped[list["ProductCustomField"]] = relationship(
         lazy="raise",
         order_by="ProductCustomField.order",
         cascade="all, delete-orphan",
         back_populates="product",
-    )
-
-    custom_fields: AssociationProxy[list["CustomField"]] = association_proxy(
-        "product_custom_fields", "custom_field"
     )
 
     @property

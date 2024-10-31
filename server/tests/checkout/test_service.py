@@ -37,6 +37,7 @@ from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.models import Checkout, Organization, Product, User, UserOrganization
 from polar.models.checkout import CheckoutStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
@@ -49,6 +50,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_checkout,
     create_checkout_link,
+    create_custom_field,
+    create_product,
     create_product_price_fixed,
     create_subscription,
     create_user,
@@ -145,6 +148,36 @@ async def checkout_confirmed_recurring_upgrade(
         status=CheckoutStatus.confirmed,
         subscription=subscription,
     )
+
+
+@pytest_asyncio.fixture
+async def product_custom_fields(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    text_field = await create_custom_field(
+        save_fixture, type=CustomFieldType.text, slug="text", organization=organization
+    )
+    select_field = await create_custom_field(
+        save_fixture,
+        type=CustomFieldType.select,
+        slug="select",
+        organization=organization,
+        properties={
+            "options": [{"value": "a", "label": "A"}, {"value": "b", "label": "B"}],
+        },
+    )
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        attached_custom_fields=[(text_field, False), (select_field, True)],
+    )
+
+
+@pytest_asyncio.fixture
+async def checkout_custom_fields(
+    save_fixture: SaveFixture, product_custom_fields: Product
+) -> Checkout:
+    return await create_checkout(save_fixture, price=product_custom_fields.prices[0])
 
 
 @pytest.mark.asyncio
@@ -633,6 +666,60 @@ class TestCreate:
         assert checkout.product_price == price
         assert checkout.product == product
         assert checkout.subscription == subscription
+
+    @pytest.mark.parametrize(
+        "custom_field_data",
+        (
+            pytest.param({"text": "abc"}, id="missing select"),
+            pytest.param({"text": "abc", "select": "c"}, id="invalid select"),
+        ),
+    )
+    async def test_invalid_custom_field_data(
+        self,
+        custom_field_data: dict[str, Any],
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_custom_fields: Product,
+    ) -> None:
+        price = product_custom_fields.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    custom_field_data=custom_field_data,
+                ),
+                auth_subject,
+            )
+
+        for error in e.value.errors():
+            assert error["loc"][0:2] == ("body", "custom_field_data")
+
+    async def test_valid_custom_field_data(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_custom_fields: Product,
+    ) -> None:
+        price = product_custom_fields.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                custom_field_data={"text": "abc", "select": "a"},
+            ),
+            auth_subject,
+        )
+
+        assert checkout.custom_field_data == {"text": "abc", "select": "a"}
 
 
 @pytest.mark.asyncio
@@ -1178,6 +1265,42 @@ class TestUpdate:
         )
 
         assert checkout.user_metadata == {"key": "value"}
+
+    @pytest.mark.parametrize(
+        "custom_field_data",
+        (
+            pytest.param({"text": "abc"}, id="missing select"),
+            pytest.param({"text": "abc", "select": "c"}, id="invalid select"),
+        ),
+    )
+    async def test_invalid_custom_field_data(
+        self,
+        custom_field_data: dict[str, Any],
+        session: AsyncSession,
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.update(
+                session,
+                checkout_custom_fields,
+                CheckoutUpdate(custom_field_data=custom_field_data),
+            )
+
+        for error in e.value.errors():
+            assert error["loc"][0:2] == ("body", "custom_field_data")
+
+    async def test_valid_custom_field_data(
+        self, session: AsyncSession, checkout_custom_fields: Checkout
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_custom_fields,
+            CheckoutUpdate(
+                custom_field_data={"text": "abc", "select": "a"},
+            ),
+        )
+
+        assert checkout.custom_field_data == {"text": "abc", "select": "a"}
 
 
 @pytest.mark.asyncio

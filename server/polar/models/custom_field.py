@@ -1,8 +1,10 @@
+from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
 from annotated_types import Ge, Len
+from pydantic import Field
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -20,6 +22,15 @@ class CustomFieldType(StrEnum):
     date = "date"
     checkbox = "checkbox"
     select = "select"
+
+    def get_model(self) -> type["CustomField"]:
+        return {
+            CustomFieldType.text: CustomFieldText,
+            CustomFieldType.number: CustomFieldNumber,
+            CustomFieldType.date: CustomFieldDate,
+            CustomFieldType.checkbox: CustomFieldCheckbox,
+            CustomFieldType.select: CustomFieldSelect,
+        }[self]
 
 
 PositiveInt = Annotated[int, Ge(0)]
@@ -82,6 +93,9 @@ class CustomField(MetadataMixin, RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
+    def get_field_definition(self, required: bool) -> tuple[Any, Any]:
+        raise NotImplementedError()
+
     __mapper_args__ = {
         "polymorphic_on": "type",
     }
@@ -97,6 +111,16 @@ class CustomFieldText(CustomField):
         "polymorphic_load": "inline",
     }
 
+    def get_field_definition(self, required: bool) -> tuple[Any, Any]:
+        return (
+            str if required else str | None,
+            Field(
+                default=None if not required else ...,
+                min_length=self.properties.get("min_length"),
+                max_length=self.properties.get("max_length"),
+            ),
+        )
+
 
 class CustomFieldNumber(CustomField):
     properties: Mapped[CustomFieldNumberProperties] = mapped_column(
@@ -107,6 +131,16 @@ class CustomFieldNumber(CustomField):
         "polymorphic_identity": CustomFieldType.number,
         "polymorphic_load": "inline",
     }
+
+    def get_field_definition(self, required: bool) -> tuple[Any, Any]:
+        return (
+            int if required else int | None,
+            Field(
+                default=None if not required else ...,
+                ge=self.properties.get("ge"),
+                le=self.properties.get("le"),
+            ),
+        )
 
 
 class CustomFieldDate(CustomField):
@@ -119,6 +153,16 @@ class CustomFieldDate(CustomField):
         "polymorphic_load": "inline",
     }
 
+    def get_field_definition(self, required: bool) -> tuple[Any, Any]:
+        ge = self.properties.get("ge")
+        ge_date = datetime.fromtimestamp(ge).date() if ge else None
+        le = self.properties.get("le")
+        le_date = datetime.fromtimestamp(le).date() if le else None
+        return (
+            datetime if required else datetime | None,
+            Field(default=None if not required else ..., ge=ge_date, le=le_date),
+        )
+
 
 class CustomFieldCheckbox(CustomField):
     properties: Mapped[CustomFieldCheckboxProperties] = mapped_column(
@@ -130,6 +174,12 @@ class CustomFieldCheckbox(CustomField):
         "polymorphic_load": "inline",
     }
 
+    def get_field_definition(self, required: bool) -> tuple[Any, Any]:
+        return (
+            Literal[True] if required else bool,
+            Field(default=False if not required else ...),
+        )
+
 
 class CustomFieldSelect(CustomField):
     properties: Mapped[CustomFieldSelectProperties] = mapped_column(
@@ -140,3 +190,14 @@ class CustomFieldSelect(CustomField):
         "polymorphic_identity": CustomFieldType.select,
         "polymorphic_load": "inline",
     }
+
+    def get_field_definition(self, required: bool) -> tuple[Any, Any]:
+        literal_type = Literal[  # type: ignore
+            tuple(option["value"] for option in self.properties["options"])
+        ]
+        return (
+            literal_type if required else literal_type | None,  # pyright: ignore
+            Field(
+                default=None if not required else ...,
+            ),
+        )

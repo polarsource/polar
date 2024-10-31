@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any
 
 import stripe as stripe_lib
 import structlog
@@ -23,6 +23,7 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.config import settings
+from polar.custom_field.data import validate_custom_field_data
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -52,7 +53,6 @@ from polar.models.product_price import ProductPriceAmountType, ProductPriceFree
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
-from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.user.service.user import user as user_service
 from polar.user_organization.service import (
@@ -341,7 +341,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 )
             customer = subscription.user
 
-        product = cast(Product, await product_service.get_loaded(session, product.id))
+        product = await self._eager_load_product(session, product)
 
         amount = checkout_create.amount
         currency = None
@@ -356,6 +356,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             amount = None
             currency = None
 
+        custom_field_data = validate_custom_field_data(
+            product.attached_custom_fields, checkout_create.custom_field_data
+        )
+
         checkout = Checkout(
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
@@ -366,6 +370,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             customer_tax_id=customer_tax_id,
             subscription=subscription,
             customer=customer,
+            custom_field_data=custom_field_data,
             **checkout_create.model_dump(
                 exclude={
                     "product_price_id",
@@ -373,6 +378,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     "customer_billing_address",
                     "customer_tax_id",
                     "subscription_id",
+                    "custom_field_data",
                 },
                 by_alias=True,
             ),
@@ -446,7 +452,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        product = cast(Product, await product_service.get_loaded(session, product.id))
+        product = await self._eager_load_product(session, product)
 
         amount = None
         currency = None
@@ -555,7 +561,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        product = cast(Product, await product_service.get_loaded(session, product.id))
+        product = await self._eager_load_product(session, product)
 
         amount = None
         currency = None
@@ -967,7 +973,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .join(Checkout.product)
             .options(
                 contains_eager(Checkout.product).options(
-                    joinedload(Product.organization), joinedload(Product.product_medias)
+                    joinedload(Product.product_medias),
+                    joinedload(Product.attached_custom_fields),
                 )
             )
         )
@@ -1147,6 +1154,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         ]
                     ) from e
 
+        if checkout_update.custom_field_data:
+            custom_field_data = validate_custom_field_data(
+                checkout.product.attached_custom_fields,
+                checkout_update.custom_field_data,
+            )
+            checkout.custom_field_data = custom_field_data
+
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
@@ -1156,6 +1170,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             "amount",
             "customer_billing_address",
             "customer_tax_id",
+            "custom_field_data",
         }
 
         if checkout.customer_id is not None:
@@ -1309,6 +1324,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             session, organization, (WebhookEventType.checkout_updated, checkout)
         )
 
+    async def _eager_load_product(
+        self, session: AsyncSession, product: Product
+    ) -> Product:
+        await session.refresh(
+            product, {"prices", "product_medias", "attached_custom_fields"}
+        )
+        return product
+
     def _get_readable_checkout_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Checkout]]:
@@ -1317,7 +1340,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .where(Checkout.deleted_at.is_(None))
             .join(Checkout.product)
             .options(
-                contains_eager(Checkout.product).joinedload(Product.product_medias)
+                contains_eager(Checkout.product).options(
+                    joinedload(Product.product_medias),
+                    joinedload(Product.attached_custom_fields),
+                )
             )
         )
 

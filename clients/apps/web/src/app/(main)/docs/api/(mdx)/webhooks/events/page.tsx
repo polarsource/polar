@@ -103,4 +103,5 @@ export default async function Page() {
 export const metadata = {
   title: 'Webhook Events',
   description: 'The list of events we may send to your webhook endpoint',
+  keywords: 'webhooks, events, payload, payload structure',
 }

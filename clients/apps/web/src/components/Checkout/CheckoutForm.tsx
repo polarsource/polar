@@ -39,6 +39,7 @@ import { PropsWithChildren, useCallback, useEffect, useState } from 'react'
 import { useFormContext, WatchObserver } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
+import CustomFieldInput from '../CustomFields/CustomFieldInput'
 import AmountLabel from '../Shared/AmountLabel'
 
 const DetailRow = ({
@@ -407,6 +408,22 @@ const BaseCheckoutForm = ({
                 )}
               /> */}
                 </>
+              )}
+              {checkout.attached_custom_fields.map(
+                ({ custom_field, required }) => (
+                  <FormField
+                    key={custom_field.id}
+                    control={control}
+                    name={`custom_field_data.${custom_field.slug}`}
+                    render={({ field }) => (
+                      <CustomFieldInput
+                        customField={custom_field}
+                        required={required}
+                        field={field}
+                      />
+                    )}
+                  />
+                ),
               )}
             </div>
             {checkout.is_payment_required && (

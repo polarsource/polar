@@ -13,7 +13,7 @@ const getIcon = (type: CustomFieldType) => {
       return TextSnippet
     case 'number':
       return Numbers
-    case 'datetime':
+    case 'date':
       return CalendarMonth
     case 'checkbox':
       return CheckBox
@@ -28,8 +28,8 @@ const getLabel = (type: CustomFieldType) => {
       return 'Text'
     case 'number':
       return 'Number'
-    case 'datetime':
-      return 'Date & Time'
+    case 'date':
+      return 'Date'
     case 'checkbox':
       return 'Checkbox'
     case 'select':

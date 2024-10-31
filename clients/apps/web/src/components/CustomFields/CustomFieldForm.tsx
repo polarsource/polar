@@ -91,11 +91,11 @@ const CustomFieldComparableProperties = () => {
     <>
       <FormField
         control={control}
-        name="properties.lt"
+        name="properties.ge"
         render={({ field }) => {
           return (
             <FormItem>
-              <FormLabel>Less than</FormLabel>
+              <FormLabel>Greater than or equal</FormLabel>
               <FormControl>
                 <Input {...field} type="number" />
               </FormControl>
@@ -111,36 +111,6 @@ const CustomFieldComparableProperties = () => {
           return (
             <FormItem>
               <FormLabel>Less than or equal</FormLabel>
-              <FormControl>
-                <Input {...field} type="number" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name="properties.gt"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Greater than</FormLabel>
-              <FormControl>
-                <Input {...field} type="number" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name="properties.ge"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Greater than or equal</FormLabel>
               <FormControl>
                 <Input {...field} type="number" />
               </FormControl>
@@ -345,7 +315,8 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
                     </FormControl>
                     <FormMessage />
                     <FormDescription>
-                      Fallback to field name if not provided.
+                      Fallback to field name if not provided. Markdown
+                      supported.
                     </FormDescription>
                   </FormItem>
                 )
@@ -369,7 +340,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
                     </FormControl>
                     <FormMessage />
                     <FormDescription>
-                      Used on the checkout form.
+                      Used on the checkout form. Markdown supported.
                     </FormDescription>
                   </FormItem>
                 )
@@ -403,7 +374,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
         </AccordionItem>
         {(type === CustomFieldType.TEXT ||
           type === CustomFieldType.NUMBER ||
-          type === CustomFieldType.DATETIME) && (
+          type === CustomFieldType.DATE) && (
           <AccordionItem
             value="validation-constraints"
             className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
@@ -417,7 +388,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
               {type === CustomFieldType.NUMBER && (
                 <CustomFieldComparableProperties />
               )}
-              {type === CustomFieldType.DATETIME && (
+              {type === CustomFieldType.DATE && (
                 <CustomFieldComparableProperties />
               )}
             </AccordionContent>

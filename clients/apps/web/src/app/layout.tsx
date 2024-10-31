@@ -24,15 +24,11 @@ export const metadata: Metadata = {
   openGraph: {
     images: 'https://polar.sh/assets/brand/polar_og.jpg',
     type: 'website',
-    title: 'Polar - The best monetization platform for developers',
     siteName: 'Polar',
-    description: 'The best monetization platform for developers',
   },
   twitter: {
     images: 'https://polar.sh/assets/brand/polar_og.jpg',
     card: 'summary_large_image',
-    title: 'Polar - The best monetization platform for developers',
-    description: 'The best monetization platform for developers',
   },
   metadataBase: new URL('https://polar.sh/'),
 }

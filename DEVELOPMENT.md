@@ -54,7 +54,7 @@ Polar needs a [Python 3.12](https://www.python.org/downloads/) and [Node.js 18](
 For the Polar stack to run properly, it needs quite a bunch of settings defined as environment variables. To ease things, we provide a script to bootstrap them. It requires [uv](https://docs.astral.sh/uv/getting-started/installation/) to be installed on your system.
 
 ```sh
-./dev/setup-environment.py
+./dev/setup-environment
 ```
 Once done, the script will automatically create `server/.env` and `clients/apps/web/.env.local` files with the necessary environment variables.
 
@@ -63,7 +63,7 @@ Once done, the script will automatically create `server/.env` and `clients/apps/
 If you want to work with GitHub login and issue funding, you'll need to have a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) for your development environment. Our script is able to help in this task by passing the following parameters:
 
 ```sh
-./dev/setup-environment.py --setup-github-app --backend-external-url mydomain.ngrok.dev
+./dev/setup-environment --setup-github-app --backend-external-url mydomain.ngrok.dev
 ```
 
 Note that you'll need a valid external URL that'll route to your development server. For this task, we recommend to use [ngrok](https://ngrok.com/).
@@ -73,7 +73,7 @@ Your browser will open a new page and you'll be prompted to **create a GitHub Ap
 > [!TIP]
 > If you run on **GitHub Codespaces**, you can just run it like this:
 > ```sh
-> ./dev/setup-environment.py --setup-github-app
+> ./dev/setup-environment --setup-github-app
 > ```
 > The script will automatically use your external GitHub Codespace URL.
 

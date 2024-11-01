@@ -77,6 +77,22 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(session, create_schema, auth_subject)
 
+    async def test_subscription_id_set(
+        self,
+        auth_subject: AuthSubject[Anonymous],
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        price = product.prices[0]
+        create_schema = CheckoutCreate(
+            product_price_id=price.id,
+            success_url=SUCCESS_URL,
+            customer_email=None,
+            subscription_id=uuid.uuid4(),
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(session, create_schema, auth_subject)
+
     async def test_valid_anonymous(
         self,
         auth_subject: AuthSubject[Anonymous],

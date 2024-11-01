@@ -7,10 +7,12 @@ const CopyToClipboardInput = ({
   value,
   onCopy,
   buttonLabel,
+  disabled = false,
 }: {
   value: string
   onCopy?: () => void
   buttonLabel?: string
+  disabled?: boolean
 }) => {
   const [isCopied, setIsCopied] = useState(false)
 
@@ -35,18 +37,20 @@ const CopyToClipboardInput = ({
         value={value}
         readOnly={true}
       />
-      <Button
-        className="mr-0.5 text-xs"
-        type="button"
-        variant="ghost"
-        onClick={copyToClipboard}
-      >
-        {isCopied ? (
-          <CheckOutlined className="text-sm" fontSize="inherit" />
-        ) : (
-          buttonLabel || 'Copy'
-        )}
-      </Button>
+      {!disabled && (
+        <Button
+          className="mr-0.5 text-xs"
+          type="button"
+          variant="ghost"
+          onClick={copyToClipboard}
+        >
+          {isCopied ? (
+            <CheckOutlined className="text-sm" fontSize="inherit" />
+          ) : (
+            buttonLabel || 'Copy'
+          )}
+        </Button>
+      )}
     </div>
   )
 }

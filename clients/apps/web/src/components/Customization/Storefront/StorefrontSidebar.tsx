@@ -340,24 +340,28 @@ export const StorefrontSidebar = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
         <StorefrontForm />
 
-        <div className="border bg-white py-4 px-4 rounded-2xl">
-          <div className="flex flex-row gap-y-2 items-center">
+        <div className={twMerge(
+          "border bg-white py-4 px-4 rounded-2xl",
+          storefrontEnabled && "bg-white",
+          !storefrontEnabled && "bg-gray-100",
+        )}>
+          <div className="flex flex-row items-center">
             <GitHubIcon width={16} height={16} className="mr-2" />
             <strong className="font-normal">
               Promote on GitHub
             </strong>
           </div>
-          <div className="flex flex-col mt-2 gap-4">
-            <CopyToClipboardInput value={githubFundingYAML} />
-            <p className="text-xs">
-              Polar storefronts are officially supported by GitHub in your {' '}
-              <a
-                className="font-bold text-blue-500 dark:text-blue-200"
-                href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository"
-              >
-                FUNDING.yaml
-              </a>.
+          <div className="flex flex-col mt-4 text-xs">
+            <CopyToClipboardInput value={githubFundingYAML} disabled={!storefrontEnabled} />
+            <p className="text-gray-800 mt-4">
+              Polar storefronts are officially supported by GitHub.
             </p>
+            <a
+              className="text-blue-500 dark:text-blue-200"
+              href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository"
+            >
+              Read how to add Polar to GitHub.
+            </a>
           </div>
         </div>
 

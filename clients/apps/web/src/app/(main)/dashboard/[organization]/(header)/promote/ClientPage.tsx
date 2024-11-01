@@ -11,6 +11,12 @@ import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import { ReactElement, useState } from 'react'
 
+
+interface Embeddable {
+  preview: ReactElement
+  tag: string
+}
+
 export default function ClientPage({
   organization,
 }: {
@@ -38,30 +44,20 @@ export default function ClientPage({
 
   const fundingYAML = `polar: ${organization.slug}`
 
-  const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
+  const [currentEmbedTab, setCurrentEmbedTab] = useState('Issues')
 
-  const previews: Record<string, ReactElement> = {
-    Tiers: (
-      <picture>
-        <source
-          media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/tiers.svg?org=${organization.slug}&darkmode`}
-        />
-        <img
-          alt="Subscription Tiers on Polar"
-          src={`/embed/tiers.svg?org=${organization.slug}`}
-        />
-      </picture>
-    ),
-    Issues: <img src={`/embed/fund-our-backlog.svg?${orgRepoParams}`} />,
-    Shield: <img src={`/embed/seeks-funding-shield.svg?${orgRepoParams}`} />,
+  const embeds: Record<string, Embeddable> = {
+    Issues: {
+      preview: <img src={`/embed/fund-our-backlog.svg?${orgRepoParams}`} alt="GitHub Embed of Fundable Backlog" />,
+      tag: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
+    },
+    Shield: {
+      preview: <img src={`/embed/seeks-funding-shield.svg?${orgRepoParams}`} alt="GitHub Shield of Fundable Issues" />,
+      tag: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
+    },
   }
 
-  const embedCodes: Record<string, string> = {
-    Tiers: `<a href="https://polar.sh/${organization.slug}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${organization.slug}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${organization.slug}"></picture></a>`,
-    Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
-    Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
-  }
+  const embeddables = Object.keys(embeds)
 
   return (
     <DashboardBody>
@@ -106,7 +102,7 @@ export default function ClientPage({
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <TabsList className="bg-transparent dark:bg-transparent">
-                    {['Tiers', 'Issues', 'Shield'].map((item) => (
+                    {embeddables.map((item) => (
                       <TabsTrigger key={item} value={item} size="small">
                         {item}
                       </TabsTrigger>
@@ -116,16 +112,11 @@ export default function ClientPage({
 
                 <div className="dark:bg-polar-800 dark:border-polar-700 relative min-h-[200px] rounded-2xl border border-gray-200 bg-gray-50 p-12">
                   <div className="relative z-10 flex h-[20px] w-full flex-col items-center justify-around">
-                    {/* Kind of hacky loading indicator _behind_ the image */}
-                    {currentEmbedTab === 'Shield' ? (
-                      <Skeleton className="h-[20px] w-[150px]" />
-                    ) : (
-                      <Spinner />
-                    )}
+                    <Spinner />
                   </div>
 
                   <div className="dark:bg-polar-800 relative z-20 -mt-[20px] flex w-full justify-center bg-gray-50">
-                    {previews[currentEmbedTab] || <></>}
+                    {embeds[currentEmbedTab].preview || <></>}
                   </div>
                 </div>
               </div>
@@ -136,7 +127,7 @@ export default function ClientPage({
                 </h3>
                 <div className="max-w-[600px]">
                   <CopyToClipboardInput
-                    value={embedCodes[currentEmbedTab] || ''}
+                    value={embeds[currentEmbedTab].tag || ''}
                   />
                 </div>
               </div>

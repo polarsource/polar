@@ -18,6 +18,7 @@ from polar.kit.utils import utc_now
 
 from .product import Product
 from .product_price import ProductPrice, ProductPriceFree
+from .subscription import Subscription
 from .user import User
 
 
@@ -103,6 +104,18 @@ class Checkout(MetadataMixin, RecordModel):
     customer_tax_id: Mapped[TaxID | None] = mapped_column(
         TaxIDType, nullable=True, default=None
     )
+
+    subscription_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def subscription(cls) -> Mapped[Subscription | None]:
+        return relationship(
+            Subscription,
+            lazy="joined",
+            foreign_keys=[cls.subscription_id],  # type: ignore
+        )
 
     @hybrid_property
     def customer_ip_address(self) -> str | None:

@@ -875,6 +875,7 @@ async def create_checkout(
     tax_amount: int | None = None,
     currency: str | None = None,
     customer: User | None = None,
+    subscription: Subscription | None = None,
 ) -> Checkout:
     if isinstance(price, ProductPriceFixed):
         amount = price.price_amount
@@ -901,6 +902,7 @@ async def create_checkout(
         product_price=price,
         product=price.product,
         customer=customer,
+        subscription=subscription,
     )
     await save_fixture(checkout)
     return checkout

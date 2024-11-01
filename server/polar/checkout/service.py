@@ -43,11 +43,12 @@ from polar.models import (
     Product,
     ProductPriceCustom,
     ProductPriceFixed,
+    Subscription,
     User,
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.product_price import ProductPriceFree
+from polar.models.product_price import ProductPriceAmountType, ProductPriceFree
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -310,6 +311,36 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     ]
                 ) from e
 
+        subscription: Subscription | None = None
+        customer: User | None = None
+        if checkout_create.subscription_id is not None:
+            subscription = await self._get_upgradable_subscription(
+                session, checkout_create.subscription_id, product.organization_id
+            )
+            if subscription is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "subscription_id"),
+                            "msg": "Subscription does not exist.",
+                            "input": checkout_create.subscription_id,
+                        }
+                    ]
+                )
+            if subscription.price.amount_type != ProductPriceAmountType.free:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "subscription_id"),
+                            "msg": "Only free subscriptions can be upgraded.",
+                            "input": checkout_create.subscription_id,
+                        }
+                    ]
+                )
+            customer = subscription.user
+
         product = cast(Product, await product_service.get_loaded(session, product.id))
 
         amount = checkout_create.amount
@@ -333,17 +364,23 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             product_price=price,
             customer_billing_address=checkout_create.customer_billing_address,
             customer_tax_id=customer_tax_id,
+            subscription=subscription,
+            customer=customer,
             **checkout_create.model_dump(
                 exclude={
                     "product_price_id",
                     "amount",
                     "customer_billing_address",
                     "customer_tax_id",
+                    "subscription_id",
                 },
                 by_alias=True,
             ),
         )
         session.add(checkout)
+
+        if checkout.customer is not None and checkout.customer_email is None:
+            checkout.customer_email = checkout.customer.email
 
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
@@ -762,20 +799,41 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             stripe_price_id = stripe_custom_price.id
 
         if product_price.is_recurring:
-            (
-                stripe_subscription,
-                stripe_invoice,
-            ) = await stripe_service.create_out_of_band_subscription(
-                customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
-                price=stripe_price_id,
-                metadata=metadata,
-                invoice_metadata={
-                    "payment_intent_id": payment_intent.id,
-                    "checkout_id": str(checkout.id),
-                },
-                idempotency_key=idempotency_key,
-            )
+            subscription = checkout.subscription
+            # New subscription
+            if subscription is None:
+                (
+                    stripe_subscription,
+                    stripe_invoice,
+                ) = await stripe_service.create_out_of_band_subscription(
+                    customer=stripe_customer_id,
+                    currency=checkout.currency or "usd",
+                    price=stripe_price_id,
+                    metadata=metadata,
+                    invoice_metadata={
+                        "payment_intent_id": payment_intent.id,
+                        "checkout_id": str(checkout.id),
+                    },
+                    idempotency_key=idempotency_key,
+                )
+            # Subscription upgrade
+            else:
+                assert subscription.stripe_subscription_id is not None
+                await session.refresh(subscription, {"price"})
+                (
+                    stripe_subscription,
+                    stripe_invoice,
+                ) = await stripe_service.update_out_of_band_subscription(
+                    subscription_id=subscription.stripe_subscription_id,
+                    old_price=subscription.price.stripe_price_id,
+                    new_price=stripe_price_id,
+                    metadata=metadata,
+                    invoice_metadata={
+                        "payment_intent_id": payment_intent.id,
+                        "checkout_id": str(checkout.id),
+                    },
+                    idempotency_key=idempotency_key,
+                )
             await stripe_service.set_automatically_charged_subscription(
                 stripe_subscription.id,
                 stripe_payment_method_id,
@@ -927,6 +985,25 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .values(status=CheckoutStatus.expired)
         )
         await session.execute(statement)
+
+    async def _get_upgradable_subscription(
+        self, session: AsyncSession, id: uuid.UUID, organization_id: uuid.UUID
+    ) -> Subscription | None:
+        statement = (
+            select(Subscription)
+            .join(Product)
+            .where(
+                Subscription.id == id,
+                Product.organization_id == organization_id,
+            )
+            .options(
+                contains_eager(Subscription.product),
+                joinedload(Subscription.price),
+                joinedload(Subscription.user),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalars().unique().one_or_none()
 
     async def _update_checkout(
         self,

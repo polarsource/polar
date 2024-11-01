@@ -72,6 +72,10 @@ class CheckoutCreate(MetadataInputMixin, Schema):
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    subscription_id: UUID4 | None = Field(
+        default=None,
+        description="ID of a subscription to upgrade. It must be on a free pricing.",
+    )
     success_url: SuccessURL = None
 
 

@@ -252,7 +252,7 @@ const fundingRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/issues`)
     },
-    if: true,
+    if: org.feature_settings?.issue_funding_enabled,
     subs: [
       {
         title: 'Overview',
@@ -280,7 +280,7 @@ const fundingRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/donations`)
     },
-    if: true,
+    if: org.donations_enabled,
   },
 ]
 

@@ -53,25 +53,12 @@ export default function ClientPage({
         />
       </picture>
     ),
-    Subscribe: (
-      <picture>
-        <source
-          media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/subscribe.svg?org=${organization.slug}&label=Subscribe&darkmode`}
-        />
-        <img
-          alt="Subscribe on Polar"
-          src={`/embed/subscribe.svg?org=${organization.slug}&label=Subscribe`}
-        />
-      </picture>
-    ),
     Issues: <img src={`/embed/fund-our-backlog.svg?${orgRepoParams}`} />,
     Shield: <img src={`/embed/seeks-funding-shield.svg?${orgRepoParams}`} />,
   }
 
   const embedCodes: Record<string, string> = {
     Tiers: `<a href="https://polar.sh/${organization.slug}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${organization.slug}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${organization.slug}"></picture></a>`,
-    Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${organization.slug}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${organization.slug}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
   }
@@ -119,7 +106,7 @@ export default function ClientPage({
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <TabsList className="bg-transparent dark:bg-transparent">
-                    {['Tiers', 'Subscribe', 'Issues', 'Shield'].map((item) => (
+                    {['Tiers', 'Issues', 'Shield'].map((item) => (
                       <TabsTrigger key={item} value={item} size="small">
                         {item}
                       </TabsTrigger>

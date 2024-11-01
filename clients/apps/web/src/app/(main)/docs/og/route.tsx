@@ -31,7 +31,7 @@ export async function GET(request: Request) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
-            justifyContent: 'center',
+            justifyContent: 'flex-end',
             padding: '80px',
             position: 'relative',
             backgroundColor: '#000000',
@@ -50,12 +50,12 @@ export async function GET(request: Request) {
               color: '#ffffff',
             }}
           >
-            <LogoIcon size={60} />
+            <LogoIcon size={100} />
           </div>
           <div
             style={{
               color: '#ffffff',
-              fontSize: '60px',
+              fontSize: '64px',
               fontWeight: 600,
               marginBottom: '20px',
               lineHeight: 1.2,
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
             <div
               style={{
                 color: 'rgba(255, 255, 255, 0.7)',
-                fontSize: '32px',
+                fontSize: '42px',
                 marginTop: '20px',
                 lineHeight: 1.4,
               }}

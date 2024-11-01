@@ -18,14 +18,14 @@ class CheckoutCreate(Schema):
         ),
     )
     customer_email: EmailStrDNS | None = Field(
-        None,
+        default=None,
         description=(
             "If you already know the email of your customer, you can set it. "
             "It'll be pre-filled on the checkout page."
         ),
     )
     subscription_id: UUID4 | None = Field(
-        None,
+        default=None,
         description=(
             "ID of the subscription to update. "
             "If not provided, a new subscription will be created."

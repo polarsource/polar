@@ -60,11 +60,13 @@ Once a webhook is configured, you will have access to a delivery overview page. 
 ![Delivery](./delivery.light.png)
 ![Delivery](./delivery.dark.png)
 
-<BrowserCallout type="NOTE">
-  If we hit an error while trying to reach your endpoint, whether it is a
-  temporary network error or a bug, we'll retry to send the event up to **10
-  times** with an exponential backoff.
-</BrowserCallout>
+### Retries
+
+If we hit an error while trying to reach your endpoint, whether it is a temporary network error or a bug, we'll retry to send the event up to **10 times** with an exponential backoff.
+
+### Timeouts
+
+We expect your endpoint to answer under **20 seconds**. Past this delay, the delivery will error and we'll enter the retry cycle described above. We recommend you to avoid too long processing while receiving the webhook. The good practice if you have long logic to run is to queue the event and respond to the webhook immediately. Your logic is then run in a background by a worker.
 
 ## Verify signature
 
@@ -75,10 +77,10 @@ As it follows the [Standard Webhooks](https://www.standardwebhooks.com/) specifi
 If you use the `standard-webhooks` library, you can verify the signature like this using Node.js:
 
 ```javascript
-import { Webhook } from "standardwebhooks"
+import { Webhook } from 'standardwebhooks'
 
-const webhookSecret = Buffer.from(env.POLAR_WEBHOOK_SECRET).toString('base64');
-const wh = new Webhook(webhookSecret);
+const webhookSecret = Buffer.from(env.POLAR_WEBHOOK_SECRET).toString('base64')
+const wh = new Webhook(webhookSecret)
 const payload = wh.verify(requestBody, webhookHeaders)
 ```
 

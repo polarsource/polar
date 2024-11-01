@@ -4,6 +4,7 @@ import { computeComplementaryColor } from '@/components/Profile/utils'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
+import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
 import {
@@ -17,6 +18,7 @@ import {
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
@@ -327,6 +329,7 @@ export const StorefrontSidebar = () => {
   )
 
   const storefrontEnabled = organization.profile_settings?.enabled ?? false
+  const githubFundingYAML = `polar: ${organization.slug}`
 
   return (
     <StorefrontSidebarContentWrapper
@@ -336,6 +339,28 @@ export const StorefrontSidebar = () => {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
         <StorefrontForm />
+
+        <div className="border bg-white py-4 px-4 rounded-2xl">
+          <div className="flex flex-row gap-y-2 items-center">
+            <GitHubIcon width={16} height={16} className="mr-2" />
+            <strong className="font-normal">
+              Promote on GitHub
+            </strong>
+          </div>
+          <div className="flex flex-col mt-2 gap-4">
+            <CopyToClipboardInput value={githubFundingYAML} />
+            <p className="text-xs">
+              Polar storefronts are officially supported by GitHub in your {' '}
+              <a
+                className="font-bold text-blue-500 dark:text-blue-200"
+                href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository"
+              >
+                FUNDING.yaml
+              </a>.
+            </p>
+          </div>
+        </div>
+
         <div className="flex flex-row items-center gap-x-4">
           <Button
             className="self-start"

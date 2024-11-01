@@ -50,8 +50,8 @@ const remarkMdxFrontmatter = (opengraphImageUrl) => ({
       : {}
 
       data.openGraph = {
-        ...data.openGraph,
         ...openGraph,
+        ...data.openGraph
       }
     }
 

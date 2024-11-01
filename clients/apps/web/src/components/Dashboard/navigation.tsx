@@ -263,6 +263,10 @@ const fundingRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/issues/badge`,
       },
       {
+        title: 'Embeds',
+        link: `/dashboard/${org.slug}/issues/embed`,
+      },
+      {
         title: 'Organizations',
         link: `/dashboard/${org.slug}/issues/organizations`,
       },
@@ -277,14 +281,6 @@ const fundingRoutesList = (org: Organization): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org.slug}/donations`)
     },
     if: true,
-  },
-  {
-    id: 'promote',
-    title: 'Promote',
-    icon: <WifiTetheringOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/promote`,
-    if: true,
-    subs: undefined,
   },
 ]
 

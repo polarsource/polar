@@ -623,9 +623,80 @@ class StripeService:
 
         invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
         invoice_id = get_expandable_id(invoice)
+        invoice = await self._pay_out_of_band_subscription_invoice(
+            invoice_id, invoice_metadata, idempotency_key
+        )
+        return subscription, invoice
+
+    async def update_out_of_band_subscription(
+        self,
+        *,
+        subscription_id: str,
+        old_price: str,
+        new_price: str,
+        metadata: dict[str, str] | None = None,
+        invoice_metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
+        subscription = await stripe_lib.Subscription.retrieve_async(subscription_id)
+
+        modify_params: stripe_lib.Subscription.ModifyParams = {
+            "collection_method": "send_invoice",
+            "days_until_due": 0,
+            "automatic_tax": {"enabled": True},
+        }
+        if metadata is not None:
+            modify_params["metadata"] = metadata
+        if idempotency_key is not None:
+            modify_params["idempotency_key"] = idempotency_key
+
+        old_items = subscription["items"]
+        new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []
+        for item in old_items:
+            if item.price.id == old_price:
+                new_items.append({"id": item.id, "deleted": True})
+        new_items.append({"price": new_price, "quantity": 1})
+        modify_params["items"] = new_items
+
+        subscription = await stripe_lib.Subscription.modify_async(
+            subscription_id, **modify_params
+        )
+
+        if subscription.latest_invoice is None:
+            raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
+
+        invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
+        invoice_id = get_expandable_id(invoice)
+        invoice = await self._pay_out_of_band_subscription_invoice(
+            invoice_id, invoice_metadata, idempotency_key
+        )
+
+        return subscription, invoice
+
+    async def set_automatically_charged_subscription(
+        self,
+        subscription_id: str,
+        payment_method: str | None,
+        *,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Subscription:
+        params: stripe_lib.Subscription.ModifyParams = {
+            "collection_method": "charge_automatically",
+            "idempotency_key": idempotency_key,
+        }
+        if payment_method is not None:
+            params["default_payment_method"] = payment_method
+        return await stripe_lib.Subscription.modify_async(subscription_id, **params)
+
+    async def _pay_out_of_band_subscription_invoice(
+        self,
+        invoice_id: str,
+        metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Invoice:
         invoice = await stripe_lib.Invoice.modify_async(
             invoice_id,
-            metadata=invoice_metadata or {},
+            metadata=metadata or {},
             idempotency_key=f"{idempotency_key}_update_invoice"
             if idempotency_key is not None
             else None,
@@ -646,22 +717,7 @@ class StripeService:
                 else None,
             )
 
-        return subscription, invoice
-
-    async def set_automatically_charged_subscription(
-        self,
-        subscription_id: str,
-        payment_method: str | None,
-        *,
-        idempotency_key: str | None = None,
-    ) -> stripe_lib.Subscription:
-        params: stripe_lib.Subscription.ModifyParams = {
-            "collection_method": "charge_automatically",
-            "idempotency_key": idempotency_key,
-        }
-        if payment_method is not None:
-            params["default_payment_method"] = payment_method
-        return await stripe_lib.Subscription.modify_async(subscription_id, **params)
+        return invoice
 
     async def create_out_of_band_invoice(
         self,

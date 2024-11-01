@@ -50,6 +50,7 @@ from tests.fixtures.random_objects import (
     create_checkout,
     create_checkout_link,
     create_product_price_fixed,
+    create_subscription,
     create_user,
 )
 
@@ -125,6 +126,24 @@ async def checkout_confirmed_recurring(
 ) -> Checkout:
     return await create_checkout(
         save_fixture, price=product.prices[0], status=CheckoutStatus.confirmed
+    )
+
+
+@pytest_asyncio.fixture
+async def checkout_confirmed_recurring_upgrade(
+    save_fixture: SaveFixture,
+    product: Product,
+    product_recurring_free_price: Product,
+    user_second: User,
+) -> Checkout:
+    subscription = await create_subscription(
+        save_fixture, product=product_recurring_free_price, user=user_second
+    )
+    return await create_checkout(
+        save_fixture,
+        price=product.prices[0],
+        status=CheckoutStatus.confirmed,
+        subscription=subscription,
     )
 
 
@@ -278,6 +297,64 @@ class TestCreate:
                         "product_price_id": price.id,
                         **payload,
                     }
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_not_existing_subscription(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    subscription_id=uuid.uuid4(),
+                    metadata={"key": "value"},
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_paid_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, product=product, user=user_second
+        )
+
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    subscription_id=subscription.id,
+                    metadata={"key": "value"},
                 ),
                 auth_subject,
             )
@@ -520,6 +597,42 @@ class TestCreate:
         assert checkout.tax_amount == 100
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_subscription_upgrade(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+        product_recurring_free_price: Product,
+        user_second: User,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, product=product_recurring_free_price, user=user_second
+        )
+
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                subscription_id=subscription.id,
+                metadata={"key": "value"},
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product_price == price
+        assert checkout.product == product
+        assert checkout.subscription == subscription
 
 
 @pytest.mark.asyncio
@@ -1417,6 +1530,33 @@ class TestHandleStripeSuccess:
             stripe_service_mock.create_out_of_band_invoice.call_args[1]["price"]
             == "STRIPE_CUSTOM_PRICE_ID"
         )
+
+    async def test_valid_recurring_upgrade(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_recurring_upgrade: Checkout,
+    ) -> None:
+        stripe_service_mock.update_out_of_band_subscription.return_value = (
+            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
+            SimpleNamespace(
+                id="STRIPE_INVOICE_ID",
+                total=checkout_confirmed_recurring_upgrade.total_amount,
+            ),
+        )
+
+        checkout = await checkout_service.handle_stripe_success(
+            session,
+            checkout_confirmed_recurring_upgrade.id,
+            build_stripe_payment_intent(
+                amount=checkout_confirmed_recurring_upgrade.total_amount or 0
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        stripe_service_mock.update_out_of_band_subscription.assert_called_once()
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
 
 
 @pytest.mark.asyncio

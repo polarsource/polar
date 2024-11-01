@@ -123,7 +123,11 @@ class Subscription(MetadataMixin, RecordModel):
 
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
-        return relationship("Checkout", lazy="raise")
+        return relationship(
+            "Checkout",
+            lazy="raise",
+            foreign_keys=[cls.checkout_id],  # type: ignore
+        )
 
     @declared_attr
     def grants(cls) -> Mapped[list["BenefitGrant"]]:

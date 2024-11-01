@@ -60,6 +60,16 @@ export async function generateMetadata({
       metadata.method,
       metadata.apiEndpointPath,
     ].join(', '),
+    openGraph: {
+      images: [
+        `${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/docs/og?${new URLSearchParams(
+          {
+            title: metadata.operation.summary ?? '',
+            description: metadata.operation.description ?? '',
+          },
+        ).toString()}`,
+      ],
+    },
   }
 }
 

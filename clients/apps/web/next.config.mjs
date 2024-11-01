@@ -9,7 +9,8 @@ import remarkFlexibleToc from 'remark-flexible-toc'
 import { bundledLanguages, createHighlighter } from 'shiki'
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 import remarkFrontmatter from 'remark-frontmatter'
-import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
+import mdxMetadata from '@polar-sh/mdx'
+
 const POLAR_AUTH_COOKIE_KEY = process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
@@ -415,7 +416,8 @@ const createConfig = async () => {
       remarkPlugins: [
         remarkFrontmatter,
         // Automatically turns frontmatter into NextJS Metadata
-        (tree, file) => remarkMdxFrontmatter({name: 'metadata'}, tree, file),
+        // Also automatically generates an OpenGraph image URL
+        mdxMetadata(`${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/docs/og`),
         remarkGfm,
         remarkFlexibleToc,
         () => (tree, file) => ({

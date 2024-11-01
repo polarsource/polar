@@ -1,0 +1,14 @@
+{
+  "name": "@polar-sh/mdx",
+  "version": "0.0.0",
+  "license": "MIT",
+  "main": "mdx-metadata.js",
+  "private": true,
+  "dependencies": {
+    "estree-util-is-identifier-name": "^3.0.0",
+    "estree-util-value-to-estree": "^3.1.2",
+    "toml": "^3.0.0",
+    "yaml": "^2.6.0"
+  },
+  "type": "module"
+}

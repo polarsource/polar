@@ -226,13 +226,21 @@ Configuring a webhook is simple. Head over to your organization's settings page 
 
 ### Tunneling webhook events to your local development environment
 
-If you're developing locally, you can use a tool like [ngrok](https://ngrok.com/) to tunnel webhook events to your local development environment. This will allow you to test your webhook handlers without deploying them to a live server.
+If you're developing locally, you can use a tool like [ngrok](https://ngrok.com/) or [Lokal](https://lokal.so/) to tunnel webhook events to your local development environment, both offer free plans. This will allow you to test your webhook handlers without deploying them to a live server.
 
 Run the following command to start an ngrok tunnel:
 
 ```bash
 ngrok http 3000
 ```
+
+If you prefer both CLI & GUI version, you can use [Lokal](https://lokal.so/).
+
+![](./tunnel-new.png)
+
+You can also inspect incoming Polar Webhook in Real-time and Replay Webhook events to test your webhook handlers.
+
+![](./webhook-replay.png)
 
 ### Add Webhook Endpoint
 

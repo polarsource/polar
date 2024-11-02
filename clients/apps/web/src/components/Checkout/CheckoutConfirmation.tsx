@@ -135,6 +135,10 @@ export const CheckoutConfirmation = ({
     }
   }, [email, router, organization, sendMagicLink])
 
+  const productHasLicenseKeys = product.benefits.some(
+    (benefit) => benefit.type === 'license_keys',
+  )
+
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-sm flex-col gap-y-8">
@@ -181,16 +185,18 @@ export const CheckoutConfirmation = ({
         )}
         {status === CheckoutStatus.SUCCEEDED && (
           <>
-            <ShadowBox className="flex flex-col gap-y-6">
-              <h3>License Keys</h3>
-              <div className="flex flex-col gap-y-2">
-                {product.benefits
-                  .filter((benefit) => benefit.type === 'license_keys')
-                  .map((benefit) => (
-                    <LicenseKey key={benefit.id} publicBenefit={benefit} />
-                  ))}
-              </div>
-            </ShadowBox>
+            {productHasLicenseKeys && (
+              <ShadowBox className="flex flex-col gap-y-6">
+                <h3>License Keys</h3>
+                <div className="flex flex-col gap-y-2">
+                  {product.benefits
+                    .filter((benefit) => benefit.type === 'license_keys')
+                    .map((benefit) => (
+                      <LicenseKey key={benefit.id} publicBenefit={benefit} />
+                    ))}
+                </div>
+              </ShadowBox>
+            )}
             {currentUser ? (
               <Link className="grow" href={disabled ? '#' : `/purchases`}>
                 <Button className="w-full" size="lg" disabled={disabled}>

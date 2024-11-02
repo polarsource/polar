@@ -3,12 +3,13 @@ import {
   PersonalAccessTokenCreate,
   UserAdvertisementCampaignCreate,
   UserAdvertisementCampaignUpdate,
+  UserSubscriptionUpdate,
   UsersAdvertisementsApiEnableRequest,
   UsersAdvertisementsApiListRequest,
   UsersBenefitsApiListRequest,
+  UsersLicenseKeysApiListRequest,
   UsersOrdersApiListRequest,
   UsersSubscriptionsApiListRequest,
-  UserSubscriptionUpdate,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -92,6 +93,23 @@ export const useCancelSubscription = (id: string) =>
         queryKey: ['user', 'subscriptions'],
       })
     },
+  })
+
+export const useUserBenefit = (id?: string) =>
+  useQuery({
+    queryKey: ['user', 'benefit', 'id', id],
+    queryFn: () => api.usersBenefits.get({ id: id ?? '' }),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+export const useUserLicenseKeys = (
+  parameters: UsersLicenseKeysApiListRequest = {},
+) =>
+  useQuery({
+    queryKey: ['user', 'licenseKeys', parameters],
+    queryFn: () => api.usersLicenseKeys.list(parameters),
+    retry: defaultRetry,
   })
 
 export const useUserBenefits = (parameters: UsersBenefitsApiListRequest = {}) =>

@@ -709,14 +709,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout_id: uuid.UUID,
         payment_intent: stripe_lib.PaymentIntent,
     ) -> Checkout:
-        checkout = await self.get(
-            session,
-            checkout_id,
-            options=(
-                joinedload(Checkout.product).joinedload(Product.product_medias),
-                joinedload(Checkout.product_price),
-            ),
-        )
+        checkout = await self._get_eager_loaded_checkout(session, checkout_id)
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -823,7 +816,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout_id: uuid.UUID,
         payment_intent: stripe_lib.PaymentIntent,
     ) -> Checkout:
-        checkout = await self.get(session, checkout_id)
+        checkout = await self._get_eager_loaded_checkout(session, checkout_id)
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -844,14 +837,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def handle_free_success(
         self, session: AsyncSession, checkout_id: uuid.UUID
     ) -> Checkout:
-        checkout = await self.get(
-            session,
-            checkout_id,
-            options=(
-                joinedload(Checkout.product).joinedload(Product.product_medias),
-                joinedload(Checkout.product_price),
-            ),
-        )
+        checkout = await self._get_eager_loaded_checkout(session, checkout_id)
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -1208,6 +1194,18 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         return stripe_customer_id
+
+    async def _get_eager_loaded_checkout(
+        self, session: AsyncSession, checkout_id: uuid.UUID
+    ) -> Checkout | None:
+        return await self.get(
+            session,
+            checkout_id,
+            options=(
+                joinedload(Checkout.product).joinedload(Product.product_medias),
+                joinedload(Checkout.product_price),
+            ),
+        )
 
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout

@@ -406,8 +406,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         subscription.checkout = checkout
         subscription.user_metadata = {
-            **(checkout.user_metadata if checkout is not None else {}),
             **(subscription.user_metadata or {}),
+            **(checkout.user_metadata if checkout is not None else {}),
         }
 
         subscription.set_started_at()
@@ -512,6 +512,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
         subscription.price = price
         subscription.product = price.product
+
+        # Get Checkout if available
+        checkout: Checkout | None = None
+        if (checkout_id := stripe_subscription.metadata.get("checkout_id")) is not None:
+            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
+            if checkout is None:
+                raise CheckoutDoesNotExist(stripe_subscription.id, checkout_id)
+        subscription.user_metadata = {
+            **(subscription.user_metadata or {}),
+            **(checkout.user_metadata if checkout is not None else {}),
+        }
 
         session.add(subscription)
 

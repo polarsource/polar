@@ -368,10 +368,10 @@ class TestCreateSubscriptionFromStripe:
             user=user,
         )
 
-        assert product.stripe_product_id is not None
+        price = product.prices[0]
         stripe_subscription = construct_stripe_subscription(
             user=user,
-            price_id=product.prices[0].stripe_price_id,
+            price_id=price.stripe_price_id,
             status=SubscriptionStatus.active,
             metadata={"subscription_id": str(existing_subscription.id)},
         )
@@ -385,8 +385,9 @@ class TestCreateSubscriptionFromStripe:
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.id == existing_subscription.id
-        assert subscription.product_id == product.id
         assert subscription.started_at == existing_subscription.started_at
+        assert subscription.price == price
+        assert subscription.product == product
 
         # load user
         user_loaded = await user_service.get(session, user.id)
@@ -511,6 +512,50 @@ class TestUpdateSubscriptionFromStripe:
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.cancel_at_period_end is True
+
+        enqueue_benefits_grants_mock.assert_called_once()
+
+    async def test_valid_new_price(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_free_price: Product,
+        product: Product,
+        user: User,
+    ) -> None:
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
+        free_price = product_recurring_free_price.prices[0]
+        paid_price = product.prices[0]
+
+        stripe_subscription = construct_stripe_subscription(
+            status=SubscriptionStatus.active, price_id=paid_price.stripe_price_id
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            price=free_price,
+            user=user,
+            stripe_subscription_id=stripe_subscription.id,
+        )
+        assert subscription.started_at is None
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.started_at is not None
+        assert updated_subscription.price == paid_price
+        assert updated_subscription.product == product
 
         enqueue_benefits_grants_mock.assert_called_once()
 

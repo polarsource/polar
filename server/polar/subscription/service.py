@@ -511,6 +511,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 stripe_subscription.id, price_id
             )
         subscription.price = price
+        subscription.product = price.product
 
         session.add(subscription)
 

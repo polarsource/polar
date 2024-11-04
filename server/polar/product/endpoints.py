@@ -40,14 +40,9 @@ ListSorting = Annotated[
 async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    auth_subject: auth.CreatorProductsReadOrAnonymous,
+    auth_subject: auth.CreatorProductsRead,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None,
-        title="OrganizationID Filter",
-        description=(
-            "Filter by organization ID. "
-            "**Required unless you use an organization token.**"
-        ),
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     query: str | None = Query(None, description="Filter by product name."),
     is_archived: bool | None = Query(None, description="Filter on archived products."),
@@ -94,7 +89,7 @@ async def list(
 )
 async def get(
     id: ProductID,
-    auth_subject: auth.CreatorProductsReadOrAnonymous,
+    auth_subject: auth.CreatorProductsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Get a product by ID."""

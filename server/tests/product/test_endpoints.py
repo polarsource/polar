@@ -21,30 +21,26 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestListProducts:
     async def test_anonymous(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        products: list[Product],
+        self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
             "/v1/products/",
             params={"organization_id": str(organization.id)},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 401
 
-        json = response.json()
-        assert json["pagination"]["total_count"] == 2
-
+    @pytest.mark.auth
     async def test_with_benefits(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
+        user_organization: UserOrganization,
         product: Product,
         benefits: list[Benefit],
     ) -> None:
@@ -77,18 +73,25 @@ class TestListProducts:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 class TestGetProduct:
-    @pytest.mark.http_auto_expunge
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/products/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
-    @pytest.mark.http_auto_expunge
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
         product: Product,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.get(f"/v1/products/{product.id}")
 
@@ -97,6 +100,7 @@ class TestGetProduct:
         json = response.json()
         assert json["id"] == str(product.id)
 
+    @pytest.mark.auth
     async def test_valid_with_benefits(
         self,
         session: AsyncSession,
@@ -104,6 +108,7 @@ class TestGetProduct:
         client: AsyncClient,
         product: Product,
         benefits: list[Benefit],
+        user_organization: UserOrganization,
     ) -> None:
         product = await add_product_benefits(
             save_fixture,
@@ -127,8 +132,8 @@ class TestGetProduct:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 class TestCreateProduct:
-    @pytest.mark.http_auto_expunge
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/products/",
@@ -143,7 +148,6 @@ class TestCreateProduct:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    @pytest.mark.http_auto_expunge
     async def test_cant_create_free_type_tier(
         self,
         client: AsyncClient,
@@ -322,7 +326,7 @@ class TestCreateProduct:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestUpdateProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.patch(
@@ -400,7 +404,7 @@ class TestUpdateProduct:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestUpdateProductBenefits:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(

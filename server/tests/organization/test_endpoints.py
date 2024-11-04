@@ -14,65 +14,31 @@ from tests.fixtures.database import SaveFixture
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestListOrganizations:
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="anonymous"),
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_no_filter(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-        organization_blocked: Organization,
-    ) -> None:
+    async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/organizations/")
 
-        assert response.status_code == 422
+        assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_filter_slug(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-        organization_blocked: Organization,
-    ) -> None:
-        response = await client.get(
-            "/v1/organizations/", params={"slug": organization.slug}
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        assert json["items"][0]["id"] == str(organization.id)
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="anonymous"))
-    async def test_filter_anonymous_is_member_true(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-        organization_blocked: Organization,
-    ) -> None:
-        response = await client.get("/v1/organizations/", params={"is_member": True})
+    async def test_not_member(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/organizations/")
 
         assert response.status_code == 200
 
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
-    async def test_filter_user_is_member_true(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
         self,
         client: AsyncClient,
         organization: Organization,
-        organization_second: Organization,
-        organization_blocked: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.get("/v1/organizations/", params={"is_member": True})
+        response = await client.get("/v1/organizations/")
 
         assert response.status_code == 200
 
@@ -80,29 +46,26 @@ class TestListOrganizations:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(organization.id)
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
-    async def test_filter_user_is_member_false(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-        organization_blocked: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.get("/v1/organizations/", params={"is_member": False})
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        assert json["items"][0]["id"] == str(organization_second.id)
-
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestGetOrganization:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 404
+
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="anonymous"),
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
@@ -112,21 +75,15 @@ class TestGetOrganization:
         assert response.status_code == 404
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="anonymous"), AuthSubjectFixture(subject="user")
-    )
-    async def test_blocked(
-        self, client: AsyncClient, organization_blocked: Organization
-    ) -> None:
-        response = await client.get(f"/v1/organizations/{organization_blocked.id}")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="anonymous"),
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid(self, client: AsyncClient, organization: Organization) -> None:
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
         response = await client.get(f"/v1/organizations/{organization.id}")
 
         assert response.status_code == 200
@@ -150,7 +107,7 @@ class TestUpdateOrganization:
     ) -> None:
         response = await client.patch(f"/v1/organizations/{organization.id}", json={})
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     @pytest.mark.auth
     async def test_valid_user(

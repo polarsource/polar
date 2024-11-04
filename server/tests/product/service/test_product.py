@@ -1,13 +1,12 @@
 import uuid
 from types import SimpleNamespace
-from typing import Any, TypeVar
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.auth.models import Anonymous, AuthMethod, AuthSubject, Subject
-from polar.auth.scope import Scope
+from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
@@ -43,17 +42,6 @@ from tests.fixtures.random_objects import (
     create_product,
 )
 
-S = TypeVar("S", bound=Subject)
-
-
-def get_auth_subject(
-    subject: S,
-    *,
-    scopes: set[Scope] = {Scope.web_default},
-    auth_method: AuthMethod = AuthMethod.COOKIE,
-) -> AuthSubject[S]:
-    return AuthSubject[S](subject, scopes, auth_method)
-
 
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
@@ -67,25 +55,6 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
 
 @pytest.mark.asyncio
 class TestList:
-    async def test_anonymous(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        session: AsyncSession,
-        products: list[Product],
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            pagination=PaginationParams(1, 10),
-            organization_id=[products[0].organization_id],
-        )
-
-        assert count == 2
-        assert len(results) == 2
-
     @pytest.mark.auth
     async def test_user(
         self,
@@ -104,8 +73,8 @@ class TestList:
             organization_id=[products[0].organization_id],
         )
 
-        assert count == 2
-        assert len(results) == 2
+        assert count == 0
+        assert len(results) == 0
 
     @pytest.mark.auth
     async def test_user_organization(
@@ -152,6 +121,7 @@ class TestList:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        user_organization: UserOrganization,
     ) -> None:
         recurring_product = await create_product(
             save_fixture,
@@ -201,6 +171,7 @@ class TestList:
         products: list[Product],
         product: Product,
         product_second: Product,
+        user_organization: UserOrganization,
     ) -> None:
         # then
         session.expunge_all()
@@ -218,8 +189,10 @@ class TestList:
         assert results[0].id == product.id
         assert results[1].id == product_second.id
 
+    @pytest.mark.auth
     async def test_filter_is_archived(
         self,
+        auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
@@ -233,27 +206,6 @@ class TestList:
         # then
         session.expunge_all()
 
-        # Anonymous
-        results, count = await product_service.list(
-            session,
-            get_auth_subject(Anonymous()),
-            is_archived=False,
-            organization_id=[archived_product.organization_id],
-            pagination=PaginationParams(1, 10),
-        )
-        assert count == 0
-        assert len(results) == 0
-        results, count = await product_service.list(
-            session,
-            get_auth_subject(Anonymous()),
-            organization_id=[archived_product.organization_id],
-            pagination=PaginationParams(1, 10),
-        )
-        assert count == 0
-        assert len(results) == 0
-
-        # User
-        auth_subject = get_auth_subject(user)
         results, count = await product_service.list(
             session,
             auth_subject,
@@ -273,40 +225,6 @@ class TestList:
         assert len(results) == 1
         assert results[0].id == archived_product.id
 
-    async def test_filter_include_archived_authed_non_member(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-    ) -> None:
-        archived_product = await create_product(
-            save_fixture, organization=organization, is_archived=True
-        )
-
-        # then
-        session.expunge_all()
-
-        # User
-        auth_subject = get_auth_subject(user)
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[archived_product.organization_id],
-            is_archived=False,
-            pagination=PaginationParams(1, 10),
-        )
-        assert count == 0
-        assert len(results) == 0
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[archived_product.organization_id],
-            pagination=PaginationParams(1, 10),
-        )
-        assert count == 0
-        assert len(results) == 0
-
     @pytest.mark.auth
     async def test_filter_benefit_id(
         self,
@@ -317,6 +235,7 @@ class TestList:
         products: list[Product],
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
+        user_organization: UserOrganization,
     ) -> None:
         for product in products[:2]:
             await add_product_benefits(
@@ -342,210 +261,9 @@ class TestList:
         assert results[0].id == products[0].id
         assert results[1].id == products[1].id
 
-    async def test_pagination(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-        user_organization: UserOrganization,
-        user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
-    ) -> None:
-        benefits = []
-        for _ in range(10):
-            benefits.append(
-                await create_benefit(save_fixture, organization=organization)
-            )
-
-        products = []
-        for _ in range(10):
-            products.append(
-                await create_product(
-                    save_fixture,
-                    organization=organization,
-                )
-            )
-
-        # and some archived products
-        for _ in range(10):
-            products.append(
-                await create_product(
-                    save_fixture,
-                    organization=organization,
-                    is_archived=True,
-                )
-            )
-
-        # test that benefits doesn't affect pagination
-        for p in products:
-            await add_product_benefits(
-                save_fixture,
-                product=p,
-                benefits=benefits,
-            )
-
-        # then
-        session.expunge_all()
-
-        # unauthenticated
-        results, count = await product_service.list(
-            session,
-            get_auth_subject(Anonymous()),
-            organization_id=[organization.id],
-            pagination=PaginationParams(1, 8),  # page 1, limit 8
-        )
-        assert 10 == count
-        assert 8 == len(results)
-        results, count = await product_service.list(
-            session,
-            get_auth_subject(Anonymous()),
-            organization_id=[organization.id],
-            pagination=PaginationParams(2, 8),  # page 2, limit 8
-        )
-        assert 10 == count
-        assert 2 == len(results)
-
-        # authed, can see archived
-        auth_subject = get_auth_subject(user)
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[organization.id],
-            pagination=PaginationParams(1, 8),  # page 1, limit 8
-        )
-        assert 20 == count
-        assert 8 == len(results)
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[organization.id],
-            pagination=PaginationParams(2, 8),  # page 2, limit 8
-        )
-        assert 20 == count
-        assert 8 == len(results)
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            organization_id=[organization.id],
-            pagination=PaginationParams(3, 8),  # page 3, limit 8
-        )
-        assert 20 == count
-        assert 4 == len(results)
-
-    async def test_pagination_prices(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-        user_organization: UserOrganization,
-        user_organization_second: UserOrganization,  # joined data, make sure that it doesn't affect anything...
-    ) -> None:
-        benefits = []
-        for _ in range(10):
-            benefits.append(
-                await create_benefit(save_fixture, organization=organization)
-            )
-
-        products = []
-        for _ in range(3):
-            products.append(
-                await create_product(
-                    save_fixture,
-                    organization=organization,
-                    prices=[
-                        (
-                            1000,
-                            ProductPriceType.recurring,
-                            SubscriptionRecurringInterval.month,
-                        ),
-                        (
-                            2000,
-                            ProductPriceType.recurring,
-                            SubscriptionRecurringInterval.year,
-                        ),
-                    ],
-                )
-            )
-
-        # # and some archived products
-        for _ in range(4):
-            products.append(
-                await create_product(
-                    save_fixture,
-                    organization=organization,
-                    is_archived=True,
-                    prices=[
-                        (
-                            1000,
-                            ProductPriceType.recurring,
-                            SubscriptionRecurringInterval.month,
-                        ),
-                        (
-                            2000,
-                            ProductPriceType.recurring,
-                            SubscriptionRecurringInterval.year,
-                        ),
-                    ],
-                )
-            )
-
-        # test that benefits doesn't affect pagination
-        for t in products:
-            await add_product_benefits(
-                save_fixture,
-                product=t,
-                benefits=benefits,
-            )
-
-        # then
-        session.expunge_all()
-
-        # unauthenticated
-        results, count = await product_service.list(
-            session,
-            get_auth_subject(Anonymous()),
-            pagination=PaginationParams(1, 8),
-            organization_id=[organization.id],
-        )
-        assert 3 == count
-        assert 3 == len(results)
-
-        # authed, can see private and archived
-        auth_subject = get_auth_subject(user)
-        results, count = await product_service.list(
-            session,
-            auth_subject,
-            pagination=PaginationParams(1, 8),  # page 1, limit 8
-            organization_id=[organization.id],
-        )
-
-        assert 7 == count
-        assert 7 == len(results)
-
 
 @pytest.mark.asyncio
 class TestGetById:
-    async def test_anonymous(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        session: AsyncSession,
-        product: Product,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        not_existing_product = await product_service.get_by_id(
-            session, auth_subject, uuid.uuid4()
-        )
-        assert not_existing_product is None
-
-        accessible_product = await product_service.get_by_id(
-            session, auth_subject, product.id
-        )
-        assert accessible_product is not None
-        assert accessible_product.id == product.id
-
     @pytest.mark.auth
     async def test_user(
         self,
@@ -556,16 +274,10 @@ class TestGetById:
         # then
         session.expunge_all()
 
-        not_existing_product = await product_service.get_by_id(
-            session, auth_subject, uuid.uuid4()
-        )
-        assert not_existing_product is None
-
-        accessible_product = await product_service.get_by_id(
+        retrieved_product = await product_service.get_by_id(
             session, auth_subject, product.id
         )
-        assert accessible_product is not None
-        assert accessible_product.id == product.id
+        assert retrieved_product is None
 
     @pytest.mark.auth
     async def test_user_organization(

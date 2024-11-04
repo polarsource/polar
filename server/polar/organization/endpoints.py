@@ -9,7 +9,6 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import (
     InternalServerError,
     NotPermitted,
-    PolarRequestValidationError,
     ResourceNotFound,
     Unauthorized,
 )
@@ -34,8 +33,6 @@ from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
-    OrganizationCustomer,
-    OrganizationCustomerType,
     OrganizationID,
     OrganizationSetAccount,
     OrganizationStripePortalSession,
@@ -61,38 +58,17 @@ OrganizationNotFound = {
     tags=[APITag.documented, APITag.featured],
 )
 async def list(
-    auth_subject: auth.AnonymousOrganizationsRead,
+    auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     slug: str | None = Query(None, description="Filter by slug."),
-    is_member: bool | None = Query(
-        None,
-        description=(
-            "Filter by membership. "
-            "If `true`, only organizations the user is a member of are returned. "
-            "If `false`, only organizations the user is not a member of are returned."
-        ),
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
     """List organizations."""
-    if slug is None and is_member is None:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("query",),
-                    "msg": "At least one of 'slug' or 'is_member' must be provided.",
-                    "type": "missing",
-                    "input": None,
-                }
-            ]
-        )
-
     results, count = await organization_service.list(
         session,
         auth_subject,
         slug=slug,
-        is_member=is_member,
         pagination=pagination,
         sorting=sorting,
     )
@@ -113,7 +89,7 @@ async def list(
 )
 async def get(
     id: OrganizationID,
-    auth_subject: auth.AnonymousOrganizationsRead,
+    auth_subject: auth.OrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Get an organization by ID."""
@@ -192,45 +168,6 @@ async def update(
 
     return await organization_service.update(
         session, authz, organization, organization_update, auth_subject
-    )
-
-
-@router.get(
-    "/{id}/customers",
-    summary="List Organization Customers",
-    response_model=ListResource[OrganizationCustomer],
-    responses={404: OrganizationNotFound},
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-)
-async def customers(
-    id: OrganizationID,
-    auth_subject: auth.AnonymousOrganizationsRead,
-    pagination: PaginationParamsQuery,
-    customer_types: set[OrganizationCustomerType] = Query(
-        {
-            OrganizationCustomerType.free_subscription,
-            OrganizationCustomerType.paid_subscription,
-            OrganizationCustomerType.order,
-            OrganizationCustomerType.donation,
-        },
-        description="Filter by the type of purchase the customer made.",
-    ),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[OrganizationCustomer]:
-    """List organization customers."""
-    organization = await organization_service.get_by_id(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    results, count = await organization_service.list_customers(
-        session, organization, customer_types=customer_types, pagination=pagination
-    )
-
-    return ListResource.from_paginated_results(
-        [OrganizationCustomer.model_validate(result) for result in results],
-        count,
-        pagination,
     )
 
 

@@ -15579,10 +15579,6 @@
             "format": "uuid4",
             "title": "Id"
           },
-          "username": {
-            "type": "string",
-            "title": "Username"
-          },
           "email": {
             "type": "string",
             "format": "email",
@@ -15603,7 +15599,6 @@
         "type": "object",
         "required": [
           "id",
-          "username",
           "email",
           "avatar_url"
         ],
@@ -28585,18 +28580,25 @@
       },
       "User": {
         "properties": {
-          "username": {
+          "public_name": {
             "type": "string",
-            "title": "Username"
+            "title": "Public Name"
           },
           "avatar_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Avatar Url"
           }
         },
         "type": "object",
         "required": [
-          "username",
+          "public_name",
           "avatar_url"
         ],
         "title": "User"
@@ -28824,11 +28826,6 @@
       },
       "UserBase": {
         "properties": {
-          "username": {
-            "type": "string",
-            "maxLength": 50,
-            "title": "Username"
-          },
           "email": {
             "type": "string",
             "format": "email",
@@ -28860,7 +28857,6 @@
         },
         "type": "object",
         "required": [
-          "username",
           "email",
           "avatar_url",
           "account_id"
@@ -30916,6 +30912,18 @@
           },
           "product_price": {
             "$ref": "#/components/schemas/ProductPrice"
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id"
           }
         },
         "type": "object",
@@ -30946,7 +30954,8 @@
           "payment_processor_metadata",
           "metadata",
           "product",
-          "product_price"
+          "product_price",
+          "subscription_id"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."
@@ -31051,6 +31060,19 @@
             ],
             "title": "Customer Tax Id"
           },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
+          },
           "success_url": {
             "anyOf": [
               {
@@ -31073,7 +31095,7 @@
           "product_price_id"
         ],
         "title": "CheckoutCreate",
-        "description": "Create a new checkout session."
+        "description": "Create a new checkout session.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
       },
       "polar__enums__PaymentProcessor": {
         "type": "string",

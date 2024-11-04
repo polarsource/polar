@@ -3,11 +3,11 @@ from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
-from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, func, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject, Subject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
@@ -59,7 +59,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Subject],
+        auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
@@ -187,7 +187,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         return await paginate(session, statement, pagination=pagination)
 
     async def get_by_id(
-        self, session: AsyncSession, auth_subject: AuthSubject[Subject], id: uuid.UUID
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
     ) -> Product | None:
         statement = (
             self._get_readable_product_statement(auth_subject)
@@ -535,7 +538,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         return product
 
     def _get_readable_product_statement(
-        self, auth_subject: AuthSubject[Subject]
+        self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Product]]:
         statement = (
             select(Product)
@@ -549,31 +552,17 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         if is_user(auth_subject):
             user = auth_subject.subject
-            # Direct product's organization member
-            statement = statement.join(
-                UserOrganization,
-                onclause=and_(
-                    UserOrganization.organization_id == Product.organization_id,
-                    UserOrganization.user_id == user.id,
-                    UserOrganization.deleted_at.is_(None),
-                ),
-                full=True,
-            ).where(
-                # Can see archived products if they are a member of the products's org
-                or_(
-                    Product.is_archived.is_(False),
-                    UserOrganization.user_id == user.id,
-                ),
+            statement = statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
             )
-        # Organization
         elif is_organization(auth_subject):
             statement = statement.where(
                 Product.organization_id == auth_subject.subject.id
-            )
-        # Anonymous
-        else:
-            statement = statement.where(
-                Product.is_archived.is_(False),
             )
 
         return statement

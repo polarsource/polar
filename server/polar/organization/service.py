@@ -5,12 +5,12 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, false, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
-from polar.auth.models import Anonymous, AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
@@ -60,10 +60,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous | User | Organization],
+        auth_subject: AuthSubject[User | Organization],
         *,
         slug: str | None = None,
-        is_member: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrganizationSortProperty]] = [
             (OrganizationSortProperty.created_at, False)
@@ -73,35 +72,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         if slug is not None:
             statement = statement.where(Organization.slug == slug)
-
-        if is_member is not None:
-            if is_user(auth_subject):
-                user_organization_statement = select(
-                    UserOrganization.organization_id
-                ).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
-                )
-                if is_member:
-                    statement = statement.where(
-                        Organization.id.in_(user_organization_statement)
-                    )
-                else:
-                    statement = statement.where(
-                        Organization.id.not_in(user_organization_statement)
-                    )
-            elif is_organization(auth_subject):
-                if is_member:
-                    statement = statement.where(
-                        Organization.id == auth_subject.subject.id
-                    )
-                else:
-                    statement = statement.where(
-                        Organization.id != auth_subject.subject.id
-                    )
-            else:
-                if is_member:
-                    statement = statement.where(false())
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -117,7 +87,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous | User | Organization],
+        auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Organization | None:
         statement = self._get_readable_organization_statement(auth_subject).where(
@@ -482,13 +452,22 @@ class OrganizationService(ResourceServiceReader[Organization]):
         )
 
     def _get_readable_organization_statement(
-        self, auth_subject: AuthSubject[Anonymous | User | Organization]
+        self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Organization]]:
         statement = select(Organization).where(
             Organization.deleted_at.is_(None), Organization.blocked_at.is_(None)
         )
 
-        if is_organization(auth_subject):
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Organization.id.in_(
+                    select(UserOrganization.organization_id)
+                    .where(UserOrganization.user_id == user.id)
+                    .where(UserOrganization.deleted_at.is_(None))
+                )
+            )
+        elif is_organization(auth_subject):
             statement = statement.where(Organization.id == auth_subject.subject.id)
 
         return statement

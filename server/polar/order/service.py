@@ -374,7 +374,8 @@ class OrderService(ResourceServiceReader[Order]):
         # Payment can be skipped in two cases:
         # * The invoice total is zero, like a free product (obviously)
         # * A balance was applied to the invoice, generally because customer has a credit after a subscription downgrade
-        if invoice.amount_paid > 0:
+        # FIXME: need to find a better way to handle out-of-band, but that's a quick fix for now
+        if invoice.amount_paid > 0 or (invoice.paid_out_of_band and invoice.total > 0):
             charge_id = get_expandable_id(invoice.charge) if invoice.charge else None
             # With Polar Checkout, we mark the order paid out-of-band,
             # so we need to retrieve the charge manually from metadata

@@ -53,6 +53,7 @@ def construct_stripe_invoice(
     lines: list[tuple[str, bool, dict[str, str] | None]] = [("PRICE_ID", False, None)],
     metadata: dict[str, str] = {},
     billing_reason: str = "subscription_create",
+    paid_out_of_band: bool = False,
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
         {
@@ -76,6 +77,7 @@ def construct_stripe_invoice(
             },
             "metadata": metadata,
             "billing_reason": billing_reason,
+            "paid_out_of_band": paid_out_of_band,
         },
         None,
     )

@@ -60,7 +60,12 @@ SuccessURL = Annotated[
 
 
 class CheckoutCreate(MetadataInputMixin, Schema):
-    """Create a new checkout session."""
+    """
+    Create a new checkout session.
+
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription.
+    """
 
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
@@ -74,7 +79,11 @@ class CheckoutCreate(MetadataInputMixin, Schema):
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     subscription_id: UUID4 | None = Field(
         default=None,
-        description="ID of a subscription to upgrade. It must be on a free pricing.",
+        description=(
+            "ID of a subscription to upgrade. It must be on a free pricing. "
+            "If checkout is successful, metadata set on this checkout "
+            "will be copied to the subscription, and existing keys will be overwritten."
+        ),
     )
     success_url: SuccessURL = None
 
@@ -183,6 +192,7 @@ class Checkout(MetadataOutputMixin, CheckoutBase):
 
     product: Product
     product_price: ProductPrice
+    subscription_id: UUID4 | None
 
 
 class CheckoutPublic(CheckoutBase):

@@ -39,7 +39,6 @@ def create_github_organization(
         owned_private_repos=0,
         private_gists=0,
         disk_usage=0,
-        collaborators=0,
         billing_email="xx",
         plan=None,
         default_repository_permission="xx",

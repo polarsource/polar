@@ -365,14 +365,14 @@ wheels = [
 
 [[package]]
 name = "discord-webhook"
-version = "1.3.0"
+version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/95/913979b0b181143421d8f93735d3dbadb14ff268e503fb2513222c7bdff6/discord_webhook-1.3.0.tar.gz", hash = "sha256:1d44e6caf81810c5ebe6e2363a6fefee2cab915ad4c2e843a0ec088b0e54ed51", size = 11681 }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/e6/660b07356a15d98787d893f879efc404eb15176312d457f2f6f7090acd32/discord_webhook-1.3.1.tar.gz", hash = "sha256:ee3e0f3ea4f3dc8dc42be91f75b894a01624c6c13fea28e23ebcf9a6c9a304f7", size = 11715 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/43/82b473a9dd9a0aa6d289111ed9af889937d1e1566872798e0e943edd58a4/discord_webhook-1.3.0-py3-none-any.whl", hash = "sha256:666d57037620feff6fd0f6930714201eee8ca279003d3d217c1ad0ca0049e93b", size = 13194 },
+    { url = "https://files.pythonhosted.org/packages/92/e2/eed83ebc8d88da0930143a6dd1d0ba0b6deba1fd91b956f21c23a2608510/discord_webhook-1.3.1-py3-none-any.whl", hash = "sha256:ede07028316de76d24eb811836e2b818b2017510da786777adcb0d5970e7af79", size = 13206 },
 ]
 
 [package.optional-dependencies]
@@ -461,7 +461,7 @@ wheels = [
 
 [[package]]
 name = "githubkit"
-version = "0.11.13"
+version = "0.11.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "hishel" },
@@ -469,9 +469,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/91/9dbb620ca9264e3f2974fb9579eca1b8fda4041a4df8dae29463553dc943/githubkit-0.11.13.tar.gz", hash = "sha256:0d17ab5bffe98ba521fabd570c39be5d0301b9d3bf8508a89a6cd0bbc080d542", size = 1926189 }
+sdist = { url = "https://files.pythonhosted.org/packages/11/2d/e9f390a716bb479529b14a926502bdad34eed59fac425935860d9f211758/githubkit-0.11.14.tar.gz", hash = "sha256:a62af8a9e3c98e202c6fd2d56ea106f238aebf03a8282c34b757eba6eaeab72c", size = 1928635 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/41/82ec032a4a65e3444d4ca82520aa05220a030857e5e055050d2132800d22/githubkit-0.11.13-py3-none-any.whl", hash = "sha256:a1d52ed31cbcebaba7c6b2d6ba54b316ca00cbca6c2429ec88715a263a7c2fdc", size = 5149681 },
+    { url = "https://files.pythonhosted.org/packages/6c/04/97a2af76ee09f5dfae1a12bc63feaca8afd3883a26a84b3429d822449cca/githubkit-0.11.14-py3-none-any.whl", hash = "sha256:780f346515f68f9f27db1b486f83fd64fe4142ad42a75b79423064d3e99ece97", size = 5154740 },
 ]
 
 [[package]]
@@ -1200,7 +1200,7 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
-[package.dependency-groups]
+[package.dev-dependencies]
 backoffice = [
     { name = "halo" },
     { name = "textual" },
@@ -1239,10 +1239,10 @@ requires-dist = [
     { name = "babel", specifier = ">=2.16.0" },
     { name = "boto3", specifier = ">=1.35.15" },
     { name = "cryptography", specifier = ">=43.0.1" },
-    { name = "discord-webhook", extras = ["async"], specifier = "==1.3.0" },
+    { name = "discord-webhook", extras = ["async"], specifier = "==1.3.1" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "fastapi", specifier = ">=0.115.2" },
-    { name = "githubkit", specifier = "==0.11.13" },
+    { name = "githubkit", specifier = "==0.11.14" },
     { name = "greenlet", specifier = ">=3.1.1" },
     { name = "httpx", specifier = ">=0.23.0" },
     { name = "httpx-oauth", specifier = ">=0.15.1" },
@@ -1282,7 +1282,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.31.1" },
 ]
 
-[package.metadata.dependency-groups]
+[package.metadata.requires-dev]
 backoffice = [
     { name = "halo" },
     { name = "textual" },

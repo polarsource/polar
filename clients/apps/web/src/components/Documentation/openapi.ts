@@ -15,10 +15,16 @@ export enum HttpMethod {
   TRACE = 'trace',
 }
 
+let _schema: OpenAPIV3_1.Document | null = null
+
 export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
+  if (_schema) {
+    return _schema
+  }
   return new Promise((resolve) =>
     swaggerParser.dereference(openapiSchema as any).then((parsedSchema) => {
-      resolve(parsedSchema as OpenAPIV3_1.Document)
+      _schema = parsedSchema as OpenAPIV3_1.Document
+      resolve(_schema)
     }),
   )
 }
@@ -46,6 +52,7 @@ export const resolveEndpointMetadata = (
   const method = endpoint[endpoint.length - 1]
 
   if (!isMethod(method)) {
+    console.warn(`Invalid method: ${method}`)
     throw new EndpointError(endpoint)
   }
 
@@ -59,11 +66,13 @@ export const resolveEndpointMetadata = (
   }
 
   if (!apiEndpoint) {
+    console.error(`Endpoint not found: ${apiEndpointPath}`)
     throw new EndpointError(endpoint)
   }
 
   const operation = apiEndpoint?.[method]
   if (!operation) {
+    console.error('operation not found')
     throw new EndpointError(endpoint)
   }
 

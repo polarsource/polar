@@ -31,13 +31,7 @@ export async function generateStaticParams(): Promise<
     (paths, { endpoints }) => [
       ...paths,
       ...endpoints.map(({ path, method }) => ({
-        endpoint: [
-          ...path
-            .split('/')
-            .filter((part) => !!part)
-            .map(encodeURIComponent),
-          method,
-        ],
+        endpoint: [...path.split('/').filter((part) => !!part), method],
       })),
     ],
     [],

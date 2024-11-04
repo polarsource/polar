@@ -2,15 +2,23 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
+import { useLicenseKey } from '@/hooks/queries'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { api } from '@/utils/api'
-import { CheckoutPublic, CheckoutStatus, Organization } from '@polar-sh/sdk'
+import { ContentPasteOutlined } from '@mui/icons-material'
+import {
+  BenefitPublicInner,
+  CheckoutPublic,
+  CheckoutStatus,
+  Organization,
+} from '@polar-sh/sdk'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { loadStripe, Stripe } from '@stripe/stripe-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useEffect, useState } from 'react'
 import LogoType from '../Brand/LogoType'
@@ -128,6 +136,8 @@ export const CheckoutConfirmation = ({
     }
   }, [email, router, organization, sendMagicLink])
 
+  console.dir(checkout, { depth: Infinity })
+
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-sm flex-col gap-y-8">
@@ -176,6 +186,9 @@ export const CheckoutConfirmation = ({
         )}
         {status === CheckoutStatus.SUCCEEDED && (
           <>
+            {licenseKeyBenefit && (
+              <LicenseKeyBenefit benefit={licenseKeyBenefit} />
+            )}
             {currentUser ? (
               <Link className="grow" href={disabled ? '#' : `/purchases`}>
                 <Button className="w-full" size="lg" disabled={disabled}>
@@ -212,5 +225,47 @@ export const CheckoutConfirmation = ({
         <LogoType className="h-5" />
       </div>
     </ShadowBox>
+  )
+}
+
+const LicenseKeyBenefit = ({ benefit }: { benefit: BenefitPublicInner }) => {
+  if (benefit.type !== 'license_keys') {
+    return <></>
+  }
+
+  console.log(benefit)
+
+  const grant = benefit.grants[0]
+  const licenseKeyId = grant.properties.license_key_id
+  const licenseKeyQuery = useLicenseKey({ licenseKeyId })
+  const licenseKey = licenseKeyQuery.data
+
+  const onCopyKey = useCallback(() => {
+    navigator.clipboard.writeText(licenseKey?.key ?? '')
+  }, [licenseKey])
+
+  if (licenseKeyQuery.isLoading) {
+    // TODO: Style me
+    return <div>Loading...</div>
+  }
+
+  if (!licenseKey) {
+    return <></>
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-y-6">
+      <div className="flex flex-row items-center space-x-2">
+        <Input value={licenseKey.key} readOnly />
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-10 w-10"
+          onClick={onCopyKey}
+        >
+          <ContentPasteOutlined fontSize="inherit" />
+        </Button>
+      </div>
+    </div>
   )
 }

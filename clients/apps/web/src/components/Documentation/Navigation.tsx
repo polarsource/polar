@@ -387,7 +387,12 @@ export const GuidesNavigation = () => {
       <NavigationItem href="/docs/guides/node">
         Integrate with Node.js & Express
       </NavigationItem>
-      <NavigationItem href="/docs/guides/checkout">Integrate Checkouts</NavigationItem>
+      <NavigationItem href="/docs/guides/laravel">
+        Integrate with Laravel
+      </NavigationItem>
+      <NavigationItem href="/docs/guides/checkout">
+        Integrate Checkouts
+      </NavigationItem>
       <NavigationItem href="/docs/guides/figma">
         Figma Plugins with License Keys
       </NavigationItem>

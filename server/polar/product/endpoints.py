@@ -115,9 +115,7 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
-    return await product_service.user_create(
-        session, authz, product_create, auth_subject
-    )
+    return await product_service.create(session, authz, product_create, auth_subject)
 
 
 @router.patch(
@@ -146,7 +144,7 @@ async def update(
     if product is None:
         raise ResourceNotFound()
 
-    return await product_service.user_update(
+    return await product_service.update(
         session,
         authz,
         product,

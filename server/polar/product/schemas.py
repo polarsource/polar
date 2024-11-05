@@ -4,7 +4,11 @@ from typing import Annotated, Literal
 import stripe as stripe_lib
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
-from polar.benefit.schemas import BenefitID, BenefitPublic
+from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
+from polar.custom_field.attachment import (
+    AttachedCustomField,
+    AttachedCustomFieldListCreate,
+)
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.db.models import Model
@@ -277,6 +281,7 @@ class ProductCreateBase(Schema):
             "of type `product_media` and correctly uploaded."
         ),
     )
+    attached_custom_fields: AttachedCustomFieldListCreate = Field(default_factory=list)
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -360,6 +365,7 @@ class ProductUpdate(Schema):
             "of type `product_media` and correctly uploaded."
         ),
     )
+    attached_custom_fields: AttachedCustomFieldListCreate | None = None
 
 
 class ProductBenefitsUpdate(Schema):
@@ -517,17 +523,43 @@ class ProductBase(IDSchema, TimestampedSchema):
     )
 
 
+ProductPriceList = Annotated[
+    list[ProductPrice],
+    Field(
+        description="List of prices for this product.",
+    ),
+]
+BenefitList = Annotated[
+    list[Benefit],
+    Field(
+        description="List of benefits granted by the product.",
+    ),
+]
+ProductMediaList = Annotated[
+    list[ProductMediaFileRead],
+    Field(
+        description="List of medias associated to the product.",
+    ),
+]
+
+
 class Product(ProductBase):
     """
     A product.
     """
 
-    prices: list[ProductPrice] = Field(
-        description="List of available prices for this product."
+    prices: ProductPriceList
+    benefits: BenefitList
+    medias: ProductMediaList
+    attached_custom_fields: list[AttachedCustomField] = Field(
+        description="List of custom fields attached to the product."
     )
-    benefits: list[BenefitPublic] = Field(
-        title="BenefitPublic", description="The benefits granted by the product."
-    )
-    medias: list[ProductMediaFileRead] = Field(
-        description="The medias associated to the product."
-    )
+
+
+BenefitPublicList = Annotated[
+    list[BenefitPublic],
+    Field(
+        title="BenefitPublic",
+        description="List of benefits granted by the product.",
+    ),
+]

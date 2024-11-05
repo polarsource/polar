@@ -5,7 +5,7 @@ from typing import Any
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select, update
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
     Anonymous,
@@ -973,8 +973,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .join(Checkout.product)
             .options(
                 contains_eager(Checkout.product).options(
-                    joinedload(Product.product_medias),
-                    joinedload(Product.attached_custom_fields),
+                    joinedload(Product.organization),
+                    selectinload(Product.product_medias),
+                    selectinload(Product.attached_custom_fields),
                 )
             )
         )

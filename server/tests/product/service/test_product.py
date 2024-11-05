@@ -326,7 +326,7 @@ class TestGetById:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-class TestUserCreate:
+class TestCreate:
     @pytest.mark.auth
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
@@ -346,9 +346,7 @@ class TestUserCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_create(
-                session, authz, create_schema, auth_subject
-            )
+            await product_service.create(session, authz, create_schema, auth_subject)
 
     @pytest.mark.auth
     async def test_user_not_writable_organization(
@@ -373,9 +371,7 @@ class TestUserCreate:
         )
 
         with pytest.raises(NotPermitted):
-            await product_service.user_create(
-                session, authz, create_schema, auth_subject
-            )
+            await product_service.create(session, authz, create_schema, auth_subject)
 
     @pytest.mark.auth
     async def test_user_valid_organization(
@@ -409,7 +405,7 @@ class TestUserCreate:
             ],
         )
 
-        product = await product_service.user_create(
+        product = await product_service.create(
             session, authz, create_schema, auth_subject
         )
         assert product.organization_id == organization.id
@@ -453,7 +449,7 @@ class TestUserCreate:
             ],
         )
 
-        product = await product_service.user_create(
+        product = await product_service.create(
             session, authz, create_schema, auth_subject
         )
         assert product.description is None
@@ -481,9 +477,7 @@ class TestUserCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_create(
-                session, authz, create_schema, auth_subject
-            )
+            await product_service.create(session, authz, create_schema, auth_subject)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_valid(
@@ -515,7 +509,7 @@ class TestUserCreate:
             ],
         )
 
-        product = await product_service.user_create(
+        product = await product_service.create(
             session, authz, create_schema, auth_subject
         )
         assert product.organization_id == organization.id
@@ -551,9 +545,7 @@ class TestUserCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_create(
-                session, authz, create_schema, auth_subject
-            )
+            await product_service.create(session, authz, create_schema, auth_subject)
 
         create_product_mock.assert_not_called()
         create_price_for_product_mock.assert_not_called()
@@ -614,9 +606,7 @@ class TestUserCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_create(
-                session, authz, create_schema, auth_subject
-            )
+            await product_service.create(session, authz, create_schema, auth_subject)
 
         create_product_mock.assert_not_called()
         create_price_for_product_mock.assert_not_called()
@@ -669,7 +659,7 @@ class TestUserCreate:
             medias=[file.id],
         )
 
-        product = await product_service.user_create(
+        product = await product_service.create(
             session, authz, create_schema, auth_subject
         )
 
@@ -743,7 +733,7 @@ class TestUserCreate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema.organization_id = organization.id
-        product = await product_service.user_create(
+        product = await product_service.create(
             session, authz, create_schema, auth_subject
         )
         assert product.organization_id == organization.id
@@ -758,7 +748,7 @@ class TestUserCreate:
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-class TestUserUpdate:
+class TestUpdate:
     @pytest.mark.auth
     async def test_not_writable_product(
         self,
@@ -775,7 +765,7 @@ class TestUserUpdate:
 
         update_schema = ProductUpdate(name="Product Update")
         with pytest.raises(NotPermitted):
-            await product_service.user_update(
+            await product_service.update(
                 session,
                 authz,
                 product_organization_loaded,
@@ -803,7 +793,7 @@ class TestUserUpdate:
 
         update_schema = ProductUpdate(prices=[])
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_update(
+            await product_service.update(
                 session,
                 authz,
                 product_organization_loaded,
@@ -834,7 +824,7 @@ class TestUserUpdate:
         assert product_organization_loaded
 
         update_schema = ProductUpdate(name="Product Update")
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -870,7 +860,7 @@ class TestUserUpdate:
         assert product_organization_loaded
 
         update_schema = ProductUpdate(description="Description update")
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -906,7 +896,7 @@ class TestUserUpdate:
         assert product_organization_loaded
 
         update_schema = ProductUpdate(description="")
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -953,7 +943,7 @@ class TestUserUpdate:
                 ),
             ]
         )
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -1010,7 +1000,7 @@ class TestUserUpdate:
                 ),
             ]
         )
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -1051,7 +1041,7 @@ class TestUserUpdate:
         assert product_organization_loaded
 
         update_schema = ProductUpdate(is_archived=True)
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -1089,7 +1079,7 @@ class TestUserUpdate:
         assert product_organization_loaded
 
         update_schema = ProductUpdate(is_archived=False)
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,
@@ -1121,7 +1111,7 @@ class TestUserUpdate:
 
         update_schema = ProductUpdate(medias=[uuid.uuid4()])
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_update(
+            await product_service.update(
                 session,
                 authz,
                 product_organization_loaded,
@@ -1175,7 +1165,7 @@ class TestUserUpdate:
 
         update_schema = ProductUpdate(medias=[file.id])
         with pytest.raises(PolarRequestValidationError):
-            await product_service.user_update(
+            await product_service.update(
                 session,
                 authz,
                 product_organization_loaded,
@@ -1218,7 +1208,7 @@ class TestUserUpdate:
         assert product_organization_loaded
 
         update_schema = ProductUpdate(medias=[file.id])
-        updated_product = await product_service.user_update(
+        updated_product = await product_service.update(
             session,
             authz,
             product_organization_loaded,

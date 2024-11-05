@@ -658,5 +658,5 @@ BenefitSubscriber = Annotated[
 
 BenefitSubscriberAdapter = TypeAdapter[BenefitSubscriber](BenefitSubscriber)
 
-# Properties that are public (included in Product endpoints)
+# Properties that are public (when embedding products benefits in storefront and checkout)
 BenefitPublic = BenefitBase | BenefitArticles

@@ -167,6 +167,17 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         session.add(custom_field)
         return custom_field
 
+    async def get_by_organization_and_id(
+        self, session: AsyncSession, id: uuid.UUID, organization_id: uuid.UUID
+    ) -> CustomField | None:
+        statement = select(CustomField).where(
+            CustomField.deleted_at.is_(None),
+            CustomField.organization_id == organization_id,
+            CustomField.id == id,
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def _get_by_organization_id_and_slug(
         self, session: AsyncSession, organization_id: uuid.UUID, slug: str
     ) -> CustomField | None:

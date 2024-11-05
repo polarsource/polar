@@ -10,13 +10,14 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
+from polar.custom_field.service import custom_field as custom_field_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.file.service import file as file_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import (
     Benefit,
@@ -28,6 +29,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceCustom,
@@ -55,7 +57,7 @@ class ProductError(PolarError): ...
 T = TypeVar("T", bound=tuple[Any])
 
 
-class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
+class ProductService(ResourceServiceReader[Product]):
     async def list(
         self,
         session: AsyncSession,
@@ -182,6 +184,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         statement = statement.options(
             selectinload(Product.product_medias),
+            selectinload(Product.attached_custom_fields),
         )
 
         return await paginate(session, statement, pagination=pagination)
@@ -198,6 +201,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             .options(
                 contains_eager(Product.organization),
                 selectinload(Product.product_medias),
+                selectinload(Product.attached_custom_fields),
             )
             .limit(1)
         )
@@ -224,15 +228,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         return result.scalar_one_or_none()
 
-    async def get_free(
-        self,
-        session: AsyncSession,
-        *,
-        organization: Organization,
-    ) -> Product | None:
-        return None
-
-    async def user_create(
+    async def create(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -252,6 +248,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             prices=[],
             product_benefits=[],
             product_medias=[],
+            attached_custom_fields=[],
             **create_schema.model_dump(exclude={"organization_id", "prices", "medias"}),
         )
         session.add(product)
@@ -275,6 +272,33 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                         ]
                     )
                 product.product_medias.append(ProductMedia(file=file, order=order))
+
+        for order, attached_custom_field in enumerate(
+            create_schema.attached_custom_fields
+        ):
+            custom_field = await custom_field_service.get_by_organization_and_id(
+                session,
+                attached_custom_field.custom_field_id,
+                organization.id,
+            )
+            if custom_field is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "attached_custom_fields", order),
+                            "msg": "Custom field does not exist.",
+                            "input": attached_custom_field.custom_field_id,
+                        }
+                    ]
+                )
+            product.attached_custom_fields.append(
+                ProductCustomField(
+                    custom_field=custom_field,
+                    order=order,
+                    required=attached_custom_field.required,
+                )
+            )
 
         metadata: dict[str, str] = {"product_id": str(product.id)}
         metadata["organization_id"] = str(organization.id)
@@ -306,7 +330,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         return product
 
-    async def user_update(
+    async def update(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -357,6 +381,39 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                         ]
                     )
                 product.product_medias.append(ProductMedia(file=file, order=order))
+
+        if update_schema.attached_custom_fields is not None:
+            nested = await session.begin_nested()
+            product.attached_custom_fields = []
+            await session.flush()
+
+            for order, attached_custom_field in enumerate(
+                update_schema.attached_custom_fields
+            ):
+                custom_field = await custom_field_service.get_by_organization_and_id(
+                    session,
+                    attached_custom_field.custom_field_id,
+                    product.organization_id,
+                )
+                if custom_field is None:
+                    await nested.rollback()
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "attached_custom_fields", order),
+                                "msg": "Custom field does not exist.",
+                                "input": attached_custom_field.custom_field_id,
+                            }
+                        ]
+                    )
+                product.attached_custom_fields.append(
+                    ProductCustomField(
+                        custom_field=custom_field,
+                        order=order,
+                        required=attached_custom_field.required,
+                    )
+                )
 
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
@@ -418,7 +475,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             product = await self._archive(product)
 
         for attr, value in update_schema.model_dump(
-            exclude_unset=True, exclude_none=True, exclude={"prices", "medias"}
+            exclude_unset=True,
+            exclude_none=True,
+            exclude={"prices", "medias", "attached_custom_fields"},
         ).items():
             setattr(product, attr, value)
 

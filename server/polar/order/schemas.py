@@ -1,6 +1,7 @@
 from babel.numbers import format_currency
 from pydantic import UUID4, Field
 
+from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason
@@ -8,7 +9,9 @@ from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
 
-class OrderBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
+class OrderBase(
+    CustomFieldDataOutputMixin, MetadataOutputMixin, IDSchema, TimestampedSchema
+):
     amount: int
     tax_amount: int
     currency: str

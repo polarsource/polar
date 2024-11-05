@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.custom_field.data import CustomFieldDataMixin
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 
@@ -19,7 +20,7 @@ class OrderBillingReason(StrEnum):
     subscription_update = "subscription_update"
 
 
-class Order(MetadataMixin, RecordModel):
+class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "orders"
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)

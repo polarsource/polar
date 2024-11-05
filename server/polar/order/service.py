@@ -335,6 +335,9 @@ class OrderService(ResourceServiceReader[Order]):
             subscription=subscription,
             checkout=checkout,
             user_metadata=checkout.user_metadata if checkout is not None else {},
+            custom_field_data=checkout.custom_field_data
+            if checkout is not None
+            else {},
         )
 
         # Get or create customer user

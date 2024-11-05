@@ -1295,7 +1295,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             session,
             checkout_id,
             options=(
-                joinedload(Checkout.product).joinedload(Product.product_medias),
+                joinedload(Checkout.product).options(
+                    selectinload(Product.product_medias),
+                    selectinload(Product.attached_custom_fields),
+                ),
                 joinedload(Checkout.product_price),
             ),
         )
@@ -1329,7 +1332,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self, session: AsyncSession, product: Product
     ) -> Product:
         await session.refresh(
-            product, {"prices", "product_medias", "attached_custom_fields"}
+            product,
+            {"organization", "prices", "product_medias", "attached_custom_fields"},
         )
         return product
 

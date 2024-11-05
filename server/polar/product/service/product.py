@@ -216,7 +216,9 @@ class ProductService(ResourceServiceReader[Product]):
             select(Product)
             .where(Product.id == id)
             .options(
-                joinedload(Product.organization), selectinload(Product.product_medias)
+                joinedload(Product.organization),
+                selectinload(Product.product_medias),
+                selectinload(Product.attached_custom_fields),
             )
             .limit(1)
         )
@@ -249,7 +251,14 @@ class ProductService(ResourceServiceReader[Product]):
             product_benefits=[],
             product_medias=[],
             attached_custom_fields=[],
-            **create_schema.model_dump(exclude={"organization_id", "prices", "medias"}),
+            **create_schema.model_dump(
+                exclude={
+                    "organization_id",
+                    "prices",
+                    "medias",
+                    "attached_custom_fields",
+                }
+            ),
         )
         session.add(product)
         await session.flush()

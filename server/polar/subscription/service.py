@@ -7,7 +7,7 @@ from typing import Any, Literal, cast, overload
 
 import stripe as stripe_lib
 from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
@@ -156,7 +156,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             query = query.options(
                 joinedload(Subscription.user),
                 joinedload(Subscription.price),
-                joinedload(Subscription.product).selectinload(Product.product_medias),
+                joinedload(Subscription.product).options(
+                    selectinload(Product.product_medias),
+                    selectinload(Product.attached_custom_fields),
+                ),
             )
 
         res = await session.execute(query)
@@ -252,7 +255,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
-            contains_eager(Subscription.product).selectinload(Product.product_medias),
+            contains_eager(Subscription.product).options(
+                selectinload(Product.product_medias),
+                selectinload(Product.attached_custom_fields),
+            ),
             contains_eager(Subscription.price),
             contains_eager(Subscription.user),
         )
@@ -409,6 +415,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             **(subscription.user_metadata or {}),
             **(checkout.user_metadata if checkout is not None else {}),
         }
+        subscription.custom_field_data = {
+            **(subscription.custom_field_data or {}),
+            **(checkout.custom_field_data if checkout is not None else {}),
+        }
 
         subscription.set_started_at()
 
@@ -522,6 +532,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.user_metadata = {
             **(subscription.user_metadata or {}),
             **(checkout.user_metadata if checkout is not None else {}),
+        }
+        subscription.custom_field_data = {
+            **(subscription.custom_field_data or {}),
+            **(checkout.custom_field_data if checkout is not None else {}),
         }
 
         session.add(subscription)

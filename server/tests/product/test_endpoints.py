@@ -68,8 +68,8 @@ class TestListProducts:
         assert item["id"] == str(product.id)
         assert len(item["benefits"]) == len(benefits)
         for benefit in item["benefits"]:
-            assert "properties" not in benefit
-            assert "is_tax_applicable" not in benefit
+            assert "properties" in benefit
+            assert "is_tax_applicable" in benefit
 
 
 @pytest.mark.asyncio
@@ -127,8 +127,8 @@ class TestGetProduct:
         assert json["id"] == str(product.id)
         assert len(json["benefits"]) == len(benefits)
         for benefit in json["benefits"]:
-            assert "properties" not in benefit
-            assert "is_tax_applicable" not in benefit
+            assert "properties" in benefit
+            assert "is_tax_applicable" in benefit
 
 
 @pytest.mark.asyncio

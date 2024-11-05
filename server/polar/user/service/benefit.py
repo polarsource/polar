@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
@@ -45,7 +45,9 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
             (UserBenefitSortProperty.granted_at, True)
         ],
     ) -> tuple[Sequence[Benefit], int]:
-        statement = self._get_readable_benefit_statement(auth_subject)
+        statement = self._get_readable_benefit_statement(auth_subject).options(
+            joinedload(Benefit.organization)
+        )
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))
@@ -108,8 +110,10 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
         auth_subject: AuthSubject[User],
         id: uuid.UUID,
     ) -> Benefit | None:
-        statement = self._get_readable_benefit_statement(auth_subject).where(
-            Benefit.id == id
+        statement = (
+            self._get_readable_benefit_statement(auth_subject)
+            .where(Benefit.id == id)
+            .options(joinedload(Benefit.organization))
         )
 
         result = await session.execute(statement)

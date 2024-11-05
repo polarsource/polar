@@ -4,6 +4,7 @@ from pydantic import UUID4, Field
 
 from polar.kit.schemas import EmailStrDNS, Schema
 from polar.models.subscription import SubscriptionStatus
+from polar.organization.schemas import Organization
 from polar.product.schemas import Product, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
@@ -21,7 +22,8 @@ class UserSubscriptionBase(SubscriptionBase):
     price_id: UUID4
 
 
-class UserSubscriptionProduct(Product): ...
+class UserSubscriptionProduct(Product):
+    organization: Organization
 
 
 class UserSubscription(UserSubscriptionBase):

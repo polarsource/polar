@@ -16,7 +16,6 @@ import {
 } from '@polar-sh/sdk'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import { Switch } from 'polarkit/components/ui/atoms'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'

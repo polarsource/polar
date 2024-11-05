@@ -1,7 +1,7 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
 import { getServerURL } from '@/utils/api'
 import {
-  Product,
+  ProductStorefront,
   Storefront,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
@@ -20,14 +20,16 @@ const getStorefront = async (org: string): Promise<Storefront> => {
   return await response.json()
 }
 
-const getRecurringProducts = async (org: string): Promise<Product[]> => {
+const getRecurringProducts = async (
+  org: string,
+): Promise<ProductStorefront[]> => {
   const { products } = await getStorefront(org)
   return products.filter((product) => product.is_recurring)
 }
 
 const renderBadge = async (
   label: string,
-  products: Product[],
+  products: ProductStorefront[],
   recurringInterval: SubscriptionRecurringInterval,
   darkmode: boolean,
 ) => {

@@ -1,7 +1,7 @@
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { Column } from '@tanstack/react-table'
 
-import { cn } from '@polarkit/lib/utils'
+import { twMerge } from 'tailwind-merge'
 import Button from '../Button'
 
 interface DataTableColumnHeaderProps<TData, TValue>
@@ -16,11 +16,11 @@ export function DataTableColumnHeader<TData, TValue>({
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort()) {
-    return <div className={cn(className)}>{title}</div>
+    return <div className={className}>{title}</div>
   }
 
   return (
-    <div className={cn('flex items-center', className)}>
+    <div className={twMerge('flex items-center', className)}>
       <Button
         type="button"
         variant="ghost"

@@ -36,6 +36,7 @@ const Default: Story = {
         <FormField
           control={control}
           name="customField"
+          // @ts-ignore
           render={({ field }) => <CustomFieldInput {...args} field={field} />}
         />
       </Form>

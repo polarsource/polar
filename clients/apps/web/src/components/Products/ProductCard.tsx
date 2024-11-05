@@ -1,12 +1,12 @@
 'use client'
 
-import { Product, ProductPrice } from '@polar-sh/sdk'
+import { ProductPrice, ProductStorefront } from '@polar-sh/sdk'
 import LogoIcon from '../Brand/LogoIcon'
 import ProductPriceLabel from './ProductPriceLabel'
 import ProductPrices from './ProductPrices'
 
 interface ProductCardProps {
-  product: Product
+  product: ProductStorefront
   price?: ProductPrice
 }
 

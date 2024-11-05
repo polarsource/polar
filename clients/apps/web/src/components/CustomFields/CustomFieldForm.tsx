@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from 'polarkit/components/ui/accordion'
+import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
@@ -297,6 +298,26 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             Form input options
           </AccordionTrigger>
           <AccordionContent className="flex flex-col gap-y-6">
+            {type === CustomFieldType.TEXT && (
+              <FormField
+                control={control}
+                name="properties.textarea"
+                render={({ field }) => {
+                  return (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel>Textarea</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+            )}
             <FormField
               control={control}
               name="properties.form_label"

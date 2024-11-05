@@ -1,8 +1,9 @@
 import {
+  CheckoutProduct,
   CheckoutPublic,
   CheckoutStatus,
-  Product,
   ProductPrice,
+  ProductStorefront,
   UserOrder,
   UserSubscription,
 } from '@polar-sh/sdk'
@@ -18,7 +19,7 @@ Gravem colentes impetus reminiscitur invitusque blanditur ipse
 Iam maiora
 In quoque extulerat tale semper quidque. Fovebat heros quos gaudent et movent agmina fortis.`
 
-export const PRODUCT_PREVIEW: Product = {
+export const PRODUCT_PREVIEW: ProductStorefront = {
   id: '123',
   is_recurring: false,
   is_archived: false,
@@ -75,7 +76,7 @@ export const PRODUCT_PREVIEW: Product = {
   created_at: new Date().toDateString(),
 }
 
-export const SUBSCRIPTION_PRODUCT_PREVIEW: Product = {
+export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
   id: '123',
   is_recurring: false,
   is_archived: false,
@@ -155,7 +156,7 @@ const ORGANIZATION = {
 }
 
 export const createCheckoutPreview = (
-  product: Product,
+  product: CheckoutProduct,
   price: ProductPrice,
 ): CheckoutPublic => {
   const amount =
@@ -193,6 +194,7 @@ export const createCheckoutPreview = (
     success_url: '/checkout/CLIENT_SECRET/confirmation',
     embed_origin: null,
     organization: ORGANIZATION,
+    attached_custom_fields: [],
   }
 }
 

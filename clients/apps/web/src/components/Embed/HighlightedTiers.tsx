@@ -1,5 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { Product, SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import {
   getRecurringBillingLabel,
@@ -11,7 +11,7 @@ const HighlightedTier = ({
   recurringInterval,
   darkmode,
 }: {
-  tier: Product
+  tier: ProductStorefront
   recurringInterval: SubscriptionRecurringInterval
   darkmode: boolean
 }) => {
@@ -164,7 +164,7 @@ export const HighlightedTiers = ({
   darkmode,
 }: {
   label: string
-  tiers: Product[]
+  tiers: ProductStorefront[]
   recurringInterval: SubscriptionRecurringInterval
   darkmode: boolean
 }) => {

@@ -2,10 +2,10 @@
 
 import {
   Organization,
-  Product,
   ProductPrice,
   ProductPriceRecurringFixed,
   ProductPriceRecurringFree,
+  ProductStorefront,
   ResponseError,
   SubscriptionRecurringInterval,
   UserSubscription,
@@ -27,7 +27,7 @@ const ProductPriceListItem = ({
   selected,
   onSelect,
 }: {
-  product: Product
+  product: ProductStorefront
   price: ProductPrice
   selected: boolean
   onSelect?: () => void
@@ -65,7 +65,8 @@ const ChangePlanModal = ({
   const currentPrice = subscription.price as
     | ProductPriceRecurringFixed
     | ProductPriceRecurringFree
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductStorefront | null>(null)
   const [selectedPrice, setSelectedPrice] = useState<
     ProductPriceRecurringFixed | ProductPriceRecurringFree | null
   >(null)

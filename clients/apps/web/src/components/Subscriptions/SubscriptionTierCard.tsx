@@ -4,7 +4,7 @@ import {
   useRecurringBillingLabel,
   useRecurringProductPrice,
 } from '@/hooks/products'
-import { Product, SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import {
   Card,
@@ -18,7 +18,7 @@ import { resolveBenefitIcon } from '../Benefit/utils'
 import { markdownOpts } from '../Feed/Markdown/markdown'
 
 export interface SubscriptionTierCardProps {
-  subscriptionTier: Partial<Product>
+  subscriptionTier: Partial<ProductStorefront>
   className?: string
   recurringInterval?: SubscriptionRecurringInterval
 }

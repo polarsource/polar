@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -27,7 +28,7 @@ from polar.models.benefit_grant import (
     BenefitGrantLicenseKeysProperties,
     BenefitGrantProperties,
 )
-from polar.organization.schemas import OrganizationID
+from polar.organization.schemas import Organization, OrganizationID
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -587,7 +588,8 @@ class BenefitGrantSubscriber(BenefitGrantBase): ...
 
 
 class BenefitSubscriberBase(BenefitBase):
-    grants: list[BenefitGrantSubscriber]
+    grants: Sequence[BenefitGrantSubscriber]
+    organization: Organization
 
 
 class BenefitCustomSubscriber(BenefitSubscriberBase):
@@ -595,7 +597,7 @@ class BenefitCustomSubscriber(BenefitSubscriberBase):
     properties: BenefitCustomSubscriberProperties
 
 
-class BenefitArticlesSubscriber(BenefitBase):
+class BenefitArticlesSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.articles]
     properties: BenefitArticlesSubscriberProperties
 
@@ -611,23 +613,23 @@ class BenefitGrantAds(BenefitGrantSubscriber):
     properties: BenefitGrantAdsSubscriberProperties
 
 
-class BenefitAdsSubscriber(BenefitBase):
+class BenefitAdsSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.ads]
     properties: BenefitAdsProperties
-    grants: list[BenefitGrantAds]
+    grants: Sequence[BenefitGrantAds]
 
 
-class BenefitDiscordSubscriber(BenefitBase):
+class BenefitDiscordSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.discord]
     properties: BenefitDiscordSubscriberProperties
 
 
-class BenefitGitHubRepositorySubscriber(BenefitBase):
+class BenefitGitHubRepositorySubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.github_repository]
     properties: BenefitGitHubRepositorySubscriberProperties
 
 
-class BenefitDownloadablesSubscriber(BenefitBase):
+class BenefitDownloadablesSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.downloadables]
     properties: BenefitDownloadablesSubscriberProperties
 
@@ -636,10 +638,10 @@ class BenefitGrantLicenseKeys(BenefitGrantSubscriber):
     properties: BenefitGrantLicenseKeysProperties
 
 
-class BenefitLicenseKeysSubscriber(BenefitBase):
+class BenefitLicenseKeysSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.license_keys]
     properties: BenefitLicenseKeysSubscriberProperties
-    grants: list[BenefitGrantLicenseKeys]
+    grants: Sequence[BenefitGrantLicenseKeys]
 
 
 # Properties that are available to subscribers only

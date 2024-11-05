@@ -12,7 +12,7 @@ import {
 } from '@polar-sh/sdk'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useProducts, useUpdateSubscription } from '@/hooks/queries'
+import { useStorefront, useUpdateSubscription } from '@/hooks/queries'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -57,7 +57,11 @@ const ChangePlanModal = ({
   onUserSubscriptionUpdate: (subscription: UserSubscription) => void
 }) => {
   const router = useRouter()
-  const products = useProducts(organization.id, { isRecurring: true })
+  const { data: storefront } = useStorefront(organization.slug)
+  const products = storefront?.products.filter(
+    ({ is_recurring }) => is_recurring,
+  )
+
   const currentPrice = subscription.price as
     | ProductPriceRecurringFixed
     | ProductPriceRecurringFree
@@ -160,7 +164,7 @@ const ChangePlanModal = ({
         </List>
         <h3 className="font-medium">Available Plans</h3>
         <List size="small">
-          {products.data?.items.map((product) => (
+          {products?.map((product) => (
             <>
               {product.prices
                 .filter((price) => price.id !== subscription.price_id)

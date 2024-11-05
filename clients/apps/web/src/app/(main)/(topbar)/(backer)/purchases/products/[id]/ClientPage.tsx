@@ -4,11 +4,7 @@ import BenefitDetails from '@/components/Benefit/BenefitDetails'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { InlineModal } from '@/components/Modal/InlineModal'
-import {
-  useOrganization,
-  useUserBenefits,
-  useUserOrderInvoice,
-} from '@/hooks/queries'
+import { useUserBenefits, useUserOrderInvoice } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { UserBenefit, UserOrder } from '@polar-sh/sdk'
@@ -22,7 +18,7 @@ import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useCallback, useState } from 'react'
 
 const ClientPage = ({ order }: { order: UserOrder }) => {
-  const { data: organization } = useOrganization(order.product.organization_id)
+  const organization = order.product.organization
   const { data: benefits } = useUserBenefits({
     orderId: order.id,
     limit: 100,

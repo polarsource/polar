@@ -4,7 +4,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
+import { useUserSubscriptions } from '@/hooks/queries'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
 import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -137,9 +137,7 @@ const SubscriptionItem = ({
 }: {
   subscription: UserSubscription
 }) => {
-  const { data: organization } = useOrganization(
-    subscription.product.organization_id,
-  )
+  const organization = subscription.product.organization
 
   const status = useMemo(() => {
     switch (subscription.status) {

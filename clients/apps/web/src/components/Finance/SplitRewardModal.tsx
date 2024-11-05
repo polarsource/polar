@@ -3,7 +3,6 @@ import {
   useIssue,
   useIssueMarkConfirmed,
   useListPledesForIssue,
-  useOrganization,
 } from '@/hooks/queries'
 import { ConfirmIssueSplit } from '@polar-sh/sdk'
 import { useState } from 'react'
@@ -13,11 +12,7 @@ import SplitNotify from './SplitNotify'
 
 const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
   const { data: issue } = useIssue(props.issueId)
-  const { data: organization } = useOrganization(
-    issue?.repository.organization.organization_id as string,
-    issue !== undefined &&
-      issue.repository.organization.organization_id !== undefined,
-  )
+  const organization = issue?.repository.internal_organization
   const pledges = useListPledesForIssue(props.issueId)
 
   const { currentUser } = useAuth()

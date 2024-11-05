@@ -9,7 +9,6 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import ChangePlanModal from '@/components/Subscriptions/ChangePlanModal'
 import {
   useCancelSubscription,
-  useOrganization,
   useUserBenefits,
   useUserOrderInvoice,
   useUserOrders,
@@ -32,9 +31,7 @@ const ClientPage = ({
   subscription: UserSubscription
 }) => {
   const [subscription, setSubscription] = useState(_subscription)
-  const { data: organization } = useOrganization(
-    subscription.product.organization_id,
-  )
+  const organization = subscription.product.organization
   const { data: benefits } = useUserBenefits({
     subscriptionId: subscription.id,
     limit: 100,

@@ -1,7 +1,6 @@
 'use client'
 
 import GitHubIcon from '@/components/Icons/GitHubIcon'
-import { useOrganization } from '@/hooks/queries'
 import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -42,11 +41,7 @@ const BenefitDetails = ({
   order,
   subscription,
 }: BenefitDetailsProps) => {
-  const { data: org } = useOrganization(benefit.organization_id)
-
-  if (!org) {
-    return <></>
-  }
+  const org = benefit.organization
 
   return (
     <div className="flex flex-col gap-y-6">

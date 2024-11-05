@@ -1,4 +1,3 @@
-import { useOrganization } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { useSortable } from '@dnd-kit/sortable'
@@ -30,11 +29,7 @@ export const ProjectCard = ({
   disabled?: boolean
   sortable?: ReturnType<typeof useSortable>
 }) => {
-  const repositoryOrganizationId = repository.organization.organization_id
-  const { data: repositoryOrganization } = useOrganization(
-    repositoryOrganizationId as string,
-    !!repositoryOrganizationId,
-  )
+  const repositoryOrganization = repository.internal_organization
   return (
     <Card
       ref={sortable ? sortable.setNodeRef : undefined}

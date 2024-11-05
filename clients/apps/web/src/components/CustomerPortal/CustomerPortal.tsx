@@ -1,7 +1,6 @@
 'use client'
 
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { useOrganization } from '@/hooks/queries'
 import { Organization, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -171,9 +170,7 @@ const SubscriptionItem = ({
 }: {
   subscription: UserSubscription
 }) => {
-  const { data: organization } = useOrganization(
-    subscription.product.organization_id,
-  )
+  const organization = subscription.product.organization
 
   const status = useMemo(() => {
     switch (subscription?.status) {

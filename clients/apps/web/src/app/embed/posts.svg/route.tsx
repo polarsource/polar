@@ -3,29 +3,22 @@ import { getServerURL } from '@/utils/api'
 import {
   Article,
   ListResourceArticle,
-  ListResourceOrganization,
   Organization,
+  Storefront,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getOrg = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
-
-  const response = await fetch(url, {
+const getStorefront = async (org: string): Promise<Storefront> => {
+  const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceOrganization
-
-  const organization = data.items[0]
-
-  if (!organization) {
+  if (response.status === 404) {
     notFound()
   }
-
-  return organization
+  return await response.json()
 }
 
 const getPosts = async (
@@ -97,7 +90,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const organization = await getOrg(org)
+    const { organization } = await getStorefront(org)
     const [pinnedPosts, latestPosts] = await Promise.all([
       getPosts(organization, 3, true),
       getPosts(organization, 3, false),

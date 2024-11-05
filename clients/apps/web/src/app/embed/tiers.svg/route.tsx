@@ -1,10 +1,8 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
 import { getServerURL } from '@/utils/api'
 import {
-  ListResourceOrganization,
-  ListResourceProduct,
-  Organization,
   Product,
+  Storefront,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
@@ -12,38 +10,19 @@ const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getOrg = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
-
-  const response = await fetch(url, {
+const getStorefront = async (org: string): Promise<Storefront> => {
+  const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceOrganization
-
-  const organization = data.items[0]
-
-  if (!organization) {
+  if (response.status === 404) {
     notFound()
   }
-
-  return organization
+  return await response.json()
 }
 
-const getRecurringProducts = async (
-  org: string,
-  limit: number = 100,
-): Promise<Product[]> => {
-  const { id: orgId } = await getOrg(org)
-
-  let url = getServerURL(
-    `/v1/products/?organization_id=${orgId}&is_recurring=true&is_archived=false&limit=${limit}`,
-  )
-
-  const response = await fetch(url, {
-    method: 'GET',
-  })
-  const d = (await response.json()) as ListResourceProduct
-  return d.items
+const getRecurringProducts = async (org: string): Promise<Product[]> => {
+  const { products } = await getStorefront(org)
+  return products.filter((product) => product.is_recurring)
 }
 
 const renderBadge = async (

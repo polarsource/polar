@@ -4,9 +4,8 @@ import PublicLayout from '@/components/Layout/PublicLayout'
 import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { UserRead } from '@polar-sh/sdk'
-import { notFound } from 'next/navigation'
 import React from 'react'
 
 export default async function Layout({
@@ -18,14 +17,10 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
 
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
-
-  if (!organization.profile_settings?.enabled) {
-    notFound()
-  }
 
   let authenticatedUser: UserRead | undefined
 
@@ -41,7 +36,10 @@ export default async function Layout({
           size={50}
         />
 
-        <TopbarRight authenticatedUser={authenticatedUser} storefrontOrg={organization} />
+        <TopbarRight
+          authenticatedUser={authenticatedUser}
+          storefrontOrg={organization}
+        />
       </div>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-grow flex-col items-center">

@@ -5,7 +5,7 @@ import {
   RepositoriesApiListRequest,
   Repository,
 } from '@polar-sh/sdk'
-import { getOrganizationById, getOrganizationBySlug } from './organization'
+import { getStorefront } from './storefront'
 
 const getRepositoryBy = async (
   api: PolarAPI,
@@ -28,10 +28,11 @@ export const resolveRepositoryPath = async (
   repositoryName: string,
   initOverrides?: RequestInit | InitOverrideFunction,
 ): Promise<[Repository, Organization] | undefined> => {
-  let organization = await getOrganizationBySlug(api, organizationSlug)
+  const storefront = await getStorefront(api, organizationSlug)
 
   // Existing Polar organization
-  if (organization) {
+  if (storefront) {
+    const { organization } = storefront
     const repository = await getRepositoryBy(
       api,
       {
@@ -57,19 +58,9 @@ export const resolveRepositoryPath = async (
   )
 
   // Repository does not exist or not linked to a Polar organization
-  if (!repository || !repository.organization.organization_id) {
+  if (!repository || !repository.internal_organization) {
     return undefined
   }
 
-  // Retrieve the Polar organization
-  organization = await getOrganizationById(
-    api,
-    repository.organization.organization_id,
-  )
-
-  if (!organization) {
-    return undefined
-  }
-
-  return [repository, organization]
+  return [repository, repository.internal_organization]
 }

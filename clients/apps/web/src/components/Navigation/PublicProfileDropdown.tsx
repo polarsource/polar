@@ -43,7 +43,7 @@ const PublicProfileDropdown = ({
 
   const loggedUser = authenticatedUser
 
-  const organizations = useListOrganizations({ isMember: true })
+  const organizations = useListOrganizations({}, !!loggedUser)
 
   if (!loggedUser) {
     return <></>

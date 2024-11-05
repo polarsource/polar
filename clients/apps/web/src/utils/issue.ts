@@ -5,7 +5,7 @@ import {
   Organization,
   PolarAPI,
 } from '@polar-sh/sdk'
-import { getOrganizationById, getOrganizationBySlug } from './organization'
+import { getStorefront } from './storefront'
 
 const getIssueBy = async (
   api: PolarAPI,
@@ -31,9 +31,11 @@ export const resolveIssuePath = async (
 ): Promise<[Issue, Organization] | undefined> => {
   const parsedIssueNumber = Number.parseInt(issueNumber, 10)
 
-  let organization = await getOrganizationBySlug(api, organizationSlug)
+  const storefront = await getStorefront(api, organizationSlug)
+
   // Existing Polar organization
-  if (organization) {
+  if (storefront) {
+    const { organization } = storefront
     const issue = await getIssueBy(
       api,
       {
@@ -61,19 +63,9 @@ export const resolveIssuePath = async (
   )
 
   // Issue does not exist or not linked to a Polar organization
-  if (!issue || !issue.repository.organization.organization_id) {
+  if (!issue || !issue.repository.internal_organization) {
     return undefined
   }
 
-  // Retrieve the Polar organization
-  organization = await getOrganizationById(
-    api,
-    issue.repository.organization.organization_id,
-  )
-
-  if (!organization) {
-    return undefined
-  }
-
-  return [issue, organization]
+  return [issue, issue.repository.internal_organization]
 }

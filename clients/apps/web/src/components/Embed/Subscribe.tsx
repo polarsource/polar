@@ -1,4 +1,4 @@
-import { OrganizationCustomer } from '@polar-sh/sdk'
+import { Customer } from '@polar-sh/sdk'
 import React from 'react'
 
 export const Subscribe = ({
@@ -7,7 +7,7 @@ export const Subscribe = ({
   darkmode,
   label,
 }: {
-  customers: OrganizationCustomer[]
+  customers: Customer[]
   totalCustomers: number
   darkmode: boolean
   label: string

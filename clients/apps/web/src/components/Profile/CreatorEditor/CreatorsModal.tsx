@@ -1,7 +1,7 @@
 import ProductPill from '@/components/Products/ProductPill'
 import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { CloseOutlined } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -36,7 +36,10 @@ export const CreatorsModal = ({
       return
     }
 
-    const organization = await getOrganizationBySlug(api, organizationName)
+    const { organization } = await getStorefrontOrNotFound(
+      api,
+      organizationName,
+    )
     if (!organization) {
       toggleOrgNotFound(true)
       return

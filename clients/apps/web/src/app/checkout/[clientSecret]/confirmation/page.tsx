@@ -2,7 +2,6 @@ import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getCheckoutByClientSecret } from '@/utils/checkout'
-import { getOrganizationById } from '@/utils/organization'
 import { CheckoutStatus } from '@polar-sh/sdk'
 import { redirect } from 'next/navigation'
 
@@ -21,13 +20,12 @@ export default async function Page({
     redirect(checkout.url)
   }
 
-  const organization = await getOrganizationById(
-    api,
-    checkout.product.organization_id,
-  )
   return (
     <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
-      <CheckoutConfirmation checkout={checkout} organization={organization} />
+      <CheckoutConfirmation
+        checkout={checkout}
+        organization={checkout.organization}
+      />
     </CheckoutLayout>
   )
 }

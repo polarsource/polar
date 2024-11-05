@@ -3,9 +3,7 @@ import {
   buildFundingFilters,
   urlSearchFromObj,
 } from '@/components/Organization/filters'
-import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { CONFIG } from '@/utils/config'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
 import { getUserOrganizations } from '@/utils/user'
@@ -151,34 +149,6 @@ export default async function Page({
 
   let featuredOrganizations: Organization[] = []
   let links: { opengraph: OgObject; url: string }[] = []
-
-  try {
-    const featuredOrganizationIDs =
-      repository.profile_settings?.featured_organizations ?? []
-
-    const loadFeaturedOrganizations = await Promise.all(
-      featuredOrganizationIDs.map((id) =>
-        api.organizations.get({ id }, cacheConfig),
-      ),
-    )
-
-    const featuredLinks = repository.profile_settings?.links ?? []
-
-    const loadLinkOpengraphs = await Promise.all(
-      featuredLinks.map((link) =>
-        fetch(`${CONFIG.FRONTEND_BASE_URL}/link/og?url=${link}`)
-          .then((res) => (res && res.ok ? res.json() : undefined))
-          .then((og) => ({ opengraph: og as OgObject, url: link })),
-      ),
-    )
-
-    featuredOrganizations = loadFeaturedOrganizations
-    links = loadLinkOpengraphs.filter(
-      (link): link is Link => link !== undefined,
-    )
-  } catch (err) {
-    notFound()
-  }
 
   return (
     <ClientPage

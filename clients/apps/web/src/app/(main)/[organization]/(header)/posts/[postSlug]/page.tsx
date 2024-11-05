@@ -1,8 +1,7 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Article, ListResourceProduct, ResponseError } from '@polar-sh/sdk'
+import { Article, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -18,10 +17,7 @@ const getArticle = async (
   postSlug: string,
 ): Promise<Article> => {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    organizationName,
-  )
+  const { organization } = await getStorefrontOrNotFound(api, organizationName)
 
   try {
     const articles = await api.articles.list(
@@ -118,6 +114,7 @@ export async function generateMetadata({
   }
 }
 
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { Article as JSONLDArticle, WithContext } from 'schema-dts'
 
 export default async function Page({
@@ -127,25 +124,7 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
   const article = await getArticle(params.organization, params.postSlug)
-
-  let products: ListResourceProduct | undefined
-
-  try {
-    products = await api.products.list(
-      {
-        organizationId: article.organization_id,
-        isArchived: false,
-        isRecurring: true,
-      },
-      cacheConfig,
-    )
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    } else {
-      throw e
-    }
-  }
+  const { products } = await getStorefrontOrNotFound(api, params.organization)
 
   const jsonLd: WithContext<JSONLDArticle> = {
     '@context': 'https://schema.org',
@@ -174,7 +153,7 @@ export default async function Page({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ClientPage article={article} products={products.items || []} />
+      <ClientPage article={article} products={products} />
     </>
   )
 }

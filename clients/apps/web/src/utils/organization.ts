@@ -33,23 +33,3 @@ export const getOrganizationBySlugOrNotFound = async (
   }
   return organization
 }
-
-const _getOrganizationById = async (
-  api: PolarAPI,
-  id: string,
-): Promise<Organization> => {
-  return await api.organizations.get(
-    {
-      id,
-    },
-    {
-      next: {
-        tags: [`organizations:${id}`],
-        revalidate: 600,
-      },
-    },
-  )
-}
-
-// Tell React to memoize it for the duration of the request
-export const getOrganizationById = cache(_getOrganizationById)

@@ -73,6 +73,10 @@ export const ProductCustomFieldSection = ({
     setSelectedField(null)
   }
 
+  if (customFields?.pagination.total_count === 0) {
+    return null
+  }
+
   return (
     <Section
       icon={<DataArrayOutlined fontSize="medium" />}

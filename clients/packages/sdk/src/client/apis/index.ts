@@ -33,6 +33,7 @@ export * from './PledgesApi';
 export * from './ProductsApi';
 export * from './RepositoriesApi';
 export * from './RewardsApi';
+export * from './StorefrontsApi';
 export * from './SubscriptionsApi';
 export * from './TransactionsApi';
 export * from './UsersApi';

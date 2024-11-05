@@ -569,7 +569,7 @@ export const MobileNav = ({
   activeSection,
 }: {
   children: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute'
+  activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute' | 'tools'
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()

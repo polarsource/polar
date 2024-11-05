@@ -10,6 +10,7 @@ from polar.external_organization.schemas import (
 )
 from polar.integrations.github import types
 from polar.kit.schemas import MergeJSONSchema, Schema, SelectorWidget
+from polar.organization.schemas import Organization
 from polar.visibility import Visibility
 
 REPOSITORY_PROFILE_DESCRIPTION_MAX_LENGTH = 240
@@ -54,6 +55,7 @@ class Repository(Schema):
     )
 
     organization: ExternalOrganizationSchema
+    internal_organization: Organization | None
 
 
 class RepositoryProfileSettingsUpdate(Schema):

@@ -7,6 +7,7 @@ from sqlalchemy.orm import (
 
 from polar.backoffice.schemas import BackofficePledge
 from polar.kit.extensions.sqlalchemy import sql
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
@@ -23,7 +24,8 @@ class BackofficePledgeService:
             joinedload(Pledge.user),
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)
-            .joinedload(Repository.organization),
+            .joinedload(Repository.organization)
+            .joinedload(ExternalOrganization.organization),
         )
 
         stmt = stmt.where(Pledge.state != PledgeState.initiated)

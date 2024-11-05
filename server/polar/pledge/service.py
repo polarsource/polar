@@ -106,7 +106,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.issue).joinedload(Issue.organization),
                 joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
+                .joinedload(Repository.organization)
+                .joinedload(ExternalOrganization.organization),
             )
             .filter(Pledge.id == pledge_id)
         )
@@ -170,7 +171,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.issue).joinedload(Issue.organization),
                 joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
+                .joinedload(Repository.organization)
+                .joinedload(ExternalOrganization.organization),
             )
 
         if load_pledger:

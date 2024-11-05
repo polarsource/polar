@@ -18,6 +18,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.organization.schemas import Organization
 from polar.product.schemas import Product, ProductPrice
 
 Amount = Annotated[
@@ -200,3 +201,4 @@ class CheckoutPublic(CheckoutBase):
 
     product: Product
     product_price: ProductPrice
+    organization: Organization

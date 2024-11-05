@@ -5,7 +5,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, distinct, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import Anonymous, AuthSubject, is_organization, is_user
 from polar.enums import Platforms
@@ -47,9 +47,7 @@ class RepositoryService(
             (RepositorySortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Repository], int]:
-        statement = self._get_readable_repository_statement(auth_subject).options(
-            joinedload(Repository.organization)
-        )
+        statement = self._get_readable_repository_statement(auth_subject)
 
         if name is not None:
             statement = statement.where(Repository.name.in_(name))
@@ -97,10 +95,8 @@ class RepositoryService(
         auth_subject: AuthSubject[Anonymous | User | Organization],
         id: uuid.UUID,
     ) -> Repository | None:
-        statement = (
-            self._get_readable_repository_statement(auth_subject)
-            .where(Repository.id == id)
-            .options(joinedload(Repository.organization))
+        statement = self._get_readable_repository_statement(auth_subject).where(
+            Repository.id == id
         )
 
         result = await session.execute(statement)
@@ -171,7 +167,11 @@ class RepositoryService(
             query = query.where(Repository.deleted_at.is_(None))
 
         if load_organization:
-            query = query.options(joinedload(Repository.organization))
+            query = query.options(
+                joinedload(Repository.organization).joinedload(
+                    ExternalOrganization.organization
+                )
+            )
 
         if options is not None:
             query = query.options(*options)
@@ -209,7 +209,11 @@ class RepositoryService(
             statement = statement.where(Repository.name == repository_name)
 
         if load_organization:
-            statement = statement.options(joinedload(Repository.organization))
+            statement = statement.options(
+                joinedload(Repository.organization).joinedload(
+                    ExternalOrganization.organization
+                )
+            )
 
         if order_by_open_source:
             statement = statement.order_by(
@@ -243,7 +247,11 @@ class RepositoryService(
             statement = statement.where(Repository.deleted_at.is_(None))
 
         if load_organization:
-            statement = statement.options(joinedload(Repository.organization))
+            statement = statement.options(
+                joinedload(Repository.organization).joinedload(
+                    ExternalOrganization.organization
+                )
+            )
 
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
@@ -450,30 +458,39 @@ class RepositoryService(
     def _get_readable_repository_statement(
         self, auth_subject: AuthSubject[Anonymous | User | Organization]
     ) -> Select[tuple[Repository]]:
-        statement = select(Repository).where(Repository.deleted_at.is_(None))
+        statement = (
+            select(Repository)
+            .where(Repository.deleted_at.is_(None))
+            .join(
+                ExternalOrganization,
+                onclause=ExternalOrganization.id == Repository.organization_id,
+            )
+            .join(
+                Organization,
+                onclause=Organization.id == ExternalOrganization.organization_id,
+                isouter=True,
+            )
+        ).options(
+            contains_eager(Repository.organization).options(
+                contains_eager(ExternalOrganization.organization)
+            ),
+        )
 
         if is_user(auth_subject):
             statement = statement.where(
                 or_(
                     Repository.is_private.is_(False),
-                    Repository.organization_id.in_(
-                        select(ExternalOrganization.id)
-                        .join(
-                            UserOrganization,
-                            onclause=UserOrganization.organization_id
-                            == ExternalOrganization.organization_id,
+                    ExternalOrganization.organization_id.in_(
+                        select(UserOrganization.organization_id).where(
+                            UserOrganization.user_id == auth_subject.subject.id,
+                            UserOrganization.deleted_at.is_(None),
                         )
-                        .where(UserOrganization.user_id == auth_subject.subject.id)
                     ),
                 )
             )
         elif is_organization(auth_subject):
             statement = statement.where(
-                Repository.organization_id.in_(
-                    select(ExternalOrganization.id).where(
-                        ExternalOrganization.organization_id == auth_subject.subject.id
-                    )
-                )
+                ExternalOrganization.organization_id == auth_subject.subject.id
             )
         else:
             statement = statement.where(Repository.is_private.is_(False))

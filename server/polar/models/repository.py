@@ -15,6 +15,7 @@ from sqlalchemy import (
     Uuid,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -23,6 +24,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
 from .external_organization import ExternalOrganization
+from .organization import Organization
 
 
 class Repository(RecordModel):
@@ -42,6 +44,10 @@ class Repository(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped[ExternalOrganization]:
         return relationship(ExternalOrganization, lazy="raise")
+
+    internal_organization: AssociationProxy[Organization | None] = association_proxy(
+        "organization", "organization"
+    )
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

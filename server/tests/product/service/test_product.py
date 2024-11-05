@@ -1598,6 +1598,7 @@ class TestUpdateBenefits:
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
+            properties={"paid_articles": False},
         )
         selectable_benefit = await create_benefit(
             save_fixture,

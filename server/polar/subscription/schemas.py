@@ -3,6 +3,7 @@ from datetime import datetime
 from babel.numbers import format_currency
 from pydantic import UUID4, Field
 
+from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
@@ -43,7 +44,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
         )}/{self.recurring_interval}"
 
 
-class Subscription(MetadataOutputMixin, SubscriptionBase):
+class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     user: SubscriptionUser
     product: Product
     price: ProductPriceRecurring

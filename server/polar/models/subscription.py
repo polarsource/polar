@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
@@ -58,7 +59,7 @@ class SubscriptionStatus(StrEnum):
         return status in cls.revoked_statuses()
 
 
-class Subscription(MetadataMixin, RecordModel):
+class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
     amount: Mapped[int | None] = mapped_column(Integer, nullable=True)

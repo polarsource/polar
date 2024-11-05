@@ -2,9 +2,11 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
-import { useUserLicenseKeys } from '@/hooks/queries'
+import { useDownloadables, useUserLicenseKeys } from '@/hooks/queries'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { api } from '@/utils/api'
+import { organizationPageLink } from '@/utils/nav'
+import { ArrowDownward } from '@mui/icons-material'
 import {
   BenefitPublicInner,
   CheckoutPublic,
@@ -139,14 +141,23 @@ export const CheckoutConfirmation = ({
     (benefit) => benefit.type === 'license_keys',
   )
 
+  const downloadablesBenefit = product.benefits.find(
+    (benefit) => benefit.type === 'downloadables',
+  )
+
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
-      <div className="flex w-full max-w-sm flex-col gap-y-8">
-        <Avatar
-          className="h-16 w-16"
-          avatar_url={organization.avatar_url}
-          name={organization.name}
-        />
+      <div className="flex w-full max-w-md flex-col gap-y-8">
+        <Link
+          href={organizationPageLink(organization)}
+          className="flex self-start"
+        >
+          <Avatar
+            className="h-16 w-16"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
+        </Link>
 
         <h1 className="text-2xl font-medium">
           {status === CheckoutStatus.CONFIRMED &&
@@ -195,6 +206,12 @@ export const CheckoutConfirmation = ({
                       <LicenseKey key={benefit.id} publicBenefit={benefit} />
                     ))}
                 </div>
+              </ShadowBox>
+            )}
+            {!!downloadablesBenefit && (
+              <ShadowBox className="flex flex-col gap-y-6">
+                <h3>Downloadables</h3>
+                <Downloadables publicBenefit={downloadablesBenefit} />
               </ShadowBox>
             )}
             {currentUser ? (
@@ -252,9 +269,47 @@ const LicenseKey = ({
   }
 
   return (
-    <div className="flex flex-col gap-y-1">
+    <div className="flex flex-col gap-y-2">
       <span className="text-sm">{publicBenefit.description}</span>
       <CopyToClipboardInput value={licenseKey.key} />
+    </div>
+  )
+}
+
+const Downloadables = ({
+  publicBenefit,
+}: {
+  publicBenefit: BenefitPublicInner
+}) => {
+  const { data: downloadables } = useDownloadables(publicBenefit.id)
+
+  return (
+    <div className="flex flex-col gap-y-2">
+      {downloadables?.items.map((downloadable) => {
+        return (
+          <div
+            key={downloadable.id}
+            className="dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-full bg-white py-2 pl-4 pr-2"
+          >
+            <div className="flex w-full min-w-0 flex-col gap-y-1">
+              <span className="min-w-0 truncate text-sm">
+                {downloadable.file.name}
+              </span>
+            </div>
+            <div className="flex flex-row items-center gap-x-2">
+              <a
+                className="flex flex-row items-center gap-x-2"
+                href={downloadable.file.download.url}
+                download
+              >
+                <Button className="h-8 w-8" size="icon">
+                  <ArrowDownward fontSize="inherit" />
+                </Button>
+              </a>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

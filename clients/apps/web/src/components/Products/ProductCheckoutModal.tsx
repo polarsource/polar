@@ -6,6 +6,7 @@ import {
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { ClearOutlined } from '@mui/icons-material'
+import { SettingsOutlined } from '@mui/icons-material';
 import {
   CheckoutLink,
   CheckoutLinkCreate,
@@ -41,10 +42,9 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useEffect } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductPriceLabel from './ProductPriceLabel'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 
 const LinkView = ({
   product,
@@ -154,14 +154,24 @@ const LinkView = ({
 const LinkList = ({
   links,
   current,
-  onSelect
+  onSelect,
+  onSelectCreate
 }: {
   links: CheckoutLink[]
   current: string | undefined
-  onSelect: (link: CheckoutLink) => void
+  onSelect: (link: CheckoutLink, showForm: boolean) => void
+  onSelectCreate: () => void
 }) => {
   return (
-    <>
+    <div>
+      <div className="flex flex-row mb-4">
+        <h2 className="grow">Links</h2>
+        <div className="pr-4">
+          <Button variant="secondary" onClick={onSelectCreate}>
+              +
+          </Button>
+        </div>
+      </div>
       <List size="small">
         {links.map((link) => {
           const url = new URL(link.url)
@@ -173,7 +183,7 @@ const LinkList = ({
               selectedClassName="text-black dark:text-white"
               key={link.id}
               selected={current === link.id}
-              onSelect={() => onSelect(link)}
+              onSelect={() => onSelect(link, false)}
             >
               <ProductPriceLabel price={link.product_price} />
               {link.success_url && (
@@ -181,11 +191,18 @@ const LinkList = ({
                   {url.host}
                 </Pill>
               )}
+              <Button size="sm" variant="secondary" onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onSelect(link, true)
+              }}>
+               <SettingsOutlined fontSize="inherit" className="text-gray-500" />
+              </Button>
             </ListItem>
           )
         })}
       </List>
-    </>
+    </div>
   )
 }
 
@@ -202,15 +219,19 @@ type ProductCheckoutForm = Omit<
 export const ProductCheckoutModal = ({
   product,
 }: ProductCheckoutModalProps) => {
-  const { data: checkoutLinks } = useCheckoutLinks(product.organization_id, {
+  const { data: checkoutLinks, isFetched } = useCheckoutLinks(product.organization_id, {
     productId: product.id,
   })
 
-  const form = useForm<ProductCheckoutForm>({
-    defaultValues: {
+  const generateDefaultValues = () => {
+    return {
       product_price_id: product.prices[0].id,
       metadata: [],
-    },
+    }
+  }
+
+  const form = useForm<ProductCheckoutForm>({
+    defaultValues: generateDefaultValues()
   })
   const { control, handleSubmit, setError, reset } = form
   const { fields, append, remove } = useFieldArray({
@@ -222,8 +243,17 @@ export const ProductCheckoutModal = ({
   })
 
   const [selectedLink, setSelectedLink] = useState<CheckoutLink | null>(null)
+  const [showForm, setShowForm] = useState<boolean>(true)
+
+  const showCreateForm = () => {
+    setSelectedLink(null)
+    setShowForm(true)
+    reset(generateDefaultValues())
+  }
+
   const onSelectLink = useCallback(
-    (link: CheckoutLink) => {
+    (link: CheckoutLink, showForm: boolean) => {
+      console.log('select', link, showForm)
       setSelectedLink(link)
       reset({
         ...link,
@@ -232,9 +262,17 @@ export const ProductCheckoutModal = ({
           value,
         })),
       })
+      setShowForm(showForm)
     },
     [reset],
   )
+
+  useEffect(() => {
+    if (checkoutLinks && checkoutLinks.items.length > 0) {
+      setSelectedLink(checkoutLinks.items[0])
+      setShowForm(false)
+    }
+  }, [isFetched, checkoutLinks, setSelectedLink])
 
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
     useCreateCheckoutLink()
@@ -260,8 +298,8 @@ export const ProductCheckoutModal = ({
         } else {
           checkoutLink = await createCheckoutLink({ body })
           setSelectedLink(checkoutLink)
-          navigator.clipboard.writeText(checkoutLink.url)
         }
+        setShowForm(false)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -291,29 +329,38 @@ export const ProductCheckoutModal = ({
     [selectedLink, createCheckoutLink, updateCheckoutLink, setError],
   )
 
+  const hasCheckoutLinks = checkoutLinks && checkoutLinks.items.length > 0
+
+  if (!isFetched) {
+    return <></>
+  }
+
   return (
     <div className="flex flex-col gap-y-8 overflow-y-auto p-12">
       <div className="flex flex-col gap-y-2">
-        <h3 className="text-xl font-medium">
-          Share
-        </h3>
+        <h1 className="text-xl font-medium">
+          Share &rsaquo; {product.name}
+        </h1>
         <p className="dark:text-polar-500 text-gray-500">
           Checkout Links &amp; Embeds to easily integrate or share directly with your audience.
         </p>
       </div>
-      <h1 className="text-xl">{product.name}</h1>
-      {checkoutLinks && checkoutLinks.items.length > 0 && (
+
+      {hasCheckoutLinks && (
         <>
-          <LinkList links={checkoutLinks.items} current={selectedLink?.id} onSelect={onSelectLink} />
-          {selectedLink && <LinkView product={product} link={selectedLink} />}
+          <LinkList
+            links={checkoutLinks.items}
+            current={selectedLink?.id}
+            onSelect={onSelectLink}
+            onSelectCreate={showCreateForm}
+          />
+          {selectedLink && !showForm && <LinkView product={product} link={selectedLink} />}
         </>
       )}
 
-      <ShadowBoxOnMd>
+      {showForm && (
         <Form {...form}>
-          <h2 className="mb-4">
-            {selectedLink ? 'Update Current Link' : 'Create New Link'}
-          </h2>
+          <h2>{selectedLink ? 'Edit Link' : 'Create Link'}</h2>
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-6"
@@ -436,16 +483,30 @@ export const ProductCheckoutModal = ({
                 </Button>
               </div>
             </FormItem>
-            <Button
-              className="self-start"
-              type="submit"
-              loading={isCreatePending || isUpdatePending}
-            >
-              {selectedLink ? 'Update Link' : 'Generate Link'}
-            </Button>
+
+            <div className="flex flex-row gap-x-4">
+              <Button
+                className="self-start"
+                type="submit"
+                loading={isCreatePending || isUpdatePending}
+              >
+                {selectedLink ? 'Save' : 'Create'}
+              </Button>
+              {selectedLink && (
+                <Button
+                  className="self-start"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowForm(false)
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
           </form>
         </Form>
-      </ShadowBoxOnMd>
+      )}
     </div>
   )
 }

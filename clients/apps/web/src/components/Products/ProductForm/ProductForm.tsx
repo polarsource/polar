@@ -5,6 +5,7 @@ import {
   ProductUpdate,
 } from '@polar-sh/sdk'
 import React from 'react'
+import { ProductCustomFieldSection } from './ProductCustomFieldSection'
 import { ProductInfoSection } from './ProductInfoSection'
 import { ProductMediaSection } from './ProductMediaSection'
 import { ProductPricingSection } from './ProductPricingSection'
@@ -27,6 +28,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
       <ProductInfoSection />
       <ProductPricingSection update={update} />
       <ProductMediaSection organization={organization} />
+      <ProductCustomFieldSection organization={organization} />
     </div>
   )
 }

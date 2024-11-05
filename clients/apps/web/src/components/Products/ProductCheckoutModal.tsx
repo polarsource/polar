@@ -42,7 +42,9 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback, useMemo, useState, useEffect } from 'react'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
+import { Label } from 'polarkit/components/ui/label'
+import { useCallback, useState, useMemo, useEffect } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -53,11 +55,10 @@ const LinkView = ({
   product: Product,
   link: CheckoutLink,
 }) => {
-  const [embedSVG, setEmbedSVG] = useState(true)
-  const [darkmode, setDarkmode] = useState(true)
-  const [embedCheckout, setEmbedCheckout] = useState(false)
+  const [darkmode, setDarkmode] = useState<boolean>(true)
+  const [embedType, setEmbedType] = useState<string>('link')
 
-  const generateSVG = (link: CheckoutLink, product: Product, darkmode: boolean) => {
+  const svgURL = useMemo(() => {
     const query = new URLSearchParams({
       organizationId: product.organization_id,
       productId: product.id,
@@ -65,87 +66,65 @@ const LinkView = ({
     }).toString()
 
     const addDarkmode = darkmode ? '&darkmode' : ''
-    return `<img src="${CONFIG.FRONTEND_BASE_URL}/embed/product.svg?${query}${addDarkmode}" alt="Purchase ${product.name}" />`
-  }
+    const url = `${CONFIG.FRONTEND_BASE_URL}/embed/product.svg?${query}${addDarkmode}`
+    return url
+  }, [link, product, darkmode])
 
-  const generateCheckoutEmbed = (link: CheckoutLink, content: string, darkmode: boolean) => {
+  const checkoutEmbed = useMemo(() => {
     const theme = darkmode ? 'dark' : 'light'
     return `
-<a href="${link.url}" data-polar-checkout data-polar-checkout-theme="${theme}">${content}</a>
+<a href="${link.url}" data-polar-checkout data-polar-checkout-theme="${theme}">Purchase ${product.name}</a>
 <script src="${CONFIG.CHECKOUT_EMBED_SCRIPT_SRC}" defer data-auto-init></script>
   `.trim()
-  }
+  }, [link, product, darkmode])
 
-  const embedCode = useMemo(() => {
-    if (!link || !product) return ''
-
-    let content = `Purchase ${product.name}`
-    if (embedSVG) {
-      content = generateSVG(link, product, darkmode)
-    }
-
-    if (embedCheckout) {
-      return generateCheckoutEmbed(link, content, darkmode)
-    }
-
-    return `<a href="${link.url}">${content}</a>`
-  }, [link, product, embedSVG, darkmode, embedCheckout])
+  const showDarkmodeToggle = embedType === 'svg' || embedType === 'checkout'
 
   return (
     <>
-      <Tabs defaultValue="link">
+      <Tabs defaultValue={embedType} onValueChange={(value) => setEmbedType(value)}>
         <TabsList>
           <TabsTrigger value="link">Link</TabsTrigger>
-          <TabsTrigger value="embed">Embed</TabsTrigger>
+          <TabsTrigger value="checkout">Checkout Embed</TabsTrigger>
+          <TabsTrigger value="svg">Product Card</TabsTrigger>
         </TabsList>
 
         <TabsContent value="link">
           <CopyToClipboardInput
             value={link.url}
-            buttonLabel="Copy URL"
+            buttonLabel="Copy"
             className="bg-white"
           />
         </TabsContent>
 
-        <TabsContent value="embed">
+        <TabsContent value="checkout">
           <CopyToClipboardInput
-            value={embedCode}
-            buttonLabel="Copy Code"
+            value={checkoutEmbed}
+            buttonLabel="Copy"
             className="bg-white"
           />
-          <div>
-            <div className="flex flex-row items-center px-4">
-              <label htmlFor="embed-svg" className="grow">Product Card (SVG)</label>
-              <Switch
-                id="embed-svg"
-                checked={embedSVG}
-                onCheckedChange={(checked) => {
-                  setEmbedSVG(checked)
-                }}
-              />
-            </div>
-            <div className="flex flex-row items-center px-4">
-              <label htmlFor="darkmode" className="grow">Dark Mode</label>
-              <Switch
-                id="darkmode"
-                checked={darkmode}
-                onCheckedChange={(checked) => {
-                  setDarkmode(checked)
-                }}
-              />
-            </div>
-            <div className="flex flex-row items-center px-4">
-              <label htmlFor="embed-checkout" className="grow">Checkout Embed</label>
-              <Switch
-                id="embed-checkout"
-                checked={embedCheckout}
-                onCheckedChange={(checked) => {
-                  setEmbedCheckout(checked)
-                }}
-              />
-            </div>
-          </div>
         </TabsContent>
+
+        <TabsContent value="svg">
+          <CopyToClipboardInput
+            value={svgURL}
+            buttonLabel="Copy"
+            className="bg-white"
+          />
+        </TabsContent>
+
+        {showDarkmodeToggle && (
+          <div className="flex flex-row gap-x-2 mt-4 px-4">
+            <Checkbox
+              id="darkmode"
+              checked={darkmode}
+              onCheckedChange={(checked) => {
+                setDarkmode(checked === true)
+              }}
+            />
+            <Label htmlFor="darkmode" className="grow text-xs">Dark Mode</Label>
+          </div>
+        )}
       </Tabs>
     </>
   )

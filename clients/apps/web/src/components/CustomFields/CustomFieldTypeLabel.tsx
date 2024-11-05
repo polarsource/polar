@@ -1,26 +1,5 @@
-import {
-  CalendarMonth,
-  CheckBox,
-  List,
-  Numbers,
-  TextSnippet,
-} from '@mui/icons-material'
 import { CustomFieldType } from '@polar-sh/sdk'
-
-const getIcon = (type: CustomFieldType) => {
-  switch (type) {
-    case 'text':
-      return TextSnippet
-    case 'number':
-      return Numbers
-    case 'date':
-      return CalendarMonth
-    case 'checkbox':
-      return CheckBox
-    case 'select':
-      return List
-  }
-}
+import CustomFieldTypeIcon from './CustomFieldTypeIcon'
 
 const getLabel = (type: CustomFieldType) => {
   switch (type) {
@@ -38,12 +17,11 @@ const getLabel = (type: CustomFieldType) => {
 }
 
 const CustomFieldTypeLabel = ({ type }: { type: CustomFieldType }) => {
-  const Icon = getIcon(type)
   const label = getLabel(type)
 
   return (
     <div className="flex flex-row items-center gap-1">
-      <Icon fontSize="inherit" />
+      <CustomFieldTypeIcon type={type} />
       <div>{label}</div>
     </div>
   )

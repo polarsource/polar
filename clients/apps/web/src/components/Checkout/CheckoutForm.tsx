@@ -414,6 +414,7 @@ const BaseCheckoutForm = ({
                   <FormField
                     key={custom_field.id}
                     control={control}
+                    // @ts-ignore
                     name={`custom_field_data.${custom_field.slug}`}
                     render={({ field }) => (
                       <CustomFieldInput
@@ -651,6 +652,15 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     await onSuccess(updatedCheckout.success_url)
   }
 
+  const inputBoxShadow =
+    theme === 'dark'
+      ? 'none'
+      : 'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px'
+  const focusBoxShadow =
+    theme === 'dark'
+      ? 'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 71, 184, 0.4) 0px 0px 0px 3px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px'
+      : 'rgb(255, 255, 255) 0px 0px 0px 0px, rgb(204, 224, 255) 0px 0px 0px 3px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px'
+
   return (
     <Elements
       stripe={stripePromise}
@@ -676,6 +686,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           }
         ).customer_session_client_secret,
         appearance: {
+          theme: theme === 'dark' ? 'night' : 'stripe',
           rules: {
             '.Label': {
               color: theme === 'dark' ? 'white' : 'black',
@@ -688,7 +699,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
               color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
-              boxShadow: 'none',
+              boxShadow: inputBoxShadow,
               borderColor: 'transparent',
             },
             '.PickerItem--selected': {
@@ -701,33 +712,47 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             },
             '.Input': {
               padding: '12px',
-              backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
+              backgroundColor: theme === 'dark' ? 'rgb(16, 16, 20)' : 'white',
               color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
-              borderColor: theme === 'dark' ? 'transparent' : '#EEE',
+              borderColor: theme === 'dark' ? 'rgb(21, 21, 25)' : '#EEE',
+              boxShadow: inputBoxShadow,
             },
             '.Input:focus': {
-              borderColor: theme === 'dark' ? '#4667CA' : '#A5C2EB',
+              borderColor:
+                theme === 'dark' ? 'rgb(0, 84, 219)' : 'rgb(102, 161, 255)',
+              boxShadow: focusBoxShadow,
             },
             '.Tab': {
+              backgroundColor: 'transparent',
+              borderColor: theme === 'dark' ? '#353641' : '#EEE',
+            },
+            '.Tab--selected': {
+              backgroundColor: 'rgb(51, 129, 255)',
+              boxShadow: focusBoxShadow,
+              border: 'none',
+            },
+            '.Tab:focus': {
+              boxShadow: focusBoxShadow,
+            },
+            '.TabLabel--selected': {
+              color: 'white',
+            },
+            '.TabIcon--selected': {
+              fill: 'white',
+            },
+            '.Block': {
               backgroundColor: 'transparent',
               borderColor: theme === 'dark' ? '#353641' : '#EEE',
             },
           },
           variables: {
             borderRadius: '8px',
-            fontFamily: '"Inter var", Inter, sans-serif',
             fontSizeBase: '0.875rem',
             spacingGridRow: '18px',
             colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
           },
         },
-        fonts: [
-          {
-            cssSrc:
-              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500',
-          },
-        ],
       }}
     >
       <ElementsConsumer>

@@ -11,7 +11,7 @@ import {
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { SubmitHandler, useForm } from 'react-hook-form'
 import CustomFieldForm from './CustomFieldForm'
 
 interface CreateCustomFieldModalContentProps {
@@ -42,8 +42,8 @@ const CreateCustomFieldModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit = useCallback(
-    async (customFieldCreate: CustomFieldCreate) => {
+  const onSubmit: SubmitHandler<CustomFieldCreate> = useCallback(
+    async (customFieldCreate) => {
       try {
         setIsLoading(true)
         const customField =

@@ -1,6 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { usePostHog, PolarHog } from '@/hooks/posthog'
+import { PolarHog, usePostHog } from '@/hooks/posthog'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
@@ -15,7 +15,6 @@ import {
   Storefront,
   TrendingUp,
   TuneOutlined,
-  Webhook,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
@@ -302,7 +301,10 @@ const communityRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (org: Organization, posthog?: PolarHog): Route[] => [
+const dashboardRoutesList = (
+  org: Organization,
+  posthog?: PolarHog,
+): Route[] => [
   ...generalRoutesList(org, posthog),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
@@ -398,16 +400,19 @@ const organizationRoutesList = (org: Organization): Route[] => [
     link: `/dashboard/${org.slug}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
-    subs: undefined,
-  },
-  {
-    id: 'webhooks',
-    title: 'Webhooks',
-    icon: <Webhook fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/webhooks`,
-    if: false,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org.slug}/settings/webhooks`)
-    },
+    subs: [
+      {
+        title: 'General',
+        link: `/dashboard/${org.slug}/settings`,
+      },
+      {
+        title: 'Webhooks',
+        link: `/dashboard/${org.slug}/settings/webhooks`,
+      },
+      {
+        title: 'Custom fields',
+        link: `/dashboard/${org.slug}/settings/custom-fields`,
+      },
+    ],
   },
 ]

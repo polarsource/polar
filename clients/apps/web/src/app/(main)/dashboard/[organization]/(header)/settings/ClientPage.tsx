@@ -3,7 +3,6 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import OrganizationAppearanceSettings from '@/components/Settings/OrganizationAppearanceSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useContext } from 'react'
 
@@ -19,14 +18,6 @@ export default function ClientPage() {
             description="Configure your organization settings"
           />
           <OrganizationAppearanceSettings organization={org} />
-        </Section>
-        <Section>
-          <SectionDescription
-            title="Webhooks"
-            description={`Configure and send webhooks to custom URLs, Discord or Slack.`}
-          />
-
-          <WebhookSettings org={org} />
         </Section>
       </div>
     </DashboardBody>

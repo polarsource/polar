@@ -1,8 +1,6 @@
 'use client'
 
-import { useOrganization } from '@/hooks/queries'
 import { Product, ProductPrice } from '@polar-sh/sdk'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
 import LogoIcon from '../Brand/LogoIcon'
 import ProductPriceLabel from './ProductPriceLabel'
 import ProductPrices from './ProductPrices'
@@ -10,18 +8,9 @@ import ProductPrices from './ProductPrices'
 interface ProductCardProps {
   product: Product
   price?: ProductPrice
-  showOrganization?: boolean
 }
 
-export const ProductCard = ({
-  product,
-  price,
-  showOrganization = false,
-}: ProductCardProps) => {
-  const { data: organization } = useOrganization(
-    product.organization_id,
-    showOrganization,
-  )
+export const ProductCard = ({ product, price }: ProductCardProps) => {
   return (
     <div className="flex h-full w-full flex-col gap-4 transition-opacity hover:opacity-50">
       {product.medias.length > 0 ? (
@@ -44,18 +33,7 @@ export const ProductCard = ({
         <h3 className="line-clamp-1 flex items-center justify-between gap-1 leading-snug text-gray-950 dark:text-white">
           {product.name}
         </h3>
-        <div className="flex flex-row items-center justify-between ">
-          {organization && showOrganization && (
-            <div className="flex flex-row items-center gap-x-2">
-              <Avatar
-                className="h-6 w-6"
-                avatar_url={organization.avatar_url}
-                name={organization.name}
-              />
-              <span className="text-xs">{organization.name}</span>
-            </div>
-          )}
-
+        <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-sm text-gray-500">
             <h3 className="leading-snug">
               {price ? (

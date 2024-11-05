@@ -133,6 +133,27 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: Product = {
   created_at: new Date().toDateString(),
 }
 
+const ORGANIZATION = {
+  id: '123',
+  name: 'My Organization',
+  slug: 'my-organization',
+  created_at: new Date().toDateString(),
+  modified_at: null,
+  avatar_url: null,
+  bio: null,
+  blog: null,
+  company: null,
+  location: null,
+  email: null,
+  default_upfront_split_to_contributors: null,
+  donations_enabled: false,
+  feature_settings: null,
+  twitter_username: null,
+  pledge_minimum_amount: 2000,
+  pledge_badge_show_amount: false,
+  profile_settings: null,
+}
+
 export const createCheckoutPreview = (
   product: Product,
   price: ProductPrice,
@@ -171,26 +192,7 @@ export const createCheckoutPreview = (
     url: '/checkout/CLIENT_SECRET',
     success_url: '/checkout/CLIENT_SECRET/confirmation',
     embed_origin: null,
-    organization: {
-      id: '123',
-      name: 'My Organization',
-      slug: 'my-organization',
-      created_at: new Date().toDateString(),
-      modified_at: null,
-      avatar_url: null,
-      bio: null,
-      blog: null,
-      company: null,
-      location: null,
-      email: null,
-      default_upfront_split_to_contributors: null,
-      donations_enabled: false,
-      feature_settings: null,
-      twitter_username: null,
-      pledge_minimum_amount: 2000,
-      pledge_badge_show_amount: false,
-      profile_settings: null,
-    },
+    organization: ORGANIZATION,
   }
 }
 
@@ -210,7 +212,10 @@ export const ORDER_PREVIEW: UserOrder = {
   product_price: PRODUCT_PREVIEW.prices[0],
   subscription_id: null,
   subscription: null,
-  product: PRODUCT_PREVIEW,
+  product: {
+    ...PRODUCT_PREVIEW,
+    organization: ORGANIZATION,
+  },
   created_at: new Date().toDateString(),
   modified_at: new Date().toDateString(),
 }
@@ -234,7 +239,10 @@ export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
   product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
   price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
   checkout_id: null,
-  product: SUBSCRIPTION_PRODUCT_PREVIEW,
+  product: {
+    ...SUBSCRIPTION_PRODUCT_PREVIEW,
+    organization: ORGANIZATION,
+  },
   price: {
     id: '123',
     amount_type: 'fixed',

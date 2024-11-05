@@ -6,7 +6,6 @@ import {
   useIssueAddPolarBadge,
   useIssueRemovePolarBadge,
   useListPledesForIssue,
-  useOrganization,
   useOrganizationBadgeSettings,
   useUpdateIssue,
 } from '@/hooks/queries'
@@ -206,9 +205,7 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const { data: linkedOrganization } = useOrganization(
-    props.issue.repository.organization.organization_id as string,
-  )
+  const linkedOrganization = props.issue.repository.internal_organization
   const badgeSettings = useOrganizationBadgeSettings(linkedOrganization?.id)
   const isBadged = useMemo(() => isIssueBadged(props.issue), [props.issue])
   const gitHubIssueLink = githubIssueLink(props.issue)
@@ -525,9 +522,7 @@ const PromoteTab = (props: {
 }
 
 const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
-  const { data: linkedOrganization } = useOrganization(
-    props.issue.repository.organization.organization_id as string,
-  )
+  const linkedOrganization = props.issue.repository.internal_organization
   const upfront =
     props.issue.upfront_split_to_contributors ??
     linkedOrganization?.default_upfront_split_to_contributors

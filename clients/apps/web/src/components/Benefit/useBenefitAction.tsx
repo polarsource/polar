@@ -1,5 +1,4 @@
 import { useDiscordAccount, useGitHubAccount } from '@/hooks'
-import { useOrganization } from '@/hooks/queries'
 import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
@@ -16,7 +15,7 @@ interface BenefitAction {
 
 export const useBenefitActions = (benefit: UserBenefit): BenefitAction[] => {
   const router = useRouter()
-  const { data: organization } = useOrganization(benefit.organization_id ?? '')
+  const organization = benefit.organization
   const discordAccount = useDiscordAccount()
   const gitHubAccount = useGitHubAccount()
 
@@ -27,7 +26,7 @@ export const useBenefitActions = (benefit: UserBenefit): BenefitAction[] => {
           key: 'article',
           icon: ArrowForwardOutlined,
           onClick: () => {
-            router.push(`/${organization?.slug}`)
+            router.push(`/${organization.slug}`)
           },
         },
       ]

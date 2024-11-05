@@ -5,7 +5,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { useOrganization, useUserOrders } from '@/hooks/queries'
+import { useUserOrders } from '@/hooks/queries'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
 import { ProductPriceType, UserOrder } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -103,11 +103,7 @@ export default function ClientPage() {
 }
 
 const OrderItem = ({ order }: { order: UserOrder }) => {
-  const { data: organization } = useOrganization(order.product.organization_id)
-
-  if (!organization) {
-    return null
-  }
+  const organization = order.product.organization
 
   return (
     <ShadowBox className="flex w-full flex-col gap-y-6 ">

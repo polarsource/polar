@@ -1,7 +1,6 @@
 'use client'
 
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
-import { useOrganization } from '@/hooks/queries'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { api } from '@/utils/api'
 import { Issue, Pledge, PledgesTypeSummaries, Reward } from '@polar-sh/sdk'
@@ -31,10 +30,7 @@ const IssueListItem = (props: {
 }) => {
   const externalOrganization = props.issue.repository.organization
   const repo = props.issue.repository
-  const { data: organization } = useOrganization(
-    externalOrganization.organization_id as string,
-    !!externalOrganization.organization_id,
-  )
+  const organization = repo.internal_organization
 
   const mergedPledges = props.pledges || []
   const latestPledge = useToastLatestPledged(

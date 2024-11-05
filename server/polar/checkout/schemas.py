@@ -25,7 +25,13 @@ from polar.kit.schemas import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.organization.schemas import Organization
-from polar.product.schemas import Product, ProductPrice
+from polar.product.schemas import (
+    BenefitPublicList,
+    ProductBase,
+    ProductMediaList,
+    ProductPrice,
+    ProductPriceList,
+)
 
 Amount = Annotated[
     int,
@@ -194,10 +200,18 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     payment_processor_metadata: dict[str, Any]
 
 
+class CheckoutProduct(ProductBase):
+    """Product data for a checkout session."""
+
+    prices: ProductPriceList
+    benefits: BenefitPublicList
+    medias: ProductMediaList
+
+
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
-    product: Product
+    product: CheckoutProduct
     product_price: ProductPrice
     subscription_id: UUID4 | None
     attached_custom_fields: list[AttachedCustomField]
@@ -206,7 +220,7 @@ class Checkout(MetadataOutputMixin, CheckoutBase):
 class CheckoutPublic(CheckoutBase):
     """Checkout session data retrieved using the client secret."""
 
-    product: Product
+    product: CheckoutProduct
     product_price: ProductPrice
     organization: Organization
     attached_custom_fields: list[AttachedCustomField]

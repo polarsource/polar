@@ -2,7 +2,13 @@ from pydantic import UUID4, Field
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.organization.schemas import Organization
-from polar.product.schemas import Product, ProductPrice
+from polar.product.schemas import (
+    BenefitPublicList,
+    ProductBase,
+    ProductMediaList,
+    ProductPrice,
+    ProductPriceList,
+)
 from polar.subscription.schemas import SubscriptionBase
 
 
@@ -18,7 +24,10 @@ class UserOrderBase(TimestampedSchema):
     subscription_id: UUID4 | None
 
 
-class UserOrderProduct(Product):
+class UserOrderProduct(ProductBase):
+    prices: ProductPriceList
+    benefits: BenefitPublicList
+    medias: ProductMediaList
     organization: Organization
 
 

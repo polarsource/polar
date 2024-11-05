@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import UUID4, Field
 from sqlalchemy import Boolean, ForeignKey, Integer, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -33,8 +33,24 @@ class AttachedCustomFieldMixin:
 class AttachedCustomField(Schema):
     """Schema of a custom field attached to a resource."""
 
+    custom_field_id: UUID4 = Field(description="ID of the custom field.")
     custom_field: CustomFieldSchema
     order: int = Field(description="Order of the custom field in the resource.")
     required: bool = Field(
         description="Whether the value is required for this custom field."
     )
+
+
+class AttachedCustomFieldCreate(Schema):
+    """Schema to attach a custom field to a resource."""
+
+    custom_field_id: UUID4 = Field(description="ID of the custom field to attach.")
+    required: bool = Field(
+        description="Whether the value is required for this custom field."
+    )
+
+
+AttachedCustomFieldListCreate = Annotated[
+    list[AttachedCustomFieldCreate],
+    Field(description="List of custom fields to attach."),
+]

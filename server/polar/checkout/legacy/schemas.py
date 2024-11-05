@@ -1,7 +1,8 @@
 from pydantic import UUID4, AnyHttpUrl, ConfigDict, Field
 
+from polar.checkout.schemas import CheckoutProduct
 from polar.kit.schemas import EmailStrDNS, Schema
-from polar.product.schemas import Product, ProductPrice
+from polar.product.schemas import ProductPrice
 
 
 class CheckoutCreate(Schema):
@@ -43,7 +44,7 @@ class Checkout(Schema):
     )
     customer_email: str | None
     customer_name: str | None
-    product: Product
+    product: CheckoutProduct
     product_price: ProductPrice
 
     model_config = ConfigDict(

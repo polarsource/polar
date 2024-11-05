@@ -81,7 +81,8 @@ class RewardService:
             joinedload(IssueReward.organization).joinedload(Organization.account),
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)
-            .joinedload(Repository.organization),
+            .joinedload(Repository.organization)
+            .joinedload(ExternalOrganization.organization),
             joinedload(Pledge.by_organization),
             joinedload(Pledge.user),
             joinedload(Pledge.on_behalf_of_organization),
@@ -123,7 +124,8 @@ class RewardService:
             joinedload(IssueReward.organization),
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)
-            .joinedload(Repository.organization),
+            .joinedload(Repository.organization)
+            .joinedload(ExternalOrganization.organization),
             joinedload(Pledge.by_organization),
             joinedload(Pledge.user),
             joinedload(Pledge.on_behalf_of_organization),

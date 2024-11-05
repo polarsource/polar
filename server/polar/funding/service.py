@@ -191,6 +191,11 @@ class FundingService:
                 Repository.deleted_at.is_(None),
                 ExternalOrganization.deleted_at.is_(None),
             )
+            .options(
+                contains_eager(Issue.repository)
+                .contains_eager(Repository.organization)
+                .contains_eager(ExternalOrganization.organization)
+            )
         )
 
         if isinstance(auth_subject, Anonymous):

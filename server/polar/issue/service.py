@@ -64,27 +64,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             (IssueSortProperty.modified_at, True)
         ],
     ) -> tuple[Sequence[Issue], int]:
-        IssueExternalOrganization = aliased(ExternalOrganization)
-        statement = (
-            self._get_readable_issue_statement(auth_subject)
-            .join(
-                IssueExternalOrganization,
-                Issue.organization_id == IssueExternalOrganization.id,
-            )
-            .options(
-                contains_eager(Issue.repository).contains_eager(
-                    Repository.organization.of_type(IssueExternalOrganization),
-                ),
-                contains_eager(Issue.organization.of_type(IssueExternalOrganization)),
-            )
-        )
+        statement = self._get_readable_issue_statement(auth_subject)
 
         if platform is not None:
             statement = statement.where(Issue.platform.in_(platform))
 
         if external_organization_name is not None:
             statement = statement.where(
-                IssueExternalOrganization.name.in_(external_organization_name)
+                ExternalOrganization.name.in_(external_organization_name)
             )
 
         if repository_name is not None:
@@ -95,7 +82,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         if organization_id is not None:
             statement = statement.where(
-                IssueExternalOrganization.organization_id.in_(organization_id)
+                ExternalOrganization.organization_id.in_(organization_id)
             )
 
         if is_badged is not None:
@@ -184,7 +171,9 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             .where(Issue.deleted_at.is_(None))
             .options(
                 joinedload(Issue.repository),
-                joinedload(Issue.repository).joinedload(Repository.organization),
+                joinedload(Issue.repository)
+                .joinedload(Repository.organization)
+                .joinedload(ExternalOrganization.organization),
             )
         )
         res = await session.execute(statement)
@@ -408,7 +397,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 contains_eager(Issue.pledges)
                 .joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
+                .joinedload(Repository.organization)
+                .joinedload(ExternalOrganization.organization),
                 contains_eager(Issue.pledges).joinedload(
                     Pledge.on_behalf_of_organization
                 ),
@@ -577,30 +567,40 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             select(Issue)
             .where(Issue.deleted_at.is_(None))
             .join(Repository, onclause=Issue.repository_id == Repository.id)
+            .join(
+                ExternalOrganization,
+                onclause=Repository.organization_id == ExternalOrganization.id,
+            )
+            .join(
+                Organization,
+                onclause=ExternalOrganization.organization_id == Organization.id,
+                isouter=True,
+            )
+            .options(
+                contains_eager(Issue.repository).options(
+                    contains_eager(Repository.organization).options(
+                        contains_eager(ExternalOrganization.organization)
+                    )
+                ),
+                contains_eager(Issue.organization.of_type(ExternalOrganization)),
+            )
         )
 
         if is_user(auth_subject):
             statement = statement.where(
                 or_(
                     Repository.is_private.is_(False),
-                    Repository.organization_id.in_(
-                        select(ExternalOrganization.id)
-                        .join(
-                            UserOrganization,
-                            onclause=UserOrganization.organization_id
-                            == ExternalOrganization.organization_id,
+                    ExternalOrganization.organization_id.in_(
+                        select(UserOrganization.organization_id).where(
+                            UserOrganization.user_id == auth_subject.subject.id,
+                            UserOrganization.deleted_at.is_(None),
                         )
-                        .where(UserOrganization.user_id == auth_subject.subject.id)
                     ),
                 )
             )
         elif is_organization(auth_subject):
             statement = statement.where(
-                Repository.organization_id.in_(
-                    select(ExternalOrganization.id).where(
-                        ExternalOrganization.organization_id == auth_subject.subject.id
-                    )
-                )
+                ExternalOrganization.organization_id == auth_subject.subject.id
             )
         else:
             statement = statement.where(Repository.is_private.is_(False))

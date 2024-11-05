@@ -36,6 +36,7 @@ from polar.pledge.endpoints import router as pledge_router
 from polar.product.endpoints import router as product_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
+from polar.storefront.endpoints import router as storefront_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
@@ -120,3 +121,5 @@ router.include_router(google_router)
 router.include_router(license_key_router)
 # /checkout-links
 router.include_router(checkout_link_router)
+# /storefronts
+router.include_router(storefront_router)

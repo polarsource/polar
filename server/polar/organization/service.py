@@ -5,9 +5,8 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -17,19 +16,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import (
-    Donation,
-    OAuthAccount,
-    Order,
-    Organization,
-    Product,
-    ProductPrice,
-    Subscription,
-    User,
-    UserOrganization,
-)
-from polar.models.product_price import ProductPriceAmountType
-from polar.models.user import OAuthPlatform
+from polar.models import Organization, User, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
@@ -37,7 +24,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .auth import OrganizationsWrite
-from .schemas import OrganizationCreate, OrganizationCustomerType, OrganizationUpdate
+from .schemas import OrganizationCreate, OrganizationUpdate
 from .sorting import OrganizationSortProperty
 
 log = structlog.get_logger()
@@ -332,113 +319,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
         await self._after_update(session, org)
 
         return org
-
-    async def list_customers(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        *,
-        pagination: PaginationParams,
-        customer_types: set[OrganizationCustomerType] = {
-            OrganizationCustomerType.free_subscription,
-            OrganizationCustomerType.paid_subscription,
-            OrganizationCustomerType.order,
-            OrganizationCustomerType.donation,
-        },
-    ) -> tuple[Sequence[User], int]:
-        clauses = []
-
-        def append_subscription_clause(is_free: bool | None = None) -> None:
-            SubscriptionProduct = aliased(Product)
-            SubscriptionProductPrice = aliased(ProductPrice)
-            where = [
-                Subscription.deleted_at.is_(None),
-                SubscriptionProduct.organization_id == organization.id,
-                Subscription.active.is_(True),
-            ]
-            if is_free is True:
-                where.append(
-                    SubscriptionProductPrice.amount_type == ProductPriceAmountType.free
-                )
-            elif is_free is False:
-                where.append(
-                    SubscriptionProductPrice.amount_type != ProductPriceAmountType.free
-                )
-
-            clauses.append(
-                User.id.in_(
-                    select(Subscription)
-                    .with_only_columns(Subscription.user_id)
-                    .join(
-                        SubscriptionProduct,
-                        onclause=SubscriptionProduct.id == Subscription.product_id,
-                    )
-                    .join(
-                        SubscriptionProductPrice,
-                        onclause=SubscriptionProductPrice.id == Subscription.price_id,
-                    )
-                    .where(*where)
-                ),
-            )
-
-        if (
-            OrganizationCustomerType.free_subscription in customer_types
-            and OrganizationCustomerType.paid_subscription in customer_types
-        ):
-            append_subscription_clause()
-        elif OrganizationCustomerType.free_subscription in customer_types:
-            append_subscription_clause(is_free=True)
-        elif OrganizationCustomerType.paid_subscription in customer_types:
-            append_subscription_clause(is_free=False)
-
-        if OrganizationCustomerType.order in customer_types:
-            OrderProduct = aliased(Product)
-            clauses.append(
-                User.id.in_(
-                    select(Order)
-                    .with_only_columns(Order.user_id)
-                    .join(OrderProduct, onclause=OrderProduct.id == Order.product_id)
-                    .where(
-                        Order.deleted_at.is_(None),
-                        OrderProduct.organization_id == organization.id,
-                        Order.subscription_id.is_(None),
-                    )
-                ),
-            )
-
-        if OrganizationCustomerType.donation in customer_types:
-            clauses.append(
-                User.id.in_(
-                    select(Donation)
-                    .with_only_columns(Donation.by_user_id)
-                    .where(
-                        Donation.deleted_at.is_(None),
-                        Donation.to_organization_id == organization.id,
-                    )
-                ),
-            )
-
-        statement = (
-            select(User)
-            .join(
-                OAuthAccount,
-                onclause=and_(
-                    User.id == OAuthAccount.user_id,
-                    OAuthAccount.platform == OAuthPlatform.github,
-                ),
-                isouter=True,
-            )
-            .where(or_(*clauses))
-            .order_by(
-                # Put users with a GitHub account first, so we can display their avatar
-                OAuthAccount.created_at.desc().nulls_last()
-            )
-            .options(contains_eager(User.oauth_accounts))
-        )
-
-        results, count = await paginate(session, statement, pagination=pagination)
-
-        return results, count
 
     async def _after_update(
         self,

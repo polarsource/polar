@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
+    ColumnElement,
     ForeignKey,
     Integer,
     String,
@@ -12,12 +13,16 @@ from sqlalchemy import (
     Uuid,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
 
 from .account import Account
+
+if TYPE_CHECKING:
+    from .product import Product
 
 
 class Organization(RecordModel):
@@ -139,9 +144,14 @@ class Organization(RecordModel):
     # End: Fields synced from GitHub
     #
 
-    @property
+    @hybrid_property
     def storefront_enabled(self) -> bool:
         return self.profile_settings.get("enabled", False)
+
+    @storefront_enabled.inplace.expression
+    @classmethod
+    def _storefront_enabled_expression(cls) -> ColumnElement[bool]:
+        return Organization.profile_settings["enabled"].as_boolean()
 
     @property
     def polar_site_url(self) -> str:
@@ -150,3 +160,21 @@ class Organization(RecordModel):
     @property
     def account_url(self) -> str:
         return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.slug}/finance/account"
+
+    @declared_attr
+    def all_products(cls) -> Mapped[list["Product"]]:
+        return relationship("Product", lazy="raise", back_populates="organization")
+
+    @declared_attr
+    def products(cls) -> Mapped[list["Product"]]:
+        return relationship(
+            "Product",
+            lazy="raise",
+            primaryjoin=(
+                "and_("
+                "Product.organization_id == Organization.id, "
+                "Product.is_archived.is_(False)"
+                ")"
+            ),
+            viewonly=True,
+        )

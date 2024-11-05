@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Connection, ForeignKey, Integer, String, Uuid, event
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship
 
@@ -16,6 +17,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 
+from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice, ProductPriceFree
 from .subscription import Subscription
@@ -69,6 +71,10 @@ class Checkout(MetadataMixin, RecordModel):
     def product(cls) -> Mapped[Product]:
         # Eager loading makes sense here because we always need the product
         return relationship(Product, lazy="joined")
+
+    organization: AssociationProxy[Organization] = association_proxy(
+        "product", "organization"
+    )
 
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False

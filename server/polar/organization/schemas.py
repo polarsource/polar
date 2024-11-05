@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from enum import StrEnum
 from typing import Annotated, Self
 
 from pydantic import (
@@ -201,19 +200,6 @@ class CreditBalance(Schema):
     amount: CurrencyAmount = Field(
         description="The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
     )
-
-
-class OrganizationCustomerType(StrEnum):
-    free_subscription = "free_subscription"
-    paid_subscription = "paid_subscription"
-    order = "order"
-    donation = "donation"
-
-
-class OrganizationCustomer(Schema):
-    public_name: str
-    github_username: str | None
-    avatar_url: str | None
 
 
 # Internal model

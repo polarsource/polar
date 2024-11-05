@@ -44,7 +44,7 @@ class Product(RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise")
+        return relationship("Organization", lazy="raise", back_populates="products")
 
     @declared_attr
     def all_prices(cls) -> Mapped[list["ProductPrice"]]:

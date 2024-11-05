@@ -31,6 +31,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models.donation import Donation
+from polar.models.external_organization import ExternalOrganization
 from polar.models.held_balance import HeldBalance
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -85,7 +86,8 @@ class DonationService:
                 joinedload(Donation.by_user),
                 joinedload(Donation.issue)
                 .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
+                .joinedload(Repository.organization)
+                .joinedload(ExternalOrganization.organization),
             )
         )
         res = await session.execute(stmt)
@@ -111,7 +113,8 @@ class DonationService:
                 joinedload(Donation.by_user),
                 joinedload(Donation.issue)
                 .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
+                .joinedload(Repository.organization)
+                .joinedload(ExternalOrganization.organization),
             )
         )
 

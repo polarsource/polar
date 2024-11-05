@@ -4,7 +4,7 @@ import { api } from '@/utils/api'
 import { DownloadableRead, ListResourceDownloadableRead } from '@polar-sh/sdk'
 import { defaultRetry } from './retry'
 
-export const useDownloadables = (benefitId: string, activeFileIds: string[]) =>
+export const useDownloadables = (benefitId: string, activeFileIds: string[] = []) =>
   useQuery({
     queryKey: ['user', 'downloadables', benefitId, ...activeFileIds],
     queryFn: () =>
@@ -14,6 +14,10 @@ export const useDownloadables = (benefitId: string, activeFileIds: string[]) =>
         })
         .then((response: ListResourceDownloadableRead) => {
           if (!response.items) {
+            return response
+          }
+
+          if (activeFileIds.length < 1) {
             return response
           }
 

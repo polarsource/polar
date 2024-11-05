@@ -406,6 +406,20 @@ export const GuidesNavigation = () => {
   )
 }
 
+export const ToolsNavigation = () => {
+  return (
+    <div>
+      <NavigationHeadline>Tools</NavigationHeadline>
+      <NavigationItem href="/docs/tools/polar-init">
+        polar-init
+      </NavigationItem>
+      <NavigationItem href="/docs/tools/checkout-link">
+        checkout-link
+      </NavigationItem>
+    </div>
+  )
+}
+
 export const SupportNavigation = () => {
   return (
     <div>
@@ -498,6 +512,15 @@ export const DocumentationPageSidebar = ({
             active={() => activeSection === 'guides'}
           >
             Guides
+          </NavigationItem>
+        </li>
+        <li>
+          <NavigationItem
+            icon={<DescriptionOutlined fontSize="inherit" />}
+            href="/docs/tools"
+            active={() => activeSection === 'tools'}
+          >
+            Tools
           </NavigationItem>
         </li>
         <li>

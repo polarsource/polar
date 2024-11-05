@@ -88,6 +88,7 @@ const EmbedIssue = (props: { src: string }) => {
         twitter_username: null,
         organization_id: null,
       },
+      internal_organization: null,
     },
     pledge_badge_currently_embedded: false,
   }

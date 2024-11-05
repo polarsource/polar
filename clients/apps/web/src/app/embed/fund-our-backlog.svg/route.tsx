@@ -1,6 +1,6 @@
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { Issue, ListResourceIssue, PolarAPI } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
@@ -11,11 +11,7 @@ const getData = async (
   organizationSlug: string,
   repositoryName: string | undefined,
 ): Promise<ListResourceIssue> => {
-  const organization = await getOrganizationBySlug(api, organizationSlug)
-
-  if (!organization) {
-    throw new Error('Organization not found')
-  }
+  const { organization } = await getStorefrontOrNotFound(api, organizationSlug)
 
   return await api.issues.list({
     organizationId: organization.id,

@@ -2,10 +2,10 @@ import {
   Article,
   Issue,
   ListResourceIssue,
-  ListResourceOrganization,
   ListResourceRepository,
   Organization,
   Repository,
+  Storefront,
 } from '@polar-sh/sdk'
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
@@ -147,21 +147,14 @@ const listIssues = async (
   })
 }
 
-const getOrg = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
-
-  const response = await fetch(url, {
+const getStorefront = async (org: string): Promise<Storefront> => {
+  const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceOrganization
-
-  const organization = data.items[0]
-
-  if (!organization) {
+  if (response.status === 404) {
     notFound()
   }
-
-  return organization
+  return await response.json()
 }
 
 const getRepo = async (orgId: string, repo: string): Promise<Repository> => {
@@ -235,11 +228,10 @@ export async function GET(req: NextRequest) {
     const repo = searchParams.get('repo')
     const number = searchParams.get('number')
 
-    let orgData: Organization | undefined
     let repoData: Repository | undefined
     let issueData: Issue | undefined
 
-    orgData = await getOrg(org)
+    const { organization } = await getStorefront(org)
 
     if (repo && number) {
       issueData = await getIssue(
@@ -249,11 +241,7 @@ export async function GET(req: NextRequest) {
     } else if (org && repo) {
       repoData = await getRepo(org, repo)
     } else if (org) {
-      return await renderCreatorOG(orgData)
-    }
-
-    if (!orgData) {
-      notFound()
+      return await renderCreatorOG(organization)
     }
 
     let issues: Issue[] = []
@@ -264,7 +252,7 @@ export async function GET(req: NextRequest) {
       issues = [issueData]
       largeIssue = true
     } else {
-      const res = await listIssues(orgData, repoData)
+      const res = await listIssues(organization, repoData)
       if (res.items) {
         issues = res.items
         total_issue_count = res.pagination.total_count
@@ -272,10 +260,10 @@ export async function GET(req: NextRequest) {
     }
 
     return await renderFundingOG(
-      orgData.name,
+      organization.name,
       repoData,
       total_issue_count,
-      orgData.avatar_url,
+      organization.avatar_url,
       issues,
       largeIssue,
     )

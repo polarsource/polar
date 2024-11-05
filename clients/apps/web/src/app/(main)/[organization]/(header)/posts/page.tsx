@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { ArticleVisibility, ListResourceArticle } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -17,7 +17,7 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
@@ -59,7 +59,7 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )

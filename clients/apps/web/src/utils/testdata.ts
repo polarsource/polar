@@ -104,6 +104,7 @@ export const repo: Repository = {
   organization: externalOrganization,
   stars: 26000,
   profile_settings: {},
+  internal_organization: org,
 }
 
 export const reactions: Reactions = {

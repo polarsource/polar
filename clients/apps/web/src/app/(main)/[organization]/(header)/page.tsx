@@ -1,11 +1,11 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { ListResourceIssueFunding, ListResourceProduct } from '@polar-sh/sdk'
+import { ListResourceIssueFunding } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 import { externalURL } from '@/components/Organization'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
 const cacheConfig = {
@@ -20,7 +20,7 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
@@ -64,53 +64,35 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  let products: ListResourceProduct | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
 
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization, products } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
 
   try {
-    const [loadProducts, loadListIssueFunding] = await Promise.all([
-      api.products.list(
-        {
-          organizationId: organization.id,
-          isArchived: false,
+    const loadListIssueFunding = await api.funding.search(
+      {
+        organizationId: organization.id,
+        limit: 10,
+        page: 1,
+        closed: false,
+        sorting: [
+          'most_funded',
+          'most_recently_funded',
+          'most_engagement',
+          'newest',
+        ],
+      },
+      {
+        ...cacheConfig,
+        next: {
+          ...cacheConfig.next,
+          tags: [`funding:${organization.id}`],
         },
-        {
-          ...cacheConfig,
-          next: {
-            ...cacheConfig.next,
-            tags: [`products:${organization.id}`],
-          },
-        },
-      ),
-      api.funding.search(
-        {
-          organizationId: organization.id,
-          limit: 10,
-          page: 1,
-          closed: false,
-          sorting: [
-            'most_funded',
-            'most_recently_funded',
-            'most_engagement',
-            'newest',
-          ],
-        },
-        {
-          ...cacheConfig,
-          next: {
-            ...cacheConfig.next,
-            tags: [`funding:${organization.id}`],
-          },
-        },
-      ),
-    ])
-
-    products = loadProducts
+      },
+    )
     listIssueFunding = loadListIssueFunding
   } catch (e) {
     notFound()
@@ -149,7 +131,7 @@ export default async function Page({
       />
       <ClientPage
         organization={organization}
-        products={products?.items ?? []}
+        products={products}
         issues={listIssueFunding?.items ?? []}
       />
     </>

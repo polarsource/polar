@@ -5,7 +5,6 @@ import {
   OrganizationBadgeSettingsUpdate,
   OrganizationCreate,
   OrganizationUpdate,
-  OrganizationsApiCustomersRequest,
   OrganizationsApiListRequest,
 } from '@polar-sh/sdk'
 import { UseMutationResult, useMutation, useQuery } from '@tanstack/react-query'
@@ -111,14 +110,4 @@ export const useOrganizationAccount = (id?: string) =>
     queryFn: () => api.organizations.getAccount({ id: id as string }),
     retry: defaultRetry,
     enabled: !!id,
-  })
-
-export const useOrganizationCustomers = (
-  opts: OrganizationsApiCustomersRequest,
-) =>
-  useQuery({
-    queryKey: ['organizationCustomers', opts.id],
-    queryFn: () => api.organizations.customers(opts),
-    retry: defaultRetry,
-    enabled: !!opts.id,
   })

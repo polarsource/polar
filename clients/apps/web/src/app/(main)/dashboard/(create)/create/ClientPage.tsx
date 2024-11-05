@@ -2,7 +2,8 @@
 
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
-import { useCreateOrganization, useListOrganizations } from '@/hooks/queries'
+import { usePostHog } from '@/hooks/posthog'
+import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
@@ -21,7 +22,6 @@ import {
 } from 'polarkit/components/ui/form'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { usePostHog } from '@/hooks/posthog'
 import slugify from 'slugify'
 
 export default function ClientPage({
@@ -69,11 +69,6 @@ export default function ClientPage({
   const name = watch('name')
   const slug = watch('slug')
 
-  const { data: existingOrganizations } = useListOrganizations(
-    { slug, limit: 1 },
-    !!slug,
-  )
-
   useEffect(() => {
     if (!editedSlug && name) {
       setValue('slug', slugify(name, { lower: true, strict: true }))
@@ -84,20 +79,6 @@ export default function ClientPage({
       )
     }
   }, [name, editedSlug, slug, setValue])
-
-  useEffect(() => {
-    if (
-      existingOrganizations &&
-      existingOrganizations.pagination.total_count > 0
-    ) {
-      setError('root', {
-        type: 'manual',
-        message: 'An organization with this slug already exists.',
-      })
-    } else {
-      clearErrors('root')
-    }
-  }, [existingOrganizations, setError, clearErrors])
 
   const onSubmit = async (data: { name: string; slug: string }) => {
     try {

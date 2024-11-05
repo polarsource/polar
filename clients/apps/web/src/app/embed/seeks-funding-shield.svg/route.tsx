@@ -1,6 +1,6 @@
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { PolarAPI } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
@@ -11,11 +11,7 @@ const getData = async (
   organizationSlug: string,
   repositoryName: string | undefined,
 ): Promise<number> => {
-  const organization = await getOrganizationBySlug(api, organizationSlug)
-
-  if (!organization) {
-    throw new Error('Organization not found')
-  }
+  const { organization } = await getStorefrontOrNotFound(api, organizationSlug)
 
   const {
     pagination: { total_count },

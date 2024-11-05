@@ -1,18 +1,12 @@
 import CheckoutProductInfo from '@/components/Checkout/CheckoutProductInfo'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { isCrawler } from '@/utils/crawlers'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { CheckoutPublic, Product, ResponseError } from '@polar-sh/sdk'
+import { getStorefrontOrNotFound } from '@/utils/storefront'
+import { CheckoutPublic } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
-
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
 
 export async function generateMetadata({
   params,
@@ -20,12 +14,11 @@ export async function generateMetadata({
   params: { organization: string; productId: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization, products } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
-
-  const product = await api.products.get({ id: params.productId }, cacheConfig)
+  const product = products.find((p) => p.id === params.productId)
 
   if (!product) {
     notFound()
@@ -72,23 +65,13 @@ export default async function Page({
   params: { organization: string; productId: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
+  const { organization, products } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
+  const product = products.find((p) => p.id === params.productId)
 
-  let product: Product | undefined
-  try {
-    product = await api.products.get({ id: params.productId }, cacheConfig)
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    } else {
-      throw e
-    }
-  }
-
-  if (product.is_archived) {
+  if (!product) {
     notFound()
   }
 

@@ -1,74 +1,23 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import { getServerURL } from '@/utils/api'
-import {
-  ListResourceOrganization,
-  ListResourceOrganizationCustomer,
-  Organization,
-  OrganizationCustomer,
-  OrganizationCustomerType,
-  OrganizationSubscribePromoteSettings,
-} from '@polar-sh/sdk'
+import { Customer, Storefront } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getOrg = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
-
-  const response = await fetch(url, {
+const getStorefront = async (org: string): Promise<Storefront> => {
+  const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceOrganization
-
-  const organization = data.items[0]
-
-  if (!organization) {
+  if (response.status === 404) {
     notFound()
   }
-
-  return organization
-}
-
-const getCustomers = async (
-  org: string,
-  limit: number = 3,
-): Promise<[OrganizationCustomer[], number]> => {
-  const { id: orgId, profile_settings } = await getOrg(org)
-
-  const settings: OrganizationSubscribePromoteSettings =
-    profile_settings?.subscribe ?? {
-      promote: true,
-      show_count: true,
-      count_free: true,
-    }
-  if (!settings.show_count) {
-    return [[], 0]
-  }
-
-  const apiBase = `${getServerURL()}/v1`
-  const requestURL = new URL(`${apiBase}/organizations/${orgId}/customers`)
-  requestURL.searchParams.append(
-    'customer_types',
-    OrganizationCustomerType.PAID_SUBSCRIPTION,
-  )
-  if (settings.count_free) {
-    requestURL.searchParams.append(
-      'customer_types',
-      OrganizationCustomerType.FREE_SUBSCRIPTION,
-    )
-  }
-  requestURL.searchParams.set('limit', limit.toString())
-
-  const response = await fetch(requestURL.toString(), {
-    method: 'GET',
-  })
-  const data = (await response.json()) as ListResourceOrganizationCustomer
-  return [data.items || [], data.pagination.total_count]
+  return await response.json()
 }
 
 const renderBadge = async (
-  customers: OrganizationCustomer[],
+  customers: Customer[],
   totalCustomers: number,
   label: string,
   darkmode: boolean,
@@ -119,7 +68,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [customers, total] = await getCustomers(org)
+    const {
+      customers: { customers, total },
+    } = await getStorefront(org)
     const svg = await renderBadge(customers, total, label, darkmode)
 
     return new Response(svg, {

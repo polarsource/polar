@@ -28,7 +28,7 @@ const _getUserOrganizations = async (
 
   try {
     const result = await api.organizations.list(
-      { isMember: true, limit: 100, sorting: ['name'] },
+      { limit: 100, sorting: ['name'] },
       {
         next: {
           tags: [`users:${user.id}:organizations`],

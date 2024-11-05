@@ -8091,24 +8091,6 @@
                         "description": "Filter by slug."
                     },
                     {
-                        "name": "is_member",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "boolean"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by membership. If `true`, only organizations the user is a member of are returned. If `false`, only organizations the user is not a member of are returned.",
-                            "title": "Is Member"
-                        },
-                        "description": "Filter by membership. If `true`, only organizations the user is a member of are returned. If `false`, only organizations the user is not a member of are returned."
-                    },
-                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -8438,150 +8420,6 @@
                 ],
                 "x-speakeasy-group": "organizations",
                 "x-speakeasy-name-override": "update"
-            }
-        },
-        "/v1/organizations/{id}/customers": {
-            "get": {
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "List Organization Customers",
-                "description": "List organization customers.",
-                "operationId": "organizations:customers",
-                "security": [
-                    {
-                        "oidc": [
-                            "organizations:read",
-                            "organizations:write"
-                        ]
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "description": "The organization ID.",
-                            "x-polar-selector-widget": {
-                                "resourceRoot": "/v1/organizations",
-                                "resourceName": "Organization",
-                                "displayProperty": "name"
-                            },
-                            "title": "Id"
-                        }
-                    },
-                    {
-                        "name": "customer_types",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "array",
-                            "uniqueItems": true,
-                            "items": {
-                                "$ref": "#/components/schemas/OrganizationCustomerType"
-                            },
-                            "description": "Filter by the type of purchase the customer made.",
-                            "default": [
-                                "paid_subscription",
-                                "order",
-                                "free_subscription",
-                                "donation"
-                            ],
-                            "title": "Customer Types"
-                        },
-                        "description": "Filter by the type of purchase the customer made."
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Page number, defaults to 1.",
-                            "default": 1,
-                            "title": "Page"
-                        },
-                        "description": "Page number, defaults to 1."
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Size of a page, defaults to 10. Maximum is 100.",
-                            "default": 10,
-                            "title": "Limit"
-                        },
-                        "description": "Size of a page, defaults to 10. Maximum is 100."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_OrganizationCustomer_"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Organization not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ResourceNotFound"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
-                ],
-                "x-speakeasy-pagination": {
-                    "type": "offsetLimit",
-                    "inputs": [
-                        {
-                            "name": "page",
-                            "in": "parameters",
-                            "type": "page"
-                        },
-                        {
-                            "name": "limit",
-                            "in": "parameters",
-                            "type": "limit"
-                        }
-                    ],
-                    "outputs": {
-                        "results": "$.items",
-                        "numPages": "$.pagination.max_page"
-                    }
-                },
-                "x-speakeasy-group": "organizations",
-                "x-speakeasy-name-override": "customers",
-                "x-speakeasy-ignore": true
             }
         },
         "/v1/organizations/{id}/account": {
@@ -13539,9 +13377,9 @@
                                 }
                             ],
                             "title": "OrganizationID Filter",
-                            "description": "Filter by organization ID. **Required unless you use an organization token.**"
+                            "description": "Filter by organization ID."
                         },
-                        "description": "Filter by organization ID. **Required unless you use an organization token.**"
+                        "description": "Filter by organization ID."
                     },
                     {
                         "name": "query",
@@ -13709,7 +13547,6 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
                     "User"
                 ],
@@ -13874,7 +13711,6 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
                     "User"
                 ],
@@ -17029,6 +16865,62 @@
                 "x-speakeasy-group": "checkout-links",
                 "x-speakeasy-name-override": "delete"
             }
+        },
+        "/v1/storefronts/{slug}": {
+            "get": {
+                "tags": [
+                    "storefronts"
+                ],
+                "summary": "Get Organization Storefront",
+                "description": "Get an organization storefront by slug.",
+                "operationId": "storefronts:get",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Slug"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Storefront"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-speakeasy-group": "storefronts",
+                "x-speakeasy-name-override": "get",
+                "x-speakeasy-ignore": true
+            }
         }
     },
     "webhooks": {
@@ -19882,15 +19774,18 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
-                    "properties": {
-                        "$ref": "#/components/schemas/BenefitAdsProperties"
-                    },
                     "grants": {
                         "items": {
                             "$ref": "#/components/schemas/BenefitGrantAds"
                         },
                         "type": "array",
                         "title": "Grants"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitAdsProperties"
                     }
                 },
                 "type": "object",
@@ -19903,8 +19798,9 @@
                     "selectable",
                     "deletable",
                     "organization_id",
-                    "properties",
-                    "grants"
+                    "grants",
+                    "organization",
+                    "properties"
                 ],
                 "title": "BenefitAdsSubscriber"
             },
@@ -20095,6 +19991,16 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrantSubscriber"
+                        },
+                        "type": "array",
+                        "title": "Grants"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitArticlesSubscriberProperties"
                     }
@@ -20109,6 +20015,8 @@
                     "selectable",
                     "deletable",
                     "organization_id",
+                    "grants",
+                    "organization",
                     "properties"
                 ],
                 "title": "BenefitArticlesSubscriber"
@@ -20479,6 +20387,9 @@
                         "type": "array",
                         "title": "Grants"
                     },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitCustomSubscriberProperties"
                     }
@@ -20494,6 +20405,7 @@
                     "deletable",
                     "organization_id",
                     "grants",
+                    "organization",
                     "properties"
                 ],
                 "title": "BenefitCustomSubscriber"
@@ -20794,6 +20706,16 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrantSubscriber"
+                        },
+                        "type": "array",
+                        "title": "Grants"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitDiscordSubscriberProperties"
                     }
@@ -20808,6 +20730,8 @@
                     "selectable",
                     "deletable",
                     "organization_id",
+                    "grants",
+                    "organization",
                     "properties"
                 ],
                 "title": "BenefitDiscordSubscriber"
@@ -21096,6 +21020,16 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrantSubscriber"
+                        },
+                        "type": "array",
+                        "title": "Grants"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitDownloadablesSubscriberProperties"
                     }
@@ -21110,6 +21044,8 @@
                     "selectable",
                     "deletable",
                     "organization_id",
+                    "grants",
+                    "organization",
                     "properties"
                 ],
                 "title": "BenefitDownloadablesSubscriber"
@@ -21468,6 +21404,16 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrantSubscriber"
+                        },
+                        "type": "array",
+                        "title": "Grants"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriberProperties"
                     }
@@ -21482,6 +21428,8 @@
                     "selectable",
                     "deletable",
                     "organization_id",
+                    "grants",
+                    "organization",
                     "properties"
                 ],
                 "title": "BenefitGitHubRepositorySubscriber"
@@ -22678,15 +22626,18 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
-                    "properties": {
-                        "$ref": "#/components/schemas/BenefitLicenseKeysSubscriberProperties"
-                    },
                     "grants": {
                         "items": {
                             "$ref": "#/components/schemas/BenefitGrantLicenseKeys"
                         },
                         "type": "array",
                         "title": "Grants"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitLicenseKeysSubscriberProperties"
                     }
                 },
                 "type": "object",
@@ -22699,8 +22650,9 @@
                     "selectable",
                     "deletable",
                     "organization_id",
-                    "properties",
-                    "grants"
+                    "grants",
+                    "organization",
+                    "properties"
                 ],
                 "title": "BenefitLicenseKeysSubscriber"
             },
@@ -23455,6 +23407,9 @@
                     },
                     "product_price": {
                         "$ref": "#/components/schemas/ProductPrice"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
                     }
                 },
                 "type": "object",
@@ -23484,7 +23439,8 @@
                     "customer_tax_id",
                     "payment_processor_metadata",
                     "product",
-                    "product_price"
+                    "product_price",
+                    "organization"
                 ],
                 "title": "CheckoutPublic",
                 "description": "Checkout session data retrieved using the client secret."
@@ -23852,6 +23808,64 @@
                     "amount"
                 ],
                 "title": "CurrencyAmount"
+            },
+            "Customer": {
+                "properties": {
+                    "public_name": {
+                        "type": "string",
+                        "title": "Public Name"
+                    },
+                    "github_username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Github Username"
+                    },
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "public_name",
+                    "github_username",
+                    "avatar_url"
+                ],
+                "title": "Customer"
+            },
+            "Customers": {
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "title": "Total"
+                    },
+                    "customers": {
+                        "items": {
+                            "$ref": "#/components/schemas/Customer"
+                        },
+                        "type": "array",
+                        "title": "Customers"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "total",
+                    "customers"
+                ],
+                "title": "Customers"
             },
             "DiscordGuild": {
                 "properties": {
@@ -26606,26 +26620,6 @@
                     "pagination"
                 ],
                 "title": "ListResource[Order]"
-            },
-            "ListResource_OrganizationCustomer_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/OrganizationCustomer"
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[OrganizationCustomer]"
             },
             "ListResource_OrganizationMember_": {
                 "properties": {
@@ -29903,53 +29897,6 @@
                 ],
                 "title": "OrganizationCreate"
             },
-            "OrganizationCustomer": {
-                "properties": {
-                    "public_name": {
-                        "type": "string",
-                        "title": "Public Name"
-                    },
-                    "github_username": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Github Username"
-                    },
-                    "avatar_url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Avatar Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "public_name",
-                    "github_username",
-                    "avatar_url"
-                ],
-                "title": "OrganizationCustomer"
-            },
-            "OrganizationCustomerType": {
-                "type": "string",
-                "enum": [
-                    "free_subscription",
-                    "paid_subscription",
-                    "order",
-                    "donation"
-                ],
-                "title": "OrganizationCustomerType"
-            },
             "OrganizationFeatureSettings": {
                 "properties": {
                     "articles_enabled": {
@@ -32534,6 +32481,115 @@
                 ],
                 "title": "ProductSortProperty"
             },
+            "ProductStorefront": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the product."
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The name of the product."
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the product."
+                    },
+                    "is_recurring": {
+                        "type": "boolean",
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the product is archived and no longer available."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the product."
+                    },
+                    "prices": {
+                        "items": {
+                            "$ref": "#/components/schemas/ProductPrice"
+                        },
+                        "type": "array",
+                        "title": "Prices",
+                        "description": "List of available prices for this product."
+                    },
+                    "benefits": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitBase"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticles"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "BenefitPublic",
+                        "description": "The benefits granted by the product."
+                    },
+                    "medias": {
+                        "items": {
+                            "$ref": "#/components/schemas/ProductMediaFileRead"
+                        },
+                        "type": "array",
+                        "title": "Medias",
+                        "description": "The medias associated to the product."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "name",
+                    "description",
+                    "is_recurring",
+                    "is_archived",
+                    "organization_id",
+                    "prices",
+                    "benefits",
+                    "medias"
+                ],
+                "title": "ProductStorefront",
+                "description": "Schema of a public product."
+            },
             "ProductUpdate": {
                 "properties": {
                     "name": {
@@ -32813,6 +32869,16 @@
                     },
                     "organization": {
                         "$ref": "#/components/schemas/ExternalOrganization"
+                    },
+                    "internal_organization": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Organization"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "type": "object",
@@ -32826,7 +32892,8 @@
                     "license",
                     "homepage",
                     "profile_settings",
-                    "organization"
+                    "organization",
+                    "internal_organization"
                 ],
                 "title": "Repository"
             },
@@ -33631,6 +33698,31 @@
                     "active"
                 ],
                 "title": "Status"
+            },
+            "Storefront": {
+                "properties": {
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
+                    },
+                    "products": {
+                        "items": {
+                            "$ref": "#/components/schemas/ProductStorefront"
+                        },
+                        "type": "array",
+                        "title": "Products"
+                    },
+                    "customers": {
+                        "$ref": "#/components/schemas/Customers"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "organization",
+                    "products",
+                    "customers"
+                ],
+                "title": "Storefront",
+                "description": "Schema of a public storefront."
             },
             "SubType": {
                 "type": "string",
@@ -35868,6 +35960,9 @@
                         "type": "array",
                         "title": "Medias",
                         "description": "The medias associated to the product."
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
                     }
                 },
                 "type": "object",
@@ -35882,7 +35977,8 @@
                     "organization_id",
                     "prices",
                     "benefits",
-                    "medias"
+                    "medias",
+                    "organization"
                 ],
                 "title": "UserOrderProduct"
             },
@@ -36560,6 +36656,9 @@
                         "type": "array",
                         "title": "Medias",
                         "description": "The medias associated to the product."
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/Organization"
                     }
                 },
                 "type": "object",
@@ -36574,7 +36673,8 @@
                     "organization_id",
                     "prices",
                     "benefits",
-                    "medias"
+                    "medias",
+                    "organization"
                 ],
                 "title": "UserSubscriptionProduct"
             },
@@ -37940,6 +38040,18 @@
                     },
                     "product_price": {
                         "$ref": "#/components/schemas/ProductPrice"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id"
                     }
                 },
                 "type": "object",
@@ -37970,7 +38082,8 @@
                     "payment_processor_metadata",
                     "metadata",
                     "product",
-                    "product_price"
+                    "product_price",
+                    "subscription_id"
                 ],
                 "title": "Checkout",
                 "description": "Checkout session data retrieved using an access token."
@@ -38075,6 +38188,19 @@
                         ],
                         "title": "Customer Tax Id"
                     },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
+                    },
                     "success_url": {
                         "anyOf": [
                             {
@@ -38097,7 +38223,7 @@
                     "product_price_id"
                 ],
                 "title": "CheckoutCreate",
-                "description": "Create a new checkout session."
+                "description": "Create a new checkout session.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
             },
             "polar__enums__PaymentProcessor": {
                 "type": "string",

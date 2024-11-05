@@ -31,6 +31,7 @@ apis/PledgesApi.ts
 apis/ProductsApi.ts
 apis/RepositoriesApi.ts
 apis/RewardsApi.ts
+apis/StorefrontsApi.ts
 apis/SubscriptionsApi.ts
 apis/TransactionsApi.ts
 apis/UsersAdvertisementsApi.ts

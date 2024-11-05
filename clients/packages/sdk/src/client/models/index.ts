@@ -2124,16 +2124,22 @@ export interface BenefitAdsSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitAdsProperties}
-     * @memberof BenefitAdsSubscriber
-     */
-    properties: BenefitAdsProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantAds>}
      * @memberof BenefitAdsSubscriber
      */
     grants: Array<BenefitGrantAds>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof BenefitAdsSubscriber
+     */
+    organization: Organization;
+    /**
+     * 
+     * @type {BenefitAdsProperties}
+     * @memberof BenefitAdsSubscriber
+     */
+    properties: BenefitAdsProperties;
 }
 
 
@@ -2320,6 +2326,18 @@ export interface BenefitArticlesSubscriber {
      * @memberof BenefitArticlesSubscriber
      */
     organization_id: string;
+    /**
+     * 
+     * @type {Array<BenefitGrantSubscriber>}
+     * @memberof BenefitArticlesSubscriber
+     */
+    grants: Array<BenefitGrantSubscriber>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof BenefitArticlesSubscriber
+     */
+    organization: Organization;
     /**
      * 
      * @type {BenefitArticlesSubscriberProperties}
@@ -2663,6 +2681,12 @@ export interface BenefitCustomSubscriber {
     grants: Array<BenefitGrantSubscriber>;
     /**
      * 
+     * @type {Organization}
+     * @memberof BenefitCustomSubscriber
+     */
+    organization: Organization;
+    /**
+     * 
      * @type {BenefitCustomSubscriberProperties}
      * @memberof BenefitCustomSubscriber
      */
@@ -2940,6 +2964,18 @@ export interface BenefitDiscordSubscriber {
     organization_id: string;
     /**
      * 
+     * @type {Array<BenefitGrantSubscriber>}
+     * @memberof BenefitDiscordSubscriber
+     */
+    grants: Array<BenefitGrantSubscriber>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof BenefitDiscordSubscriber
+     */
+    organization: Organization;
+    /**
+     * 
      * @type {BenefitDiscordSubscriberProperties}
      * @memberof BenefitDiscordSubscriber
      */
@@ -3207,6 +3243,18 @@ export interface BenefitDownloadablesSubscriber {
      * @memberof BenefitDownloadablesSubscriber
      */
     organization_id: string;
+    /**
+     * 
+     * @type {Array<BenefitGrantSubscriber>}
+     * @memberof BenefitDownloadablesSubscriber
+     */
+    grants: Array<BenefitGrantSubscriber>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof BenefitDownloadablesSubscriber
+     */
+    organization: Organization;
     /**
      * 
      * @type {BenefitDownloadablesSubscriberProperties}
@@ -3530,6 +3578,18 @@ export interface BenefitGitHubRepositorySubscriber {
      * @memberof BenefitGitHubRepositorySubscriber
      */
     organization_id: string;
+    /**
+     * 
+     * @type {Array<BenefitGrantSubscriber>}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    grants: Array<BenefitGrantSubscriber>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    organization: Organization;
     /**
      * 
      * @type {BenefitGitHubRepositorySubscriberProperties}
@@ -4424,16 +4484,22 @@ export interface BenefitLicenseKeysSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitLicenseKeysSubscriberProperties}
-     * @memberof BenefitLicenseKeysSubscriber
-     */
-    properties: BenefitLicenseKeysSubscriberProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantLicenseKeys>}
      * @memberof BenefitLicenseKeysSubscriber
      */
     grants: Array<BenefitGrantLicenseKeys>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    organization: Organization;
+    /**
+     * 
+     * @type {BenefitLicenseKeysSubscriberProperties}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    properties: BenefitLicenseKeysSubscriberProperties;
 }
 
 
@@ -5035,6 +5101,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     product_price: ProductPrice;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof CheckoutPublic
+     */
+    organization: Organization;
 }
 
 
@@ -5275,6 +5347,50 @@ export interface CurrencyAmount {
      * @memberof CurrencyAmount
      */
     amount: number;
+}
+/**
+ * 
+ * @export
+ * @interface Customer
+ */
+export interface Customer {
+    /**
+     * 
+     * @type {string}
+     * @memberof Customer
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Customer
+     */
+    github_username: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Customer
+     */
+    avatar_url: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface Customers
+ */
+export interface Customers {
+    /**
+     * 
+     * @type {number}
+     * @memberof Customers
+     */
+    total: number;
+    /**
+     * 
+     * @type {Array<Customer>}
+     * @memberof Customers
+     */
+    customers: Array<Customer>;
 }
 /**
  * 
@@ -7655,25 +7771,6 @@ export interface ListResourceOrganization {
      * 
      * @type {Pagination}
      * @memberof ListResourceOrganization
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceOrganizationCustomer
- */
-export interface ListResourceOrganizationCustomer {
-    /**
-     * 
-     * @type {Array<OrganizationCustomer>}
-     * @memberof ListResourceOrganizationCustomer
-     */
-    items: Array<OrganizationCustomer>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceOrganizationCustomer
      */
     pagination: Pagination;
 }
@@ -10604,44 +10701,6 @@ export interface OrganizationCreate {
 /**
  * 
  * @export
- * @interface OrganizationCustomer
- */
-export interface OrganizationCustomer {
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationCustomer
-     */
-    public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationCustomer
-     */
-    github_username: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationCustomer
-     */
-    avatar_url: string | null;
-}
-
-/**
- * 
- * @export
- */
-export const OrganizationCustomerType = {
-    FREE_SUBSCRIPTION: 'free_subscription',
-    PAID_SUBSCRIPTION: 'paid_subscription',
-    ORDER: 'order',
-    DONATION: 'donation'
-} as const;
-export type OrganizationCustomerType = typeof OrganizationCustomerType[keyof typeof OrganizationCustomerType];
-
-/**
- * 
- * @export
  * @interface OrganizationFeatureSettings
  */
 export interface OrganizationFeatureSettings {
@@ -10664,13 +10723,6 @@ export interface OrganizationFeatureSettings {
  * @export
  */
 export type OrganizationIDFilter = Array<string> | string;
-
-/**
- * @type OrganizationIDFilter1
- * Filter by organization ID. **Required unless you use an organization token.**
- * @export
- */
-export type OrganizationIDFilter1 = Array<string> | string;
 
 /**
  * @type OrganizationId
@@ -11901,11 +11953,20 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     product_price: ProductPrice;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    subscription_id: string | null;
 }
 
 
 /**
  * Create a new checkout session.
+ * 
+ * Metadata set on the checkout will be copied
+ * to the resulting order and/or subscription.
  * @export
  * @interface PolarCheckoutSchemasCheckoutCreate
  */
@@ -11968,6 +12029,12 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
     customer_tax_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    subscription_id?: string | null;
     /**
      * 
      * @type {string}
@@ -13195,6 +13262,79 @@ export const ProductSortProperty = {
 export type ProductSortProperty = typeof ProductSortProperty[keyof typeof ProductSortProperty];
 
 /**
+ * Schema of a public product.
+ * @export
+ * @interface ProductStorefront
+ */
+export interface ProductStorefront {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductStorefront
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductStorefront
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof ProductStorefront
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof ProductStorefront
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductStorefront
+     */
+    description: string | null;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof ProductStorefront
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductStorefront
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof ProductStorefront
+     */
+    organization_id: string;
+    /**
+     * List of available prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof ProductStorefront
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * The benefits granted by the product.
+     * @type {Array<BenefitPublicInner>}
+     * @memberof ProductStorefront
+     */
+    benefits: Array<BenefitPublicInner>;
+    /**
+     * The medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof ProductStorefront
+     */
+    medias: Array<ProductMediaFileRead>;
+}
+/**
  * Schema to update a product.
  * @export
  * @interface ProductUpdate
@@ -13407,6 +13547,12 @@ export interface Repository {
      * @memberof Repository
      */
     organization: ExternalOrganization;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof Repository
+     */
+    internal_organization: Organization | null;
 }
 
 
@@ -14121,6 +14267,31 @@ export const Status = {
 } as const;
 export type Status = typeof Status[keyof typeof Status];
 
+/**
+ * Schema of a public storefront.
+ * @export
+ * @interface Storefront
+ */
+export interface Storefront {
+    /**
+     * 
+     * @type {Organization}
+     * @memberof Storefront
+     */
+    organization: Organization;
+    /**
+     * 
+     * @type {Array<ProductStorefront>}
+     * @memberof Storefront
+     */
+    products: Array<ProductStorefront>;
+    /**
+     * 
+     * @type {Customers}
+     * @memberof Storefront
+     */
+    customers: Customers;
+}
 
 /**
  * 
@@ -15923,6 +16094,12 @@ export interface UserOrderProduct {
      * @memberof UserOrderProduct
      */
     medias: Array<ProductMediaFileRead>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof UserOrderProduct
+     */
+    organization: Organization;
 }
 
 /**
@@ -16419,6 +16596,12 @@ export interface UserSubscriptionProduct {
      * @memberof UserSubscriptionProduct
      */
     medias: Array<ProductMediaFileRead>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof UserSubscriptionProduct
+     */
+    organization: Organization;
 }
 
 /**

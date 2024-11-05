@@ -19,6 +19,7 @@ import {
   IntegrationsGithubRepositoryBenefitApi,
   IssuesApi,
   MagicLinkApi,
+  StorefrontsApi,
   NotificationsApi,
   Oauth2Api,
   Oauth2ClientsApi,
@@ -76,6 +77,7 @@ export class PolarAPI {
   public readonly products: ProductsApi
   public readonly repositories: RepositoriesApi
   public readonly rewards: RewardsApi
+  public readonly storefronts: StorefrontsApi
   public readonly subscriptions: SubscriptionsApi
   public readonly transactions: TransactionsApi
   public readonly usersAdvertisements: UsersAdvertisementsApi
@@ -121,6 +123,7 @@ export class PolarAPI {
     this.products = new ProductsApi(config)
     this.repositories = new RepositoriesApi(config)
     this.rewards = new RewardsApi(config)
+    this.storefronts = new StorefrontsApi(config)
     this.subscriptions = new SubscriptionsApi(config)
     this.transactions = new TransactionsApi(config)
     this.usersAdvertisements = new UsersAdvertisementsApi(config)

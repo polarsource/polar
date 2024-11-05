@@ -34,8 +34,8 @@ const getProduct = async (
 
 const render = async (
   product: Product,
-  cta: string,
-  darkmode: boolean,
+  cta?: string,
+  darkmode?: boolean,
 ) => {
   const inter500 = await fetch(
     new URL('../../../assets/fonts/Inter-Regular.ttf', import.meta.url),
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
   }
 
   const darkmode = searchParams.has('darkmode')
-  const cta = searchParams.get('cta') ?? 'Purchase'
+  const cta = searchParams.get('cta')
 
   try {
     const product = await getProduct(productId, productPriceId)

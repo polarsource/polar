@@ -11,16 +11,44 @@ export const ProductCard = ({
   darkmode,
 }: {
   product: Product
-  cta: string
-  darkmode: boolean
+  cta?: string
+  darkmode?: boolean
 }) => {
   const price: ProductPrice = product.prices[0]
 
-  const recurringBillingLabel = ('recurring_interval' in price)
+  const isSubscription = ('recurring_interval' in price)
+  const isPWYW = price.amount_type === 'custom'
+  const recurringBillingLabel = isSubscription
     ? getRecurringBillingLabel(price.recurring_interval)
     : ''
 
+  if (!cta) {
+    cta = isSubscription ? 'Subscribe' : 'Buy'
+  }
+
   const cover = product.medias.length ? product.medias[0].public_url : null
+
+  let shownDescription = product.description
+  if (shownDescription && shownDescription.length > 100) {
+    shownDescription = shownDescription.slice(0, 100) + '...'
+  }
+
+  let priceLabel = null
+  switch (price.amount_type) {
+    case 'free':
+      priceLabel = 'Free'
+      break;
+    case 'custom':
+      priceLabel = 'Pay what you want'
+      break;
+    case 'fixed':
+      priceLabel = formatCurrencyAndAmount(
+        price.price_amount,
+        price.price_currency,
+        0,
+      )
+      break;
+  }
 
   return (
     <div
@@ -57,18 +85,13 @@ export const ProductCard = ({
           style={{
             display: 'flex',
             flexDirection: 'row',
+            color: darkmode ? '#4C5069' : '#333333',
             alignItems: 'flex-end',
             gap: 8,
-            fontSize: 32,
+            fontSize: isPWYW ? 20 : 36,
           }}
         >
-          {price.amount_type === 'fixed'
-            ? formatCurrencyAndAmount(
-                price.price_amount,
-                price.price_currency,
-                0,
-              )
-            : 'Pay what you want'}
+          {priceLabel}
           <div
             style={{
               fontSize: 14,
@@ -94,7 +117,7 @@ export const ProductCard = ({
             fontSize: 12,
           }}
         >
-          {product.description}
+          {shownDescription}
         </div>
       )}
       <div

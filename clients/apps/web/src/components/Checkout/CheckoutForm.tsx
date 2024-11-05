@@ -420,6 +420,7 @@ const BaseCheckoutForm = ({
                       <CustomFieldInput
                         customField={custom_field}
                         required={required}
+                        // @ts-ignore
                         field={field}
                       />
                     )}

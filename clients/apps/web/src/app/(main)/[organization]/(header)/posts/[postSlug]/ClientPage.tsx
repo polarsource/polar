@@ -6,13 +6,13 @@ import { BrowserServerRender } from '@/components/Feed/Markdown/Render/BrowserSe
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser } from '@/utils/user'
-import { Article, BenefitPublicInner, Product } from '@polar-sh/sdk'
+import { Article, BenefitPublicInner, ProductStorefront } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 
 interface PostPageProps {
-  products: Product[]
+  products: ProductStorefront[]
   article: Article
 }
 

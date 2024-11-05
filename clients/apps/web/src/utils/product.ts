@@ -1,13 +1,17 @@
 import {
+  CheckoutProduct,
   PolarAPI,
   Product,
+  ProductStorefront,
   ResponseError,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
-export const hasIntervals = (product: Product): [boolean, boolean, boolean] => {
+export const hasIntervals = (
+  product: ProductStorefront | CheckoutProduct,
+): [boolean, boolean, boolean] => {
   const hasMonthInterval = product.prices.some(
     (price) =>
       price.type === 'recurring' &&

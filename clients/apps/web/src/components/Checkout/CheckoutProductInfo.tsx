@@ -1,14 +1,14 @@
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { Slideshow } from '@/components/Products/Slideshow'
 import { organizationPageLink } from '@/utils/nav'
-import { Organization, Product } from '@polar-sh/sdk'
+import { CheckoutProduct, Organization } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 
 interface CheckoutProductInfoProps {
   organization: Organization
-  product: Product
+  product: CheckoutProduct
 }
 
 const CheckoutProductInfo = ({

@@ -1,5 +1,5 @@
 import {
-  BenefitPublicInner,
+  Benefit,
   Product,
   ProductCreate,
   ProductPrice,
@@ -9,7 +9,7 @@ import { ProductFullMediasMixin } from './ProductForm/ProductForm'
 
 export const productUpdateToProduct = (
   productUpdate: ProductUpdate & ProductFullMediasMixin,
-  benefits: BenefitPublicInner[],
+  benefits: Benefit[],
   product: Product,
 ): Product => {
   const { full_medias, ...productUpdateRest } = productUpdate
@@ -29,7 +29,7 @@ export const productUpdateToProduct = (
 export const productCreateToProduct = (
   organizationId: string,
   productCreate: ProductCreate & ProductFullMediasMixin,
-  benefits: BenefitPublicInner[],
+  benefits: Benefit[],
 ): Product => {
   const { full_medias, ...productCreateRest } = productCreate
   return {
@@ -52,5 +52,6 @@ export const productCreateToProduct = (
     is_recurring:
       productCreate.prices.some((price) => price.type === 'recurring') ?? false,
     is_archived: false,
+    attached_custom_fields: [],
   }
 }

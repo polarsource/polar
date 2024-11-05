@@ -1,8 +1,14 @@
-import { Product, ProductPrice, TransactionProduct } from '@polar-sh/sdk'
+import {
+  CheckoutProduct,
+  Product,
+  ProductPrice,
+  ProductStorefront,
+  TransactionProduct,
+} from '@polar-sh/sdk'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPillProps {
-  product: Product | TransactionProduct
+  product: Product | TransactionProduct | ProductStorefront | CheckoutProduct
   price?: ProductPrice
 }
 

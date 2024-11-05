@@ -1,10 +1,12 @@
 'use client'
 
+import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductSelect, {
   ProductSelectType,
 } from '@/components/Products/ProductSelect'
 import { useProductsByPriceType } from '@/hooks/products'
+import { useCustomFields } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import {
   DataTablePaginationState,
@@ -136,6 +138,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const orders = ordersHook.data?.items || []
   const pageCount = ordersHook.data?.pagination.max_page ?? 1
 
+  const { data: customFields } = useCustomFields(organization.id)
+
   const columns: DataTableColumnDef<Order>[] = [
     {
       accessorKey: 'user',
@@ -196,6 +200,23 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <>{formatCurrencyAndAmount(order.amount, order.currency)}</>
       ),
     },
+    ...(customFields
+      ? customFields.items.map<DataTableColumnDef<Order>>((field) => ({
+          accessorKey: `custom_field_data.${field.slug}`,
+          enableSorting: false,
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={field.name} />
+          ),
+          cell: (props) => (
+            <div className="max-w-48">
+              <CustomFieldValue
+                field={field}
+                value={props.getValue() as string | number | boolean}
+              />
+            </div>
+          ),
+        }))
+      : []),
   ]
 
   return (

@@ -6,6 +6,7 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
+  Benefit,
   BenefitPublicInner,
   Organization,
   Product,
@@ -76,7 +77,7 @@ export const EditProductPage = ({
     updatedProduct,
     enabledBenefitIds
       .map((id) => organizationBenefits.find((b) => b.id === id))
-      .filter(Boolean) as BenefitPublicInner[],
+      .filter(Boolean) as Benefit[],
     product,
   )
 

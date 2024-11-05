@@ -6,13 +6,14 @@ import {
   Product,
   ProductPriceRecurring,
   ProductPriceType,
+  ProductStorefront,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { useProducts } from './queries'
 
 export const useRecurringInterval = (
-  products: Product[],
+  products: ProductStorefront[],
 ): [
   SubscriptionRecurringInterval,
   Dispatch<SetStateAction<SubscriptionRecurringInterval>>,
@@ -54,7 +55,7 @@ export const useRecurringInterval = (
 }
 
 export const useRecurringProductPrice = (
-  product: Partial<Product>,
+  product: Partial<ProductStorefront>,
   recurringInterval: SubscriptionRecurringInterval,
 ): ProductPriceRecurring | undefined => {
   return useMemo(

@@ -7,6 +7,7 @@ import {
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
+  Benefit,
   BenefitPublicInner,
   Organization,
   ProductCreate,
@@ -82,7 +83,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     createdProduct,
     enabledBenefitIds
       .map((id) => organizationBenefits.find((b) => b.id === id))
-      .filter(Boolean) as BenefitPublicInner[],
+      .filter(Boolean) as Benefit[],
   )
 
   const onSubmit = useCallback(

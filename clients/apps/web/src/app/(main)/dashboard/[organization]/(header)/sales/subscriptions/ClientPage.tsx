@@ -1,11 +1,16 @@
 'use client'
 
+import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
-import { useListSubscriptions, useProducts } from '@/hooks/queries'
+import {
+  useCustomFields,
+  useListSubscriptions,
+  useProducts,
+} from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
@@ -139,6 +144,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const subscriptions = subscriptionsHook.data?.items || []
   const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
 
+  const { data: customFields } = useCustomFields(organization.id)
+
   const columns: DataTableColumnDef<Subscription>[] = [
     {
       id: 'user',
@@ -246,6 +253,23 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )
       },
     },
+    ...(customFields
+      ? customFields.items.map<DataTableColumnDef<Subscription>>((field) => ({
+          accessorKey: `custom_field_data.${field.slug}`,
+          enableSorting: false,
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={field.name} />
+          ),
+          cell: (props) => (
+            <div className="max-w-48">
+              <CustomFieldValue
+                field={field}
+                value={props.getValue() as string | number | boolean}
+              />
+            </div>
+          ),
+        }))
+      : []),
   ]
 
   const onExport = () => {

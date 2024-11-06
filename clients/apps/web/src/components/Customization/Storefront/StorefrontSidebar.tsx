@@ -1,10 +1,10 @@
 'use client'
 
+import { CONFIG } from '@/utils/config'
 import { computeComplementaryColor } from '@/components/Profile/utils'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
-import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
 import {
@@ -34,6 +34,8 @@ import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
+import { Separator } from 'polarkit/components/ui/separator'
+import { Label } from 'polarkit/components/ui/label'
 
 const colorThemes = [
   '#121316',
@@ -329,7 +331,7 @@ export const StorefrontSidebar = () => {
   )
 
   const storefrontEnabled = organization.profile_settings?.enabled ?? false
-  const githubFundingYAML = `polar: ${organization.slug}`
+  const storefrontURL = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}`
 
   return (
     <StorefrontSidebarContentWrapper
@@ -337,45 +339,39 @@ export const StorefrontSidebar = () => {
       enabled={organization.profile_settings?.enabled ?? false}
       organization={organization}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
-        <StorefrontForm />
-
-        <div className={twMerge(
-          "border bg-white py-4 px-4 rounded-2xl",
-          storefrontEnabled && "bg-white",
-          !storefrontEnabled && "bg-gray-100",
-        )}>
-          <div className="flex flex-row items-center">
-            <GitHubIcon width={16} height={16} className="mr-2" />
-            <strong className="font-normal">
-              Promote on GitHub
-            </strong>
-          </div>
-          <div className="flex flex-col mt-4 text-xs">
-            <CopyToClipboardInput value={githubFundingYAML} disabled={!storefrontEnabled} />
-            <p className="text-gray-800 mt-4">
-              Polar storefronts are officially supported by GitHub.
-            </p>
-            <a
-              className="text-blue-500 dark:text-blue-200"
-              href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository"
+      <div className="flex flex-col gap-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
+          <StorefrontForm />
+          <div className="flex flex-row items-center gap-x-4">
+            <Button
+              className="self-start"
+              type="submit"
+              loading={isSaveLoading}
+              disabled={!formState.isDirty}
             >
-              Read how to add Polar to GitHub.
-            </a>
+              Save
+            </Button>
           </div>
-        </div>
+        </form>
+        {storefrontEnabled && (
+          <>
+            <Separator />
 
-        <div className="flex flex-row items-center gap-x-4">
-          <Button
-            className="self-start"
-            type="submit"
-            loading={isSaveLoading}
-            disabled={!formState.isDirty}
-          >
-            Save
-          </Button>
-        </div>
-      </form>
+            <div className="flex flex-col gap-y-4">
+              <Label>Share</Label>
+              <CopyToClipboardInput
+                value={storefrontURL}
+                buttonLabel="Copy"
+                className="bg-white"
+              />
+              <p className="text-xs text-gray-500 text-center">
+                Add an official link from GitHub to Polar.{' '}
+                <a href="/docs/github/funding-yaml" target="_blank" className="underline">Learn more.</a>
+              </p>
+            </div>
+          </>
+        )}
+      </div>
       <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white p-6 lg:rounded-3xl">
         <div className="flex flex-col gap-y-2">
           <h3 className="text-sm">

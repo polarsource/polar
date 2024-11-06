@@ -4879,10 +4879,10 @@ export interface CheckoutLink {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof CheckoutLink
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {PolarEnumsPaymentProcessor}
@@ -4932,12 +4932,16 @@ export interface CheckoutLinkCreate {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CheckoutLinkCreate
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * Payment processor to use. Currently only Stripe is supported.
      * @type {string}
@@ -4986,10 +4990,10 @@ export type CheckoutLinkSortProperty = typeof CheckoutLinkSortProperty[keyof typ
 export interface CheckoutLinkUpdate {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CheckoutLinkUpdate
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * 
      * @type {string}
@@ -5330,10 +5334,10 @@ export interface CheckoutUpdate {
     customer_tax_id?: string | null;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CheckoutUpdate
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * IP address of the customer. Used to detect tax location.
      * @type {string}
@@ -5535,10 +5539,10 @@ export interface CustomFieldCheckbox {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof CustomFieldCheckbox
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {string}
@@ -5621,12 +5625,16 @@ export interface CustomFieldCreateCheckbox {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldCreateCheckbox
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5678,12 +5686,16 @@ export interface CustomFieldCreateDate {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldCreateDate
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5735,12 +5747,16 @@ export interface CustomFieldCreateNumber {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldCreateNumber
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5792,12 +5808,16 @@ export interface CustomFieldCreateSelect {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldCreateSelect
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5849,12 +5869,16 @@ export interface CustomFieldCreateText {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldCreateText
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5922,10 +5946,10 @@ export interface CustomFieldDate {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof CustomFieldDate
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {string}
@@ -6030,10 +6054,10 @@ export interface CustomFieldNumber {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof CustomFieldNumber
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {string}
@@ -6138,10 +6162,10 @@ export interface CustomFieldSelect {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof CustomFieldSelect
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {string}
@@ -6276,10 +6300,10 @@ export interface CustomFieldText {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof CustomFieldText
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {string}
@@ -6399,10 +6423,10 @@ export type CustomFieldUpdate = { type: 'checkbox' } & CustomFieldUpdateCheckbox
 export interface CustomFieldUpdateCheckbox {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateCheckbox
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * Name of the custom field.
      * @type {string}
@@ -6446,10 +6470,10 @@ export type CustomFieldUpdateCheckboxTypeEnum = typeof CustomFieldUpdateCheckbox
 export interface CustomFieldUpdateDate {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateDate
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * Name of the custom field.
      * @type {string}
@@ -6493,10 +6517,10 @@ export type CustomFieldUpdateDateTypeEnum = typeof CustomFieldUpdateDateTypeEnum
 export interface CustomFieldUpdateNumber {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateNumber
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * Name of the custom field.
      * @type {string}
@@ -6540,10 +6564,10 @@ export type CustomFieldUpdateNumberTypeEnum = typeof CustomFieldUpdateNumberType
 export interface CustomFieldUpdateSelect {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateSelect
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * Name of the custom field.
      * @type {string}
@@ -6587,10 +6611,10 @@ export type CustomFieldUpdateSelectTypeEnum = typeof CustomFieldUpdateSelectType
 export interface CustomFieldUpdateText {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateText
      */
-    metadata?: { [key: string]: string; } | null;
+    metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * Name of the custom field.
      * @type {string}
@@ -6726,343 +6750,6 @@ export interface DiscordGuildRole {
      */
     color: string;
 }
-/**
- * 
- * @export
- * @interface Donation
- */
-export interface Donation {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof Donation
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Donation
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the object.
-     * @type {string}
-     * @memberof Donation
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof Donation
-     */
-    amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof Donation
-     */
-    currency: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Donation
-     */
-    message: string | null;
-    /**
-     * 
-     * @type {Donor}
-     * @memberof Donation
-     */
-    donor: Donor | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Donation
-     */
-    email: string;
-    /**
-     * 
-     * @type {Issue}
-     * @memberof Donation
-     */
-    issue: Issue | null;
-}
-/**
- * 
- * @export
- * @interface DonationCreateStripePaymentIntent
- */
-export interface DonationCreateStripePaymentIntent {
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    to_organization_id: string;
-    /**
-     * The donators email address. Receipts will be sent to this address.
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    email: string;
-    /**
-     * The amount in cents.
-     * @type {number}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    amount: number;
-    /**
-     * The currency. Currently, only `usd` is supported.
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    currency?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    setup_future_usage?: DonationCreateStripePaymentIntentSetupFutureUsageEnum | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    on_behalf_of_organization_id?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    message?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationCreateStripePaymentIntent
-     */
-    issue_id?: string | null;
-}
-
-
-/**
- * @export
- */
-export const DonationCreateStripePaymentIntentSetupFutureUsageEnum = {
-    ON_SESSION: 'on_session'
-} as const;
-export type DonationCreateStripePaymentIntentSetupFutureUsageEnum = typeof DonationCreateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationCreateStripePaymentIntentSetupFutureUsageEnum];
-
-/**
- * 
- * @export
- * @interface DonationOrganization
- */
-export interface DonationOrganization {
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationOrganization
-     */
-    id: string;
-    /**
-     * 
-     * @type {Platforms}
-     * @memberof DonationOrganization
-     */
-    platform: Platforms;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationOrganization
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationOrganization
-     */
-    avatar_url: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof DonationOrganization
-     */
-    is_personal: boolean;
-}
-
-
-
-/**
- * 
- * @export
- */
-export const DonationSortProperty = {
-    AMOUNT: 'amount',
-    AMOUNT2: '-amount',
-    CREATED_AT: 'created_at',
-    CREATED_AT2: '-created_at'
-} as const;
-export type DonationSortProperty = typeof DonationSortProperty[keyof typeof DonationSortProperty];
-
-/**
- * 
- * @export
- * @interface DonationStatistics
- */
-export interface DonationStatistics {
-    /**
-     * 
-     * @type {Array<DonationStatisticsPeriod>}
-     * @memberof DonationStatistics
-     */
-    periods: Array<DonationStatisticsPeriod>;
-}
-/**
- * 
- * @export
- * @interface DonationStatisticsPeriod
- */
-export interface DonationStatisticsPeriod {
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationStatisticsPeriod
-     */
-    start_date: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationStatisticsPeriod
-     */
-    end_date: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof DonationStatisticsPeriod
-     */
-    sum: number;
-}
-/**
- * 
- * @export
- * @interface DonationStripePaymentIntentMutationResponse
- */
-export interface DonationStripePaymentIntentMutationResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationStripePaymentIntentMutationResponse
-     */
-    payment_intent_id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof DonationStripePaymentIntentMutationResponse
-     */
-    amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationStripePaymentIntentMutationResponse
-     */
-    currency: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationStripePaymentIntentMutationResponse
-     */
-    client_secret: string | null;
-}
-/**
- * 
- * @export
- * @interface DonationUpdateStripePaymentIntent
- */
-export interface DonationUpdateStripePaymentIntent {
-    /**
-     * The donators email address. Receipts will be sent to this address.
-     * @type {string}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    email: string;
-    /**
-     * The amount in cents.
-     * @type {number}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    amount: number;
-    /**
-     * The currency. Currently, only `usd` is supported.
-     * @type {string}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    currency?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    setup_future_usage?: DonationUpdateStripePaymentIntentSetupFutureUsageEnum | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    on_behalf_of_organization_id?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    message?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUpdateStripePaymentIntent
-     */
-    issue_id?: string | null;
-}
-
-
-/**
- * @export
- */
-export const DonationUpdateStripePaymentIntentSetupFutureUsageEnum = {
-    ON_SESSION: 'on_session'
-} as const;
-export type DonationUpdateStripePaymentIntentSetupFutureUsageEnum = typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationUpdateStripePaymentIntentSetupFutureUsageEnum];
-
-/**
- * 
- * @export
- * @interface DonationUser
- */
-export interface DonationUser {
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUser
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUser
-     */
-    public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationUser
-     */
-    avatar_url: string | null;
-}
-/**
- * @type Donor
- * @export
- */
-export type Donor = DonationOrganization | DonationUser;
-
 /**
  * Schema to create a file to be associated with the downloadables benefit.
  * @export
@@ -8884,25 +8571,6 @@ export interface ListResourceCheckoutLink {
 /**
  * 
  * @export
- * @interface ListResourceDonation
- */
-export interface ListResourceDonation {
-    /**
-     * 
-     * @type {Array<Donation>}
-     * @memberof ListResourceDonation
-     */
-    items: Array<Donation>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceDonation
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceDownloadableRead
  */
 export interface ListResourceDownloadableRead {
@@ -9163,25 +8831,6 @@ export interface ListResourceProduct {
      * 
      * @type {Pagination}
      * @memberof ListResourceProduct
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourcePublicDonation
- */
-export interface ListResourcePublicDonation {
-    /**
-     * 
-     * @type {Array<PublicDonation>}
-     * @memberof ListResourcePublicDonation
-     */
-    items: Array<PublicDonation>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourcePublicDonation
      */
     pagination: Pagination;
 }
@@ -9586,72 +9235,6 @@ export interface MaintainerCreateAccountNotificationPayload {
      * @memberof MaintainerCreateAccountNotificationPayload
      */
     url: string;
-}
-/**
- * 
- * @export
- * @interface MaintainerDonationReceivedNotification
- */
-export interface MaintainerDonationReceivedNotification {
-    /**
-     * 
-     * @type {string}
-     * @memberof MaintainerDonationReceivedNotification
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof MaintainerDonationReceivedNotification
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof MaintainerDonationReceivedNotification
-     */
-    type: MaintainerDonationReceivedNotificationTypeEnum;
-    /**
-     * 
-     * @type {MaintainerDonationReceivedNotificationPayload}
-     * @memberof MaintainerDonationReceivedNotification
-     */
-    payload: MaintainerDonationReceivedNotificationPayload;
-}
-
-
-/**
- * @export
- */
-export const MaintainerDonationReceivedNotificationTypeEnum = {
-    MAINTAINER_DONATION_RECEIVED: 'MaintainerDonationReceived'
-} as const;
-export type MaintainerDonationReceivedNotificationTypeEnum = typeof MaintainerDonationReceivedNotificationTypeEnum[keyof typeof MaintainerDonationReceivedNotificationTypeEnum];
-
-/**
- * 
- * @export
- * @interface MaintainerDonationReceivedNotificationPayload
- */
-export interface MaintainerDonationReceivedNotificationPayload {
-    /**
-     * 
-     * @type {string}
-     * @memberof MaintainerDonationReceivedNotificationPayload
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof MaintainerDonationReceivedNotificationPayload
-     */
-    donation_amount: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof MaintainerDonationReceivedNotificationPayload
-     */
-    donation_id: string;
 }
 /**
  * 
@@ -10400,6 +9983,18 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
     maintainer_has_account: boolean;
 }
 /**
+ * @type MetadataValue
+ * @export
+ */
+export type MetadataValue = boolean | number | string;
+
+/**
+ * @type MetadataValue1
+ * @export
+ */
+export type MetadataValue1 = boolean | number | string;
+
+/**
  * Information about a metric.
  * @export
  * @interface Metric
@@ -10711,7 +10306,7 @@ export type NotPermittedTypeEnum = typeof NotPermittedTypeEnum[keyof typeof NotP
  * 
  * @export
  */
-export type NotificationsInner = { type: 'BenefitPreconditionErrorNotification' } & BenefitPreconditionErrorNotification | { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerDonationReceived' } & MaintainerDonationReceivedNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerNewProductSaleNotification' } & MaintainerNewProductSaleNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
+export type NotificationsInner = { type: 'BenefitPreconditionErrorNotification' } & BenefitPreconditionErrorNotification | { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerNewProductSaleNotification' } & MaintainerNewProductSaleNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
 /**
  * 
  * @export
@@ -11219,10 +10814,10 @@ export interface Order {
     id: string;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof Order
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * Key-value object storing custom field values.
      * @type {object}
@@ -11425,10 +11020,10 @@ export type OrderSortProperty = typeof OrderSortProperty[keyof typeof OrderSortP
 export interface OrderSubscription {
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof OrderSubscription
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * Creation timestamp of the object.
      * @type {string}
@@ -11661,12 +11256,6 @@ export interface Organization {
      * @memberof Organization
      */
     default_upfront_split_to_contributors: number | null;
-    /**
-     * If this organizations accepts donations
-     * @type {boolean}
-     * @memberof Organization
-     */
-    donations_enabled: boolean;
     /**
      * 
      * @type {OrganizationProfileSettings}
@@ -11990,12 +11579,6 @@ export interface OrganizationCreate {
     avatar_url?: string | null;
     /**
      * 
-     * @type {boolean}
-     * @memberof OrganizationCreate
-     */
-    donations_enabled?: boolean;
-    /**
-     * 
      * @type {OrganizationFeatureSettings}
      * @memberof OrganizationCreate
      */
@@ -12226,12 +11809,6 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     per_user_monthly_spending_limit?: number | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    donations_enabled?: boolean;
     /**
      * 
      * @type {OrganizationProfileSettings}
@@ -13246,10 +12823,10 @@ export interface PolarCheckoutSchemasCheckout {
     payment_processor_metadata: object;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof PolarCheckoutSchemasCheckout
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {CheckoutProduct}
@@ -13290,12 +12867,16 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * Key-value object allowing you to store additional information.
      * 
      * The key must be a string with a maximum length of **40 characters**.
-     * The value must be a string with a maximum length of **500 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
      * You can store up to **50 key-value pairs**.
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue1; }}
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
-    metadata?: { [key: string]: string; };
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * Key-value object storing custom field values.
      * @type {object}
@@ -13480,6 +13061,12 @@ export interface Product {
      * @memberof Product
      */
     organization_id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof Product
+     */
+    metadata: { [key: string]: MetadataValue; };
     /**
      * List of prices for this product.
      * @type {Array<ProductPrice>}
@@ -13782,6 +13369,20 @@ export type ProductMediaFileReadServiceEnum = typeof ProductMediaFileReadService
  * @interface ProductOneTimeCreate
  */
 export interface ProductOneTimeCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof ProductOneTimeCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
     /**
      * The name of the product.
      * @type {string}
@@ -14606,6 +14207,20 @@ export type ProductPriceTypeFilter1 = Array<ProductPriceType> | ProductPriceType
  */
 export interface ProductRecurringCreate {
     /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof ProductRecurringCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
      * The name of the product.
      * @type {string}
      * @memberof ProductRecurringCreate
@@ -14741,6 +14356,12 @@ export interface ProductStorefront {
  */
 export interface ProductUpdate {
     /**
+     * 
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof ProductUpdate
+     */
+    metadata?: { [key: string]: MetadataValue1; } | null;
+    /**
      * The name of the product.
      * @type {string}
      * @memberof ProductUpdate
@@ -14789,43 +14410,6 @@ export type ProductUpdatePricesInner = ExistingProductPrice | ProductPriceOneTim
  */
 export type Properties = BenefitGrantAdsProperties | BenefitGrantDiscordProperties | BenefitGrantDownloadablesProperties | BenefitGrantGitHubRepositoryProperties | BenefitGrantLicenseKeysProperties | object;
 
-/**
- * 
- * @export
- * @interface PublicDonation
- */
-export interface PublicDonation {
-    /**
-     * 
-     * @type {string}
-     * @memberof PublicDonation
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof PublicDonation
-     */
-    amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof PublicDonation
-     */
-    currency: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PublicDonation
-     */
-    message: string | null;
-    /**
-     * 
-     * @type {Donor}
-     * @memberof PublicDonation
-     */
-    donor: Donor | null;
-}
 /**
  * 
  * @export
@@ -15695,6 +15279,12 @@ export interface Storefront {
     products: Array<ProductStorefront>;
     /**
      * 
+     * @type {ProductStorefront}
+     * @memberof Storefront
+     */
+    donation_product: ProductStorefront | null;
+    /**
+     * 
      * @type {Customers}
      * @memberof Storefront
      */
@@ -15815,10 +15405,10 @@ export interface Subscription {
     checkout_id: string | null;
     /**
      * 
-     * @type {{ [key: string]: string; }}
+     * @type {{ [key: string]: MetadataValue; }}
      * @memberof Subscription
      */
-    metadata: { [key: string]: string; };
+    metadata: { [key: string]: MetadataValue; };
     /**
      * Key-value object storing custom field values.
      * @type {object}
@@ -16197,12 +15787,6 @@ export interface Transaction {
      * @type {string}
      * @memberof Transaction
      */
-    donation_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Transaction
-     */
     payout_transaction_id: string | null;
     /**
      * 
@@ -16228,12 +15812,6 @@ export interface Transaction {
      * @memberof Transaction
      */
     order: TransactionOrder | null;
-    /**
-     * 
-     * @type {TransactionDonation}
-     * @memberof Transaction
-     */
-    donation: TransactionDonation | null;
     /**
      * 
      * @type {Array<TransactionEmbedded>}
@@ -16350,12 +15928,6 @@ export interface TransactionDetails {
      * @type {string}
      * @memberof TransactionDetails
      */
-    donation_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionDetails
-     */
     payout_transaction_id: string | null;
     /**
      * 
@@ -16381,12 +15953,6 @@ export interface TransactionDetails {
      * @memberof TransactionDetails
      */
     order: TransactionOrder | null;
-    /**
-     * 
-     * @type {TransactionDonation}
-     * @memberof TransactionDetails
-     */
-    donation: TransactionDonation | null;
     /**
      * 
      * @type {Array<TransactionEmbedded>}
@@ -16420,37 +15986,6 @@ export interface TransactionDetails {
 }
 
 
-/**
- * 
- * @export
- * @interface TransactionDonation
- */
-export interface TransactionDonation {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof TransactionDonation
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionDonation
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the object.
-     * @type {string}
-     * @memberof TransactionDonation
-     */
-    id: string;
-    /**
-     * 
-     * @type {TransactionOrganization}
-     * @memberof TransactionDonation
-     */
-    to_organization: TransactionOrganization | null;
-}
 /**
  * 
  * @export
@@ -16535,12 +16070,6 @@ export interface TransactionEmbedded {
      * @memberof TransactionEmbedded
      */
     order_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionEmbedded
-     */
-    donation_id: string | null;
     /**
      * 
      * @type {string}
@@ -17755,12 +17284,6 @@ export interface UserSignupAttribution {
      * @type {string}
      * @memberof UserSignupAttribution
      */
-    donation?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSignupAttribution
-     */
     from_storefront?: string | null;
     /**
      * 
@@ -17801,7 +17324,6 @@ export interface UserSignupAttribution {
 export const UserSignupAttributionIntentEnum = {
     CREATOR: 'creator',
     PLEDGE: 'pledge',
-    DONATION: 'donation',
     PURCHASE: 'purchase',
     SUBSCRIPTION: 'subscription',
     NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription'
@@ -18434,37 +17956,6 @@ export interface WebhookDelivery {
     webhook_event: WebhookEvent;
 }
 /**
- * Sent when a new donation is created.
- * 
- * **Discord & Slack support:** Full
- * @export
- * @interface WebhookDonationCreatedPayload
- */
-export interface WebhookDonationCreatedPayload {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookDonationCreatedPayload
-     */
-    type: WebhookDonationCreatedPayloadTypeEnum;
-    /**
-     * 
-     * @type {Donation}
-     * @memberof WebhookDonationCreatedPayload
-     */
-    data: Donation;
-}
-
-
-/**
- * @export
- */
-export const WebhookDonationCreatedPayloadTypeEnum = {
-    DONATION_CREATED: 'donation.created'
-} as const;
-export type WebhookDonationCreatedPayloadTypeEnum = typeof WebhookDonationCreatedPayloadTypeEnum[keyof typeof WebhookDonationCreatedPayloadTypeEnum];
-
-/**
  * A webhook endpoint.
  * @export
  * @interface WebhookEndpoint
@@ -18665,8 +18156,7 @@ export const WebhookEventType = {
     BENEFIT_GRANT_REVOKED: 'benefit_grant.revoked',
     ORGANIZATION_UPDATED: 'organization.updated',
     PLEDGE_CREATED: 'pledge.created',
-    PLEDGE_UPDATED: 'pledge.updated',
-    DONATION_CREATED: 'donation.created'
+    PLEDGE_UPDATED: 'pledge.updated'
 } as const;
 export type WebhookEventType = typeof WebhookEventType[keyof typeof WebhookEventType];
 

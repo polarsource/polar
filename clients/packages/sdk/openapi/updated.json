@@ -32573,6 +32573,10 @@
                         "type": "array",
                         "title": "Benefits",
                         "description": "List of benefits granted by the product."
+                    },
+                    "etag": {
+                        "type": "string",
+                        "title": "Etag"
                     }
                 },
                 "type": "object",
@@ -32584,7 +32588,8 @@
                     "organization_id",
                     "price",
                     "cover",
-                    "benefits"
+                    "benefits",
+                    "etag"
                 ],
                 "title": "ProductEmbed"
             },

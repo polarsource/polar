@@ -1,7 +1,7 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from pydantic import UUID4
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, ResourceNotModified
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.product.service.product import product as product_service
@@ -18,6 +18,7 @@ router = APIRouter(
 
 @router.get("/product/{id}", summary="Product Embed")
 async def get_product(
+    request: Request,
     auth_subject: auth.EmbedsRead,
     id: ProductID,
     price_id: UUID4 | None = None,
@@ -27,6 +28,11 @@ async def get_product(
     product = await product_service.get_embed(session, id)
     if product is None:
         raise ResourceNotFound()
+
+    cached_etag = request.headers.get("If-None-Match")
+    etag = product.etag
+    if cached_etag and etag == cached_etag:
+        raise ResourceNotModified()
 
     cover = None
     if product.medias:
@@ -50,5 +56,6 @@ async def get_product(
             cover=cover,
             price=price,
             benefits=product.benefits,
+            etag=etag,
         )
     )

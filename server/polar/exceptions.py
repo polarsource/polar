@@ -101,6 +101,14 @@ class ResourceNotFound(PolarError):
         super().__init__(message, status_code)
 
 
+class ResourceNotModified(Exception):
+    # Handled separately to avoid any content being returned
+    """304 Not Modified."""
+
+    def __init__(self) -> None:
+        self.status_code = 304
+
+
 class ResourceUnavailable(PolarError):
     def __init__(self, message: str = "Unavailable", status_code: int = 410) -> None:
         super().__init__(message, status_code)

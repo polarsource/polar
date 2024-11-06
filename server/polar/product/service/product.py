@@ -215,7 +215,7 @@ class ProductService(ResourceServiceReader[Product]):
             .where(
                 Product.id == id,
                 Product.deleted_at.is_(None),
-                Product.is_archived.is_(None),
+                Product.is_archived.is_(False),
             )
             .options(
                 selectinload(Product.product_medias),

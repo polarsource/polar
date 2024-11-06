@@ -13,7 +13,6 @@ import {
   MaintainerAccountReviewedNotification,
   MaintainerAccountUnderReviewNotification,
   MaintainerCreateAccountNotification,
-  MaintainerDonationReceivedNotification,
   MaintainerNewPaidSubscriptionNotification,
   MaintainerNewProductSaleNotification,
   MaintainerPledgeConfirmationPendingNotification,
@@ -735,32 +734,6 @@ const MaintainerCreateAccount = ({
   )
 }
 
-const MaintainerDonationReceived = ({
-  n,
-}: {
-  n: MaintainerDonationReceivedNotification
-}) => {
-  const { payload } = n
-  return (
-    <Item n={n} iconClasses="bg-green-200 text-green-500">
-      {{
-        text: (
-          <>
-            {payload.organization_name} received a ${payload.donation_amount}{' '}
-            <InternalLink
-              href={`/dashboard/${payload.organization_name}/donations/overview`}
-            >
-              <>donation</>
-            </InternalLink>
-            .
-          </>
-        ),
-        icon: <DollarSignIcon />,
-      }}
-    </Item>
-  )
-}
-
 export const Notification = ({
   n,
   setIsInNestedModal,
@@ -822,9 +795,6 @@ export const Notification = ({
 
     case 'MaintainerCreateAccountNotification':
       return <MaintainerCreateAccount n={n} />
-
-    case 'MaintainerDonationReceived':
-      return <MaintainerDonationReceived n={n} />
   }
 }
 

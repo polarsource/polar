@@ -48,12 +48,6 @@ const getTransactionMeta = (transaction: Transaction) => {
       externalOrganization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
-  } else if (transaction.donation) {
-    return {
-      type: 'Donation',
-      organization: transaction.donation.to_organization,
-      meta: transaction.donation,
-    }
   } else if (transaction.type === TransactionType.PAYOUT) {
     return {
       type: 'Payout',
@@ -130,18 +124,6 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                 </Link>
               </div>
             )}
-            {transactionMeta.type === 'Donation' &&
-            'to_organization' in transactionMeta.meta &&
-            transactionMeta.meta.to_organization ? (
-              <div className="flex flex-col gap-1">
-                <Link
-                  className=" text-blue-500 dark:text-blue-400"
-                  href={`/${transactionMeta.meta.to_organization.slug}`}
-                >
-                  {transactionMeta.meta.to_organization.slug}
-                </Link>
-              </div>
-            ) : null}
           </>
         )}
       </div>

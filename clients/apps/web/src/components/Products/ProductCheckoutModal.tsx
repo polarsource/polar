@@ -5,8 +5,7 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
-import { ClearOutlined } from '@mui/icons-material'
-import { SettingsOutlined } from '@mui/icons-material';
+import { ClearOutlined, SettingsOutlined } from '@mui/icons-material'
 import {
   CheckoutLink,
   CheckoutLinkCreate,
@@ -27,6 +26,13 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/atoms/tabs'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
+import {
   Form,
   FormControl,
   FormDescription,
@@ -35,15 +41,8 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Label } from 'polarkit/components/ui/label'
-import { useCallback, useState, useMemo, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -51,8 +50,8 @@ const LinkView = ({
   product,
   link,
 }: {
-  product: Product,
-  link: CheckoutLink,
+  product: Product
+  link: CheckoutLink
 }) => {
   const [darkmode, setDarkmode] = useState<boolean>(true)
   const [embedType, setEmbedType] = useState<string>('link')
@@ -81,7 +80,10 @@ const LinkView = ({
 
   return (
     <>
-      <Tabs defaultValue={embedType} onValueChange={(value) => setEmbedType(value)}>
+      <Tabs
+        defaultValue={embedType}
+        onValueChange={(value) => setEmbedType(value)}
+      >
         <TabsList>
           <TabsTrigger value="link">Link</TabsTrigger>
           <TabsTrigger value="checkout">Checkout Embed</TabsTrigger>
@@ -113,7 +115,7 @@ const LinkView = ({
         </TabsContent>
 
         {showDarkmodeToggle && (
-          <div className="flex flex-row gap-x-2 mt-4 px-4">
+          <div className="mt-4 flex flex-row gap-x-2 px-4">
             <Checkbox
               id="darkmode"
               checked={darkmode}
@@ -121,7 +123,9 @@ const LinkView = ({
                 setDarkmode(checked === true)
               }}
             />
-            <Label htmlFor="darkmode" className="grow text-xs">Dark Mode</Label>
+            <Label htmlFor="darkmode" className="grow text-xs">
+              Dark Mode
+            </Label>
           </div>
         )}
       </Tabs>
@@ -133,7 +137,7 @@ const LinkList = ({
   links,
   current,
   onSelect,
-  onSelectCreate
+  onSelectCreate,
 }: {
   links: CheckoutLink[]
   current: string | undefined
@@ -142,11 +146,11 @@ const LinkList = ({
 }) => {
   return (
     <div>
-      <div className="flex flex-row mb-4">
+      <div className="mb-4 flex flex-row">
         <h2 className="grow">Links</h2>
         <div className="pr-4">
           <Button variant="secondary" onClick={onSelectCreate}>
-              +
+            +
           </Button>
         </div>
       </div>
@@ -169,12 +173,19 @@ const LinkList = ({
                   {url.host}
                 </Pill>
               )}
-              <Button size="sm" variant="secondary" onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onSelect(link, true)
-              }}>
-               <SettingsOutlined fontSize="inherit" className="text-gray-500" />
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onSelect(link, true)
+                }}
+              >
+                <SettingsOutlined
+                  fontSize="inherit"
+                  className="text-gray-500"
+                />
               </Button>
             </ListItem>
           )
@@ -184,7 +195,6 @@ const LinkList = ({
   )
 }
 
-
 export interface ProductCheckoutModalProps {
   product: Product
 }
@@ -192,14 +202,17 @@ export interface ProductCheckoutModalProps {
 type ProductCheckoutForm = Omit<
   CheckoutLinkCreate,
   'payment_processor' | 'metadata'
-> & { metadata: { key: string; value: string }[] }
+> & { metadata: { key: string; value: string | number | boolean }[] }
 
 export const ProductCheckoutModal = ({
   product,
 }: ProductCheckoutModalProps) => {
-  const { data: checkoutLinks, isFetched } = useCheckoutLinks(product.organization_id, {
-    productId: product.id,
-  })
+  const { data: checkoutLinks, isFetched } = useCheckoutLinks(
+    product.organization_id,
+    {
+      productId: product.id,
+    },
+  )
 
   const generateDefaultValues = () => {
     return {
@@ -209,7 +222,7 @@ export const ProductCheckoutModal = ({
   }
 
   const form = useForm<ProductCheckoutForm>({
-    defaultValues: generateDefaultValues()
+    defaultValues: generateDefaultValues(),
   })
   const { control, handleSubmit, setError, reset } = form
   const { fields, append, remove } = useFieldArray({
@@ -316,11 +329,10 @@ export const ProductCheckoutModal = ({
   return (
     <div className="flex flex-col gap-y-8 overflow-y-auto p-12">
       <div className="flex flex-col gap-y-2">
-        <h1 className="text-xl font-medium">
-          Share &rsaquo; {product.name}
-        </h1>
+        <h1 className="text-xl font-medium">Share &rsaquo; {product.name}</h1>
         <p className="dark:text-polar-500 text-gray-500">
-          Checkout Links &amp; Embeds to easily integrate or share directly with your audience.
+          Checkout Links &amp; Embeds to easily integrate or share directly with
+          your audience.
         </p>
       </div>
 
@@ -332,7 +344,9 @@ export const ProductCheckoutModal = ({
             onSelect={onSelectLink}
             onSelectCreate={showCreateForm}
           />
-          {selectedLink && !showForm && <LinkView product={product} link={selectedLink} />}
+          {selectedLink && !showForm && (
+            <LinkView product={product} link={selectedLink} />
+          )}
         </>
       )}
 
@@ -427,7 +441,7 @@ export const ProductCheckoutModal = ({
                           <FormControl>
                             <Input
                               {...field}
-                              value={field.value || ''}
+                              value={field.value.toString() || ''}
                               placeholder="Value"
                             />
                           </FormControl>

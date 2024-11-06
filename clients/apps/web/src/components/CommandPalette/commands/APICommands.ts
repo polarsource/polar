@@ -21,7 +21,6 @@ type FindMatchingPath<
 type Sitemap = {
   products: FindMatchingPath<'/v1/products'>[]
   issues: FindMatchingPath<'/v1/issues'>[]
-  donations: FindMatchingPath<'/v1/donations'>[]
   subscriptions: FindMatchingPath<'/v1/subscriptions'>[]
   benefits: FindMatchingPath<'/v1/benefits'>[]
   users: FindMatchingPath<'/v1/users'>[]
@@ -41,7 +40,6 @@ const filterPath = <T extends string>(key: T) =>
 const sitemap: Sitemap = {
   products: filterPath('/v1/products'),
   issues: filterPath('/v1/issues'),
-  donations: filterPath('/v1/donations'),
   subscriptions: filterPath('/v1/subscriptions'),
   benefits: filterPath('/v1/benefits'),
   users: filterPath('/v1/users'),

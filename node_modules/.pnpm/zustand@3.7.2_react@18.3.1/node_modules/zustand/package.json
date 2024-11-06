@@ -1,0 +1,78 @@
+{
+  "name": "zustand",
+  "private": false,
+  "version": "3.7.2",
+  "description": "🐻 Bear necessities for state management in React",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "files": [
+    "**"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./index.d.ts",
+      "module": "./esm/index.js",
+      "import": "./esm/index.mjs",
+      "default": "./index.js"
+    },
+    "./vanilla": {
+      "types": "./vanilla.d.ts",
+      "module": "./esm/vanilla.js",
+      "import": "./esm/vanilla.mjs",
+      "default": "./vanilla.js"
+    },
+    "./middleware": {
+      "types": "./middleware.d.ts",
+      "module": "./esm/middleware.js",
+      "import": "./esm/middleware.mjs",
+      "default": "./middleware.js"
+    },
+    "./shallow": {
+      "types": "./shallow.d.ts",
+      "module": "./esm/shallow.js",
+      "import": "./esm/shallow.mjs",
+      "default": "./shallow.js"
+    },
+    "./context": {
+      "types": "./context.d.ts",
+      "module": "./esm/context.js",
+      "import": "./esm/context.mjs",
+      "default": "./context.js"
+    }
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=12.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmndrs/zustand.git"
+  },
+  "keywords": [
+    "react",
+    "state",
+    "manager",
+    "management",
+    "redux",
+    "store"
+  ],
+  "author": "Paul Henschel",
+  "contributors": [
+    "Jeremy Holcomb (https://github.com/JeremyRH)",
+    "Daishi Kato (https://github.com/dai-shi)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pmndrs/zustand/issues"
+  },
+  "homepage": "https://github.com/pmndrs/zustand",
+  "peerDependencies": {
+    "react": ">=16.8"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}

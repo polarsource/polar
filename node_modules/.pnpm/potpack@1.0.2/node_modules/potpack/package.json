@@ -1,0 +1,53 @@
+{
+  "name": "potpack",
+  "version": "1.0.2",
+  "description": "A tiny library for packing 2D rectangles (for sprite layouts)",
+  "main": "index",
+  "module": "index.mjs",
+  "unpkg": "index.js",
+  "jsdelivr": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.mjs",
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "pretest": "eslint index.mjs test.mjs bench.mjs",
+    "test": "node -r esm test.mjs",
+    "bench": "node -r esm bench.mjs",
+    "build": "rollup -c",
+    "start": "rollup -w",
+    "prepublishOnly": "npm run build"
+  },
+  "eslintConfig": {
+    "extends": "mourner"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mapbox/potpack.git"
+  },
+  "keywords": [
+    "algorithms",
+    "sprites",
+    "bin packing",
+    "geometry",
+    "rectangles"
+  ],
+  "author": "Vladimir Agafonkin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mapbox/potpack/issues"
+  },
+  "homepage": "https://mapbox.github.io/potpack/",
+  "devDependencies": {
+    "@mapbox/shelf-pack": "^3.2.0",
+    "@rollup/plugin-buble": "^0.21.3",
+    "bin-pack": "^1.0.2",
+    "eslint": "^8.0.1",
+    "eslint-config-mourner": "^3.0.0",
+    "esm": "^3.2.25",
+    "rollup": "^2.58.0",
+    "tape": "^5.3.1"
+  }
+}

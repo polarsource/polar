@@ -10,7 +10,7 @@ export const Monetization = () => {
   // const circleRadius = 80
 
   return (
-    <div className="flex flex-col gap-y-24 md:gap-y-32">
+    <div className="rounded-4xl dark:bg-polar-900 flex flex-col gap-y-24 bg-gray-50 p-12 md:gap-y-32">
       <div className="flex flex-col gap-y-24">
         <div className="grid grid-cols-1 gap-x-16 gap-y-16 md:grid-cols-3 md:gap-y-24">
           <div className="flex flex-col justify-between gap-y-12">
@@ -35,7 +35,7 @@ export const Monetization = () => {
                     <div
                       key={i}
                       className={twMerge(
-                        'dark:bg-polar-700 flex h-1.5 w-1.5 flex-col items-center justify-center rounded-full bg-gray-100',
+                        'dark:bg-polar-700 flex h-1.5 w-1.5 flex-col items-center justify-center rounded-full bg-gray-300',
                       )}
                     >
                       {active && (
@@ -69,7 +69,7 @@ export const Monetization = () => {
           </div>
 
           <div className="flex flex-col justify-between gap-y-12">
-            <div className="dark:bg-polar-950 dark:border-polar-700 flex w-full flex-col gap-y-6 overflow-auto rounded-2xl border p-6 text-sm">
+            <div className="dark:bg-polar-800 flex w-full flex-col gap-y-6 overflow-auto rounded-2xl bg-gray-100 p-6 text-sm">
               <div className="flex flex-row items-center gap-x-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
                 <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
@@ -109,7 +109,7 @@ export const Monetization = () => {
               />
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-200"
-                srcSet={`/assets/landing/fund_dark.svg`}
+                srcSet={`/assets/landing/fund.svg`}
                 alt="Polar crowdfunding badge embedded on a GitHub issue"
               />
             </picture>

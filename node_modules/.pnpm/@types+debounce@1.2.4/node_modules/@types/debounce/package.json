@@ -1,0 +1,30 @@
+{
+    "name": "@types/debounce",
+    "version": "1.2.4",
+    "description": "TypeScript definitions for debounce",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/debounce",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Denis Sokolov",
+            "githubUsername": "denis-sokolov",
+            "url": "https://github.com/denis-sokolov"
+        },
+        {
+            "name": "Wayne Carson",
+            "githubUsername": "wcarson",
+            "url": "https://github.com/wcarson"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/debounce"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "d5f376ebc2050dff0fc2cc5476ce48bda4c335b67817ac6bf0ceb5ac6e7392da",
+    "typeScriptVersion": "4.5"
+}

@@ -18,7 +18,7 @@ export const MerchantOfRecord = () => {
           alt="Polar transactions view"
         />
       </picture>
-      <div className="rounded-4xl dark:bg-polar-900 relative col-span-1 flex w-full flex-col justify-between gap-y-8 p-10">
+      <div className="rounded-4xl dark:bg-polar-900 relative col-span-1 flex w-full flex-col justify-between gap-y-8 bg-gray-50 p-10">
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex w-full max-w-sm flex-col gap-y-6">
             <h3 className="text-3xl font-medium leading-tight">

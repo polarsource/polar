@@ -1,0 +1,64 @@
+{
+	"name": "@tweenjs/tween.js",
+	"description": "Simple and fast tweening engine with optimised Robert Penner's equations.",
+	"version": "23.1.3",
+	"type": "module",
+	"main": "dist/tween.cjs",
+	"types": "dist/tween.d.ts",
+	"module": "dist/tween.esm.js",
+	"exports": {
+		".": {
+			"import": "./dist/tween.esm.js",
+			"require": "./dist/tween.cjs",
+			"types": "./dist/tween.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"homepage": "https://github.com/tweenjs/tween.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tweenjs/tween.js.git"
+	},
+	"bugs": {
+		"url": "https://github.com/tweenjs/tween.js/issues"
+	},
+	"license": "MIT",
+	"keywords": [
+		"tween",
+		"interpolation"
+	],
+	"dependencies": {},
+	"scripts": {
+		"dev": "(npm run tsc-watch -- --preserveWatchOutput & p1=$!; npm run rollup-build -- --watch & p2=$!; wait $p1 $p2)",
+		"build": "rimraf dist .tmp && node scripts/write-version.js && npm run tsc && npm run rollup-build",
+		"rollup-build": "rollup -c ./rollup.config.js",
+		"tsc": "tsc",
+		"tsc-watch": "tsc --watch",
+		"examples": "npx serve .",
+		"test": "npm run build && npm run test-lint && npm run test-unit",
+		"test-unit": "nodeunit test/unit/nodeunitheadless.cjs",
+		"test-lint": "npm run prettier -- --check",
+		"lint": "npm run prettier -- --write",
+		"prettier": "prettier .",
+		"prepare": "npm run build",
+		"version": "npm test && git add .",
+		"release:patch": "npm version patch --message 'v%s' && npm publish && npm run _release:push-branch",
+		"release:minor": "npm version minor --message 'v%s' && npm publish && npm run _release:push-branch",
+		"release:major": "npm version major --message 'v%s' && npm publish && npm run _release:push-branch",
+		"_release:push-branch": "git push --follow-tags --set-upstream origin `git rev-parse --abbrev-ref HEAD`"
+	},
+	"author": "tween.js contributors (https://github.com/tweenjs/tween.js/graphs/contributors)",
+	"devDependencies": {
+		"nodeunit": "^0.11.3",
+		"prettier": "^3.0.0",
+		"rimraf": "^3.0.0",
+		"rollup": "3.20.7",
+		"rollup-plugin-dts": "5.3.0",
+		"tslib": "^1.10.0",
+		"typescript": "5.0.4"
+	}
+}

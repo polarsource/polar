@@ -1,47 +1,20 @@
 'use client'
 
-import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { Section } from '@/components/Landing/Section'
 import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import { motion } from 'framer-motion'
-import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { PropsWithChildren, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { PropsWithChildren } from 'react'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
 export default function Layout({ children }: PropsWithChildren) {
-  const pathname = usePathname()
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  useEffect(() => {
-    window.scroll(0, 0)
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [pathname])
-
   return (
     <div className="flex w-full flex-col items-center bg-gray-100 dark:bg-black dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%)]">
-      <Section
-        wrapperClassName={twMerge(
-          'sticky top-0 z-30 duration-500 transition-colors dark:bg-transparent',
-          isScrolled ? 'dark:bg-black bg-gray-50' : '',
-        )}
-        className="py-4 md:py-8"
-      >
-        <LandingPageTopbar />
-      </Section>
+      <LandingPageTopbar />
       {children}
       <LandingPageFooter />
     </div>
@@ -58,11 +31,11 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="relative flex flex-row items-center justify-between bg-transparent">
+    <div className="dark:bg-polar-800 shadow-3xl sticky top-8 z-30 flex w-full max-w-2xl flex-row items-center justify-between rounded-3xl bg-gray-50 px-8 py-4">
       <TopbarNavigation />
       <BrandingMenu
         className="mt-1 hidden md:block"
-        size={100}
+        size={80}
         logoVariant="logotype"
       />
       <BrandingMenu
@@ -74,7 +47,6 @@ const LandingPageTopbar = () => {
         <Button onClick={onLoginClick} variant="secondary">
           Log in
         </Button>
-        <GetStartedButton className="px-3" size="default" />
       </div>
       <Modal
         isShown={isModalShown}

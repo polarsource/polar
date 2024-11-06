@@ -1,0 +1,189 @@
+"use strict";
+Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+const THREE = require("three");
+const ToonShader1 = {
+  uniforms: {
+    uDirLightPos: { value: new THREE.Vector3() },
+    uDirLightColor: { value: new THREE.Color(15658734) },
+    uAmbientLightColor: { value: new THREE.Color(328965) },
+    uBaseColor: { value: new THREE.Color(16777215) }
+  },
+  vertexShader: [
+    "varying vec3 vNormal;",
+    "varying vec3 vRefract;",
+    "void main() {",
+    "	vec4 worldPosition = modelMatrix * vec4( position, 1.0 );",
+    "	vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+    "	vec3 worldNormal = normalize ( mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * normal );",
+    "	vNormal = normalize( normalMatrix * normal );",
+    "	vec3 I = worldPosition.xyz - cameraPosition;",
+    "	vRefract = refract( normalize( I ), worldNormal, 1.02 );",
+    "	gl_Position = projectionMatrix * mvPosition;",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform vec3 uBaseColor;",
+    "uniform vec3 uDirLightPos;",
+    "uniform vec3 uDirLightColor;",
+    "uniform vec3 uAmbientLightColor;",
+    "varying vec3 vNormal;",
+    "varying vec3 vRefract;",
+    "void main() {",
+    "	float directionalLightWeighting = max( dot( normalize( vNormal ), uDirLightPos ), 0.0);",
+    "	vec3 lightWeighting = uAmbientLightColor + uDirLightColor * directionalLightWeighting;",
+    "	float intensity = smoothstep( - 0.5, 1.0, pow( length(lightWeighting), 20.0 ) );",
+    "	intensity += length(lightWeighting) * 0.2;",
+    "	float cameraWeighting = dot( normalize( vNormal ), vRefract );",
+    "	intensity += pow( 1.0 - length( cameraWeighting ), 6.0 );",
+    "	intensity = intensity * 0.2 + 0.3;",
+    "	if ( intensity < 0.50 ) {",
+    "		gl_FragColor = vec4( 2.0 * intensity * uBaseColor, 1.0 );",
+    "	} else {",
+    "		gl_FragColor = vec4( 1.0 - 2.0 * ( 1.0 - intensity ) * ( 1.0 - uBaseColor ), 1.0 );",
+    "}",
+    "}"
+  ].join("\n")
+};
+const ToonShader2 = {
+  uniforms: {
+    uDirLightPos: { value: new THREE.Vector3() },
+    uDirLightColor: { value: new THREE.Color(15658734) },
+    uAmbientLightColor: { value: new THREE.Color(328965) },
+    uBaseColor: { value: new THREE.Color(15658734) },
+    uLineColor1: { value: new THREE.Color(8421504) },
+    uLineColor2: { value: new THREE.Color(0) },
+    uLineColor3: { value: new THREE.Color(0) },
+    uLineColor4: { value: new THREE.Color(0) }
+  },
+  vertexShader: [
+    "varying vec3 vNormal;",
+    "void main() {",
+    "	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+    "	vNormal = normalize( normalMatrix * normal );",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform vec3 uBaseColor;",
+    "uniform vec3 uLineColor1;",
+    "uniform vec3 uLineColor2;",
+    "uniform vec3 uLineColor3;",
+    "uniform vec3 uLineColor4;",
+    "uniform vec3 uDirLightPos;",
+    "uniform vec3 uDirLightColor;",
+    "uniform vec3 uAmbientLightColor;",
+    "varying vec3 vNormal;",
+    "void main() {",
+    "	float camera = max( dot( normalize( vNormal ), vec3( 0.0, 0.0, 1.0 ) ), 0.4);",
+    "	float light = max( dot( normalize( vNormal ), uDirLightPos ), 0.0);",
+    "	gl_FragColor = vec4( uBaseColor, 1.0 );",
+    "	if ( length(uAmbientLightColor + uDirLightColor * light) < 1.00 ) {",
+    "		gl_FragColor *= vec4( uLineColor1, 1.0 );",
+    "	}",
+    "	if ( length(uAmbientLightColor + uDirLightColor * camera) < 0.50 ) {",
+    "		gl_FragColor *= vec4( uLineColor2, 1.0 );",
+    "	}",
+    "}"
+  ].join("\n")
+};
+const ToonShaderHatching = {
+  uniforms: {
+    uDirLightPos: { value: new THREE.Vector3() },
+    uDirLightColor: { value: new THREE.Color(15658734) },
+    uAmbientLightColor: { value: new THREE.Color(328965) },
+    uBaseColor: { value: new THREE.Color(16777215) },
+    uLineColor1: { value: new THREE.Color(0) },
+    uLineColor2: { value: new THREE.Color(0) },
+    uLineColor3: { value: new THREE.Color(0) },
+    uLineColor4: { value: new THREE.Color(0) }
+  },
+  vertexShader: [
+    "varying vec3 vNormal;",
+    "void main() {",
+    "	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+    "	vNormal = normalize( normalMatrix * normal );",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform vec3 uBaseColor;",
+    "uniform vec3 uLineColor1;",
+    "uniform vec3 uLineColor2;",
+    "uniform vec3 uLineColor3;",
+    "uniform vec3 uLineColor4;",
+    "uniform vec3 uDirLightPos;",
+    "uniform vec3 uDirLightColor;",
+    "uniform vec3 uAmbientLightColor;",
+    "varying vec3 vNormal;",
+    "void main() {",
+    "	float directionalLightWeighting = max( dot( normalize(vNormal), uDirLightPos ), 0.0);",
+    "	vec3 lightWeighting = uAmbientLightColor + uDirLightColor * directionalLightWeighting;",
+    "	gl_FragColor = vec4( uBaseColor, 1.0 );",
+    "	if ( length(lightWeighting) < 1.00 ) {",
+    "		if ( mod(gl_FragCoord.x + gl_FragCoord.y, 10.0) == 0.0) {",
+    "			gl_FragColor = vec4( uLineColor1, 1.0 );",
+    "		}",
+    "	}",
+    "	if ( length(lightWeighting) < 0.75 ) {",
+    "		if (mod(gl_FragCoord.x - gl_FragCoord.y, 10.0) == 0.0) {",
+    "			gl_FragColor = vec4( uLineColor2, 1.0 );",
+    "		}",
+    "	}",
+    "	if ( length(lightWeighting) < 0.50 ) {",
+    "		if (mod(gl_FragCoord.x + gl_FragCoord.y - 5.0, 10.0) == 0.0) {",
+    "			gl_FragColor = vec4( uLineColor3, 1.0 );",
+    "		}",
+    "	}",
+    "	if ( length(lightWeighting) < 0.3465 ) {",
+    "		if (mod(gl_FragCoord.x - gl_FragCoord.y - 5.0, 10.0) == 0.0) {",
+    "			gl_FragColor = vec4( uLineColor4, 1.0 );",
+    "	}",
+    "	}",
+    "}"
+  ].join("\n")
+};
+const ToonShaderDotted = {
+  uniforms: {
+    uDirLightPos: { value: new THREE.Vector3() },
+    uDirLightColor: { value: new THREE.Color(15658734) },
+    uAmbientLightColor: { value: new THREE.Color(328965) },
+    uBaseColor: { value: new THREE.Color(16777215) },
+    uLineColor1: { value: new THREE.Color(0) }
+  },
+  vertexShader: [
+    "varying vec3 vNormal;",
+    "void main() {",
+    "	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+    "	vNormal = normalize( normalMatrix * normal );",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform vec3 uBaseColor;",
+    "uniform vec3 uLineColor1;",
+    "uniform vec3 uLineColor2;",
+    "uniform vec3 uLineColor3;",
+    "uniform vec3 uLineColor4;",
+    "uniform vec3 uDirLightPos;",
+    "uniform vec3 uDirLightColor;",
+    "uniform vec3 uAmbientLightColor;",
+    "varying vec3 vNormal;",
+    "void main() {",
+    "float directionalLightWeighting = max( dot( normalize(vNormal), uDirLightPos ), 0.0);",
+    "vec3 lightWeighting = uAmbientLightColor + uDirLightColor * directionalLightWeighting;",
+    "gl_FragColor = vec4( uBaseColor, 1.0 );",
+    "if ( length(lightWeighting) < 1.00 ) {",
+    "		if ( ( mod(gl_FragCoord.x, 4.001) + mod(gl_FragCoord.y, 4.0) ) > 6.00 ) {",
+    "			gl_FragColor = vec4( uLineColor1, 1.0 );",
+    "		}",
+    "	}",
+    "	if ( length(lightWeighting) < 0.50 ) {",
+    "		if ( ( mod(gl_FragCoord.x + 2.0, 4.001) + mod(gl_FragCoord.y + 2.0, 4.0) ) > 6.00 ) {",
+    "			gl_FragColor = vec4( uLineColor1, 1.0 );",
+    "		}",
+    "	}",
+    "}"
+  ].join("\n")
+};
+exports.ToonShader1 = ToonShader1;
+exports.ToonShader2 = ToonShader2;
+exports.ToonShaderDotted = ToonShaderDotted;
+exports.ToonShaderHatching = ToonShaderHatching;
+//# sourceMappingURL=ToonShader.cjs.map

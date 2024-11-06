@@ -1,0 +1,4 @@
+{
+  "main": "dist/maath-matrix.cjs.js",
+  "module": "dist/maath-matrix.esm.js"
+}

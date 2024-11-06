@@ -1,0 +1,30 @@
+import * as THREE from 'three';
+import * as React from 'react';
+import { ComputeFunction, ReactThreeFiber } from '@react-three/fiber';
+import { ForwardRefComponent } from '../helpers/ts-utils';
+export type RenderCubeTextureProps = Omit<JSX.IntrinsicElements['texture'], 'rotation'> & {
+    stencilBuffer?: boolean;
+    depthBuffer?: boolean;
+    generateMipmaps?: boolean;
+    renderPriority?: number;
+    eventPriority?: number;
+    frames?: number;
+    compute?: ComputeFunction;
+    flip?: boolean;
+    resolution?: number;
+    children: React.ReactNode;
+    near?: number;
+    far?: number;
+    position?: ReactThreeFiber.Vector3;
+    rotation?: ReactThreeFiber.Euler;
+    scale?: ReactThreeFiber.Vector3;
+    quaternion?: ReactThreeFiber.Quaternion;
+    matrix?: ReactThreeFiber.Matrix4;
+    matrixAutoUpdate?: boolean;
+};
+export type RenderCubeTextureApi = {
+    scene: THREE.Scene;
+    fbo: THREE.WebGLCubeRenderTarget;
+    camera: THREE.CubeCamera;
+};
+export declare const RenderCubeTexture: ForwardRefComponent<RenderCubeTextureProps, RenderCubeTextureApi>;

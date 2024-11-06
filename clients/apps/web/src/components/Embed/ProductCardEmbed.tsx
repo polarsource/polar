@@ -1,20 +1,20 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { Product, ProductPrice } from '@polar-sh/sdk'
+import { ProductEmbed, ProductPrice } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import {
   getRecurringBillingLabel,
 } from '../Subscriptions/utils'
 
-export const ProductCard = ({
-  product,
+export const ProductCardEmbed = ({
+  embed,
   cta,
   darkmode,
 }: {
-  product: Product
+  embed: ProductEmbed
   cta?: string
   darkmode?: boolean
 }) => {
-  const price: ProductPrice = product.prices[0]
+  const price: ProductPrice = embed.price
 
   const isSubscription = ('recurring_interval' in price)
   const isPWYW = price.amount_type === 'custom'
@@ -26,9 +26,9 @@ export const ProductCard = ({
     cta = isSubscription ? 'Subscribe' : 'Buy'
   }
 
-  const cover = product.medias.length ? product.medias[0].public_url : null
+  const coverUrl = embed.cover ? embed.cover.public_url : null
 
-  let shownDescription = product.description
+  let shownDescription = embed.description
   if (shownDescription && shownDescription.length > 100) {
     shownDescription = shownDescription.slice(0, 100) + '...'
   }
@@ -52,7 +52,7 @@ export const ProductCard = ({
 
   return (
     <div
-      key={product.id}
+      key={embed.id}
       style={{
         display: 'flex',
         flexBasis: 0,
@@ -77,7 +77,7 @@ export const ProductCard = ({
             fontSize: 20,
           }}
         >
-          {product.name}
+          {embed.name}
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -103,10 +103,10 @@ export const ProductCard = ({
           </div>
         </div>
       </div>
-      {cover && (
-        <img src={cover} style={{ width: '200px', height: '100px' }} alt="" />
+      {coverUrl && (
+        <img src={coverUrl} style={{ width: '200px', height: '100px' }} alt="" />
       )}
-      {product.description && (
+      {embed.description && (
         <div
           style={{
             display: 'flex',
@@ -137,7 +137,7 @@ export const ProductCard = ({
           color: darkmode ? '#8186A4' : '#666',
         }}
       >
-        {product.benefits?.map((benefit) => (
+        {embed.benefits?.map((benefit) => (
           <div
             key={benefit.id}
             style={{

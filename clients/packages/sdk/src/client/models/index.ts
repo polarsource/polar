@@ -13525,6 +13525,61 @@ export interface ProductBenefitsUpdate {
 export type ProductCreate = ProductOneTimeCreate | ProductRecurringCreate;
 
 /**
+ * 
+ * @export
+ * @interface ProductEmbed
+ */
+export interface ProductEmbed {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductEmbed
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductEmbed
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductEmbed
+     */
+    description: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProductEmbed
+     */
+    is_recurring: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductEmbed
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof ProductEmbed
+     */
+    price: ProductPrice;
+    /**
+     * 
+     * @type {ProductMediaFileRead}
+     * @memberof ProductEmbed
+     */
+    cover: ProductMediaFileRead | null;
+    /**
+     * List of benefits granted by the product.
+     * @type {Array<Benefit>}
+     * @memberof ProductEmbed
+     */
+    benefits: Array<Benefit>;
+}
+/**
  * @type ProductIDFilter
  * Filter by product ID.
  * @export

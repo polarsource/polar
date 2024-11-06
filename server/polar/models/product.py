@@ -17,6 +17,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.metadata import MetadataMixin
 from polar.models.product_price import ProductPriceType
 
 from .product_price import ProductPrice
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     from polar.models.file import ProductMediaFile
 
 
-class Product(RecordModel):
+class Product(MetadataMixin, RecordModel):
     __tablename__ = "products"
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)

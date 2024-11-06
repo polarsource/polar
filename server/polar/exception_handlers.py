@@ -3,13 +3,14 @@ from urllib.parse import urlencode
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from polar.config import settings
 from polar.exceptions import (
     PolarError,
     PolarRedirectionError,
     PolarRequestValidationError,
+    ResourceNotModified,
 )
 
 
@@ -43,11 +44,22 @@ async def polar_redirection_exception_handler(
     return RedirectResponse(error_url, 303)
 
 
+async def polar_not_modified_handler(
+    request: Request, exc: ResourceNotModified
+) -> Response:
+    return Response(status_code=exc.status_code)
+
+
 def add_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
         PolarRedirectionError,
         polar_redirection_exception_handler,  # type: ignore
     )
+    app.add_exception_handler(
+        ResourceNotModified,
+        polar_not_modified_handler,  # type: ignore
+    )
+
     app.add_exception_handler(
         RequestValidationError,
         request_validation_exception_handler,  # type: ignore

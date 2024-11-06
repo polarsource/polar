@@ -13,3 +13,4 @@ class ProductEmbed(Schema):
     price: ProductPrice
     cover: ProductMediaFileRead | None
     benefits: BenefitList
+    etag: str

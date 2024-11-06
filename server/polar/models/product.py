@@ -1,3 +1,4 @@
+import hashlib
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -133,3 +134,15 @@ class Product(RecordModel):
                 ProductPrice.type != ProductPriceType.recurring
             )
         )
+
+    @property
+    def etag(self) -> str:
+        # NOTE: Could be moved to a mixin & something we can store in the DB
+        last_modified = self.modified_at
+        if not last_modified:
+            last_modified = self.created_at
+
+        h = hashlib.sha256()
+        h.update(str(last_modified).encode("utf-8"))
+        etag = h.hexdigest()
+        return etag

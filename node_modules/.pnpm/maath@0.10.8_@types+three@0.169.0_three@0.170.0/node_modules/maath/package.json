@@ -1,0 +1,31 @@
+{
+  "name": "maath",
+  "version": "0.10.8",
+  "license": "MIT",
+  "main": "dist/maath.cjs.js",
+  "module": "dist/maath.esm.js",
+  "types": "dist/maath.cjs.d.ts",
+  "preconstruct": {
+    "entrypoints": [
+      "index.ts",
+      "buffer.ts",
+      "easing.ts",
+      "matrix.ts",
+      "misc.ts",
+      "random/index.ts",
+      "triangle.ts",
+      "vector2.ts",
+      "vector3.ts",
+      "three.ts",
+      "geometry.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@types/three": ">=0.134.0",
+    "three": ">=0.134.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.134.0",
+    "three": "^0.134.0"
+  }
+}

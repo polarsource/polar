@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.js","sources":["../../src/_polyfill/constants.ts"],"sourcesContent":["import { REVISION } from 'three'\n\nexport const version = parseInt(REVISION.replace(/\\D+/g, ''))\n"],"names":[],"mappings":";AAEO,MAAM,UAAU,SAAS,SAAS,QAAQ,QAAQ,EAAE,CAAC;"}

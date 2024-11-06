@@ -1,0 +1,43 @@
+{
+  "name": "@use-gesture/react",
+  "version": "10.3.1",
+  "description": "React target for @use-gesture",
+  "keywords": [
+    "react",
+    "hook",
+    "gesture",
+    "mouse",
+    "trackpad",
+    "touch",
+    "drag",
+    "pinch",
+    "rotate",
+    "scale",
+    "zoom",
+    "scroll",
+    "wheel"
+  ],
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "dist/use-gesture-react.cjs.js",
+  "module": "dist/use-gesture-react.esm.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmndrs/use-gesture.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/pmndrs/use-gesture/issues"
+  },
+  "author": "Paul Henschel",
+  "contributors": [
+    "David Bismut (https://github.com/dbismut)"
+  ],
+  "homepage": "https://use-gesture.netlify.app",
+  "peerDependencies": {
+    "react": ">= 16.8.0"
+  },
+  "dependencies": {
+    "@use-gesture/core": "10.3.1"
+  }
+}

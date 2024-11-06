@@ -1,0 +1,37 @@
+{
+  "name": "webgl-constants",
+  "version": "1.1.1",
+  "description": "Complete set of constants as specified in the WebGL, WebGL2 and extension spec.",
+  "main": "dist/webgl-constants.cjs.js",
+  "browser": "dist/webgl-constants.umd.js",
+  "module": "dist/webgl-constants.esm.js",
+  "jsnext:main": "dist/webgl-constants.esm.js",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "start": "rollup -c rollup.config.ts -w",
+    "lint": "tslint --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
+    "prebuild": "rimraf dist docs",
+    "build": "tsc --module commonjs && rollup -c rollup.config.ts"
+  },
+  "author": "Tim van Scherpenzeel",
+  "dependencies": {},
+  "devDependencies": {
+    "prettier": "^1.17.1",
+    "rimraf": "^2.6.3",
+    "rollup": "^1.12.3",
+    "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-filesize": "^6.0.1",
+    "rollup-plugin-node-resolve": "^5.0.0",
+    "rollup-plugin-terser": "^5.0.0",
+    "rollup-plugin-typescript2": "^0.21.1",
+    "tslint": "^5.16.0",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.4.5"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 100
+  }
+}

@@ -1,0 +1,36 @@
+{
+    "name": "@types/offscreencanvas",
+    "version": "2019.7.3",
+    "description": "TypeScript definitions for offscreencanvas",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/offscreencanvas",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Klaus Reimer",
+            "githubUsername": "kayahr",
+            "url": "https://github.com/kayahr"
+        },
+        {
+            "name": "Oleg Varaksin",
+            "githubUsername": "ova2",
+            "url": "https://github.com/ova2"
+        },
+        {
+            "name": "Sean T.McBeth",
+            "githubUsername": "capnmidnight",
+            "url": "https://github.com/capnmidnight"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/offscreencanvas"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "3bb9d8e21546b767b05750c5b57b2612423128a6c4619c93ff2e2cbe93279baf",
+    "typeScriptVersion": "4.5",
+    "nonNpm": true
+}

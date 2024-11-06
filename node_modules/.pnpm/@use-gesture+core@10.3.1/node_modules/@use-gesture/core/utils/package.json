@@ -1,0 +1,4 @@
+{
+  "main": "dist/use-gesture-core-utils.cjs.js",
+  "module": "dist/use-gesture-core-utils.esm.js"
+}

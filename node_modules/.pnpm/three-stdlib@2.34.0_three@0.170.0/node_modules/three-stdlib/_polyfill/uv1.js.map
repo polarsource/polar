@@ -1,0 +1,1 @@
+{"version":3,"file":"uv1.js","sources":["../../src/_polyfill/uv1.ts"],"sourcesContent":["import { version } from \"./constants\";\n\n/** uv2 renamed to uv1 in r125\n * \n * https://github.com/mrdoob/three.js/pull/25943\n*/\nexport const UV1 = version >= 125 ? 'uv1' : 'uv2'"],"names":[],"mappings":";AAMa,MAAA,MAAM,WAAW,MAAM,QAAQ;"}

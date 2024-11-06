@@ -1,0 +1,20 @@
+{
+  "name": "@mediapipe/tasks-vision",
+  "version": "0.10.8",
+  "description": "MediaPipe Vision Tasks",
+  "main": "vision_bundle.cjs",
+  "browser": "vision_bundle.mjs",
+  "module": "vision_bundle.mjs",
+  "exports": {
+    "import":  "./vision_bundle.mjs",
+    "require": "./vision_bundle.cjs",
+    "default":  "./vision_bundle.mjs",
+    "types":  "./vision.d.ts"
+  },
+  "author": "mediapipe@google.com",
+  "license": "Apache-2.0",
+  "type": "module",
+  "types": "vision.d.ts",
+  "homepage": "http://mediapipe.dev",
+  "keywords": [ "AR", "ML", "Augmented", "MediaPipe", "MediaPipe Tasks" ]
+}

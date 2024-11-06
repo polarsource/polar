@@ -1,0 +1,35 @@
+{
+    "name": "@types/stats.js",
+    "version": "0.17.3",
+    "description": "TypeScript definitions for stats.js",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/stats.js",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Gregory Dalton",
+            "githubUsername": "gregolai",
+            "url": "https://github.com/gregolai"
+        },
+        {
+            "name": "Harm Berntsen",
+            "githubUsername": "hberntsen",
+            "url": "https://github.com/hberntsen"
+        },
+        {
+            "name": "Dan Vanderkam",
+            "githubUsername": "danvk",
+            "url": "https://github.com/danvk"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/stats.js"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "daccb624eeb6bf9309fad3da1d171da64dcf65281735ba4961e50aa4b7017e65",
+    "typeScriptVersion": "4.5"
+}

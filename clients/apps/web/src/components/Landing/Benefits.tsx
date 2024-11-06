@@ -60,7 +60,7 @@ export const Benefits = () => {
   const subscription = useMemo(() => setPoint(), [setPoint])
 
   return (
-    <div className="flex flex-col gap-y-32">
+    <div className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-12 bg-gray-50 p-16">
       <div className="flex w-full flex-col gap-x-24 gap-y-16 md:flex-row">
         <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
           <h2 className="text-3xl !leading-tight md:text-5xl">
@@ -106,7 +106,7 @@ export const Benefits = () => {
 
           <div className="flex h-full flex-col" ref={subscription}>
             <SubscriptionTierCard
-              className="h-full"
+              className="shadow-3xl h-full border-none"
               subscriptionTier={MOCKED_WEBSITE_SUBSCRIPTION}
             />
           </div>
@@ -142,7 +142,7 @@ const Benefit = forwardRef<HTMLAnchorElement, BenefitProps>(
       <Link
         ref={ref}
         href={link}
-        className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-4 rounded-3xl border border-gray-200 bg-gray-50 p-6"
+        className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl bg-gray-100 p-6"
       >
         <span className="text-2xl">
           {React.cloneElement(icon, {

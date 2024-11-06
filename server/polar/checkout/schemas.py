@@ -70,6 +70,15 @@ SuccessURL = Annotated[
         )
     ),
 ]
+EmbedOrigin = Annotated[
+    str | None,
+    Field(
+        default=None,
+        description="If you plan to embed the checkout session, "
+        "set this to the Origin of the embedding page. "
+        "It'll allow the Polar iframe to communicate with the parent page.",
+    ),
+]
 
 
 class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
@@ -99,6 +108,7 @@ class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
         ),
     )
     success_url: SuccessURL = None
+    embed_origin: EmbedOrigin = None
 
 
 class CheckoutCreatePublic(Schema):
@@ -129,6 +139,7 @@ class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
 
     customer_ip_address: CustomerIPAddress | None = None
     success_url: SuccessURL = None
+    embed_origin: EmbedOrigin = None
 
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):

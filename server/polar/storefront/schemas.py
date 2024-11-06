@@ -37,4 +37,5 @@ class Storefront(Schema):
 
     organization: Organization
     products: list[ProductStorefront]
+    donation_product: ProductStorefront | None
     customers: Customers

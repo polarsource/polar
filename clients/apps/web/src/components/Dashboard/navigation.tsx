@@ -15,7 +15,6 @@ import {
   Storefront,
   TrendingUp,
   TuneOutlined,
-  WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'

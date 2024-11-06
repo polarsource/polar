@@ -111,14 +111,6 @@ class Organization(RecordModel):
     )
 
     #
-    # Donation fields
-    #
-
-    donations_enabled: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
-
-    #
     # Feature Flags
     #
 

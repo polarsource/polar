@@ -47,10 +47,6 @@ class TransactionOrganization(IDSchema, TimestampedSchema):
     avatar_url: str | None
 
 
-class TransactionDonation(IDSchema, TimestampedSchema):
-    to_organization: TransactionOrganization | None
-
-
 class TransactionIssueReward(IDSchema, TimestampedSchema):
     issue_id: UUID4
     share_thousands: int
@@ -85,7 +81,6 @@ class TransactionEmbedded(IDSchema, TimestampedSchema):
     pledge_id: UUID4 | None
     issue_reward_id: UUID4 | None
     order_id: UUID4 | None
-    donation_id: UUID4 | None
 
     payout_transaction_id: UUID4 | None
     incurred_by_transaction_id: UUID4 | None
@@ -95,7 +90,6 @@ class Transaction(TransactionEmbedded):
     pledge: TransactionPledge | None
     issue_reward: TransactionIssueReward | None
     order: TransactionOrder | None
-    donation: TransactionDonation | None
 
     account_incurred_transactions: list[TransactionEmbedded]
 

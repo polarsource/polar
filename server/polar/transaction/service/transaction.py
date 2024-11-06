@@ -20,7 +20,6 @@ from polar.models import (
     Transaction,
     User,
 )
-from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.models.user_organization import UserOrganization
@@ -74,13 +73,6 @@ class TransactionService(BaseTransactionService):
                 joinedload(Order.product).options(joinedload(Product.organization)),
                 joinedload(Order.product_price),
             ),
-            # Donation
-            subqueryload(Transaction.donation).options(
-                joinedload(Donation.to_organization),
-                joinedload(Donation.by_user),
-                joinedload(Donation.by_organization),
-                joinedload(Donation.on_behalf_of_organization),
-            ),
         )
 
         if type is not None:
@@ -132,13 +124,6 @@ class TransactionService(BaseTransactionService):
                     joinedload(Order.product).options(joinedload(Product.organization)),
                     joinedload(Order.product_price),
                 ),
-                # Donation
-                subqueryload(Transaction.donation).options(
-                    joinedload(Donation.to_organization),
-                    joinedload(Donation.by_user),
-                    joinedload(Donation.by_organization),
-                    joinedload(Donation.on_behalf_of_organization),
-                ),
                 # Paid transactions (joining on itself)
                 subqueryload(Transaction.paid_transactions)
                 .subqueryload(Transaction.pledge)
@@ -162,14 +147,7 @@ class TransactionService(BaseTransactionService):
                 subqueryload(Transaction.paid_transactions)
                 .subqueryload(Transaction.order)
                 .options(joinedload(Order.product_price)),
-                subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.donation)
-                .options(
-                    joinedload(Donation.to_organization),
-                    joinedload(Donation.by_user),
-                    joinedload(Donation.by_organization),
-                    joinedload(Donation.on_behalf_of_organization),
-                ),
+                subqueryload(Transaction.paid_transactions),
             )
             .where(Transaction.id == id)
         )

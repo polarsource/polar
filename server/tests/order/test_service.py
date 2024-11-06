@@ -230,10 +230,7 @@ class TestList:
 class TestCreateOrderFromStripe:
     @pytest.mark.parametrize(
         "metadata",
-        [
-            {"type": ProductType.pledge},
-            {"type": ProductType.donation},
-        ],
+        [{"type": ProductType.pledge}],
     )
     async def test_not_a_order_invoice(
         self, metadata: dict[str, str], session: AsyncSession

@@ -528,36 +528,3 @@ async def test_articles_enabled(
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["articles_enabled"] is False  # no change
-
-
-@pytest.mark.asyncio
-@pytest.mark.auth
-async def test_donations_enabled(
-    organization: Organization,
-    client: AsyncClient,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    session: AsyncSession,
-) -> None:
-    # then
-    session.expunge_all()
-
-    response = await client.patch(
-        f"/v1/organizations/{organization.id}",
-        json={"donations_enabled": True},
-    )
-    assert response.status_code == 200
-    assert response.json()["donations_enabled"] is True
-
-    response = await client.patch(
-        f"/v1/organizations/{organization.id}",
-        json={},
-    )
-    assert response.status_code == 200
-    assert response.json()["donations_enabled"] is True  # no change
-
-    response = await client.patch(
-        f"/v1/organizations/{organization.id}",
-        json={"donations_enabled": False},
-    )
-    assert response.status_code == 200
-    assert response.json()["donations_enabled"] is False

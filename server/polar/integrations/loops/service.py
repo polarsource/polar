@@ -46,13 +46,9 @@ class Loops:
         self,
         user: User,
         enabled_storefront: bool = False,
-        enabled_donations: bool = False,
     ) -> None:
         if enabled_storefront:
             await self.user_enabled_storefront(user)
-
-        if enabled_donations:
-            await self.user_enabled_donations(user)
 
     async def user_enabled_storefront(self, user: User) -> None:
         await self.enqueue_event(
@@ -60,15 +56,6 @@ class Loops:
             event="Storefront Enabled",
             properties={
                 "storefrontEnabled": True,
-            },
-        )
-
-    async def user_enabled_donations(self, user: User) -> None:
-        await self.enqueue_event(
-            user,
-            event="Donations Enabled",
-            properties={
-                "donationsEnabled": True,
             },
         )
 
@@ -119,7 +106,6 @@ class Loops:
                 "storefrontEnabled": False,
                 "githubOrgInstalled": False,
                 "githubIssueBadged": False,
-                "donationsEnabled": False,
                 **properties,
             },
         )

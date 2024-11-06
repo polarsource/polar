@@ -97,10 +97,6 @@ class Organization(IDSchema, TimestampedSchema):
 
     default_upfront_split_to_contributors: int | None
 
-    donations_enabled: bool = Field(
-        description="If this organizations accepts donations"
-    )
-
     profile_settings: OrganizationProfileSettings | None = Field(
         description="Settings for the organization profile"
     )
@@ -134,7 +130,6 @@ class OrganizationCreate(Schema):
         AfterValidator(validate_reserved_keywords),
     ]
     avatar_url: HttpUrlToStr | None = None
-    donations_enabled: bool = False
     feature_settings: OrganizationFeatureSettings | None = None
 
 
@@ -158,8 +153,6 @@ class OrganizationUpdate(Schema):
     total_monthly_spending_limit: int | None = None
 
     per_user_monthly_spending_limit: int | None = None
-
-    donations_enabled: bool = False
 
     profile_settings: OrganizationProfileSettings | None = None
     feature_settings: OrganizationFeatureSettings | None = None

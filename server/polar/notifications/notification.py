@@ -32,7 +32,6 @@ class NotificationType(StrEnum):
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     benefit_precondition_error = "BenefitPreconditionErrorNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
-    maintainer_donation_received = "MaintainerDonationReceived"
 
 
 class NotificationPayloadBase(BaseModel):
@@ -537,28 +536,6 @@ class MaintainerCreateAccountNotification(NotificationBase):
     payload: MaintainerCreateAccountNotificationPayload
 
 
-class MaintainerDonationReceivedNotificationPayload(NotificationPayloadBase):
-    organization_name: str
-    donation_amount: str
-    donation_id: UUID
-
-    def subject(self) -> str:
-        return "Received ${{donation_amount}} donation to {{organization_name}}"  # noqa: E501
-
-    def body(self) -> str:
-        return """Hi,<br><br>
-
-Great news! {{organization_name}} just received a ${{donation_amount}} <a href="https://polar.sh/dashboard/{{organization_name}}/donations/overview">donation</a>.
-
-It's already available on your <a href="https://polar.sh/dashboard/{{organization_name}}/finance/incoming">Polar Balance</a>.
-"""  # noqa: E501
-
-
-class MaintainerDonationReceivedNotification(NotificationBase):
-    type: Literal[NotificationType.maintainer_donation_received]
-    payload: MaintainerDonationReceivedNotificationPayload
-
-
 NotificationPayload = (
     MaintainerPledgeCreatedNotificationPayload
     | MaintainerPledgeConfirmationPendingNotificationPayload
@@ -575,7 +552,6 @@ NotificationPayload = (
     | MaintainerNewProductSaleNotificationPayload
     | BenefitPreconditionErrorNotificationPayload
     | MaintainerCreateAccountNotificationPayload
-    | MaintainerDonationReceivedNotificationPayload
 )
 
 Notification = Annotated[
@@ -593,7 +569,6 @@ Notification = Annotated[
     | MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
     | BenefitPreconditionErrorNotification
-    | MaintainerCreateAccountNotification
-    | MaintainerDonationReceivedNotification,
+    | MaintainerCreateAccountNotification,
     Discriminator(discriminator="type"),
 ]

@@ -11,7 +11,6 @@ from polar.checkout.legacy.endpoints import router as checkout_legacy_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.dashboard.endpoints import router as dashboard_router
-from polar.donation.endpoints import router as donations_router
 from polar.embed.endpoints import router as embed_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.external_organization.endpoints import router as external_organization_router
@@ -97,8 +96,6 @@ router.include_router(transaction_router)
 router.include_router(advertisements_router)
 # /auth
 router.include_router(auth_router)
-# /donations
-router.include_router(donations_router)
 # /oauth2
 router.include_router(oauth2_router)
 # /benefits

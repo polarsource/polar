@@ -8,7 +8,6 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import Account, IssueReward, Order, Pledge, Transaction
-from polar.models.donation import Donation
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 
@@ -40,7 +39,6 @@ class BalanceTransactionService(BaseTransactionService):
         order: Order | None = None,
         issue_reward: IssueReward | None = None,
         platform_fee_type: PlatformFeeType | None = None,
-        donation: Donation | None = None,
     ) -> tuple[Transaction, Transaction]:
         currency = "usd"  # FIXME: Main Polar currency
 
@@ -61,7 +59,6 @@ class BalanceTransactionService(BaseTransactionService):
             order=order,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
-            donation=donation,
         )
         incoming_transaction = Transaction(
             id=generate_uuid(),
@@ -78,7 +75,6 @@ class BalanceTransactionService(BaseTransactionService):
             order=order,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
-            donation=donation,
         )
 
         session.add(outgoing_transaction)
@@ -101,7 +97,6 @@ class BalanceTransactionService(BaseTransactionService):
         pledge: Pledge | None = None,
         order: Order | None = None,
         issue_reward: IssueReward | None = None,
-        donation: Donation | None = None,
     ) -> tuple[Transaction, Transaction]:
         payment_transaction = await self.get_by(
             session, type=TransactionType.payment, charge_id=charge_id
@@ -118,7 +113,6 @@ class BalanceTransactionService(BaseTransactionService):
             pledge=pledge,
             order=order,
             issue_reward=issue_reward,
-            donation=donation,
         )
 
     async def create_balance_from_payment_intent(
@@ -132,7 +126,6 @@ class BalanceTransactionService(BaseTransactionService):
         pledge: Pledge | None = None,
         order: Order | None = None,
         issue_reward: IssueReward | None = None,
-        donation: Donation | None = None,
     ) -> tuple[Transaction, Transaction]:
         payment_intent = await stripe_service.retrieve_intent(payment_intent_id)
         assert payment_intent.latest_charge is not None
@@ -147,7 +140,6 @@ class BalanceTransactionService(BaseTransactionService):
             pledge=pledge,
             order=order,
             issue_reward=issue_reward,
-            donation=donation,
         )
 
     async def create_reversal_balance(

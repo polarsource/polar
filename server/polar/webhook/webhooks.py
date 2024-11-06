@@ -13,14 +13,12 @@ from pydantic import Discriminator, TypeAdapter
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
-from polar.donation.schemas import Donation as DonationSchema
 from polar.exceptions import PolarError
 from polar.kit.schemas import IDSchema, Schema
 from polar.models import (
     Benefit,
     BenefitGrant,
     Checkout,
-    Donation,
     Order,
     Organization,
     Pledge,
@@ -52,7 +50,6 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.product_updated], Product]
     | tuple[Literal[WebhookEventType.pledge_created], Pledge]
     | tuple[Literal[WebhookEventType.pledge_updated], Pledge]
-    | tuple[Literal[WebhookEventType.donation_created], Donation]
     | tuple[Literal[WebhookEventType.organization_updated], Organization]
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
@@ -630,7 +627,7 @@ class WebhookPledgeCreatedPayload(BaseWebhookPayload):
             {"name": "Amount", "value": f"${amount}"},
         ]
         payload: DiscordPayload = {
-            "content": "New Donation Received",
+            "content": "New Pledge Received",
             "embeds": [
                 get_branded_discord_embed(
                     {
@@ -682,75 +679,6 @@ class WebhookPledgeUpdatedPayload(BaseWebhookPayload):
 
     type: Literal[WebhookEventType.pledge_updated]
     data: PledgeSchema
-
-
-class WebhookDonationCreatedPayload(BaseWebhookPayload):
-    """
-    Sent when a new donation is created.
-
-    **Discord & Slack support:** Full
-    """
-
-    type: Literal[WebhookEventType.donation_created]
-    data: DonationSchema
-
-    def get_discord_payload(self, target: User | Organization) -> str:
-        if isinstance(target, User):
-            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
-
-        amount = self.data.amount / 100
-        fields: list[DiscordEmbedField] = []
-        if self.data.donor:
-            fields.append({"name": "Donor", "value": self.data.donor.get_name()})
-        fields.append({"name": "Amount", "value": f"${amount}"})
-        if self.data.message:
-            fields.append({"name": "Message", "value": self.data.message})
-        payload: DiscordPayload = {
-            "content": "New Donation Received",
-            "embeds": [
-                get_branded_discord_embed(
-                    {
-                        "title": "New Donation Received",
-                        "description": f"A ${amount} donation has been made to {target.name}",
-                        "fields": fields,
-                    }
-                )
-            ],
-        }
-
-        return json.dumps(payload)
-
-    def get_slack_payload(self, target: User | Organization) -> str:
-        if isinstance(target, User):
-            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
-
-        amount = self.data.amount / 100
-        fields: list[SlackText] = []
-        if self.data.donor:
-            fields.append(
-                {"type": "mrkdwn", "text": f"*Donor*\n{self.data.donor.get_name()}"}
-            )
-        fields.append({"type": "mrkdwn", "text": f"*Amount*\n${amount}"})
-        if self.data.message:
-            fields.append({"type": "mrkdwn", "text": f"*Message*\n{self.data.message}"})
-
-        payload: SlackPayload = get_branded_slack_payload(
-            {
-                "text": "New Donation Received",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"A ${amount} donation has been made to {target.name}",
-                        },
-                        "fields": fields,
-                    }
-                ],
-            }
-        )
-
-        return json.dumps(payload)
 
 
 class WebhookOrganizationUpdatedPayload(BaseWebhookPayload):
@@ -832,7 +760,6 @@ WebhookPayload = Annotated[
     | WebhookProductUpdatedPayload
     | WebhookPledgeCreatedPayload
     | WebhookPledgeUpdatedPayload
-    | WebhookDonationCreatedPayload
     | WebhookOrganizationUpdatedPayload
     | WebhookBenefitCreatedPayload
     | WebhookBenefitUpdatedPayload

@@ -17,12 +17,10 @@ from polar.models import (
     Transaction,
     User,
 )
-from polar.models.donation import Donation
 from polar.models.pledge import PledgeType
 from polar.models.transaction import PaymentProcessor, TransactionType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_donation,
     create_order,
     create_pledge,
     create_product,
@@ -44,7 +42,6 @@ async def create_transaction(
     order: Order | None = None,
     payout_transaction: Transaction | None = None,
     payment_transaction: Transaction | None = None,
-    donation: Donation | None = None,
     charge_id: str | None = None,
     dispute_id: str | None = None,
     created_at: datetime | None = None,
@@ -64,7 +61,6 @@ async def create_transaction(
         pledge=pledge,
         issue_reward=issue_reward,
         order=order,
-        donation=donation,
         payout_transaction=payout_transaction,
         payment_transaction=payment_transaction,
         charge_id=charge_id,
@@ -150,48 +146,12 @@ async def transaction_order_subscription(
 
 
 @pytest_asyncio.fixture
-async def transaction_donation_by_user(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Donation:
-    return await create_donation(
-        save_fixture,
-        organization,
-        by_user=user,
-    )
-
-
-@pytest_asyncio.fixture
-async def transaction_donation_by_organization(
-    save_fixture: SaveFixture, organization: Organization
-) -> Donation:
-    return await create_donation(
-        save_fixture,
-        organization,
-        by_organization=organization,
-    )
-
-
-@pytest_asyncio.fixture
-async def transaction_donation_on_behalf_of_organization(
-    save_fixture: SaveFixture, organization: Organization
-) -> Donation:
-    return await create_donation(
-        save_fixture,
-        organization,
-        on_behalf_of_organization=organization,
-    )
-
-
-@pytest_asyncio.fixture
 async def account_transactions(
     save_fixture: SaveFixture,
     account: Account,
     transaction_pledge: Pledge,
     transaction_issue_reward: IssueReward,
     transaction_order_subscription: Order,
-    transaction_donation_by_user: Donation,
-    transaction_donation_by_organization: Donation,
-    transaction_donation_on_behalf_of_organization: Donation,
 ) -> list[Transaction]:
     return [
         await create_transaction(
@@ -221,27 +181,6 @@ async def account_transactions(
             account_currency="eur",
             account=account,
             amount=-3000,
-        ),
-        await create_transaction(
-            save_fixture,
-            type=TransactionType.balance,
-            account_currency="usd",
-            account=account,
-            donation=transaction_donation_by_user,
-        ),
-        await create_transaction(
-            save_fixture,
-            type=TransactionType.balance,
-            account_currency="usd",
-            account=account,
-            donation=transaction_donation_by_organization,
-        ),
-        await create_transaction(
-            save_fixture,
-            type=TransactionType.balance,
-            account_currency="usd",
-            account=account,
-            donation=transaction_donation_on_behalf_of_organization,
         ),
     ]
 

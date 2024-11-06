@@ -7,10 +7,7 @@ import stripe as stripe_lib
 from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.exceptions import InternalServerError, PolarError
-from polar.integrations.stripe.schemas import (
-    DonationPaymentIntentMetadata,
-    PledgePaymentIntentMetadata,
-)
+from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
@@ -57,9 +54,7 @@ class StripeService:
         *,
         amount: int,
         currency: str,
-        metadata: PledgePaymentIntentMetadata
-        | DonationPaymentIntentMetadata
-        | None = None,
+        metadata: PledgePaymentIntentMetadata | None = None,
         receipt_email: str,
         description: str,
         customer: User | Organization | None = None,
@@ -89,9 +84,7 @@ class StripeService:
         *,
         amount: int,
         currency: str,
-        metadata: PledgePaymentIntentMetadata
-        | DonationPaymentIntentMetadata
-        | None = None,
+        metadata: PledgePaymentIntentMetadata | None = None,
         receipt_email: str | None = None,
         description: str | None = None,
         customer: User | Organization | None = None,

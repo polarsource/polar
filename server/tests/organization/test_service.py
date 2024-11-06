@@ -73,7 +73,6 @@ class TestCreate:
         assert organization.name == "My New Organization"
         assert organization.slug == slug
         assert organization.feature_settings == {}
-        assert organization.donations_enabled is False
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -97,7 +96,6 @@ class TestCreate:
                     issue_funding_enabled=False,
                     articles_enabled=False,
                 ),
-                donations_enabled=True,
             ),
             auth_subject,
         )
@@ -108,4 +106,3 @@ class TestCreate:
             "issue_funding_enabled": False,
             "articles_enabled": False,
         }
-        assert organization.donations_enabled is True

@@ -12,6 +12,11 @@ from polar.custom_field.attachment import (
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.db.models import Model
+from polar.kit.metadata import (
+    MetadataInputMixin,
+    MetadataOutputMixin,
+    OptionalMetadataInputMixin,
+)
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
@@ -266,7 +271,7 @@ ProductPriceOneTimeCreateList = Annotated[
 ]
 
 
-class ProductCreateBase(Schema):
+class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
 
@@ -333,7 +338,7 @@ ProductPriceUpdate = Annotated[
 ]
 
 
-class ProductUpdate(Schema):
+class ProductUpdate(OptionalMetadataInputMixin, Schema):
     """
     Schema to update a product.
     """
@@ -543,7 +548,7 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(ProductBase):
+class Product(MetadataOutputMixin, ProductBase):
     """
     A product.
     """

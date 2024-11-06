@@ -1,7 +1,0 @@
-{
-  "main": "dist/maath-three.cjs.js",
-  "module": "dist/maath-three.esm.js",
-  "peerDependencies": {
-    "three": "^0.134.0"
-  }
-}

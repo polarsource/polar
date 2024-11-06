@@ -28,7 +28,7 @@ export async function generateMetadata({
       title: `${organization.name} on Polar`,
       description: `${organization.name} on Polar`,
       siteName: 'Polar',
-
+      type: 'website',
       images: [
         {
           url: `https://polar.sh/og?org=${organization.slug}`,

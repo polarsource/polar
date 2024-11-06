@@ -29,7 +29,7 @@ export async function generateMetadata({
       title: `Donate to ${organization.name}`,
       description: `Donate to ${organization.name}`,
       siteName: 'Polar',
-
+      type: 'website',
       images: [
         {
           url: `https://polar.sh/og?org=${organization.slug}`,

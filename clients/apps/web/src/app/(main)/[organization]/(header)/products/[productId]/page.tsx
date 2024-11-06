@@ -30,7 +30,7 @@ export async function generateMetadata({
       title: `${product.name}`,
       description: `A product from ${organization.name}`,
       siteName: 'Polar',
-
+      type: 'website',
       images: [
         {
           url:

@@ -37,17 +37,19 @@ const remarkMdxFrontmatter = (opengraphImageUrl) => ({
         ...parser(value),
       }
 
-      const openGraph = opengraphImageUrl
-        ? {
+      const openGraph = {
+        type: 'website',
+        ...opengraphImageUrl
+          ? {
             images: [
               {
-            url: `${opengraphImageUrl}?${new URLSearchParams(data).toString()}`,
-            width: 1200,
-            height: 630,
-          },
-          ],
-        }
-      : {}
+                url: `${opengraphImageUrl}?${new URLSearchParams(data).toString()}`,
+                width: 1200,
+                height: 630,
+              },
+            ],
+          } : {},
+      }
 
       data.openGraph = {
         ...openGraph,

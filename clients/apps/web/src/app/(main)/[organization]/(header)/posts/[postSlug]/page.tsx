@@ -89,7 +89,7 @@ export async function generateMetadata({
       title: `${article.title}`,
       description: `${description}`,
       siteName: 'Polar',
-
+      type: 'website',
       images: [
         {
           url: imageUrl,

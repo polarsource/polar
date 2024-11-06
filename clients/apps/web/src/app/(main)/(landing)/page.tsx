@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     'monetization, merchant of record, saas, digital products, platform, developer, open source, funding, open source, economy',
   openGraph: {
     siteName: 'Polar',
+    type: 'website',
     images: [
       {
         url: 'https://polar.sh/assets/brand/polar_og.jpg',

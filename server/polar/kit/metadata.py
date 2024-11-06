@@ -21,18 +21,23 @@ _MetadataKey = Annotated[
     str,
     StringConstraints(min_length=_MINIMUM_KEY_LENGTH, max_length=_MAXIMUM_KEY_LENGTH),
 ]
-_MetadataValue = Annotated[
+_MetadataValueString = Annotated[
     str,
     StringConstraints(
         min_length=_MINIMUM_VALUE_LENGTH, max_length=_MAXIMUM_VALUE_LENGTH
     ),
 ]
+_MetadataValue = _MetadataValueString | int | bool
 _description = inspect.cleandoc(
     f"""
     Key-value object allowing you to store additional information.
 
     The key must be a string with a maximum length of **{_MAXIMUM_KEY_LENGTH} characters**.
-    The value must be a string with a maximum length of **{_MAXIMUM_VALUE_LENGTH} characters**.
+    The value must be either:
+        * A string with a maximum length of **{_MAXIMUM_VALUE_LENGTH} characters**
+        * An integer
+        * A boolean
+
     You can store up to **{_MAXIMUM_KEYS} key-value pairs**.
     """
 )
@@ -57,4 +62,4 @@ class OptionalMetadataInputMixin(BaseModel):
 
 
 class MetadataOutputMixin(BaseModel):
-    metadata: dict[str, str] = Field(validation_alias="user_metadata")
+    metadata: dict[str, str | int | bool] = Field(validation_alias="user_metadata")

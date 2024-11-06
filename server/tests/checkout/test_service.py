@@ -721,6 +721,34 @@ class TestCreate:
 
         assert checkout.custom_field_data == {"text": "abc", "select": "a"}
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    @pytest.mark.parametrize("amount", [None, 4242])
+    async def test_valid_embed_origin(
+        self,
+        amount: int | None,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                amount=amount,
+                embed_origin="https://example.com",
+            ),
+            auth_subject,
+        )
+
+        assert checkout.embed_origin == "https://example.com"
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -1301,6 +1329,21 @@ class TestUpdate:
         )
 
         assert checkout.custom_field_data == {"text": "abc", "select": "a"}
+
+    async def test_valid_embed_origin(
+        self,
+        session: AsyncSession,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_free,
+            CheckoutUpdate(
+                embed_origin="https://example.com",
+            ),
+        )
+
+        assert checkout.embed_origin == "https://example.com"
 
 
 @pytest.mark.asyncio

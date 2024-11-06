@@ -8,13 +8,13 @@ import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
 import {
   FileServiceTypes,
+  Organization,
   OrganizationAvatarFileRead,
   OrganizationUpdate,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -48,18 +48,25 @@ const StorefrontSidebarContentWrapper = ({
   title,
   enabled,
   children,
+  organization,
 }: PropsWithChildren<{
   title: string
   enabled: boolean
+  organization: Organization
 }>) => {
   return (
-    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col p-8">
+    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto p-8">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
-          <Pill className="px-2 py-1" color={enabled ? 'blue' : 'gray'}>
-            {enabled ? 'Enabled' : 'Disabled'}
-          </Pill>
+
+          {enabled && (
+            <Button size="sm">
+              <Link href={`/${organization.slug}`} target="_blank">
+                Open Storefront
+              </Link>
+            </Button>
+          )}
         </div>
         <div
           className={twMerge('flex flex-grow flex-col justify-between gap-y-8')}
@@ -325,6 +332,7 @@ export const StorefrontSidebar = () => {
     <StorefrontSidebarContentWrapper
       title="Storefront"
       enabled={organization.profile_settings?.enabled ?? false}
+      organization={organization}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
         <StorefrontForm />
@@ -337,28 +345,26 @@ export const StorefrontSidebar = () => {
           >
             Save
           </Button>
-          {organization.profile_settings?.enabled && (
-            <Button variant="secondary" size="default">
-              <Link href={`/${organization.slug}`} target="_blank">
-                View Storefront
-              </Link>
-            </Button>
-          )}
         </div>
       </form>
-      <ShadowBox className="dark:bg-polar-950 flex flex-col gap-y-4 bg-white p-6">
-        <h3>
-          {storefrontEnabled ? 'Deactivate Storefront' : 'Activate Storefront'}
-        </h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          {storefrontEnabled
-            ? 'Disables the storefront and only allows checkouts via API and Checkout Links'
-            : 'Publish your very own Polar Storefront and drive traffic to your products'}
-        </p>
+      <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white p-6 lg:rounded-3xl">
+        <div className="flex flex-col gap-y-2">
+          <h3 className="text-sm">
+            {storefrontEnabled
+              ? 'Deactivate Storefront'
+              : 'Activate Storefront'}
+          </h3>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            {storefrontEnabled
+              ? 'Disables the storefront and only allows checkouts via API and Checkout Links'
+              : 'Publish your very own Polar Storefront and drive traffic to your products'}
+          </p>
+        </div>
         <Button
-          fullWidth
+          className="self-start"
           onClick={() => toggleProfilePage(!storefrontEnabled)}
           variant={storefrontEnabled ? 'destructive' : 'default'}
+          size="sm"
           loading={isProfilePageEnabledLoading}
         >
           {storefrontEnabled ? 'Deactivate Storefront' : 'Activate Storefront'}

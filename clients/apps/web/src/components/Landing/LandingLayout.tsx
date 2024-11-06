@@ -31,11 +31,11 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="dark:bg-polar-800 shadow-3xl sticky top-8 z-30 flex w-full max-w-2xl flex-row items-center justify-between rounded-3xl bg-gray-50 px-8 py-4">
+    <div className="dark:bg-polar-800 shadow-3xl sticky top-6 z-30 flex w-full max-w-2xl flex-row items-center justify-between rounded-3xl bg-gray-50 px-8 py-4">
       <TopbarNavigation />
       <BrandingMenu
         className="mt-1 hidden md:block"
-        size={80}
+        size={70}
         logoVariant="logotype"
       />
       <BrandingMenu

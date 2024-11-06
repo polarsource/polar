@@ -69,7 +69,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
             return (
               <FormItem>
                 <FormControl className="w-full">
-                  <div className="flex w-full flex-col gap-2">
+                  <div className="flex w-full flex-row gap-2">
                     <Input
                       type="email"
                       required
@@ -78,8 +78,8 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
                       data-1p-ignore
                       {...field}
                     />
-                    <Button type="submit" variant="secondary" loading={loading} disabled={loading}>
-                      Continue with email
+                    <Button type="submit" size="lg" variant="secondary" loading={loading} disabled={loading}>
+                      Login
                     </Button>
                   </div>
                 </FormControl>

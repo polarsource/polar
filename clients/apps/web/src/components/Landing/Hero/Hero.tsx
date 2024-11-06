@@ -69,7 +69,7 @@ export const Hero = () => {
         </div>
         <p className="dark:text-polar-500 text-balance text-gray-500">
           <span className="text-polar-300">
-            ♥️ Trusted by thousands of developers
+            Trusted by thousands of developers
           </span>{' '}
           &amp;{' '}
           <Link

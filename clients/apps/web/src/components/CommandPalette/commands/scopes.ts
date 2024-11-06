@@ -27,11 +27,6 @@ export const API_SCOPES = [
     commands: createAPICommands('products'),
   },
   {
-    name: 'api:donations',
-    type: ScopeType.Isolated,
-    commands: createAPICommands('donations'),
-  },
-  {
     name: 'api:subscriptions',
     type: ScopeType.Isolated,
     commands: createAPICommands('subscriptions'),

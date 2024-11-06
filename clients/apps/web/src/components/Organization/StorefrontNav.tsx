@@ -57,12 +57,6 @@ export const StorefrontNav = ({
             </Link>
           )}
 
-          {organization.donations_enabled && (
-            <Link href={organizationPageLink(organization, 'donate')}>
-              <TabsTrigger value="donate">Donate</TabsTrigger>
-            </Link>
-          )}
-
           {(orders?.items.length ?? 0) > 0 && (
             <Link href={organizationPageLink(organization, 'portal')}>
               <TabsTrigger value="portal">My Orders</TabsTrigger>
@@ -99,11 +93,6 @@ export const StorefrontNav = ({
           {organization.feature_settings?.issue_funding_enabled && (
             <SelectItem value="issues">
               <span className="whitespace-nowrap">Issue Funding</span>
-            </SelectItem>
-          )}
-          {organization.donations_enabled && (
-            <SelectItem value="donate">
-              <span className="whitespace-nowrap">Donate</span>
             </SelectItem>
           )}
           {(orders?.items.length ?? 0) > 0 && (

@@ -55,7 +55,6 @@ export const org: Organization = {
   profile_settings: {
     enabled: false,
   },
-  donations_enabled: false,
   feature_settings: {},
   default_upfront_split_to_contributors: null,
   bio: null,

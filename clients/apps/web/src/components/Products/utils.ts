@@ -53,5 +53,6 @@ export const productCreateToProduct = (
       productCreate.prices.some((price) => price.type === 'recurring') ?? false,
     is_archived: false,
     attached_custom_fields: [],
+    metadata: {},
   }
 }

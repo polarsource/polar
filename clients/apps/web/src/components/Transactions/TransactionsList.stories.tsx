@@ -1,7 +1,6 @@
 import {
   ProductPrice,
   Transaction,
-  TransactionDonation,
   TransactionExternalOrganization,
   TransactionIssue,
   TransactionIssueReward,
@@ -41,32 +40,11 @@ const tx: Transaction = {
   pledge_id: null,
   issue_reward_id: null,
   order_id: null,
-  donation_id: null,
   payout_transaction_id: null,
   incurred_by_transaction_id: null,
   pledge: null,
   issue_reward: null,
   order: null,
-  donation: null,
-}
-
-const donation: TransactionDonation = {
-  created_at: '2024-03-27',
-  modified_at: null,
-  id: '',
-  to_organization: {
-    id: '',
-    name: 'OrgName',
-    slug: 'hello',
-    avatar_url: '',
-    created_at: '2024-03-27',
-    modified_at: null,
-  },
-}
-
-const txDonation: Transaction = {
-  ...tx,
-  donation,
 }
 
 const issue_reward: TransactionIssueReward = {
@@ -170,7 +148,7 @@ const txOrder: Transaction = {
 
 export const Default: Story = {
   args: {
-    transactions: [tx, txDonation, txIssueReward, txOrder],
+    transactions: [tx, txIssueReward, txOrder],
     isLoading: false,
   },
 }

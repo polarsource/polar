@@ -1,6 +1,7 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { resolveIssuePath } from '@/utils/issue'
+import { getStorefront } from '@/utils/storefront'
 import {
   Issue,
   Organization,
@@ -21,6 +22,7 @@ type Data = {
   issue: Issue
   organization: Organization
   pledges: PledgePledgesSummary
+  donationsEnabled: boolean
 }
 
 const getBadgeData = async (
@@ -42,8 +44,14 @@ const getBadgeData = async (
   }
 
   const [issue, organization] = resolvedIssueOrganization
+  const storefront = await getStorefront(api, organization.slug)
   const pledges = await api.pledges.summary({ issueId: issue.id }, cacheConfig)
-  return { pledges, issue, organization }
+  return {
+    pledges,
+    issue,
+    organization,
+    donationsEnabled: storefront ? storefront.donation_product !== null : false,
+  }
 }
 
 const renderBadge = async (data: Data, isDarkmode: boolean) => {
@@ -51,6 +59,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
     pledges: { funding, pledges },
     organization,
     issue,
+    donationsEnabled,
   } = data
 
   const hasAmount =
@@ -91,7 +100,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       issueIsClosed={
         Boolean(issue.issue_closed_at) || issue.state === State.CLOSED
       }
-      donationsEnabled={organization.donations_enabled}
+      donationsEnabled={donationsEnabled}
     />,
     {
       width: 400,

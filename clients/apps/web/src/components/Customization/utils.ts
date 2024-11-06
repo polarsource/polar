@@ -147,7 +147,6 @@ const ORGANIZATION = {
   location: null,
   email: null,
   default_upfront_split_to_contributors: null,
-  donations_enabled: false,
   feature_settings: null,
   twitter_username: null,
   pledge_minimum_amount: 2000,

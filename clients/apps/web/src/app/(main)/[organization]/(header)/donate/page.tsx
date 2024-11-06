@@ -1,15 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { Issue } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import ClientPage from './ClientPage'
-
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
+import { notFound, redirect } from 'next/navigation'
 
 export async function generateMetadata({
   params,
@@ -56,44 +48,16 @@ export async function generateMetadata({
 
 export default async function Page({
   params,
-  searchParams: { amount, issue_id },
 }: {
   params: { organization: string }
-  searchParams: { amount?: string; issue_id?: string }
 }) {
   const api = getServerSideAPI()
-  const { organization } = await getStorefrontOrNotFound(
+  const { organization, donation_product } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
-  let issue: Issue | undefined
-
-  try {
-    const [loadIssue] = await Promise.all([
-      // Optional Issue Loading
-      issue_id
-        ? api.issues.get({ id: issue_id }, cacheConfig)
-        : Promise.resolve(undefined),
-    ])
-
-    issue = loadIssue
-  } catch (e) {
-    notFound()
+  if (donation_product) {
+    redirect(`/${organization.slug}/products/${donation_product.id}`)
   }
-
-  // If issue and issue does not match org
-  if (
-    issue &&
-    issue.repository.organization.organization_id !== organization.id
-  ) {
-    notFound()
-  }
-
-  return (
-    <ClientPage
-      organization={organization}
-      defaultAmount={parseInt(amount ?? '2000')}
-      issue={issue}
-    />
-  )
+  notFound()
 }

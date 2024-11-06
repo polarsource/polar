@@ -1,7 +1,6 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { DonateWidget } from '@/components/Donations/DontateWidget'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
@@ -227,10 +226,6 @@ const ClientPage = ({
                 </div>
               </ShadowBoxOnMd>
             </div>
-
-            {organization.donations_enabled ? (
-              <DonateWidget organization={organization} />
-            ) : null}
 
             {organization.feature_settings?.articles_enabled &&
               posts.length > 0 && (

@@ -11,7 +11,6 @@ import {
   ModeStandby,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
-  SpokeOutlined,
   Storefront,
   TrendingUp,
   TuneOutlined,
@@ -270,16 +269,6 @@ const fundingRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/issues/organizations`,
       },
     ],
-  },
-  {
-    id: 'donations',
-    title: 'Donations',
-    icon: <SpokeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/donations/overview`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org.slug}/donations`)
-    },
-    if: org.donations_enabled,
   },
 ]
 

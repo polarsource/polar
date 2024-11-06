@@ -3,12 +3,10 @@ from typing import cast
 import stripe as stripe_lib
 from sqlalchemy import select
 
-from polar.donation.service import donation_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Pledge, Transaction
-from polar.models.donation import Donation
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
@@ -35,23 +33,11 @@ class PledgeDoesNotExist(PaymentTransactionError):
         super().__init__(message)
 
 
-class DonationDoesNotExist(PaymentTransactionError):
-    def __init__(self, charge_id: str, payment_intent_id: str) -> None:
-        self.charge_id = charge_id
-        self.payment_intent_id = payment_intent_id
-        message = (
-            f"Received a donation charge {charge_id} ({payment_intent_id}) from Stripe "
-            "but no such Donation exists."
-        )
-        super().__init__(message)
-
-
 class PaymentTransactionService(BaseTransactionService):
     async def create_payment(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> Transaction:
         pledge: Pledge | None = None
-        donation: Donation | None = None
 
         # Make sure we don't already have this transaction
         existing_transaction = await self._get_by_charge_id(session, charge.id)
@@ -114,15 +100,6 @@ class PaymentTransactionService(BaseTransactionService):
                 payment_user = pledge.user
                 payment_organization = pledge.by_organization
 
-        # Try to link with a Donation
-        if charge.metadata.get("type") == ProductType.donation:
-            assert charge.payment_intent is not None
-            payment_intent = get_expandable_id(charge.payment_intent)
-            donation = await donation_service.get_by_payment_id(session, payment_intent)
-            # Give a chance to retry this later in case we didn't create the Donation yet.
-            if donation is None:
-                raise DonationDoesNotExist(charge.id, payment_intent)
-
         transaction = Transaction(
             type=TransactionType.payment,
             processor=PaymentProcessor.stripe,
@@ -139,7 +116,6 @@ class PaymentTransactionService(BaseTransactionService):
             charge_id=charge.id,
             pledge=pledge,
             order=None,
-            donation=donation,
         )
 
         # Compute and link fees
@@ -150,12 +126,6 @@ class PaymentTransactionService(BaseTransactionService):
 
         session.add(transaction)
         await session.flush()
-
-        # Donation: create balances (or held balances) right away
-        if donation is not None:
-            await donation_service.create_balance(
-                session, donation=donation, payment_transaction=transaction
-            )
 
         return transaction
 

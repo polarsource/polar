@@ -19,7 +19,6 @@ class PaymentIntentSuccessWebhook(Schema):
 
 class ProductType(StrEnum):
     pledge = "pledge"
-    donation = "donation"
     product = "product"
 
 
@@ -56,23 +55,3 @@ class PledgePaymentIntentMetadata(PaymentIntentMetadata):
 
     # Set to empty string to unset the value
     on_behalf_of_organization_id: UUID | Literal[""] | None = None
-
-
-class DonationPaymentIntentMetadata(PaymentIntentMetadata):
-    type: Literal[ProductType.donation] = ProductType.donation
-
-    to_organization_id: UUID | None = None
-    to_organization_name: str | None = None
-
-    by_user_id: UUID | Literal[""] | None = None
-
-    by_organization_id: UUID | Literal[""] | None = None
-
-    # Set to empty string to unset the value
-    on_behalf_of_organization_id: UUID | Literal[""] | None = None
-
-    # Set to empty string to unset the value
-    donation_message: str | Literal[""] | None = None
-
-    # Set to empty string to unset the value
-    issue_id: UUID | Literal[""] | None = None

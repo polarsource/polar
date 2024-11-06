@@ -27,7 +27,6 @@ class WebhookEventType(StrEnum):
     organization_updated = "organization.updated"
     pledge_created = "pledge.created"
     pledge_updated = "pledge.updated"
-    donation_created = "donation.created"
 
 
 class WebhookFormat(StrEnum):

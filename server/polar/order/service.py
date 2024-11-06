@@ -231,10 +231,7 @@ class OrderService(ResourceServiceReader[Order]):
     ) -> Order:
         assert invoice.id is not None
 
-        if invoice.metadata and invoice.metadata.get("type") in {
-            ProductType.pledge,
-            ProductType.donation,
-        }:
+        if invoice.metadata and invoice.metadata.get("type") in {ProductType.pledge}:
             raise NotAnOrderInvoice(invoice.id)
 
         # Get price and product

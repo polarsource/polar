@@ -190,7 +190,6 @@ class TestCreatePayout:
             pledge=None,
             issue_reward=None,
             order=None,
-            donation=None,
             account_incurred_transactions=[],
         )
         await save_fixture(payout)

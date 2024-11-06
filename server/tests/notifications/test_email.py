@@ -9,7 +9,6 @@ from polar.models.pledge import PledgeType
 from polar.models.user import User
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
-    MaintainerDonationReceivedNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
     MaintainerPledgeConfirmationPendingNotificationPayload,
@@ -414,18 +413,6 @@ async def test_MaintainerCreateAccountNotificationPayload() -> None:
     n = MaintainerCreateAccountNotificationPayload(
         organization_name="orgname",
         url="https://example.com/url",
-    )
-
-    await check_diff(n.render())
-
-
-@pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
-async def test_MaintainerDonationReceivedNotificationPayload() -> None:
-    n = MaintainerDonationReceivedNotificationPayload(
-        organization_name="orgname",
-        donation_amount="20",
-        donation_id=uuid.uuid4(),
     )
 
     await check_diff(n.render())

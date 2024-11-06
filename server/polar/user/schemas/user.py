@@ -65,7 +65,6 @@ class UserSignupAttribution(Schema):
         Literal[
             "creator",
             "pledge",
-            "donation",
             "purchase",
             "subscription",
             "newsletter_subscription",
@@ -77,7 +76,6 @@ class UserSignupAttribution(Schema):
     order: UUID4ToStr | None = None
     subscription: UUID4ToStr | None = None
     pledge: UUID4ToStr | None = None
-    donation: UUID4ToStr | None = None
     from_storefront: UUID4ToStr | None = None
 
     # Website source

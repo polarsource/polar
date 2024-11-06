@@ -10,7 +10,6 @@ from polar.kit.db.models import RecordModel
 if TYPE_CHECKING:
     from polar.models import (
         Account,
-        Donation,
         IssueReward,
         Order,
         Organization,
@@ -294,18 +293,6 @@ class Transaction(RecordModel):
     @declared_attr
     def pledge(cls) -> Mapped["Pledge | None"]:
         return relationship("Pledge", lazy="raise")
-
-    donation_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("donations.id", ondelete="set null"),
-        nullable=True,
-        index=True,
-    )
-    """ID of the `Donation` related to this transaction."""
-
-    @declared_attr
-    def donation(cls) -> Mapped["Donation | None"]:
-        return relationship("Donation", lazy="raise")
 
     order_id: Mapped[UUID | None] = mapped_column(
         Uuid,

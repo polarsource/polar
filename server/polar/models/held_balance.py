@@ -9,7 +9,6 @@ from polar.kit.db.models import RecordModel
 if TYPE_CHECKING:
     from polar.models import (
         Account,
-        Donation,
         IssueReward,
         Order,
         Organization,
@@ -110,15 +109,3 @@ class HeldBalance(RecordModel):
     @declared_attr
     def issue_reward(cls) -> Mapped["IssueReward | None"]:
         return relationship("IssueReward", lazy="raise")
-
-    donation_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("donations.id", ondelete="set null"),
-        nullable=True,
-        index=True,
-    )
-    """ID of the `Donation` related to this balance."""
-
-    @declared_attr
-    def donation(cls) -> Mapped["Donation | None"]:
-        return relationship("Donation", lazy="raise")

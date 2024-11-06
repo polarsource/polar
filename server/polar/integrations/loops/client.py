@@ -37,9 +37,6 @@ class Properties(TypedDict, total=False):
 
     accountType: AccountType
 
-    # Donations (soon products, i.e deprecated)
-    donationsEnabled: bool
-
     # Issue Funding
     githubOrgInstalled: bool
     githubIssueBadged: bool

@@ -8,7 +8,7 @@ import { Organization } from '@polar-sh/sdk'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { AuthModal } from './AuthModal'
-import { useCallback } from 'react'
+import { useCallback, useMemo, FormEvent } from 'react'
 import { usePostHog } from '@/hooks/posthog'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
@@ -30,17 +30,25 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const text = _text || 'Get Started'
 
-  let signup = {}
-  if (storefrontOrg?.id) {
-    signup = {
+  const signup = useMemo(() => {
+    if (!storefrontOrg) return {}
+
+    return {
       from_storefront: storefrontOrg.id,
     }
-  }
+  }, [storefrontOrg])
 
   const onClick = useCallback(() => {
     posthog.capture('global:user:signup:click', signup)
     showModal()
-  }, [signup])
+  }, [signup, posthog, showModal])
+
+  // Supporting embedding the button in a form
+  const onSubmit = useCallback((e: FormEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onClick()
+  }, [onClick])
 
   return (
     <>
@@ -51,6 +59,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
         )}
         size={size}
         onClick={onClick}
+        onSubmit={onSubmit}
         {...props}
       >
         <div>{text}</div>

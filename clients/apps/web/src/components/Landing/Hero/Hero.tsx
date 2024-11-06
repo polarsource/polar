@@ -43,9 +43,13 @@ export const Hero = () => {
         </div>
         <div className="flex flex-col items-center gap-y-8">
           <div className="z-20 flex flex-row items-center gap-x-4">
-            <div
+            <form
+              action="/signup"
               className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2"
-              role="form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
             >
               <div className="flex flex-row items-center gap-x-0.5">
                 <span className="md:text-xl">polar.sh/</span>
@@ -58,13 +62,14 @@ export const Hero = () => {
                 />
               </div>
               <GetStartedButton
+                type="submit"
                 className="px-3"
                 orgSlug={slug}
                 size="lg"
                 text="Start for free"
                 wrapperClassNames="md:text-lg md:px-4"
               />
-            </div>
+            </form>
           </div>
         </div>
         <p className="dark:text-polar-500 text-balance text-gray-500">

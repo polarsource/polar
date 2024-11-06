@@ -17398,6 +17398,89 @@
                 "x-speakeasy-group": "custom-fields",
                 "x-speakeasy-name-override": "delete"
             }
+        },
+        "/v1/embed/product/{id}": {
+            "get": {
+                "tags": [
+                    "embeds"
+                ],
+                "summary": "Product Embed",
+                "description": "Get product card.",
+                "operationId": "embeds:get_product",
+                "security": [
+                    {
+                        "oidc": []
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The product ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/products",
+                                "resourceName": "Product",
+                                "displayProperty": "name"
+                            },
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "price_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Price Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductEmbed"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-group": "embeds",
+                "x-speakeasy-name-override": "get_product",
+                "x-speakeasy-ignore": true
+            }
         }
     },
     "webhooks": {
@@ -33321,6 +33404,73 @@
                 ],
                 "title": "ProductBenefitsUpdate",
                 "description": "Schema to update the benefits granted by a product."
+            },
+            "ProductEmbed": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "is_recurring": {
+                        "type": "boolean",
+                        "title": "Is Recurring"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
+                    "price": {
+                        "$ref": "#/components/schemas/ProductPrice"
+                    },
+                    "cover": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductMediaFileRead"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "benefits": {
+                        "items": {
+                            "$ref": "#/components/schemas/Benefit",
+                            "title": "Benefit"
+                        },
+                        "type": "array",
+                        "title": "Benefits",
+                        "description": "List of benefits granted by the product."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "is_recurring",
+                    "organization_id",
+                    "price",
+                    "cover",
+                    "benefits"
+                ],
+                "title": "ProductEmbed"
             },
             "ProductMediaFileCreate": {
                 "properties": {

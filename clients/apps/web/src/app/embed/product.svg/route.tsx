@@ -1,39 +1,36 @@
-import { ProductCard } from '@/components/Embed/ProductCard'
+import { ProductCardEmbed } from '@/components/Embed/ProductCardEmbed'
 import { getServerURL } from '@/utils/api'
 import {
-  Product,
+  ProductEmbed,
 } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getProduct = async (
+const getEmbed = async (
   productId: string,
-  productPriceId: string,
-): Promise<Product | undefined> => {
-  let url = getServerURL(`/v1/products/${productId}`)
+  productPriceId?: string,
+): Promise<ProductEmbed | undefined> => {
+  let path = `/v1/embed/product/${productId}`
+  if (productPriceId) {
+    path += `?price_id=${productPriceId}`
+  }
+  let url = getServerURL(path)
   const response = await fetch(url, {
     method: 'GET',
   })
-  const d = (await response.json()) as Product
-  if (!d) {
-    return undefined
+
+  if (!response.ok) {
+    const body = await response.text()
+    console.error(`HTTP ${response.status} /v1/embed/product: ${body}`)
+    return
   }
 
-  const filteredPrices = d.prices.filter((price) => {
-    return (price.id === productPriceId)
-  })
-
-  if (!filteredPrices.length) {
-    return undefined
-  }
-
-  d.prices = filteredPrices
-  return d
+  return (await response.json()) as ProductEmbed
 }
 
 const render = async (
-  product: Product,
+  embed: ProductEmbed,
   cta?: string,
   darkmode?: boolean,
 ) => {
@@ -46,8 +43,8 @@ const render = async (
   ).then((res) => res.arrayBuffer())
 
   return await satori(
-    <ProductCard
-      product={product}
+    <ProductCardEmbed
+      embed={embed}
       cta={cta}
       darkmode={darkmode}
     />,
@@ -91,22 +88,18 @@ export async function GET(request: Request) {
     return generate404Response()
   }
 
-  const productPriceId = searchParams.get('productPriceId')
-  if (!productPriceId) {
-    return generate404Response()
-  }
-
+  const productPriceId = searchParams.get('productPriceId') ?? undefined
   const darkmode = searchParams.has('darkmode')
-  const cta = searchParams.get('cta')
+  const cta = searchParams.get('cta') ?? undefined
 
   try {
-    const product = await getProduct(productId, productPriceId)
-    if (!product) {
+    const embed = await getEmbed(productId, productPriceId)
+    if (!embed) {
       return generate404Response()
     }
 
     const svg = await render(
-      product,
+      embed,
       cta,
       darkmode,
     )

@@ -10,6 +10,7 @@ apis/CheckoutsCustomApi.ts
 apis/CustomFieldsApi.ts
 apis/DashboardApi.ts
 apis/DonationsApi.ts
+apis/EmbedsApi.ts
 apis/ExternalOrganizationsApi.ts
 apis/FilesApi.ts
 apis/FundingApi.ts

@@ -1,1 +1,0 @@
-{"version":3,"file":"helpers.cjs","sources":["../../src/types/helpers.ts"],"sourcesContent":["export const getWithKey = <T, K extends keyof T>(obj: T, key: K): T[K] => obj[key]\n"],"names":[],"mappings":";;AAAO,MAAM,aAAa,CAAuB,KAAQ,QAAiB,IAAI,GAAG;;"}

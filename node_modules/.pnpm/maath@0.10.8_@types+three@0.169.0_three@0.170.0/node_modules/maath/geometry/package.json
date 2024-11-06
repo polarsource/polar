@@ -1,5 +1,0 @@
-{
-    "main": "dist/maath-geometry.cjs.js",
-    "module": "dist/maath-geometry.esm.js"
-  }
-  

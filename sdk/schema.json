@@ -5099,24 +5099,6 @@
             "description": "Filter by slug."
           },
           {
-            "name": "is_member",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by membership. If `true`, only organizations the user is a member of are returned. If `false`, only organizations the user is not a member of are returned.",
-              "title": "Is Member"
-            },
-            "description": "Filter by membership. If `true`, only organizations the user is a member of are returned. If `false`, only organizations the user is not a member of are returned."
-          },
-          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -10161,9 +10143,9 @@
                 }
               ],
               "title": "OrganizationID Filter",
-              "description": "Filter by organization ID. **Required unless you use an organization token.**"
+              "description": "Filter by organization ID."
             },
-            "description": "Filter by organization ID. **Required unless you use an organization token.**"
+            "description": "Filter by organization ID."
           },
           {
             "name": "query",
@@ -10331,7 +10313,6 @@
           }
         },
         "x-polar-allowed-subjects": [
-          "Anonymous",
           "Organization",
           "User"
         ],
@@ -10520,7 +10501,6 @@
           }
         },
         "x-polar-allowed-subjects": [
-          "Anonymous",
           "Organization",
           "User"
         ],
@@ -13776,6 +13756,599 @@
           }
         ]
       }
+    },
+    "/v1/storefronts/{slug}": {
+      "get": {
+        "tags": [
+          "storefronts"
+        ],
+        "summary": "Get Organization Storefront",
+        "description": "Get an organization storefront by slug.",
+        "operationId": "storefronts:get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storefront"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-group": "storefronts",
+        "x-speakeasy-name-override": "get",
+        "x-speakeasy-ignore": true
+      }
+    },
+    "/v1/custom-fields/": {
+      "get": {
+        "tags": [
+          "custom-fields",
+          "documented"
+        ],
+        "summary": "List Custom Fields",
+        "description": "List custom fields.",
+        "operationId": "custom-fields:list",
+        "security": [
+          {
+            "oidc": [
+              "custom_fields:read",
+              "custom_fields:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by custom field name or slug.",
+              "title": "Query"
+            },
+            "description": "Filter by custom field name or slug."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CustomFieldType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomFieldType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CustomFieldType Filter",
+              "description": "Filter by custom field type."
+            },
+            "description": "Filter by custom field type."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomFieldSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "slug"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-group": "custom-fields",
+        "x-speakeasy-name-override": "list",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "list",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "list",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.custom_fields.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.next()\n        if res is None:\n            break"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "custom-fields",
+          "documented"
+        ],
+        "summary": "Create Custom Field",
+        "description": "Create a custom field.",
+        "operationId": "custom-fields:create",
+        "security": [
+          {
+            "oidc": [
+              "custom_fields:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomFieldCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Custom field created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomField"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "custom-fields",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "create",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    slug: \"<value>\",\n    name: \"<value>\",\n    properties: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "create",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.custom_fields.create(request={\n    \"type\": polar_sdk.CustomFieldCreateNumberType.NUMBER,\n    \"slug\": \"<value>\",\n    \"name\": \"<value>\",\n    \"properties\": {},\n})\n\nif res is not None:\n    # handle response\n    pass"
+          }
+        ]
+      }
+    },
+    "/v1/custom-fields/{id}": {
+      "get": {
+        "tags": [
+          "custom-fields",
+          "documented"
+        ],
+        "summary": "Get Custom Field",
+        "description": "Get a custom field by ID.",
+        "operationId": "custom-fields:get",
+        "security": [
+          {
+            "oidc": [
+              "custom_fields:read",
+              "custom_fields:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The custom field ID.",
+              "title": "Id"
+            },
+            "description": "The custom field ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomField"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Custom field not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "custom-fields",
+        "x-speakeasy-name-override": "get",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "get",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "get",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.custom_fields.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "custom-fields",
+          "documented"
+        ],
+        "summary": "Update Custom Field",
+        "description": "Update a custom field.",
+        "operationId": "custom-fields:update",
+        "security": [
+          {
+            "oidc": [
+              "custom_fields:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The custom field ID.",
+              "title": "Id"
+            },
+            "description": "The custom field ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomFieldUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Custom field updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomField"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Custom field not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "custom-fields",
+        "x-speakeasy-name-override": "update",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "update",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.update({\n    id: \"<value>\",\n    customFieldUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "update",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.custom_fields.update(id=\"<value>\", custom_field_update={\n    \"type\": polar_sdk.CustomFieldUpdateTextType.TEXT,\n})\n\nif res is not None:\n    # handle response\n    pass"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "custom-fields",
+          "documented"
+        ],
+        "summary": "Delete Custom Field",
+        "description": "Delete a custom field.",
+        "operationId": "custom-fields:delete",
+        "security": [
+          {
+            "oidc": [
+              "custom_fields:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The custom field ID.",
+              "title": "Id"
+            },
+            "description": "The custom field ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Custom field deleted."
+          },
+          "404": {
+            "description": "Custom field not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "custom-fields",
+        "x-speakeasy-name-override": "delete",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "delete",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.customFields.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "delete",
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.custom_fields.delete(id=\"<value>\")\n\n# Use the SDK ..."
+          }
+        ]
+      }
     }
   },
   "webhooks": {
@@ -15419,6 +15992,60 @@
         ],
         "title": "Assignee"
       },
+      "AttachedCustomField": {
+        "properties": {
+          "custom_field_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Custom Field Id",
+            "description": "ID of the custom field."
+          },
+          "custom_field": {
+            "$ref": "#/components/schemas/CustomField"
+          },
+          "order": {
+            "type": "integer",
+            "title": "Order",
+            "description": "Order of the custom field in the resource."
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "description": "Whether the value is required for this custom field."
+          }
+        },
+        "type": "object",
+        "required": [
+          "custom_field_id",
+          "custom_field",
+          "order",
+          "required"
+        ],
+        "title": "AttachedCustomField",
+        "description": "Schema of a custom field attached to a resource."
+      },
+      "AttachedCustomFieldCreate": {
+        "properties": {
+          "custom_field_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Custom Field Id",
+            "description": "ID of the custom field to attach."
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "description": "Whether the value is required for this custom field."
+          }
+        },
+        "type": "object",
+        "required": [
+          "custom_field_id",
+          "required"
+        ],
+        "title": "AttachedCustomFieldCreate",
+        "description": "Schema to attach a custom field to a resource."
+      },
       "Author": {
         "properties": {
           "id": {
@@ -15827,15 +16454,18 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitAdsProperties"
-          },
           "grants": {
             "items": {
               "$ref": "#/components/schemas/BenefitGrantAds"
             },
             "type": "array",
             "title": "Grants"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/BenefitAdsProperties"
           }
         },
         "type": "object",
@@ -15848,8 +16478,9 @@
           "selectable",
           "deletable",
           "organization_id",
-          "properties",
-          "grants"
+          "grants",
+          "organization",
+          "properties"
         ],
         "title": "BenefitAdsSubscriber"
       },
@@ -16040,6 +16671,16 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/BenefitGrantSubscriber"
+            },
+            "type": "array",
+            "title": "Grants"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitArticlesSubscriberProperties"
           }
@@ -16054,6 +16695,8 @@
           "selectable",
           "deletable",
           "organization_id",
+          "grants",
+          "organization",
           "properties"
         ],
         "title": "BenefitArticlesSubscriber"
@@ -16424,6 +17067,9 @@
             "type": "array",
             "title": "Grants"
           },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitCustomSubscriberProperties"
           }
@@ -16439,6 +17085,7 @@
           "deletable",
           "organization_id",
           "grants",
+          "organization",
           "properties"
         ],
         "title": "BenefitCustomSubscriber"
@@ -16739,6 +17386,16 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/BenefitGrantSubscriber"
+            },
+            "type": "array",
+            "title": "Grants"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDiscordSubscriberProperties"
           }
@@ -16753,6 +17410,8 @@
           "selectable",
           "deletable",
           "organization_id",
+          "grants",
+          "organization",
           "properties"
         ],
         "title": "BenefitDiscordSubscriber"
@@ -17041,6 +17700,16 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/BenefitGrantSubscriber"
+            },
+            "type": "array",
+            "title": "Grants"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDownloadablesSubscriberProperties"
           }
@@ -17055,6 +17724,8 @@
           "selectable",
           "deletable",
           "organization_id",
+          "grants",
+          "organization",
           "properties"
         ],
         "title": "BenefitDownloadablesSubscriber"
@@ -17413,6 +18084,16 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/BenefitGrantSubscriber"
+            },
+            "type": "array",
+            "title": "Grants"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriberProperties"
           }
@@ -17427,6 +18108,8 @@
           "selectable",
           "deletable",
           "organization_id",
+          "grants",
+          "organization",
           "properties"
         ],
         "title": "BenefitGitHubRepositorySubscriber"
@@ -18623,15 +19306,18 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitLicenseKeysSubscriberProperties"
-          },
           "grants": {
             "items": {
               "$ref": "#/components/schemas/BenefitGrantLicenseKeys"
             },
             "type": "array",
             "title": "Grants"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/BenefitLicenseKeysSubscriberProperties"
           }
         },
         "type": "object",
@@ -18644,8 +19330,9 @@
           "selectable",
           "deletable",
           "organization_id",
-          "properties",
-          "grants"
+          "grants",
+          "organization",
+          "properties"
         ],
         "title": "BenefitLicenseKeysSubscriber"
       },
@@ -18784,6 +19471,18 @@
       },
       "CheckoutConfirmStripe": {
         "properties": {
+          "custom_field_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
           "product_price_id": {
             "anyOf": [
               {
@@ -19059,6 +19758,115 @@
         "title": "CheckoutLinkUpdate",
         "description": "Schema to update an existing checkout link."
       },
+      "CheckoutProduct": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the product."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the product."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the product."
+          },
+          "is_recurring": {
+            "type": "boolean",
+            "title": "Is Recurring",
+            "description": "Whether the product is a subscription tier."
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived",
+            "description": "Whether the product is archived and no longer available."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the product."
+          },
+          "prices": {
+            "items": {
+              "$ref": "#/components/schemas/ProductPrice"
+            },
+            "type": "array",
+            "title": "Prices",
+            "description": "List of prices for this product."
+          },
+          "benefits": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BenefitBase"
+                },
+                {
+                  "$ref": "#/components/schemas/BenefitArticles"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "BenefitPublic",
+            "description": "List of benefits granted by the product."
+          },
+          "medias": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMediaFileRead"
+            },
+            "type": "array",
+            "title": "Medias",
+            "description": "List of medias associated to the product."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "name",
+          "description",
+          "is_recurring",
+          "is_archived",
+          "organization_id",
+          "prices",
+          "benefits",
+          "medias"
+        ],
+        "title": "CheckoutProduct",
+        "description": "Product data for a checkout session."
+      },
       "CheckoutPublic": {
         "properties": {
           "created_at": {
@@ -19085,6 +19893,11 @@
             "format": "uuid4",
             "title": "Id",
             "description": "The ID of the object."
+          },
+          "custom_field_data": {
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
           },
           "payment_processor": {
             "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
@@ -19269,10 +20082,20 @@
             "title": "Payment Processor Metadata"
           },
           "product": {
-            "$ref": "#/components/schemas/Product"
+            "$ref": "#/components/schemas/CheckoutProduct"
           },
           "product_price": {
             "$ref": "#/components/schemas/ProductPrice"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
+          "attached_custom_fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttachedCustomField"
+            },
+            "type": "array",
+            "title": "Attached Custom Fields"
           }
         },
         "type": "object",
@@ -19302,7 +20125,9 @@
           "customer_tax_id",
           "payment_processor_metadata",
           "product",
-          "product_price"
+          "product_price",
+          "organization",
+          "attached_custom_fields"
         ],
         "title": "CheckoutPublic",
         "description": "Checkout session data retrieved using the client secret."
@@ -19330,6 +20155,18 @@
       },
       "CheckoutUpdate": {
         "properties": {
+          "custom_field_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
           "product_price_id": {
             "anyOf": [
               {
@@ -19447,6 +20284,18 @@
             ],
             "title": "Success Url",
             "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+          },
+          "embed_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Origin",
+            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
           }
         },
         "type": "object",
@@ -19455,6 +20304,18 @@
       },
       "CheckoutUpdatePublic": {
         "properties": {
+          "custom_field_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
           "product_price_id": {
             "anyOf": [
               {
@@ -19603,6 +20464,1441 @@
           "amount"
         ],
         "title": "CurrencyAmount"
+      },
+      "CustomField": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CustomFieldText"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldNumber"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldDate"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldCheckbox"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldSelect"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "checkbox": "#/components/schemas/CustomFieldCheckbox",
+            "date": "#/components/schemas/CustomFieldDate",
+            "number": "#/components/schemas/CustomFieldNumber",
+            "select": "#/components/schemas/CustomFieldSelect",
+            "text": "#/components/schemas/CustomFieldText"
+          }
+        }
+      },
+      "CustomFieldCheckbox": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "checkbox"
+            ],
+            "const": "checkbox",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field.",
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldCheckboxProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "metadata",
+          "type",
+          "slug",
+          "name",
+          "organization_id",
+          "properties"
+        ],
+        "title": "CustomFieldCheckbox",
+        "description": "Schema for a custom field of type checkbox."
+      },
+      "CustomFieldCheckboxProperties": {
+        "properties": {
+          "form_label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Label"
+          },
+          "form_help_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Help Text"
+          },
+          "form_placeholder": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Placeholder"
+          }
+        },
+        "type": "object",
+        "title": "CustomFieldCheckboxProperties"
+      },
+      "CustomFieldCreate": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CustomFieldCreateText"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldCreateNumber"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldCreateDate"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldCreateCheckbox"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldCreateSelect"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "checkbox": "#/components/schemas/CustomFieldCreateCheckbox",
+            "date": "#/components/schemas/CustomFieldCreateDate",
+            "number": "#/components/schemas/CustomFieldCreateNumber",
+            "select": "#/components/schemas/CustomFieldCreateSelect",
+            "text": "#/components/schemas/CustomFieldCreateText"
+          }
+        }
+      },
+      "CustomFieldCreateCheckbox": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "checkbox"
+            ],
+            "const": "checkbox",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field. **Required unless you use an organization token.**"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldCheckboxProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "slug",
+          "name",
+          "properties"
+        ],
+        "title": "CustomFieldCreateCheckbox",
+        "description": "Schema to create a custom field of type checkbox."
+      },
+      "CustomFieldCreateDate": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "date"
+            ],
+            "const": "date",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field. **Required unless you use an organization token.**"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldDateProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "slug",
+          "name",
+          "properties"
+        ],
+        "title": "CustomFieldCreateDate",
+        "description": "Schema to create a custom field of type date."
+      },
+      "CustomFieldCreateNumber": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "number"
+            ],
+            "const": "number",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field. **Required unless you use an organization token.**"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldNumberProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "slug",
+          "name",
+          "properties"
+        ],
+        "title": "CustomFieldCreateNumber",
+        "description": "Schema to create a custom field of type number."
+      },
+      "CustomFieldCreateSelect": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "select"
+            ],
+            "const": "select",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field. **Required unless you use an organization token.**"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldSelectProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "slug",
+          "name",
+          "properties"
+        ],
+        "title": "CustomFieldCreateSelect",
+        "description": "Schema to create a custom field of type select."
+      },
+      "CustomFieldCreateText": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ],
+            "const": "text",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field. **Required unless you use an organization token.**"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldTextProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "slug",
+          "name",
+          "properties"
+        ],
+        "title": "CustomFieldCreateText",
+        "description": "Schema to create a custom field of type text."
+      },
+      "CustomFieldDate": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "date"
+            ],
+            "const": "date",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field.",
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldDateProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "metadata",
+          "type",
+          "slug",
+          "name",
+          "organization_id",
+          "properties"
+        ],
+        "title": "CustomFieldDate",
+        "description": "Schema for a custom field of type date."
+      },
+      "CustomFieldDateProperties": {
+        "properties": {
+          "form_label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Label"
+          },
+          "form_help_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Help Text"
+          },
+          "form_placeholder": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Placeholder"
+          },
+          "ge": {
+            "type": "integer",
+            "title": "Ge"
+          },
+          "le": {
+            "type": "integer",
+            "title": "Le"
+          }
+        },
+        "type": "object",
+        "title": "CustomFieldDateProperties"
+      },
+      "CustomFieldNumber": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "number"
+            ],
+            "const": "number",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field.",
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldNumberProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "metadata",
+          "type",
+          "slug",
+          "name",
+          "organization_id",
+          "properties"
+        ],
+        "title": "CustomFieldNumber",
+        "description": "Schema for a custom field of type number."
+      },
+      "CustomFieldNumberProperties": {
+        "properties": {
+          "form_label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Label"
+          },
+          "form_help_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Help Text"
+          },
+          "form_placeholder": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Placeholder"
+          },
+          "ge": {
+            "type": "integer",
+            "title": "Ge"
+          },
+          "le": {
+            "type": "integer",
+            "title": "Le"
+          }
+        },
+        "type": "object",
+        "title": "CustomFieldNumberProperties"
+      },
+      "CustomFieldSelect": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "select"
+            ],
+            "const": "select",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field.",
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldSelectProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "metadata",
+          "type",
+          "slug",
+          "name",
+          "organization_id",
+          "properties"
+        ],
+        "title": "CustomFieldSelect",
+        "description": "Schema for a custom field of type select."
+      },
+      "CustomFieldSelectOption": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "CustomFieldSelectOption"
+      },
+      "CustomFieldSelectProperties": {
+        "properties": {
+          "form_label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Label"
+          },
+          "form_help_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Help Text"
+          },
+          "form_placeholder": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Placeholder"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/CustomFieldSelectOption"
+            },
+            "type": "array",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "options"
+        ],
+        "title": "CustomFieldSelectProperties"
+      },
+      "CustomFieldSortProperty": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "-created_at",
+          "slug",
+          "-slug",
+          "name",
+          "-name",
+          "type",
+          "-type"
+        ],
+        "title": "CustomFieldSortProperty"
+      },
+      "CustomFieldText": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ],
+            "const": "text",
+            "title": "Type"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the custom field."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the custom field.",
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "properties": {
+            "$ref": "#/components/schemas/CustomFieldTextProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "metadata",
+          "type",
+          "slug",
+          "name",
+          "organization_id",
+          "properties"
+        ],
+        "title": "CustomFieldText",
+        "description": "Schema for a custom field of type text."
+      },
+      "CustomFieldTextProperties": {
+        "properties": {
+          "form_label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Label"
+          },
+          "form_help_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Help Text"
+          },
+          "form_placeholder": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Form Placeholder"
+          },
+          "textarea": {
+            "type": "boolean",
+            "title": "Textarea"
+          },
+          "min_length": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Min Length"
+          },
+          "max_length": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Max Length"
+          }
+        },
+        "type": "object",
+        "title": "CustomFieldTextProperties"
+      },
+      "CustomFieldType": {
+        "type": "string",
+        "enum": [
+          "text",
+          "number",
+          "date",
+          "checkbox",
+          "select"
+        ],
+        "title": "CustomFieldType"
+      },
+      "CustomFieldUpdate": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CustomFieldUpdateText"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldUpdateNumber"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldUpdateDate"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldUpdateCheckbox"
+          },
+          {
+            "$ref": "#/components/schemas/CustomFieldUpdateSelect"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "checkbox": "#/components/schemas/CustomFieldUpdateCheckbox",
+            "date": "#/components/schemas/CustomFieldUpdateDate",
+            "number": "#/components/schemas/CustomFieldUpdateNumber",
+            "select": "#/components/schemas/CustomFieldUpdateSelect",
+            "text": "#/components/schemas/CustomFieldUpdateText"
+          }
+        }
+      },
+      "CustomFieldUpdateCheckbox": {
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "type": "object",
+                "maxProperties": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the custom field."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "checkbox"
+            ],
+            "const": "checkbox",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomFieldCheckboxProperties"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CustomFieldUpdateCheckbox",
+        "description": "Schema to update a custom field of type checkbox."
+      },
+      "CustomFieldUpdateDate": {
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "type": "object",
+                "maxProperties": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the custom field."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "date"
+            ],
+            "const": "date",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomFieldDateProperties"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CustomFieldUpdateDate",
+        "description": "Schema to update a custom field of type date."
+      },
+      "CustomFieldUpdateNumber": {
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "type": "object",
+                "maxProperties": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the custom field."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "number"
+            ],
+            "const": "number",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomFieldNumberProperties"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CustomFieldUpdateNumber",
+        "description": "Schema to update a custom field of type number."
+      },
+      "CustomFieldUpdateSelect": {
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "type": "object",
+                "maxProperties": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the custom field."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "select"
+            ],
+            "const": "select",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomFieldSelectProperties"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CustomFieldUpdateSelect",
+        "description": "Schema to update a custom field of type select."
+      },
+      "CustomFieldUpdateText": {
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "type": "object",
+                "maxProperties": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the custom field."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ],
+            "const": "text",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomFieldTextProperties"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CustomFieldUpdateText",
+        "description": "Schema to update a custom field of type text."
+      },
+      "Customer": {
+        "properties": {
+          "public_name": {
+            "type": "string",
+            "title": "Public Name"
+          },
+          "github_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Username"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_name",
+          "github_username",
+          "avatar_url"
+        ],
+        "title": "Customer"
+      },
+      "Customers": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            },
+            "type": "array",
+            "title": "Customers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "customers"
+        ],
+        "title": "Customers"
       },
       "Donation": {
         "properties": {
@@ -22364,6 +24660,26 @@
         ],
         "title": "ListResource[WebhookEndpoint]"
       },
+      "ListResource__": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustomField"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[]"
+      },
       "Metric": {
         "properties": {
           "slug": {
@@ -22689,7 +25005,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
           },
           "client_name": {
             "type": "string",
@@ -22851,7 +25167,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
           },
           "client_name": {
             "type": "string",
@@ -22972,7 +25288,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
           },
           "client_name": {
             "type": "string",
@@ -23171,6 +25487,11 @@
             },
             "type": "object",
             "title": "Metadata"
+          },
+          "custom_field_data": {
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
           },
           "amount": {
             "type": "integer",
@@ -24758,22 +27079,16 @@
             },
             "type": "array",
             "title": "Prices",
-            "description": "List of available prices for this product."
+            "description": "List of prices for this product."
           },
           "benefits": {
             "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/BenefitBase"
-                },
-                {
-                  "$ref": "#/components/schemas/BenefitArticles"
-                }
-              ]
+              "$ref": "#/components/schemas/Benefit",
+              "title": "Benefit"
             },
             "type": "array",
-            "title": "BenefitPublic",
-            "description": "The benefits granted by the product."
+            "title": "Benefits",
+            "description": "List of benefits granted by the product."
           },
           "medias": {
             "items": {
@@ -24781,7 +27096,15 @@
             },
             "type": "array",
             "title": "Medias",
-            "description": "The medias associated to the product."
+            "description": "List of medias associated to the product."
+          },
+          "attached_custom_fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttachedCustomField"
+            },
+            "type": "array",
+            "title": "Attached Custom Fields",
+            "description": "List of custom fields attached to the product."
           }
         },
         "type": "object",
@@ -24796,7 +27119,8 @@
           "organization_id",
           "prices",
           "benefits",
-          "medias"
+          "medias",
+          "attached_custom_fields"
         ],
         "title": "Product",
         "description": "A product."
@@ -25109,6 +27433,14 @@
             ],
             "title": "Medias",
             "description": "List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."
+          },
+          "attached_custom_fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttachedCustomFieldCreate"
+            },
+            "type": "array",
+            "title": "Attached Custom Fields",
+            "description": "List of custom fields to attach."
           },
           "organization_id": {
             "anyOf": [
@@ -26037,6 +28369,14 @@
             "title": "Medias",
             "description": "List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."
           },
+          "attached_custom_fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttachedCustomFieldCreate"
+            },
+            "type": "array",
+            "title": "Attached Custom Fields",
+            "description": "List of custom fields to attach."
+          },
           "organization_id": {
             "anyOf": [
               {
@@ -26080,6 +28420,115 @@
           "-price_amount"
         ],
         "title": "ProductSortProperty"
+      },
+      "ProductStorefront": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the product."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the product."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the product."
+          },
+          "is_recurring": {
+            "type": "boolean",
+            "title": "Is Recurring",
+            "description": "Whether the product is a subscription tier."
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived",
+            "description": "Whether the product is archived and no longer available."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the product."
+          },
+          "prices": {
+            "items": {
+              "$ref": "#/components/schemas/ProductPrice"
+            },
+            "type": "array",
+            "title": "Prices",
+            "description": "List of available prices for this product."
+          },
+          "benefits": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BenefitBase"
+                },
+                {
+                  "$ref": "#/components/schemas/BenefitArticles"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "BenefitPublic",
+            "description": "The benefits granted by the product."
+          },
+          "medias": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMediaFileRead"
+            },
+            "type": "array",
+            "title": "Medias",
+            "description": "The medias associated to the product."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "name",
+          "description",
+          "is_recurring",
+          "is_archived",
+          "organization_id",
+          "prices",
+          "benefits",
+          "medias"
+        ],
+        "title": "ProductStorefront",
+        "description": "Schema of a public product."
       },
       "ProductUpdate": {
         "properties": {
@@ -26169,6 +28618,21 @@
             ],
             "title": "Medias",
             "description": "List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."
+          },
+          "attached_custom_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AttachedCustomFieldCreate"
+                },
+                "type": "array",
+                "description": "List of custom fields to attach."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attached Custom Fields"
           }
         },
         "type": "object",
@@ -26360,6 +28824,16 @@
           },
           "organization": {
             "$ref": "#/components/schemas/ExternalOrganization"
+          },
+          "internal_organization": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Organization"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -26373,7 +28847,8 @@
           "license",
           "homepage",
           "profile_settings",
-          "organization"
+          "organization",
+          "internal_organization"
         ],
         "title": "Repository"
       },
@@ -26914,6 +29389,8 @@
           "web_default",
           "organizations:read",
           "organizations:write",
+          "custom_fields:read",
+          "custom_fields:write",
           "checkout_links:read",
           "checkout_links:write",
           "checkouts:read",
@@ -27000,6 +29477,31 @@
           "active"
         ],
         "title": "Status"
+      },
+      "Storefront": {
+        "properties": {
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductStorefront"
+            },
+            "type": "array",
+            "title": "Products"
+          },
+          "customers": {
+            "$ref": "#/components/schemas/Customers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization",
+          "products",
+          "customers"
+        ],
+        "title": "Storefront",
+        "description": "Schema of a public storefront."
       },
       "SubType": {
         "type": "string",
@@ -27142,6 +29644,11 @@
             },
             "type": "object",
             "title": "Metadata"
+          },
+          "custom_field_data": {
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
           },
           "user": {
             "$ref": "#/components/schemas/SubscriptionUser"
@@ -29126,7 +31633,7 @@
             },
             "type": "array",
             "title": "Prices",
-            "description": "List of available prices for this product."
+            "description": "List of prices for this product."
           },
           "benefits": {
             "items": {
@@ -29141,7 +31648,7 @@
             },
             "type": "array",
             "title": "BenefitPublic",
-            "description": "The benefits granted by the product."
+            "description": "List of benefits granted by the product."
           },
           "medias": {
             "items": {
@@ -29149,7 +31656,10 @@
             },
             "type": "array",
             "title": "Medias",
-            "description": "The medias associated to the product."
+            "description": "List of medias associated to the product."
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
           }
         },
         "type": "object",
@@ -29164,7 +31674,8 @@
           "organization_id",
           "prices",
           "benefits",
-          "medias"
+          "medias",
+          "organization"
         ],
         "title": "UserOrderProduct"
       },
@@ -29556,7 +32067,7 @@
             },
             "type": "array",
             "title": "Prices",
-            "description": "List of available prices for this product."
+            "description": "List of prices for this product."
           },
           "benefits": {
             "items": {
@@ -29571,7 +32082,7 @@
             },
             "type": "array",
             "title": "BenefitPublic",
-            "description": "The benefits granted by the product."
+            "description": "List of benefits granted by the product."
           },
           "medias": {
             "items": {
@@ -29579,7 +32090,10 @@
             },
             "type": "array",
             "title": "Medias",
-            "description": "The medias associated to the product."
+            "description": "List of medias associated to the product."
+          },
+          "organization": {
+            "$ref": "#/components/schemas/Organization"
           }
         },
         "type": "object",
@@ -29594,7 +32108,8 @@
           "organization_id",
           "prices",
           "benefits",
-          "medias"
+          "medias",
+          "organization"
         ],
         "title": "UserSubscriptionProduct"
       },
@@ -30625,7 +33140,7 @@
             "title": "Customer Name"
           },
           "product": {
-            "$ref": "#/components/schemas/Product"
+            "$ref": "#/components/schemas/CheckoutProduct"
           },
           "product_price": {
             "$ref": "#/components/schemas/ProductPrice"
@@ -30717,6 +33232,11 @@
             "format": "uuid4",
             "title": "Id",
             "description": "The ID of the object."
+          },
+          "custom_field_data": {
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
           },
           "payment_processor": {
             "$ref": "#/components/schemas/polar__enums__PaymentProcessor",
@@ -30908,7 +33428,7 @@
             "title": "Metadata"
           },
           "product": {
-            "$ref": "#/components/schemas/Product"
+            "$ref": "#/components/schemas/CheckoutProduct"
           },
           "product_price": {
             "$ref": "#/components/schemas/ProductPrice"
@@ -30924,6 +33444,13 @@
               }
             ],
             "title": "Subscription Id"
+          },
+          "attached_custom_fields": {
+            "items": {
+              "$ref": "#/components/schemas/AttachedCustomField"
+            },
+            "type": "array",
+            "title": "Attached Custom Fields"
           }
         },
         "type": "object",
@@ -30955,7 +33482,8 @@
           "metadata",
           "product",
           "product_price",
-          "subscription_id"
+          "subscription_id",
+          "attached_custom_fields"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."
@@ -30972,6 +33500,11 @@
             "maxProperties": 50,
             "title": "Metadata",
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+          },
+          "custom_field_data": {
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
           },
           "payment_processor": {
             "type": "string",
@@ -31087,6 +33620,18 @@
             ],
             "title": "Success Url",
             "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+          },
+          "embed_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Origin",
+            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
           }
         },
         "type": "object",

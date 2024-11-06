@@ -196,7 +196,7 @@ const DocumentationPopover = () => {
 
 export const TopbarNavigation = () => {
   return (
-    <div className="absolute left-1/2 hidden -translate-x-1/2 flex-row items-center gap-x-4 text-sm md:flex">
+    <div className="absolute left-1/2 hidden -translate-x-1/2 flex-row items-center gap-x-2 text-sm md:flex">
       <PlatformPopover />
       <DocumentationPopover />
       <Link

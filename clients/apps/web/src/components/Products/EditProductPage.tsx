@@ -200,20 +200,18 @@ export const EditProductPage = ({
             />
           </div>
 
-          <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
-            {organization.profile_settings?.enabled ? (
-              <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
-                <Link
-                  href={`/${organization.slug}/products/${product.id}`}
-                  target="_blank"
-                >
-                  <Button>View Product Page</Button>
-                </Link>
-              </div>
-            ) : (
-              <Button onClick={showCheckoutModal}>Share</Button>
-            )}
-          </div>
+          {organization.profile_settings?.enabled ? (
+            <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
+              <Link
+                href={`/${organization.slug}/products/${product.id}`}
+                target="_blank"
+              >
+                <Button>View Product Page</Button>
+              </Link>
+            </div>
+          ) : (
+            <Button onClick={showCheckoutModal}>Share</Button>
+          )}
           <InlineModal
             isShown={isCheckoutModalShown}
             hide={hideCheckoutModal}

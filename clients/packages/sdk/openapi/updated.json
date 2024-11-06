@@ -10708,467 +10708,6 @@
                 "x-speakeasy-ignore": true
             }
         },
-        "/v1/donations/search": {
-            "get": {
-                "tags": [
-                    "donations"
-                ],
-                "summary": "Search Donations",
-                "operationId": "search_donations",
-                "security": [
-                    {
-                        "oidc": []
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "to_organization_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "title": "To Organization Id"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Page number, defaults to 1.",
-                            "default": 1,
-                            "title": "Page"
-                        },
-                        "description": "Page number, defaults to 1."
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Size of a page, defaults to 10. Maximum is 100.",
-                            "default": 10,
-                            "title": "Limit"
-                        },
-                        "description": "Size of a page, defaults to 10. Maximum is 100."
-                    },
-                    {
-                        "name": "sorting",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/DonationSortProperty"
-                                    }
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "default": [
-                                "-created_at"
-                            ],
-                            "title": "Sorting"
-                        },
-                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Donation_"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ],
-                "x-speakeasy-pagination": {
-                    "type": "offsetLimit",
-                    "inputs": [
-                        {
-                            "name": "page",
-                            "in": "parameters",
-                            "type": "page"
-                        },
-                        {
-                            "name": "limit",
-                            "in": "parameters",
-                            "type": "limit"
-                        }
-                    ],
-                    "outputs": {
-                        "results": "$.items",
-                        "numPages": "$.pagination.max_page"
-                    }
-                },
-                "x-speakeasy-group": "donations",
-                "x-speakeasy-name-override": "search_donations",
-                "x-speakeasy-ignore": true
-            }
-        },
-        "/v1/donations/payment_intent": {
-            "post": {
-                "tags": [
-                    "donations"
-                ],
-                "summary": "Create Payment Intent",
-                "operationId": "create_payment_intent",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/DonationCreateStripePaymentIntent"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DonationStripePaymentIntentMutationResponse"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "oidc": []
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
-                ],
-                "x-speakeasy-group": "donations",
-                "x-speakeasy-name-override": "create_payment_intent",
-                "x-speakeasy-ignore": true
-            }
-        },
-        "/v1/donations/payment_intent/{id}": {
-            "patch": {
-                "tags": [
-                    "donations"
-                ],
-                "summary": "Update Payment Intent",
-                "operationId": "update_payment_intent",
-                "security": [
-                    {
-                        "oidc": []
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/DonationUpdateStripePaymentIntent"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DonationStripePaymentIntentMutationResponse"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
-                ],
-                "x-speakeasy-group": "donations",
-                "x-speakeasy-name-override": "update_payment_intent",
-                "x-speakeasy-ignore": true
-            }
-        },
-        "/v1/donations/statistics": {
-            "get": {
-                "tags": [
-                    "donations"
-                ],
-                "summary": "Statistics",
-                "operationId": "statistics",
-                "security": [
-                    {
-                        "oidc": []
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "to_organization_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "title": "To Organization Id"
-                        }
-                    },
-                    {
-                        "name": "start_date",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "date",
-                            "title": "Start Date"
-                        }
-                    },
-                    {
-                        "name": "end_date",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "date",
-                            "title": "End Date"
-                        }
-                    },
-                    {
-                        "name": "donationsInterval",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "enum": [
-                                "month",
-                                "week",
-                                "day"
-                            ],
-                            "type": "string",
-                            "title": "Donationsinterval"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DonationStatistics"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ],
-                "x-speakeasy-group": "donations",
-                "x-speakeasy-name-override": "statistics",
-                "x-speakeasy-ignore": true
-            }
-        },
-        "/v1/donations/public/search": {
-            "get": {
-                "tags": [
-                    "donations"
-                ],
-                "summary": "Donations Public Search",
-                "operationId": "donations_public_search",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "description": "The organization ID.",
-                            "x-polar-selector-widget": {
-                                "resourceRoot": "/v1/organizations",
-                                "resourceName": "Organization",
-                                "displayProperty": "name"
-                            },
-                            "title": "Organization Id"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Page number, defaults to 1.",
-                            "default": 1,
-                            "title": "Page"
-                        },
-                        "description": "Page number, defaults to 1."
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Size of a page, defaults to 10. Maximum is 100.",
-                            "default": 10,
-                            "title": "Limit"
-                        },
-                        "description": "Size of a page, defaults to 10. Maximum is 100."
-                    },
-                    {
-                        "name": "sorting",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/DonationSortProperty"
-                                    }
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "default": [
-                                "-created_at"
-                            ],
-                            "title": "Sorting"
-                        },
-                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_PublicDonation_"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-speakeasy-pagination": {
-                    "type": "offsetLimit",
-                    "inputs": [
-                        {
-                            "name": "page",
-                            "in": "parameters",
-                            "type": "page"
-                        },
-                        {
-                            "name": "limit",
-                            "in": "parameters",
-                            "type": "limit"
-                        }
-                    ],
-                    "outputs": {
-                        "results": "$.items",
-                        "numPages": "$.pagination.max_page"
-                    }
-                },
-                "x-speakeasy-group": "donations",
-                "x-speakeasy-name-override": "donations_public_search",
-                "x-speakeasy-ignore": true
-            }
-        },
         "/v1/oauth2/": {
             "get": {
                 "tags": [
@@ -22780,7 +22319,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -22841,14 +22390,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "payment_processor": {
                         "type": "string",
@@ -22903,9 +22462,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -22915,7 +22484,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "success_url": {
                         "anyOf": [
@@ -23422,9 +22991,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -23434,7 +23013,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "customer_ip_address": {
                         "anyOf": [
@@ -23757,7 +23336,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -23864,14 +23453,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "type": {
                         "type": "string",
@@ -23930,14 +23529,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "type": {
                         "type": "string",
@@ -23996,14 +23605,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "type": {
                         "type": "string",
@@ -24062,14 +23681,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "type": {
                         "type": "string",
@@ -24128,14 +23757,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "type": {
                         "type": "string",
@@ -24219,7 +23858,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -24330,7 +23979,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -24441,7 +24100,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -24588,7 +24257,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -24722,9 +24401,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -24734,7 +24423,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "name": {
                         "anyOf": [
@@ -24794,9 +24483,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -24806,7 +24505,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "name": {
                         "anyOf": [
@@ -24866,9 +24565,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -24878,7 +24587,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "name": {
                         "anyOf": [
@@ -24938,9 +24647,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -24950,7 +24669,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "name": {
                         "anyOf": [
@@ -25010,9 +24729,19 @@
                         "anyOf": [
                             {
                                 "additionalProperties": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
                                 },
                                 "type": "object",
                                 "maxProperties": 50
@@ -25022,7 +24751,7 @@
                             }
                         ],
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "name": {
                         "anyOf": [
@@ -25188,416 +24917,6 @@
                     "color"
                 ],
                 "title": "DiscordGuildRole"
-            },
-            "Donation": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the object."
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Message"
-                    },
-                    "donor": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/DonationOrganization"
-                            },
-                            {
-                                "$ref": "#/components/schemas/DonationUser"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donor"
-                    },
-                    "email": {
-                        "type": "string",
-                        "title": "Email"
-                    },
-                    "issue": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/Issue"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "amount",
-                    "currency",
-                    "message",
-                    "donor",
-                    "email",
-                    "issue"
-                ],
-                "title": "Donation"
-            },
-            "DonationCreateStripePaymentIntent": {
-                "properties": {
-                    "to_organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "To Organization Id"
-                    },
-                    "email": {
-                        "type": "string",
-                        "format": "email",
-                        "title": "Email",
-                        "description": "The donators email address. Receipts will be sent to this address."
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "maximum": 99999999,
-                        "exclusiveMinimum": 0,
-                        "title": "Amount",
-                        "description": "The amount in cents."
-                    },
-                    "currency": {
-                        "type": "string",
-                        "pattern": "usd",
-                        "title": "Currency",
-                        "description": "The currency. Currently, only `usd` is supported.",
-                        "default": "usd"
-                    },
-                    "setup_future_usage": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "enum": [
-                                    "on_session"
-                                ],
-                                "const": "on_session"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Setup Future Usage",
-                        "description": "If the payment method should be saved for future usage."
-                    },
-                    "on_behalf_of_organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "On Behalf Of Organization Id",
-                        "description": "The organization to give credit to. The pledge will be paid by the authenticated user."
-                    },
-                    "message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Message",
-                        "description": "Message included with the donation"
-                    },
-                    "issue_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Issue Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "to_organization_id",
-                    "email",
-                    "amount"
-                ],
-                "title": "DonationCreateStripePaymentIntent"
-            },
-            "DonationOrganization": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name"
-                    },
-                    "avatar_url": {
-                        "type": "string",
-                        "title": "Avatar Url"
-                    },
-                    "is_personal": {
-                        "type": "boolean",
-                        "title": "Is Personal"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "platform",
-                    "name",
-                    "avatar_url",
-                    "is_personal"
-                ],
-                "title": "DonationOrganization"
-            },
-            "DonationSortProperty": {
-                "type": "string",
-                "enum": [
-                    "amount",
-                    "-amount",
-                    "created_at",
-                    "-created_at"
-                ],
-                "title": "DonationSortProperty"
-            },
-            "DonationStatistics": {
-                "properties": {
-                    "periods": {
-                        "items": {
-                            "$ref": "#/components/schemas/DonationStatisticsPeriod"
-                        },
-                        "type": "array",
-                        "title": "Periods"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "periods"
-                ],
-                "title": "DonationStatistics"
-            },
-            "DonationStatisticsPeriod": {
-                "properties": {
-                    "start_date": {
-                        "type": "string",
-                        "format": "date",
-                        "title": "Start Date"
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "format": "date",
-                        "title": "End Date"
-                    },
-                    "sum": {
-                        "type": "integer",
-                        "title": "Sum"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "start_date",
-                    "end_date",
-                    "sum"
-                ],
-                "title": "DonationStatisticsPeriod"
-            },
-            "DonationStripePaymentIntentMutationResponse": {
-                "properties": {
-                    "payment_intent_id": {
-                        "type": "string",
-                        "title": "Payment Intent Id"
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "client_secret": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Client Secret"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "payment_intent_id",
-                    "amount",
-                    "currency",
-                    "client_secret"
-                ],
-                "title": "DonationStripePaymentIntentMutationResponse"
-            },
-            "DonationUpdateStripePaymentIntent": {
-                "properties": {
-                    "email": {
-                        "type": "string",
-                        "title": "Email",
-                        "description": "The donators email address. Receipts will be sent to this address."
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "maximum": 99999999,
-                        "exclusiveMinimum": 0,
-                        "title": "Amount",
-                        "description": "The amount in cents."
-                    },
-                    "currency": {
-                        "type": "string",
-                        "pattern": "usd",
-                        "title": "Currency",
-                        "description": "The currency. Currently, only `usd` is supported.",
-                        "default": "usd"
-                    },
-                    "setup_future_usage": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "enum": [
-                                    "on_session"
-                                ],
-                                "const": "on_session"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Setup Future Usage",
-                        "description": "If the payment method should be saved for future usage."
-                    },
-                    "on_behalf_of_organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "On Behalf Of Organization Id",
-                        "description": "The organization to give credit to. The pledge will be paid by the authenticated user."
-                    },
-                    "message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Message",
-                        "description": "Message included with the donation"
-                    },
-                    "issue_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Issue Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "email",
-                    "amount"
-                ],
-                "title": "DonationUpdateStripePaymentIntent"
-            },
-            "DonationUser": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "public_name": {
-                        "type": "string",
-                        "title": "Public Name"
-                    },
-                    "avatar_url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Avatar Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "public_name",
-                    "avatar_url"
-                ],
-                "title": "DonationUser"
             },
             "DownloadableFileCreate": {
                 "properties": {
@@ -27689,26 +27008,6 @@
                 ],
                 "title": "ListResource[Checkout]"
             },
-            "ListResource_Donation_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/Donation"
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[Donation]"
-            },
             "ListResource_DownloadableRead_": {
                 "properties": {
                     "items": {
@@ -28007,26 +27306,6 @@
                     "pagination"
                 ],
                 "title": "ListResource[Product]"
-            },
-            "ListResource_PublicDonation_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/PublicDonation"
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[PublicDonation]"
             },
             "ListResource_Repository_": {
                 "properties": {
@@ -28473,63 +27752,6 @@
                     "url"
                 ],
                 "title": "MaintainerCreateAccountNotificationPayload"
-            },
-            "MaintainerDonationReceivedNotification": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "MaintainerDonationReceived"
-                        ],
-                        "const": "MaintainerDonationReceived",
-                        "title": "Type"
-                    },
-                    "payload": {
-                        "$ref": "#/components/schemas/MaintainerDonationReceivedNotificationPayload"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "created_at",
-                    "type",
-                    "payload"
-                ],
-                "title": "MaintainerDonationReceivedNotification"
-            },
-            "MaintainerDonationReceivedNotificationPayload": {
-                "properties": {
-                    "organization_name": {
-                        "type": "string",
-                        "title": "Organization Name"
-                    },
-                    "donation_amount": {
-                        "type": "string",
-                        "title": "Donation Amount"
-                    },
-                    "donation_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Donation Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "organization_name",
-                    "donation_amount",
-                    "donation_id"
-                ],
-                "title": "MaintainerDonationReceivedNotificationPayload"
             },
             "MaintainerNewPaidSubscriptionNotification": {
                 "properties": {
@@ -29533,9 +28755,6 @@
                                 },
                                 {
                                     "$ref": "#/components/schemas/MaintainerCreateAccountNotification"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/MaintainerDonationReceivedNotification"
                                 }
                             ],
                             "discriminator": {
@@ -29545,7 +28764,6 @@
                                     "MaintainerAccountReviewedNotification": "#/components/schemas/MaintainerAccountReviewedNotification",
                                     "MaintainerAccountUnderReviewNotification": "#/components/schemas/MaintainerAccountUnderReviewNotification",
                                     "MaintainerCreateAccountNotification": "#/components/schemas/MaintainerCreateAccountNotification",
-                                    "MaintainerDonationReceived": "#/components/schemas/MaintainerDonationReceivedNotification",
                                     "MaintainerNewPaidSubscriptionNotification": "#/components/schemas/MaintainerNewPaidSubscriptionNotification",
                                     "MaintainerNewProductSaleNotification": "#/components/schemas/MaintainerNewProductSaleNotification",
                                     "MaintainerPledgeConfirmationPendingNotification": "#/components/schemas/MaintainerPledgeConfirmationPendingNotification",
@@ -30194,7 +29412,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -30419,7 +29647,17 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -30756,11 +29994,6 @@
                         ],
                         "title": "Default Upfront Split To Contributors"
                     },
-                    "donations_enabled": {
-                        "type": "boolean",
-                        "title": "Donations Enabled",
-                        "description": "If this organizations accepts donations"
-                    },
                     "profile_settings": {
                         "anyOf": [
                             {
@@ -30801,7 +30034,6 @@
                     "pledge_minimum_amount",
                     "pledge_badge_show_amount",
                     "default_upfront_split_to_contributors",
-                    "donations_enabled",
                     "profile_settings",
                     "feature_settings"
                 ],
@@ -31166,11 +30398,6 @@
                         ],
                         "title": "Avatar Url"
                     },
-                    "donations_enabled": {
-                        "type": "boolean",
-                        "title": "Donations Enabled",
-                        "default": false
-                    },
                     "feature_settings": {
                         "anyOf": [
                             {
@@ -31496,11 +30723,6 @@
                             }
                         ],
                         "title": "Per User Monthly Spending Limit"
-                    },
-                    "donations_enabled": {
-                        "type": "boolean",
-                        "title": "Donations Enabled",
-                        "default": false
                     },
                     "profile_settings": {
                         "anyOf": [
@@ -32444,6 +31666,23 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
+                    "metadata": {
+                        "additionalProperties": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
+                        },
+                        "type": "object",
+                        "title": "Metadata"
+                    },
                     "prices": {
                         "items": {
                             "$ref": "#/components/schemas/ProductPrice"
@@ -32488,6 +31727,7 @@
                     "is_recurring",
                     "is_archived",
                     "organization_id",
+                    "metadata",
                     "prices",
                     "benefits",
                     "medias",
@@ -32823,6 +32063,27 @@
             },
             "ProductOneTimeCreate": {
                 "properties": {
+                    "metadata": {
+                        "additionalProperties": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
+                        },
+                        "type": "object",
+                        "maxProperties": 50,
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+                    },
                     "name": {
                         "type": "string",
                         "minLength": 3,
@@ -33752,6 +33013,27 @@
             },
             "ProductRecurringCreate": {
                 "properties": {
+                    "metadata": {
+                        "additionalProperties": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
+                        },
+                        "type": "object",
+                        "maxProperties": 50,
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+                    },
                     "name": {
                         "type": "string",
                         "minLength": 3,
@@ -33975,6 +33257,34 @@
             },
             "ProductUpdate": {
                 "properties": {
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        }
+                                    ]
+                                },
+                                "type": "object",
+                                "maxProperties": 50
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metadata",
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+                    },
                     "name": {
                         "anyOf": [
                             {
@@ -34081,57 +33391,6 @@
                 "type": "object",
                 "title": "ProductUpdate",
                 "description": "Schema to update a product."
-            },
-            "PublicDonation": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Message"
-                    },
-                    "donor": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/DonationOrganization"
-                            },
-                            {
-                                "$ref": "#/components/schemas/DonationUser"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donor"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "amount",
-                    "currency",
-                    "message",
-                    "donor"
-                ],
-                "title": "PublicDonation"
             },
             "Reactions": {
                 "properties": {
@@ -35111,6 +34370,16 @@
                         "type": "array",
                         "title": "Products"
                     },
+                    "donation_product": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductStorefront"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "customers": {
                         "$ref": "#/components/schemas/Customers"
                     }
@@ -35119,6 +34388,7 @@
                 "required": [
                     "organization",
                     "products",
+                    "donation_product",
                     "customers"
                 ],
                 "title": "Storefront",
@@ -35261,7 +34531,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -35649,18 +34929,6 @@
                         ],
                         "title": "Order Id"
                     },
-                    "donation_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donation Id"
-                    },
                     "payout_transaction_id": {
                         "anyOf": [
                             {
@@ -35715,16 +34983,6 @@
                             }
                         ]
                     },
-                    "donation": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/TransactionDonation"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
                     "account_incurred_transactions": {
                         "items": {
                             "$ref": "#/components/schemas/TransactionEmbedded"
@@ -35760,13 +35018,11 @@
                     "pledge_id",
                     "issue_reward_id",
                     "order_id",
-                    "donation_id",
                     "payout_transaction_id",
                     "incurred_by_transaction_id",
                     "pledge",
                     "issue_reward",
                     "order",
-                    "donation",
                     "account_incurred_transactions",
                     "incurred_amount",
                     "gross_amount",
@@ -35876,18 +35132,6 @@
                         ],
                         "title": "Order Id"
                     },
-                    "donation_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donation Id"
-                    },
                     "payout_transaction_id": {
                         "anyOf": [
                             {
@@ -35942,16 +35186,6 @@
                             }
                         ]
                     },
-                    "donation": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/TransactionDonation"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
                     "account_incurred_transactions": {
                         "items": {
                             "$ref": "#/components/schemas/TransactionEmbedded"
@@ -35994,13 +35228,11 @@
                     "pledge_id",
                     "issue_reward_id",
                     "order_id",
-                    "donation_id",
                     "payout_transaction_id",
                     "incurred_by_transaction_id",
                     "pledge",
                     "issue_reward",
                     "order",
-                    "donation",
                     "account_incurred_transactions",
                     "incurred_amount",
                     "gross_amount",
@@ -36008,53 +35240,6 @@
                     "paid_transactions"
                 ],
                 "title": "TransactionDetails"
-            },
-            "TransactionDonation": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the object."
-                    },
-                    "to_organization": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/TransactionOrganization"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "modified_at",
-                    "id",
-                    "to_organization"
-                ],
-                "title": "TransactionDonation"
             },
             "TransactionEmbedded": {
                 "properties": {
@@ -36158,18 +35343,6 @@
                         ],
                         "title": "Order Id"
                     },
-                    "donation_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donation Id"
-                    },
                     "payout_transaction_id": {
                         "anyOf": [
                             {
@@ -36210,7 +35383,6 @@
                     "pledge_id",
                     "issue_reward_id",
                     "order_id",
-                    "donation_id",
                     "payout_transaction_id",
                     "incurred_by_transaction_id"
                 ],
@@ -37670,7 +36842,6 @@
                                 "enum": [
                                     "creator",
                                     "pledge",
-                                    "donation",
                                     "purchase",
                                     "subscription",
                                     "newsletter_subscription"
@@ -37717,18 +36888,6 @@
                             }
                         ],
                         "title": "Pledge"
-                    },
-                    "donation": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Donation"
                     },
                     "from_storefront": {
                         "anyOf": [
@@ -38488,28 +37647,6 @@
                 "title": "WebhookDelivery",
                 "description": "A webhook delivery for a webhook event."
             },
-            "WebhookDonationCreatedPayload": {
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "donation.created"
-                        ],
-                        "const": "donation.created",
-                        "title": "Type"
-                    },
-                    "data": {
-                        "$ref": "#/components/schemas/Donation"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "type",
-                    "data"
-                ],
-                "title": "WebhookDonationCreatedPayload",
-                "description": "Sent when a new donation is created.\n\n**Discord & Slack support:** Full"
-            },
             "WebhookEndpoint": {
                 "properties": {
                     "created_at": {
@@ -38812,8 +37949,7 @@
                     "benefit_grant.revoked",
                     "organization.updated",
                     "pledge.created",
-                    "pledge.updated",
-                    "donation.created"
+                    "pledge.updated"
                 ],
                 "title": "WebhookEventType"
             },
@@ -39440,7 +38576,17 @@
                     },
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string"
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "title": "Metadata"
@@ -39510,14 +38656,24 @@
                 "properties": {
                     "metadata": {
                         "additionalProperties": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "boolean"
+                                }
+                            ]
                         },
                         "type": "object",
                         "maxProperties": 50,
                         "title": "Metadata",
-                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be a string with a maximum length of **500 characters**.\nYou can store up to **50 key-value pairs**."
+                        "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
                     },
                     "custom_field_data": {
                         "type": "object",

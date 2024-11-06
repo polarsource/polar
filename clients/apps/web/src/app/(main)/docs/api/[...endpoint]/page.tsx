@@ -55,13 +55,11 @@ export async function generateMetadata({
       metadata.apiEndpointPath,
     ].join(', '),
     openGraph: {
+      title: metadata.operation.summary ?? '',
+      description: metadata.operation.description ?? '',
+      type: 'website',
       images: [
-        `${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/docs/og?${new URLSearchParams(
-          {
-            title: metadata.operation.summary ?? '',
-            description: metadata.operation.description ?? '',
-          },
-        ).toString()}`,
+        `${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/docs/og?${new URLSearchParams().toString()}`,
       ],
     },
   }

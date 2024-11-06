@@ -45,6 +45,7 @@ export async function generateMetadata({
     openGraph: {
       title: `Fund: ${issue.title}`,
       description: `${issue.repository.organization.name} seeks funding for ${issue.title} Polar`,
+      type: 'website',
       images: [
         {
           url: `https://polar.sh/og?org=${issue.repository.organization.name}&repo=${issue.repository.name}&number=${issue.number}`,

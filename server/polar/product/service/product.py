@@ -209,6 +209,23 @@ class ProductService(ResourceServiceReader[Product]):
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_embed(self, session: AsyncSession, id: uuid.UUID) -> Product | None:
+        statement = (
+            select(Product)
+            .where(
+                Product.id == id,
+                Product.deleted_at.is_(None),
+                Product.is_archived.is_(None),
+            )
+            .options(
+                selectinload(Product.product_medias),
+            )
+            .limit(1)
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_loaded(
         self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
     ) -> Product | None:

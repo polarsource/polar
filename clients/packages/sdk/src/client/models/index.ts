@@ -13578,6 +13578,12 @@ export interface ProductEmbed {
      * @memberof ProductEmbed
      */
     benefits: Array<Benefit>;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductEmbed
+     */
+    etag: string;
 }
 /**
  * @type ProductIDFilter

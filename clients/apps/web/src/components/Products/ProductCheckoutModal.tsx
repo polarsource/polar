@@ -57,7 +57,7 @@ const LinkView = ({
   const [darkmode, setDarkmode] = useState<boolean>(true)
   const [embedType, setEmbedType] = useState<string>('link')
 
-  const svgURL = useMemo(() => {
+  const svgEmbed = useMemo(() => {
     const query = new URLSearchParams({
       organizationId: product.organization_id,
       productId: product.id,
@@ -66,7 +66,7 @@ const LinkView = ({
 
     const addDarkmode = darkmode ? '&darkmode' : ''
     const url = `${CONFIG.FRONTEND_BASE_URL}/embed/product.svg?${query}${addDarkmode}`
-    return url
+    return `<a href="${link.url}"><img src="${url}" alt="${product.name}" /></a>`
   }, [link, product, darkmode])
 
   const checkoutEmbed = useMemo(() => {
@@ -106,7 +106,7 @@ const LinkView = ({
 
         <TabsContent value="svg">
           <CopyToClipboardInput
-            value={svgURL}
+            value={svgEmbed}
             buttonLabel="Copy"
             className="bg-white"
           />

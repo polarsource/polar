@@ -30,10 +30,12 @@ export const CustomMaterial = forwardRef<
   )
 })
 
+CustomMaterial.displayName = 'CustomMaterial'
+
 const radius = 3
 const count = 8
 
-function Item(props: GroupProps) {
+const Item = (props: GroupProps) => {
   const ref = useRef<THREE.Group>(null)
 
   useFrame(() => {

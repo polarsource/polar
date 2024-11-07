@@ -4,7 +4,7 @@ description: Learn how to sell products with Polar
 keywords: checkout, example, tutorial, sell, products, polar, payments, storefront, embedded checkout, api
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 import CheckoutEmbedExample from './CheckoutEmbedExample'
 
 # Checkout
@@ -33,10 +33,10 @@ You can also optionally set `Metadata`: this is a key-value object allowing you 
 ![Checkout Links](./checkout_link.light.png)
 ![Checkout Links](./checkout_link.dark.png)
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   Previously generated links will be displayed in this modal as well. Click on
   it to edit the success URL or metadata.
-</BrowserCallout>
+</Callout>
 
 ## Embedded Checkout
 
@@ -71,10 +71,10 @@ The snippet looks like this:
 
 This will display a `Purchase` link which will open an inline checkout when clicked, like the following: <CheckoutEmbedExample />
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   You can style the trigger element any way you want, as long as you keep the
   `data-polar-checkout` attribute.
-</BrowserCallout>
+</Callout>
 
 ### Import library
 
@@ -117,11 +117,11 @@ If you want to integrate more deeply the checkout process with your website or a
 
 The first step is to [create a Checkout session](/docs/api/v1/checkouts/custom/post). For this you'll need at least your **Product Price ID**.
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   You can retrieve your Product Price ID from `Products` in your dashboard,
   click on "context-menu" button in front of your product and click on `Copy
   Price ID`.
-</BrowserCallout>
+</Callout>
 
 The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
 

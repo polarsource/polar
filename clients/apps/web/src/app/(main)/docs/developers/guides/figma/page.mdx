@@ -4,7 +4,7 @@ description: Learn how to sell access to your Figma plugin using License Keys & 
 keywords: figma, plugin, license keys, polar, sdk, sell figma plugin, monetize figma plugin, example, tutorial, guide
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout';
+import Callout from '@/components/Markdown/Callout'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import Button from 'polarkit/components/ui/atoms/button'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
@@ -22,10 +22,14 @@ Want to earn a few bucks on your Figma plugin? Sell access to your plugin using 
 - A Figma plugin with React & Typescript configured
 
 <ShadowBox className="mt-12">
-<GitHubIcon width={40} />
-<h3>Polar Figma Plugin Example</h3>
-<p>We've created a simple example Figma plugin that you can use as a reference</p>
-<a href="https://github.com/polarsource/polar-figma" target="_blank"><Button>View Code on GitHub</Button></a>
+  <GitHubIcon width={40} />
+  <h3>Polar Figma Plugin Example</h3>
+  <p>
+    We've created a simple example Figma plugin that you can use as a reference
+  </p>
+  <a href="https://github.com/polarsource/polar-figma" target="_blank">
+    <Button>View Code on GitHub</Button>
+  </a>
 </ShadowBox>
 
 ## Creating a product with License Key Benefit
@@ -69,14 +73,10 @@ In order to communicate with the Polar API, you'll need to configure the Figma p
   "capabilities": [],
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
-  "editorType": [
-    "figma"
-  ],
+  "editorType": ["figma"],
   "ui": "ui.html",
   "networkAccess": {
-    "allowedDomains": [
-      "https://*.polar.sh"
-    ],
+    "allowedDomains": ["https://*.polar.sh"],
     "reasoning": "This plugin needs to access the Polar API to validate license keys."
   }
 }
@@ -105,108 +105,108 @@ export const polar = new Polar()
 
 ![Plugin UI](./ui.png)
 
-Go ahead and add an input field to your Figma plugin UI where users can enter their license key. 
+Go ahead and add an input field to your Figma plugin UI where users can enter their license key.
 
 This example uses TailwindCSS for styling and React hooks for state management.
 
 ```tsx
 // src/ui/components/LicenseKeyInput.tsx
-import type { Polar } from "@polar-sh/sdk";
+import type { Polar } from '@polar-sh/sdk'
 import type {
-	LicenseKeyActivationRead,
-	ValidatedLicenseKey,
-} from "@polar-sh/sdk/models/components";
-import React, { useState, useCallback } from "react";
-import { twMerge } from "tailwind-merge";
-import { polar } from "../polar";
+  LicenseKeyActivationRead,
+  ValidatedLicenseKey,
+} from '@polar-sh/sdk/models/components'
+import React, { useState, useCallback } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { polar } from '../polar'
 
 export interface LicenseKeyInputProps {
-	organizationId: string;
-	needsActivation?: boolean;
-	onValidation?: (validation: ValidatedLicenseKey) => void;
-	onActivation?: (activation: LicenseKeyActivationRead) => void;
+  organizationId: string
+  needsActivation?: boolean
+  onValidation?: (validation: ValidatedLicenseKey) => void
+  onActivation?: (activation: LicenseKeyActivationRead) => void
 }
 
 export const LicenseKeyInput = ({
-	organizationId,
-	needsActivation,
-	onActivation,
-	onValidation,
+  organizationId,
+  needsActivation,
+  onActivation,
+  onValidation,
 }: LicenseKeyInputProps) => {
-	const [licenseKey, setLicenseKey] = useState("");
-	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
+  const [licenseKey, setLicenseKey] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-	const handleError = useCallback((error: string) => {
-		setError(error);
-	}, []);
+  const handleError = useCallback((error: string) => {
+    setError(error)
+  }, [])
 
-	const handleActivation = useCallback(async () => {
-		setError(null);
-		setLoading(true);
-		try {
-			const activation = await polar.users.licenseKeys.activate({
-				key: licenseKey,
-				organizationId: organizationId,
-				label: "Figma Plugin",
-			});
+  const handleActivation = useCallback(async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const activation = await polar.users.licenseKeys.activate({
+        key: licenseKey,
+        organizationId: organizationId,
+        label: 'Figma Plugin',
+      })
 
-			onActivation?.(activation);
-		} catch (error) {
-			if (error instanceof Error) {
-				handleError(error.message);
-			}
-		} finally {
-			setLoading(false);
-		}
-	}, [licenseKey, organizationId, onActivation, handleError]);
+      onActivation?.(activation)
+    } catch (error) {
+      if (error instanceof Error) {
+        handleError(error.message)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [licenseKey, organizationId, onActivation, handleError])
 
-	const handleValidation = useCallback(async () => {
-		setError(null);
-		setLoading(true);
-		try {
-			const validation = await polar.users.licenseKeys.validate({
-				key: licenseKey,
-				organizationId: organizationId,
-			});
+  const handleValidation = useCallback(async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const validation = await polar.users.licenseKeys.validate({
+        key: licenseKey,
+        organizationId: organizationId,
+      })
 
-			onValidation?.(validation);
-		} catch (error) {
-			if (error instanceof Error) {
-				handleError(error.message);
-			}
-		} finally {
-			setLoading(false);
-		}
-	}, [onValidation, licenseKey, organizationId, handleError]);
+      onValidation?.(validation)
+    } catch (error) {
+      if (error instanceof Error) {
+        handleError(error.message)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [onValidation, licenseKey, organizationId, handleError])
 
-	return (
-		<div className="flex flex-col gap-y-4 w-full">
-			<input
-				className="bg-gray-100 py-2 px-4 rounded-xl w-full"
-				placeholder="License Key"
-				value={licenseKey}
-				onChange={(e) => setLicenseKey(e.target.value)}
-			/>
-			{error && (
-				<div className="flex rounded-lg px-4 py-2 bg-red-50">
-					<p className="text-red-500 text-xs">License key is invalid</p>
-				</div>
-			)}
-			<button
-				className={twMerge(
-					"text-white py-2 px-4 rounded-xl",
-					loading ? "bg-gray-300" : "bg-blue-500",
-				)}
-				onClick={needsActivation ? handleActivation : handleValidation}
-				type="button"
-				disabled={loading}
-			>
-				{loading ? "Validating..." : "Validate"}
-			</button>
-		</div>
-	);
-};
+  return (
+    <div className="flex w-full flex-col gap-y-4">
+      <input
+        className="w-full rounded-xl bg-gray-100 px-4 py-2"
+        placeholder="License Key"
+        value={licenseKey}
+        onChange={(e) => setLicenseKey(e.target.value)}
+      />
+      {error && (
+        <div className="flex rounded-lg bg-red-50 px-4 py-2">
+          <p className="text-xs text-red-500">License key is invalid</p>
+        </div>
+      )}
+      <button
+        className={twMerge(
+          'rounded-xl px-4 py-2 text-white',
+          loading ? 'bg-gray-300' : 'bg-blue-500',
+        )}
+        onClick={needsActivation ? handleActivation : handleValidation}
+        type="button"
+        disabled={loading}
+      >
+        {loading ? 'Validating...' : 'Validate'}
+      </button>
+    </div>
+  )
+}
 ```
 
 ### Activate License Key
@@ -227,56 +227,56 @@ Let's create two different UI components, one for when the user has a validated 
 
 ```tsx
 // src/ui/components/Authenticated.tsx
-import * as React from "react";
+import * as React from 'react'
 
 // This is where you can add what you want the authenticated user to see
 export const Authenticated = () => {
-	return (
-		<div className="flex flex-col items-center h-full w-full">
-			<h1 className="text-lg font-medium">Thanks for supporting this plugin</h1>
-		</div>
-	);
-};
+  return (
+    <div className="flex h-full w-full flex-col items-center">
+      <h1 className="text-lg font-medium">Thanks for supporting this plugin</h1>
+    </div>
+  )
+}
 ```
 
 ```tsx
 // src/ui/components/Unauthenticated.tsx
 import type {
-	LicenseKeyActivationRead,
-	ValidatedLicenseKey,
-} from "@polar-sh/sdk/models/components";
-import { polar } from "../polar";
-import { LicenseKeyInput } from "./LicenseKeyInput";
+  LicenseKeyActivationRead,
+  ValidatedLicenseKey,
+} from '@polar-sh/sdk/models/components'
+import { polar } from '../polar'
+import { LicenseKeyInput } from './LicenseKeyInput'
 
 export interface UnauthenticatedProps {
-	organizationId: string;
-	onValidation: (
-		validation: ValidatedLicenseKey | LicenseKeyActivationRead,
-	) => void;
+  organizationId: string
+  onValidation: (
+    validation: ValidatedLicenseKey | LicenseKeyActivationRead,
+  ) => void
 }
 
 export const Unauthenticated = ({
-	organizationId,
-	onValidation,
+  organizationId,
+  onValidation,
 }: UnauthenticatedProps) => {
-	return (
-		<div className="flex flex-col items-center justify-center h-full gap-y-16">
-			<div className="flex flex-col gap-y-2 items-center">
-				<h3 className="text-lg font-medium">Polar License Key Example</h3>
-				<p className="text-sm text-gray-500">
-					Enter your license key to continue
-				</p>
-			</div>
-			<LicenseKeyInput
-				organizationId={organizationId}
-				onValidation={onValidation}
-				onActivation={onValidation}
-				// Set to true if your configured Polar License Key has a limit of activations
-				needsActivation={false}
-			/>
-		</div>
-	);
-};
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-y-16">
+      <div className="flex flex-col items-center gap-y-2">
+        <h3 className="text-lg font-medium">Polar License Key Example</h3>
+        <p className="text-sm text-gray-500">
+          Enter your license key to continue
+        </p>
+      </div>
+      <LicenseKeyInput
+        organizationId={organizationId}
+        onValidation={onValidation}
+        onActivation={onValidation}
+        // Set to true if your configured Polar License Key has a limit of activations
+        needsActivation={false}
+      />
+    </div>
+  )
+}
 ```
 
 ## Gatekeeping the UI
@@ -287,40 +287,43 @@ We can create an entry point in a file called `main.tsx` for this example.
 
 ```tsx
 // src/ui/main.tsx
-import React, { useState } from "react";
+import React, { useState } from 'react'
 import type {
-	LicenseKeyActivationRead,
-	ValidatedLicenseKey,
-} from "@polar-sh/sdk/models/components";
-import { Authenticated } from "./components/Authenticated";
-import { Unauthenticated } from "./components/Unauthenticated";
-import { createRoot } from "react-dom/client";
-import "./input.css";
+  LicenseKeyActivationRead,
+  ValidatedLicenseKey,
+} from '@polar-sh/sdk/models/components'
+import { Authenticated } from './components/Authenticated'
+import { Unauthenticated } from './components/Unauthenticated'
+import { createRoot } from 'react-dom/client'
+import './input.css'
 
 // Replace this with your actual organization ID
 // It can be found in your Polar Organization Settings page
-const ORGANIZATION_ID = "<YOUR_ORGANIZATION_ID>";
+const ORGANIZATION_ID = '<YOUR_ORGANIZATION_ID>'
 
 function Plugin() {
-	const [validation, setValidation] = useState<ValidatedLicenseKey | LicenseKeyActivationRead>();
+  const [validation, setValidation] = useState<
+    ValidatedLicenseKey | LicenseKeyActivationRead
+  >()
 
-	return (
-		<div className="flex flex-col h-full w-full bg-white p-8">
-			{validation ? (
-				<Authenticated />
-			) : (
-				<Unauthenticated
-					organizationId={ORGANIZATION_ID}
-					onValidation={setValidation}
-				/>
-			)}
-		</div>
-	);
+  return (
+    <div className="flex h-full w-full flex-col bg-white p-8">
+      {validation ? (
+        <Authenticated />
+      ) : (
+        <Unauthenticated
+          organizationId={ORGANIZATION_ID}
+          onValidation={setValidation}
+        />
+      )}
+    </div>
+  )
 }
 
-const container = document.getElementById("root") ?? document.createElement("div");
-const root = createRoot(container);
-root.render(<Plugin />);
+const container =
+  document.getElementById('root') ?? document.createElement('div')
+const root = createRoot(container)
+root.render(<Plugin />)
 ```
 
 ## Persisting License keys
@@ -337,115 +340,127 @@ Let's implement a simple example where the UI code posts a message to the plugin
 
 ```typescript
 // src/main/main.ts
-figma.showUI(__html__, { themeColors: true, height: 480, width: 360 });
+figma.showUI(__html__, { themeColors: true, height: 480, width: 360 })
 
 interface GetLicenseKey {
-	type: "getLicenseKey";
-	data: null;
+  type: 'getLicenseKey'
+  data: null
 }
 
 interface SetLicenseKey {
-	type: "setLicenseKey";
-	data: string;
+  type: 'setLicenseKey'
+  data: string
 }
 
 figma.ui.onmessage = async (message: GetLicenseKey | SetLicenseKey) => {
-	switch (message.type) {
-		case "getLicenseKey":
-			const licenseKey = await figma.clientStorage.getAsync("license_key");
+  switch (message.type) {
+    case 'getLicenseKey':
+      const licenseKey = await figma.clientStorage.getAsync('license_key')
 
-			figma.ui.postMessage({
-				type: "getLicenseKey",
-				data: licenseKey,
-			});
-			break;
-		case "setLicenseKey":
-			await figma.clientStorage.setAsync("license_key", message.data);
+      figma.ui.postMessage({
+        type: 'getLicenseKey',
+        data: licenseKey,
+      })
+      break
+    case 'setLicenseKey':
+      await figma.clientStorage.setAsync('license_key', message.data)
 
-			figma.ui.postMessage({
-				type: "setLicenseKey",
-				data: message.data,
-			});
-			break;
-	}
-};
+      figma.ui.postMessage({
+        type: 'setLicenseKey',
+        data: message.data,
+      })
+      break
+  }
+}
 ```
 
 Now, let's update the UI code to listen for messages from the plugin code and persist the license key in the clientStorage API.
 
 ```tsx
 // src/ui/main.tsx
-import { polar } from "./polar";
-import React, { useCallback, useEffect, useState } from "react";
+import { polar } from './polar'
+import React, { useCallback, useEffect, useState } from 'react'
 import type {
-	LicenseKeyActivationRead,
-	ValidatedLicenseKey,
-} from "@polar-sh/sdk/models/components";
-import { Authenticated } from "./components/Authenticated";
-import { Unauthenticated } from "./components/Unauthenticated";
-import { createRoot } from "react-dom/client";
-import "./input.css";
+  LicenseKeyActivationRead,
+  ValidatedLicenseKey,
+} from '@polar-sh/sdk/models/components'
+import { Authenticated } from './components/Authenticated'
+import { Unauthenticated } from './components/Unauthenticated'
+import { createRoot } from 'react-dom/client'
+import './input.css'
 
 // Replace this with your actual organization ID
 // It can be found in your Polar Organization Settings page
-const ORGANIZATION_ID = "<YOUR_ORGANIZATION_ID>";
+const ORGANIZATION_ID = '<YOUR_ORGANIZATION_ID>'
 
 function Plugin() {
-	const [validation, setValidation] = useState<ValidatedLicenseKey | LicenseKeyActivationRead>();
+  const [validation, setValidation] = useState<
+    ValidatedLicenseKey | LicenseKeyActivationRead
+  >()
 
-	const onValidation = useCallback(
-		(licenseKeyValidation: ValidatedLicenseKey | LicenseKeyActivationRead) => {
-			const key = "key" in licenseKeyValidation ? licenseKeyValidation.key : licenseKeyValidation.licenseKey;
+  const onValidation = useCallback(
+    (licenseKeyValidation: ValidatedLicenseKey | LicenseKeyActivationRead) => {
+      const key =
+        'key' in licenseKeyValidation
+          ? licenseKeyValidation.key
+          : licenseKeyValidation.licenseKey
 
-			parent.postMessage({ pluginMessage: { type: "setLicenseKey", data: key } }, "*");
+      parent.postMessage(
+        { pluginMessage: { type: 'setLicenseKey', data: key } },
+        '*',
+      )
 
-			setValidation(licenseKeyValidation);
-		},
-		[],
-	);
+      setValidation(licenseKeyValidation)
+    },
+    [],
+  )
 
-	const initialize = useCallback(async () => {
-		window.onmessage = async (e) => {
-			const persistedLicenseKey = e.data.pluginMessage.data;
+  const initialize = useCallback(async () => {
+    window.onmessage = async (e) => {
+      const persistedLicenseKey = e.data.pluginMessage.data
 
-			switch (e.data.pluginMessage.type) {
-				case "getLicenseKey":
-					if (persistedLicenseKey) {
-						const validation = await polar.users.licenseKeys.validate({
-							organizationId: ORGANIZATION_ID,
-							key: persistedLicenseKey,
-						});
+      switch (e.data.pluginMessage.type) {
+        case 'getLicenseKey':
+          if (persistedLicenseKey) {
+            const validation = await polar.users.licenseKeys.validate({
+              organizationId: ORGANIZATION_ID,
+              key: persistedLicenseKey,
+            })
 
-						setValidation(validation);
-					}
-					break;
-			}
-		};
+            setValidation(validation)
+          }
+          break
+      }
+    }
 
-		parent.postMessage({ pluginMessage: { type: "getLicenseKey", data: null } }, "*");
-	}, []);
+    parent.postMessage(
+      { pluginMessage: { type: 'getLicenseKey', data: null } },
+      '*',
+    )
+  }, [])
 
-	useEffect(() => {
-		initialize();
-	}, [initialize]);
+  useEffect(() => {
+    initialize()
+  }, [initialize])
 
-	return (
-		<div className="flex flex-col h-full w-full bg-white p-8">
-			{validation ? (
-				<Authenticated />
-			) : (
-				<Unauthenticated
-					organizationId={ORGANIZATION_ID}
-					onValidation={onValidation}
-				/>
-			)}
-		</div>
-	);
+  return (
+    <div className="flex h-full w-full flex-col bg-white p-8">
+      {validation ? (
+        <Authenticated />
+      ) : (
+        <Unauthenticated
+          organizationId={ORGANIZATION_ID}
+          onValidation={onValidation}
+        />
+      )}
+    </div>
+  )
 }
 
-const container = document.getElementById("root") ?? document.createElement("div");
-const root = createRoot(container);
-root.render(<Plugin />);
+const container =
+  document.getElementById('root') ?? document.createElement('div')
+const root = createRoot(container)
+root.render(<Plugin />)
 ```
 
 ## Conclusion
@@ -453,8 +468,12 @@ root.render(<Plugin />);
 You've now created a Figma plugin that can validate license keys using the Polar SDK. You can now go forth and monetize your plugin! 🎉
 
 <ShadowBox className="mt-12">
-<GitHubIcon width={40} />
-<h3>Polar Figma Plugin Example</h3>
-<p>We've created a simple example Figma plugin that you can use as a reference</p>
-<a href="https://github.com/polarsource/polar-figma" target="_blank"><Button>View Code on GitHub</Button></a>
+  <GitHubIcon width={40} />
+  <h3>Polar Figma Plugin Example</h3>
+  <p>
+    We've created a simple example Figma plugin that you can use as a reference
+  </p>
+  <a href="https://github.com/polarsource/polar-figma" target="_blank">
+    <Button>View Code on GitHub</Button>
+  </a>
 </ShadowBox>

@@ -21,7 +21,6 @@ type Surface =
   | 'global'
 
 type Category =
-  | 'articles'
   | 'benefits'
   | 'subscriptions'
   | 'user'

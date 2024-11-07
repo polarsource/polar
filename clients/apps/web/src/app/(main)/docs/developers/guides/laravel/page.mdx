@@ -4,7 +4,7 @@ description: Integrate Polar with your Laravel application
 keywords: laravel, php, polar, integrate, sell, products, payments, storefront, embedded checkout, api, example, tutorial, guide
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import Button from 'polarkit/components/ui/atoms/button'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
@@ -15,15 +15,25 @@ import GitHubIcon from '@/components/Icons/GitHubIcon'
 
 In this guide, we'll show you how to integrate Polar with Laravel.
 
-<BrowserCallout type="TIP">
-Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data. <a href="https://sandbox.polar.sh/start" target='_blank'>You can find the Sandbox environment here.</a>
-</BrowserCallout>
+<Callout type="TIP">
+  Consider following this guide while using the Polar Sandbox Environment. This
+  will allow you to test your integration without affecting your production
+  data.{' '}
+  <a href="https://sandbox.polar.sh/start" target="_blank">
+    You can find the Sandbox environment here.
+  </a>
+</Callout>
 
 <ShadowBox className="mt-12">
-<GitHubIcon width={40} />
-<h3>Polar Laravel Example App</h3>
-<p>We've created a simple example Laravel application that you can use as a reference</p>
-<a href="https://github.com/polarsource/polar-laravel" target="_blank"><Button>View Code on GitHub</Button></a>
+  <GitHubIcon width={40} />
+  <h3>Polar Laravel Example App</h3>
+  <p>
+    We've created a simple example Laravel application that you can use as a
+    reference
+  </p>
+  <a href="https://github.com/polarsource/polar-laravel" target="_blank">
+    <Button>View Code on GitHub</Button>
+  </a>
 </ShadowBox>
 
 ## Setting up environment variables
@@ -31,7 +41,10 @@ Consider following this guide while using the Polar Sandbox Environment. This wi
 #### Polar API Key
 
 To authenticate with Polar, you need create an access token, and supply it to Laravel using a `POLAR_API_KEY` environment variable.
-<a href="https://sandbox.polar.sh/settings" target='_blank'>You can create a personal access token on the Polar account settings page.</a>
+
+<a href="https://sandbox.polar.sh/settings" target="_blank">
+  You can create a personal access token on the Polar account settings page.
+</a>
 
 #### Polar Organization ID
 
@@ -200,9 +213,11 @@ class ConfirmationController extends Controller
 }
 ```
 
-<BrowserCallout type="IMPORTANT">
-The checkout is not considered "successful" yet however. It's initially marked as `confirmed` until you've received a webhook event `checkout.updated` with a status set to `succeeded`. We'll cover this in the next section.
-</BrowserCallout>
+<Callout type="IMPORTANT">
+  The checkout is not considered "successful" yet however. It's initially marked
+  as `confirmed` until you've received a webhook event `checkout.updated` with a
+  status set to `succeeded`. We'll cover this in the next section.
+</Callout>
 
 ## Handling Polar Webhooks
 
@@ -365,6 +380,7 @@ return [
 ```
 
 #### Preparing the database
+
 By default, all webhook calls get saved into the database. So, we need to publish the migration that will hold the records. So run:
 
 ```bash
@@ -473,27 +489,36 @@ class ProcessWebhook extends ProcessWebhookJob
 
 Our application is ready to receive webhook requests.
 
-<BrowserCallout type="TIP">
-Don’t forget to run `php artisan queue:listen` to process the jobs.
-</BrowserCallout>
+<Callout type="TIP">
+  Don’t forget to run `php artisan queue:listen` to process the jobs.
+</Callout>
 
 #### Tips
 
 If you're keeping track of active and inactive subscriptions in your database, make sure to handle the `subscription.active` and `subscription.revoked` events accordingly.
 
-<BrowserCallout type="CAUTION">
-The cancellation of a subscription is handled by the `subscription.canceled` event. The user has probably canceled their subscription before the end of the billing period. Do not revoke any kind of access immediately, but rather wait until the end of the billing period or when you receive the `subscription.revoked` event.
-</BrowserCallout>
+<Callout type="CAUTION">
+  The cancellation of a subscription is handled by the `subscription.canceled`
+  event. The user has probably canceled their subscription before the end of the
+  billing period. Do not revoke any kind of access immediately, but rather wait
+  until the end of the billing period or when you receive the
+  `subscription.revoked` event.
+</Callout>
 
 ### Notifying the client about the event
 
 If you're building a real-time application, you might want to notify the client about the event. On the confirmation-page, you can listen for the `checkout.updated` event and update the UI accordingly when it reaches the succeeded status.
 
 <ShadowBox className="mt-12">
-<GitHubIcon width={40} />
-<h3>Polar Laravel Example App</h3>
-<p>We've created a simple example Laravel application that you can use as a reference</p>
-<a href="https://github.com/polarsource/polar-laravel" target="_blank"><Button>View Code on GitHub</Button></a>
+  <GitHubIcon width={40} />
+  <h3>Polar Laravel Example App</h3>
+  <p>
+    We've created a simple example Laravel application that you can use as a
+    reference
+  </p>
+  <a href="https://github.com/polarsource/polar-laravel" target="_blank">
+    <Button>View Code on GitHub</Button>
+  </a>
 </ShadowBox>
 
 If you have issues or need support, feel free to join [our Discord](https://discord.gg/Pnhfz3UThd).

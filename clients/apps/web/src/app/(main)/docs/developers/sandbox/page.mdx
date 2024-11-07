@@ -4,7 +4,7 @@ description: Learn how to use the Polar Sandbox
 keywords: sandbox, test, development
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Sandbox
 
@@ -12,14 +12,14 @@ To test Polar or work on your integration without worrying about actual money pr
 
 It's a dedicated server, completely isolated from the production instance where you can do all the experiments you want!
 
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
   **Why a dedicated environment instead of a test mode?**
 
 Since we're dealing with money and need to keep track of all movements to assure or Merchant of Records service, we found it safer to isolate live data from test data so it never interferes.
 
 Besides, it allows you to create an unlimited number of account and organization to test lot of different scenarios. Consider it as your own development server!
 
-</BrowserCallout>
+</Callout>
 
 ## Get started
 
@@ -40,7 +40,7 @@ You'll then need to create a dedicated user account and organization, the same w
 
 The sandbox environment allows you to experience the complete customer funnel, including the payment form. You can perform test payments using Stripe's [test card numbers](https://docs.stripe.com/testing#cards).
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   The easiest one to test a successful payment is `4242 4242 4242 4242` with a
   future expiration date and random CVC.
-</BrowserCallout>
+</Callout>

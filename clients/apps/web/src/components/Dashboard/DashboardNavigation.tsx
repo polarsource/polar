@@ -4,7 +4,6 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { useContext } from 'react'
 import { NavigationContainer } from './NavigationContainer'
 import {
-  useCommunityRoutes,
   useFundingRoutes,
   useGeneralRoutes,
   useOrganizationRoutes,
@@ -16,13 +15,11 @@ const MaintainerNavigation = () => {
 
   const generalRoutesList = useGeneralRoutes(org)
   const fundingRoutes = useFundingRoutes(org)
-  const communityRoutes = useCommunityRoutes(org)
   const organizationRoutes = useOrganizationRoutes(org)
 
   const dashboardRoutes = [
     ...generalRoutesList,
     ...fundingRoutes,
-    ...communityRoutes,
     ...organizationRoutes,
   ]
 

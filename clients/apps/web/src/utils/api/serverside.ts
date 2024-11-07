@@ -3,7 +3,7 @@ import { cookies, headers as getOriginalHeaders } from 'next/headers'
 import { cache } from 'react'
 import { getServerURL } from '.'
 
-const _getServerSideAPI = (token?: string): PolarAPI => {
+const _getServerSideAPI = (): PolarAPI => {
   let headers: HTTPHeaders = {}
 
   const originalHeaders = getOriginalHeaders()
@@ -15,17 +15,10 @@ const _getServerSideAPI = (token?: string): PolarAPI => {
     }
   }
 
-  if (token) {
-    headers = {
-      ...headers,
-      Authorization: `Bearer ${token}`,
-    }
-  } else {
-    const cookieStore = cookies()
-    headers = {
-      ...headers,
-      Cookie: cookieStore.toString(),
-    }
+  const cookieStore = cookies()
+  headers = {
+    ...headers,
+    Cookie: cookieStore.toString(),
   }
 
   // When running inside GitHub Codespaces, we need to pass a token to access forwarded ports

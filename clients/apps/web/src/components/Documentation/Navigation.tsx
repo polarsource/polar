@@ -14,7 +14,8 @@ import {
   ShortTextOutlined,
   SupportOutlined,
   TerminalOutlined,
-  FavoriteBorderOutlined
+  FavoriteBorderOutlined,
+  WebhookOutlined,
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
@@ -89,8 +90,8 @@ const WebhooksReferenceSections = () => {
     <div className="flex flex-col gap-y-6">
       <h3>Webhooks</h3>
       <div className="flex flex-col">
-        <NavigationItem href="/docs/api/webhooks">Overview</NavigationItem>
-        <NavigationItem href="/docs/api/webhooks/events">Events</NavigationItem>
+        <NavigationItem href="/docs/developers/webhooks">Overview</NavigationItem>
+        <NavigationItem href="/docs/developers/webhooks/events">Events</NavigationItem>
       </div>
     </div>
   )
@@ -547,6 +548,15 @@ export const DocumentationPageSidebar = ({
                 active={() => activeSection === 'api'}
               >
                 API Reference
+              </NavigationItem>
+            </li>
+            <li>
+              <NavigationItem
+                icon={<WebhookOutlined fontSize="inherit" />}
+                href="/docs/developers/webhooks"
+                active={() => activeSection === 'api'}
+              >
+                Webhooks
               </NavigationItem>
             </li>
             <li>

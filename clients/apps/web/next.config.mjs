@@ -211,7 +211,11 @@ const nextConfig = {
         destination: '/docs/open-source',
         permanent: true,
       },
-
+      {
+        source: '/docs/sandbox',
+        destination: '/docs/developers/sandbox',
+        permanent: true,
+      },
 
       // Redirect /docs/overview/:path to /docs/:path
       {

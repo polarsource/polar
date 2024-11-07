@@ -1,7 +1,9 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { Canvas } from '@react-three/fiber'
 import { useCallback, useMemo, useState } from 'react'
+import { Coins } from './Coins'
 
 export const Hero = () => {
   const [slug, setSlug] = useState('')
@@ -26,13 +28,14 @@ export const Hero = () => {
 
   return (
     <div className="flex w-full flex-col items-center justify-center gap-12 text-center">
-      {/* <Canvas
+      <Canvas
+        className="sentry-block"
         camera={{
           zoom: 0.8,
         }}
       >
         <Coins />
-      </Canvas> */}
+      </Canvas>
       <h1 className="max-w-2xl text-pretty text-4xl !leading-tight text-gray-950 md:text-6xl dark:text-white">
         Sell SaaS and digital products{' '}
         <span className="dark:text-polar-500 text-gray-400">in minutes</span>

@@ -237,7 +237,6 @@ export const MainNavigation = () => {
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
         <NavigationItem href="/docs/fees">Fees</NavigationItem>
-        <NavigationItem href="/docs/sandbox">Sandbox</NavigationItem>
       </div>
 
       <div>
@@ -530,6 +529,15 @@ export const DocumentationPageSidebar = ({
                 active={() => activeSection === 'developers'}
               >
                 Guides &amp; Tools
+              </NavigationItem>
+            </li>
+            <li>
+              <NavigationItem
+                icon={<TerminalOutlined fontSize="inherit" />}
+                href="/docs/developers/sandbox"
+                active={() => activeSection === 'developers'}
+              >
+                Sandbox
               </NavigationItem>
             </li>
             <li>

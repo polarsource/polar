@@ -5,12 +5,34 @@ import ReportOutlined from '@mui/icons-material/ReportOutlined'
 import WarningOutlined from '@mui/icons-material/WarningOutlined'
 import { twMerge } from 'tailwind-merge'
 
-import {
-  CALLOUT_TYPE_BORDER_COLORS,
-  CALLOUT_TYPE_TEXT_COLORS,
-  CalloutProps,
-  CalloutType,
-} from './renderRule'
+export enum CalloutType {
+  NOTE = 'NOTE',
+  TIP = 'TIP',
+  IMPORTANT = 'IMPORTANT',
+  WARNING = 'WARNING',
+  CAUTION = 'CAUTION',
+}
+
+export const CALLOUT_TYPE_BORDER_COLORS: Record<CalloutType, string> = {
+  [CalloutType.NOTE]: 'border-blue-500',
+  [CalloutType.TIP]: 'border-green-500',
+  [CalloutType.IMPORTANT]: 'border-violet-500',
+  [CalloutType.WARNING]: 'border-yellow-500',
+  [CalloutType.CAUTION]: 'border-red-500',
+}
+
+export const CALLOUT_TYPE_TEXT_COLORS: Record<CalloutType, string> = {
+  [CalloutType.NOTE]: 'text-blue-500',
+  [CalloutType.TIP]: 'text-green-500',
+  [CalloutType.IMPORTANT]: 'text-violet-500',
+  [CalloutType.WARNING]: 'text-yellow-500',
+  [CalloutType.CAUTION]: 'text-red-500',
+}
+
+export interface CalloutProps {
+  type: CalloutType
+  children: React.ReactNode
+}
 
 const CALLOUT_TYPE_ICON: Record<CalloutType, React.ReactNode> = {
   [CalloutType.NOTE]: <InfoOutlined />,
@@ -20,7 +42,7 @@ const CALLOUT_TYPE_ICON: Record<CalloutType, React.ReactNode> = {
   [CalloutType.CAUTION]: <ReportOutlined />,
 }
 
-const BrowserCallout: React.FC<CalloutProps> = ({ type, children }) => {
+const Callout: React.FC<CalloutProps> = ({ type, children }) => {
   return (
     <div
       className={twMerge(
@@ -42,4 +64,4 @@ const BrowserCallout: React.FC<CalloutProps> = ({ type, children }) => {
   )
 }
 
-export default BrowserCallout
+export default Callout

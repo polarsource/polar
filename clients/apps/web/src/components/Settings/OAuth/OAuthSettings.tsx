@@ -1,6 +1,5 @@
 'use client'
 
-import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
@@ -12,8 +11,7 @@ import {
 } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useRef, useState } from 'react'
-import { useHoverDirty } from 'react-use'
+import { useState } from 'react'
 import { EditOAuthClientModal } from './EditOAuthClientModal'
 import { NewOAuthClientModal } from './NewOAuthClientModal'
 
@@ -113,12 +111,8 @@ interface OAuthClientDetailsProps {
 }
 
 const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {
-  const ref = useRef<HTMLDivElement>(null)
-  const isHovered = useHoverDirty(ref)
-
   return (
     <div
-      ref={ref}
       className="flex w-full cursor-pointer flex-col gap-y-4"
       onClick={() => onClick(client)}
     >
@@ -141,9 +135,9 @@ const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {
             </p>
           </div>
         </div>
-        <AnimatedIconButton active={isHovered} variant="secondary">
+        <Button variant="secondary">
           <ArrowForward fontSize="inherit" />
-        </AnimatedIconButton>
+        </Button>
       </div>
     </div>
   )

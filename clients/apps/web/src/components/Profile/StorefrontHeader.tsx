@@ -4,7 +4,6 @@ import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import { Organization, Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useSelectedLayoutSegment } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -18,16 +17,12 @@ interface StorefrontHeaderProps {
 }
 
 export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
-  const segment = useSelectedLayoutSegment()
-
   const externalGitHubOrganizations = useExternalOrganizations({
     organizationId: organization.id,
     platform: Platforms.GITHUB,
     limit: 1,
     sorting: ['created_at'],
   })
-
-  const isPostView = segment === 'posts'
 
   const gradient = useMemo(
     () => (typeof window !== 'undefined' ? new Gradient() : undefined),
@@ -79,12 +74,7 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
           </Link>
         </div>
       </div>
-      <div
-        className={twMerge(
-          'flex w-full flex-grow flex-col items-center',
-          isPostView ? 'hidden  md:flex' : 'flex',
-        )}
-      >
+      <div className="flex w-full flex-grow flex-col items-center">
         <div className="flex w-full flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(

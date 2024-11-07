@@ -1,5 +1,5 @@
-import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { Slideshow } from '@/components/Products/Slideshow'
+import { markdownOptions } from '@/utils/markdown'
 import { organizationPageLink } from '@/utils/nav'
 import { CheckoutProduct, Organization } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
@@ -42,19 +42,7 @@ const CheckoutProductInfo = ({
       )}
       {product.description ? (
         <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-medium prose-headings:text-black prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-md prose-h5:text-sm prose-h6:text-sm dark:prose-headings:text-white dark:text-polar-300 max-w-4xl text-gray-800">
-          <Markdown
-            options={{
-              ...markdownOpts,
-              overrides: {
-                ...markdownOpts.overrides,
-                a: (props) => (
-                  <a {...props} rel="noopener noreferrer nofollow" />
-                ),
-              },
-            }}
-          >
-            {product.description}
-          </Markdown>
+          <Markdown options={markdownOptions}>{product.description}</Markdown>
         </div>
       ) : (
         <></>

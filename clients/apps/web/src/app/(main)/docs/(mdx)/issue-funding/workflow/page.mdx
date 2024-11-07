@@ -4,7 +4,7 @@ description: Learn how to use issue funding
 keywords: issue funding, workflow
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Issue Funding Workflow
 
@@ -51,7 +51,7 @@ you can easily do so manually. You can either:
 1. Label the issue on GitHub directly using the label `Fund` (case insensitive)
 2. Click `Add badge` for the desired issue in your Polar dashboard
 
-    *This will automatically open the [customiztion modal](#customize) below.*
+   _This will automatically open the [customiztion modal](#customize) below._
 
 Almost instantly the Polar Badge is embedded at the end of
 the GitHub issue description by the Polar GitHub App you've
@@ -95,10 +95,9 @@ within the badge.
 2. Click `Update` to save your changes
 
 "GitHub caches the badge for ~30-90 seconds"
-    We set `no-cache` headers and GitHub does support this. However, their proxy CDN
-    seems to have a minimal Cache TTL nonetheless, but it's very short-lived
-    (with no headers it's cached for much longer).
-
+We set `no-cache` headers and GitHub does support this. However, their proxy CDN
+seems to have a minimal Cache TTL nonetheless, but it's very short-lived
+(with no headers it's cached for much longer).
 
 #### Rewards
 
@@ -145,7 +144,7 @@ This has a couple of benefits:
 2. An additional opportunity to capture impressions from new viewers (who might
    scroll quickly to the end)
 
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
 #### Comments on your behalf
 
 In case you submit a comment via the modal (optional), it will be posted on
@@ -153,7 +152,7 @@ your behalf. This is mentioned next to the `Post` action so it's never a
 surprise. Additionally, GitHub will add the Polar logo in connection with
 your avatar for the comment - indicating it was done via the Polar App.
 
-</BrowserCallout>
+</Callout>
 
 ##### Direct Link
 

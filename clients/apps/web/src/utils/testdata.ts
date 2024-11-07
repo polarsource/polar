@@ -1,5 +1,4 @@
 import {
-  Article,
   ExternalOrganization,
   Issue,
   IssueFunding,
@@ -350,35 +349,3 @@ export const notification_maintainerPledgedIssueConfirmationPendingNotification:
     type: 'MaintainerPledgedIssueConfirmationPendingNotification',
     payload: maintainerPledgedIssueConfirmationPendingNotification,
   }
-
-export const article: Article = {
-  id: 'xxxx',
-  slug: 'build-saas-with-polar',
-  organization_id: org.id,
-  organization: {
-    ...org,
-    slug: 'polarsource',
-    name: 'Polar',
-  },
-  title: 'Build SaaS with Polar using our API, Webhooks & OAuth',
-  body: `![Hero](https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Frame%20543-jakaw4OY2P90MQRnqVzbrmv9cJbtfe.jpg)
-
-Our mission at Polar is for developers to get paid coding on their passions. Empowering open source- and indie developers to build independent careers and businesses. All the way from first donation to IPO.
-  `,
-  visibility: 'public',
-  is_preview: false,
-  byline: {
-    name: 'polarsource',
-    avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
-  },
-  is_pinned: false,
-  user_id: null,
-  published_at: null,
-  paid_subscribers_only: false,
-  paid_subscribers_only_ends_at: null,
-  notify_subscribers: false,
-  notifications_sent_at: null,
-  email_sent_to_count: null,
-  og_image_url: null,
-  og_description: null,
-}

@@ -73,7 +73,7 @@ We also maintain SDK for the following languages:
 
 ## Contributions
 
-Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) contains all youn need to know to configure your development environment.
+Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to know to configure your development environment.
 
 > [!TIP]
 > Want to get started quickly? Use GitHub Codespaces.

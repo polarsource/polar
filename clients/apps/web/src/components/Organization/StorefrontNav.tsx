@@ -45,12 +45,6 @@ export const StorefrontNav = ({
             <TabsTrigger value="products">Products</TabsTrigger>
           </Link>
 
-          {organization.feature_settings?.articles_enabled && (
-            <Link href={organizationPageLink(organization, 'posts')}>
-              <TabsTrigger value="posts">Newsletter</TabsTrigger>
-            </Link>
-          )}
-
           {organization.feature_settings?.issue_funding_enabled && (
             <Link href={organizationPageLink(organization, 'issues')}>
               <TabsTrigger value="issues">Issue Funding</TabsTrigger>
@@ -69,7 +63,6 @@ export const StorefrontNav = ({
         onValueChange={(value) => {
           const link = {
             products: organizationPageLink(organization),
-            posts: organizationPageLink(organization, 'posts'),
             issues: organizationPageLink(organization, 'issues'),
             donate: organizationPageLink(organization, 'donate'),
             portal: organizationPageLink(organization, 'portal'),
@@ -85,11 +78,6 @@ export const StorefrontNav = ({
           <SelectItem value="products">
             <span className="whitespace-nowrap">Products</span>
           </SelectItem>
-          {organization.feature_settings?.articles_enabled && (
-            <SelectItem value="posts">
-              <span className="whitespace-nowrap">Newsletter</span>
-            </SelectItem>
-          )}
           {organization.feature_settings?.issue_funding_enabled && (
             <SelectItem value="issues">
               <span className="whitespace-nowrap">Issue Funding</span>

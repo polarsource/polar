@@ -14,7 +14,6 @@ import { defaultRetry } from './retry'
 
 export * from './accounts'
 export * from './advertisements'
-export * from './articles'
 export * from './backoffice'
 export * from './benefits'
 export * from './checkout_links'

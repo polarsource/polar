@@ -4,12 +4,11 @@ description: Sell software license keys with Polar
 keywords: license keys, sell software, access, benefits
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Sell License Keys
 
 ![Showcase License Key Feature](./hero.jpg)
-
 
 You can easily sell software license keys with Polar without having to deal with
 sales tax or hosting an API to validate them in real-time. License keys with Polar come with a lot of powerful
@@ -30,7 +29,6 @@ features built-in.
 
 ![License Key Create Form](./create.light.png)
 ![License Key Create Form](./create.dark.png)
-
 
 ### Custom Branding
 
@@ -71,7 +69,6 @@ usage quota per license key and increment usage upon validation.
 ![Set usage limit](./usage.light.png)
 ![Set usage limit](./usage.dark.png)
 
-
 ## Customer Experience
 
 Once customers buy your product or subscribes to your tier, they will
@@ -85,6 +82,7 @@ their purchases page.
 ![Set usage limit](./license.dark.png)
 
 Customers can:
+
 - View & copy their license key
 - See expiration date (if applicable)
 - See usage left (if applicable)
@@ -97,6 +95,7 @@ application, library or API.
 
 Below are the two main endpoints to activate & validate license keys. Want to
 review the full API docs?
+
 - [License Key Management](/docs/api/v1/license-keys/get)
 - [User/Customer License Keys](/docs/api/v1/users/license-keys/get)
 
@@ -124,10 +123,11 @@ curl -X POST https://api.polar.app/v1/users/license-keys/activate
 - **organization_id**. Replace with your <a href="/docs/api/v1/organizations/%7Bid%7D/get">organization ID here (logged in).</a>
 - **label**. Set a label to associate with this specific activation.
 - **conditions (optional)**. JSON object with custom conditions to validate against in the future, e.g IP,
-mac address, major version etc.
+  mac address, major version etc.
 - **meta (optional)**. JSON object with metadata to store for the users activation.
 
 **Response (200 OK)**
+
 ```json
 {
   "id": "b6724bc8-7ad9-4ca0-b143-7c896fcbb6fe",
@@ -211,7 +211,7 @@ curl -X POST https://api.polar.app/v1/users/license-keys/validate
 }
 ```
 
-<BrowserCallout type="WARNING">
+<Callout type="WARNING">
 **Validate `benefit_id` in case of multiple license keys**
 
 We require `organization_id` to be provided to avoid cases of Polar license keys
@@ -221,4 +221,5 @@ key for one organization could be used on another.
 However, you are required to validate and scope license keys more narrowly
 within your organization if necessary. Offering more than one type of license
 key? Be sure to validate their unique `benefit_id` in the responses.
-</BrowserCallout>
+
+</Callout>

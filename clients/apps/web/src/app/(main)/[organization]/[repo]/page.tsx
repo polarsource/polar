@@ -7,12 +7,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
 import { getUserOrganizations } from '@/utils/user'
-import {
-  ArticleVisibility,
-  ListResourceArticle,
-  ListResourceIssueFunding,
-  Organization,
-} from '@polar-sh/sdk'
+import { ListResourceIssueFunding, Organization } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import type { SuccessResult } from 'open-graph-scraper-lite'
@@ -119,33 +114,21 @@ export default async function Page({
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
   let issuesFunding: ListResourceIssueFunding | undefined
-  let posts: ListResourceArticle | undefined
 
   try {
-    ;[issuesFunding, posts] = await Promise.all([
-      api.funding.search(
-        {
-          organizationId: organization.id,
-          repositoryName: params.repo,
-          query: filters.q,
-          sorting: filters.sort,
-          badged: filters.badged,
-          limit: 20,
-          closed: filters.closed,
-          page: searchParams.page ? parseInt(searchParams.page) : 1,
-        },
-        cacheConfig,
-      ),
-      api.articles.list(
-        {
-          organizationId: organization.id,
-          isPublished: true,
-          visibility: ArticleVisibility.PUBLIC,
-          limit: 3,
-        },
-        cacheConfig,
-      ),
-    ])
+    issuesFunding = await api.funding.search(
+      {
+        organizationId: organization.id,
+        repositoryName: params.repo,
+        query: filters.q,
+        sorting: filters.sort,
+        badged: filters.badged,
+        limit: 20,
+        closed: filters.closed,
+        page: searchParams.page ? parseInt(searchParams.page) : 1,
+      },
+      cacheConfig,
+    )
   } catch (e) {
     notFound()
   }
@@ -161,7 +144,6 @@ export default async function Page({
       featuredOrganizations={featuredOrganizations}
       userOrganizations={userOrganizations}
       links={links}
-      posts={posts?.items ?? []}
     />
   )
 }

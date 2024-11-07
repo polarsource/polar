@@ -4,15 +4,20 @@ description: Integrate Polar with Node.js
 keywords: node.js, polar, integrate, sell, products, payments, storefront, embedded checkout, api, example, tutorial, guide
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Integrating Polar with Node.js
 
 In this guide, we'll show you how to integrate Polar with Node.js.
 
-<BrowserCallout type="TIP">
-Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data. <a href="https://sandbox.polar.sh/start" target='_blank'>You can find the Sandbox environment here.</a>
-</BrowserCallout>
+<Callout type="TIP">
+  Consider following this guide while using the Polar Sandbox Environment. This
+  will allow you to test your integration without affecting your production
+  data.{' '}
+  <a href="https://sandbox.polar.sh/start" target="_blank">
+    You can find the Sandbox environment here.
+  </a>
+</Callout>
 
 ## Install the Polar JavaScript SDK
 
@@ -27,7 +32,10 @@ pnpm install @polar-sh/sdk
 #### Polar Access Token
 
 To authenticate with Polar, you need create an access token, and supply it to Node.js using a `POLAR_ACCESS_TOKEN` environment variable.
-<a href="https://polar.sh/settings" target='_blank'>You can create a personal access token on the Polar account settings page.</a>
+
+<a href="https://polar.sh/settings" target="_blank">
+  You can create a personal access token on the Polar account settings page.
+</a>
 
 #### Polar Organization ID
 
@@ -46,11 +54,11 @@ To interact with the Polar API, you need to create a new instance of the `Polar`
 
 ```typescript
 // src/polar.ts
-import { Polar } from "@polar-sh/sdk"
+import { Polar } from '@polar-sh/sdk'
 
 export const api = new Polar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN!,
-    server: 'sandbox' // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  server: 'sandbox', // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
 })
 ```
 
@@ -60,11 +68,11 @@ Remember to replace `sandbox` with `production` when you're ready to switch to t
 
 The first step is to [create a Checkout session](/docs/api/v1/checkouts/custom/post). For this you'll need at least your **Product Price ID**.
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   You can retrieve your Product Price ID from `Products` in your dashboard,
   click on the ellipsis `…` button in front of your product and click on `Copy
   Price ID`.
-</BrowserCallout>
+</Callout>
 
 The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
 
@@ -170,12 +178,12 @@ app.get('/success', async (req: Request, res: Response) => {
 })
 ```
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   The metadata you set on Checkout are **automatically copied** to the Order and/or Subscription that are created from that session.
 
 It means that if you listen to new orders and subscriptions from webhooks, you'll get that metadata directly. Besides, they also have a `checkout_id` reference to the origin Checkout, so you can retrieve it if needed.
 
-</BrowserCallout>
+</Callout>
 
 ## Prefill customer information
 

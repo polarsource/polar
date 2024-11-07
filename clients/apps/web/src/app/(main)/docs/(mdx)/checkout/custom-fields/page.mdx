@@ -4,16 +4,16 @@ description: Learn how to add custom input fields to your checkout with Polar
 keywords: checkout, custom, fields, metadata, terms
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Custom Fields
 
 By default, the Checkout form will only ask basic information from the customer to fulfill the order: a name, an email address, billing information, etc. But you might need more! A few examples:
 
-* A checkbox asking the customer to accept your terms
-* An opt-in newsletter consent
-* A select menu to ask where they heard from you
-* ...
+- A checkbox asking the customer to accept your terms
+- An opt-in newsletter consent
+- A select menu to ask where they heard from you
+- ...
 
 With Polar, you can easily add such fields to your checkout using **Custom Fields**.
 
@@ -64,7 +64,6 @@ Underneath, the data will be stored as a boolean (`true` or `false`).
 
 This will display a select field with a predefined set of options. Each option is a pair of `Value` and `Label`, the first one being the value that'll be stored underneath and the latter the one that will be shown to the customer.
 
-
 ### Slug and name
 
 The slug determines the key that'll be used to store the data inside objects related to the checkout, like Orders and Subscriptions. It must be unique across your organization. You can change it afterwards, we'll automatically update the data to reflect the new slug.
@@ -78,9 +77,9 @@ The name is what we'll be displayed to you to recognize the field across your da
 
 Those options allow you to customize how the field is displayed to the customer. You can set:
 
-* The label, displayed above the field
-* The help text, displayed below the field
-* The placeholder, displayed inside the field when there is no value
+- The label, displayed above the field
+- The help text, displayed below the field
+- The placeholder, displayed inside the field when there is no value
 
 The label and help text supports basic Markdown syntax, so you can add bold, italic or even links.
 
@@ -96,9 +95,10 @@ Custom Fields are enabled on Checkout specifically on each **product**. While [c
 
 Note that you can make the field `Required`.
 
-<BrowserCallout type="TIP">
-If you make a **checkbox** field **required**, customers will have to check the box before submitting the checkout. Very useful for terms acceptance!
-</BrowserCallout>
+<Callout type="TIP">
+  If you make a **checkbox** field **required**, customers will have to check
+  the box before submitting the checkout. Very useful for terms acceptance!
+</Callout>
 
 The fields are now added as part of the Checkout form for this product.
 

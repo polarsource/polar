@@ -14,9 +14,7 @@ import useDebouncedCallback from '@/hooks/utils'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import { ArrowForward } from '@mui/icons-material'
 import {
-  Article,
   ListResourceIssueFunding,
   Organization,
   Repository,
@@ -37,7 +35,6 @@ const ClientPage = ({
   featuredOrganizations,
   userOrganizations,
   links,
-  posts,
 }: {
   organization: Organization
   repository: Repository
@@ -45,7 +42,6 @@ const ClientPage = ({
   featuredOrganizations: Organization[]
   userOrganizations: Organization[]
   links: { opengraph: OgObject; url: string }[]
-  posts: Article[]
 }) => {
   const isOrgMember = useMemo(
     () => userOrganizations?.some((org) => org.id === organization.id),
@@ -228,46 +224,6 @@ const ClientPage = ({
                 </div>
               </ShadowBoxOnMd>
             </div>
-
-            {organization.feature_settings?.articles_enabled &&
-              posts.length > 0 && (
-                <div className="flex flex-col gap-6">
-                  <div className="flex flex-row items-center gap-4">
-                    <h3>Newsletter from the creator</h3>
-                  </div>
-                  <ShadowBoxOnMd className="flex w-full flex-col gap-6 md:p-6">
-                    {posts.map((post) => (
-                      <Link
-                        key={post.id}
-                        href={organizationPageLink(
-                          organization,
-                          `posts/${post.slug}`,
-                        )}
-                        className="flex w-full flex-col gap-1 transition-opacity hover:opacity-70"
-                      >
-                        <h3 className="line-clamp-2">{post.title}</h3>
-                        <span className="dark:text-polar-500 text-sm text-gray-500">
-                          {new Date(post.published_at ?? 0).toLocaleDateString(
-                            'en-US',
-                            {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            },
-                          )}
-                        </span>
-                      </Link>
-                    ))}
-                    <Link
-                      className="flex flex-row items-center gap-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      href={organizationPageLink(organization, 'posts')}
-                    >
-                      <span>View all</span>
-                      <ArrowForward fontSize="inherit" />
-                    </Link>
-                  </ShadowBoxOnMd>
-                </div>
-              )}
 
             <LinksEditor
               links={links}

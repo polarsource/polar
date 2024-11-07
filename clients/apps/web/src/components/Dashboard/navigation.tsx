@@ -5,7 +5,6 @@ import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
-  DraftsOutlined,
   HiveOutlined,
   HowToVote,
   ModeStandby,
@@ -110,13 +109,6 @@ export const useFundingRoutes = (
   allowAll?: boolean,
 ): RouteWithActive[] => {
   return useResolveRoutes(fundingRoutesList, org, allowAll)
-}
-
-export const useCommunityRoutes = (
-  org: Organization,
-  allowAll?: boolean,
-): RouteWithActive[] => {
-  return useResolveRoutes(communityRoutesList, org, allowAll)
 }
 
 export const useOrganizationRoutes = (
@@ -257,23 +249,9 @@ const fundingRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const communityRoutesList = (org: Organization): Route[] => [
-  {
-    id: 'newsletter',
-    title: 'Newsletter',
-    icon: <DraftsOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/posts`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org.slug}/posts`)
-    },
-    if: org.feature_settings?.articles_enabled ?? false,
-  },
-]
-
 const dashboardRoutesList = (org: Organization): Route[] => [
   ...generalRoutesList(org),
   ...fundingRoutesList(org),
-  ...communityRoutesList(org),
   ...organizationRoutesList(org),
 ]
 

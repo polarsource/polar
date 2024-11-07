@@ -2,9 +2,9 @@
 
 import BenefitDetails from '@/components/Benefit/BenefitDetails'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
-import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useUserBenefits, useUserOrderInvoice } from '@/hooks/queries'
+import { markdownOptions } from '@/utils/markdown'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { UserBenefit, UserOrder } from '@polar-sh/sdk'
@@ -63,17 +63,7 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
             <h1 className="text-3xl font-medium">{order.product.name}</h1>
             {order.product.description ? (
               <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
-                <Markdown
-                  options={{
-                    ...markdownOpts,
-                    overrides: {
-                      ...markdownOpts.overrides,
-                      a: (props) => (
-                        <a {...props} rel="noopener noreferrer nofollow" />
-                      ),
-                    },
-                  }}
-                >
+                <Markdown options={markdownOptions}>
                   {order.product.description}
                 </Markdown>
               </div>

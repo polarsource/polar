@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, delete, desc, or_, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
@@ -16,6 +16,7 @@ from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
+from .attachment import attached_custom_fields_models
 from .schemas import CustomFieldCreate, CustomFieldUpdate
 
 
@@ -165,6 +166,14 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
     ) -> CustomField:
         custom_field.set_deleted_at()
         session.add(custom_field)
+
+        # Delete row with this custom field from all association tables
+        for model in attached_custom_fields_models:
+            delete_statement = delete(model).where(
+                model.custom_field_id == custom_field.id
+            )
+            await session.execute(delete_statement)
+
         return custom_field
 
     async def get_by_organization_and_id(

@@ -259,7 +259,8 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
               <FormMessage />
               <FormDescription>
                 Will be used as a key when storing the value. Must be unique
-                across your organization.
+                across your organization. It can only contain ASCII letters,
+                numbers and hyphens.
               </FormDescription>
             </FormItem>
           )

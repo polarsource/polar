@@ -13,7 +13,7 @@ import { useModal } from '../Modal/useModal'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="flex w-full flex-col items-center bg-gray-100 dark:bg-black dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%)]">
+    <div className="relative flex w-full flex-col items-center bg-gray-100 dark:bg-black dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%)]">
       <LandingPageTopbar />
       {children}
       <LandingPageFooter />
@@ -31,7 +31,7 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="dark:bg-polar-800 shadow-3xl sticky top-6 z-30 flex w-full max-w-2xl flex-row items-center justify-between rounded-3xl bg-gray-50 px-8 py-4">
+    <div className="dark:bg-polar-800 shadow-3xl fixed inset-x-4 top-6 z-30 flex flex-row items-center justify-between rounded-3xl bg-gray-50 px-8 py-4 md:sticky md:inset-x-0 md:w-full md:max-w-2xl">
       <TopbarNavigation />
       <BrandingMenu
         className="mt-1 hidden md:block"
@@ -41,7 +41,7 @@ const LandingPageTopbar = () => {
       <BrandingMenu
         className="ml-2 mt-1 md:hidden"
         logoVariant="logotype"
-        size={100}
+        size={70}
       />
       <div className="flex flex-row items-center gap-x-4">
         <Button onClick={onLoginClick} variant="secondary">

@@ -1,13 +1,19 @@
 from typing import Annotated, Literal
 
-from pydantic import Discriminator, Field, TypeAdapter
+from pydantic import Discriminator, Field, StringConstraints, TypeAdapter
 
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
     OptionalMetadataInputMixin,
 )
-from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    Schema,
+    SetSchemaReference,
+    SlugValidator,
+    TimestampedSchema,
+)
 from polar.models.custom_field import (
     CustomFieldCheckboxProperties,
     CustomFieldDateProperties,
@@ -20,11 +26,14 @@ from polar.organization.schemas import OrganizationID
 
 Slug = Annotated[
     str,
+    SlugValidator,
+    StringConstraints(to_lower=True, min_length=1),
     Field(
         description=(
             "Identifier of the custom field. "
             "It'll be used as key when storing the value. "
             "Must be unique across the organization."
+            "It can only contain ASCII letters, numbers and hyphens."
         ),
         min_length=1,
     ),
@@ -152,8 +161,7 @@ class CustomFieldBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     type: CustomFieldType = Field(description="Data type of the custom field.")
     slug: str = Field(
         description="Identifier of the custom field. "
-        "It'll be used as key when storing the value. "
-        "Must be unique across the organization."
+        "It'll be used as key when storing the value."
     )
     name: str = Field(description="Name of the custom field.")
     organization_id: OrganizationID = Field(

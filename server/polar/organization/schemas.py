@@ -9,7 +9,6 @@ from pydantic import (
     StringConstraints,
     model_validator,
 )
-from slugify import slugify
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
@@ -20,6 +19,7 @@ from polar.kit.schemas import (
     MergeJSONSchema,
     Schema,
     SelectorWidget,
+    SlugValidator,
     TimestampedSchema,
 )
 
@@ -106,15 +106,6 @@ class Organization(IDSchema, TimestampedSchema):
     )
 
 
-def validate_slug(value: str) -> str:
-    slugified = slugify(value)
-    if slugified != value:
-        raise ValueError(
-            "The slug can only contain ASCII letters, numbers and hyphens."
-        )
-    return value
-
-
 def validate_reserved_keywords(value: str) -> str:
     if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
         raise ValueError("This slug is reserved.")
@@ -126,7 +117,7 @@ class OrganizationCreate(Schema):
     slug: Annotated[
         str,
         StringConstraints(to_lower=True, min_length=3),
-        AfterValidator(validate_slug),
+        SlugValidator,
         AfterValidator(validate_reserved_keywords),
     ]
     avatar_url: HttpUrlToStr | None = None

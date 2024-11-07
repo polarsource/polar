@@ -1,9 +1,15 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import UUID
 
 from pydantic import UUID4, Field
-from sqlalchemy import Boolean, ForeignKey, Integer, Uuid
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy import Boolean, ForeignKey, Integer, Uuid, event
+from sqlalchemy.orm import (
+    Mapped,
+    Mapper,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.schemas import Schema
 
@@ -28,6 +34,16 @@ class AttachedCustomFieldMixin:
     def custom_field(cls) -> Mapped["CustomField"]:
         # This is an association table, so eager loading makes sense
         return relationship("CustomField", lazy="joined")
+
+
+attached_custom_fields_models: set[type[AttachedCustomFieldMixin]] = set()
+
+
+# Event listener to track models inheriting from AttachedCustomFieldMixin
+@event.listens_for(Mapper, "mapper_configured")
+def track_attached_custom_field_mixin(_mapper: Mapper[Any], class_: type) -> None:
+    if issubclass(class_, AttachedCustomFieldMixin):
+        attached_custom_fields_models.add(class_)
 
 
 class AttachedCustomField(Schema):

@@ -261,29 +261,29 @@ def upgrade() -> None:
         """
     )
 
-    op.drop_index("ix_donations_by_organization_id", table_name="donations")
-    op.drop_index("ix_donations_by_user_id", table_name="donations")
-    op.drop_index("ix_donations_charge_id", table_name="donations")
-    op.drop_index("ix_donations_created_at", table_name="donations")
-    op.drop_index("ix_donations_deleted_at", table_name="donations")
-    op.drop_index("ix_donations_email", table_name="donations")
-    op.drop_index("ix_donations_modified_at", table_name="donations")
-    op.drop_index("ix_donations_on_behalf_of_organization_id", table_name="donations")
-    op.drop_index("ix_donations_payment_id", table_name="donations")
-    op.drop_index("ix_held_balances_donation_id", table_name="held_balances")
-    op.drop_constraint(
-        "held_balances_donation_id_fkey", "held_balances", type_="foreignkey"
-    )
-    op.drop_column("held_balances", "donation_id")
-    op.drop_column("organizations", "donations_enabled")
+    # op.drop_index("ix_donations_by_organization_id", table_name="donations")
+    # op.drop_index("ix_donations_by_user_id", table_name="donations")
+    # op.drop_index("ix_donations_charge_id", table_name="donations")
+    # op.drop_index("ix_donations_created_at", table_name="donations")
+    # op.drop_index("ix_donations_deleted_at", table_name="donations")
+    # op.drop_index("ix_donations_email", table_name="donations")
+    # op.drop_index("ix_donations_modified_at", table_name="donations")
+    # op.drop_index("ix_donations_on_behalf_of_organization_id", table_name="donations")
+    # op.drop_index("ix_donations_payment_id", table_name="donations")
+    # op.drop_index("ix_held_balances_donation_id", table_name="held_balances")
+    # op.drop_constraint(
+    #     "held_balances_donation_id_fkey", "held_balances", type_="foreignkey"
+    # )
+    # op.drop_column("held_balances", "donation_id")
+    # op.drop_column("organizations", "donations_enabled")
 
-    op.drop_index("ix_transactions_donation_id", table_name="transactions")
-    op.drop_constraint(
-        "transactions_donation_id_fkey", "transactions", type_="foreignkey"
-    )
-    op.drop_column("transactions", "donation_id")
+    # op.drop_index("ix_transactions_donation_id", table_name="transactions")
+    # op.drop_constraint(
+    #     "transactions_donation_id_fkey", "transactions", type_="foreignkey"
+    # )
+    # op.drop_column("transactions", "donation_id")
 
-    op.drop_table("donations")
+    # op.drop_table("donations")
     # ### end Alembic commands ###
 
 

@@ -815,6 +815,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     customer=stripe_customer_id,
                     currency=checkout.currency or "usd",
                     price=stripe_price_id,
+                    automatic_tax=checkout.product.is_tax_applicable,
                     metadata=metadata,
                     invoice_metadata={
                         "payment_intent_id": payment_intent.id,
@@ -833,6 +834,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     subscription_id=subscription.stripe_subscription_id,
                     old_price=subscription.price.stripe_price_id,
                     new_price=stripe_price_id,
+                    automatic_tax=checkout.product.is_tax_applicable,
                     metadata=metadata,
                     invoice_metadata={
                         "payment_intent_id": payment_intent.id,
@@ -850,6 +852,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
+                automatic_tax=checkout.product.is_tax_applicable,
                 metadata={
                     **metadata,
                     "payment_intent_id": payment_intent.id,
@@ -1188,6 +1191,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def _update_checkout_tax(
         self, session: AsyncSession, checkout: Checkout
     ) -> Checkout:
+        if not checkout.product.is_tax_applicable:
+            checkout.tax_amount = 0
+            return checkout
+
         if (
             checkout.currency is not None
             and checkout.amount is not None

@@ -180,6 +180,26 @@ async def checkout_custom_fields(
     return await create_checkout(save_fixture, price=product_custom_fields.prices[0])
 
 
+@pytest_asyncio.fixture
+async def product_tax_not_applicable(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        tax_applicable=False,
+    )
+
+
+@pytest_asyncio.fixture
+async def checkout_tax_not_applicable(
+    save_fixture: SaveFixture, product_tax_not_applicable: Product
+) -> Checkout:
+    return await create_checkout(
+        save_fixture, price=product_tax_not_applicable.prices[0]
+    )
+
+
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestCreate:
@@ -748,6 +768,30 @@ class TestCreate:
         )
 
         assert checkout.embed_origin == "https://example.com"
+
+    async def test_valid_tax_not_applicable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_tax_not_applicable: Product,
+    ) -> None:
+        price = product_tax_not_applicable.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+            ),
+            auth_subject,
+        )
+
+        assert checkout.tax_amount == 0
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"
 
 
 @pytest.mark.asyncio
@@ -1344,6 +1388,21 @@ class TestUpdate:
         )
 
         assert checkout.embed_origin == "https://example.com"
+
+    async def test_valid_tax_not_applicable(
+        self, session: AsyncSession, checkout_tax_not_applicable: Checkout
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_tax_not_applicable,
+            CheckoutUpdate(
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+            ),
+        )
+
+        assert checkout.tax_amount == 0
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"
 
 
 @pytest.mark.asyncio

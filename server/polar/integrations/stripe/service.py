@@ -634,6 +634,7 @@ class StripeService:
         subscription_id: str,
         old_price: str,
         new_price: str,
+        automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         invoice_metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
@@ -643,7 +644,7 @@ class StripeService:
         modify_params: stripe_lib.Subscription.ModifyParams = {
             "collection_method": "send_invoice",
             "days_until_due": 0,
-            "automatic_tax": {"enabled": True},
+            "automatic_tax": {"enabled": automatic_tax},
         }
         if metadata is not None:
             modify_params["metadata"] = metadata

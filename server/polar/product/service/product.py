@@ -4,7 +4,6 @@ from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
 from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, select
-from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -364,7 +363,6 @@ class ProductService(ResourceServiceReader[Product]):
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        product = await self.with_organization(session, product)
         subject = auth_subject.subject
 
         if not await authz.can(subject, AccessType.write, product):
@@ -523,8 +521,6 @@ class ProductService(ResourceServiceReader[Product]):
         benefits: List[uuid.UUID],  # noqa: UP006
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
-        product = await self.with_organization(session, product)
-
         subject = auth_subject.subject
         if not await authz.can(subject, AccessType.write, product):
             raise NotPermitted()
@@ -532,15 +528,10 @@ class ProductService(ResourceServiceReader[Product]):
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
 
-        nested = await session.begin_nested()
-
-        product.product_benefits = []
-        await session.flush()
-
+        new_product_benefits: list[ProductBenefit] = []
         for order, benefit_id in enumerate(benefits):
             benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
             if benefit is None:
-                await nested.rollback()
                 raise PolarRequestValidationError(
                     [
                         {
@@ -563,9 +554,15 @@ class ProductService(ResourceServiceReader[Product]):
                     ]
                 )
             new_benefits.add(benefit)
-            product.product_benefits.append(
-                ProductBenefit(benefit=benefit, order=order)
-            )
+            new_product_benefits.append(ProductBenefit(benefit=benefit, order=order))
+
+        # Remove all previous benefits: flush to actually remove them
+        product.product_benefits = []
+        session.add(product)
+        await session.flush()
+
+        # Set the new benefits
+        product.product_benefits = new_product_benefits
 
         added_benefits = new_benefits - previous_benefits
         deleted_benefits = previous_benefits - new_benefits
@@ -596,15 +593,6 @@ class ProductService(ResourceServiceReader[Product]):
         await self._after_product_updated(session, product)
 
         return product, added_benefits, deleted_benefits
-
-    async def with_organization(
-        self, session: AsyncSession, product: Product
-    ) -> Product:
-        try:
-            product.organization
-        except InvalidRequestError:
-            await session.refresh(product, {"organization"})
-        return product
 
     async def _archive(self, product: Product) -> Product:
         if product.stripe_product_id is not None:
@@ -675,19 +663,15 @@ class ProductService(ResourceServiceReader[Product]):
         event_type: Literal[WebhookEventType.product_created]
         | Literal[WebhookEventType.product_updated],
     ) -> None:
-        # load full tier with relations
-        full_product = await self.get_loaded(session, product.id, allow_deleted=True)
-        assert full_product
-
         # mypy 1.9 is does not allow us to do
         #    event = (event_type, subscription)
         # directly, even if it could have...
         event: WebhookTypeObject | None = None
         match event_type:
             case WebhookEventType.product_created:
-                event = (event_type, full_product)
+                event = (event_type, product)
             case WebhookEventType.product_updated:
-                event = (event_type, full_product)
+                event = (event_type, product)
 
         if managing_org := await organization_service.get(
             session, product.organization_id

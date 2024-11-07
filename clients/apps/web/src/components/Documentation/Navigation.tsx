@@ -4,6 +4,7 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { CommandPaletteTrigger } from '@/components/CommandPalette/CommandPaletteTrigger'
 import { useModal } from '@/components/Modal/useModal'
 import {
+  ApiOutlined,
   ArrowForward,
   ArticleOutlined,
   CloseOutlined,
@@ -16,6 +17,7 @@ import {
   TerminalOutlined,
   FavoriteBorderOutlined,
   WebhookOutlined,
+  AssuredWorkloadOutlined,
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
@@ -534,7 +536,7 @@ export const DocumentationPageSidebar = ({
             </li>
             <li>
               <NavigationItem
-                icon={<TerminalOutlined fontSize="inherit" />}
+                icon={<AssuredWorkloadOutlined fontSize="inherit" />}
                 href="/docs/developers/sandbox"
                 active={() => activeSection === 'developers'}
               >
@@ -543,7 +545,7 @@ export const DocumentationPageSidebar = ({
             </li>
             <li>
               <NavigationItem
-                icon={<TerminalOutlined fontSize="inherit" />}
+                icon={<ApiOutlined fontSize="inherit" />}
                 href="/docs/api"
                 active={() => activeSection === 'api'}
               >

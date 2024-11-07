@@ -1,5 +1,7 @@
+import revalidate from '@/app/actions'
 import { api, queryClient } from '@/utils/api'
 import {
+  Organization,
   OrganizationIDFilter,
   ProductBenefitsUpdate,
   ProductCreate,
@@ -55,21 +57,22 @@ export const useProduct = (id?: string) =>
     enabled: !!id,
   })
 
-export const useCreateProduct = (organizationId?: string) =>
+export const useCreateProduct = (organization: Organization) =>
   useMutation({
     mutationFn: (body: ProductCreate) => {
       return api.products.create({
         body,
       })
     },
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['products', { organizationId }],
+        queryKey: ['products', { organizationId: organization.id }],
       })
+      await revalidate(`storefront:${organization.slug}`)
     },
   })
 
-export const useUpdateProduct = (organizationId?: string) =>
+export const useUpdateProduct = (organization: Organization) =>
   useMutation({
     mutationFn: ({ id, body }: { id: string; body: ProductUpdate }) => {
       return api.products.update({
@@ -77,18 +80,20 @@ export const useUpdateProduct = (organizationId?: string) =>
         body,
       })
     },
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['products', { organizationId }],
+        queryKey: ['products', { organizationId: organization.id }],
       })
 
       queryClient.invalidateQueries({
         queryKey: ['products', { id: _variables.id }],
       })
+
+      await revalidate(`storefront:${organization.slug}`)
     },
   })
 
-export const useUpdateProductBenefits = (organizationId?: string) =>
+export const useUpdateProductBenefits = (organization: Organization) =>
   useMutation({
     mutationFn: ({ id, body }: { id: string; body: ProductBenefitsUpdate }) => {
       return api.products.updateBenefits({
@@ -96,13 +101,15 @@ export const useUpdateProductBenefits = (organizationId?: string) =>
         body,
       })
     },
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['products', { organizationId }],
+        queryKey: ['products', { organizationId: organization.id }],
       })
 
       queryClient.invalidateQueries({
         queryKey: ['products', { id: _variables.id }],
       })
+
+      await revalidate(`storefront:${organization.slug}`)
     },
   })

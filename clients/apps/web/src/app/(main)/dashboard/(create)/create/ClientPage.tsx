@@ -88,9 +88,6 @@ export default function ClientPage({
       }
       posthog.capture('dashboard:organizations:create:submit', params)
       const organization = await createOrganization.mutateAsync(params)
-
-      await revalidate(`organizations:${organization.id}`)
-      await revalidate(`organizations:${organization.slug}`)
       await revalidate(`users:${currentUser?.id}:organizations`)
       setUserOrganizations((orgs) => [...orgs, organization])
       router.push(`/dashboard/${organization.slug}`)

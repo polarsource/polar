@@ -1,4 +1,3 @@
-import revalidate from '@/app/actions'
 import {
   useBenefits,
   useUpdateProduct,
@@ -69,8 +68,8 @@ export const EditProductPage = ({
 
   const { handleSubmit, setError, watch } = form
 
-  const updateProduct = useUpdateProduct(organization?.id)
-  const updateBenefits = useUpdateProductBenefits(organization.id)
+  const updateProduct = useUpdateProduct(organization)
+  const updateBenefits = useUpdateProductBenefits(organization)
 
   const updatedProduct = watch()
   const reconciledProduct = productUpdateToProduct(
@@ -99,9 +98,6 @@ export const EditProductPage = ({
             benefits: enabledBenefitIds,
           },
         })
-
-        revalidate(`products:${organization.id}:recurring`)
-        revalidate(`products:${organization.id}:one_time`)
 
         router.push(`/dashboard/${organization.slug}/products`)
       } catch (e) {
@@ -177,10 +173,6 @@ export const EditProductPage = ({
       id: product.id,
       body: { is_archived: true },
     })
-
-    revalidate(`products:${organization.id}:recurring`)
-    revalidate(`products:${organization.id}:one_time`)
-
     router.push(`/dashboard/${organization.slug}/products`)
   }, [product, updateProduct, organization, router])
 

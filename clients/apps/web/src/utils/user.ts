@@ -1,9 +1,19 @@
 import { Organization, PolarAPI, ResponseError, UserRead } from '@polar-sh/sdk'
+import { cookies } from 'next/headers'
 import { cache } from 'react'
+
+const POLAR_AUTH_COOKIE_KEY =
+  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
 const _getAuthenticatedUser = async (
   api: PolarAPI,
 ): Promise<UserRead | undefined> => {
+  // Optimization: if the cookie is not set, the user is not authenticated
+  const cookieStore = cookies()
+  if (!cookieStore.has(POLAR_AUTH_COOKIE_KEY)) {
+    return undefined
+  }
+
   try {
     // Don't cache it on Next.js edge cache...
     return await api.users.getAuthenticated({ cache: 'no-cache' })

@@ -50,7 +50,7 @@ const UpdateCustomFieldModalContent = ({
           const body = await e.response.json()
           if (e.response.status === 422) {
             const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError, 1)
+            setValidationErrors(validationErrors, setError, 2)
           }
         }
       } finally {

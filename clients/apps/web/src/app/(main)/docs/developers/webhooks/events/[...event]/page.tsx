@@ -12,6 +12,10 @@ import SyntaxHighlighterServer, {
 import { notFound } from 'next/navigation'
 import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
+import { TableOfContents } from '@/components/Documentation/TableOfContents'
+import type { TocItem } from 'remark-flexible-toc'
+
+
 
 export const dynamic = 'force-static'
 
@@ -27,7 +31,7 @@ const Webhook = ({
   const bodySchema = getRequestBodySchema(webhook)
   return (
     <>
-      <h2 id={event}>{webhook.summary}</h2>
+      <h1 id={event}>{webhook.summary}</h1>
       <Markdown>{webhook.description ?? ''}</Markdown>
       <p className="font-semibold">Raw format payload</p>
       {bodySchema && (
@@ -55,6 +59,16 @@ export default async function Page({
     return notFound()
   }
 
+  const tocItems: TocItem[] = [
+    {
+      value: eventName,
+      href: `#${eventName}`,
+      depth: 1,
+      numbering: [1],
+      parent: 'root',
+    }
+  ]
+
   return (
     <>
       <article className="flex w-full max-w-3xl flex-shrink flex-col">
@@ -66,6 +80,7 @@ export default async function Page({
           />
         </ProseWrapper>
       </article>
+      <TableOfContents items={tocItems} />
     </>
   )
 }

@@ -130,7 +130,9 @@ Notice how you can pass the `{CHECKOUT_ID}` token to your URL: Polar will automa
 
 ## Reconciliation with your app
 
-In your app, it's probable you already know the customer or are in a specific state you don't want to lose during the checkout process. For this, you can pass **arbitrary metadata** to the Checkout object. This way, when you retrieve the Checkout on your success page (or through a [webhook](/docs/api/webhooks)), you can read the metadata and link with your own application state.
+In your app, it's probable you already know the customer or are in a specific
+state you don't want to lose during the checkout process. For this, you can pass
+**arbitrary metadata** to the Checkout object. This way, when you retrieve the Checkout on your success page (or through a [webhook](/docs/developers/webhooks)), you can read the metadata and link with your own application state.
 
 ```ts
 app.get('/checkout', async (req: Request, res: Response) => {

@@ -216,6 +216,11 @@ const nextConfig = {
         destination: '/docs/developers/sandbox',
         permanent: true,
       },
+      {
+        source: '/docs/api/webhooks/:path*',
+        destination: '/docs/developers/webhooks/:path*',
+        permanent: true,
+      },
 
       // Redirect /docs/overview/:path to /docs/:path
       {

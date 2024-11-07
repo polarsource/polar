@@ -54,10 +54,7 @@ def create_stripe_product(
                     "organization_id": str(organization_id),
                     "organization_name": organization_slug,
                 },
-            },
-            {
-                "idempotency_key": f"v8-donation-product-{organization_id}",
-            },
+            }
         )
     except stripe_lib.RateLimitError:
         time.sleep(retry + random.random())

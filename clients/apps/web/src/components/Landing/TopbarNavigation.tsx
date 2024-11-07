@@ -51,7 +51,7 @@ const PlatformPopover = () => {
       >
         Platform
         <PopoverContent
-          className="rounded-4xl flex w-[920px] flex-row divide-x p-6 dark:text-white"
+          className="rounded-4xl shadow-3xl flex w-[920px] flex-row divide-x p-8 dark:text-white"
           sideOffset={20}
         >
           <div className="flex w-1/2 flex-col gap-y-4 pr-8">
@@ -130,7 +130,7 @@ const DocumentationPopover = () => {
       >
         Docs
         <PopoverContent
-          className="rounded-4xl flex w-[920px] flex-row divide-x p-6 dark:text-white"
+          className="rounded-4xl shadow-3xl flex w-[920px] flex-row divide-x p-8 dark:text-white"
           sideOffset={20}
         >
           <div className="flex w-1/2 flex-col gap-y-4 pr-8">
@@ -196,7 +196,7 @@ const DocumentationPopover = () => {
 
 export const TopbarNavigation = () => {
   return (
-    <div className="absolute left-1/2 hidden -translate-x-1/2 flex-row items-center gap-x-2 text-sm md:flex">
+    <div className="absolute left-1/2 hidden -translate-x-1/2 flex-row items-center text-sm md:flex">
       <PlatformPopover />
       <DocumentationPopover />
       <Link

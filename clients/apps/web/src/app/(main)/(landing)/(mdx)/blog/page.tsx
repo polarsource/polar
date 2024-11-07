@@ -30,7 +30,7 @@ export default async function BlogPage() {
               className="group flex h-full flex-col"
               key={post.slug}
             >
-              <Card className="flex h-full flex-col justify-between gap-y-6 overflow-hidden">
+              <Card className="flex h-full flex-col justify-between gap-y-6 overflow-hidden bg-gray-50">
                 <CardHeader className="p-6 pb-0">
                   {img ? (
                     <Image

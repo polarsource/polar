@@ -106,7 +106,7 @@ export const Benefits = () => {
 
           <div className="flex h-full flex-col" ref={subscription}>
             <SubscriptionTierCard
-              className="shadow-3xl h-full border-none"
+              className="shadow-3xl h-full"
               subscriptionTier={MOCKED_WEBSITE_SUBSCRIPTION}
             />
           </div>

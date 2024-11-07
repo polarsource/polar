@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { Section } from './Section'
 
 const testimonials = [
   {
@@ -80,13 +79,13 @@ const testimonials = [
 
 export const Testimonials = () => {
   return (
-    <Section className="flex-col items-center gap-y-24">
+    <div className="flex flex-col items-center gap-y-24">
       <h3 className="text-center text-2xl leading-snug md:text-5xl">
         Serving world-class developers, world-wide
       </h3>
-      <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border">
+      <div className="flex w-full flex-col gap-8">
         <Link
-          className="dark:hover:bg-polar-900 flex flex-col items-center gap-y-12 p-12 transition-colors hover:bg-gray-100"
+          className="dark:hover:bg-polar-900 dark:bg-polar-950 rounded-4xl flex flex-col items-center gap-y-12 bg-gray-50 p-12 transition-colors hover:bg-white"
           href={testimonials[0].link}
           target="_blank"
         >
@@ -108,11 +107,11 @@ export const Testimonials = () => {
             </div>
           </div>
         </Link>
-        <div className="flex flex-col divide-y md:flex-row md:divide-x md:divide-y-0">
+        <div className="flex flex-col gap-8 md:flex-row">
           {testimonials.slice(1).map((testamonial) => (
             <Link
               key={testamonial.name}
-              className="dark:hover:bg-polar-900 group relative flex flex-col transition-colors hover:bg-gray-100 md:w-1/3"
+              className="dark:hover:bg-polar-900 dark:bg-polar-950 rounded-4xl group relative flex w-full flex-col gap-y-12 bg-gray-50 transition-colors hover:bg-white md:w-1/3"
               href={testamonial.link}
               target="_blank"
             >
@@ -138,6 +137,6 @@ export const Testimonials = () => {
           ))}
         </div>
       </div>
-    </Section>
+    </div>
   )
 }

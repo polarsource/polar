@@ -1,7 +1,7 @@
-import LogoType from '@/components/Brand/LogoType'
 import Link, { LinkProps } from 'next/link'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { BrandingMenu } from '../Layout/Public/BrandingMenu'
 
 const Footer = ({ wide }: { wide?: boolean }) => {
   return (
@@ -17,8 +17,8 @@ const Footer = ({ wide }: { wide?: boolean }) => {
         )}
       >
         <div className="flex flex-col gap-y-6">
-          <span className="text-blue-500 dark:text-white">
-            <LogoType width={120} />
+          <span className="text-black dark:text-white">
+            <BrandingMenu logoVariant="logotype" size={120} />
           </span>
           <span className="dark:text-polar-500 text-gray-500">
             &copy; Polar Software Inc. {new Date().getFullYear()}

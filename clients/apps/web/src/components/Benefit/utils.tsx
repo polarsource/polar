@@ -23,7 +23,7 @@ export const resolveBenefitCategoryIcon = (
     case BenefitType.ADS:
       return <WebOutlined className={cn} fontSize={fontSize} />
     case BenefitType.DISCORD:
-      return <DiscordIcon />
+      return <DiscordIcon className={cn} />
     case BenefitType.GITHUB_REPOSITORY:
       return <GitHub className={cn} fontSize={fontSize} />
     case BenefitType.DOWNLOADABLES:

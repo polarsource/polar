@@ -13,8 +13,8 @@ export const MerchantOfRecord = () => {
           srcSet={`/assets/landing/transactions_dark.png`}
         />
         <img
-          className="w-full rounded-2xl"
-          srcSet={`/assets/landing/transactions_dark.png`}
+          className="shadow-3xl w-full rounded-2xl"
+          srcSet={`/assets/landing/transactions_light.png`}
           alt="Polar transactions view"
         />
       </picture>

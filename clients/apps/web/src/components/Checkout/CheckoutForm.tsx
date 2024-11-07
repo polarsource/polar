@@ -713,10 +713,10 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             },
             '.Input': {
               padding: '12px',
-              backgroundColor: theme === 'dark' ? 'rgb(16, 16, 20)' : 'white',
+              backgroundColor: theme === 'dark' ? 'rgb(21, 22, 25)' : 'white',
               color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
-              borderColor: theme === 'dark' ? 'rgb(21, 21, 25)' : '#EEE',
+              borderColor: theme === 'dark' ? 'rgb(28, 29, 33)' : '#EEE',
               boxShadow: inputBoxShadow,
             },
             '.Input:focus': {

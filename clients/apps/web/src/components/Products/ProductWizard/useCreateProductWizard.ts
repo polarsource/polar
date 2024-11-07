@@ -1,6 +1,5 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import {
   useBenefits,
   useCreateProduct,
@@ -16,7 +15,6 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ProductFullMediasMixin } from '../ProductForm/ProductForm'
@@ -25,7 +23,6 @@ export const useCreateProductWizard = (
   organization: Organization,
   onSuccess?: (product: Product) => void,
 ) => {
-  const router = useRouter()
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
@@ -58,8 +55,8 @@ export const useCreateProductWizard = (
   })
   const { handleSubmit, control, setError } = form
 
-  const createProduct = useCreateProduct(organization.id)
-  const updateBenefits = useUpdateProductBenefits(organization.id)
+  const createProduct = useCreateProduct(organization)
+  const updateBenefits = useUpdateProductBenefits(organization)
 
   const onSubmit = useCallback(
     async (productCreate: ProductCreate & ProductFullMediasMixin) => {
@@ -77,9 +74,6 @@ export const useCreateProductWizard = (
           },
         })
 
-        revalidate(`products:${organization.id}:recurring`)
-        revalidate(`products:${organization.id}:one_time`)
-
         onSuccess?.(product)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -93,15 +87,7 @@ export const useCreateProductWizard = (
         setLoading(false)
       }
     },
-    [
-      organization,
-      enabledBenefitIds,
-      createProduct,
-      updateBenefits,
-      setError,
-      router,
-      onSuccess,
-    ],
+    [enabledBenefitIds, createProduct, updateBenefits, setError, onSuccess],
   )
 
   const onSelectBenefit = useCallback(

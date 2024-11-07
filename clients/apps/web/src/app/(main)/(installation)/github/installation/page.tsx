@@ -74,6 +74,7 @@ export default function Page() {
           await Promise.all([
             revalidate(`organizations:${organization.id}`),
             revalidate(`organizations:${organization.slug}`),
+            revalidate(`storefront:${organization.slug}`),
             revalidate(`funding:${organization.id}`),
             revalidate(`repositories:${organization.id}`),
           ])

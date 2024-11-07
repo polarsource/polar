@@ -1,4 +1,3 @@
-import revalidate from '@/app/actions'
 import {
   useBenefits,
   useCreateProduct,
@@ -74,8 +73,8 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   const { handleSubmit, watch, setError } = form
   const newProduct = watch()
 
-  const createProduct = useCreateProduct(organization.id)
-  const updateBenefits = useUpdateProductBenefits(organization.id)
+  const createProduct = useCreateProduct(organization)
+  const updateBenefits = useUpdateProductBenefits(organization)
 
   const createdProduct = watch()
   const reconciledProduct = productCreateToProduct(
@@ -103,9 +102,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         })
 
         clearDraft('ProductCreate')
-
-        revalidate(`products:${organization.id}:recurring`)
-        revalidate(`products:${organization.id}:one_time`)
 
         router.push(`/dashboard/${organization.slug}/products`)
       } catch (e) {

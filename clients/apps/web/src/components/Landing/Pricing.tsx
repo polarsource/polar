@@ -2,7 +2,10 @@ import Link from 'next/link'
 
 export const Pricing = () => {
   return (
-    <div className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-12 bg-gray-50 p-8 md:p-16 dark:md:bg-[radial-gradient(400px_at_top,rgba(20,20,25,1)_0%,rgba(7,7,9,1)_100%)]">
+    <div
+      id="pricing"
+      className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-12 bg-gray-50 p-8 md:p-16 dark:md:bg-[radial-gradient(400px_at_top,rgba(20,20,25,1)_0%,rgba(7,7,9,1)_100%)]"
+    >
       <div className="flex flex-col items-center gap-y-6">
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Early Member

@@ -18,6 +18,7 @@ from pydantic import (
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, PydanticCustomError, core_schema
+from slugify import slugify
 
 from .email import EmailNotValidError, validate_email
 
@@ -68,10 +69,21 @@ def _validate_email_dns(email: str) -> str:
         return email
 
 
-UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
-
 EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
 
+
+def _validate_slug(value: str) -> str:
+    slugified = slugify(value)
+    if slugified != value:
+        raise ValueError(
+            "The slug can only contain ASCII letters, numbers and hyphens."
+        )
+    return value
+
+
+SlugValidator = AfterValidator(_validate_slug)
+
+UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
 
 

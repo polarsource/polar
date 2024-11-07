@@ -42,11 +42,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       )}
     >
       <CardHeader className="flex grow gap-y-6 p-8 pb-0">
-        <h3 className={twMerge('truncate text-lg font-medium')}>
-          {subscriptionTier.name}
-        </h3>
+        <h3 className={twMerge('text-2xl')}>{subscriptionTier.name}</h3>
       </CardHeader>
-      <CardContent className="flex h-full grow flex-col gap-y-6 px-8">
+      <CardContent className="flex h-full grow flex-col gap-y-6 px-8 py-0">
         <div className="text-4xl font-light">
           {price ? (
             <>
@@ -96,19 +94,22 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         )}
       </CardContent>
       {(subscriptionTier.benefits?.length ?? 0) > 0 && (
-        <CardFooter className="flex w-full flex-col items-start p-3">
-          <div className="dark:bg-polar-800 flex w-full flex-col gap-y-2 rounded-3xl bg-gray-100 p-5">
-            {subscriptionTier.benefits?.map((benefit) => (
-              <div
-                key={benefit.id}
-                className="flex flex-row items-center gap-x-3"
-              >
-                <span className="flex h-4 w-4 items-center justify-center text-2xl text-black dark:text-white">
-                  {resolveBenefitIcon(benefit, 'inherit')}
-                </span>
-                <span className="text-sm">{benefit.description}</span>
-              </div>
-            ))}
+        <CardFooter className="flex w-full flex-col items-start p-3 pt-0">
+          <div className="dark:bg-polar-800 flex w-full flex-col gap-y-3 rounded-3xl bg-gray-100 p-5">
+            <h3 className="text-sm font-medium">Included</h3>
+            <div className="flex flex-col gap-y-2">
+              {subscriptionTier.benefits?.map((benefit) => (
+                <div
+                  key={benefit.id}
+                  className="flex flex-row items-center gap-x-3"
+                >
+                  <span className="flex h-4 w-4 items-center justify-center text-2xl text-black dark:text-white">
+                    {resolveBenefitIcon(benefit, 'inherit')}
+                  </span>
+                  <span className="text-sm">{benefit.description}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </CardFooter>
       )}

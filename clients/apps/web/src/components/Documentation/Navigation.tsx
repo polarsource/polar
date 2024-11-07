@@ -241,41 +241,7 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <NavigationHeadline>Get Funding</NavigationHeadline>
-        <NavigationItem href="/docs/donations">Donations</NavigationItem>
-        <NavigationSection
-          title="Issue Funding & Rewards"
-          defaultOpened={false}
-        >
-          <NavigationItem
-            href="/docs/issue-funding"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Introduction
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/issue-funding/getting-started"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Setup
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/issue-funding/workflow"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Workflow
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/issue-funding/reward-contributors"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Reward Contributors
-          </NavigationItem>
-        </NavigationSection>
-      </div>
-
-      <div>
-        <NavigationHeadline>Offer Products & Subscriptions</NavigationHeadline>
+        <NavigationHeadline>Offer Products &amp; Subscriptions</NavigationHeadline>
         <div className="flex flex-col">
           <NavigationItem href="/docs/products">Overview</NavigationItem>
           <NavigationItem href="/docs/products/create">
@@ -323,7 +289,7 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <NavigationHeadline>Orders & Subscribers</NavigationHeadline>
+        <NavigationHeadline>Orders &amp; Subscribers</NavigationHeadline>
         <NavigationItem href="/docs/sales">Sales Dashboard</NavigationItem>
         <NavigationItem href="/docs/sales/orders">
           Transaction History
@@ -334,20 +300,7 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <NavigationHeadline>GitHub Support</NavigationHeadline>
-        <NavigationItem href="/docs/github/install">
-          Connect Organization(s)
-        </NavigationItem>
-        <NavigationItem href="/docs/github/funding-yaml">
-          Official FUNDING.yaml link
-        </NavigationItem>
-        <NavigationItem href="/docs/github/embeds">
-          README Embeds
-        </NavigationItem>
-      </div>
-
-      <div>
-        <NavigationHeadline>Finance & Payouts</NavigationHeadline>
+        <NavigationHeadline>Finance &amp; Payouts</NavigationHeadline>
         <NavigationItem href="/docs/finance/balance">
           Your Balance
         </NavigationItem>
@@ -365,6 +318,53 @@ export const MainNavigation = () => {
         <NavigationItem href="/docs/merchant-of-record/compliance">
           Invoices & Tax Forms
         </NavigationItem>
+      </div>
+
+      <div>
+        <NavigationHeadline>GitHub Support</NavigationHeadline>
+        <NavigationItem href="/docs/github/install">
+          Connect Organization(s)
+        </NavigationItem>
+        <NavigationItem href="/docs/github/funding-yaml">
+          Official FUNDING.yaml link
+        </NavigationItem>
+        <NavigationItem href="/docs/github/embeds">
+          README Embeds
+        </NavigationItem>
+      </div>
+
+      <div>
+        <NavigationHeadline>Get Funding</NavigationHeadline>
+        <NavigationItem href="/docs/donations">Donations</NavigationItem>
+        <NavigationSection
+          title="Issue Funding & Rewards"
+          defaultOpened={false}
+        >
+          <NavigationItem
+            href="/docs/issue-funding"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
+            Introduction
+          </NavigationItem>
+          <NavigationItem
+            href="/docs/issue-funding/getting-started"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
+            Setup
+          </NavigationItem>
+          <NavigationItem
+            href="/docs/issue-funding/workflow"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
+            Workflow
+          </NavigationItem>
+          <NavigationItem
+            href="/docs/issue-funding/reward-contributors"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
+            Reward Contributors
+          </NavigationItem>
+        </NavigationSection>
       </div>
 
       <div>

@@ -29,7 +29,6 @@ export const Hero = () => {
   return (
     <div className="flex w-full flex-col items-center justify-center gap-12 text-center">
       <Canvas
-        className="sentry-block"
         camera={{
           zoom: 0.8,
         }}

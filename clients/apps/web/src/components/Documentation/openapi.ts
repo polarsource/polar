@@ -83,6 +83,51 @@ export const resolveEndpointMetadata = (
   }
 }
 
+export const getWebhooks = (
+  schema: OpenAPIV3_1.Document,
+): [string, OpenAPIV3_1.OperationObject][] => {
+  const webhooks = schema.webhooks
+    ? Object.entries(schema.webhooks)
+        .reduce<[string, OpenAPIV3_1.OperationObject][]>(
+          (acc, [event, webhook]) => {
+            if (isDereferenced(webhook) && webhook.post) {
+              return [...acc, [event, webhook.post]]
+            }
+            return acc
+          },
+          [],
+        )
+        .sort(([a], [b]) => a.localeCompare(b))
+    : []
+  return webhooks
+}
+
+export const getWebhook = (
+  event: string,
+  schema: OpenAPIV3_1.Document,
+): OpenAPIV3_1.OperationObject | undefined => {
+  const hooks = schema.webhooks
+  if (!hooks) {
+    return
+  }
+
+  const webhooks = Object.entries(hooks).filter<[string, OpenAPIV3_1.OperationObject][]>(([eventName, webhook]) => {
+    if (eventName === event && isDereferenced(webhook) && webhook.post) {
+      return true
+    }
+    return false
+  })
+  if (webhooks.length === 0) {
+    return
+  }
+
+  const webhook = webhooks[0][1]
+  if (!('post' in webhook)) {
+    return
+  }
+  return webhook.post as OpenAPIV3_1.OperationObject
+}
+
 export const isDereferenced = <T extends object>(
   s: OpenAPIV3_1.ReferenceObject | T,
 ): s is T => {

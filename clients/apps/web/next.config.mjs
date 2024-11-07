@@ -203,7 +203,7 @@ const nextConfig = {
       },
       {
         source: '/docs/tools/:path*',
-        destination: '/docs/developers/tools/:path*',
+        destination: '/docs/developers/sdk/:path*',
         permanent: true,
       },
       {

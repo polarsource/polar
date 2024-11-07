@@ -1,18 +1,17 @@
 import ProseWrapper from '@/components/Documentation/ProseWrapper'
-import { TableOfContents } from '@/components/Documentation/TableOfContents'
 import {
   fetchSchema,
   generateSchemaExample,
   getRequestBodySchema,
-  isDereferenced,
+  getWebhook,
 } from '@/components/Documentation/openapi'
 import SyntaxHighlighterServer, {
   Highlighter,
   getHighlighter,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
+import { notFound } from 'next/navigation'
 import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
-import type { TocItem } from 'remark-flexible-toc'
 
 export const dynamic = 'force-static'
 
@@ -42,60 +41,31 @@ const Webhook = ({
   )
 }
 
-export default async function Page() {
+export default async function Page({
+  params: { event }
+}: {
+  params: { event: string[] }
+}) {
   const highlighter = await getHighlighter()
   const schema = await fetchSchema()
-  const webhooks = schema.webhooks
-    ? Object.entries(schema.webhooks)
-        .reduce<[string, OpenAPIV3_1.OperationObject][]>(
-          (acc, [event, webhook]) => {
-            if (isDereferenced(webhook) && webhook.post) {
-              return [...acc, [event, webhook.post]]
-            }
-            return acc
-          },
-          [],
-        )
-        .sort(([a], [b]) => a.localeCompare(b))
-    : []
 
-  const tocItems: TocItem[] = [
-    {
-      value: 'Webhook events',
-      href: '#webhook-events',
-      depth: 1,
-      numbering: [1],
-      parent: 'root',
-    },
-    ...webhooks.map<TocItem>(([event, webhook], index) => ({
-      value: webhook.summary ?? event,
-      href: `#${event}`,
-      depth: 2,
-      numbering: [1, index],
-      parent: 'root',
-    })),
-  ]
+  const eventName = event[0]
+  const webhook = getWebhook(eventName, schema)
+  if (!webhook) {
+    return notFound()
+  }
 
   return (
     <>
       <article className="flex w-full max-w-3xl flex-shrink flex-col">
         <ProseWrapper>
-          <h1 id="webhook-events">Webhook events</h1>
-          <p>
-            You&apos;ll find below the list of events we may send to your
-            webhook endpoint, along with their payload structure.
-          </p>
-          {webhooks.map(([event, webhook]) => (
-            <Webhook
-              key={event}
-              event={event}
-              webhook={webhook}
-              highlighter={highlighter}
-            />
-          ))}
+          <Webhook
+            event={eventName}
+            webhook={webhook}
+            highlighter={highlighter}
+          />
         </ProseWrapper>
       </article>
-      <TableOfContents items={tocItems} />
     </>
   )
 }

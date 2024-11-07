@@ -36,7 +36,8 @@ import {
   isOtherEndpoint,
 } from './openapi'
 
-const NavigationSection = ({
+
+export const NavigationSection = ({
   title,
   children,
   defaultOpened = false,
@@ -56,7 +57,7 @@ const NavigationSection = ({
   )
 }
 
-const NavigationHeadline = ({ children }: { children: React.ReactNode }) => {
+export const NavigationHeadline = ({ children }: { children: React.ReactNode }) => {
   return (
     <h2 className="mb-4 font-medium text-black dark:text-white">{children}</h2>
   )
@@ -73,27 +74,24 @@ const APISections = () => {
   )
 }
 
-const SDKReferenceSections = () => {
+export const SDKNavigation = () => {
   return (
     <div className="flex flex-col gap-y-6">
-      <h3>SDK & Integrations</h3>
+      <h3>SDK &amp; Integrations</h3>
       <div className="flex flex-col">
         <NavigationItem href="/docs/developers/sdk">SDK</NavigationItem>
+      </div>
+      <div>
+        <NavigationHeadline>Tools</NavigationHeadline>
+        <NavigationItem href="/docs/developers/sdk/polar-init">
+          polar-init
+        </NavigationItem>
+        <NavigationItem href="/docs/developers/sdk/checkout-link">
+          checkout-link
+        </NavigationItem>
         <NavigationItem href="/docs/developers/sdk/github-actions">
           GitHub Actions
         </NavigationItem>
-      </div>
-    </div>
-  )
-}
-
-const WebhooksReferenceSections = () => {
-  return (
-    <div className="flex flex-col gap-y-6">
-      <h3>Webhooks</h3>
-      <div className="flex flex-col">
-        <NavigationItem href="/docs/developers/webhooks">Overview</NavigationItem>
-        <NavigationItem href="/docs/developers/webhooks/events">Events</NavigationItem>
       </div>
     </div>
   )
@@ -408,20 +406,6 @@ export const GuidesNavigation = () => {
   )
 }
 
-export const ToolsNavigation = () => {
-  return (
-    <div>
-      <NavigationHeadline>Tools</NavigationHeadline>
-      <NavigationItem href="/docs/developers/tools/polar-init">
-        polar-init
-      </NavigationItem>
-      <NavigationItem href="/docs/developers/tools/checkout-link">
-        checkout-link
-      </NavigationItem>
-    </div>
-  )
-}
-
 export const SupportNavigation = () => {
   return (
     <div>
@@ -456,8 +440,6 @@ export const APINavigation = ({
   return (
     <>
       <APISections />
-      <SDKReferenceSections />
-      <WebhooksReferenceSections />
       <APIReferenceSections
         openAPISchema={openAPISchema}
         filter={isFeaturedEndpoint}
@@ -480,12 +462,23 @@ export const APINavigation = ({
   )
 }
 
+type ActiveSection = (
+  'overview'
+  | 'support'
+  | 'guides'
+  | 'sandbox'
+  | 'api'
+  | 'webhooks'
+  | 'sdk'
+  | 'open-source'
+)
+
 export const DocumentationPageSidebar = ({
   children,
   activeSection,
 }: {
   children?: React.ReactNode
-  activeSection: 'overview' | 'support'| 'developers' | 'api' | 'open-source'
+  activeSection: ActiveSection
 }) => {
   const { isShown, show, hide, toggle } = useModal()
 
@@ -499,7 +492,7 @@ export const DocumentationPageSidebar = ({
       </div>
       <div className="flex flex-col gap-y-4">
         <div>
-          <h3>Product</h3>
+          <h3>Polar</h3>
           <ul className="flex flex-col mt-2">
             <li>
               <NavigationItem
@@ -529,16 +522,16 @@ export const DocumentationPageSidebar = ({
               <NavigationItem
                 icon={<ConstructionOutlined fontSize="inherit" />}
                 href="/docs/developers"
-                active={() => activeSection === 'developers'}
+                active={() => activeSection === 'guides'}
               >
-                Guides &amp; Tools
+                Start Building
               </NavigationItem>
             </li>
             <li>
               <NavigationItem
                 icon={<AssuredWorkloadOutlined fontSize="inherit" />}
                 href="/docs/developers/sandbox"
-                active={() => activeSection === 'developers'}
+                active={() => activeSection === 'sandbox'}
               >
                 Sandbox
               </NavigationItem>
@@ -556,7 +549,7 @@ export const DocumentationPageSidebar = ({
               <NavigationItem
                 icon={<WebhookOutlined fontSize="inherit" />}
                 href="/docs/developers/webhooks"
-                active={() => activeSection === 'api'}
+                active={() => activeSection === 'webhooks'}
               >
                 Webhooks
               </NavigationItem>
@@ -565,12 +558,11 @@ export const DocumentationPageSidebar = ({
               <NavigationItem
                 icon={<TerminalOutlined fontSize="inherit" />}
                 href="/docs/developers/sdk"
-                active={() => activeSection === 'api'}
+                active={() => activeSection === 'sdk'}
               >
                 SDK
               </NavigationItem>
             </li>
-
             <li>
               <NavigationItem
                 icon={<FavoriteBorderOutlined fontSize="inherit" />}
@@ -601,7 +593,7 @@ export const MobileNav = ({
   activeSection,
 }: {
   children: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute' | 'tools'
+  activeSection: ActiveSection
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()

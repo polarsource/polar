@@ -572,7 +572,7 @@ export const DocumentationPageSidebar = ({
             <li>
               <NavigationItem
                 icon={<FavoriteBorderOutlined fontSize="inherit" />}
-                href="/docs/open-source"
+                href="/docs/developers/open-source"
                 active={() => activeSection === 'open-source'}
               >
                 Open Source

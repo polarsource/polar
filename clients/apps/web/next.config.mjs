@@ -208,7 +208,7 @@ const nextConfig = {
       },
       {
         source: '/docs/contribute',
-        destination: '/docs/open-source',
+        destination: '/docs/developers/open-source',
         permanent: true,
       },
       {

@@ -76,8 +76,8 @@ const SDKReferenceSections = () => {
     <div className="flex flex-col gap-y-6">
       <h3>SDK & Integrations</h3>
       <div className="flex flex-col">
-        <NavigationItem href="/docs/api/sdk">SDK</NavigationItem>
-        <NavigationItem href="/docs/api/sdk/github-actions">
+        <NavigationItem href="/docs/developers/sdk">SDK</NavigationItem>
+        <NavigationItem href="/docs/developers/sdk/github-actions">
           GitHub Actions
         </NavigationItem>
       </div>
@@ -559,6 +559,16 @@ export const DocumentationPageSidebar = ({
                 Webhooks
               </NavigationItem>
             </li>
+            <li>
+              <NavigationItem
+                icon={<TerminalOutlined fontSize="inherit" />}
+                href="/docs/developers/sdk"
+                active={() => activeSection === 'api'}
+              >
+                SDK
+              </NavigationItem>
+            </li>
+
             <li>
               <NavigationItem
                 icon={<FavoriteBorderOutlined fontSize="inherit" />}

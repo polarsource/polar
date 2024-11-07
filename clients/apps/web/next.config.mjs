@@ -196,6 +196,23 @@ const nextConfig = {
         permanent: true,
       },
 
+      {
+        source: '/docs/guides/:path*',
+        destination: '/docs/developers/guides/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools/:path*',
+        destination: '/docs/developers/tools/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/contribute',
+        destination: '/docs/open-source',
+        permanent: true,
+      },
+
+
       // Redirect /docs/overview/:path to /docs/:path
       {
         source: '/docs/overview/:path*',

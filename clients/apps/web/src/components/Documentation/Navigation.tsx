@@ -8,13 +8,13 @@ import {
   ArticleOutlined,
   CloseOutlined,
   ConstructionOutlined,
-  DescriptionOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
   NorthEastOutlined,
   ShortTextOutlined,
   SupportOutlined,
   TerminalOutlined,
+  FavoriteBorderOutlined
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
@@ -381,19 +381,19 @@ export const GuidesNavigation = () => {
   return (
     <div>
       <NavigationHeadline>Guides</NavigationHeadline>
-      <NavigationItem href="/docs/guides/nextjs">
+      <NavigationItem href="/docs/developers/guides/nextjs">
         Integrate with Next.js
       </NavigationItem>
-      <NavigationItem href="/docs/guides/node">
+      <NavigationItem href="/docs/developers/guides/node">
         Integrate with Node.js & Express
       </NavigationItem>
-      <NavigationItem href="/docs/guides/laravel">
+      <NavigationItem href="/docs/developers/guides/laravel">
         Integrate with Laravel
       </NavigationItem>
-      <NavigationItem href="/docs/guides/checkout">
+      <NavigationItem href="/docs/developers/guides/checkout">
         Integrate Checkouts
       </NavigationItem>
-      <NavigationItem href="/docs/guides/figma">
+      <NavigationItem href="/docs/developers/guides/figma">
         Figma Plugins with License Keys
       </NavigationItem>
       <NavigationItem
@@ -410,10 +410,10 @@ export const ToolsNavigation = () => {
   return (
     <div>
       <NavigationHeadline>Tools</NavigationHeadline>
-      <NavigationItem href="/docs/tools/polar-init">
+      <NavigationItem href="/docs/developers/tools/polar-init">
         polar-init
       </NavigationItem>
-      <NavigationItem href="/docs/tools/checkout-link">
+      <NavigationItem href="/docs/developers/tools/checkout-link">
         checkout-link
       </NavigationItem>
     </div>
@@ -483,7 +483,7 @@ export const DocumentationPageSidebar = ({
   activeSection,
 }: {
   children?: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute' | 'tools'
+  activeSection: 'overview' | 'support'| 'developers' | 'api' | 'open-source'
 }) => {
   const { isShown, show, hide, toggle } = useModal()
 
@@ -495,62 +495,64 @@ export const DocumentationPageSidebar = ({
           onClick={show}
         />
       </div>
-      <ul className="flex flex-col">
-        <li>
-          <NavigationItem
-            icon={<ArticleOutlined fontSize="inherit" />}
-            href="/docs"
-            active={() => activeSection === 'overview'}
-          >
-            Documentation
-          </NavigationItem>
-        </li>
-        <li>
-          <NavigationItem
-            icon={<DescriptionOutlined fontSize="inherit" />}
-            href="/docs/guides"
-            active={() => activeSection === 'guides'}
-          >
-            Guides
-          </NavigationItem>
-        </li>
-        <li>
-          <NavigationItem
-            icon={<DescriptionOutlined fontSize="inherit" />}
-            href="/docs/tools"
-            active={() => activeSection === 'tools'}
-          >
-            Tools
-          </NavigationItem>
-        </li>
-        <li>
-          <NavigationItem
-            icon={<TerminalOutlined fontSize="inherit" />}
-            href="/docs/api"
-            active={() => activeSection === 'api'}
-          >
-            API Reference
-          </NavigationItem>
-        </li>
-        <li>
-          <NavigationItem
-            icon={<ConstructionOutlined fontSize="inherit" />}
-            href="/docs/contribute"
-            active={() => activeSection === 'contribute'}
-          >
-            Contribute
-          </NavigationItem>
-        </li>
-        <li>
-          <NavigationItem
-            icon={<SupportOutlined fontSize="inherit" />}
-            href="/docs/support"
-            active={() => activeSection === 'support'}
-          >
-            Help
-          </NavigationItem>
-        </li>
-      </ul>
+      <div className="flex flex-col gap-y-4">
+        <div>
+          <h3>Product</h3>
+          <ul className="flex flex-col mt-2">
+            <li>
+              <NavigationItem
+                icon={<ArticleOutlined fontSize="inherit" />}
+                href="/docs"
+                active={() => activeSection === 'overview'}
+              >
+                Get Started
+              </NavigationItem>
+            </li>
+            <li>
+              <NavigationItem
+                icon={<SupportOutlined fontSize="inherit" />}
+                href="/docs/support"
+                active={() => activeSection === 'support'}
+              >
+                Help
+              </NavigationItem>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Developers</h3>
+          <ul className="flex flex-col mt-2">
+            <li>
+              <NavigationItem
+                icon={<ConstructionOutlined fontSize="inherit" />}
+                href="/docs/developers"
+                active={() => activeSection === 'developers'}
+              >
+                Guides &amp; Tools
+              </NavigationItem>
+            </li>
+            <li>
+              <NavigationItem
+                icon={<TerminalOutlined fontSize="inherit" />}
+                href="/docs/api"
+                active={() => activeSection === 'api'}
+              >
+                API Reference
+              </NavigationItem>
+            </li>
+            <li>
+              <NavigationItem
+                icon={<FavoriteBorderOutlined fontSize="inherit" />}
+                href="/docs/open-source"
+                active={() => activeSection === 'open-source'}
+              >
+                Open Source
+              </NavigationItem>
+            </li>
+          </ul>
+        </div>
+      </div>
 
       {children && (
         <>

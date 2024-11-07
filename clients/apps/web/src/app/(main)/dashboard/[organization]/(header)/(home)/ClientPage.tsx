@@ -185,7 +185,7 @@ app.listen(port, () => {
         </div>
       </div>
       <div className="flex flex-row items-center gap-x-2">
-        <Link href={`/docs/guides/node`} target="_blank">
+        <Link href={`/docs/developers/guides/node`} target="_blank">
           <Button wrapperClassNames="flex flex-row items-center gap-x-2">
             <span>Checkout API Guide</span>
             <ChevronRight className="text-sm" fontSize="inherit" />
@@ -299,7 +299,7 @@ const polar = new Polar({
   const result = await polar.products.list({
     organizationId: "${organization.id}",
   });
-  
+
   for await (const page of result) {
     // Handle the page
     console.log(page);

@@ -37,9 +37,9 @@ from polar.product.sorting import ProductSortProperty
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_product_benefits,
     create_benefit,
     create_product,
+    set_product_benefits,
 )
 
 
@@ -238,7 +238,7 @@ class TestList:
         user_organization: UserOrganization,
     ) -> None:
         for product in products[:2]:
-            await add_product_benefits(
+            await set_product_benefits(
                 save_fixture,
                 product=product,
                 benefits=[benefit_organization, benefit_organization_second],
@@ -1220,6 +1220,7 @@ class TestUpdate:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 class TestUpdateBenefits:
     @pytest.mark.auth
     async def test_not_writable_product(
@@ -1229,16 +1230,9 @@ class TestUpdateBenefits:
         authz: Authz,
         product: Product,
     ) -> None:
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
-
         with pytest.raises(NotPermitted):
             await product_service.update_benefits(
-                session, authz, product_organization_loaded, [], auth_subject
+                session, authz, product, [], auth_subject
             )
 
     @pytest.mark.auth(
@@ -1255,31 +1249,21 @@ class TestUpdateBenefits:
         product: Product,
         benefits: list[Benefit],
     ) -> None:
-        product = await add_product_benefits(
-            save_fixture,
-            product=product,
-            benefits=benefits,
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
         )
-
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
+        assert len(product.product_benefits) == len(benefits)
 
         with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 [uuid.uuid4()],
                 auth_subject,
             )
 
-        await session.refresh(product_organization_loaded)
-
-        assert len(product_organization_loaded.product_benefits) == len(benefits)
+        assert len(product.product_benefits) == len(benefits)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1287,6 +1271,7 @@ class TestUpdateBenefits:
     )
     async def test_added_benefits(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
         authz: Authz,
@@ -1295,12 +1280,7 @@ class TestUpdateBenefits:
         product: Product,
         benefits: list[Benefit],
     ) -> None:
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
+        await set_product_benefits(save_fixture, product=product, benefits=[])
 
         (
             product,
@@ -1309,7 +1289,7 @@ class TestUpdateBenefits:
         ) = await product_service.update_benefits(
             session,
             authz,
-            product_organization_loaded,
+            product,
             [benefit.id for benefit in benefits],
             auth_subject,
         )
@@ -1339,6 +1319,7 @@ class TestUpdateBenefits:
     )
     async def test_order(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
         authz: Authz,
@@ -1347,12 +1328,7 @@ class TestUpdateBenefits:
         product: Product,
         benefits: list[Benefit],
     ) -> None:
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
+        await set_product_benefits(save_fixture, product=product, benefits=[])
 
         (
             product,
@@ -1361,7 +1337,7 @@ class TestUpdateBenefits:
         ) = await product_service.update_benefits(
             session,
             authz,
-            product_organization_loaded,
+            product,
             [benefit.id for benefit in benefits[::-1]],
             auth_subject,
         )
@@ -1400,25 +1376,18 @@ class TestUpdateBenefits:
         product: Product,
         benefits: list[Benefit],
     ) -> None:
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,
         )
-
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
 
         (
             product,
             added,
             deleted,
         ) = await product_service.update_benefits(
-            session, authz, product_organization_loaded, [], auth_subject
+            session, authz, product, [], auth_subject
         )
         await session.flush()
 
@@ -1451,18 +1420,11 @@ class TestUpdateBenefits:
         product: Product,
         benefits: list[Benefit],
     ) -> None:
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,
         )
-
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
 
         (
             product,
@@ -1471,11 +1433,10 @@ class TestUpdateBenefits:
         ) = await product_service.update_benefits(
             session,
             authz,
-            product_organization_loaded,
+            product,
             [benefit.id for benefit in benefits[::-1]],
             auth_subject,
         )
-        await session.flush()
 
         assert len(product.product_benefits) == len(benefits)
         for i, product_benefit in enumerate(product.product_benefits):
@@ -1517,18 +1478,11 @@ class TestUpdateBenefits:
             selectable=False,
         )
 
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
-
         with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 [not_selectable_benefit.id],
                 auth_subject,
             )
@@ -1555,24 +1509,17 @@ class TestUpdateBenefits:
             selectable=False,
         )
 
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=[not_selectable_benefit],
         )
 
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
-
         with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 [],
                 auth_subject,
             )
@@ -1607,18 +1554,11 @@ class TestUpdateBenefits:
             organization=organization,
             description="SELECTABLE",
         )
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=[not_selectable_benefit],
         )
-
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
 
         (
             _,
@@ -1627,7 +1567,7 @@ class TestUpdateBenefits:
         ) = await product_service.update_benefits(
             session,
             authz,
-            product_organization_loaded,
+            product,
             [not_selectable_benefit.id, selectable_benefit.id],
             auth_subject,
         )

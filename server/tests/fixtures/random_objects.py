@@ -581,12 +581,13 @@ async def create_product(
         | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
     ] = [(1000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
+    tax_applicable: bool = True,
 ) -> Product:
     product = Product(
         name=name,
         description="Description",
         is_archived=is_archived,
-        organization_id=organization.id,
+        organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
         all_prices=[],
         prices=[],
@@ -637,6 +638,12 @@ async def create_product(
             )
         product.prices.append(product_price)
         product.all_prices.append(product_price)
+
+    if tax_applicable:
+        benefit = await create_benefit(
+            save_fixture, organization=organization, is_tax_applicable=True
+        )
+        product.product_benefits.append(ProductBenefit(benefit=benefit, order=0))
 
     return product
 
@@ -762,13 +769,14 @@ async def create_benefit(
     return benefit
 
 
-async def add_product_benefits(
+async def set_product_benefits(
     save_fixture: SaveFixture,
     *,
     product: Product,
     benefits: list[Benefit],
 ) -> Product:
     product.product_benefits = []
+    await save_fixture(product)
     for order, benefit in enumerate(benefits):
         product.product_benefits.append(ProductBenefit(benefit=benefit, order=order))
     await save_fixture(product)

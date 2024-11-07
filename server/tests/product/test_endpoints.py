@@ -16,7 +16,7 @@ from polar.models import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_product_benefits,
+    set_product_benefits,
 )
 
 
@@ -44,7 +44,7 @@ class TestListProducts:
         product: Product,
         benefits: list[Benefit],
     ) -> None:
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,
@@ -110,7 +110,7 @@ class TestGetProduct:
         benefits: list[Benefit],
         user_organization: UserOrganization,
     ) -> None:
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,

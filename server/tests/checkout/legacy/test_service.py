@@ -12,13 +12,12 @@ from polar.checkout.legacy.service import checkout as checkout_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Organization, Product, User
+from polar.models import Product, User
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_product_benefits,
-    create_benefit,
+    set_product_benefits,
 )
 
 SUCCESS_URL = Url("https://example.com/success")
@@ -128,7 +127,7 @@ class TestCreate:
             price.stripe_price_id,
             str(SUCCESS_URL),
             is_subscription=True,
-            is_tax_applicable=False,
+            is_tax_applicable=True,
             metadata={
                 "type": ProductType.product,
                 "product_id": str(product.id),
@@ -180,7 +179,7 @@ class TestCreate:
             price.stripe_price_id,
             str(SUCCESS_URL),
             is_subscription=True,
-            is_tax_applicable=False,
+            is_tax_applicable=True,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
                 "type": ProductType.product,
@@ -235,7 +234,7 @@ class TestCreate:
             price.stripe_price_id,
             str(SUCCESS_URL),
             is_subscription=True,
-            is_tax_applicable=False,
+            is_tax_applicable=True,
             metadata={
                 "type": ProductType.product,
                 "product_id": str(product.id),
@@ -289,7 +288,7 @@ class TestCreate:
             price.stripe_price_id,
             str(SUCCESS_URL),
             is_subscription=True,
-            is_tax_applicable=False,
+            is_tax_applicable=True,
             customer_email="backer@example.com",
             metadata={
                 "type": ProductType.product,
@@ -303,22 +302,18 @@ class TestCreate:
             },
         )
 
-    async def test_valid_tax_applicable(
+    async def test_valid_tax_not_applicable(
         self,
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         stripe_service_mock: MagicMock,
-        organization: Organization,
     ) -> None:
-        applicable_tax_benefit = await create_benefit(
-            save_fixture, is_tax_applicable=True, organization=organization
-        )
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
-            benefits=[applicable_tax_benefit],
+            benefits=[],
         )
 
         create_checkout_session_mock: MagicMock = (
@@ -349,7 +344,7 @@ class TestCreate:
             price.stripe_price_id,
             str(SUCCESS_URL),
             is_subscription=True,
-            is_tax_applicable=True,
+            is_tax_applicable=False,
             metadata={
                 "type": ProductType.product,
                 "product_id": str(product.id),

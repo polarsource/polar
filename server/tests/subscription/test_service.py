@@ -30,9 +30,9 @@ from polar.user.service.user import user as user_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_product_benefits,
     create_active_subscription,
     create_subscription,
+    set_product_benefits,
 )
 
 
@@ -577,7 +577,7 @@ class TestEnqueueBenefitsGrants:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,
@@ -606,7 +606,7 @@ class TestEnqueueBenefitsGrants:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,
@@ -650,7 +650,7 @@ class TestEnqueueBenefitsGrants:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture,
             product=product,
             benefits=benefits,

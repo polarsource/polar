@@ -21,10 +21,10 @@ from polar.redis import Redis
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_product_benefits,
     create_benefit_grant,
     create_order,
     create_subscription,
+    set_product_benefits,
 )
 
 
@@ -348,7 +348,7 @@ class TestEnqueueBenefitsGrants:
             "polar.benefit.service.benefit_grant.enqueue_job"
         )
 
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture, product=product, benefits=benefits
         )
 
@@ -388,7 +388,7 @@ class TestEnqueueBenefitsGrants:
         grant.set_granted()
         await save_fixture(grant)
 
-        product = await add_product_benefits(
+        product = await set_product_benefits(
             save_fixture, product=product, benefits=benefits[1:]
         )
 

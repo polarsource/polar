@@ -197,7 +197,7 @@ export const CheckoutConfirmation = ({
         {status === CheckoutStatus.SUCCEEDED && (
           <>
             {productHasLicenseKeys && (
-              <ShadowBox className="flex flex-col gap-y-6 bg-white dark:bg-polar-800">
+              <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white">
                 <h3>License Keys</h3>
                 <div className="flex flex-col gap-y-2">
                   {product.benefits
@@ -209,7 +209,7 @@ export const CheckoutConfirmation = ({
               </ShadowBox>
             )}
             {!!downloadablesBenefit && (
-              <ShadowBox className="flex flex-col gap-y-6 bg-white dark:bg-polar-800">
+              <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white">
                 <h3>Downloadables</h3>
                 <Downloadables publicBenefit={downloadablesBenefit} />
               </ShadowBox>

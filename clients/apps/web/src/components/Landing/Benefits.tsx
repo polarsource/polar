@@ -60,16 +60,16 @@ export const Benefits = () => {
   const subscription = useMemo(() => setPoint(), [setPoint])
 
   return (
-    <div className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-12 bg-gray-50 p-16">
+    <div className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-12 bg-gray-50 p-8 md:p-16">
       <div className="flex w-full flex-col gap-x-24 gap-y-16 md:flex-row">
-        <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
+        <div className="flex h-full flex-col items-center gap-y-8 text-center md:items-start md:text-left">
           <h2 className="text-3xl !leading-tight md:text-5xl">
             Automated benefits like never before
           </h2>
           <p className="dark:text-polar-400 text-lg text-gray-600">
             Sell access to your premium apps, services or APIs with ease.
           </p>
-          <div className="flex flex-row items-center justify-start gap-x-4">
+          <div className="flex flex-col items-center justify-start gap-4 md:flex-row">
             <GetStartedButton text="Get Started" />
             <Link href={`/docs/benefits`}>
               <Button variant="ghost" size="lg">
@@ -79,7 +79,7 @@ export const Benefits = () => {
           </div>
         </div>
 
-        <div className="relative flex grid-cols-2 flex-col gap-x-4 gap-y-8 md:grid md:gap-x-8 lg:gap-x-16">
+        <div className="relative flex grid-cols-1 flex-col gap-x-4 gap-y-8 md:grid md:grid-cols-2 md:gap-x-8 lg:gap-x-16">
           <div className="hidden flex-col gap-y-6 md:flex">
             <Benefit
               ref={benefit1}

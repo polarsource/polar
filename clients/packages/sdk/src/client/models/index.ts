@@ -5350,6 +5350,12 @@ export interface CheckoutUpdate {
      * @memberof CheckoutUpdate
      */
     success_url?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    embed_origin?: string | null;
 }
 /**
  * Update an existing checkout session using the client secret.
@@ -5550,7 +5556,7 @@ export interface CustomFieldCheckbox {
      */
     type: CustomFieldCheckboxTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
      * @memberof CustomFieldCheckbox
      */
@@ -5642,7 +5648,7 @@ export interface CustomFieldCreateCheckbox {
      */
     type: CustomFieldCreateCheckboxTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldCreateCheckbox
      */
@@ -5703,7 +5709,7 @@ export interface CustomFieldCreateDate {
      */
     type: CustomFieldCreateDateTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldCreateDate
      */
@@ -5764,7 +5770,7 @@ export interface CustomFieldCreateNumber {
      */
     type: CustomFieldCreateNumberTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldCreateNumber
      */
@@ -5825,7 +5831,7 @@ export interface CustomFieldCreateSelect {
      */
     type: CustomFieldCreateSelectTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldCreateSelect
      */
@@ -5886,7 +5892,7 @@ export interface CustomFieldCreateText {
      */
     type: CustomFieldCreateTextTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldCreateText
      */
@@ -5957,7 +5963,7 @@ export interface CustomFieldDate {
      */
     type: CustomFieldDateTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
      * @memberof CustomFieldDate
      */
@@ -6065,7 +6071,7 @@ export interface CustomFieldNumber {
      */
     type: CustomFieldNumberTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
      * @memberof CustomFieldNumber
      */
@@ -6173,7 +6179,7 @@ export interface CustomFieldSelect {
      */
     type: CustomFieldSelectTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
      * @memberof CustomFieldSelect
      */
@@ -6311,7 +6317,7 @@ export interface CustomFieldText {
      */
     type: CustomFieldTextTypeEnum;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
      * @memberof CustomFieldText
      */
@@ -6434,7 +6440,7 @@ export interface CustomFieldUpdateCheckbox {
      */
     name?: string | null;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldUpdateCheckbox
      */
@@ -6481,7 +6487,7 @@ export interface CustomFieldUpdateDate {
      */
     name?: string | null;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldUpdateDate
      */
@@ -6528,7 +6534,7 @@ export interface CustomFieldUpdateNumber {
      */
     name?: string | null;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldUpdateNumber
      */
@@ -6575,7 +6581,7 @@ export interface CustomFieldUpdateSelect {
      */
     name?: string | null;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldUpdateSelect
      */
@@ -6622,7 +6628,7 @@ export interface CustomFieldUpdateText {
      */
     name?: string | null;
     /**
-     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.
+     * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
      * @memberof CustomFieldUpdateText
      */
@@ -12943,6 +12949,12 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
     success_url?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    embed_origin?: string | null;
 }
 
 

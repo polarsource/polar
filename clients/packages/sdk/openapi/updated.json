@@ -23042,6 +23042,18 @@
                         ],
                         "title": "Success Url",
                         "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+                    },
+                    "embed_origin": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Embed Origin",
+                        "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
                     }
                 },
                 "type": "object",
@@ -23362,7 +23374,7 @@
                     "slug": {
                         "type": "string",
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value."
                     },
                     "name": {
                         "type": "string",
@@ -23484,7 +23496,7 @@
                         "type": "string",
                         "minLength": 1,
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
                     "name": {
                         "type": "string",
@@ -23560,7 +23572,7 @@
                         "type": "string",
                         "minLength": 1,
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
                     "name": {
                         "type": "string",
@@ -23636,7 +23648,7 @@
                         "type": "string",
                         "minLength": 1,
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
                     "name": {
                         "type": "string",
@@ -23712,7 +23724,7 @@
                         "type": "string",
                         "minLength": 1,
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
                     "name": {
                         "type": "string",
@@ -23788,7 +23800,7 @@
                         "type": "string",
                         "minLength": 1,
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
                     "name": {
                         "type": "string",
@@ -23884,7 +23896,7 @@
                     "slug": {
                         "type": "string",
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value."
                     },
                     "name": {
                         "type": "string",
@@ -24005,7 +24017,7 @@
                     "slug": {
                         "type": "string",
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value."
                     },
                     "name": {
                         "type": "string",
@@ -24126,7 +24138,7 @@
                     "slug": {
                         "type": "string",
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value."
                     },
                     "name": {
                         "type": "string",
@@ -24283,7 +24295,7 @@
                     "slug": {
                         "type": "string",
                         "title": "Slug",
-                        "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                        "description": "Identifier of the custom field. It'll be used as key when storing the value."
                     },
                     "name": {
                         "type": "string",
@@ -24443,7 +24455,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
-                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
                                 "type": "null"
@@ -24525,7 +24537,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
-                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
                                 "type": "null"
@@ -24607,7 +24619,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
-                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
                                 "type": "null"
@@ -24689,7 +24701,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
-                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
                                 "type": "null"
@@ -24771,7 +24783,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
-                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization."
+                                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
                                 "type": "null"
@@ -38794,6 +38806,18 @@
                         ],
                         "title": "Success Url",
                         "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+                    },
+                    "embed_origin": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Embed Origin",
+                        "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
                     }
                 },
                 "type": "object",

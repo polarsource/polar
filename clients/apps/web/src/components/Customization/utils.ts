@@ -29,13 +29,13 @@ export const PRODUCT_PREVIEW: ProductStorefront = {
     {
       id: '123',
       created_at: new Date().toDateString(),
-      public_url: '/assets/brand/polar_og.jpg',
+      public_url: '/assets/docs/og/bg.jpg',
       is_uploaded: false,
       service: 'product_media',
       mime_type: 'image/png',
       organization_id: '123',
       name: 'blend.png',
-      path: '/assets/brand/polar_login.png',
+      path: '/assets/docs/og/bg.png',
       size: 123,
       size_readable: '123 B',
       storage_version: '1',
@@ -59,7 +59,7 @@ export const PRODUCT_PREVIEW: ProductStorefront = {
       product_id: '123',
     },
   ],
-  name: 'My Saas Pro Tier',
+  name: 'Pro Tier',
   description: PRODUCT_DESCRIPTION,
   benefits: [
     {
@@ -86,13 +86,13 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
     {
       id: '123',
       created_at: new Date().toDateString(),
-      public_url: '/assets/brand/polar_og.jpg',
+      public_url: '/assets/docs/og/bg.jpg',
       is_uploaded: false,
       service: 'product_media',
       mime_type: 'image/png',
       organization_id: '123',
       name: 'blend.png',
-      path: '/assets/brand/polar_login.png',
+      path: '/assets/docs/og/bg.png',
       size: 123,
       size_readable: '123 B',
       storage_version: '1',
@@ -117,7 +117,7 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
       product_id: '123',
     },
   ],
-  name: 'My Saas Pro Tier',
+  name: 'Pro Tier',
   description: PRODUCT_DESCRIPTION,
   benefits: [
     {
@@ -134,13 +134,13 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
   created_at: new Date().toDateString(),
 }
 
-const ORGANIZATION = {
+export const ORGANIZATION = {
   id: '123',
   name: 'My Organization',
   slug: 'my-organization',
   created_at: new Date().toDateString(),
   modified_at: null,
-  avatar_url: null,
+  avatar_url: '/assets/acme.jpg',
   bio: null,
   blog: null,
   company: null,

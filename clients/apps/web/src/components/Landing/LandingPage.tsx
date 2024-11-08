@@ -6,6 +6,7 @@ import { API } from './API'
 import { Benefits } from './Benefits'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
+import { Checkout } from './Checkout'
 
 export default function Page() {
   return (
@@ -34,6 +35,7 @@ export const PageContent = () => {
         </div>
 
         <MerchantOfRecord />
+        <Checkout />
         <Monetization />
         <Pricing />
         <Testimonials />

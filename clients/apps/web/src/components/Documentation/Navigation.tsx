@@ -454,7 +454,7 @@ export const GuidesNavigation = () => {
         Figma Plugins with License Keys
       </NavigationItem>
       <NavigationItem
-        href="/docs/api/webhooks"
+        href="/docs/developers/webhooks"
         icon={<NorthEastOutlined fontSize="inherit" />}
       >
         Setting up Webhooks

@@ -51,6 +51,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceFree
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.product.service.product_price import product_price as product_price_service
 from polar.user.service.user import user as user_service
@@ -172,7 +173,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         statement = self._get_readable_checkout_statement(auth_subject)
 
         if organization_id is not None:
-            statement = statement.where(Checkout.organization_id.in_(organization_id))
+            statement = statement.where(Product.organization_id.in_(organization_id))
 
         if product_id is not None:
             statement = statement.where(Checkout.product_id.in_(product_id))
@@ -365,7 +366,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency=currency,
             product=product,
             product_price=price,
-            organization=product.organization,
             customer_billing_address=checkout_create.customer_billing_address,
             customer_tax_id=customer_tax_id,
             subscription=subscription,
@@ -474,7 +474,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency=currency,
             product=product,
             product_price=price,
-            organization=product.organization,
         )
         if is_direct_user(auth_subject):
             checkout.customer = auth_subject.subject
@@ -511,7 +510,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         # Send a depreciation event to the organization's members
         if checkout_create.from_legacy_checkout_link:
             user_organizations = await user_organization_service.list_by_org(
-                session, checkout.organization_id
+                session, product.organization_id
             )
             for user_organization in user_organizations:
                 enqueue_job(
@@ -521,7 +520,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     event_properties={
                         "product": product.name,
                         "product_price_id": str(price.id),
-                        "organization": checkout.organization.name,
+                        "organization": product.organization.name,
                     },
                 )
 
@@ -583,7 +582,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency=currency,
             product=product,
             product_price=price,
-            organization=product.organization,
             embed_origin=embed_origin,
             customer_ip_address=ip_address,
             payment_processor=checkout_link.payment_processor,
@@ -978,10 +976,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .join(Checkout.product)
             .options(
                 contains_eager(Checkout.product).options(
+                    joinedload(Product.organization),
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
-                ),
-                joinedload(Checkout.organization),
+                )
             )
         )
         result = await session.execute(statement)
@@ -1034,7 +1032,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
             if (
                 price is None
-                or price.product.organization_id != checkout.organization_id
+                or price.product.organization_id != checkout.product.organization_id
             ):
                 raise PolarRequestValidationError(
                     [
@@ -1309,17 +1307,18 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     selectinload(Product.attached_custom_fields),
                 ),
                 joinedload(Checkout.product_price),
-                joinedload(Checkout.organization),
             ),
         )
 
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
+        organization = await organization_service.get(
+            session, checkout.product.organization_id
+        )
+        assert organization is not None
         await webhook_service.send(
-            session,
-            checkout.organization,
-            (WebhookEventType.checkout_created, checkout),
+            session, organization, (WebhookEventType.checkout_created, checkout)
         )
 
     async def _after_checkout_updated(
@@ -1328,10 +1327,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         await publish(
             "checkout.updated", {}, checkout_client_secret=checkout.client_secret
         )
+        organization = await organization_service.get(
+            session, checkout.product.organization_id
+        )
+        assert organization is not None
         await webhook_service.send(
-            session,
-            checkout.organization,
-            (WebhookEventType.checkout_updated, checkout),
+            session, organization, (WebhookEventType.checkout_updated, checkout)
         )
 
     async def _eager_load_product(
@@ -1354,15 +1355,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 contains_eager(Checkout.product).options(
                     joinedload(Product.product_medias),
                     joinedload(Product.attached_custom_fields),
-                ),
-                joinedload(Checkout.organization),
+                )
             )
         )
 
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(
-                Checkout.organization_id.in_(
+                Product.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.deleted_at.is_(None),
@@ -1371,7 +1371,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
         elif is_organization(auth_subject):
             statement = statement.where(
-                Checkout.organization_id == auth_subject.subject.id,
+                Product.organization_id == auth_subject.subject.id,
             )
 
         return statement

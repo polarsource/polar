@@ -989,7 +989,6 @@ async def create_checkout(
         currency=currency,
         product_price=price,
         product=price.product,
-        organization=price.product.organization,
         customer=customer,
         subscription=subscription,
     )

@@ -770,5 +770,18 @@ class StripeService:
     ) -> stripe_lib.tax.Calculation:
         return await stripe_lib.tax.Calculation.create_async(**params)
 
+    async def create_coupon(
+        self, **params: Unpack[stripe_lib.Coupon.CreateParams]
+    ) -> stripe_lib.Coupon:
+        return await stripe_lib.Coupon.create_async(**params)
+
+    async def update_coupon(
+        self, id: str, **params: Unpack[stripe_lib.Coupon.ModifyParams]
+    ) -> stripe_lib.Coupon:
+        return await stripe_lib.Coupon.modify_async(id, **params)
+
+    async def delete_coupon(self, id: str) -> stripe_lib.Coupon:
+        return await stripe_lib.Coupon.delete_async(id)
+
 
 stripe = StripeService()

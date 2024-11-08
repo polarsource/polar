@@ -7,6 +7,7 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -91,12 +92,18 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-        # TODO: create on Stripe
-
-        discount = Discount(
+        discount_model = discount_create.type.get_model()
+        discount_id = uuid.uuid4()
+        discount = discount_model(
             **discount_create.model_dump(exclude={"organization_id"}),
+            id=discount_id,
             organization=organization,
         )
+        stripe_coupon = await stripe_service.create_coupon(
+            **discount.get_stripe_coupon_params()
+        )
+        discount.stripe_coupon_id = stripe_coupon.id
+
         session.add(discount)
 
         return discount
@@ -104,17 +111,23 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def update(
         self, session: AsyncSession, discount: Discount, discount_update: DiscountUpdate
     ) -> Discount:
+        previous_name = discount.name
+
         for attr, value in discount_update.model_dump(exclude_unset=True).items():
             setattr(discount, attr, value)
 
-        # TODO: update on Stripe
+        if previous_name != discount.name:
+            await stripe_service.update_coupon(
+                discount.stripe_coupon_id, name=discount.name
+            )
 
         session.add(discount)
         return discount
 
     async def delete(self, session: AsyncSession, discount: Discount) -> Discount:
         discount.set_deleted_at()
-        # TODO: delete on Stripe
+
+        await stripe_service.delete_coupon(discount.stripe_coupon_id)
 
         session.add(discount)
         return discount

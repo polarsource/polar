@@ -1,9 +1,10 @@
 import math
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
+import stripe as stripe_lib
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -24,11 +25,20 @@ class DiscountType(StrEnum):
     fixed = "fixed"
     percentage = "percentage"
 
+    def get_model(self) -> type["Discount"]:
+        return {
+            DiscountType.fixed: DiscountFixed,
+            DiscountType.percentage: DiscountPercentage,
+        }[self]
+
 
 class DiscountDuration(StrEnum):
     once = "once"
     forever = "forever"
     repeating = "repeating"
+
+    def as_literal(self) -> Literal["once", "forever", "repeating"]:
+        return cast(Literal["once", "forever", "repeating"], self.value)
 
 
 class Discount(MetadataMixin, RecordModel):
@@ -49,6 +59,8 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    stripe_coupon_id: Mapped[str] = mapped_column(String, nullable=False)
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
@@ -59,6 +71,23 @@ class Discount(MetadataMixin, RecordModel):
 
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()
+
+    def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
+        params: stripe_lib.Coupon.CreateParams = {
+            "name": self.name,
+            "duration": self.duration.as_literal(),
+            "metadata": {
+                "discount_id": str(self.id),
+                "organization_id": str(self.organization.id),
+            },
+        }
+        if self.max_redemptions is not None:
+            params["max_redemptions"] = self.max_redemptions
+        if self.ends_at is not None:
+            params["redeem_by"] = int(self.ends_at.timestamp())
+        if self.duration_in_months is not None:
+            params["duration_in_months"] = self.duration_in_months
+        return params
 
     __mapper_args__ = {
         "polymorphic_on": "type",
@@ -74,6 +103,14 @@ class DiscountFixed(Discount):
 
     def get_discount_amount(self, amount: int) -> int:
         return min(self.amount, amount)
+
+    def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
+        params = super().get_stripe_coupon_params()
+        return {
+            **params,
+            "amount_off": self.amount,
+            "currency": self.currency,
+        }
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.fixed,
@@ -94,6 +131,13 @@ class DiscountPercentage(Discount):
             if discount_amount_float - int(discount_amount_float) >= 0.5
             else math.floor(discount_amount_float)
         )
+
+    def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
+        params = super().get_stripe_coupon_params()
+        return {
+            **params,
+            "percent_off": self.basis_points / 100,
+        }
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.percentage,

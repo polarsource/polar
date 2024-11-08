@@ -11,6 +11,7 @@ from polar.checkout.legacy.endpoints import router as checkout_legacy_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.dashboard.endpoints import router as dashboard_router
+from polar.discount.endpoints import router as discount_router
 from polar.embed.endpoints import router as embed_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.external_organization.endpoints import router as external_organization_router
@@ -126,3 +127,5 @@ router.include_router(storefront_router)
 router.include_router(custom_field_router)
 # /embed
 router.include_router(embed_router)
+# /discounts
+router.include_router(discount_router)

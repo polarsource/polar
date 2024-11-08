@@ -75,10 +75,6 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Eager loading makes sense here because we always need the product
         return relationship(Product, lazy="joined")
 
-    organization: AssociationProxy[Organization] = association_proxy(
-        "product", "organization"
-    )
-
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
     )
@@ -87,6 +83,14 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def product_price(cls) -> Mapped[ProductPrice]:
         # Eager loading makes sense here because we always need the price
         return relationship(ProductPrice, lazy="joined")
+
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid,

@@ -195,6 +195,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     total_amount: int | None = Field(description="Total amount to pay in cents.")
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    organization_id: UUID4 = Field(description="ID of the organization of the product.")
     is_payment_required: bool = Field(
         description=(
             "Whether the checkout requires payment. " "Useful to detect free products."

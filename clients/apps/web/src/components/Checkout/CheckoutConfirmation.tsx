@@ -191,24 +191,29 @@ export const CheckoutConfirmation = ({
         )}
         {status === CheckoutStatus.SUCCEEDED && (
           <>
-            {productHasLicenseKeys && (
-              <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white">
-                <h3>License Keys</h3>
-                <div className="flex flex-col gap-y-2">
-                  {product.benefits
-                    .filter((benefit) => benefit.type === 'license_keys')
-                    .map((benefit) => (
-                      <LicenseKey key={benefit.id} publicBenefit={benefit} />
-                    ))}
-                </div>
-              </ShadowBox>
-            )}
-           {currentUser ? (
-              <Link className="grow" href={disabled ? '#' : `/purchases`}>
-                <Button className="w-full" size="lg" disabled={disabled}>
-                  Access your benefits
-                </Button>
-              </Link>
+            {currentUser ? (
+              <>
+                {productHasLicenseKeys && (
+                  <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white">
+                    <h3>License Keys</h3>
+                    <div className="flex flex-col gap-y-2">
+                      {product.benefits
+                        .filter((benefit) => benefit.type === 'license_keys')
+                        .map((benefit) => (
+                          <LicenseKey
+                            key={benefit.id}
+                            publicBenefit={benefit}
+                          />
+                        ))}
+                    </div>
+                  </ShadowBox>
+                )}
+                <Link className="grow" href={disabled ? '#' : `/purchases`}>
+                  <Button className="w-full" size="lg" disabled={disabled}>
+                    Access your benefits
+                  </Button>
+                </Link>
+              </>
             ) : (
               <div className="flex flex-col gap-y-6">
                 <p className="dark:text-polar-500 text-gray-500">

@@ -142,9 +142,9 @@ const DocumentationPopover = () => {
                 link="/docs"
               />
               <PopoverLinkItem
-                title="Guides"
-                description="How-to guides for common use-cases"
-                link="/docs/guides"
+                title="Developer Guides"
+                description="How-to guides for common frameworks and use cases"
+                link="/docs/developers"
               />
               <PopoverLinkItem
                 title="Support"
@@ -174,17 +174,17 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="Webhooks"
                 description="Integrate Polar with your application"
-                link="/docs/api/webhooks"
+                link="/docs/developers/webhooks"
               />
               <PopoverLinkItem
                 title="Polar SDKs"
                 description="Build with our JavaScript & Python SDKs"
-                link="/docs/api/sdk"
+                link="/docs/developers/sdk"
               />
               <PopoverLinkItem
                 title="GitHub Actions"
                 description="Use Polar in your CI/CD pipeline"
-                link="/docs/api/github-actions"
+                link="/docs/developers/sdk/github-actions"
               />
             </div>
           </div>

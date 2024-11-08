@@ -111,7 +111,7 @@ export const getWebhook = (
     return
   }
 
-  const webhooks = Object.entries(hooks).filter<[string, OpenAPIV3_1.OperationObject][]>(([eventName, webhook]) => {
+  const webhooks = Object.entries(hooks).filter(([eventName, webhook]) => {
     if (eventName === event && isDereferenced(webhook) && webhook.post) {
       return true
     }

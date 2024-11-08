@@ -20,6 +20,9 @@ class Scope(StrEnum):
     custom_fields_read = "custom_fields:read"
     custom_fields_write = "custom_fields:write"
 
+    discounts_read = "discounts:read"
+    discounts_write = "discounts:write"
+
     checkout_links_read = "checkout_links:read"
     checkout_links_write = "checkout_links:write"
 

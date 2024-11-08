@@ -9,6 +9,7 @@ from .benefit_grant import BenefitGrant
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .custom_field import CustomField
+from .discount import Discount
 from .downloadable import Downloadable
 from .external_organization import ExternalOrganization
 from .file import File
@@ -61,6 +62,7 @@ __all__ = [
     "Checkout",
     "CheckoutLink",
     "CustomField",
+    "Discount",
     "Downloadable",
     "ExternalOrganization",
     "File",

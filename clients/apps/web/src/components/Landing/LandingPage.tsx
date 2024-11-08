@@ -4,9 +4,9 @@ import { Monetization } from '@/components/Landing/Monetization'
 import { Testimonials } from '@/components/Landing/Testimonials'
 import { API } from './API'
 import { Benefits } from './Benefits'
+import { Checkout } from './Checkout'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
-import { Checkout } from './Checkout'
 
 export default function Page() {
   return (
@@ -25,7 +25,7 @@ export const PageContent = () => {
         <Benefits />
 
         <div className="flex flex-col gap-y-12">
-          <h1 className="text-4xl tracking-tight md:text-5xl md:leading-tight">
+          <h1 className="text-4xl leading-snug tracking-tight md:text-5xl md:leading-tight">
             Polar as Merchant of Record.{' '}
             <span className="dark:text-polar-500 text-gray-400">
               Leave all tax & VAT headaches to us. Focus on your passion, while

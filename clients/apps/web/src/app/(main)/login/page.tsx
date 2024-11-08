@@ -1,4 +1,5 @@
 import Login from '@/components/Auth/Login'
+import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -14,9 +15,10 @@ export default async function Page({
 }) {
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
-      <div className="flex w-full max-w-md flex-col justify-between gap-8 p-16">
-        <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-2">
+      <div className="rounded-4xl dark:bg-polar-900 shadow-3xl flex w-full max-w-md flex-col justify-between gap-16 bg-gray-50 p-12">
+        <div className="flex flex-col gap-y-8">
+          <BrandingMenu logoVariant="icon" size={60} />
+          <div className="flex flex-col gap-4">
             <h2 className="text-2xl text-black dark:text-white">
               Welcome to Polar
             </h2>

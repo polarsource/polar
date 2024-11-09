@@ -52,9 +52,6 @@ export const ProductInfoSection = ({ className }: ProductInfoSectionProps) => {
         <FormField
           control={control}
           name="description"
-          rules={{
-            required: 'This field is required',
-          }}
           render={({ field }) => (
             <FormItem className="flex flex-col gap-2">
               <div className="flex flex-row items-center justify-between">

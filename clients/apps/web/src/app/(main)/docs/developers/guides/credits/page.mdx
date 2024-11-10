@@ -26,3 +26,47 @@ In this guide, we will use "Usage" as our "Credits".
 Imagine that you want to issue 2000 credits of some kind. We will then essentially configure the License Key to support 2000 Usages.
 
 The nice thing with Polar's License Key benefit, is that we can easily increment usages by an arbitrary amount. It's up to you.
+
+## Creating the Product
+
+Go ahead and navigate to the Product Creation screen.
+
+Fill in all the details of your product.
+
+### License Key Benefit
+
+When you reach the Benefit section at the bottom, expand the `License Key` section, and click "Create New".
+
+Give your license key a description, preferrably including the credits you want to issue. Something like `500 API Requests`.
+
+The trick is to enable the `Limit Usage` option, and set the amount to how many Credits you want to issue.
+
+Hit "Create" and enable it on the new Product.
+
+## Setting up the authentication mechanism
+
+We will use Next.js API routes to illustrate on how you can use the Polar API to authenticate the requests. It should be fairly simple to translate to your specific usecase/framework.
+
+### Installing the Polar SDK
+
+Install the Polar SDK from npm:
+
+```bash
+pnpm add @polar-sh/sdk
+```
+
+You can use the REST API just as well, if you're integrating using another language.
+
+### Authenticating incoming requests
+
+```typescript
+// Configure this to your liking
+// You could for example set this value depening on the tokens used from openai, etc.
+const CREDIT_COST_PER_REQUEST = 1
+
+const validation = await polar.users.licenseKeys.validate({
+  key: licenseKey,
+	organizationId: process.env.POLAR_ORGANIZATION_ID,
+  incrementUsage: CREDIT_COST_PER_REQUEST
+});
+```

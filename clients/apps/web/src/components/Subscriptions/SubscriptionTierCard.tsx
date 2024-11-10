@@ -33,6 +33,8 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     price ? price.recurring_interval : null,
   )
 
+  const hasBenefits = (subscriptionTier.benefits?.length ?? 0) > 0
+
   return (
     <Card
       id={subscriptionTier.name}
@@ -44,7 +46,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <CardHeader className="flex grow gap-y-6 p-8 pb-0">
         <h3 className={twMerge('text-2xl')}>{subscriptionTier.name}</h3>
       </CardHeader>
-      <CardContent className="flex h-full grow flex-col gap-y-6 px-8 py-0">
+      <CardContent
+        className={twMerge(
+          'flex h-full grow flex-col gap-y-6 px-8 py-0',
+          hasBenefits ? 'pb-0' : 'pb-8',
+        )}
+      >
         <div className="text-4xl font-light">
           {price ? (
             <>

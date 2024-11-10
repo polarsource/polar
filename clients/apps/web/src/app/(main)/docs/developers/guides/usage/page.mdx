@@ -1,0 +1,28 @@
+---
+title: Credits-based products with Polar
+description: Evetything you need to know to implement credits-based Products with Polar
+keywords: credits, usage, polar, payments, invoice, billing, saas, product, lemon squeezy, api, gatekeep
+---
+
+# Credits-based products with Polar
+
+In this guide, we will be creating a Product which grants X amount of credits, which gatekeeps access to an API. It's perfect if you're building an AI application, where you want to deduct credits on every request hitting your API.
+
+## The anatomy of Credits-based products
+
+The requirements of creating a credit-system are:
+
+- A mechanism to authenticate incoming requests
+- An incrementation mechanism which runs on subsequent requests
+
+Polar has the "License Key" benefit which can fit both of these requirements.
+
+### License Keys with Credits
+
+When creating a License Key benefit on Polar, you have the option to issue an arbitrary "Usage" limit. This essentially means that you can restrict the License Key to be used a certain amount of times.
+
+In this guide, we will use "Usage" as our "Credits".
+
+Imagine that you want to issue 2000 credits of some kind. We will then essentially configure the License Key to support 2000 Usages.
+
+The nice thing with Polar's License Key benefit, is that we can easily increment usages by an arbitrary amount. It's up to you.

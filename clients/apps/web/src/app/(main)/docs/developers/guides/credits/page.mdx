@@ -57,16 +57,64 @@ pnpm add @polar-sh/sdk
 
 You can use the REST API just as well, if you're integrating using another language.
 
-### Authenticating incoming requests
+### Add your Polar Organization ID
+
+In order to make validation requests to Polar's API, we need to supply the Organization ID to the SDK.
+
+You can find the Organization ID on the Polar Organization Settings page.
+
+Go ahead and add it to your `.env` so that we can access it.
+
+```bash
+# .env
+POLAR_ORGANIZATION_ID="..."
+```
+
+### Implementation with Next.js
 
 ```typescript
+import headers from 'next/headers';
+import { CoreMessage, streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { headers } from "next/headers";
+
+const polar = new Polar({
+  server: 'sandbox', // Use sandbox for testing purposes - otherwise use 'production' or omit this line
+})
+
 // Configure this to your liking
 // You could for example set this value depening on the tokens used from openai, etc.
-const CREDIT_COST_PER_REQUEST = 1
+const CREDIT_COST_PER_REQUEST = 1;
 
-const validation = await polar.users.licenseKeys.validate({
-  key: licenseKey,
-	organizationId: process.env.POLAR_ORGANIZATION_ID,
-  incrementUsage: CREDIT_COST_PER_REQUEST
-});
+export async function POST(req: Request) {
+  const { messages }: { messages: CoreMessage[] } = await req.json();
+  const headersList = await headers();
+  const licenseKey = headersList.get("Authorization")?.split(" ")[1];
+
+  if (!licenseKey) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const validation = polar.users.licenseKeys.validate({
+    organizationId: process.env.POLAR_ORGANIZATION_ID!,
+    key: licenseKey,
+    incrementUsage: CREDIT_COST_PER_REQUEST
+  })
+
+  if (!validation) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const result = await streamText({
+    model: openai('gpt-4o-mini'),
+    system: 'You are a helpful assistant.',
+    messages,
+  });
+
+  return result.toDataStreamResponse();
+}
 ```
+
+This will take an incoming request, extract the License Key from the Authorization header, and pass that along to the license key validation function using the Polar SDK. If the validation passes, we go ahead and call whatever we want.
+
+Using the `ìncrementUsage` parameter, we increase the "credits" for every request done.

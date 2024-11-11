@@ -45,6 +45,7 @@ import { Label } from 'polarkit/components/ui/label'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductPriceLabel from './ProductPriceLabel'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 const LinkView = ({
   product,
@@ -87,7 +88,7 @@ const LinkView = ({
         <TabsList>
           <TabsTrigger value="link">Link</TabsTrigger>
           <TabsTrigger value="checkout">Checkout Embed</TabsTrigger>
-          <TabsTrigger value="svg">Product Card</TabsTrigger>
+          <TabsTrigger value="svg">SVG Embed</TabsTrigger>
         </TabsList>
 
         <TabsContent value="link">
@@ -149,8 +150,8 @@ const LinkList = ({
       <div className="mb-4 flex flex-row">
         <h2 className="grow">Links</h2>
         <div className="pr-4">
-          <Button variant="secondary" onClick={onSelectCreate}>
-            +
+          <Button size="sm" onClick={onSelectCreate}>
+            New Link
           </Button>
         </div>
       </div>
@@ -174,7 +175,7 @@ const LinkList = ({
                 </Pill>
               )}
               <Button
-                size="sm"
+                size="icon"
                 variant="secondary"
                 onClick={(e) => {
                   e.preventDefault()
@@ -184,7 +185,6 @@ const LinkList = ({
               >
                 <SettingsOutlined
                   fontSize="inherit"
-                  className="text-gray-500"
                 />
               </Button>
             </ListItem>
@@ -329,7 +329,7 @@ export const ProductCheckoutModal = ({
   return (
     <div className="flex flex-col gap-y-8 overflow-y-auto p-12">
       <div className="flex flex-col gap-y-2">
-        <h1 className="text-xl font-medium">Share &rsaquo; {product.name}</h1>
+        <h1 className="text-xl font-medium">{product.name}</h1>
         <p className="dark:text-polar-500 text-gray-500">
           Checkout Links &amp; Embeds to easily integrate or share directly with
           your audience.
@@ -351,153 +351,155 @@ export const ProductCheckoutModal = ({
       )}
 
       {showForm && (
-        <Form {...form}>
-          <h2>{selectedLink ? 'Edit Link' : 'Create Link'}</h2>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-6"
-          >
-            {!selectedLink && product.prices.length > 1 && (
+        <ShadowBox className="dark:bg-polar-800 bg-white flex flex-col gap-y-6 p-6 rounded-xl">
+          <Form {...form}>
+            <h2>{selectedLink ? 'Edit Link' : 'Create Link'}</h2>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-y-6"
+            >
+              {!selectedLink && product.prices.length > 1 && (
+                <FormField
+                  control={control}
+                  name="product_price_id"
+                  rules={{ required: 'This field is required' }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a price" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {product.prices.map((price) => (
+                            <SelectItem key={price.id} value={price.id}>
+                              <ProductPriceLabel price={price} />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={control}
-                name="product_price_id"
-                rules={{ required: 'This field is required' }}
+                name="success_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a price" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {product.prices.map((price) => (
-                          <SelectItem key={price.id} value={price.id}>
-                            <ProductPriceLabel price={price} />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Success URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Include{' '}
+                      <code>
+                        {'{'}CHECKOUT_ID{'}'}
+                      </code>{' '}
+                      to receive the Checkout ID on success.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
-            <FormField
-              control={control}
-              name="success_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Success URL</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Include{' '}
-                    <code>
-                      {'{'}CHECKOUT_ID{'}'}
-                    </code>{' '}
-                    to receive the Checkout ID on success.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormItem>
-              <FormLabel>Metadata</FormLabel>
-              <div className="flex flex-col gap-2">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="flex flex-row items-center gap-2"
-                  >
-                    <FormField
-                      control={control}
-                      name={`metadata.${index}.key`}
-                      render={({ field }) => (
-                        <div className="flex flex-col">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ''}
-                              placeholder="Key"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      )}
-                    />
-                    <FormField
-                      control={control}
-                      name={`metadata.${index}.value`}
-                      render={({ field }) => (
-                        <div className="flex flex-col">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value.toString() || ''}
-                              placeholder="Value"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      )}
-                    />
-                    <Button
-                      className={
-                        'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                      }
-                      size="icon"
-                      variant="secondary"
-                      type="button"
-                      onClick={() => remove(index)}
+              <FormItem>
+                <FormLabel>Metadata</FormLabel>
+                <div className="flex flex-col gap-2">
+                  {fields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className="flex flex-row items-center gap-2"
                     >
-                      <ClearOutlined fontSize="inherit" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  type="button"
-                  onClick={() => {
-                    append({ key: '', value: '' })
-                  }}
-                >
-                  Add metadata
-                </Button>
-              </div>
-            </FormItem>
+                      <FormField
+                        control={control}
+                        name={`metadata.${index}.key`}
+                        render={({ field }) => (
+                          <div className="flex flex-col">
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ''}
+                                placeholder="Key"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </div>
+                        )}
+                      />
+                      <FormField
+                        control={control}
+                        name={`metadata.${index}.value`}
+                        render={({ field }) => (
+                          <div className="flex flex-col">
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value.toString() || ''}
+                                placeholder="Value"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </div>
+                        )}
+                      />
+                      <Button
+                        className={
+                          'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                        }
+                        size="icon"
+                        variant="secondary"
+                        type="button"
+                        onClick={() => remove(index)}
+                      >
+                        <ClearOutlined fontSize="inherit" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="self-start"
+                    type="button"
+                    onClick={() => {
+                      append({ key: '', value: '' })
+                    }}
+                  >
+                    Add metadata
+                  </Button>
+                </div>
+              </FormItem>
 
-            <div className="flex flex-row gap-x-4">
-              <Button
-                className="self-start"
-                type="submit"
-                loading={isCreatePending || isUpdatePending}
-              >
-                {selectedLink ? 'Save' : 'Create'}
-              </Button>
-              {selectedLink && (
+              <div className="flex flex-row gap-x-4">
                 <Button
                   className="self-start"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowForm(false)
-                  }}
+                  type="submit"
+                  loading={isCreatePending || isUpdatePending}
                 >
-                  Cancel
+                  {selectedLink ? 'Save' : 'Create'}
                 </Button>
-              )}
-            </div>
-          </form>
-        </Form>
+                {selectedLink && (
+                  <Button
+                    className="self-start"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowForm(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Form>
+        </ShadowBox>
       )}
     </div>
   )

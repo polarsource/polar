@@ -46,7 +46,7 @@ export const EditProductPage = ({
   } = useModal()
 
   const router = useRouter()
-  const benefits = useBenefits(organization.id)
+  const benefits = useBenefits(organization.id, 50)
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
     [benefits],

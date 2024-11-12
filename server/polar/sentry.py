@@ -112,6 +112,7 @@ class PostHogIntegration(Integration):
 def configure_sentry() -> None:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
+        enable_tracing=False,
         traces_sample_rate=0.1,
         profiles_sample_rate=0.1,
         release=os.environ.get("RELEASE_VERSION", "development"),

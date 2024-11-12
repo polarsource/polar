@@ -498,3 +498,6 @@ class Transaction(RecordModel):
     @property
     def transferable_amount(self) -> int:
         return self.amount + self.reversed_amount
+
+    def __repr__(self) -> str:
+        return f"Transaction(id={self.id!r}, type={self.type!r}, amount={self.amount!r}, currency={self.currency!r})"

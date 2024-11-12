@@ -37,6 +37,7 @@ export interface LicenseKeysApiGetActivationRequest {
 
 export interface LicenseKeysApiListRequest {
     organizationId?: OrganizationIDFilter;
+    benefitId?: string;
     page?: number;
     limit?: number;
 }
@@ -153,6 +154,10 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
         if (requestParameters['organizationId'] != null) {
             queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
         }
 
         if (requestParameters['page'] != null) {

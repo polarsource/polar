@@ -127,8 +127,6 @@ export const ClientPage = ({
     [updateLicenseKey, selectedLicenseKey, setStatusLoading],
   )
 
-  console.log(selectedLicenseKey)
-
   const LicenseKeyContextView = selectedLicenseKey ? (
     <div className="flex flex-col gap-y-8 p-8">
       <h1 className="text-xl">License Key</h1>

@@ -15408,6 +15408,31 @@
                         "description": "Filter by organization ID."
                     },
                     {
+                        "name": "benefit_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The benefit ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/benefits",
+                                        "resourceName": "Benefit",
+                                        "displayProperty": "description"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "BenefitID Filter",
+                            "description": "Filter by benefit ID."
+                        },
+                        "description": "Filter by benefit ID."
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -23495,6 +23520,7 @@
                     "slug": {
                         "type": "string",
                         "minLength": 1,
+                        "pattern": "^[a-z0-9-_]+$",
                         "title": "Slug",
                         "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
@@ -23571,6 +23597,7 @@
                     "slug": {
                         "type": "string",
                         "minLength": 1,
+                        "pattern": "^[a-z0-9-_]+$",
                         "title": "Slug",
                         "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
@@ -23647,6 +23674,7 @@
                     "slug": {
                         "type": "string",
                         "minLength": 1,
+                        "pattern": "^[a-z0-9-_]+$",
                         "title": "Slug",
                         "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
@@ -23723,6 +23751,7 @@
                     "slug": {
                         "type": "string",
                         "minLength": 1,
+                        "pattern": "^[a-z0-9-_]+$",
                         "title": "Slug",
                         "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
@@ -23799,6 +23828,7 @@
                     "slug": {
                         "type": "string",
                         "minLength": 1,
+                        "pattern": "^[a-z0-9-_]+$",
                         "title": "Slug",
                         "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                     },
@@ -24455,6 +24485,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
+                                "pattern": "^[a-z0-9-_]+$",
                                 "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
@@ -24537,6 +24568,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
+                                "pattern": "^[a-z0-9-_]+$",
                                 "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
@@ -24619,6 +24651,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
+                                "pattern": "^[a-z0-9-_]+$",
                                 "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
@@ -24701,6 +24734,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
+                                "pattern": "^[a-z0-9-_]+$",
                                 "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {
@@ -24783,6 +24817,7 @@
                             {
                                 "type": "string",
                                 "minLength": 1,
+                                "pattern": "^[a-z0-9-_]+$",
                                 "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
                             },
                             {

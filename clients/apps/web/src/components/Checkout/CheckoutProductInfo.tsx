@@ -20,14 +20,14 @@ const CheckoutProductInfo = ({
       {organization.profile_settings?.enabled ? (
         <Link href={organizationPageLink(organization)}>
           <Avatar
-            className="md:h-16 md:w-16"
+            className="h-16 w-16"
             avatar_url={organization.avatar_url}
             name={organization.name}
           />
         </Link>
       ) : (
         <Avatar
-          className="md:h-16 md:w-16"
+          className="h-16 w-16"
           avatar_url={organization.avatar_url}
           name={organization.name}
         />

@@ -23,7 +23,7 @@ export const CheckoutInfo = ({
   const { product } = checkout
   return (
     <div
-      className={twMerge('flex flex-col gap-y-12 md:p-20', className)}
+      className={twMerge('flex flex-col gap-y-12 md:p-12 lg:p-20', className)}
     >
       <CheckoutProductInfo organization={organization} product={product} />
       <CheckoutCard checkout={checkout} onCheckoutUpdate={onCheckoutUpdate} />

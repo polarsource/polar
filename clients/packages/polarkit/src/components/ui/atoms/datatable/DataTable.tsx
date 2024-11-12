@@ -150,9 +150,25 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className={row.getCanSelect() ? 'cursor-pointer' : ''}
-                      data-state={row.getIsSelected() && 'selected'}
-                      onClick={row.getToggleSelectedHandler()}
+                      className={
+                        enableRowSelection
+                          ? row.getCanSelect()
+                            ? 'cursor-pointer'
+                            : ''
+                          : undefined
+                      }
+                      data-state={
+                        enableRowSelection
+                          ? row.getIsSelected()
+                            ? 'selected'
+                            : undefined
+                          : undefined
+                      }
+                      onClick={
+                        enableRowSelection
+                          ? row.getToggleSelectedHandler()
+                          : undefined
+                      }
                     >
                       {row.getVisibleCells().map((cell) => {
                         const colSpan = getCellColSpan

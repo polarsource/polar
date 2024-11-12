@@ -11,6 +11,7 @@ export * from './CheckoutsApi';
 export * from './CheckoutsCustomApi';
 export * from './CustomFieldsApi';
 export * from './DashboardApi';
+export * from './DiscountsApi';
 export * from './EmbedsApi';
 export * from './ExternalOrganizationsApi';
 export * from './FilesApi';

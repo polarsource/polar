@@ -9,6 +9,7 @@ import {
   CheckoutsCustomApi,
   Configuration,
   DashboardApi,
+  DiscountsApi,
   ExternalOrganizationsApi,
   FilesApi,
   FundingApi,
@@ -55,6 +56,7 @@ export class PolarAPI {
   public readonly checkouts: CheckoutsCustomApi
   public readonly checkoutLinks: CheckoutLinksApi
   public readonly customFields: CustomFieldsApi
+  public readonly discounts: DiscountsApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly externalOrganizations: ExternalOrganizationsApi
@@ -102,6 +104,7 @@ export class PolarAPI {
     this.customFields = new CustomFieldsApi(config)
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
+    this.discounts = new DiscountsApi(config)
     this.externalOrganizations = new ExternalOrganizationsApi(config)
     this.funding = new FundingApi(config)
     this.integrationsDiscord = new IntegrationsDiscordApi(config)

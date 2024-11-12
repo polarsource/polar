@@ -1,6 +1,5 @@
 'use client'
 
-import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasIntervals } from '@/utils/product'

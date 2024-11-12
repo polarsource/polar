@@ -59,6 +59,29 @@ async def create_payment_transaction(
     return transaction
 
 
+async def create_refund_transaction(
+    save_fixture: SaveFixture,
+    *,
+    amount: int = -1000,
+    charge_id: str = "STRIPE_CHARGE_ID",
+    refund_id: str = "STRIPE_REFUND_ID",
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.refund,
+        account=None,
+        processor=PaymentProcessor.stripe,
+        currency="usd",
+        amount=amount,
+        account_currency="usd",
+        account_amount=amount,
+        tax_amount=0,
+        charge_id=charge_id,
+        refund_id=refund_id,
+    )
+    await save_fixture(transaction)
+    return transaction
+
+
 async def create_balance_transaction(
     save_fixture: SaveFixture,
     *,
@@ -66,6 +89,8 @@ async def create_balance_transaction(
     currency: str = "usd",
     amount: int = 1000,
     payment_transaction: Transaction | None = None,
+    balance_reversal_transaction: Transaction | None = None,
+    payout_transaction: Transaction | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.balance,
@@ -77,6 +102,8 @@ async def create_balance_transaction(
         account_amount=amount,
         tax_amount=0,
         payment_transaction=payment_transaction,
+        balance_reversal_transaction=balance_reversal_transaction,
+        payout_transaction=payout_transaction,
     )
     await save_fixture(transaction)
     return transaction
@@ -299,6 +326,214 @@ class TestCreatePayout:
         )
         assert payout.paid_transactions[0].id == balance_transaction_1.id
         assert payout.paid_transactions[1].id == balance_transaction_2.id
+
+        stripe_service_mock.create_payout.assert_not_called()
+
+    async def test_stripe_refund(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            processor_fees_applicable=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_ID_1"
+        )
+        balance_transaction_1 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_ID_2"
+        )
+        balance_transaction_2 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        assert payment_transaction_1.charge_id is not None
+        refund_transaction_1 = await create_refund_transaction(
+            save_fixture,
+            amount=-payment_transaction_1.amount,
+            charge_id=payment_transaction_1.charge_id,
+        )
+        balance_transaction_3 = await create_balance_transaction(
+            save_fixture,
+            account=account,
+            amount=refund_transaction_1.amount,
+            balance_reversal_transaction=balance_transaction_1,
+        )
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
+        )
+
+        # then
+        session.expunge_all()
+
+        payout = await payout_transaction_service.create_payout(
+            session, account=account
+        )
+
+        assert payout.account == account
+        assert payout.processor == PaymentProcessor.stripe
+        assert payout.payout_id is None
+        assert payout.currency == "usd"
+        assert payout.amount < 0
+        assert payout.account_currency == "usd"
+        assert payout.account_amount < 0
+
+        assert len(payout.paid_transactions) == 3 + len(
+            payout.account_incurred_transactions
+        )
+        assert payout.paid_transactions[0].id == balance_transaction_1.id
+        assert payout.paid_transactions[1].id == balance_transaction_2.id
+        assert payout.paid_transactions[2].id == balance_transaction_3.id
+
+        assert len(payout.incurred_transactions) > 0
+        assert (
+            len(payout.account_incurred_transactions)
+            == len(payout.incurred_transactions) / 2
+        )
+
+        transfer_mock: MagicMock = stripe_service_mock.transfer
+        assert transfer_mock.call_count == 1
+        for call in transfer_mock.call_args_list:
+            assert call[0][0] == account.stripe_id
+            assert call[1]["source_transaction"] in [
+                payment_transaction_1.charge_id,
+                payment_transaction_2.charge_id,
+            ]
+            # assert call[1]["transfer_group"] == str(payout.id)
+            assert call[1]["metadata"]["payout_transaction_id"] == str(payout.id)
+
+        stripe_service_mock.create_payout.assert_not_called()
+
+    async def test_stripe_refund_of_paid_payment(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            processor_fees_applicable=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        previous_payout = Transaction(
+            type=TransactionType.payout,
+            account=account,
+            processor=PaymentProcessor.stripe,
+            currency="usd",
+            amount=-1000,
+            account_currency="usd",
+            account_amount=-1000,
+            tax_amount=0,
+        )
+        await save_fixture(previous_payout)
+
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_ID_1"
+        )
+        balance_transaction_1 = await create_balance_transaction(
+            save_fixture,
+            account=account,
+            payment_transaction=payment_transaction_1,
+            payout_transaction=previous_payout,
+        )
+
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_ID_2"
+        )
+        balance_transaction_2 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        payment_transaction_3 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_ID_3"
+        )
+        balance_transaction_3 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_3
+        )
+
+        assert payment_transaction_1.charge_id is not None
+        refund_transaction_1 = await create_refund_transaction(
+            save_fixture,
+            amount=-payment_transaction_1.amount,
+            charge_id=payment_transaction_1.charge_id,
+        )
+        balance_transaction_4 = await create_balance_transaction(
+            save_fixture,
+            account=account,
+            amount=refund_transaction_1.amount,
+            balance_reversal_transaction=balance_transaction_1,
+        )
+
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
+        )
+
+        # then
+        session.expunge_all()
+
+        payout = await payout_transaction_service.create_payout(
+            session, account=account
+        )
+
+        assert payout.account == account
+        assert payout.processor == PaymentProcessor.stripe
+        assert payout.payout_id is None
+        assert payout.currency == "usd"
+        assert payout.amount < 0
+        assert payout.account_currency == "usd"
+        assert payout.account_amount < 0
+
+        assert len(payout.paid_transactions) == 3 + len(
+            payout.account_incurred_transactions
+        )
+        assert payout.paid_transactions[0].id == balance_transaction_2.id
+        assert payout.paid_transactions[1].id == balance_transaction_3.id
+        assert payout.paid_transactions[2].id == balance_transaction_4.id
+
+        assert len(payout.incurred_transactions) > 0
+        assert (
+            len(payout.account_incurred_transactions)
+            == len(payout.incurred_transactions) / 2
+        )
+
+        transfer_mock: MagicMock = stripe_service_mock.transfer
+        assert transfer_mock.call_count == 1
+        for call in transfer_mock.call_args_list:
+            assert call[0][0] == account.stripe_id
+            assert call[1]["source_transaction"] in [
+                payment_transaction_2.charge_id,
+                payment_transaction_3.charge_id,
+            ]
+            # assert call[1]["transfer_group"] == str(payout.id)
+            assert call[1]["metadata"]["payout_transaction_id"] == str(payout.id)
 
         stripe_service_mock.create_payout.assert_not_called()
 

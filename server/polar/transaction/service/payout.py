@@ -164,7 +164,6 @@ class PayoutTransactionService(BaseTransactionService):
         unpaid_balance_transactions = await self._get_unpaid_balance_transactions(
             session, account
         )
-        payout_fees = balance_amount - balance_amount_after_fees
 
         if account.account_type == AccountType.stripe:
             transaction = await self._prepare_stripe_payout(
@@ -172,7 +171,6 @@ class PayoutTransactionService(BaseTransactionService):
                 transaction=transaction,
                 account=account,
                 unpaid_balance_transactions=unpaid_balance_transactions,
-                payout_fees=payout_fees,
             )
         elif account.account_type == AccountType.open_collective:
             transaction.processor = PaymentProcessor.open_collective
@@ -406,7 +404,6 @@ class PayoutTransactionService(BaseTransactionService):
         transaction: Transaction,
         account: Account,
         unpaid_balance_transactions: Sequence[Transaction],
-        payout_fees: int,
     ) -> Transaction:
         """
         The Stripe payout is a two-steps process:
@@ -421,22 +418,51 @@ class PayoutTransactionService(BaseTransactionService):
         transaction.processor = PaymentProcessor.stripe
         transfer_group = str(transaction.id)
 
-        transfers: list[tuple[str, int, Transaction]] = []
-        for balance_transaction in unpaid_balance_transactions:
-            if (
-                balance_transaction.payment_transaction is not None
-                and balance_transaction.payment_transaction.charge_id is not None
-            ):
-                source_transaction = balance_transaction.payment_transaction.charge_id
-                transfer_amount = max(
-                    balance_transaction.transferable_amount - payout_fees, 0
-                )
-                if transfer_amount > 0:
-                    transfers.append(
-                        (source_transaction, transfer_amount, balance_transaction)
-                    )
-                payout_fees -= balance_transaction.transferable_amount - transfer_amount
+        # Balances that we'll be able to pull money from
+        payment_balance_transactions = [
+            balance_transaction
+            for balance_transaction in unpaid_balance_transactions
+            if balance_transaction.payment_transaction is not None
+            and balance_transaction.payment_transaction.charge_id is not None
+        ]
 
+        # Balances that are not tied to a payment. Typically, this is:
+        # * Payout fees we just created
+        # * Refunds that have been issued after the payment has been paid out
+        outstanding_balance_transactions = [
+            balance_transaction
+            for balance_transaction in unpaid_balance_transactions
+            if balance_transaction not in payment_balance_transactions
+            and balance_transaction.balance_reversal_transaction
+            not in payment_balance_transactions
+        ]
+
+        # This is the amount we should subtract from the total transfer
+        outstanding_amount = abs(
+            sum(
+                balance_transaction.amount
+                for balance_transaction in outstanding_balance_transactions
+            )
+        )
+
+        # Compute transfers out of each payment balance, making sure to subtract the outstanding amount
+        transfers: list[tuple[str, int, Transaction]] = []
+        for balance_transaction in payment_balance_transactions:
+            assert balance_transaction.payment_transaction is not None
+            assert balance_transaction.payment_transaction.charge_id is not None
+            source_transaction = balance_transaction.payment_transaction.charge_id
+            transfer_amount = max(
+                balance_transaction.transferable_amount - outstanding_amount, 0
+            )
+            if transfer_amount > 0:
+                transfers.append(
+                    (source_transaction, transfer_amount, balance_transaction)
+                )
+            outstanding_amount -= (
+                balance_transaction.transferable_amount - transfer_amount
+            )
+
+        # Make sure the expected amount of the payout actually matches the sum of the transfers
         transfers_sum = sum(amount for _, amount, _ in transfers)
         if transfers_sum != -transaction.amount:
             raise UnmatchingTransfersAmount(-transaction.amount, transfers_sum)
@@ -516,6 +542,7 @@ class PayoutTransactionService(BaseTransactionService):
                 Transaction.payout_transaction_id.is_(None),
             )
             .options(
+                selectinload(Transaction.balance_reversal_transaction),
                 selectinload(Transaction.balance_reversal_transactions),
                 selectinload(Transaction.payment_transaction),
             )

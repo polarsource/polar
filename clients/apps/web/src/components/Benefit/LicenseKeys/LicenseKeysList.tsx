@@ -3,6 +3,7 @@ import { LicenseKeyRead } from '@polar-sh/sdk'
 import {
   OnChangeFn,
   PaginationState,
+  RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -21,6 +22,8 @@ export interface LicenseKeysListProps {
   setSorting: OnChangeFn<SortingState>
   sorting: DataTableSortingState
   isLoading: boolean
+  selectedLicenseKey: RowSelectionState
+  onSelectLicenseKeyChange?: OnChangeFn<RowSelectionState>
 }
 
 export const LicenseKeysList = ({
@@ -31,6 +34,8 @@ export const LicenseKeysList = ({
   setSorting,
   sorting,
   isLoading,
+  selectedLicenseKey,
+  onSelectLicenseKeyChange,
 }: LicenseKeysListProps) => {
   const columns: DataTableColumnDef<LicenseKeyRead>[] = [
     {
@@ -149,6 +154,11 @@ export const LicenseKeysList = ({
       sorting={sorting}
       onSortingChange={setSorting}
       isLoading={isLoading}
+      enableRowSelection={true}
+      selectionState={selectedLicenseKey}
+      onRowSelectionChange={onSelectLicenseKeyChange}
+      rowSelection={selectedLicenseKey}
+      getRowId={(row) => row.id}
     />
   )
 }

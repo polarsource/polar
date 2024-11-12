@@ -6,6 +6,7 @@ import {
   OnChangeFn,
   PaginationState,
   Row,
+  RowSelectionState,
   SortingState,
   flexRender,
   getCoreRowModel,
@@ -46,6 +47,9 @@ interface DataTableProps<TData, TValue> {
   isLoading: boolean | ReactQueryLoading
   getCellColSpan?: (cell: Cell<TData, unknown>) => number
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
+  rowSelection?: RowSelectionState
+  enableRowSelection?: boolean
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -76,6 +80,9 @@ export function DataTable<TData, TValue>({
   isLoading,
   getCellColSpan,
   getRowId,
+  rowSelection,
+  enableRowSelection,
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -89,10 +96,13 @@ export function DataTable<TData, TValue>({
     getSubRows,
     getExpandedRowModel: getExpandedRowModel(),
     getRowId,
-
+    enableRowSelection,
+    onRowSelectionChange,
+    enableMultiRowSelection: false,
     state: {
       pagination,
       sorting,
+      rowSelection,
     },
   })
 
@@ -140,7 +150,9 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
+                      className={row.getCanSelect() && 'cursor-pointer'}
                       data-state={row.getIsSelected() && 'selected'}
+                      onClick={row.getToggleSelectedHandler()}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const colSpan = getCellColSpan

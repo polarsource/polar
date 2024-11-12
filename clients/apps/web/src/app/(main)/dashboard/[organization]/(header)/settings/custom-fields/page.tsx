@@ -7,7 +7,7 @@ import ClientPage from './ClientPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Custom fields', // " | Polar is added by the template"
+    title: 'Custom Fields', // " | Polar is added by the template"
   }
 }
 

@@ -20,7 +20,7 @@ const CustomFieldTypeLabel = ({ type }: { type: CustomFieldType }) => {
   const label = getLabel(type)
 
   return (
-    <div className="flex flex-row items-center gap-1">
+    <div className="flex flex-row items-center gap-2">
       <CustomFieldTypeIcon type={type} />
       <div>{label}</div>
     </div>

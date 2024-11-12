@@ -394,7 +394,7 @@ const organizationRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/settings/webhooks`,
       },
       {
-        title: 'Custom fields',
+        title: 'Custom Fields',
         link: `/dashboard/${org.slug}/settings/custom-fields`,
       },
     ],

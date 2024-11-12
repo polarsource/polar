@@ -18,6 +18,7 @@ import {
 import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import FormattedDateTime from 'polarkit/components/ui/atoms/FormattedDateTime'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useMemo, useState } from 'react'
 

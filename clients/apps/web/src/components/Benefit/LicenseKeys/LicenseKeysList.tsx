@@ -6,7 +6,6 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   DataTable,
@@ -77,41 +76,6 @@ export const LicenseKeysList = ({
           </div>
         )
       },
-    },
-    {
-      id: 'validations',
-      accessorKey: 'validations',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Validations" />
-      ),
-      cell: ({ row: { original: licenseKey } }) => (
-        <span>{licenseKey.validations}</span>
-      ),
-    },
-    {
-      id: 'last_validated_at',
-      accessorKey: 'last_validated_at',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Validated At" />
-      ),
-      cell: ({ getValue, row: { original: licenseKey } }) =>
-        licenseKey.last_validated_at ? (
-          <FormattedDateTime datetime={getValue() as string} />
-        ) : (
-          <span className="dark:text-polar-500 text-gray-500">
-            Never Validated
-          </span>
-        ),
-    },
-    {
-      id: 'expires_at',
-      accessorKey: 'expires_at',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Expiry Date" />
-      ),
-      cell: ({ getValue }) => (
-        <FormattedDateTime datetime={getValue() as string} />
-      ),
     },
     {
       id: 'user',

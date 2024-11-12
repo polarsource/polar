@@ -3,6 +3,8 @@
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
+  useLicenseKey,
+  useLicenseKeyDeactivation,
   useLicenseKeyUpdate,
   useOrganizationLicenseKeys,
 } from '@/hooks/queries'
@@ -12,6 +14,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
+import { CloseOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import {
   PaginationState,
@@ -23,6 +26,7 @@ import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useMemo, useState } from 'react'
 
@@ -123,69 +127,85 @@ export const ClientPage = ({
     [updateLicenseKey, selectedLicenseKey, setStatusLoading],
   )
 
+  console.log(selectedLicenseKey)
+
   const LicenseKeyContextView = selectedLicenseKey ? (
-    <div className="flex flex-col gap-y-6 p-8">
+    <div className="flex flex-col gap-y-8 p-8">
       <h1 className="text-xl">License Key</h1>
-      <CopyToClipboardInput value={selectedLicenseKey.key} />
-      <ShadowBox className="dark:bg-polar-800 bg-white p-6 text-sm lg:rounded-3xl">
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-y-2">
-            <div className="flex flex-row items-center justify-between">
-              <span className="dark:text-polar-500 text-gray-500">Status</span>
-              <span className="capitalize">{selectedLicenseKey.status}</span>
-            </div>
-            {selectedLicenseKey.limit_usage && (
+      <div className="flex flex-row items-center gap-x-3">
+        <Avatar
+          className="h-10 w-10"
+          avatar_url={selectedLicenseKey.user?.avatar_url}
+          name={selectedLicenseKey.user?.public_name}
+        />
+        <div className="flex flex-col">
+          <span>{selectedLicenseKey.user?.public_name}</span>
+          <span className="dark:text-polar-500 text-xs text-gray-500">
+            {selectedLicenseKey.user?.email}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-y-6">
+        <CopyToClipboardInput value={selectedLicenseKey.key} />
+        <ShadowBox className="dark:bg-polar-800 bg-white p-6 text-sm lg:rounded-3xl">
+          <div className="flex flex-col gap-y-6">
+            <div className="flex flex-col gap-y-2">
               <div className="flex flex-row items-center justify-between">
-                <span className="dark:text-polar-500 text-gray-500">Usage</span>
+                <span className="dark:text-polar-500 text-gray-500">
+                  Status
+                </span>
+                <span className="capitalize">{selectedLicenseKey.status}</span>
+              </div>
+              {selectedLicenseKey.limit_usage && (
+                <div className="flex flex-row items-center justify-between">
+                  <span className="dark:text-polar-500 text-gray-500">
+                    Usage
+                  </span>
+                  <span>
+                    {selectedLicenseKey.usage} /{' '}
+                    {selectedLicenseKey.limit_usage}
+                  </span>
+                </div>
+              )}
+              <div className="flex flex-row items-center justify-between">
+                <span className="dark:text-polar-500 text-gray-500">
+                  Validations
+                </span>
+                <span>{selectedLicenseKey.validations}</span>
+              </div>
+              <div className="flex flex-row items-center justify-between">
+                <span className="dark:text-polar-500 text-gray-500">
+                  Validated At
+                </span>
                 <span>
-                  {selectedLicenseKey.usage} / {selectedLicenseKey.limit_usage}
+                  {selectedLicenseKey.last_validated_at ? (
+                    <FormattedDateTime
+                      datetime={selectedLicenseKey.last_validated_at ?? ''}
+                    />
+                  ) : (
+                    <span>Never Validated</span>
+                  )}
                 </span>
               </div>
-            )}
-            <div className="flex flex-row items-center justify-between">
-              <span className="dark:text-polar-500 text-gray-500">
-                Validated At
-              </span>
-              <span>
-                {selectedLicenseKey.last_validated_at ? (
-                  <FormattedDateTime
-                    datetime={selectedLicenseKey.last_validated_at ?? ''}
-                  />
-                ) : (
-                  <span>Never Validated</span>
-                )}
-              </span>
-            </div>
-            <div className="flex flex-row items-center justify-between">
-              <span className="dark:text-polar-500 text-gray-500">
-                Expiry Date
-              </span>
-              <span>
-                {selectedLicenseKey.expires_at ? (
-                  <FormattedDateTime
-                    datetime={selectedLicenseKey.expires_at ?? ''}
-                  />
-                ) : (
-                  <span>No Expiry</span>
-                )}
-              </span>
+              <div className="flex flex-row items-center justify-between">
+                <span className="dark:text-polar-500 text-gray-500">
+                  Expiry Date
+                </span>
+                <span>
+                  {selectedLicenseKey.expires_at ? (
+                    <FormattedDateTime
+                      datetime={selectedLicenseKey.expires_at ?? ''}
+                    />
+                  ) : (
+                    <span>No Expiry</span>
+                  )}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex flex-row items-center gap-x-3">
-            <Avatar
-              className="h-10 w-10"
-              avatar_url={selectedLicenseKey.user?.avatar_url}
-              name={selectedLicenseKey.user?.public_name}
-            />
-            <div className="flex flex-col">
-              <span>{selectedLicenseKey.user?.public_name}</span>
-              <span className="dark:text-polar-500 text-xs text-gray-500">
-                {selectedLicenseKey.user?.email}
-              </span>
-            </div>
-          </div>
-        </div>
-      </ShadowBox>
+        </ShadowBox>
+      </div>
+      <LicenseKeyActivations licenseKeyId={selectedLicenseKey.id} />
       <div className="flex flex-row gap-x-4">
         {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
           <Button
@@ -230,5 +250,55 @@ export const ClientPage = ({
         selectedLicenseKey={selectedLicenseKeys}
       />
     </DashboardBody>
+  )
+}
+
+interface LicenseKeyActivationsProps {
+  licenseKeyId: string
+}
+
+const LicenseKeyActivations = ({
+  licenseKeyId,
+}: LicenseKeyActivationsProps) => {
+  const { data: licenseKey } = useLicenseKey({ licenseKeyId })
+
+  const onDeactivate = useLicenseKeyDeactivation(licenseKeyId)
+
+  const hasActivations = (licenseKey?.activations?.length ?? 0) > 0
+
+  if (!hasActivations) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-col gap-y-4">
+      <h3>Activations</h3>
+      <List size="small">
+        {licenseKey?.activations.map((activation) => (
+          <ListItem key={activation.id} size="small">
+            <h3 className="text-sm">{activation.label}</h3>
+            <div className="flex flex-row items-center gap-x-4">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                <FormattedDateTime datetime={activation.created_at} />
+              </span>
+              <Button
+                className="h-6 w-6"
+                variant="secondary"
+                size="icon"
+                onClick={() => {
+                  onDeactivate.mutate({
+                    activationId: activation.id,
+                    key: licenseKey.key,
+                    organizationId: licenseKey.organization_id,
+                  })
+                }}
+              >
+                <CloseOutlined fontSize="inherit" />
+              </Button>
+            </div>
+          </ListItem>
+        ))}
+      </List>
+    </div>
   )
 }

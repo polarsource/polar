@@ -61,7 +61,6 @@ const LandingPageTopbar = () => {
 const LandingPageFooter = () => {
   return (
     <motion.div
-      className="dark:bg-polar-900 flex w-full flex-col items-center justify-center bg-gray-50"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}

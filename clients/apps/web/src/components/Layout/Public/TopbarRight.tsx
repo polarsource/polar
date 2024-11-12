@@ -6,10 +6,10 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/Popover'
-import { UserRead, Organization } from '@polar-sh/sdk'
+import { usePostHog } from '@/hooks/posthog'
+import { Organization, UserRead } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { usePostHog } from '@/hooks/posthog'
 
 const TopbarRight = ({
   authenticatedUser,
@@ -46,7 +46,12 @@ const TopbarRight = ({
             Log in
           </Button>
 
-          <GetStartedButton size="default" text="Sell with Polar" storefrontOrg={storefrontOrg} />
+          <GetStartedButton
+            className="hidden md:flex"
+            size="default"
+            text="Sell with Polar"
+            storefrontOrg={storefrontOrg}
+          />
 
           <Modal
             isShown={isModalShown}

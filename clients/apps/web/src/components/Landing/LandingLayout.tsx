@@ -62,6 +62,7 @@ const LandingPageFooter = () => {
   return (
     <motion.div
       initial="initial"
+      className="flex w-full"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"

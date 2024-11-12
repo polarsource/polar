@@ -1,6 +1,5 @@
 'use client'
 
-import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import CreateCustomFieldModalContent from '@/components/CustomFields/CreateCustomFieldModalContent'
 import CustomFieldTypeLabel from '@/components/CustomFields/CustomFieldTypeLabel'
 import UpdateCustomFieldModalContent from '@/components/CustomFields/UpdateCustomFieldModalContent'
@@ -116,8 +115,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         const value = getValue() as string
         return (
           <div className="flex flex-row items-center gap-1">
-            <div className="font-mono">{value}</div>
-            <CopyToClipboardButton text={value} />
+            <span>{value}</span>
           </div>
         )
       },

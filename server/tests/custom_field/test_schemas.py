@@ -16,6 +16,8 @@ CustomFieldCreateAdapter: TypeAdapter[CustomFieldCreate] = TypeAdapter(
     "input",
     (
         pytest.param({"slug": ""}, id="empty slug"),
+        pytest.param({"slug": "aaa bbb"}, id="invalid slug 1"),
+        pytest.param({"slug": "888!"}, id="invalid slug 2"),
         pytest.param({"name": ""}, id="empty name"),
         pytest.param({"properties": {"form_label": ""}}, id="empty form label"),
         pytest.param({"properties": {"form_help_text": ""}}, id="empty form help text"),
@@ -72,6 +74,8 @@ def test_invalid_create(input: dict[str, Any]) -> None:
             CustomFieldType.select,
             id="select",
         ),
+        pytest.param({"slug": "valid_slug"}, CustomFieldType.text, id="valid slug 1"),
+        pytest.param({"slug": "_valid_slug2"}, CustomFieldType.text, id="valid slug 2"),
     ),
 )
 def test_valid_create(input: dict[str, Any], expected_type: CustomFieldType) -> None:

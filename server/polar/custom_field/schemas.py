@@ -11,7 +11,6 @@ from polar.kit.schemas import (
     IDSchema,
     Schema,
     SetSchemaReference,
-    SlugValidator,
     TimestampedSchema,
 )
 from polar.models.custom_field import (
@@ -26,8 +25,7 @@ from polar.organization.schemas import OrganizationID
 
 Slug = Annotated[
     str,
-    SlugValidator,
-    StringConstraints(to_lower=True, min_length=1),
+    StringConstraints(to_lower=True, min_length=1, pattern=r"^[a-z0-9-_]+$"),
     Field(
         description=(
             "Identifier of the custom field. "

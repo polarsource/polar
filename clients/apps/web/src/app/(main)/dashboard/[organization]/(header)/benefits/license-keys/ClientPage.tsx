@@ -2,7 +2,10 @@
 
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useOrganizationLicenseKeys } from '@/hooks/queries'
+import {
+  useLicenseKeyUpdate,
+  useOrganizationLicenseKeys,
+} from '@/hooks/queries'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -18,9 +21,10 @@ import {
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 export const ClientPage = ({
   organization,
@@ -31,6 +35,7 @@ export const ClientPage = ({
   sorting: SortingState
   pagination: PaginationState
 }) => {
+  const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeys, setSelectedLicenseKeys] =
     useState<RowSelectionState>({})
 
@@ -93,6 +98,31 @@ export const ClientPage = ({
     )
   }
 
+  const updateLicenseKey = useLicenseKeyUpdate(organization.id)
+
+  const handleToggleLicenseKeyStatus = useCallback(
+    (status: 'granted' | 'disabled' | 'revoked') => {
+      if (selectedLicenseKey) {
+        setStatusLoading(true)
+
+        updateLicenseKey.mutate(
+          {
+            id: selectedLicenseKey.id,
+            body: {
+              status,
+            },
+          },
+          {
+            onSettled: () => {
+              setStatusLoading(false)
+            },
+          },
+        )
+      }
+    },
+    [updateLicenseKey, selectedLicenseKey, setStatusLoading],
+  )
+
   const LicenseKeyContextView = selectedLicenseKey ? (
     <div className="flex flex-col gap-y-6 p-8">
       <h1 className="text-xl">License Key</h1>
@@ -117,12 +147,26 @@ export const ClientPage = ({
                 Validated At
               </span>
               <span>
-                {selectedLicenseKeys.last_validated_at ? (
+                {selectedLicenseKey.last_validated_at ? (
                   <FormattedDateTime
                     datetime={selectedLicenseKey.last_validated_at ?? ''}
                   />
                 ) : (
                   <span>Never Validated</span>
+                )}
+              </span>
+            </div>
+            <div className="flex flex-row items-center justify-between">
+              <span className="dark:text-polar-500 text-gray-500">
+                Expiry Date
+              </span>
+              <span>
+                {selectedLicenseKey.expires_at ? (
+                  <FormattedDateTime
+                    datetime={selectedLicenseKey.expires_at ?? ''}
+                  />
+                ) : (
+                  <span>No Expiry</span>
                 )}
               </span>
             </div>
@@ -142,6 +186,33 @@ export const ClientPage = ({
           </div>
         </div>
       </ShadowBox>
+      <div className="flex flex-row gap-x-4">
+        {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
+          <Button
+            onClick={() => handleToggleLicenseKeyStatus('granted')}
+            loading={statusLoading}
+          >
+            Enable
+          </Button>
+        )}
+        {selectedLicenseKey.status === 'granted' && (
+          <Button
+            onClick={() => handleToggleLicenseKeyStatus('disabled')}
+            loading={statusLoading}
+          >
+            Disable
+          </Button>
+        )}
+        {selectedLicenseKey.status === 'granted' && (
+          <Button
+            onClick={() => handleToggleLicenseKeyStatus('revoked')}
+            loading={statusLoading}
+            variant="destructive"
+          >
+            Revoke
+          </Button>
+        )}
+      </div>
     </div>
   ) : undefined
 

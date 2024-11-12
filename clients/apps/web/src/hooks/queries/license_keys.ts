@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { api } from '@/utils/api'
-import { LicenseKeysApiListRequest } from '@polar-sh/sdk'
+import { api, queryClient } from '@/utils/api'
+import {
+  LicenseKeysApiListRequest,
+  LicenseKeysApiUpdateRequest,
+} from '@polar-sh/sdk'
 import { defaultRetry } from './retry'
 
 interface GetLicenseKeysRequest {
@@ -17,6 +20,17 @@ export const useLicenseKey = ({ licenseKeyId }: GetLicenseKeysRequest) =>
       }),
     retry: defaultRetry,
     enabled: !!licenseKeyId,
+  })
+
+export const useLicenseKeyUpdate = (organizationId: string) =>
+  useMutation({
+    mutationFn: (update: LicenseKeysApiUpdateRequest) =>
+      api.licenseKeys.update(update),
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['license_keys', 'organization', organizationId],
+      })
+    },
   })
 
 export const useOrganizationLicenseKeys = ({

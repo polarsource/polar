@@ -10,8 +10,16 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { Organization } from '@polar-sh/sdk'
-import { PaginationState, SortingState } from '@tanstack/react-table'
+import {
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { useMemo, useState } from 'react'
 
 export const ClientPage = ({
   organization,
@@ -22,10 +30,21 @@ export const ClientPage = ({
   sorting: SortingState
   pagination: PaginationState
 }) => {
+  const [selectedLicenseKeys, setSelectedLicenseKeys] =
+    useState<RowSelectionState>({})
+
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organizationId: organization.id,
     ...getAPIParams(pagination, sorting),
   })
+
+  const selectedLicenseKey = useMemo(() => {
+    const selectedLicenseKeyIds = Object.keys(selectedLicenseKeys)
+    const key = licenseKeys?.items.find(
+      (licenseKey) => licenseKey.id === selectedLicenseKeyIds[0],
+    )
+    return key
+  }, [selectedLicenseKeys, licenseKeys])
 
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -73,8 +92,60 @@ export const ClientPage = ({
     )
   }
 
+  const LicenseKeyContextView = selectedLicenseKey ? (
+    <div className="flex flex-col gap-y-6 p-8">
+      <h1 className="text-xl">License Key</h1>
+      <CopyToClipboardInput value={selectedLicenseKey.key} />
+      <ShadowBox className="dark:bg-polar-800 bg-white p-6 text-sm lg:rounded-3xl">
+        <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-2">
+            <div className="flex flex-row items-center justify-between">
+              <span className="dark:text-polar-500 text-gray-500">Status</span>
+              <span className="capitalize">{selectedLicenseKey.status}</span>
+            </div>
+            {selectedLicenseKey.limit_usage && (
+              <div className="flex flex-row items-center justify-between">
+                <span className="dark:text-polar-500 text-gray-500">Usage</span>
+                <span>
+                  {selectedLicenseKey.usage} / {selectedLicenseKey.limit_usage}
+                </span>
+              </div>
+            )}
+            <div className="flex flex-row items-center justify-between">
+              <span className="dark:text-polar-500 text-gray-500">
+                Validated At
+              </span>
+              <span>
+                {selectedLicenseKeys.last_validated_at ? (
+                  <FormattedDateTime
+                    dateTime={selectedLicenseKey.last_validated_at}
+                  />
+                ) : (
+                  <span>Never Validated</span>
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-x-3">
+            <Avatar
+              className="h-10 w-10"
+              avatar_url={selectedLicenseKey.user?.avatar_url}
+              name={selectedLicenseKey.user?.public_name}
+            />
+            <div className="flex flex-col">
+              <span>{selectedLicenseKey.user?.public_name}</span>
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                {selectedLicenseKey.user?.email}
+              </span>
+            </div>
+          </div>
+        </div>
+      </ShadowBox>
+    </div>
+  ) : undefined
+
   return (
-    <DashboardBody>
+    <DashboardBody contextView={LicenseKeyContextView}>
       <LicenseKeysList
         isLoading={isLoading}
         pageCount={licenseKeys?.pagination.max_page ?? 1}
@@ -83,6 +154,8 @@ export const ClientPage = ({
         sorting={sorting}
         setPagination={setPagination}
         setSorting={setSorting}
+        onSelectLicenseKeyChange={setSelectedLicenseKeys}
+        selectedLicenseKey={selectedLicenseKeys}
       />
     </DashboardBody>
   )

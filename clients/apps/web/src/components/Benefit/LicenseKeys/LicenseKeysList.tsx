@@ -155,7 +155,6 @@ export const LicenseKeysList = ({
       onSortingChange={setSorting}
       isLoading={isLoading}
       enableRowSelection={true}
-      selectionState={selectedLicenseKey}
       onRowSelectionChange={onSelectLicenseKeyChange}
       rowSelection={selectedLicenseKey}
       getRowId={(row) => row.id}

@@ -120,7 +120,7 @@ export const Checkout = ({
           checkout={checkout}
           onCheckoutUpdate={onCheckoutUpdate}
         />
-        <div className="md:p-20 flex flex-col gap-y-8">
+        <div className="flex flex-col gap-y-8 md:p-12 lg:p-20">
           <h1 className="text-2xl">Checkout</h1>
           <CheckoutForm
             checkout={checkout}

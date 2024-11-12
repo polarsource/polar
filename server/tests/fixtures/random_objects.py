@@ -723,6 +723,7 @@ async def create_order(
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
     created_at: datetime | None = None,
+    custom_field_data: dict[str, Any] | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -739,6 +740,7 @@ async def create_order(
         if product.prices
         else None,
         subscription=subscription,
+        custom_field_data=custom_field_data or {},
     )
     await save_fixture(order)
     return order

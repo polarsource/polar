@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String, Uuid
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
@@ -10,7 +11,14 @@ from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Product, ProductPrice, Subscription, User
+    from polar.models import (
+        Checkout,
+        Organization,
+        Product,
+        ProductPrice,
+        Subscription,
+        User,
+    )
 
 
 class OrderBillingReason(StrEnum):
@@ -62,6 +70,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @declared_attr
     def product_price(cls) -> Mapped["ProductPrice"]:
         return relationship("ProductPrice", lazy="raise")
+
+    organization: AssociationProxy["Organization"] = association_proxy(
+        "product", "organization"
+    )
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid,

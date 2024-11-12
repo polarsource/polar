@@ -13,6 +13,7 @@ from sqlalchemy import (
     Uuid,
     type_coerce,
 )
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -22,7 +23,14 @@ from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
-    from polar.models import BenefitGrant, Checkout, Product, ProductPrice, User
+    from polar.models import (
+        BenefitGrant,
+        Checkout,
+        Organization,
+        Product,
+        ProductPrice,
+        User,
+    )
 
 
 class SubscriptionStatus(StrEnum):
@@ -117,6 +125,10 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship(
             "ProductPrice", lazy="raise", back_populates="subscriptions"
         )
+
+    organization: AssociationProxy["Organization"] = association_proxy(
+        "product", "organization"
+    )
 
     checkout_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True

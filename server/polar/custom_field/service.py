@@ -2,7 +2,18 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, delete, desc, or_, select
+from sqlalchemy import (
+    Select,
+    UnaryExpression,
+    asc,
+    delete,
+    desc,
+    func,
+    or_,
+    select,
+    update,
+)
+from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
@@ -17,6 +28,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
 from .attachment import attached_custom_fields_models
+from .data import custom_field_data_models
 from .schemas import CustomFieldCreate, CustomFieldUpdate
 
 
@@ -151,12 +163,50 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                 ]
             )
 
+        if (
+            custom_field_update.slug is not None
+            and custom_field.slug != custom_field_update.slug
+        ):
+            existing_field = await self._get_by_organization_id_and_slug(
+                session, custom_field.organization_id, custom_field_update.slug
+            )
+            if existing_field is not None and existing_field.id != custom_field.id:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "slug"),
+                            "msg": "Custom field with this slug already exists.",
+                            "input": custom_field_update.slug,
+                        }
+                    ]
+                )
+
+        previous_slug = custom_field.slug
         for attr, value in custom_field_update.model_dump(exclude_unset=True).items():
             setattr(custom_field, attr, value)
 
-        if custom_field_update.slug is not None:
-            # TODO: update value keys present in orders, subscriptions and so on
-            pass
+        # Update the slug from all custom_field_data JSONB
+        if previous_slug != custom_field.slug:
+            for model in custom_field_data_models:
+                update_statement = (
+                    update(model)
+                    .where(
+                        model.organization == custom_field.organization,
+                        model.custom_field_data.has_key(previous_slug),
+                    )
+                    .values(
+                        custom_field_data=(
+                            model.custom_field_data.op("-")(previous_slug)
+                        ).op("||")(
+                            func.jsonb_build_object(
+                                custom_field.slug,
+                                model.custom_field_data[previous_slug],
+                            )
+                        )
+                    )
+                )
+                await session.execute(update_statement)
 
         session.add(custom_field)
         return custom_field
@@ -200,7 +250,12 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
     def _get_readable_custom_field_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[CustomField]]:
-        statement = select(CustomField).where(CustomField.deleted_at.is_(None))
+        statement = (
+            select(CustomField)
+            .where(CustomField.deleted_at.is_(None))
+            .join(Organization, Organization.id == CustomField.organization_id)
+            .options(contains_eager(CustomField.organization))
+        )
 
         if is_user(auth_subject):
             user = auth_subject.subject

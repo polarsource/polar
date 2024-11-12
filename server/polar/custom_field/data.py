@@ -2,13 +2,14 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, ValidationError, create_model
+from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, Mapper, ORMDescriptor, mapped_column
 
 from polar.exceptions import PolarRequestValidationError
 
 if TYPE_CHECKING:
-    from polar.models import CustomField
+    from polar.models import CustomField, Organization
 
     from .attachment import AttachedCustomFieldMixin
 
@@ -17,6 +18,21 @@ class CustomFieldDataMixin:
     custom_field_data: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
+
+    # Make the type checker happy, but we should make sure actual models
+    # declare an organization attribute by themselves.
+    if TYPE_CHECKING:
+        organization: ORMDescriptor["Organization"]
+
+
+custom_field_data_models: set[type[CustomFieldDataMixin]] = set()
+
+
+# Event listener to track models inheriting from CustomFieldDataMixin
+@event.listens_for(Mapper, "mapper_configured")
+def track_attached_custom_field_mixin(_mapper: Mapper[Any], class_: type) -> None:
+    if issubclass(class_, CustomFieldDataMixin):
+        custom_field_data_models.add(class_)
 
 
 class CustomFieldDataInputMixin(BaseModel):

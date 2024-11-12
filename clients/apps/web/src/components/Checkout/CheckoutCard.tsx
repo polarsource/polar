@@ -22,6 +22,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { BenefitList } from '@/components/Products/BenefitList'
 
 export interface CheckoutCardProps {
   checkout: CheckoutPublic
@@ -173,15 +174,7 @@ export const CheckoutCard = ({
             <h1 className="font-medium dark:text-white">Included</h1>
           </div>
           <div className="flex flex-col gap-y-2">
-            {product.benefits.map((benefit) => (
-              <div
-                key={benefit.id}
-                className="flex flex-row items-center gap-x-2"
-              >
-                {resolveBenefitIcon(benefit, 'small', 'h-4 w-4')}
-                <span className="text-sm">{benefit.description}</span>
-              </div>
-            ))}
+            <BenefitList benefits={product.benefits} toggle={true} />
           </div>
         </div>
       ) : (

@@ -103,6 +103,9 @@ class CustomField(MetadataMixin, RecordModel):
 
 
 class CustomFieldText(CustomField):
+    type: Mapped[Literal[CustomFieldType.text]] = mapped_column(
+        use_existing_column=True
+    )
     properties: Mapped[CustomFieldTextProperties] = mapped_column(
         use_existing_column=True
     )
@@ -124,6 +127,9 @@ class CustomFieldText(CustomField):
 
 
 class CustomFieldNumber(CustomField):
+    type: Mapped[Literal[CustomFieldType.number]] = mapped_column(
+        use_existing_column=True
+    )
     properties: Mapped[CustomFieldNumberProperties] = mapped_column(
         use_existing_column=True
     )
@@ -145,6 +151,9 @@ class CustomFieldNumber(CustomField):
 
 
 class CustomFieldDate(CustomField):
+    type: Mapped[Literal[CustomFieldType.date]] = mapped_column(
+        use_existing_column=True
+    )
     properties: Mapped[CustomFieldDateProperties] = mapped_column(
         use_existing_column=True
     )
@@ -166,6 +175,9 @@ class CustomFieldDate(CustomField):
 
 
 class CustomFieldCheckbox(CustomField):
+    type: Mapped[Literal[CustomFieldType.checkbox]] = mapped_column(
+        use_existing_column=True
+    )
     properties: Mapped[CustomFieldCheckboxProperties] = mapped_column(
         use_existing_column=True
     )
@@ -183,6 +195,9 @@ class CustomFieldCheckbox(CustomField):
 
 
 class CustomFieldSelect(CustomField):
+    type: Mapped[Literal[CustomFieldType.select]] = mapped_column(
+        use_existing_column=True
+    )
     properties: Mapped[CustomFieldSelectProperties] = mapped_column(
         use_existing_column=True
     )

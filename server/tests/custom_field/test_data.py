@@ -4,7 +4,10 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel, ValidationError
 
-from polar.custom_field.data import build_custom_field_data_schema
+from polar.custom_field.data import (
+    build_custom_field_data_schema,
+    custom_field_data_models,
+)
 from polar.models import Organization
 from polar.models.custom_field import CustomFieldType
 from tests.fixtures.database import SaveFixture
@@ -114,3 +117,11 @@ async def test_checkbox_input(
         required_schema.model_validate({"checkbox1": False})
     data = required_schema.model_validate({"checkbox1": True})
     assert getattr(data, "checkbox1") is True
+
+
+def test_custom_field_data_models() -> None:
+    for model in custom_field_data_models:
+        assert hasattr(model, "organization"), (
+            f"{model} should have an organization property "
+            "so we can update custom fields properly"
+        )

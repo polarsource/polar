@@ -16,9 +16,9 @@ import {
   SortingState,
 } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
+import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
-import FormattedDateTime from 'polarkit/components/ui/atoms/FormattedDateTime'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useMemo, useState } from 'react'
 
@@ -119,7 +119,7 @@ export const ClientPage = ({
               <span>
                 {selectedLicenseKeys.last_validated_at ? (
                   <FormattedDateTime
-                    dateTime={selectedLicenseKey.last_validated_at}
+                    datetime={selectedLicenseKey.last_validated_at ?? ''}
                   />
                 ) : (
                   <span>Never Validated</span>

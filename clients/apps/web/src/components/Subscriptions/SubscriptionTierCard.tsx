@@ -14,8 +14,8 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
-import { resolveBenefitIcon } from '../Benefit/utils'
 import { markdownOpts } from '../Feed/Markdown/markdown'
+import { BenefitList } from '@/components/Products/BenefitList'
 
 export interface SubscriptionTierCardProps {
   subscriptionTier: Partial<ProductStorefront>
@@ -105,17 +105,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           <div className="dark:bg-polar-800 flex w-full flex-col gap-y-3 rounded-3xl bg-gray-100 p-5">
             <h3 className="text-sm font-medium">Included</h3>
             <div className="flex flex-col gap-y-2">
-              {subscriptionTier.benefits?.map((benefit) => (
-                <div
-                  key={benefit.id}
-                  className="flex flex-row items-center gap-x-3"
-                >
-                  <span className="flex h-4 w-4 items-center justify-center text-2xl text-black dark:text-white">
-                    {resolveBenefitIcon(benefit, 'inherit')}
-                  </span>
-                  <span className="text-sm">{benefit.description}</span>
-                </div>
-              ))}
+              <BenefitList benefits={subscriptionTier.benefits} />
             </div>
           </div>
         </CardFooter>

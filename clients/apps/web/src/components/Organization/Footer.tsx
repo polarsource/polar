@@ -7,27 +7,26 @@ const Footer = ({ wide }: { wide?: boolean }) => {
   return (
     <div
       className={twMerge(
-        'dark:border-polar-700 dark:bg-polar-950 flex w-full flex-col items-center space-y-24 border-t border-gray-200 bg-gray-50 py-24 md:py-32',
+        'flex w-full flex-col items-center space-y-24 px-4 py-16',
       )}
     >
       <div
         className={twMerge(
-          'flex w-full flex-col gap-x-16 gap-y-24 px-8 md:flex-row md:justify-between md:gap-y-12',
+          'dark:md:bg-polar-900 md:rounded-4xl flex w-full flex-col gap-x-32 gap-y-24 md:justify-between md:gap-y-12 md:bg-gray-50 md:p-16 lg:flex-row',
           wide ? 'max-w-7xl' : 'max-w-[970px]',
         )}
       >
-        <div className="flex flex-col gap-y-6">
-          <span className="text-black dark:text-white">
+        <div className="flex flex-grow flex-col gap-y-6">
+          <span className="ml-2 text-black md:ml-0 dark:text-white">
             <BrandingMenu logoVariant="logotype" size={120} />
           </span>
-          <span className="dark:text-polar-500 text-gray-500">
+          <span className="dark:text-polar-500 w-full flex-grow text-gray-500">
             &copy; Polar Software Inc. {new Date().getFullYear()}
           </span>
         </div>
         <div
           className={twMerge(
-            'flex flex-col gap-y-12 md:flex-row',
-            wide ? 'gap-x-24 lg:gap-x-32' : 'gap-x-20',
+            'flex flex-col gap-x-12 gap-y-12 text-sm md:flex-row [&>div]:w-36',
           )}
         >
           <div className="flex flex-col gap-y-4">

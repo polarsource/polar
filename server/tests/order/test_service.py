@@ -13,6 +13,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
+    Discount,
     Product,
     Subscription,
     Transaction,
@@ -54,6 +55,7 @@ def construct_stripe_invoice(
     metadata: dict[str, str] = {},
     billing_reason: str = "subscription_create",
     paid_out_of_band: bool = False,
+    coupon_id: str | None = None,
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
         {
@@ -78,6 +80,7 @@ def construct_stripe_invoice(
             "metadata": metadata,
             "billing_reason": billing_reason,
             "paid_out_of_band": paid_out_of_band,
+            "discount": {"coupon": {"id": coupon_id}} if coupon_id else None,
         },
         None,
     )
@@ -490,6 +493,57 @@ class TestCreateOrderFromStripe:
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
 
+    async def test_subscription_discount(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        product: Product,
+        organization_account: Account,
+        discount_fixed_once: Discount,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id,
+            lines=[(product.prices[0].stripe_price_id, False, None)],
+            coupon_id=discount_fixed_once.stripe_coupon_id,
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice_total
+        assert order.discount == discount_fixed_once
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription
+
     async def test_one_time_product(
         self,
         enqueue_job_mock: AsyncMock,
@@ -555,6 +609,56 @@ class TestCreateOrderFromStripe:
             product_id=product_one_time.id,
             order_id=order.id,
         )
+
+    async def test_one_time_product_discount(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time: Product,
+        organization_account: Account,
+        user: User,
+        discount_fixed_once: Discount,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
+            subscription_id=None,
+            billing_reason="manual",
+            coupon_id=discount_fixed_once.stripe_coupon_id,
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice_total
+        assert order.discount == discount_fixed_once
 
     async def test_one_time_custom_price_product(
         self,

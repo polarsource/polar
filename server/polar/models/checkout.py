@@ -20,6 +20,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 
+from .discount import Discount
 from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice, ProductPriceFree
@@ -88,6 +89,15 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Eager loading makes sense here because we always need the price
         return relationship(ProductPrice, lazy="joined")
 
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def discount(cls) -> Mapped[Discount | None]:
+        # Eager loading makes sense here because we always need the discount when present
+        return relationship(Discount, lazy="joined")
+
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("users.id", ondelete="cascade"),
@@ -96,7 +106,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @declared_attr
     def customer(cls) -> Mapped[User | None]:
-        return relationship(User)
+        return relationship(User, lazy="raise")
 
     customer_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
@@ -154,10 +164,22 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.customer_tax_id[0] if self.customer_tax_id is not None else None
 
     @property
-    def total_amount(self) -> int | None:
+    def subtotal_amount(self) -> int | None:
         if self.amount is None:
             return None
-        return self.amount + (self.tax_amount or 0)
+        discount_amount = (
+            self.discount.get_discount_amount(self.amount)
+            if self.discount is not None
+            else 0
+        )
+        return self.amount - discount_amount
+
+    @property
+    def total_amount(self) -> int | None:
+        subtotal_amount = self.subtotal_amount
+        if subtotal_amount is None:
+            return None
+        return subtotal_amount + (self.tax_amount or 0)
 
     @property
     def is_payment_required(self) -> bool:

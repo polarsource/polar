@@ -10,6 +10,7 @@ from polar.authz.service import Authz
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Benefit,
+    Discount,
     Organization,
     Product,
     ProductPriceCustom,
@@ -46,6 +47,7 @@ def construct_stripe_subscription(
     latest_invoice: stripe_lib.Invoice | None = None,
     cancel_at_period_end: bool = False,
     metadata: dict[str, str] = {},
+    coupon_id: str | None = None,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     base_metadata: dict[str, str] = {
@@ -72,6 +74,9 @@ def construct_stripe_subscription(
             "ended_at": None,
             "latest_invoice": latest_invoice,
             "metadata": {**base_metadata, **metadata},
+            "discount": {"coupon": {"id": coupon_id}}
+            if coupon_id is not None
+            else None,
         },
         None,
     )
@@ -395,6 +400,32 @@ class TestCreateSubscriptionFromStripe:
 
         assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
+    async def test_discount(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
+        assert product.stripe_product_id is not None
+        stripe_subscription = construct_stripe_subscription(
+            price_id=product.prices[0].stripe_price_id,
+            coupon_id=discount_fixed_once.stripe_coupon_id,
+        )
+
+        # then
+        session.expunge_all()
+
+        subscription = await subscription_service.create_subscription_from_stripe(
+            session, stripe_subscription=stripe_subscription
+        )
+
+        assert subscription.discount == discount_fixed_once
+
 
 @pytest.mark.asyncio
 class TestUpdateSubscriptionFromStripe:
@@ -558,6 +589,40 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.product == product
 
         enqueue_benefits_grants_mock.assert_called_once()
+
+    async def test_valid_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        user: User,
+        discount_fixed_once: Discount,
+    ) -> None:
+        price = product.prices[0]
+        stripe_subscription = construct_stripe_subscription(
+            status=SubscriptionStatus.active,
+            price_id=price.stripe_price_id,
+            coupon_id=discount_fixed_once.stripe_coupon_id,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            user=user,
+            stripe_subscription_id=stripe_subscription.id,
+        )
+        assert subscription.discount is None
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.discount == discount_fixed_once
 
 
 @pytest.mark.asyncio

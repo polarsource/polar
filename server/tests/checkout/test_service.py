@@ -16,6 +16,7 @@ from polar.checkout.schemas import (
     CheckoutCreate,
     CheckoutCreatePublic,
     CheckoutUpdate,
+    CheckoutUpdatePublic,
 )
 from polar.checkout.service import (
     CheckoutDoesNotExist,
@@ -35,7 +36,14 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.utils import utc_now
-from polar.models import Checkout, Organization, Product, User, UserOrganization
+from polar.models import (
+    Checkout,
+    Discount,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.product_price import (
@@ -376,6 +384,31 @@ class TestCreate:
                     product_price_id=price.id,
                     subscription_id=uuid.uuid4(),
                     metadata={"key": "value"},
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_not_existing_discount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    discount_id=uuid.uuid4(),
                 ),
                 auth_subject,
             )
@@ -793,6 +826,35 @@ class TestCreate:
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
+    async def test_valid_discount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                discount_id=discount_fixed_once.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.discount == discount_fixed_once
+        assert checkout.amount == price.price_amount
+        assert (
+            checkout.subtotal_amount
+            == price.price_amount
+            - discount_fixed_once.get_discount_amount(price.price_amount)
+        )
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -1155,6 +1217,34 @@ class TestUpdate:
                 CheckoutUpdate.model_validate(updated_values),
             )
 
+    async def test_invalid_discount_id(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_fixed,
+                CheckoutUpdate(
+                    discount_id=uuid.uuid4(),
+                ),
+            )
+
+    async def test_invalid_discount_code(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_fixed,
+                CheckoutUpdatePublic(
+                    discount_code="invalid",
+                ),
+            )
+
     async def test_valid_price_fixed_change(
         self,
         save_fixture: SaveFixture,
@@ -1407,6 +1497,56 @@ class TestUpdate:
         assert checkout.tax_amount == 0
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
+
+    async def test_valid_discount_id(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdate(
+                discount_id=discount_fixed_once.id,
+            ),
+        )
+
+        assert checkout.discount == discount_fixed_once
+
+        price = checkout_one_time_fixed.product_price
+        assert isinstance(price, ProductPriceFixed)
+        assert checkout.amount == price.price_amount
+        assert (
+            checkout.subtotal_amount
+            == price.price_amount
+            - discount_fixed_once.get_discount_amount(price.price_amount)
+        )
+
+    async def test_valid_discount_code(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(
+                discount_code=discount_fixed_once.code,
+            ),
+        )
+
+        assert checkout.discount == discount_fixed_once
+
+        price = checkout_one_time_fixed.product_price
+        assert isinstance(price, ProductPriceFixed)
+        assert checkout.amount == price.price_amount
+        assert (
+            checkout.subtotal_amount
+            == price.price_amount
+            - discount_fixed_once.get_discount_amount(price.price_amount)
+        )
 
 
 @pytest.mark.asyncio

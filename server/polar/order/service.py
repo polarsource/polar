@@ -12,6 +12,7 @@ from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
+from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.exceptions import PolarError
@@ -26,6 +27,7 @@ from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import (
     Checkout,
+    Discount,
     HeldBalance,
     Order,
     Organization,
@@ -95,6 +97,17 @@ class ProductPriceDoesNotExist(OrderError):
         message = (
             f"Received invoice {invoice_id} from Stripe with price {stripe_price_id}, "
             f"but no associated ProductPrice exists."
+        )
+        super().__init__(message)
+
+
+class DiscountDoesNotExist(OrderError):
+    def __init__(self, invoice_id: str, coupon_id: str) -> None:
+        self.invoice_id = invoice_id
+        self.coupon_id = coupon_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe with coupon {coupon_id}, "
+            f"but no associated Discount exists."
         )
         super().__init__(message)
 
@@ -282,6 +295,16 @@ class OrderService(ResourceServiceReader[Order]):
 
         product = product_price.product
 
+        # Get Discount if available
+        discount: Discount | None = None
+        if invoice.discount is not None:
+            coupon_id = invoice.discount.coupon.id
+            discount = await discount_service.get_by_stripe_coupon_id(
+                session, coupon_id
+            )
+            if discount is None:
+                raise DiscountDoesNotExist(invoice.id, coupon_id)
+
         # Get Checkout if available
         checkout: Checkout | None = None
         if (
@@ -295,6 +318,9 @@ class OrderService(ResourceServiceReader[Order]):
         user: User | None = None
 
         billing_reason: OrderBillingReason = OrderBillingReason.purchase
+
+        tax = invoice.tax or 0
+        amount = invoice.total - tax
 
         # Get subscription if applicable
         subscription: Subscription | None = None
@@ -317,18 +343,24 @@ class OrderService(ResourceServiceReader[Order]):
                     )
                     billing_reason = OrderBillingReason.subscription_cycle
 
+            # Set the subscription amount to the latest order amount
+            # Helps to reflect discount that may have ended
+            if subscription.amount != amount:
+                subscription.amount = amount
+                session.add(subscription)
+
         # Create Order
-        tax = invoice.tax or 0
         order = Order(
             # Generate ID upfront for user attribution
             id=Order.generate_id(),
-            amount=invoice.total - tax,
+            amount=amount,
             tax_amount=tax,
             currency=invoice.currency,
             billing_reason=billing_reason,
             stripe_invoice_id=invoice.id,
             product=product,
             product_price=product_price,
+            discount=discount,
             subscription=subscription,
             checkout=checkout,
             user_metadata=checkout.user_metadata if checkout is not None else {},

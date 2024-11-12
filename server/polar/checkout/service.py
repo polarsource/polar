@@ -24,6 +24,7 @@ from polar.checkout.schemas import (
 from polar.checkout.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
+from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -40,6 +41,7 @@ from polar.logging import Logger
 from polar.models import (
     Checkout,
     CheckoutLink,
+    Discount,
     Organization,
     Product,
     ProductPriceCustom,
@@ -281,6 +283,23 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     ]
                 )
 
+        discount: Discount | None = None
+        if checkout_create.discount_id is not None:
+            discount = await discount_service.get_by_id_and_organization(
+                session, checkout_create.discount_id, product.organization
+            )
+            if discount is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "discount_id"),
+                            "msg": "Discount does not exist.",
+                            "input": checkout_create.discount_id,
+                        }
+                    ]
+                )
+
         customer_tax_id: TaxID | None = None
         if checkout_create.customer_tax_id is not None:
             if checkout_create.customer_billing_address is None:
@@ -366,6 +385,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency=currency,
             product=product,
             product_price=price,
+            discount=discount,
             customer_billing_address=checkout_create.customer_billing_address,
             customer_tax_id=customer_tax_id,
             subscription=subscription,
@@ -474,6 +494,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency=currency,
             product=product,
             product_price=price,
+            customer=None,
         )
         if is_direct_user(auth_subject):
             checkout.customer = auth_subject.subject
@@ -815,6 +836,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     customer=stripe_customer_id,
                     currency=checkout.currency or "usd",
                     price=stripe_price_id,
+                    coupon=checkout.discount.stripe_coupon_id
+                    if checkout.discount
+                    else None,
                     automatic_tax=checkout.product.is_tax_applicable,
                     metadata=metadata,
                     invoice_metadata={
@@ -834,6 +858,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     subscription_id=subscription.stripe_subscription_id,
                     old_price=subscription.price.stripe_price_id,
                     new_price=stripe_price_id,
+                    coupon=checkout.discount.stripe_coupon_id
+                    if checkout.discount
+                    else None,
                     automatic_tax=checkout.product.is_tax_applicable,
                     metadata=metadata,
                     invoice_metadata={
@@ -852,6 +879,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
+                coupon=checkout.discount.stripe_coupon_id
+                if checkout.discount
+                else None,
                 automatic_tax=checkout.product.is_tax_applicable,
                 metadata={
                     **metadata,
@@ -1114,6 +1144,48 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
             checkout.amount = checkout_update.amount
 
+        if isinstance(checkout_update, CheckoutUpdate):
+            if checkout_update.discount_id is not None:
+                discount = await discount_service.get_by_id_and_organization(
+                    session, checkout_update.discount_id, checkout.product.organization
+                )
+                if discount is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "discount_id"),
+                                "msg": "Discount does not exist.",
+                                "input": checkout_update.discount_id,
+                            }
+                        ]
+                    )
+
+                checkout.discount = discount
+        elif isinstance(checkout_update, CheckoutUpdatePublic):
+            if checkout_update.discount_code is not None:
+                discount = await discount_service.get_by_code_and_organization(
+                    session,
+                    checkout_update.discount_code,
+                    checkout.product.organization,
+                )
+                if discount is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "discount_code"),
+                                "msg": (
+                                    "This discount code does not exist "
+                                    "or is no longer available."
+                                ),
+                                "input": checkout_update.discount_code,
+                            }
+                        ]
+                    )
+
+                checkout.discount = discount
+
         if checkout_update.customer_billing_address:
             checkout.customer_billing_address = checkout_update.customer_billing_address
 
@@ -1197,14 +1269,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         if (
             checkout.currency is not None
-            and checkout.amount is not None
+            and checkout.subtotal_amount is not None
             and checkout.customer_billing_address is not None
             and checkout.product.stripe_product_id is not None
         ):
             try:
                 tax_amount = await calculate_tax(
                     checkout.currency,
-                    checkout.amount,
+                    checkout.subtotal_amount,
                     checkout.product.stripe_product_id,
                     checkout.customer_billing_address,
                     [checkout.customer_tax_id]

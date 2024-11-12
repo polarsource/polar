@@ -1,13 +1,19 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Field, HttpUrl, IPvAnyAddress
+from pydantic import UUID4, Discriminator, Field, HttpUrl, IPvAnyAddress, Tag
 
 from polar.custom_field.attachment import AttachedCustomField
 from polar.custom_field.data import (
     CustomFieldDataInputMixin,
     CustomFieldDataOutputMixin,
     OptionalCustomFieldDataInputMixin,
+)
+from polar.discount.schemas import (
+    DiscountFixedBase,
+    DiscountOnceForeverDurationBase,
+    DiscountPercentageBase,
+    DiscountRepeatDurationBase,
 )
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
@@ -24,6 +30,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
@@ -93,6 +100,9 @@ class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
         description="Payment processor to use. Currently only Stripe is supported."
     )
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    discount_id: UUID4 | None = Field(
+        default=None, description="ID of the discount to apply to the checkout."
+    )
     amount: Amount | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
@@ -137,6 +147,9 @@ class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):
 class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
     """Update an existing checkout session using an access token."""
 
+    discount_id: UUID4 | None = Field(
+        default=None, description="ID of the discount to apply to the checkout."
+    )
     customer_ip_address: CustomerIPAddress | None = None
     success_url: SuccessURL = None
     embed_origin: EmbedOrigin = None
@@ -144,6 +157,10 @@ class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):
     """Update an existing checkout session using the client secret."""
+
+    discount_code: str | None = Field(
+        default=None, description="Discount code to apply to the checkout."
+    )
 
 
 class CheckoutConfirmBase(CheckoutUpdatePublic): ...
@@ -192,9 +209,17 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     amount: Amount | None
     tax_amount: int | None = Field(description="Computed tax amount to pay in cents.")
     currency: str | None = Field(description="Currency code of the checkout session.")
-    total_amount: int | None = Field(description="Total amount to pay in cents.")
+    subtotal_amount: int | None = Field(
+        description="Subtotal amount in cents, including discounts and before tax."
+    )
+    total_amount: int | None = Field(
+        description="Total amount to pay in cents, including discounts and after tax."
+    )
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    discount_id: UUID4 | None = Field(
+        description="ID of the discount applied to the checkout."
+    )
     is_payment_required: bool = Field(
         description=(
             "Whether the checkout requires payment. " "Useful to detect free products."
@@ -219,11 +244,70 @@ class CheckoutProduct(ProductBase):
     medias: ProductMediaList
 
 
+class CheckoutDiscountBase(IDSchema):
+    type: DiscountType
+    duration: DiscountDuration
+    code: str | None
+
+
+class CheckoutDiscountFixedOnceForeverDuration(
+    CheckoutDiscountBase, DiscountFixedBase, DiscountOnceForeverDurationBase
+):
+    """Schema for a fixed amount discount that is applied once or forever."""
+
+
+class CheckoutDiscountFixedRepeatDuration(
+    CheckoutDiscountBase, DiscountFixedBase, DiscountRepeatDurationBase
+):
+    """
+    Schema for a fixed amount discount that is applied on every invoice
+    for a certain number of months.
+    """
+
+
+class CheckoutDiscountPercentageOnceForeverDuration(
+    CheckoutDiscountBase, DiscountPercentageBase, DiscountOnceForeverDurationBase
+):
+    """Schema for a percentage discount that is applied once or forever."""
+
+
+class CheckoutDiscountPercentageRepeatDuration(
+    CheckoutDiscountBase, DiscountPercentageBase, DiscountRepeatDurationBase
+):
+    """
+    Schema for a percentage discount that is applied on every invoice
+    for a certain number of months.
+    """
+
+
+def get_discount_discriminator_value(v: CheckoutDiscountBase) -> str:
+    type = v.type
+    duration = v.duration
+    duration_tag = (
+        "once_forever"
+        if duration in {DiscountDuration.once, DiscountDuration.forever}
+        else "repeat"
+    )
+    return f"{type}.{duration_tag}"
+
+
+CheckoutDiscount = Annotated[
+    Annotated[CheckoutDiscountFixedOnceForeverDuration, Tag("fixed.once_forever")]
+    | Annotated[CheckoutDiscountFixedRepeatDuration, Tag("fixed.repeat")]
+    | Annotated[
+        CheckoutDiscountPercentageOnceForeverDuration, Tag("percentage.once_forever")
+    ]
+    | Annotated[CheckoutDiscountPercentageRepeatDuration, Tag("percentage.repeat")],
+    Discriminator(get_discount_discriminator_value),
+]
+
+
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
     product: CheckoutProduct
     product_price: ProductPrice
+    discount: CheckoutDiscount | None
     subscription_id: UUID4 | None
     attached_custom_fields: list[AttachedCustomField]
 
@@ -233,5 +317,6 @@ class CheckoutPublic(CheckoutBase):
 
     product: CheckoutProduct
     product_price: ProductPrice
+    discount: CheckoutDiscount | None
     organization: Organization
     attached_custom_fields: list[AttachedCustomField]

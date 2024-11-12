@@ -24,6 +24,7 @@ from polar.models import (
     Checkout,
     CheckoutLink,
     CustomField,
+    Discount,
     ExternalOrganization,
     Order,
     Organization,
@@ -57,6 +58,12 @@ from polar.models.custom_field import (
     CustomFieldText,
     CustomFieldTextProperties,
     CustomFieldType,
+)
+from polar.models.discount import (
+    DiscountDuration,
+    DiscountFixed,
+    DiscountPercentage,
+    DiscountType,
 )
 from polar.models.issue import Issue
 from polar.models.order import OrderBillingReason
@@ -711,6 +718,85 @@ async def create_product_price_free(
     return price
 
 
+@typing.overload
+async def create_discount(
+    save_fixture: SaveFixture,
+    *,
+    type: typing.Literal[DiscountType.fixed],
+    amount: int,
+    currency: str,
+    duration: DiscountDuration,
+    organization: Organization,
+    name: str = "Discount",
+    code: str | None = None,
+    duration_in_months: int | None = None,
+    stripe_coupon_id: str = "STRIPE_COUPON_ID",
+) -> DiscountFixed: ...
+@typing.overload
+async def create_discount(
+    save_fixture: SaveFixture,
+    *,
+    type: typing.Literal[DiscountType.percentage],
+    basis_points: int,
+    duration: DiscountDuration,
+    organization: Organization,
+    name: str = "Discount",
+    code: str | None = None,
+    duration_in_months: int | None = None,
+    stripe_coupon_id: str = "STRIPE_COUPON_ID",
+) -> DiscountPercentage: ...
+async def create_discount(
+    save_fixture: SaveFixture,
+    *,
+    type: DiscountType,
+    amount: int | None = None,
+    currency: str | None = None,
+    basis_points: int | None = None,
+    duration: DiscountDuration,
+    organization: Organization,
+    name: str = "Discount",
+    code: str | None = None,
+    duration_in_months: int | None = None,
+    stripe_coupon_id: str = "STRIPE_COUPON_ID",
+) -> Discount:
+    model = type.get_model()
+    custom_field = model(
+        name=name,
+        type=type,
+        code=code,
+        duration=duration,
+        duration_in_months=duration_in_months,
+        organization=organization,
+        stripe_coupon_id=stripe_coupon_id,
+    )
+    if isinstance(custom_field, DiscountFixed):
+        assert amount is not None
+        assert currency is not None
+        custom_field.amount = amount
+        custom_field.currency = currency
+    elif isinstance(custom_field, DiscountPercentage):
+        assert basis_points is not None
+        custom_field.basis_points = basis_points
+
+    await save_fixture(custom_field)
+    return custom_field
+
+
+@pytest_asyncio.fixture
+async def discount_fixed_once(
+    save_fixture: SaveFixture, organization: Organization
+) -> DiscountFixed:
+    return await create_discount(
+        save_fixture,
+        type=DiscountType.fixed,
+        amount=1000,
+        currency="usd",
+        duration=DiscountDuration.once,
+        organization=organization,
+        code="DISCOUNTFIXEDONCE",
+    )
+
+
 async def create_order(
     save_fixture: SaveFixture,
     *,
@@ -795,6 +881,7 @@ async def create_subscription(
     ended_at: datetime | None = None,
     current_period_start: datetime | None = None,
     current_period_end: datetime | None = None,
+    discount: Discount | None = None,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
 ) -> Subscription:
     price = price or product.prices[0] if product.prices else None
@@ -821,6 +908,7 @@ async def create_subscription(
         user=user,
         product=product,
         price=price,
+        discount=discount,
     )
     await save_fixture(subscription)
     return subscription
@@ -992,6 +1080,7 @@ async def create_checkout(
     currency: str | None = None,
     customer: User | None = None,
     subscription: Subscription | None = None,
+    discount: Discount | None = None,
 ) -> Checkout:
     if isinstance(price, ProductPriceFixed):
         amount = price.price_amount
@@ -1019,6 +1108,7 @@ async def create_checkout(
         product=price.product,
         customer=customer,
         subscription=subscription,
+        discount=discount,
     )
     await save_fixture(checkout)
     return checkout

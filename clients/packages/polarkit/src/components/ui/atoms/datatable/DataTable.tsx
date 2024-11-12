@@ -150,7 +150,7 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className={row.getCanSelect() && 'cursor-pointer'}
+                      className={row.getCanSelect() ? 'cursor-pointer' : ''}
                       data-state={row.getIsSelected() && 'selected'}
                       onClick={row.getToggleSelectedHandler()}
                     >

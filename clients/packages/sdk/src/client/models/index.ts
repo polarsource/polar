@@ -1657,6 +1657,8 @@ export const AvailableScope = {
     ORGANIZATIONSWRITE: 'organizations:write',
     CUSTOM_FIELDSREAD: 'custom_fields:read',
     CUSTOM_FIELDSWRITE: 'custom_fields:write',
+    DISCOUNTSREAD: 'discounts:read',
+    DISCOUNTSWRITE: 'discounts:write',
     CHECKOUT_LINKSREAD: 'checkout_links:read',
     CHECKOUT_LINKSWRITE: 'checkout_links:write',
     CHECKOUTSREAD: 'checkouts:read',
@@ -4833,6 +4835,12 @@ export interface CheckoutConfirmStripe {
      * @type {string}
      * @memberof CheckoutConfirmStripe
      */
+    discount_code?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutConfirmStripe
+     */
     confirmation_token_id?: string | null;
 }
 /**
@@ -4860,6 +4868,212 @@ export interface CheckoutCreatePublic {
      */
     from_legacy_checkout_link?: boolean;
 }
+/**
+ * Schema for a fixed amount discount that is applied once or forever.
+ * @export
+ * @interface CheckoutDiscountFixedOnceForeverDuration
+ */
+export interface CheckoutDiscountFixedOnceForeverDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    currency: string;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountFixedOnceForeverDuration
+     */
+    code: string | null;
+}
+
+
+/**
+ * Schema for a fixed amount discount that is applied on every invoice
+ * for a certain number of months.
+ * @export
+ * @interface CheckoutDiscountFixedRepeatDuration
+ */
+export interface CheckoutDiscountFixedRepeatDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    currency: string;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountFixedRepeatDuration
+     */
+    code: string | null;
+}
+
+
+/**
+ * Schema for a percentage discount that is applied once or forever.
+ * @export
+ * @interface CheckoutDiscountPercentageOnceForeverDuration
+ */
+export interface CheckoutDiscountPercentageOnceForeverDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof CheckoutDiscountPercentageOnceForeverDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof CheckoutDiscountPercentageOnceForeverDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutDiscountPercentageOnceForeverDuration
+     */
+    basis_points: number;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutDiscountPercentageOnceForeverDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountPercentageOnceForeverDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountPercentageOnceForeverDuration
+     */
+    code: string | null;
+}
+
+
+/**
+ * Schema for a percentage discount that is applied on every invoice
+ * for a certain number of months.
+ * @export
+ * @interface CheckoutDiscountPercentageRepeatDuration
+ */
+export interface CheckoutDiscountPercentageRepeatDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    basis_points: number;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutDiscountPercentageRepeatDuration
+     */
+    code: string | null;
+}
+
+
 /**
  * Checkout link data.
  * @export
@@ -5346,6 +5560,12 @@ export interface CheckoutPublic {
      * @type {number}
      * @memberof CheckoutPublic
      */
+    subtotal_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublic
+     */
     total_amount: number | null;
     /**
      * ID of the product to checkout.
@@ -5360,11 +5580,41 @@ export interface CheckoutPublic {
      */
     product_price_id: string;
     /**
-     * Whether the checkout requires payment. Useful to detect free products.
+     * 
+     * @type {string}
+     * @memberof CheckoutPublic
+     */
+    discount_id: string | null;
+    /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    allow_discount_codes: boolean;
+    /**
+     * Whether the product price is free, regardless of discounts.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    is_free_product_price: boolean;
+    /**
+     * Whether the checkout requires payment, e.g. in case of free products or discounts that cover the total amount.
      * @type {boolean}
      * @memberof CheckoutPublic
      */
     is_payment_required: boolean;
+    /**
+     * Whether the checkout requires setting up a payment method, regardless of the amount, e.g. subscriptions that have first free cycles.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    is_payment_setup_required: boolean;
+    /**
+     * Whether the checkout requires a payment form, whether because of a payment or payment method setup.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    is_payment_form_required: boolean;
     /**
      * 
      * @type {string}
@@ -5421,6 +5671,12 @@ export interface CheckoutPublic {
     product_price: ProductPrice;
     /**
      * 
+     * @type {CheckoutPublicDiscount}
+     * @memberof CheckoutPublic
+     */
+    discount: CheckoutPublicDiscount | null;
+    /**
+     * 
      * @type {Organization}
      * @memberof CheckoutPublic
      */
@@ -5434,6 +5690,12 @@ export interface CheckoutPublic {
 }
 
 
+/**
+ * @type CheckoutPublicDiscount
+ * 
+ * @export
+ */
+export type CheckoutPublicDiscount = CheckoutDiscountFixedOnceForeverDuration | CheckoutDiscountFixedRepeatDuration | CheckoutDiscountPercentageOnceForeverDuration | CheckoutDiscountPercentageRepeatDuration;
 
 /**
  * 
@@ -5516,6 +5778,18 @@ export interface CheckoutUpdate {
      */
     metadata?: { [key: string]: MetadataValue1; } | null;
     /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdate
+     */
+    discount_id?: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CheckoutUpdate
+     */
+    allow_discount_codes?: boolean | null;
+    /**
      * IP address of the customer. Used to detect tax location.
      * @type {string}
      * @memberof CheckoutUpdate
@@ -5582,6 +5856,12 @@ export interface CheckoutUpdatePublic {
      * @memberof CheckoutUpdatePublic
      */
     customer_tax_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutUpdatePublic
+     */
+    discount_code?: string | null;
 }
 /**
  * 
@@ -6933,6 +7213,1026 @@ export interface DiscordGuildRole {
      */
     color: string;
 }
+/**
+ * @type Discount
+ * 
+ * @export
+ */
+export type Discount = DiscountFixedOnceForeverDuration | DiscountFixedRepeatDuration | DiscountPercentageOnceForeverDuration | DiscountPercentageRepeatDuration;
+/**
+ * @type DiscountCreate
+ * 
+ * @export
+ */
+export type DiscountCreate = DiscountFixedOnceForeverDurationCreate | DiscountFixedRepeatDurationCreate | DiscountPercentageOnceForeverDurationCreate | DiscountPercentageRepeatDurationCreate;
+
+/**
+ * 
+ * @export
+ */
+export const DiscountDuration = {
+    ONCE: 'once',
+    FOREVER: 'forever',
+    REPEATING: 'repeating'
+} as const;
+export type DiscountDuration = typeof DiscountDuration[keyof typeof DiscountDuration];
+
+/**
+ * Schema for a fixed amount discount that is applied once or forever.
+ * @export
+ * @interface DiscountFixedOnceForeverDuration
+ */
+export interface DiscountFixedOnceForeverDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    currency: string;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    redemptions_count: number;
+    /**
+     * 
+     * @type {Array<DiscountProduct>}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    products: Array<DiscountProduct>;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    organization_id: string;
+}
+
+
+/**
+ * Schema to create a fixed amount discount that is applied once or forever.
+ * @export
+ * @interface DiscountFixedOnceForeverDurationCreate
+ */
+export interface DiscountFixedOnceForeverDurationCreate {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    type: DiscountType;
+    /**
+     * Fixed amount to discount from the invoice total.
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    currency?: string;
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    code?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    starts_at?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    ends_at?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    max_redemptions?: number | null;
+    /**
+     * List of product IDs the discount can be applied to.
+     * @type {Array<string>}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    products?: Array<string> | null;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationCreate
+     */
+    organization_id?: string | null;
+}
+
+
+/**
+ * Schema for a fixed amount discount that is applied on every invoice
+ * for a certain number of months.
+ * @export
+ * @interface DiscountFixedRepeatDuration
+ */
+export interface DiscountFixedRepeatDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    currency: string;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    redemptions_count: number;
+    /**
+     * 
+     * @type {Array<DiscountProduct>}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    products: Array<DiscountProduct>;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    organization_id: string;
+}
+
+
+/**
+ * Schema to create a fixed amount discount that is applied on every invoice
+ * for a certain number of months.
+ * @export
+ * @interface DiscountFixedRepeatDurationCreate
+ */
+export interface DiscountFixedRepeatDurationCreate {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    duration: DiscountDuration;
+    /**
+     * Number of months the discount should be applied.
+     * 
+     * For this to work on yearly pricing, you should multiply this by 12.
+     * For example, to apply the discount for 2 years, set this to 24.
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    type: DiscountType;
+    /**
+     * Fixed amount to discount from the invoice total.
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    currency?: string;
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    code?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    starts_at?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    ends_at?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    max_redemptions?: number | null;
+    /**
+     * List of product IDs the discount can be applied to.
+     * @type {Array<string>}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    products?: Array<string> | null;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationCreate
+     */
+    organization_id?: string | null;
+}
+
+
+/**
+ * Schema for a percentage discount that is applied once or forever.
+ * @export
+ * @interface DiscountPercentageOnceForeverDuration
+ */
+export interface DiscountPercentageOnceForeverDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    basis_points: number;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    redemptions_count: number;
+    /**
+     * 
+     * @type {Array<DiscountProduct>}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    products: Array<DiscountProduct>;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    organization_id: string;
+}
+
+
+/**
+ * Schema to create a percentage discount that is applied once or forever.
+ * @export
+ * @interface DiscountPercentageOnceForeverDurationCreate
+ */
+export interface DiscountPercentageOnceForeverDurationCreate {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    type: DiscountType;
+    /**
+     * Discount percentage in basis points.
+     * 
+     * A basis point is 1/100th of a percent.
+     * For example, to create a 25.5% discount, set this to 2550.
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    basis_points: number;
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    code?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    starts_at?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    ends_at?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    max_redemptions?: number | null;
+    /**
+     * List of product IDs the discount can be applied to.
+     * @type {Array<string>}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    products?: Array<string> | null;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationCreate
+     */
+    organization_id?: string | null;
+}
+
+
+/**
+ * Schema for a percentage discount that is applied on every invoice
+ * for a certain number of months.
+ * @export
+ * @interface DiscountPercentageRepeatDuration
+ */
+export interface DiscountPercentageRepeatDuration {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    basis_points: number;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    redemptions_count: number;
+    /**
+     * 
+     * @type {Array<DiscountProduct>}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    products: Array<DiscountProduct>;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    organization_id: string;
+}
+
+
+/**
+ * Schema to create a percentage discount that is applied on every invoice
+ * for a certain number of months.
+ * @export
+ * @interface DiscountPercentageRepeatDurationCreate
+ */
+export interface DiscountPercentageRepeatDurationCreate {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    duration: DiscountDuration;
+    /**
+     * Number of months the discount should be applied.
+     * 
+     * For this to work on yearly pricing, you should multiply this by 12.
+     * For example, to apply the discount for 2 years, set this to 24.
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    type: DiscountType;
+    /**
+     * Discount percentage in basis points.
+     * 
+     * A basis point is 1/100th of a percent.
+     * For example, to create a 25.5% discount, set this to 2550.
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    basis_points: number;
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    code?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    starts_at?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    ends_at?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    max_redemptions?: number | null;
+    /**
+     * List of product IDs the discount can be applied to.
+     * @type {Array<string>}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    products?: Array<string> | null;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationCreate
+     */
+    organization_id?: string | null;
+}
+
+
+/**
+ * A product that a discount can be applied to.
+ * @export
+ * @interface DiscountProduct
+ */
+export interface DiscountProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountProduct
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof DiscountProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof DiscountProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountProduct
+     */
+    description: string | null;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof DiscountProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof DiscountProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof DiscountProduct
+     */
+    organization_id: string;
+}
+
+/**
+ * 
+ * @export
+ */
+export const DiscountSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    NAME: 'name',
+    NAME2: '-name',
+    CODE: 'code',
+    CODE2: '-code',
+    REDEMPTIONS_COUNT: 'redemptions_count',
+    REDEMPTIONS_COUNT2: '-redemptions_count'
+} as const;
+export type DiscountSortProperty = typeof DiscountSortProperty[keyof typeof DiscountSortProperty];
+
+
+/**
+ * 
+ * @export
+ */
+export const DiscountType = {
+    FIXED: 'fixed',
+    PERCENTAGE: 'percentage'
+} as const;
+export type DiscountType = typeof DiscountType[keyof typeof DiscountType];
+
+/**
+ * Schema to update a discount.
+ * @export
+ * @interface DiscountUpdate
+ */
+export interface DiscountUpdate {
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof DiscountUpdate
+     */
+    metadata?: { [key: string]: MetadataValue1; } | null;
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountUpdate
+     */
+    name?: string | null;
+    /**
+     * 
+     * @type {DiscountUpdateCode}
+     * @memberof DiscountUpdate
+     */
+    code?: DiscountUpdateCode | null;
+    /**
+     * 
+     * @type {DiscountUpdateStartsAt}
+     * @memberof DiscountUpdate
+     */
+    starts_at?: DiscountUpdateStartsAt | null;
+    /**
+     * 
+     * @type {DiscountUpdateEndsAt}
+     * @memberof DiscountUpdate
+     */
+    ends_at?: DiscountUpdateEndsAt | null;
+    /**
+     * 
+     * @type {DiscountUpdateMaxRedemptions}
+     * @memberof DiscountUpdate
+     */
+    max_redemptions?: DiscountUpdateMaxRedemptions | null;
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountUpdate
+     */
+    duration?: DiscountDuration | null;
+    /**
+     * Number of months the discount should be applied.
+     * 
+     * For this to work on yearly pricing, you should multiply this by 12.
+     * For example, to apply the discount for 2 years, set this to 24.
+     * @type {number}
+     * @memberof DiscountUpdate
+     */
+    duration_in_months?: number | null;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountUpdate
+     */
+    type?: DiscountType | null;
+    /**
+     * Fixed amount to discount from the invoice total.
+     * @type {number}
+     * @memberof DiscountUpdate
+     */
+    amount?: number | null;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof DiscountUpdate
+     */
+    currency?: string | null;
+    /**
+     * Discount percentage in basis points.
+     * 
+     * A basis point is 1/100th of a percent.
+     * For example, to create a 25.5% discount, set this to 2550.
+     * @type {number}
+     * @memberof DiscountUpdate
+     */
+    basis_points?: number | null;
+    /**
+     * List of product IDs the discount can be applied to.
+     * @type {Array<string>}
+     * @memberof DiscountUpdate
+     */
+    products?: Array<string> | null;
+}
+
+
+/**
+ * @type DiscountUpdateCode
+ * Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+ * @export
+ */
+export type DiscountUpdateCode = string;
+
+/**
+ * @type DiscountUpdateEndsAt
+ * Optional timestamp after which the discount is no longer redeemable.
+ * @export
+ */
+export type DiscountUpdateEndsAt = string;
+
+/**
+ * @type DiscountUpdateMaxRedemptions
+ * Optional maximum number of times the discount can be redeemed.
+ * @export
+ */
+export type DiscountUpdateMaxRedemptions = number;
+
+/**
+ * @type DiscountUpdateStartsAt
+ * Optional timestamp after which the discount is redeemable.
+ * @export
+ */
+export type DiscountUpdateStartsAt = string;
+
 /**
  * Schema to create a file to be associated with the downloadables benefit.
  * @export
@@ -8602,25 +9902,6 @@ export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundin
 /**
  * 
  * @export
- * @interface ListResource
- */
-export interface ListResource {
-    /**
-     * 
-     * @type {Array<CustomField>}
-     * @memberof ListResource
-     */
-    items: Array<CustomField>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResource
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceAccount
  */
 export interface ListResourceAccount {
@@ -8748,6 +10029,44 @@ export interface ListResourceCheckoutLink {
      * 
      * @type {Pagination}
      * @memberof ListResourceCheckoutLink
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceCustomField
+ */
+export interface ListResourceCustomField {
+    /**
+     * 
+     * @type {Array<CustomField>}
+     * @memberof ListResourceCustomField
+     */
+    items: Array<CustomField>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCustomField
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceDiscount
+ */
+export interface ListResourceDiscount {
+    /**
+     * 
+     * @type {Array<Discount>}
+     * @memberof ListResourceDiscount
+     */
+    items: Array<Discount>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceDiscount
      */
     pagination: Pagination;
 }
@@ -12943,6 +14262,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @type {number}
      * @memberof PolarCheckoutSchemasCheckout
      */
+    subtotal_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
     total_amount: number | null;
     /**
      * ID of the product to checkout.
@@ -12957,11 +14282,41 @@ export interface PolarCheckoutSchemasCheckout {
      */
     product_price_id: string;
     /**
-     * Whether the checkout requires payment. Useful to detect free products.
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    discount_id: string | null;
+    /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    allow_discount_codes: boolean;
+    /**
+     * Whether the product price is free, regardless of discounts.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    is_free_product_price: boolean;
+    /**
+     * Whether the checkout requires payment, e.g. in case of free products or discounts that cover the total amount.
      * @type {boolean}
      * @memberof PolarCheckoutSchemasCheckout
      */
     is_payment_required: boolean;
+    /**
+     * Whether the checkout requires setting up a payment method, regardless of the amount, e.g. subscriptions that have first free cycles.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    is_payment_setup_required: boolean;
+    /**
+     * Whether the checkout requires a payment form, whether because of a payment or payment method setup.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    is_payment_form_required: boolean;
     /**
      * 
      * @type {string}
@@ -13024,6 +14379,12 @@ export interface PolarCheckoutSchemasCheckout {
     product_price: ProductPrice;
     /**
      * 
+     * @type {CheckoutPublicDiscount}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    discount: CheckoutPublicDiscount | null;
+    /**
+     * 
      * @type {string}
      * @memberof PolarCheckoutSchemasCheckout
      */
@@ -13078,6 +14439,18 @@ export interface PolarCheckoutSchemasCheckoutCreate {
      * @memberof PolarCheckoutSchemasCheckoutCreate
      */
     product_price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    discount_id?: string | null;
+    /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckoutCreate
+     */
+    allow_discount_codes?: boolean;
     /**
      * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
      * @type {number}
@@ -14991,6 +16364,24 @@ export const ResourceNotFoundTypeEnum = {
 export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typeof ResourceNotFoundTypeEnum];
 
 /**
+ * @type ResponseDiscountsCreate
+ * 
+ * @export
+ */
+export type ResponseDiscountsCreate = DiscountFixedOnceForeverDuration | DiscountFixedRepeatDuration | DiscountPercentageOnceForeverDuration | DiscountPercentageRepeatDuration;
+/**
+ * @type ResponseDiscountsGet
+ * 
+ * @export
+ */
+export type ResponseDiscountsGet = DiscountFixedOnceForeverDuration | DiscountFixedRepeatDuration | DiscountPercentageOnceForeverDuration | DiscountPercentageRepeatDuration;
+/**
+ * @type ResponseDiscountsUpdate
+ * 
+ * @export
+ */
+export type ResponseDiscountsUpdate = DiscountFixedOnceForeverDuration | DiscountFixedRepeatDuration | DiscountPercentageOnceForeverDuration | DiscountPercentageRepeatDuration;
+/**
  * @type ResponseFilesUpdate
  * 
  * @export
@@ -15388,6 +16779,8 @@ export const Scope = {
     ORGANIZATIONSWRITE: 'organizations:write',
     CUSTOM_FIELDSREAD: 'custom_fields:read',
     CUSTOM_FIELDSWRITE: 'custom_fields:write',
+    DISCOUNTSREAD: 'discounts:read',
+    DISCOUNTSWRITE: 'discounts:write',
     CHECKOUT_LINKSREAD: 'checkout_links:read',
     CHECKOUT_LINKSWRITE: 'checkout_links:write',
     CHECKOUTSREAD: 'checkouts:read',

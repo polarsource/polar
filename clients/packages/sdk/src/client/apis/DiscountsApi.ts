@@ -15,53 +15,53 @@
 
 import * as runtime from '../runtime';
 import type {
-  CustomField,
-  CustomFieldCreate,
-  CustomFieldSortProperty,
-  CustomFieldTypeFilter,
-  CustomFieldUpdate,
+  DiscountCreate,
+  DiscountSortProperty,
+  DiscountUpdate,
   HTTPValidationError,
-  ListResourceCustomField,
+  ListResourceDiscount,
   OrganizationIDFilter,
   ResourceNotFound,
+  ResponseDiscountsCreate,
+  ResponseDiscountsGet,
+  ResponseDiscountsUpdate,
 } from '../models/index';
 
-export interface CustomFieldsApiCreateRequest {
-    body: CustomFieldCreate;
+export interface DiscountsApiCreateRequest {
+    body: DiscountCreate;
 }
 
-export interface CustomFieldsApiDeleteRequest {
+export interface DiscountsApiDeleteRequest {
     id: string;
 }
 
-export interface CustomFieldsApiGetRequest {
+export interface DiscountsApiGetRequest {
     id: string;
 }
 
-export interface CustomFieldsApiListRequest {
+export interface DiscountsApiListRequest {
     organizationId?: OrganizationIDFilter;
     query?: string;
-    type?: CustomFieldTypeFilter;
     page?: number;
     limit?: number;
-    sorting?: Array<CustomFieldSortProperty>;
+    sorting?: Array<DiscountSortProperty>;
 }
 
-export interface CustomFieldsApiUpdateRequest {
+export interface DiscountsApiUpdateRequest {
     id: string;
-    body: CustomFieldUpdate;
+    body: DiscountUpdate;
 }
 
 /**
  * 
  */
-export class CustomFieldsApi extends runtime.BaseAPI {
+export class DiscountsApi extends runtime.BaseAPI {
 
     /**
-     * Create a custom field.
-     * Create Custom Field
+     * Create a discount.
+     * Create Discount
      */
-    async createRaw(requestParameters: CustomFieldsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomField>> {
+    async createRaw(requestParameters: DiscountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseDiscountsCreate>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -84,7 +84,7 @@ export class CustomFieldsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/custom-fields/`,
+            path: `/v1/discounts/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -95,19 +95,19 @@ export class CustomFieldsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a custom field.
-     * Create Custom Field
+     * Create a discount.
+     * Create Discount
      */
-    async create(requestParameters: CustomFieldsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomField> {
+    async create(requestParameters: DiscountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseDiscountsCreate> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Delete a custom field.
-     * Delete Custom Field
+     * Delete a discount.
+     * Delete Discount
      */
-    async deleteRaw(requestParameters: CustomFieldsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async deleteRaw(requestParameters: DiscountsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -128,7 +128,7 @@ export class CustomFieldsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/custom-fields/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/discounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -138,18 +138,18 @@ export class CustomFieldsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete a custom field.
-     * Delete Custom Field
+     * Delete a discount.
+     * Delete Discount
      */
-    async delete(requestParameters: CustomFieldsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+    async delete(requestParameters: DiscountsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.deleteRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Get a custom field by ID.
-     * Get Custom Field
+     * Get a discount by ID.
+     * Get Discount
      */
-    async getRaw(requestParameters: CustomFieldsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomField>> {
+    async getRaw(requestParameters: DiscountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseDiscountsGet>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -170,7 +170,7 @@ export class CustomFieldsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/custom-fields/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/discounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -180,19 +180,19 @@ export class CustomFieldsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a custom field by ID.
-     * Get Custom Field
+     * Get a discount by ID.
+     * Get Discount
      */
-    async get(requestParameters: CustomFieldsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomField> {
+    async get(requestParameters: DiscountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseDiscountsGet> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List custom fields.
-     * List Custom Fields
+     * List discounts.
+     * List Discounts
      */
-    async listRaw(requestParameters: CustomFieldsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceCustomField>> {
+    async listRaw(requestParameters: DiscountsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceDiscount>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -201,10 +201,6 @@ export class CustomFieldsApi extends runtime.BaseAPI {
 
         if (requestParameters['query'] != null) {
             queryParameters['query'] = requestParameters['query'];
-        }
-
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
         }
 
         if (requestParameters['page'] != null) {
@@ -230,7 +226,7 @@ export class CustomFieldsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/custom-fields/`,
+            path: `/v1/discounts/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -240,19 +236,19 @@ export class CustomFieldsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List custom fields.
-     * List Custom Fields
+     * List discounts.
+     * List Discounts
      */
-    async list(requestParameters: CustomFieldsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceCustomField> {
+    async list(requestParameters: DiscountsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceDiscount> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Update a custom field.
-     * Update Custom Field
+     * Update a discount.
+     * Update Discount
      */
-    async updateRaw(requestParameters: CustomFieldsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomField>> {
+    async updateRaw(requestParameters: DiscountsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseDiscountsUpdate>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -282,7 +278,7 @@ export class CustomFieldsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/custom-fields/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/discounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -293,10 +289,10 @@ export class CustomFieldsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a custom field.
-     * Update Custom Field
+     * Update a discount.
+     * Update Discount
      */
-    async update(requestParameters: CustomFieldsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomField> {
+    async update(requestParameters: DiscountsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseDiscountsUpdate> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -115,7 +115,7 @@ export const Checkout = ({
     <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-24 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
       <FormProvider {...form}>
         <CheckoutInfo
-          className="md:dark:bg-polar-900 md:bg-white"
+          className="md:dark:bg-polar-900 md:bg-white lg:p-20"
           organization={organization}
           checkout={checkout}
           onCheckoutUpdate={onCheckoutUpdate}

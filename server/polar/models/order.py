@@ -13,6 +13,7 @@ from polar.kit.metadata import MetadataMixin
 if TYPE_CHECKING:
     from polar.models import (
         Checkout,
+        Discount,
         Organization,
         Product,
         ProductPrice,
@@ -70,6 +71,14 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @declared_attr
     def product_price(cls) -> Mapped["ProductPrice"]:
         return relationship("ProductPrice", lazy="raise")
+
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def discount(cls) -> Mapped["Discount | None"]:
+        return relationship("Discount", lazy="raise")
 
     organization: AssociationProxy["Organization"] = association_proxy(
         "product", "organization"

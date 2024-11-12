@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
 import stripe as stripe_lib
-from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -43,10 +43,11 @@ class DiscountDuration(StrEnum):
 
 class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
+    __table_args__ = (UniqueConstraint("organization_id", "code"),)
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[DiscountType] = mapped_column(String, nullable=False)
-    code: Mapped[str | None] = mapped_column(String, nullable=True)
+    code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
     starts_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -59,7 +60,9 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    stripe_coupon_id: Mapped[str] = mapped_column(String, nullable=False)
+    stripe_coupon_id: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True, index=True
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False

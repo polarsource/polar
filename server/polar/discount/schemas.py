@@ -215,6 +215,7 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
         )
     )
     type: DiscountType
+    duration: DiscountDuration
     code: str | None = Field(
         description="Code customers can use to apply the discount during checkout."
     )
@@ -228,8 +229,6 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     max_redemptions: int | None = Field(
         description="Maximum number of times the discount can be redeemed."
     )
-
-    duration: DiscountDuration
 
     organization_id: OrganizationID
 

@@ -132,6 +132,37 @@ class DiscountService(ResourceServiceReader[Discount]):
         session.add(discount)
         return discount
 
+    async def get_by_id_and_organization(
+        self, session: AsyncSession, id: uuid.UUID, organization: Organization
+    ) -> Discount | None:
+        statement = select(Discount).where(
+            Discount.id == id,
+            Discount.organization_id == organization.id,
+            Discount.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_by_code_and_organization(
+        self, session: AsyncSession, code: str, organization: Organization
+    ) -> Discount | None:
+        statement = select(Discount).where(
+            Discount.code == code,
+            Discount.organization_id == organization.id,
+            Discount.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_by_stripe_coupon_id(
+        self, session: AsyncSession, stripe_coupon_id: str
+    ) -> Discount | None:
+        statement = select(Discount).where(
+            Discount.stripe_coupon_id == stripe_coupon_id
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Discount]]:

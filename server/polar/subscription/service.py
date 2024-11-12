@@ -16,6 +16,7 @@ from polar.auth.models import (
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
+from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
@@ -31,6 +32,7 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Checkout,
+    Discount,
     Organization,
     Product,
     ProductBenefit,
@@ -95,13 +97,24 @@ class SubscriptionDoesNotExist(SubscriptionError):
         super().__init__(message)
 
 
+class DiscountDoesNotExist(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, coupon_id: str) -> None:
+        self.stripe_subscription_id = stripe_subscription_id
+        self.coupon_id = coupon_id
+        message = (
+            f"Received subscription {stripe_subscription_id} from Stripe "
+            f"with coupon {coupon_id}, but no associated Discount exists."
+        )
+        super().__init__(message)
+
+
 class CheckoutDoesNotExist(SubscriptionError):
     def __init__(self, stripe_subscription_id: str, checkout_id: str) -> None:
         self.stripe_subscription_id = stripe_subscription_id
         self.checkout_id = checkout_id
         message = (
-            f"Received a subscription update from Stripe for {stripe_subscription_id}, "
-            f"but no associated Checkout exists."
+            f"Received subscription {stripe_subscription_id} from Stripe "
+            f"with checkout {checkout_id}, but no associated Checkout exists."
         )
         super().__init__(message)
 
@@ -363,6 +376,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         assert subscription_tier_org is not None
 
+        # Get Discount if available
+        discount: Discount | None = None
+        if stripe_subscription.discount is not None:
+            coupon_id = stripe_subscription.discount.coupon.id
+            discount = await discount_service.get_by_stripe_coupon_id(
+                session, coupon_id
+            )
+            if discount is None:
+                raise DiscountDoesNotExist(stripe_subscription.id, coupon_id)
+
         # Get Checkout if available
         checkout: Checkout | None = None
         if (checkout_id := stripe_subscription.metadata.get("checkout_id")) is not None:
@@ -400,6 +423,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+
+        subscription.discount = discount
         subscription.price = price
         subscription.recurring_interval = price.recurring_interval
         if isinstance(price, ProductPriceFixed):
@@ -522,6 +547,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
         subscription.price = price
         subscription.product = price.product
+
+        # Get Discount if available
+        if stripe_subscription.discount is not None:
+            coupon_id = stripe_subscription.discount.coupon.id
+            discount = await discount_service.get_by_stripe_coupon_id(
+                session, coupon_id
+            )
+            if discount is None:
+                raise DiscountDoesNotExist(stripe_subscription.id, coupon_id)
+            subscription.discount = discount
 
         # Get Checkout if available
         checkout: Checkout | None = None

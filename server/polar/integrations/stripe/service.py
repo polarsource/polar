@@ -594,22 +594,27 @@ class StripeService:
         customer: str,
         currency: str,
         price: str,
+        coupon: str | None = None,
         automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         invoice_metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
-        subscription = await stripe_lib.Subscription.create_async(
-            customer=customer,
-            currency=currency,
-            collection_method="send_invoice",
-            days_until_due=0,
-            items=[{"price": price, "quantity": 1}],
-            metadata=metadata or {},
-            automatic_tax={"enabled": automatic_tax},
-            expand=["latest_invoice"],
-            idempotency_key=idempotency_key,
-        )
+        params: stripe_lib.Subscription.CreateParams = {
+            "customer": customer,
+            "currency": currency,
+            "collection_method": "send_invoice",
+            "days_until_due": 0,
+            "items": [{"price": price, "quantity": 1}],
+            "metadata": metadata or {},
+            "automatic_tax": {"enabled": automatic_tax},
+            "expand": ["latest_invoice"],
+            "idempotency_key": idempotency_key,
+        }
+        if coupon is not None:
+            params["discounts"] = [{"coupon": coupon}]
+
+        subscription = await stripe_lib.Subscription.create_async(**params)
 
         if subscription.latest_invoice is None:
             raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
@@ -627,6 +632,7 @@ class StripeService:
         subscription_id: str,
         old_price: str,
         new_price: str,
+        coupon: str | None = None,
         automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         invoice_metadata: dict[str, str] | None = None,
@@ -639,6 +645,8 @@ class StripeService:
             "days_until_due": 0,
             "automatic_tax": {"enabled": automatic_tax},
         }
+        if coupon is not None:
+            modify_params["discounts"] = [{"coupon": coupon}]
         if metadata is not None:
             modify_params["metadata"] = metadata
         if idempotency_key is not None:
@@ -719,20 +727,27 @@ class StripeService:
         customer: str,
         currency: str,
         price: str,
+        coupon: str | None = None,
         automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Invoice:
-        invoice = await stripe_lib.Invoice.create_async(
-            auto_advance=True,
-            collection_method="send_invoice",
-            days_until_due=0,
-            customer=customer,
-            metadata=metadata or {},
-            automatic_tax={"enabled": automatic_tax},
-            currency=currency,
-            idempotency_key=f"{idempotency_key}_invoice" if idempotency_key else None,
-        )
+        params: stripe_lib.Invoice.CreateParams = {
+            "auto_advance": True,
+            "collection_method": "send_invoice",
+            "days_until_due": 0,
+            "customer": customer,
+            "metadata": metadata or {},
+            "automatic_tax": {"enabled": automatic_tax},
+            "currency": currency,
+            "idempotency_key": f"{idempotency_key}_invoice"
+            if idempotency_key
+            else None,
+        }
+        if coupon is not None:
+            params["discounts"] = [{"coupon": coupon}]
+
+        invoice = await stripe_lib.Invoice.create_async(**params)
         invoice_id = cast(str, invoice.id)
 
         await stripe_lib.InvoiceItem.create_async(

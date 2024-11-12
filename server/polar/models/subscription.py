@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from polar.models import (
         BenefitGrant,
         Checkout,
+        Discount,
         Organization,
         Product,
         ProductPrice,
@@ -125,6 +126,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship(
             "ProductPrice", lazy="raise", back_populates="subscriptions"
         )
+
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def discount(cls) -> Mapped["Discount | None"]:
+        return relationship("Discount", lazy="raise")
 
     organization: AssociationProxy["Organization"] = association_proxy(
         "product", "organization"

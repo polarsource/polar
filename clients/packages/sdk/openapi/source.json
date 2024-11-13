@@ -2652,7 +2652,14 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "github_authorize",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/callback": {
@@ -2756,7 +2763,14 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "github_callback",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/lookup_user": {
@@ -2806,7 +2820,13 @@
                     {
                         "pat": []
                     }
-                ]
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "lookup_user",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/organizations/{id}/installation": {
@@ -2878,7 +2898,13 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "redirect_to_organization_installation",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/organizations/{id}/check_permissions": {
@@ -2939,7 +2965,13 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "check_organization_permissions",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/organizations/{id}/billing": {
@@ -2997,7 +3029,13 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "get_organization_billing_plan",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/installations": {
@@ -3047,7 +3085,13 @@
                     {
                         "pat": []
                     }
-                ]
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "install",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github/webhook": {
@@ -3069,7 +3113,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "integrations_github",
+                "x-speakeasy-name-override": "webhook",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github_repository_benefit/user/authorize": {
@@ -11223,7 +11270,7 @@
             "get": {
                 "tags": [
                     "oauth2",
-                    "private"
+                    "documented"
                 ],
                 "summary": "Authorize",
                 "operationId": "oauth2:authorize",
@@ -11267,8 +11314,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "oauth2",
-                "x-speakeasy-name-override": "authorize",
-                "x-speakeasy-ignore": true
+                "x-speakeasy-name-override": "authorize"
             }
         },
         "/v1/oauth2/consent": {
@@ -15677,7 +15723,7 @@
                         "description": "Filter by organization ID."
                     },
                     {
-                        "name": "benefit_id",
+                        "name": "benefit_ids",
                         "in": "query",
                         "required": false,
                         "schema": {

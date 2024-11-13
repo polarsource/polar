@@ -1,0 +1,7 @@
+overlay: 1.0.0
+info:
+  title: Overlay to automatically remove "readOnly" from schemas properties
+  version: 0.0.1
+actions:
+  - target: "$.components.schemas.*.properties.*.readOnly"
+    remove: true

@@ -2,23 +2,16 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
-import { useUserLicenseKeys } from '@/hooks/queries'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
-import {
-  BenefitPublicInner,
-  CheckoutPublic,
-  CheckoutStatus,
-  Organization,
-} from '@polar-sh/sdk'
+import { CheckoutPublic, CheckoutStatus, Organization } from '@polar-sh/sdk'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useEffect, useState } from 'react'
 import LogoType from '../Brand/LogoType'
@@ -136,10 +129,6 @@ export const CheckoutConfirmation = ({
     }
   }, [email, router, organization, sendMagicLink])
 
-  const productHasLicenseKeys = product.benefits.some(
-    (benefit) => benefit.type === 'license_keys',
-  )
-
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-md flex-col gap-y-8">
@@ -193,21 +182,6 @@ export const CheckoutConfirmation = ({
           <>
             {currentUser ? (
               <>
-                {productHasLicenseKeys && (
-                  <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white">
-                    <h3>License Keys</h3>
-                    <div className="flex flex-col gap-y-2">
-                      {product.benefits
-                        .filter((benefit) => benefit.type === 'license_keys')
-                        .map((benefit) => (
-                          <LicenseKey
-                            key={benefit.id}
-                            publicBenefit={benefit}
-                          />
-                        ))}
-                    </div>
-                  </ShadowBox>
-                )}
                 <Link className="grow" href={disabled ? '#' : `/purchases`}>
                   <Button className="w-full" size="lg" disabled={disabled}>
                     Access your benefits
@@ -244,28 +218,5 @@ export const CheckoutConfirmation = ({
         <LogoType className="h-5" />
       </div>
     </ShadowBox>
-  )
-}
-
-const LicenseKey = ({
-  publicBenefit,
-}: {
-  publicBenefit: BenefitPublicInner
-}) => {
-  const { data: licenseKeys } = useUserLicenseKeys({
-    benefitId: publicBenefit.id,
-    limit: 1,
-  })
-  const licenseKey = licenseKeys?.items[0]
-
-  if (!licenseKey) {
-    return null
-  }
-
-  return (
-    <div className="flex flex-col gap-y-2">
-      <span className="text-sm">{publicBenefit.description}</span>
-      <CopyToClipboardInput value={licenseKey.key} />
-    </div>
   )
 }

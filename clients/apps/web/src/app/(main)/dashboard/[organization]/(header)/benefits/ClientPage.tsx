@@ -16,13 +16,18 @@ import {
   useBenefits,
   useDeleteBenefit,
 } from '@/hooks/queries'
-import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  AllInclusive,
+  MoreVertOutlined,
+} from '@mui/icons-material'
 import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,7 +114,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               <span>New Benefit</span>
             </Button>
           </div>
-          {(benefits?.items.length ?? 0) > 0 && (
+          {(benefits?.items.length ?? 0) > 0 ? (
             <List>
               {benefits?.items.map((benefit) => (
                 <ListItem
@@ -127,6 +132,25 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                 </ListItem>
               ))}
             </List>
+          ) : (
+            <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
+              <AllInclusive
+                className="dark:text-polar-600 text-5xl text-gray-300"
+                fontSize="inherit"
+              />
+              <div className="flex flex-col items-center gap-y-6">
+                <div className="flex flex-col items-center gap-y-2">
+                  <h3 className="text-lg font-medium">No Benefits found</h3>
+                  <p className="dark:text-polar-500  text-center text-gray-500">
+                    Benefits are automated and granted upon purchase of a
+                    product
+                  </p>
+                </div>
+                <Button role="link" variant="secondary" onClick={toggle}>
+                  <span>Create Benefit</span>
+                </Button>
+              </div>
+            </ShadowBoxOnMd>
           )}
         </div>
 

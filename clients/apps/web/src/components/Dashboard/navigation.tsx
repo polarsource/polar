@@ -150,61 +150,36 @@ const generalRoutesList = (org: Organization, posthog?: PolarHog): Route[] => [
       currentRoute === `/dashboard/${org.slug}`,
     if: true,
   },
-  ...(posthog?.isFeatureEnabled('customer_management')
-    ? [
-        {
-          id: 'new-products',
-          title: 'Products',
-          icon: <HiveOutlined fontSize="inherit" />,
-          link: `/dashboard/${org.slug}/products`,
-          checkIsActive: (currentRoute: string): boolean => {
-            return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
-          },
-          if: true,
-        },
-        {
-          id: 'benefits',
-          title: 'Benefits',
-          icon: <AllInclusiveOutlined fontSize="inherit" />,
-          link: `/dashboard/${org.slug}/benefits`,
-          checkIsActive: (currentRoute: string): boolean => {
-            return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
-          },
-          if: true,
-          subs: [
-            {
-              title: 'Overview',
-              link: `/dashboard/${org.slug}/benefits`,
-            },
-            {
-              title: 'License Keys',
-              link: `/dashboard/${org.slug}/benefits/license-keys`,
-            },
-          ],
-        },
-      ]
-    : [
-        {
-          id: 'products',
-          title: 'Products',
-          icon: <HiveOutlined fontSize="inherit" />,
-          link: `/dashboard/${org.slug}/products`,
-          checkIsActive: (currentRoute: string): boolean => {
-            return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
-          },
-          if: true,
-          subs: [
-            {
-              title: 'Overview',
-              link: `/dashboard/${org.slug}/products`,
-            },
-            {
-              title: 'Benefits',
-              link: `/dashboard/${org.slug}/products/benefits`,
-            },
-          ],
-        },
-      ]),
+  {
+    id: 'new-products',
+    title: 'Products',
+    icon: <HiveOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/products`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
+    },
+    if: true,
+  },
+  {
+    id: 'benefits',
+    title: 'Benefits',
+    icon: <AllInclusiveOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/benefits`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
+    },
+    if: true,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/dashboard/${org.slug}/benefits`,
+      },
+      {
+        title: 'License Keys',
+        link: `/dashboard/${org.slug}/benefits/license-keys`,
+      },
+    ],
+  },
   {
     id: 'org-sales',
     title: 'Sales',

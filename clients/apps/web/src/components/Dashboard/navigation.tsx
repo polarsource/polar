@@ -140,7 +140,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (org: Organization, posthog?: PolarHog): Route[] => [
+const generalRoutesList = (org: Organization): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -260,11 +260,8 @@ const communityRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (
-  org: Organization,
-  posthog?: PolarHog,
-): Route[] => [
-  ...generalRoutesList(org, posthog),
+const dashboardRoutesList = (org: Organization): Route[] => [
+  ...generalRoutesList(org),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...organizationRoutesList(org),

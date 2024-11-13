@@ -29,7 +29,7 @@ export const DownloadableItem = ({
   }, [downloadable])
 
   return (
-    <div className="flex w-full flex-row items-center justify-between gap-x-6">
+    <div className="dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-xl bg-white px-4 py-2">
       <div className="flex w-full min-w-0 flex-col gap-y-1">
         <span className="min-w-0 truncate text-sm">
           {downloadable.file.name}

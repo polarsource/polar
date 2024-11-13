@@ -158,7 +158,7 @@ def create_app() -> FastAPI:
     # /.well-known
     app.include_router(well_known_router)
 
-    # /healthz and /readyz
+    # /healthz
     app.include_router(health_router)
 
     app.include_router(router)

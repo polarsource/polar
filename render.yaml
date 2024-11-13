@@ -17,7 +17,7 @@ services:
     plan: standard
     preDeployCommand: "uv run task pre_deploy"
     region: ohio
-    healthCheckPath: /readyz
+    healthCheckPath: /healthz
     autoDeploy: false # deploys are triggered by github actions
     domains:
       - api.polar.sh
@@ -146,7 +146,7 @@ services:
     preDeployCommand: "uv run task pre_deploy"
     region: ohio
     numInstances: 1
-    healthCheckPath: /readyz
+    healthCheckPath: /healthz
     autoDeploy: false # deploys are triggered by github actions
     domains:
       - sandbox-api.polar.sh

@@ -40,10 +40,7 @@ def instrument_fastapi(app: FastAPI) -> None:
 
     logfire.instrument_fastapi(
         app,
-        excluded_urls=(
-            "/healthz$",
-            "/readyz$",
-        ),
+        excluded_urls=("/healthz$",),
     )
 
 

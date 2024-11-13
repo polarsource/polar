@@ -336,7 +336,7 @@ export const ProductPricingSection = ({
               setPricingType(value as ProductPriceType)
             }
           >
-            <TabsList className="dark:bg-polar-950 w-full rounded-full bg-gray-100">
+            <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
               <TabsTrigger
                 className="flex-grow"
                 value={ProductPriceType.ONE_TIME}

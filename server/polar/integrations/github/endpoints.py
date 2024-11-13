@@ -2,13 +2,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import (
-    APIRouter,
-    Depends,
-    Header,
-    HTTPException,
-    Request,
-)
+from fastapi import Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from githubkit.exception import RequestFailed
 from httpx_oauth.clients.github import GitHubOAuth2
@@ -45,6 +39,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.redis import Redis, get_redis
 from polar.reward.service import reward_service
+from polar.routing import APIRouter
 from polar.user.schemas.user import UserSignupAttribution, UserSignupAttributionQuery
 from polar.worker import enqueue_job
 

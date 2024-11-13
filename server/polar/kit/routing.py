@@ -55,10 +55,10 @@ class IncludedInSchemaAPIRoute(APIRoute):
         super().__init__(path, endpoint, **kwargs)
         tags = self.tags
         if self.include_in_schema:
-            if APITag.documented in tags:
-                self.include_in_schema = True
-            elif APITag.private in tags:
+            if APITag.private in tags:
                 self.include_in_schema = settings.is_development()
+            elif APITag.documented in tags:
+                self.include_in_schema = True
             else:
                 self.include_in_schema = False
 

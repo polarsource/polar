@@ -7,7 +7,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import DownloadablesSubscriberWidget from './Downloadables/SubscriberWidget'
 import { LicenseKeysSubscriberWidget } from './LicenseKeys/SubscriberWidget'
 import ConfigureAdCampaigns from './ads/ConfigureAdCampaigns'
-import { resolveBenefitIcon } from './utils'
+import { resolveBenefitTypeDisplayName } from './utils'
 
 const GitHubRepoWidget = ({ benefit }: BenefitDetailsProps) => {
   if (benefit.type !== 'github_repository') {
@@ -45,11 +45,11 @@ const BenefitDetails = ({
 
   return (
     <div className="flex flex-col gap-y-6">
-      <div className="flex flex-row items-start gap-x-3 align-middle">
-        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-          {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+      <div className="flex flex-col">
+        <h3 className="text-lg">{benefit.description}</h3>
+        <span className="dark:text-polar-500 text-gray-500">
+          {resolveBenefitTypeDisplayName(benefit.type)}
         </span>
-        <span className="text-sm">{benefit.description}</span>
       </div>
       {benefit.type === 'custom' && benefit.properties.note && (
         <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm dark:bg-blue-950">

@@ -17,22 +17,24 @@ const CheckoutProductInfo = ({
 }: CheckoutProductInfoProps) => {
   return (
     <>
-      {organization.profile_settings?.enabled ? (
-        <Link href={organizationPageLink(organization)}>
+      <div className="flex flex-col gap-y-6 md:gap-y-12">
+        {organization.profile_settings?.enabled ? (
+          <Link href={organizationPageLink(organization)}>
+            <Avatar
+              className="h-12 w-12 md:h-16 md:w-16"
+              avatar_url={organization.avatar_url}
+              name={organization.name}
+            />
+          </Link>
+        ) : (
           <Avatar
-            className="h-16 w-16"
+            className="h-12 w-12 md:h-16 md:w-16"
             avatar_url={organization.avatar_url}
             name={organization.name}
           />
-        </Link>
-      ) : (
-        <Avatar
-          className="h-16 w-16"
-          avatar_url={organization.avatar_url}
-          name={organization.name}
-        />
-      )}
-      <h1 className="text-3xl">{product.name}</h1>
+        )}
+        <h1 className="text-3xl">{product.name}</h1>
+      </div>
       {product.medias.length > 0 && (
         <Slideshow
           images={product.medias.map(({ public_url }) => public_url)}

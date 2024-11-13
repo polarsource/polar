@@ -4257,6 +4257,13 @@ export type BenefitIDFilter = Array<string> | string;
 export type BenefitIDFilter1 = Array<string> | string;
 
 /**
+ * @type BenefitIDFilter2
+ * Filter by benefit ID.
+ * @export
+ */
+export type BenefitIDFilter2 = Array<string> | string;
+
+/**
  * 
  * @export
  * @interface BenefitLicenseKeyActivationProperties

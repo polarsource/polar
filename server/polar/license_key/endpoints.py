@@ -48,7 +48,7 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    benefit_id: BenefitID | None = Query(
+    benefit_ids: MultipleQueryFilter[BenefitID] | None = Query(
         None, title="BenefitID Filter", description="Filter by benefit ID."
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -58,7 +58,7 @@ async def list(
         session,
         auth_subject,
         organization_ids=organization_id,
-        benefit_id=benefit_id,
+        benefit_ids=benefit_ids,
         pagination=pagination,
     )
 

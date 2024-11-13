@@ -1,17 +1,18 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
+import mdxMetadata from '@polar-sh/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import rehypeMdxImportMedia from 'rehype-mdx-import-media'
 import rehypeSlug from 'rehype-slug'
-import remarkGfm from 'remark-gfm'
 import remarkFlexibleToc from 'remark-flexible-toc'
+import remarkFrontmatter from 'remark-frontmatter'
+import remarkGfm from 'remark-gfm'
 import { bundledLanguages, createHighlighter } from 'shiki'
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
-import remarkFrontmatter from 'remark-frontmatter'
-import mdxMetadata from '@polar-sh/mdx'
 
-const POLAR_AUTH_COOKIE_KEY = process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
+const POLAR_AUTH_COOKIE_KEY =
+  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
 const CODESPACES = process.env.CODESPACES === 'true'
@@ -32,14 +33,24 @@ const nextConfig = {
 
   // Since Codespaces run behind a proxy, we need to allow it for Server-Side Actions, like cache revalidation
   // See: https://github.com/vercel/next.js/issues/58019
-  ...CODESPACES ? {
-    experimental: {
-      serverActions: {
-        allowedForwardedHosts: [`${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`, "localhost:8080", "127.0.0.1:8080"],
-        allowedOrigins: [`${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`, "localhost:8080", "127.0.0.1:8080"],
-      },
-    },
-  } : {},
+  ...(CODESPACES
+    ? {
+        experimental: {
+          serverActions: {
+            allowedForwardedHosts: [
+              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+              'localhost:8080',
+              '127.0.0.1:8080',
+            ],
+            allowedOrigins: [
+              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+              'localhost:8080',
+              '127.0.0.1:8080',
+            ],
+          },
+        },
+      }
+    : {}),
 
   images: {
     remotePatterns: [
@@ -115,29 +126,31 @@ const nextConfig = {
       },
       ...(ENVIRONMENT === 'production'
         ? [
-          {
-            source: '/:client_secret(polar_cl_.*)',
-            destination: 'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
-            has: [
-              {
-                type: 'host',
-                value: 'buy.polar.sh',
-              },
-            ],
-            permanent: false,
-          },
-          {
-            source: '/:id',
-            destination: 'https://polar.sh/api/checkout?price=:id*',
-            has: [
-              {
-                type: 'host',
-                value: 'buy.polar.sh',
-              },
-            ],
-            permanent: false,
-          }
-        ] : []),
+            {
+              source: '/:client_secret(polar_cl_.*)',
+              destination:
+                'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
+              has: [
+                {
+                  type: 'host',
+                  value: 'buy.polar.sh',
+                },
+              ],
+              permanent: false,
+            },
+            {
+              source: '/:id',
+              destination: 'https://polar.sh/api/checkout?price=:id*',
+              has: [
+                {
+                  type: 'host',
+                  value: 'buy.polar.sh',
+                },
+              ],
+              permanent: false,
+            },
+          ]
+        : []),
       {
         source: '/:path*',
         destination: 'https://polar.sh/:path*',
@@ -243,29 +256,29 @@ const nextConfig = {
       // Redirect old FAQ to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-          {
-            source: '/faq',
-            destination: 'https://docs.polar.sh/faq/overview',
-            has: [
-              {
-                type: 'host',
-                value: 'polar.sh',
-              },
-            ],
-            permanent: true,
-          },
-          {
-            source: '/faq/:path*',
-            destination: 'https://docs.polar.sh/faq/:path*',
-            has: [
-              {
-                type: 'host',
-                value: 'polar.sh',
-              },
-            ],
-            permanent: true,
-          },
-        ]
+            {
+              source: '/faq',
+              destination: 'https://docs.polar.sh/faq/overview',
+              has: [
+                {
+                  type: 'host',
+                  value: 'polar.sh',
+                },
+              ],
+              permanent: true,
+            },
+            {
+              source: '/faq/:path*',
+              destination: 'https://docs.polar.sh/faq/:path*',
+              has: [
+                {
+                  type: 'host',
+                  value: 'polar.sh',
+                },
+              ],
+              permanent: true,
+            },
+          ]
         : []),
 
       {
@@ -348,12 +361,12 @@ const nextConfig = {
       // Redirect /docs to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-          {
-            source: '/docs/:path*',
-            destination: 'https://docs.polar.sh/:path*',
-            permanent: false,
-          },
-        ]
+            {
+              source: '/docs/:path*',
+              destination: 'https://docs.polar.sh/:path*',
+              permanent: false,
+            },
+          ]
         : []),
 
       {
@@ -374,6 +387,11 @@ const nextConfig = {
       {
         source: '/dashboard/:organization/overview',
         destination: '/dashboard/:organization',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/products/benefits',
+        destination: '/dashboard/:organization/benefits',
         permanent: true,
       },
       {
@@ -477,7 +495,7 @@ const createConfig = async () => {
               children: [],
             },
           ],
-        })
+        }),
       ],
       rehypePlugins: [
         rehypeMdxImportMedia,
@@ -498,50 +516,47 @@ const createConfig = async () => {
 
   // Injected content via Sentry wizard below
 
-  conf = withSentryConfig(
-    conf,
-    {
-      // For all available options, see:
-      // https://github.com/getsentry/sentry-webpack-plugin#options
+  conf = withSentryConfig(conf, {
+    // For all available options, see:
+    // https://github.com/getsentry/sentry-webpack-plugin#options
 
-      org: "polar-sh",
-      project: "dashboard",
+    org: 'polar-sh',
+    project: 'dashboard',
 
-      // Pass the auth token
-      authToken: process.env.SENTRY_AUTH_TOKEN,
+    // Pass the auth token
+    authToken: process.env.SENTRY_AUTH_TOKEN,
 
-      // Only print logs for uploading source maps in CI
-      silent: !process.env.CI,
+    // Only print logs for uploading source maps in CI
+    silent: !process.env.CI,
 
-      // For all available options, see:
-      // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+    // For all available options, see:
+    // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-      // Upload a larger set of source maps for prettier stack traces (increases build time)
-      widenClientFileUpload: true,
+    // Upload a larger set of source maps for prettier stack traces (increases build time)
+    widenClientFileUpload: true,
 
-      reactComponentAnnotation: {
-        enabled: false,
-      },
+    reactComponentAnnotation: {
+      enabled: false,
+    },
 
-      // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-      // This can increase your server load as well as your hosting bill.
-      // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-      // side errors will fail.
-      tunnelRoute: "/monitoring",
+    // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+    // This can increase your server load as well as your hosting bill.
+    // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
+    // side errors will fail.
+    tunnelRoute: '/monitoring',
 
-      // Hides source maps from generated client bundles
-      hideSourceMaps: true,
+    // Hides source maps from generated client bundles
+    hideSourceMaps: true,
 
-      // Automatically tree-shake Sentry logger statements to reduce bundle size
-      disableLogger: true,
+    // Automatically tree-shake Sentry logger statements to reduce bundle size
+    disableLogger: true,
 
-      // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
-      // See the following for more information:
-      // https://docs.sentry.io/product/crons/
-      // https://vercel.com/docs/cron-jobs
-      automaticVercelMonitors: true,
-    }
-  )
+    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
+    // See the following for more information:
+    // https://docs.sentry.io/product/crons/
+    // https://vercel.com/docs/cron-jobs
+    automaticVercelMonitors: true,
+  })
 
   if (process.env.ANALYZE === 'true') {
     const withBundleAnalyzer = bundleAnalyzer({
@@ -554,5 +569,3 @@ const createConfig = async () => {
 }
 
 export default createConfig
-
-

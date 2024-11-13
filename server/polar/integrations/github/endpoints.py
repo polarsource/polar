@@ -39,7 +39,7 @@ from polar.kit.http import ReturnTo
 from polar.locker import Locker, get_locker
 from polar.models import ExternalOrganization
 from polar.models.benefit import BenefitType
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -63,9 +63,7 @@ from .service.user import GithubUserServiceError, github_user
 log = structlog.get_logger()
 
 router = APIRouter(
-    prefix="/integrations/github",
-    tags=["integrations_github"],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    prefix="/integrations/github", tags=["integrations_github", APITag.private]
 )
 
 

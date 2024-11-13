@@ -17,7 +17,7 @@ from polar.kit.schemas import Schema
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
@@ -35,9 +35,7 @@ from .schemas import (
     BackofficeReward,
 )
 
-router = APIRouter(
-    tags=["backoffice"], prefix="/backoffice", include_in_schema=IN_DEVELOPMENT_ONLY
-)
+router = APIRouter(tags=["backoffice", APITag.private], prefix="/backoffice")
 
 
 @router.get("/pledges", response_model=list[BackofficePledge])

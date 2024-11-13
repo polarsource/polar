@@ -7,13 +7,14 @@ from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import Account, AccountCreate, AccountLink
 from .service import account as account_service
 
-router = APIRouter(tags=["accounts"])
+router = APIRouter(tags=["accounts", APITag.private])
 
 
 @router.get("/accounts/search", response_model=ListResource[Account])

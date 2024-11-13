@@ -1,12 +1,12 @@
 from fastapi.responses import RedirectResponse
 
 from polar.config import settings
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.routing import APIRouter
 
 from .service import AuthService
 
-router = APIRouter(tags=["auth"], include_in_schema=IN_DEVELOPMENT_ONLY)
+router = APIRouter(tags=["auth", APITag.private])
 
 
 @router.get("/auth/logout")

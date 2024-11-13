@@ -22,7 +22,7 @@ from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.models import Issue
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
@@ -43,7 +43,7 @@ from .schemas import (
 from .schemas import Issue as IssueSchema
 from .service import issue as issue_service
 
-router = APIRouter(tags=["issues"])
+router = APIRouter(tags=["issues", APITag.private])
 
 
 @router.get(
@@ -189,11 +189,7 @@ async def get_body(
     return HTMLResponse(content=content)
 
 
-@router.get(
-    "/issues/for_you",
-    response_model=ListResource[IssueSchema],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-)
+@router.get("/issues/for_you", response_model=ListResource[IssueSchema])
 async def for_you(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
@@ -405,11 +401,7 @@ async def confirm(
 #
 
 
-@router.post(
-    "/issues/{id}/add_badge",
-    response_model=IssueSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-)
+@router.post("/issues/{id}/add_badge", response_model=IssueSchema)
 async def add_polar_badge(
     id: UUID,
     auth_subject: WebUser,
@@ -448,11 +440,7 @@ async def add_polar_badge(
     return issue_ret
 
 
-@router.post(
-    "/issues/{id}/remove_badge",
-    response_model=IssueSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-)
+@router.post("/issues/{id}/remove_badge", response_model=IssueSchema)
 async def remove_polar_badge(
     id: UUID,
     auth_subject: WebUser,
@@ -489,11 +477,7 @@ async def remove_polar_badge(
     return issue_ret
 
 
-@router.post(
-    "/issues/{id}/comment",
-    response_model=IssueSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-)
+@router.post("/issues/{id}/comment", response_model=IssueSchema)
 async def add_issue_comment(
     id: UUID,
     comment: PostIssueComment,
@@ -544,11 +528,7 @@ async def add_issue_comment(
     return issue_ret
 
 
-@router.post(
-    "/issues/{id}/badge_with_message",
-    response_model=IssueSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-)
+@router.post("/issues/{id}/badge_with_message", response_model=IssueSchema)
 async def badge_with_message(
     id: UUID,
     badge_message: IssueUpdateBadgeMessage,

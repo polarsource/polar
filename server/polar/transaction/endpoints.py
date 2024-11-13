@@ -13,6 +13,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.routing import APIRouter
 
@@ -27,7 +28,7 @@ from .service.payout import payout_transaction as payout_transaction_service
 from .service.transaction import TransactionSortProperty
 from .service.transaction import transaction as transaction_service
 
-router = APIRouter(prefix="/transactions", tags=["transactions"])
+router = APIRouter(prefix="/transactions", tags=["transactions", APITag.private])
 
 
 SearchSorting = Annotated[

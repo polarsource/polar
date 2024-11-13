@@ -9,7 +9,7 @@ from polar.exceptions import PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.posthog import posthog
 from polar.routing import APIRouter
@@ -18,9 +18,7 @@ from .schemas import MagicLinkRequest
 from .service import MagicLinkError
 from .service import magic_link as magic_link_service
 
-router = APIRouter(
-    prefix="/magic_link", tags=["magic_link"], include_in_schema=IN_DEVELOPMENT_ONLY
-)
+router = APIRouter(prefix="/magic_link", tags=["magic_link", APITag.private])
 
 
 @router.post(

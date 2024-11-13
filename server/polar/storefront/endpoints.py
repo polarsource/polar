@@ -3,13 +3,14 @@ from fastapi import Depends
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.models import Product
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import Storefront
 from .service import storefront as storefront_service
 
-router = APIRouter(prefix="/storefronts", tags=["storefronts"])
+router = APIRouter(prefix="/storefronts", tags=["storefronts", APITag.private])
 
 OrganizationNotFound = {
     "description": "Organization not found.",

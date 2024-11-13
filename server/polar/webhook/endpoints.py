@@ -7,6 +7,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import WebhookEndpoint
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -17,7 +18,7 @@ from .schemas import WebhookEndpoint as WebhookEndpointSchema
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .service import webhook as webhook_service
 
-router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+router = APIRouter(prefix="/webhooks", tags=["webhooks", APITag.private])
 
 WebhookEndpointID = Annotated[UUID4, Path(description="The webhook endpoint ID.")]
 WebhookEndpointNotFound = {

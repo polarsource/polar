@@ -4,7 +4,7 @@ from pydantic import UUID4
 from polar.auth.dependencies import WebUser
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -16,9 +16,7 @@ from .schemas import (
 from .service import personal_access_token as personal_access_token_service
 
 router = APIRouter(
-    prefix="/personal_access_tokens",
-    tags=["personal_access_token"],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    prefix="/personal_access_tokens", tags=["personal_access_token", APITag.private]
 )
 
 

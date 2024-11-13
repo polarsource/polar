@@ -6,6 +6,7 @@ from typing import Any, ParamSpec, TypeVar
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
 
+from polar.config import settings
 from polar.kit.pagination import ListResource
 from polar.openapi import APITag
 
@@ -42,6 +43,24 @@ class AutoCommitAPIRoute(APIRoute):
             return response
 
         return wrapped_endpoint
+
+
+class IncludedInSchemaAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically sets the `include_in_schema` property
+    depending on the tags.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        tags = self.tags
+        if self.include_in_schema:
+            if APITag.documented in tags:
+                self.include_in_schema = True
+            elif APITag.private in tags:
+                self.include_in_schema = settings.is_development()
+            else:
+                self.include_in_schema = False
 
 
 class SpeakeasyNameOverrideAPIRoute(APIRoute):
@@ -155,4 +174,12 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
     return _CustomAPIRouter
 
 
-__all__ = ["get_api_router_class", "AutoCommitAPIRoute"]
+__all__ = [
+    "get_api_router_class",
+    "AutoCommitAPIRoute",
+    "IncludedInSchemaAPIRoute",
+    "SpeakeasyGroupAPIRoute",
+    "SpeakeasyIgnoreAPIRoute",
+    "SpeakeasyNameOverrideAPIRoute",
+    "SpeakeasyPaginationAPIRoute",
+]

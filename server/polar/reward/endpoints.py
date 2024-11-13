@@ -11,6 +11,7 @@ from polar.kit.pagination import ListResource, Pagination
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
+from polar.openapi import APITag
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge
 from polar.postgres import AsyncSession, get_db_session
@@ -20,7 +21,7 @@ from polar.user.schemas.user import User
 from .schemas import Reward, RewardsSummary, RewardsSummaryReceiver, RewardState
 from .service import reward_service
 
-router = APIRouter(tags=["rewards"])
+router = APIRouter(tags=["rewards", APITag.private])
 
 
 @router.get(

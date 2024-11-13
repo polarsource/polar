@@ -10,7 +10,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
 from polar.models.benefit import BenefitAds
-from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -111,7 +111,7 @@ async def get(
         204: {"description": "The view was successfully tracked."},
         404: AdvertisementCampaignNotFound,
     },
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def track_view(
     id: AdvertisementCampaignID,

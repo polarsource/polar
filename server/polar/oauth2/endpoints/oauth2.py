@@ -7,7 +7,7 @@ from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
-from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
+from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -143,7 +143,7 @@ async def delete(
     )
 
 
-@router.get("/authorize")
+@router.get("/authorize", tags=[APITag.documented])
 async def authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
@@ -181,7 +181,7 @@ async def authorize(
     )
 
 
-@router.post("/consent", include_in_schema=IN_DEVELOPMENT_ONLY)
+@router.post("/consent", tags=[APITag.private])
 async def consent(
     request: Request,
     auth_subject: WebUser,

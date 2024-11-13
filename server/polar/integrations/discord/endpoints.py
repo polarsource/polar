@@ -11,7 +11,7 @@ from polar.config import settings
 from polar.exceptions import ResourceAlreadyExists, Unauthorized
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -24,8 +24,7 @@ log = structlog.get_logger()
 
 router = APIRouter(
     prefix="/integrations/discord",
-    tags=["integrations_discord"],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=["integrations_discord", APITag.private],
 )
 
 

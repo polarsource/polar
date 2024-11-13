@@ -179,6 +179,7 @@ export const EditProductPage = ({
   return (
     <DashboardBody
       title="Edit Product"
+      contextViewClassName="hidden md:block"
       contextView={
         <div className="flex h-full flex-col justify-between">
           <div className="flex h-full flex-col overflow-y-auto p-8 py-12">

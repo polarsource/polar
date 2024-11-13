@@ -162,6 +162,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     <DashboardBody
       title="Create Product"
       className="gap-y-16"
+      contextViewClassName="hidden md:block"
       contextView={
         <div className="flex h-full flex-col justify-between p-8 py-12">
           <CheckoutInfo

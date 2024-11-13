@@ -232,12 +232,14 @@ export const DashboardBody = ({
   className,
   title,
   contextView,
+  contextViewClassName,
   header = true,
 }: {
   children?: React.ReactNode
   className?: string
   title?: string
   contextView?: React.ReactElement
+  contextViewClassName?: string
   header?: boolean
 }) => {
   const currentRoute = useRoute()
@@ -272,7 +274,12 @@ export const DashboardBody = ({
         </div>
       </div>
       {contextView ? (
-        <div className="dark:bg-polar-900 dark:border-polar-700 w-full max-w-[440px] overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50">
+        <div
+          className={twMerge(
+            'dark:bg-polar-900 dark:border-polar-700 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 md:max-w-[320px] xl:max-w-[440px]',
+            contextViewClassName,
+          )}
+        >
           {contextView}
         </div>
       ) : null}

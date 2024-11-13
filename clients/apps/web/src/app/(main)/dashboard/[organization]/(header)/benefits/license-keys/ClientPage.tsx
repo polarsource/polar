@@ -3,6 +3,7 @@
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
+  useBenefits,
   useLicenseKey,
   useLicenseKeyDeactivation,
   useLicenseKeyUpdate,
@@ -27,6 +28,13 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useMemo, useState } from 'react'
 
@@ -39,14 +47,24 @@ export const ClientPage = ({
   sorting: SortingState
   pagination: PaginationState
 }) => {
+  const [selectedBenefitId, setSelectedBenefitId] = useState<
+    string | undefined
+  >()
   const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeys, setSelectedLicenseKeys] =
     useState<RowSelectionState>({})
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organizationId: organization.id,
+    benefitId: selectedBenefitId,
     ...getAPIParams(pagination, sorting),
   })
+
+  const { data: licenseKeyBenefits } = useBenefits(
+    organization.id,
+    100,
+    'license_keys',
+  )
 
   const selectedLicenseKey = useMemo(() => {
     const selectedLicenseKeyIds = Object.keys(selectedLicenseKeys)
@@ -235,7 +253,30 @@ export const ClientPage = ({
   ) : undefined
 
   return (
-    <DashboardBody contextView={LicenseKeyContextView}>
+    <DashboardBody
+      className="flex flex-col gap-y-6"
+      contextView={LicenseKeyContextView}
+    >
+      <Select
+        defaultValue="all"
+        onValueChange={(value) => {
+          setSelectedBenefitId(value != 'all' ? value : undefined)
+        }}
+      >
+        <SelectTrigger className="w-fit min-w-64">
+          <SelectValue placeholder="Filter by Benefit" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem key="all" value="all">
+            All License Keys
+          </SelectItem>
+          {licenseKeyBenefits?.items.map((benefit) => (
+            <SelectItem key={benefit.id} value={benefit.id}>
+              {benefit.description}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <LicenseKeysList
         isLoading={isLoading}
         pageCount={licenseKeys?.pagination.max_page ?? 1}

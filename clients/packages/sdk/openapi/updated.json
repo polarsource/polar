@@ -15408,7 +15408,7 @@
                         "description": "Filter by organization ID."
                     },
                     {
-                        "name": "benefit_ids",
+                        "name": "benefit_id",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -38907,6 +38907,10 @@
         }
     },
     "tags": [
+        {
+            "name": "private",
+            "description": "Endpoints that should appear in the schema only in development to generate our internal JS SDK."
+        },
         {
             "name": "documented",
             "description": "Endpoints shown and documented in the Polar API documentation."

@@ -15408,7 +15408,7 @@
                         "description": "Filter by organization ID."
                     },
                     {
-                        "name": "benefit_id",
+                        "name": "benefit_ids",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -15421,6 +15421,19 @@
                                         "resourceRoot": "/v1/benefits",
                                         "resourceName": "Benefit",
                                         "displayProperty": "description"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The benefit ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/benefits",
+                                            "resourceName": "Benefit",
+                                            "displayProperty": "description"
+                                        }
                                     }
                                 },
                                 {

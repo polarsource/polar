@@ -141,7 +141,7 @@ class LicenseKeyService(
         auth_subject: AuthSubject[User | Organization],
         *,
         pagination: PaginationParams,
-        benefit_ids: UUID | None = None,
+        benefit_ids: Sequence[UUID] | None = None,
         organization_ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         query = self._get_select_base().order_by(LicenseKey.created_at.asc())

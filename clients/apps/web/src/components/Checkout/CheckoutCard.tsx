@@ -1,5 +1,6 @@
 'use client'
 
+import { BenefitList } from '@/components/Products/BenefitList'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasIntervals } from '@/utils/product'
@@ -21,7 +22,6 @@ import {
 } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { BenefitList } from '@/components/Products/BenefitList'
 
 export interface CheckoutCardProps {
   checkout: CheckoutPublic
@@ -84,9 +84,8 @@ export const CheckoutCard = ({
           tabsListClassName="w-full flex-row dark:bg-polar-800 bg-gray-50 rounded-full"
         />
       )}
-      <h2 className="text-xl">{product.name}</h2>
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-light">
+        <h1 className="text-3xl font-light">
           {productPrice.amount_type !== 'custom' && (
             <ProductPriceLabel price={productPrice} />
           )}

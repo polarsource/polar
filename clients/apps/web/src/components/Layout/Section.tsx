@@ -17,7 +17,7 @@ export const Section = ({
   return (
     <div
       className={twMerge(
-        'relative flex flex-col gap-12 py-12 md:flex-row md:gap-32 md:py-16',
+        'relative flex flex-col gap-12 py-12 2xl:flex-row 2xl:gap-32 2xl:py-16',
         className,
       )}
     >
@@ -37,7 +37,7 @@ const SectionDescription = ({
   description?: string
 }) => {
   return (
-    <div className="flex w-full flex-shrink-0 flex-col gap-y-6 md:w-2/5">
+    <div className="flex w-full max-w-96 flex-col gap-y-6">
       {icon}
       <div className="flex flex-col gap-y-2">
         <h2 className="text-lg font-medium">{title}</h2>

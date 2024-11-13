@@ -77,7 +77,7 @@ export const useRecurringBillingLabel = (
 export const useProductsByPriceType = (
   organizationId: string,
 ): Record<ProductPriceType, Product[]> => {
-  const { data: products } = useProducts(organizationId)
+  const { data: products } = useProducts(organizationId, { limit: 100 })
   return useMemo(
     () => ({
       [ProductPriceType.ONE_TIME]:

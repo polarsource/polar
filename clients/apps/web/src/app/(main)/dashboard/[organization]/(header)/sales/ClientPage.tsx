@@ -223,7 +223,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <DashboardBody>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between gap-2">
-          <div className="w-full max-w-[180px]">
+          <div className="max-w-auto w-full">
             <ProductSelect
               productsByPriceType={productsByPriceType}
               value={productSelectValue}

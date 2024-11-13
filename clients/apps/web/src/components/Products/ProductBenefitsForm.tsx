@@ -241,13 +241,12 @@ const BenefitsContainer = ({
   onCreateNewBenefit,
   type,
 }: BenefitsContainerProps) => {
-  const [open, setOpen] = useState(false)
-
-  const { organization } = useContext(MaintainerOrganizationContext)
-
   const hasEnabledBenefits = benefits.some((benefit) => {
     return enabledBenefits.some((b) => b.id === benefit.id)
   })
+  const [open, setOpen] = useState(hasEnabledBenefits)
+
+  const { organization } = useContext(MaintainerOrganizationContext)
 
   if (benefits.length === 0 && !onCreateNewBenefit) {
     return null
@@ -257,30 +256,30 @@ const BenefitsContainer = ({
     <div className="flex flex-col gap-2">
       <div
         className={twMerge(
-          'dark:bg-polar-800 dark:hover:border-polar-700 group flex flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-3 text-sm transition-colors dark:border-transparent',
-          hasEnabledBenefits ? '' : 'cursor-pointer hover:border-gray-200',
+          'dark:bg-polar-800 dark:hover:border-polar-700 group flex cursor-pointer flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-3 text-sm transition-colors hover:border-gray-200 dark:border-transparent',
         )}
-        onClick={() => !hasEnabledBenefits && setOpen((v) => !v)}
+        onClick={() => setOpen((v) => !v)}
         role="button"
       >
         <div className="flex flex-row items-center gap-x-3">
           {resolveBenefitCategoryIcon(type, 'small', 'h-4 w-4')}
           <span>{title}</span>
         </div>
-        <span className="flex flex-row gap-x-4">
+        <span className="flex flex-row items-center gap-x-4">
+          {hasEnabledBenefits ? (
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
+          ) : null}
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
             {benefits.length}
           </span>
-          {!hasEnabledBenefits ? (
-            open ? (
-              <ChevronUpIcon className="h-4 w-4 opacity-30 group-hover:opacity-100" />
-            ) : (
-              <ChevronDownIcon className="h-4 w-4 opacity-30 group-hover:opacity-100" />
-            )
-          ) : null}
+          {open ? (
+            <ChevronUpIcon className="h-4 w-4 opacity-30 group-hover:opacity-100" />
+          ) : (
+            <ChevronDownIcon className="h-4 w-4 opacity-30 group-hover:opacity-100" />
+          )}
         </span>
       </div>
-      {open || hasEnabledBenefits ? (
+      {open ? (
         <div className="dark:border-polar-700 mb-2 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4">
           {benefits.length > 0 ? (
             <div className="flex flex-col">

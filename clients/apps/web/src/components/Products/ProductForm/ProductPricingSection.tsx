@@ -317,6 +317,10 @@ export const ProductPricingSection = ({
     }
   }, [update, pricingType, replace, amountType])
 
+  if (update && amountType === 'free') {
+    return null
+  }
+
   return (
     <Section
       icon={<AttachMoneyOutlined fontSize="medium" />}

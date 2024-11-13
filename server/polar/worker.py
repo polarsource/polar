@@ -34,7 +34,7 @@ from polar.kit.db.postgres import (
 from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import generate_correlation_id
 from polar.postgres import create_async_engine
-from polar.redis import Redis
+from polar.redis import REDIS_RETRY, REDIS_RETRY_ON_ERRROR, Redis
 
 log = structlog.get_logger()
 
@@ -76,12 +76,19 @@ class QueueName(Enum):
     github_crawl = "arq:queue:github_crawl"
 
 
+def get_redis_settings() -> RedisSettings:
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    redis_settings.retry_on_error = REDIS_RETRY_ON_ERRROR  # type: ignore  # https://github.com/python-arq/arq/pull/446
+    redis_settings.retry = REDIS_RETRY
+    return redis_settings
+
+
 class WorkerSettings:
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
     queue_name: str = QueueName.default.value
 
-    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    redis_settings = get_redis_settings()
 
     @staticmethod
     async def on_startup(ctx: WorkerContext) -> None:
@@ -152,7 +159,7 @@ class WorkerSettingsGitHubCrawl(WorkerSettings):
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
 
-    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    redis_settings = get_redis_settings()
 
     @staticmethod
     async def on_startup(ctx: WorkerContext) -> None:

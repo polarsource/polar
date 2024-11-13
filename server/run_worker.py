@@ -2,13 +2,14 @@ import argparse
 import multiprocessing
 import os
 import signal
-from logging import Logger
+import sys
 from types import FrameType
 
 import structlog
 from arq import run_worker as arq_run_worker
 
 from polar.logfire import configure_logfire
+from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
 from polar.worker import CronTasksScheduler, WorkerSettings, WorkerSettingsGitHubCrawl
@@ -25,7 +26,10 @@ def _run_scheduler() -> None:
     structlog.contextvars.bind_contextvars(pid=pid)
 
     scheduler = CronTasksScheduler()
-    scheduler.run()
+    try:
+        scheduler.run()
+    except KeyboardInterrupt:
+        pass
 
 
 def _run_worker(settings_cls: type[WorkerSettings]) -> None:
@@ -38,7 +42,9 @@ def _run_worker(settings_cls: type[WorkerSettings]) -> None:
     arq_run_worker(settings_cls)  # type: ignore
 
 
-def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> None:
+def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> int:
+    running = True
+
     logger: Logger = structlog.get_logger(pid=os.getpid())
     logger.info("Starting worker processes")
 
@@ -65,19 +71,54 @@ def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> None:
         processes.append(github_worker_process)
     logger.debug(f"Triggered {github_worker_num} GitHub worker processes")
 
+    def stop_processes(signum: signal.Signals) -> None:
+        logger.debug("Stopping worker processes")
+        nonlocal running
+        running = False
+
+        for p in processes:
+            logger.debug(f"Stopping process {p.pid}")
+            if p.pid is None:
+                continue
+            try:
+                os.kill(p.pid, signum.value)
+                logger.debug(f"Sent signal {signum} to process {p.pid}")
+            except OSError:
+                if p.exitcode is None:
+                    logger.warning(f"Failed to kill process {p.pid}")
+
     def handle_signal(signum: int, frame: FrameType | None) -> None:
         logger.info(f"Received signal {signum}, shutting down worker processes")
-        for process in processes:
-            process.terminate()
+        stop_processes(signal.Signals(signum))
 
-    signal.signal(signal.SIGTERM, handle_signal)
-    signal.signal(signal.SIGINT, handle_signal)
+    for sig in {signal.SIGTERM, signal.SIGINT}:
+        signal.signal(sig, handle_signal)
 
-    try:
-        for process in processes:
-            process.join()
-    except KeyboardInterrupt:
-        handle_signal(signal.SIGINT, None)
+    # Wait for all processes to exit.
+    # If a process terminates abnormally, shutdown everything.
+    # `waited` here avoids a race condition where the processes could potentially exit
+    # before we even get a chance to wait on them.
+    # Inspired from: https://github.com/Bogdanp/dramatiq/blob/382534702db167192dfd91d5e751b7f3aafacd3b/dramatiq/cli.py#L575-L615
+    exit_code = 0
+    waited = False
+    while not waited or any(p.exitcode is None for p in processes):
+        waited = True
+        for p in processes:
+            p.join(timeout=1)
+            if p.exitcode is None:
+                continue
+
+            if running:
+                logger.error(
+                    f"Worker process {p.pid} exited with code {p.exitcode}. "
+                    "Shutting down."
+                )
+                stop_processes(signal.SIGTERM)
+            else:
+                exit_code = exit_code or p.exitcode
+
+    logger.info("All worker processes stopped.", exit_code=exit_code)
+    return exit_code
 
 
 if __name__ == "__main__":
@@ -96,4 +137,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    _main(args.default_worker_num, args.github_worker_num)
+    sys.exit(_main(args.default_worker_num, args.github_worker_num))

@@ -32,6 +32,7 @@ class APITag(StrEnum):
         ```
     """
 
+    private = "private"
     documented = "documented"
     featured = "featured"
     issue_funding = "issue_funding"
@@ -39,6 +40,13 @@ class APITag(StrEnum):
     @classmethod
     def metadata(cls) -> list[OpenAPITag]:
         return [
+            {
+                "name": cls.private,
+                "description": (
+                    "Endpoints that should appear in the schema only "
+                    "in development to generate our internal JS SDK."
+                ),
+            },
             {
                 "name": cls.documented,
                 "description": (
@@ -98,8 +106,6 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
     ],
 }
 
-IN_DEVELOPMENT_ONLY = settings.is_development()
-
 
 def set_openapi_generator(app: FastAPI) -> None:
     def _openapi_generator() -> dict[str, Any]:
@@ -128,7 +134,6 @@ def set_openapi_generator(app: FastAPI) -> None:
 
 __all__ = [
     "OPENAPI_PARAMETERS",
-    "IN_DEVELOPMENT_ONLY",
     "APITag",
     "set_openapi_generator",
 ]

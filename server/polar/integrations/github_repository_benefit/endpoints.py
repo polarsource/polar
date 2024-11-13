@@ -19,7 +19,7 @@ from polar.integrations.github_repository_benefit.schemas import (
 )
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -28,8 +28,7 @@ from .service import github_oauth_client, github_repository_benefit_user_service
 
 router = APIRouter(
     prefix="/integrations/github_repository_benefit",
-    tags=["integrations_github_repository_benefit"],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=["integrations_github_repository_benefit", APITag.private],
 )
 
 

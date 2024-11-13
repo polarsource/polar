@@ -14,7 +14,7 @@ from polar.exceptions import PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.routing import APIRouter
@@ -33,8 +33,7 @@ class OAuthCallbackError(PolarRedirectionError): ...
 
 router = APIRouter(
     prefix="/integrations/google",
-    tags=["integrations_google"],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=["integrations_google", APITag.private],
 )
 
 

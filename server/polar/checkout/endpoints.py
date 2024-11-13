@@ -10,7 +10,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Checkout
-from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
@@ -167,7 +167,7 @@ async def client_get(
     summary="Create Checkout Session from Client",
     response_model=CheckoutPublic,
     status_code=201,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def client_create(
     request: Request,

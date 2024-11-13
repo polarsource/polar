@@ -2,6 +2,7 @@ from fastapi import Depends, Request
 from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound, ResourceNotModified
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.product.service.product import product as product_service
@@ -10,10 +11,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import ProductEmbed
 
-router = APIRouter(
-    prefix="/embed",
-    tags=["embeds"],
-)
+router = APIRouter(prefix="/embed", tags=["embeds", APITag.private])
 
 
 @router.get("/product/{id}", summary="Product Embed")

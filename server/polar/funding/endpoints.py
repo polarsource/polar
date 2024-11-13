@@ -6,6 +6,7 @@ from polar.auth.dependencies import WebUserOrAnonymous
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -18,7 +19,7 @@ from .schemas import IssueFunding
 from .service import ListFundingSortBy
 from .service import funding as funding_service
 
-router = APIRouter(prefix="/funding", tags=["funding"])
+router = APIRouter(prefix="/funding", tags=["funding", APITag.private])
 
 
 @router.get("/search", response_model=ListResource[IssueFunding])

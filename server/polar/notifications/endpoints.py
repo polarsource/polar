@@ -1,14 +1,14 @@
 from fastapi import Depends
 
 from polar.auth.dependencies import WebUser
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import NotificationsList, NotificationsMarkRead
 from .service import notifications
 
-router = APIRouter(tags=["notifications"], include_in_schema=IN_DEVELOPMENT_ONLY)
+router = APIRouter(tags=["notifications", APITag.private])
 
 
 @router.get("/notifications", response_model=NotificationsList)

@@ -6,14 +6,14 @@ from polar.authz.service import Authz
 from polar.exceptions import InternalServerError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
 from ..schemas.user import UserRead, UserScopes, UserSetAccount, UserStripePortalSession
 
-router = APIRouter(include_in_schema=IN_DEVELOPMENT_ONLY)
+router = APIRouter(tags=[APITag.private])
 
 
 @router.get("/me", response_model=UserRead)

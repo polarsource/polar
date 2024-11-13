@@ -10,7 +10,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models.article import ArticleVisibility
-from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -321,7 +321,7 @@ async def send(
     return None
 
 
-@router.get("/unsubscribe", include_in_schema=IN_DEVELOPMENT_ONLY, status_code=204)
+@router.get("/unsubscribe", tags=[APITag.private], status_code=204)
 async def email_unsubscribe(
     article_subscription_id: UUID,
     session: AsyncSession = Depends(get_db_session),

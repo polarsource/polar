@@ -13,7 +13,7 @@ from polar.kit.pagination import ListResource, Pagination
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge
 from polar.models.user import User
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -38,7 +38,7 @@ from .schemas import (
 )
 from .service import pledge as pledge_service
 
-router = APIRouter(tags=["pledges"])
+router = APIRouter(tags=["pledges", APITag.private])
 
 
 async def include_receiver_admin_fields(
@@ -319,9 +319,9 @@ async def get(
 @router.post(
     "/pledges",
     response_model=PledgeSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
     description="Creates a pledge from a payment intent",
     status_code=200,
+    tags=[APITag.private],
 )
 async def create(
     create: CreatePledgeFromPaymentIntent,
@@ -350,9 +350,9 @@ async def create(
 @router.post(
     "/pledges/pay_on_completion",
     response_model=PledgeSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
     description="Creates a pay_on_completion type of pledge",
     status_code=200,
+    tags=[APITag.private],
 )
 async def create_pay_on_completion(
     create: CreatePledgePayLater,
@@ -385,9 +385,9 @@ async def create_pay_on_completion(
 @router.post(
     "/pledges/{id}/create_invoice",
     response_model=PledgeSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
     description="Creates an invoice for pay_on_completion pledges",
     status_code=200,
+    tags=[APITag.private],
 )
 async def create_invoice(
     id: UUID,
@@ -414,8 +414,8 @@ async def create_invoice(
 @router.post(
     "/pledges/payment_intent",
     response_model=PledgeStripePaymentIntentMutationResponse,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
     status_code=200,
+    tags=[APITag.private],
 )
 async def create_payment_intent(
     intent: PledgeStripePaymentIntentCreate,
@@ -457,7 +457,7 @@ async def create_payment_intent(
 @router.patch(
     "/pledges/payment_intent/{id}",
     response_model=PledgeStripePaymentIntentMutationResponse,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def update_payment_intent(
     id: str,
@@ -482,9 +482,7 @@ async def update_payment_intent(
 
 
 @router.post(
-    "/pledges/{pledge_id}/dispute",
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-    response_model=PledgeSchema,
+    "/pledges/{pledge_id}/dispute", response_model=PledgeSchema, tags=[APITag.private]
 )
 async def dispute_pledge(
     pledge_id: UUID,

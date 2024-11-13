@@ -16,7 +16,7 @@ from polar.integrations.github.badge import GithubBadge
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
-from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.routing import APIRouter
@@ -185,7 +185,7 @@ async def update(
             "model": ResourceNotFound.schema(),
         },
     },
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def get_account(
     id: OrganizationID,
@@ -225,7 +225,7 @@ async def get_account(
         },
         404: OrganizationNotFound,
     },
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def set_account(
     id: OrganizationID,
@@ -255,7 +255,7 @@ async def set_account(
 @router.get(
     "/{id}/members",
     response_model=ListResource[OrganizationMember],
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def members(
     auth_subject: auth.OrganizationsWrite,
@@ -288,7 +288,7 @@ async def members(
 @router.post(
     "/{id}/stripe_customer_portal",
     response_model=OrganizationStripePortalSession,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def create_stripe_customer_portal(
     id: UUID,
@@ -314,7 +314,7 @@ async def create_stripe_customer_portal(
 @router.get(
     "/{id}/badge_settings",
     response_model=OrganizationBadgeSettingsRead,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    tags=[APITag.private],
 )
 async def get_badge_settings(
     id: UUID,
@@ -381,9 +381,7 @@ async def get_badge_settings(
 
 
 @router.post(
-    "/{id}/badge_settings",
-    response_model=OrganizationSchema,
-    include_in_schema=IN_DEVELOPMENT_ONLY,
+    "/{id}/badge_settings", response_model=OrganizationSchema, tags=[APITag.private]
 )
 async def update_badge_settings(
     id: UUID,

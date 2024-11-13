@@ -52,7 +52,7 @@ export const ClientPage = ({
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organizationId: organization.id,
-    benefitId: selectedBenefitId ? [selectedBenefitId] : undefined,
+    benefitIds: selectedBenefitId ? [selectedBenefitId] : undefined,
     ...getAPIParams(pagination, sorting),
   })
 

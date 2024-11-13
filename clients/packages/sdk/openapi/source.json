@@ -22,7 +22,8 @@
         "/v1/users/me": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "private"
                 ],
                 "summary": "Get Authenticated",
                 "operationId": "users:get_authenticated",
@@ -57,7 +58,8 @@
         "/v1/users/me/scopes": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "private"
                 ],
                 "summary": "Scopes",
                 "operationId": "users:scopes",
@@ -92,7 +94,8 @@
         "/v1/users/me/account": {
             "patch": {
                 "tags": [
-                    "users"
+                    "users",
+                    "private"
                 ],
                 "summary": "Set Account",
                 "operationId": "users:set_account",
@@ -147,7 +150,8 @@
         "/v1/users/me/stripe_customer_portal": {
             "post": {
                 "tags": [
-                    "users"
+                    "users",
+                    "private"
                 ],
                 "summary": "Create Stripe Customer Portal",
                 "operationId": "users:create_stripe_customer_portal",
@@ -2566,7 +2570,8 @@
         "/v1/integrations/github/authorize": {
             "get": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Integrations.Github.Authorize",
                 "operationId": "integrations_github:integrations.github.authorize",
@@ -2653,7 +2658,8 @@
         "/v1/integrations/github/callback": {
             "get": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Integrations.Github.Callback",
                 "operationId": "integrations_github:integrations.github.callback",
@@ -2756,7 +2762,8 @@
         "/v1/integrations/github/lookup_user": {
             "post": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Lookup User",
                 "operationId": "integrations_github:lookup_user",
@@ -2805,7 +2812,8 @@
         "/v1/integrations/github/organizations/{id}/installation": {
             "get": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Redirect To Organization Installation",
                 "operationId": "integrations_github:redirect_to_organization_installation",
@@ -2876,7 +2884,8 @@
         "/v1/integrations/github/organizations/{id}/check_permissions": {
             "post": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Check Organization Permissions",
                 "operationId": "integrations_github:check_organization_permissions",
@@ -2936,7 +2945,8 @@
         "/v1/integrations/github/organizations/{id}/billing": {
             "get": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Get Organization Billing Plan",
                 "operationId": "integrations_github:get_organization_billing_plan",
@@ -2993,7 +3003,8 @@
         "/v1/integrations/github/installations": {
             "post": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Install",
                 "operationId": "integrations_github:install",
@@ -3042,7 +3053,8 @@
         "/v1/integrations/github/webhook": {
             "post": {
                 "tags": [
-                    "integrations_github"
+                    "integrations_github",
+                    "private"
                 ],
                 "summary": "Webhook",
                 "operationId": "integrations_github:webhook",
@@ -3063,7 +3075,8 @@
         "/v1/integrations/github_repository_benefit/user/authorize": {
             "get": {
                 "tags": [
-                    "integrations_github_repository_benefit"
+                    "integrations_github_repository_benefit",
+                    "private"
                 ],
                 "summary": "Integrations.Github Repository Benefit.User Authorize",
                 "operationId": "integrations_github_repository_benefit:integrations.github_repository_benefit.user_authorize",
@@ -3124,7 +3137,8 @@
         "/v1/integrations/github_repository_benefit/user/callback": {
             "get": {
                 "tags": [
-                    "integrations_github_repository_benefit"
+                    "integrations_github_repository_benefit",
+                    "private"
                 ],
                 "summary": "Integrations.Github Repository Benefit.User Callback",
                 "operationId": "integrations_github_repository_benefit:integrations.github_repository_benefit.user_callback",
@@ -3233,7 +3247,8 @@
         "/v1/integrations/github_repository_benefit/user/repositories": {
             "get": {
                 "tags": [
-                    "integrations_github_repository_benefit"
+                    "integrations_github_repository_benefit",
+                    "private"
                 ],
                 "summary": "Integrations.Github Repository Benefit.User Repositories",
                 "description": "Lists available repositories for this user",
@@ -3269,7 +3284,8 @@
         "/v1/integrations/github_repository_benefit/installation/install": {
             "get": {
                 "tags": [
-                    "integrations_github_repository_benefit"
+                    "integrations_github_repository_benefit",
+                    "private"
                 ],
                 "summary": "Integrations.Github Repository Benefit.Installation Install",
                 "operationId": "integrations_github_repository_benefit:integrations.github_repository_benefit.installation_install",
@@ -3302,7 +3318,8 @@
         "/v1/integrations/github_repository_benefit/installation/callback": {
             "get": {
                 "tags": [
-                    "integrations_github_repository_benefit"
+                    "integrations_github_repository_benefit",
+                    "private"
                 ],
                 "summary": "Integrations.Github Repository Benefit.Installation Callback",
                 "operationId": "integrations_github_repository_benefit:integrations.github_repository_benefit.installation_callback",
@@ -3335,7 +3352,8 @@
         "/v1/integrations/discord/bot/authorize": {
             "get": {
                 "tags": [
-                    "integrations_discord"
+                    "integrations_discord",
+                    "private"
                 ],
                 "summary": "Integrations.Discord.Bot Authorize",
                 "operationId": "integrations_discord:integrations.discord.bot_authorize",
@@ -3396,7 +3414,8 @@
         "/v1/integrations/discord/bot/callback": {
             "get": {
                 "tags": [
-                    "integrations_discord"
+                    "integrations_discord",
+                    "private"
                 ],
                 "summary": "Integrations.Discord.Bot Callback",
                 "operationId": "integrations_discord:integrations.discord.bot_callback",
@@ -3498,7 +3517,8 @@
         "/v1/integrations/discord/user/authorize": {
             "get": {
                 "tags": [
-                    "integrations_discord"
+                    "integrations_discord",
+                    "private"
                 ],
                 "summary": "Integrations.Discord.User Authorize",
                 "operationId": "integrations_discord:integrations.discord.user_authorize",
@@ -3559,7 +3579,8 @@
         "/v1/integrations/discord/user/callback": {
             "get": {
                 "tags": [
-                    "integrations_discord"
+                    "integrations_discord",
+                    "private"
                 ],
                 "summary": "Integrations.Discord.User Callback",
                 "operationId": "integrations_discord:integrations.discord.user_callback",
@@ -3661,7 +3682,8 @@
         "/v1/integrations/discord/guild/lookup": {
             "get": {
                 "tags": [
-                    "integrations_discord"
+                    "integrations_discord",
+                    "private"
                 ],
                 "summary": "Discord Guild Lookup",
                 "operationId": "integrations_discord:discord_guild_lookup",
@@ -3717,7 +3739,8 @@
         "/v1/backoffice/pledges": {
             "get": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Pledges",
                 "operationId": "backoffice:pledges",
@@ -3756,7 +3779,8 @@
         "/v1/backoffice/rewards/by_issue": {
             "get": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Rewards",
                 "operationId": "backoffice:rewards",
@@ -3839,7 +3863,8 @@
         "/v1/backoffice/rewards/pending": {
             "get": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Rewards Pending",
                 "operationId": "backoffice:rewards_pending",
@@ -3893,7 +3918,8 @@
         "/v1/backoffice/issue/{id}": {
             "get": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Issue",
                 "operationId": "backoffice:issue",
@@ -3950,7 +3976,8 @@
         "/v1/backoffice/pledges/approve": {
             "post": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Pledge Reward Transfer",
                 "operationId": "backoffice:pledge_reward_transfer",
@@ -4005,7 +4032,8 @@
         "/v1/backoffice/pledges/create_invoice/{pledge_id}": {
             "post": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Pledge Create Invoice",
                 "operationId": "backoffice:pledge_create_invoice",
@@ -4062,7 +4090,8 @@
         "/v1/backoffice/pledges/mark_disputed/{pledge_id}": {
             "post": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Pledge Mark Disputed",
                 "operationId": "backoffice:pledge_mark_disputed",
@@ -4119,7 +4148,8 @@
         "/v1/backoffice/badge": {
             "post": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Manage Badge",
                 "operationId": "backoffice:manage_badge",
@@ -4174,7 +4204,8 @@
         "/v1/backoffice/update_badge_contents": {
             "post": {
                 "tags": [
-                    "backoffice"
+                    "backoffice",
+                    "private"
                 ],
                 "summary": "Update Badge Contents",
                 "operationId": "backoffice:update_badge_contents",
@@ -4240,7 +4271,8 @@
         "/v1/dashboard/personal": {
             "get": {
                 "tags": [
-                    "dashboard"
+                    "dashboard",
+                    "private"
                 ],
                 "summary": "Get Personal Dashboard",
                 "operationId": "dashboard:get_personal_dashboard",
@@ -4359,7 +4391,8 @@
         "/v1/dashboard/organization/{id}": {
             "get": {
                 "tags": [
-                    "dashboard"
+                    "dashboard",
+                    "private"
                 ],
                 "summary": "Get Dashboard",
                 "operationId": "dashboard:get_dashboard",
@@ -4516,7 +4549,8 @@
         "/v1/dashboard/dummy_do_not_use": {
             "get": {
                 "tags": [
-                    "dashboard"
+                    "dashboard",
+                    "private"
                 ],
                 "summary": "Dummy Do Not Use",
                 "operationId": "dashboard:dummy_do_not_use",
@@ -4540,7 +4574,8 @@
         "/v1/funding/search": {
             "get": {
                 "tags": [
-                    "funding"
+                    "funding",
+                    "private"
                 ],
                 "summary": "Search",
                 "operationId": "funding:search",
@@ -4736,7 +4771,8 @@
         "/v1/funding/lookup": {
             "get": {
                 "tags": [
-                    "funding"
+                    "funding",
+                    "private"
                 ],
                 "summary": "Lookup",
                 "operationId": "funding:lookup",
@@ -4794,7 +4830,8 @@
         "/v1/magic_link/request": {
             "post": {
                 "tags": [
-                    "magic_link"
+                    "magic_link",
+                    "private"
                 ],
                 "summary": "Magic Link.Request",
                 "operationId": "magic_link:magic_link.request",
@@ -4836,7 +4873,8 @@
         "/v1/magic_link/authenticate": {
             "post": {
                 "tags": [
-                    "magic_link"
+                    "magic_link",
+                    "private"
                 ],
                 "summary": "Magic Link.Authenticate",
                 "operationId": "magic_link:magic_link.authenticate",
@@ -4908,7 +4946,8 @@
         "/v1/notifications": {
             "get": {
                 "tags": [
-                    "notifications"
+                    "notifications",
+                    "private"
                 ],
                 "summary": "Get",
                 "operationId": "notifications:get",
@@ -4943,7 +4982,8 @@
         "/v1/notifications/read": {
             "post": {
                 "tags": [
-                    "notifications"
+                    "notifications",
+                    "private"
                 ],
                 "summary": "Mark Read",
                 "operationId": "notifications:mark_read",
@@ -5631,7 +5671,8 @@
         "/v1/rewards/search": {
             "get": {
                 "tags": [
-                    "rewards"
+                    "rewards",
+                    "private"
                 ],
                 "summary": "Search rewards",
                 "description": "Search rewards.",
@@ -5755,7 +5796,8 @@
         "/v1/rewards/summary": {
             "get": {
                 "tags": [
-                    "rewards"
+                    "rewards",
+                    "private"
                 ],
                 "summary": "Get rewards summary",
                 "description": "Get summary of rewards for resource.",
@@ -5814,7 +5856,8 @@
         "/v1/personal_access_tokens/": {
             "get": {
                 "tags": [
-                    "personal_access_token"
+                    "personal_access_token",
+                    "private"
                 ],
                 "summary": "List Personal Access Tokens",
                 "description": "List personal access tokens.",
@@ -5905,7 +5948,8 @@
             },
             "post": {
                 "tags": [
-                    "personal_access_token"
+                    "personal_access_token",
+                    "private"
                 ],
                 "summary": "Create Personal Access Token",
                 "operationId": "personal_access_token:create_personal_access_token",
@@ -5960,7 +6004,8 @@
         "/v1/personal_access_tokens/{id}": {
             "delete": {
                 "tags": [
-                    "personal_access_token"
+                    "personal_access_token",
+                    "private"
                 ],
                 "summary": "Delete Personal Access Token",
                 "operationId": "personal_access_token:delete_personal_access_token",
@@ -6010,7 +6055,8 @@
         "/v1/payment_methods": {
             "get": {
                 "tags": [
-                    "payment_methods"
+                    "payment_methods",
+                    "private"
                 ],
                 "summary": "List",
                 "operationId": "payment_methods:list",
@@ -6064,7 +6110,8 @@
         "/v1/payment_methods/{id}/detach": {
             "post": {
                 "tags": [
-                    "payment_methods"
+                    "payment_methods",
+                    "private"
                 ],
                 "summary": "Detach",
                 "operationId": "payment_methods:detach",
@@ -6120,7 +6167,8 @@
         "/v1/accounts/search": {
             "get": {
                 "tags": [
-                    "accounts"
+                    "accounts",
+                    "private"
                 ],
                 "summary": "Search",
                 "operationId": "accounts:search",
@@ -6212,7 +6260,8 @@
         "/v1/accounts/{id}": {
             "get": {
                 "tags": [
-                    "accounts"
+                    "accounts",
+                    "private"
                 ],
                 "summary": "Get",
                 "operationId": "accounts:get",
@@ -6269,7 +6318,8 @@
         "/v1/accounts/{id}/onboarding_link": {
             "post": {
                 "tags": [
-                    "accounts"
+                    "accounts",
+                    "private"
                 ],
                 "summary": "Onboarding Link",
                 "operationId": "accounts:onboarding_link",
@@ -6335,7 +6385,8 @@
         "/v1/accounts/{id}/dashboard_link": {
             "post": {
                 "tags": [
-                    "accounts"
+                    "accounts",
+                    "private"
                 ],
                 "summary": "Dashboard Link",
                 "operationId": "accounts:dashboard_link",
@@ -6392,7 +6443,8 @@
         "/v1/accounts": {
             "post": {
                 "tags": [
-                    "accounts"
+                    "accounts",
+                    "private"
                 ],
                 "summary": "Create",
                 "operationId": "accounts:create",
@@ -6447,7 +6499,8 @@
         "/v1/issues/": {
             "get": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "List Issues",
                 "description": "List issues.",
@@ -6724,7 +6777,8 @@
         "/v1/issues/lookup": {
             "get": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Lookup",
                 "operationId": "issues:lookup",
@@ -6793,7 +6847,8 @@
         "/v1/issues/{id}/body": {
             "get": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Get Body",
                 "operationId": "issues:get_body",
@@ -6849,7 +6904,8 @@
         "/v1/issues/for_you": {
             "get": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "For You",
                 "operationId": "issues:for_you",
@@ -6903,7 +6959,8 @@
         "/v1/issues/{id}": {
             "get": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Get issue",
                 "description": "Get issue",
@@ -6960,7 +7017,8 @@
             },
             "post": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Update issue.",
                 "description": "Update issue. Requires authentication.",
@@ -7028,7 +7086,8 @@
         "/v1/issues/{id}/confirm_solved": {
             "post": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Mark an issue as confirmed solved.",
                 "description": "Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.",
@@ -7096,7 +7155,8 @@
         "/v1/issues/{id}/add_badge": {
             "post": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Add Polar Badge",
                 "operationId": "issues:add_polar_badge",
@@ -7153,7 +7213,8 @@
         "/v1/issues/{id}/remove_badge": {
             "post": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Remove Polar Badge",
                 "operationId": "issues:remove_polar_badge",
@@ -7210,7 +7271,8 @@
         "/v1/issues/{id}/comment": {
             "post": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Add Issue Comment",
                 "operationId": "issues:add_issue_comment",
@@ -7277,7 +7339,8 @@
         "/v1/issues/{id}/badge_with_message": {
             "post": {
                 "tags": [
-                    "issues"
+                    "issues",
+                    "private"
                 ],
                 "summary": "Badge With Message",
                 "operationId": "issues:badge_with_message",
@@ -7344,7 +7407,8 @@
         "/v1/pledges/search": {
             "get": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private"
                 ],
                 "summary": "Search pledges",
                 "description": "Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).",
@@ -7516,7 +7580,8 @@
         "/v1/pledges/summary": {
             "get": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private"
                 ],
                 "summary": "Get pledges summary",
                 "description": "Get summary of pledges for resource.",
@@ -7575,7 +7640,8 @@
         "/v1/pledges/spending": {
             "get": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private"
                 ],
                 "summary": "Get user spending",
                 "description": "Get current user spending in the current period. Used together with spending limits.",
@@ -7635,7 +7701,8 @@
         "/v1/pledges/{id}": {
             "get": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private"
                 ],
                 "summary": "Get pledge",
                 "description": "Get a pledge. Requires authentication.",
@@ -7693,7 +7760,9 @@
         "/v1/pledges": {
             "post": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private",
+                    "private"
                 ],
                 "summary": "Create",
                 "description": "Creates a pledge from a payment intent",
@@ -7750,7 +7819,9 @@
         "/v1/pledges/pay_on_completion": {
             "post": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private",
+                    "private"
                 ],
                 "summary": "Create Pay On Completion",
                 "description": "Creates a pay_on_completion type of pledge",
@@ -7806,7 +7877,9 @@
         "/v1/pledges/{id}/create_invoice": {
             "post": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private",
+                    "private"
                 ],
                 "summary": "Create Invoice",
                 "description": "Creates an invoice for pay_on_completion pledges",
@@ -7864,7 +7937,9 @@
         "/v1/pledges/payment_intent": {
             "post": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private",
+                    "private"
                 ],
                 "summary": "Create Payment Intent",
                 "operationId": "pledges:create_payment_intent",
@@ -7920,7 +7995,9 @@
         "/v1/pledges/payment_intent/{id}": {
             "patch": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private",
+                    "private"
                 ],
                 "summary": "Update Payment Intent",
                 "operationId": "pledges:update_payment_intent",
@@ -7987,7 +8064,9 @@
         "/v1/pledges/{pledge_id}/dispute": {
             "post": {
                 "tags": [
-                    "pledges"
+                    "pledges",
+                    "private",
+                    "private"
                 ],
                 "summary": "Dispute Pledge",
                 "operationId": "pledges:dispute_pledge",
@@ -8425,7 +8504,8 @@
         "/v1/organizations/{id}/account": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "private"
                 ],
                 "summary": "Get Organization Account",
                 "description": "Get the account for an organization.",
@@ -8510,7 +8590,8 @@
             },
             "patch": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "private"
                 ],
                 "summary": "Set Organization Account",
                 "description": "Set the account for an organization.",
@@ -8607,7 +8688,8 @@
         "/v1/organizations/{id}/members": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "private"
                 ],
                 "summary": "Members",
                 "description": "List members in an organization.",
@@ -8694,7 +8776,8 @@
         "/v1/organizations/{id}/stripe_customer_portal": {
             "post": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "private"
                 ],
                 "summary": "Create Stripe Customer Portal",
                 "description": "Create a new Stripe Customer session for a organization.",
@@ -8755,7 +8838,8 @@
         "/v1/organizations/{id}/badge_settings": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "private"
                 ],
                 "summary": "Get Badge Settings",
                 "description": "Get badge settings for an organization.",
@@ -8814,7 +8898,8 @@
             },
             "post": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "private"
                 ],
                 "summary": "Update Badge Settings",
                 "description": "Update badge settings for an organization.",
@@ -10037,7 +10122,8 @@
             "get": {
                 "tags": [
                     "articles",
-                    "documented"
+                    "documented",
+                    "private"
                 ],
                 "summary": "Email Unsubscribe",
                 "operationId": "articles:email_unsubscribe",
@@ -10075,7 +10161,8 @@
         "/v1/transactions/search": {
             "get": {
                 "tags": [
-                    "transactions"
+                    "transactions",
+                    "private"
                 ],
                 "summary": "Search Transactions",
                 "operationId": "transactions:search_transactions",
@@ -10268,7 +10355,8 @@
         "/v1/transactions/lookup": {
             "get": {
                 "tags": [
-                    "transactions"
+                    "transactions",
+                    "private"
                 ],
                 "summary": "Lookup Transaction",
                 "operationId": "transactions:lookup_transaction",
@@ -10325,7 +10413,8 @@
         "/v1/transactions/summary": {
             "get": {
                 "tags": [
-                    "transactions"
+                    "transactions",
+                    "private"
                 ],
                 "summary": "Get Summary",
                 "operationId": "transactions:get_summary",
@@ -10382,7 +10471,8 @@
         "/v1/transactions/payouts": {
             "get": {
                 "tags": [
-                    "transactions"
+                    "transactions",
+                    "private"
                 ],
                 "summary": "Get Payout Estimate",
                 "operationId": "transactions:get_payout_estimate",
@@ -10437,7 +10527,8 @@
             },
             "post": {
                 "tags": [
-                    "transactions"
+                    "transactions",
+                    "private"
                 ],
                 "summary": "Create Payout",
                 "operationId": "transactions:create_payout",
@@ -10492,7 +10583,8 @@
         "/v1/transactions/payouts/{id}/csv": {
             "get": {
                 "tags": [
-                    "transactions"
+                    "transactions",
+                    "private"
                 ],
                 "summary": "Get Payout Csv",
                 "operationId": "transactions:get_payout_csv",
@@ -10729,7 +10821,8 @@
             "post": {
                 "tags": [
                     "advertisements",
-                    "documented"
+                    "documented",
+                    "private"
                 ],
                 "summary": "Track View",
                 "description": "Track a view on an advertisement campaign.",
@@ -10780,7 +10873,8 @@
         "/v1/auth/logout": {
             "get": {
                 "tags": [
-                    "auth"
+                    "auth",
+                    "private"
                 ],
                 "summary": "Logout",
                 "operationId": "auth:logout",
@@ -11128,7 +11222,8 @@
         "/v1/oauth2/authorize": {
             "get": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "private"
                 ],
                 "summary": "Authorize",
                 "operationId": "oauth2:authorize",
@@ -11179,7 +11274,8 @@
         "/v1/oauth2/consent": {
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "private"
                 ],
                 "summary": "Consent",
                 "operationId": "oauth2:consent",
@@ -12239,7 +12335,8 @@
         "/v1/webhooks/endpoints": {
             "get": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "List Webhook Endpoints",
                 "description": "List webhook endpoints.",
@@ -12378,7 +12475,8 @@
             },
             "post": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "Create Webhook Endpoint",
                 "description": "Create a webhook endpoint.",
@@ -12437,7 +12535,8 @@
         "/v1/webhooks/endpoints/{id}": {
             "get": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "Get Webhook Endpoint",
                 "description": "Get a webhook endpoint by ID.",
@@ -12509,7 +12608,8 @@
             },
             "patch": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "Update Webhook Endpoint",
                 "description": "Update a webhook endpoint.",
@@ -12600,7 +12700,8 @@
             },
             "delete": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "Delete Webhook Endpoint",
                 "description": "Delete a webhook endpoint.",
@@ -12676,7 +12777,8 @@
         "/v1/webhooks/deliveries": {
             "get": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "List Webhook Deliveries",
                 "description": "List webhook deliveries.\n\nDeliveries are all the attempts to deliver a webhook event to an endpoint.",
@@ -12792,7 +12894,8 @@
         "/v1/webhooks/events/{id}/redeliver": {
             "post": {
                 "tags": [
-                    "webhooks"
+                    "webhooks",
+                    "private"
                 ],
                 "summary": "Redeliver Webhook Event",
                 "description": "Schedule the re-delivery of a webhook event.",
@@ -14394,7 +14497,8 @@
                     "checkouts",
                     "custom",
                     "documented",
-                    "featured"
+                    "featured",
+                    "private"
                 ],
                 "summary": "Create Checkout Session from Client",
                 "description": "Create a checkout session from a client. Suitable to build checkout links.",
@@ -15325,7 +15429,8 @@
         "/v1/integrations/google/authorize": {
             "get": {
                 "tags": [
-                    "integrations_google"
+                    "integrations_google",
+                    "private"
                 ],
                 "summary": "Integrations.Google.Authorize",
                 "operationId": "integrations_google:integrations.google.authorize",
@@ -15403,7 +15508,8 @@
         "/v1/integrations/google/callback": {
             "get": {
                 "tags": [
-                    "integrations_google"
+                    "integrations_google",
+                    "private"
                 ],
                 "summary": "Integrations.Google.Callback",
                 "operationId": "integrations_google:integrations.google.callback",
@@ -15571,7 +15677,7 @@
                         "description": "Filter by organization ID."
                     },
                     {
-                        "name": "benefit_ids",
+                        "name": "benefit_id",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -16446,7 +16552,8 @@
         "/v1/storefronts/{slug}": {
             "get": {
                 "tags": [
-                    "storefronts"
+                    "storefronts",
+                    "private"
                 ],
                 "summary": "Get Organization Storefront",
                 "description": "Get an organization storefront by slug.",
@@ -16979,7 +17086,8 @@
         "/v1/embed/product/{id}": {
             "get": {
                 "tags": [
-                    "embeds"
+                    "embeds",
+                    "private"
                 ],
                 "summary": "Product Embed",
                 "description": "Get product card.",
@@ -39754,6 +39862,10 @@
         }
     },
     "tags": [
+        {
+            "name": "private",
+            "description": "Endpoints that should appear in the schema only in development to generate our internal JS SDK."
+        },
         {
             "name": "documented",
             "description": "Endpoints shown and documented in the Polar API documentation."

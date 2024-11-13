@@ -26,7 +26,7 @@ const createOperationId = (currentOperationId) => {
   return parts[parts.length - 1]
 }
 
-const GENERIC_TAGS = ['documented', 'featured', 'issue_funding']
+const GENERIC_TAGS = ['private', 'documented', 'featured', 'issue_funding']
 
 // Remove generic tags and join them in a dotted string
 // * ['users', 'documented', 'featured'] -> ['users']

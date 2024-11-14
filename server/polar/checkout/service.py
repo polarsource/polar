@@ -534,7 +534,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
-        price = checkout_link.product_price
+        price = checkout_link.checkout_price
 
         if price.is_archived:
             raise PolarRequestValidationError(
@@ -548,15 +548,15 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        product = price.product
+        product = checkout_link.product
         if product.is_archived:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
+                        "loc": ("body", "product_id"),
                         "msg": "Product is archived.",
-                        "input": price.id,
+                        "input": product.id,
                     }
                 ]
             )

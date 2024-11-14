@@ -4,7 +4,7 @@ from typing import Any, cast
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import (
     AuthSubject,
@@ -29,7 +29,12 @@ from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 
-from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
+from .schemas import (
+    CheckoutLinkCreate,
+    CheckoutLinkPriceCreate,
+    CheckoutLinkProductCreate,
+    CheckoutLinkUpdate,
+)
 from .sorting import CheckoutLinkSortProperty
 
 log: Logger = structlog.get_logger()
@@ -68,7 +73,6 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             if criterion == CheckoutLinkSortProperty.created_at:
                 order_by_clauses.append(clause_function(CheckoutLink.created_at))
         statement = statement.order_by(*order_by_clauses)
-
         return await paginate(session, statement, pagination=pagination)
 
     async def get_by_id(
@@ -89,6 +93,77 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_create: CheckoutLinkCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
+        if hasattr(checkout_link_create, "product_price_id"):
+            product, price = await self._get_validated_price(
+                session,
+                cast(CheckoutLinkPriceCreate, checkout_link_create),
+                auth_subject,
+            )
+        else:
+            product, price = await self._get_validated_product(
+                session,
+                cast(CheckoutLinkProductCreate, checkout_link_create),
+                auth_subject,
+            )
+
+        checkout_link = CheckoutLink(
+            client_secret=generate_token(prefix=CHECKOUT_LINK_CLIENT_SECRET_PREFIX),
+            product=product,
+            **checkout_link_create.model_dump(
+                exclude={
+                    "product_price_id",
+                    "product_id",
+                },
+                by_alias=True,
+            ),
+        )
+        if price:
+            checkout_link.product_price = price
+
+        session.add(checkout_link)
+        return checkout_link
+
+    async def _get_validated_product(
+        self,
+        session: AsyncSession,
+        checkout_link_create: CheckoutLinkProductCreate,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> tuple[Product, None]:
+        product = await product_service.get_by_id(
+            session, auth_subject, checkout_link_create.product_id
+        )
+        if not product:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": checkout_link_create.product_id,
+                    }
+                ]
+            )
+
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is archived.",
+                        "input": checkout_link_create.product_id,
+                    }
+                ]
+            )
+
+        return (product, None)
+
+    async def _get_validated_price(
+        self,
+        session: AsyncSession,
+        checkout_link_create: CheckoutLinkPriceCreate,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> tuple[Product, ProductPrice]:
         price = await product_price_service.get_writable_by_id(
             session, checkout_link_create.product_price_id, auth_subject
         )
@@ -131,20 +206,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             )
 
         product = cast(Product, await product_service.get_loaded(session, product.id))
-
-        checkout_link = CheckoutLink(
-            client_secret=generate_token(prefix=CHECKOUT_LINK_CLIENT_SECRET_PREFIX),
-            product_price=price,
-            **checkout_link_create.model_dump(
-                exclude={
-                    "product_price_id",
-                },
-                by_alias=True,
-            ),
-        )
-        session.add(checkout_link)
-
-        return checkout_link
+        return (product, price)
 
     async def update(
         self,
@@ -170,21 +232,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def get_by_client_secret(
         self, session: AsyncSession, client_secret: str
     ) -> CheckoutLink | None:
-        statement = (
-            select(CheckoutLink)
-            .where(
-                CheckoutLink.deleted_at.is_(None),
-                CheckoutLink.client_secret == client_secret,
-            )
-            .join(
-                ProductPrice, onclause=ProductPrice.id == CheckoutLink.product_price_id
-            )
-            .join(Product, onclause=Product.id == ProductPrice.product_id)
-            .options(
-                contains_eager(CheckoutLink.product_price).contains_eager(
-                    ProductPrice.product
-                )
-            )
+        statement = select(CheckoutLink).where(
+            CheckoutLink.deleted_at.is_(None),
+            CheckoutLink.client_secret == client_secret,
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -195,11 +245,13 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         statement = (
             select(CheckoutLink)
             .where(CheckoutLink.deleted_at.is_(None))
-            .join(
-                ProductPrice, onclause=ProductPrice.id == CheckoutLink.product_price_id
+            .join(Product, onclause=Product.id == CheckoutLink.product_id)
+            .options(
+                contains_eager(CheckoutLink.product).options(
+                    joinedload(Product.product_medias),
+                    joinedload(Product.attached_custom_fields),
+                )
             )
-            .join(Product, onclause=Product.id == ProductPrice.product_id)
-            .options(contains_eager(CheckoutLink.product_price))
         )
 
         if is_user(auth_subject):

@@ -35,10 +35,10 @@ export const PageContent = () => {
         </div>
 
         <MerchantOfRecord />
+        <Testimonials />
         <Checkout />
         <Monetization />
         <Pricing />
-        <Testimonials />
       </Section>
     </>
   )

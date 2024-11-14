@@ -10,7 +10,13 @@ from polar.kit.metadata import (
     OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
-from polar.product.schemas import ProductPrice
+from polar.product.schemas import (
+    BenefitPublicList,
+    ProductBase,
+    ProductMediaList,
+    ProductPrice,
+    ProductPriceList,
+)
 
 SuccessURL = Annotated[
     HttpUrl | None,
@@ -24,14 +30,27 @@ SuccessURL = Annotated[
 ]
 
 
-class CheckoutLinkCreate(MetadataInputMixin, Schema):
-    """Schema to create a new checkout link."""
-
+class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    label: str | None = Field(
+        description="Optional label to distinguish links internally"
+    )
     success_url: SuccessURL = None
+
+
+class CheckoutLinkPriceCreate(CheckoutLinkCreateBase):
+    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+
+
+class CheckoutLinkProductCreate(CheckoutLinkCreateBase):
+    product_id: UUID4 = Field(
+        description="ID of the product to checkout. First available price will be selected."
+    )
+
+
+CheckoutLinkCreate = CheckoutLinkProductCreate | CheckoutLinkPriceCreate
 
 
 class CheckoutLinkUpdate(OptionalMetadataInputMixin):
@@ -50,7 +69,13 @@ class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
             "URL where the customer will be redirected after a successful payment."
         )
     )
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    label: str | None = Field(
+        description="Optional label to distinguish links internally"
+    )
+    product_id: UUID4 = Field(description="ID of the product to checkout.")
+    product_price_id: UUID4 | None = Field(
+        description="ID of the product price to checkout. First available price will be selected unless an explicit price ID is set."
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -58,7 +83,16 @@ class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
         return settings.CHECKOUT_BASE_URL.format(client_secret=self.client_secret)
 
 
+class CheckoutLinkProduct(ProductBase):
+    """Product data for a checkout link."""
+
+    prices: ProductPriceList
+    benefits: BenefitPublicList
+    medias: ProductMediaList
+
+
 class CheckoutLink(CheckoutLinkBase):
     """Checkout link data."""
 
-    product_price: ProductPrice
+    product: CheckoutLinkProduct
+    product_price: ProductPrice | None

@@ -11,7 +11,9 @@ from polar.kit.metadata import (
     OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
+    ClassName,
     IDSchema,
+    MergeJSONSchema,
     Schema,
     TimestampedSchema,
 )
@@ -323,5 +325,7 @@ Discount = Annotated[
     | Annotated[DiscountPercentageOnceForeverDuration, Tag("percentage.once_forever")]
     | Annotated[DiscountPercentageRepeatDuration, Tag("percentage.repeat")],
     Discriminator(get_discriminator_value),
+    MergeJSONSchema({"title": "Discount"}),
+    ClassName("Discount"),
 ]
 DiscountAdapter: TypeAdapter[Discount] = TypeAdapter(Discount)

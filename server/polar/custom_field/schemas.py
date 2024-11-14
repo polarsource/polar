@@ -8,7 +8,9 @@ from polar.kit.metadata import (
     OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
+    ClassName,
     IDSchema,
+    MergeJSONSchema,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
@@ -210,6 +212,8 @@ CustomField = Annotated[
     | CustomFieldSelect,
     Discriminator("type"),
     SetSchemaReference("CustomField"),
+    MergeJSONSchema({"title": "CustomField"}),
+    ClassName("CustomField"),
 ]
 
 CustomFieldAdapter: TypeAdapter[CustomField] = TypeAdapter(CustomField)

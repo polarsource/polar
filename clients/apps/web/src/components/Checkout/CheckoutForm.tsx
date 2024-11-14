@@ -421,55 +421,56 @@ const BaseCheckoutForm = ({
                   )}
                 </>
               )}
-              {!checkout.is_free_product_price && (
-                <FormField
-                  control={control}
-                  name="discount_code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <div className="flex flex-row items-center justify-between">
-                          <div>Discount Code</div>
-                          <span className="dark:text-polar-500 text-xs text-gray-500">
-                            Optional
-                          </span>
-                        </div>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            autoComplete="off"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                          <div className="absolute inset-y-0 right-1 z-10 flex items-center">
-                            {!checkout.discount && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={addDiscountCode}
-                              >
-                                Apply
-                              </Button>
-                            )}
-                            {checkout.discount && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={removeDiscountCode}
-                              >
-                                <CloseOutlined className="h-4 w-4" />
-                              </Button>
-                            )}
+              {checkout.allow_discount_codes &&
+                !checkout.is_free_product_price && (
+                  <FormField
+                    control={control}
+                    name="discount_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <div className="flex flex-row items-center justify-between">
+                            <div>Discount Code</div>
+                            <span className="dark:text-polar-500 text-xs text-gray-500">
+                              Optional
+                            </span>
                           </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type="text"
+                              autoComplete="off"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                            <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                              {!checkout.discount && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={addDiscountCode}
+                                >
+                                  Apply
+                                </Button>
+                              )}
+                              {checkout.discount && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={removeDiscountCode}
+                                >
+                                  <CloseOutlined className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               {checkout.attached_custom_fields.map(
                 ({ custom_field, required }) => (
                   <FormField

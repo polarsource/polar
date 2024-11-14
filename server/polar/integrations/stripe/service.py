@@ -545,6 +545,11 @@ class StripeService:
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
+    async def create_setup_intent(
+        self, **params: Unpack[stripe_lib.SetupIntent.CreateParams]
+    ) -> stripe_lib.SetupIntent:
+        return await stripe_lib.SetupIntent.create_async(**params)
+
     async def create_customer(
         self, **params: Unpack[stripe_lib.Customer.CreateParams]
     ) -> stripe_lib.Customer:

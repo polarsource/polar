@@ -23,10 +23,10 @@ from polar.checkout.service import (
     NoCustomerOnCheckout,
     NoCustomerOnPaymentIntent,
     NoPaymentMethodOnPaymentIntent,
-    NotAFreePrice,
     NotConfirmedCheckout,
     NotOpenCheckout,
     PaymentIntentNotSucceeded,
+    PaymentRequired,
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.checkout.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
@@ -155,6 +155,18 @@ async def checkout_confirmed_recurring_upgrade(
         price=product.prices[0],
         status=CheckoutStatus.confirmed,
         subscription=subscription,
+    )
+
+
+@pytest_asyncio.fixture
+async def checkout_discount_percentage_100(
+    save_fixture: SaveFixture, product: Product, discount_percentage_100: Discount
+) -> Checkout:
+    return await create_checkout(
+        save_fixture,
+        price=product.prices[0],
+        status=CheckoutStatus.open,
+        discount=discount_percentage_100,
     )
 
 
@@ -1667,14 +1679,67 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata == {
-            "payment_intent_client_secret": "CLIENT_SECRET",
-            "payment_intent_status": "succeeded",
+            "intent_client_secret": "CLIENT_SECRET",
+            "intent_status": "succeeded",
             "customer_id": "STRIPE_CUSTOMER_ID",
         }
 
         stripe_service_mock.create_customer.assert_called_once()
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
+            "checkout_id": str(checkout.id),
+            "type": ProductType.product,
+            "tax_amount": "0",
+            **expected_tax_metadata,
+        }
+
+    @pytest.mark.parametrize(
+        "customer_billing_address,expected_tax_metadata",
+        [
+            ({"country": "FR"}, {"tax_country": "FR"}),
+            (
+                {"country": "CA", "state": "CA-QC"},
+                {"tax_country": "CA", "tax_state": "QC"},
+            ),
+        ],
+    )
+    async def test_valid_fully_discounted_subscription(
+        self,
+        customer_billing_address: dict[str, str],
+        expected_tax_metadata: dict[str, str],
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        checkout = await checkout_service.confirm(
+            session,
+            checkout_discount_percentage_100,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": customer_billing_address,
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.payment_processor_metadata == {
+            "intent_client_secret": "CLIENT_SECRET",
+            "intent_status": "succeeded",
+            "customer_id": "STRIPE_CUSTOMER_ID",
+        }
+
+        stripe_service_mock.create_customer.assert_called_once()
+        stripe_service_mock.create_setup_intent.assert_called_once()
+        assert stripe_service_mock.create_setup_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
             "type": ProductType.product,
             "tax_amount": "0",
@@ -1991,7 +2056,7 @@ class TestHandleFreeSuccess:
                 session, checkout_one_time_free.id
             )
 
-    async def test_not_a_free_price(
+    async def test_payment_required(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2002,7 +2067,7 @@ class TestHandleFreeSuccess:
         }
         await save_fixture(checkout_confirmed_one_time)
 
-        with pytest.raises(NotAFreePrice):
+        with pytest.raises(PaymentRequired):
             await checkout_service.handle_free_success(
                 session, checkout_confirmed_one_time.id
             )
@@ -2048,6 +2113,33 @@ class TestHandleFreeSuccess:
 
         checkout = await checkout_service.handle_free_success(
             session, checkout_recurring_free.id
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
+
+    async def test_valid_discount_percentage_100(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        checkout_discount_percentage_100.status = CheckoutStatus.confirmed
+        checkout_discount_percentage_100.payment_processor_metadata = {
+            "customer_id": "STRIPE_CUSTOMER_ID"
+        }
+        await save_fixture(checkout_discount_percentage_100)
+
+        stripe_service_mock.create_out_of_band_subscription.return_value = (
+            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
+            SimpleNamespace(id="STRIPE_INVOICE_ID"),
+        )
+
+        checkout = await checkout_service.handle_free_success(
+            session, checkout_discount_percentage_100.id
         )
 
         assert checkout.status == CheckoutStatus.succeeded

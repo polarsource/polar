@@ -149,10 +149,10 @@ class NoCustomerOnCheckout(CheckoutError):
         super().__init__(message)
 
 
-class NotAFreePrice(CheckoutError):
+class PaymentRequired(CheckoutError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
-        message = f"{checkout.id} is not a free price."
+        message = f"{checkout.id} requires a payment."
         super().__init__(message)
 
 
@@ -713,10 +713,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
             checkout.payment_processor_metadata = {"customer_id": stripe_customer_id}
 
-            if checkout.is_payment_required:
+            if checkout.is_payment_required or checkout.is_payment_setup_required:
                 assert checkout_confirm.confirmation_token_id is not None
                 assert checkout.customer_billing_address is not None
-                payment_intent_metadata: dict[str, str] = {
+                intent_metadata: dict[str, str] = {
                     "checkout_id": str(checkout.id),
                     "type": ProductType.product,
                     "tax_amount": str(checkout.tax_amount),
@@ -725,37 +725,53 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 if (
                     state := checkout.customer_billing_address.get_unprefixed_state()
                 ) is not None:
-                    payment_intent_metadata["tax_state"] = state
-                payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
-                    "amount": checkout.total_amount or 0,
-                    "currency": checkout.currency or "usd",
-                    "automatic_payment_methods": {"enabled": True},
-                    "confirm": True,
-                    "confirmation_token": checkout_confirm.confirmation_token_id,
-                    "customer": stripe_customer_id,
-                    "metadata": payment_intent_metadata,
-                    "return_url": settings.generate_frontend_url(
-                        f"/checkout/{checkout.client_secret}/confirmation"
-                    ),
-                }
-                if checkout.product_price.is_recurring:
-                    payment_intent_params["setup_future_usage"] = "off_session"
+                    intent_metadata["tax_state"] = state
 
+                intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
                 try:
-                    payment_intent = await stripe_service.create_payment_intent(
-                        **payment_intent_params
-                    )
+                    if checkout.is_payment_required:
+                        payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                            "amount": checkout.total_amount or 0,
+                            "currency": checkout.currency or "usd",
+                            "automatic_payment_methods": {"enabled": True},
+                            "confirm": True,
+                            "confirmation_token": checkout_confirm.confirmation_token_id,
+                            "customer": stripe_customer_id,
+                            "metadata": intent_metadata,
+                            "return_url": settings.generate_frontend_url(
+                                f"/checkout/{checkout.client_secret}/confirmation"
+                            ),
+                        }
+                        if checkout.product_price.is_recurring:
+                            payment_intent_params["setup_future_usage"] = "off_session"
+                        intent = await stripe_service.create_payment_intent(
+                            **payment_intent_params
+                        )
+                    else:
+                        setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
+                            "automatic_payment_methods": {"enabled": True},
+                            "confirm": True,
+                            "confirmation_token": checkout_confirm.confirmation_token_id,
+                            "customer": stripe_customer_id,
+                            "metadata": intent_metadata,
+                            "return_url": settings.generate_frontend_url(
+                                f"/checkout/{checkout.client_secret}/confirmation"
+                            ),
+                        }
+                        intent = await stripe_service.create_setup_intent(
+                            **setup_intent_params
+                        )
                 except stripe_lib.StripeError as e:
                     error = e.error
                     error_type = error.type if error is not None else None
                     error_message = error.message if error is not None else None
                     raise PaymentError(checkout, error_type, error_message)
-
-                checkout.payment_processor_metadata = {
-                    **checkout.payment_processor_metadata,
-                    "payment_intent_client_secret": payment_intent.client_secret,
-                    "payment_intent_status": payment_intent.status,
-                }
+                else:
+                    checkout.payment_processor_metadata = {
+                        **checkout.payment_processor_metadata,
+                        "intent_client_secret": intent.client_secret,
+                        "intent_status": intent.status,
+                    }
 
         if not checkout.is_payment_required:
             enqueue_job("checkout.handle_free_success", checkout_id=checkout.id)
@@ -946,10 +962,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if stripe_customer_id is None:
             raise NoCustomerOnCheckout(checkout)
 
-        product_price = checkout.product_price
-        if not isinstance(product_price, ProductPriceFree):
-            raise NotAFreePrice(checkout)
+        if checkout.is_payment_required:
+            raise PaymentRequired(checkout)
 
+        product_price = checkout.product_price
         stripe_price_id = product_price.stripe_price_id
         metadata = {
             "type": ProductType.product,
@@ -967,6 +983,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
+                coupon=checkout.discount.stripe_coupon_id
+                if checkout.discount
+                else None,
                 automatic_tax=False,
                 metadata=metadata,
                 idempotency_key=idempotency_key,
@@ -981,6 +1000,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
                 price=stripe_price_id,
+                coupon=checkout.discount.stripe_coupon_id
+                if checkout.discount
+                else None,
                 automatic_tax=False,
                 metadata=metadata,
                 idempotency_key=idempotency_key,
@@ -1160,8 +1182,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                             }
                         ]
                     )
-
                 checkout.discount = discount
+            # User explicitly removed the discount
+            elif "discount_id" in checkout_update.model_fields_set:
+                checkout.discount = None
         elif isinstance(checkout_update, CheckoutUpdatePublic):
             if checkout_update.discount_code is not None:
                 discount = await discount_service.get_by_code_and_organization(
@@ -1183,8 +1207,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                             }
                         ]
                     )
-
                 checkout.discount = discount
+            # User explicitly removed the discount
+            elif "discount_code" in checkout_update.model_fields_set:
+                checkout.discount = None
 
         if checkout_update.customer_billing_address:
             checkout.customer_billing_address = checkout_update.customer_billing_address
@@ -1320,7 +1346,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[str]:
         fields = {"customer_email"}
-        if checkout.is_payment_required:
+        if checkout.is_payment_required or checkout.is_payment_setup_required:
             fields.update({"customer_name", "customer_billing_address"})
         return fields
 

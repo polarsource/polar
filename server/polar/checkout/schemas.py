@@ -87,6 +87,12 @@ EmbedOrigin = Annotated[
     ),
 ]
 
+_allow_discount_codes_description = (
+    "Whether to allow the customer to apply discount codes. "
+    "If you apply a discount through `discount_id`, it'll still be applied, "
+    "but the customer won't be able to change it."
+)
+
 
 class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     """
@@ -102,6 +108,9 @@ class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(
         default=None, description="ID of the discount to apply to the checkout."
+    )
+    allow_discount_codes: bool = Field(
+        default=True, description=_allow_discount_codes_description
     )
     amount: Amount | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
@@ -149,6 +158,9 @@ class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
 
     discount_id: UUID4 | None = Field(
         default=None, description="ID of the discount to apply to the checkout."
+    )
+    allow_discount_codes: bool | None = Field(
+        default=None, description=_allow_discount_codes_description
     )
     customer_ip_address: CustomerIPAddress | None = None
     success_url: SuccessURL = None
@@ -220,6 +232,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
     )
+    allow_discount_codes: bool = Field(description=_allow_discount_codes_description)
     is_free_product_price: bool = Field(
         description="Whether the product price is free, regardless of discounts."
     )

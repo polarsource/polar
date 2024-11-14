@@ -20,6 +20,7 @@ import {
   loadStripe,
   Stripe,
   StripeElements,
+  StripeElementsOptions,
   StripeError,
 } from '@stripe/stripe-js'
 import debounce from 'lodash.debounce'
@@ -579,14 +580,34 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const { checkout, onCheckoutUpdate, onCheckoutConfirm, theme, embed } = props
   const [loading, setLoading] = useState(false)
 
-  const elementsMode = useMemo<'subscription' | 'payment' | 'setup'>(() => {
-    if (checkout.is_payment_setup_required && checkout.is_payment_required) {
-      return 'subscription'
+  const elementsOptions = useMemo<StripeElementsOptions>(() => {
+    if (
+      checkout.is_payment_setup_required &&
+      checkout.is_payment_required &&
+      checkout.total_amount
+    ) {
+      return {
+        mode: 'subscription',
+        setupFutureUsage: 'off_session',
+        paymentMethodCreation: 'manual',
+        amount: checkout.total_amount,
+        currency: checkout.currency || 'usd',
+      }
+    } else if (checkout.is_payment_required && checkout.total_amount) {
+      return {
+        mode: 'payment',
+        paymentMethodCreation: 'manual',
+        amount: checkout.total_amount,
+        currency: checkout.currency || 'usd',
+      }
     }
-    if (checkout.is_payment_setup_required) {
-      return 'setup'
+
+    return {
+      mode: 'setup',
+      paymentMethodCreation: 'manual',
+      setupFutureUsage: 'off_session',
+      currency: checkout.currency || 'usd',
     }
-    return 'payment'
   }, [checkout])
 
   const onSuccess = useCallback(
@@ -741,17 +762,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     <Elements
       stripe={stripePromise}
       options={{
-        ...(checkout.is_payment_form_required
-          ? {
-              mode: elementsMode,
-              setupFutureUsage: checkout.is_payment_setup_required
-                ? 'off_session'
-                : undefined,
-              paymentMethodCreation: 'manual',
-              amount: checkout.amount || 0,
-              currency: checkout.currency || 'usd',
-            }
-          : {}),
+        ...elementsOptions,
         customerSessionClientSecret: (
           checkout.payment_processor_metadata as {
             customer_session_client_secret?: string

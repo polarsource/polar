@@ -433,6 +433,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/50/d2/1d4df87147ebb024edf1b1863fbaa4f433cd9562aac4ef8d458b6b7b77af/fakeredis-2.26.1-py3-none-any.whl", hash = "sha256:68a5615d7ef2529094d6958677e30a6d30d544e203a5ab852985c19d7ad57e32", size = 103415 },
 ]
 
+[package.optional-dependencies]
+lua = [
+    { name = "lupa" },
+]
+
 [[package]]
 name = "fastapi"
 version = "0.115.4"
@@ -731,6 +736,25 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/41/7b563b7db2490ba9090edd0ba7b70ad9a003bfd608dc132edf5f1b394140/logfire-1.3.1.tar.gz", hash = "sha256:73f9ff2691c927fc3ad28da5308ffd43af30d9bb8efedef52266a797da878381", size = 242221 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/6e/2d1a1b116733e930e8a20e2263cc5a9968d51ef546cc473895c1b5252ee0/logfire-1.3.1-py3-none-any.whl", hash = "sha256:974657b9d775a65b5c526550baa95c121257a907ab5d9e8c99cbb715562c2673", size = 164833 },
+]
+
+[[package]]
+name = "lupa"
+version = "2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/13/3a0d2c231ae39bced22f14ded420915be1b88f030bfd2388900d89a74a4b/lupa-2.2.tar.gz", hash = "sha256:665a006bcf8d9aacdfdb953824b929d06a0c55910a662b59be2f157ab4c8924d", size = 7147957 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d6/d3/96454f23fe99ff5aa6c146523a9e6ccff8b52f2f9772fe9dd83cbde858b7/lupa-2.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8cd872e16e736a3ecb800e70b4f36a66c794b7d339247712244a515561da4ff5", size = 933559 },
+    { url = "https://files.pythonhosted.org/packages/dc/83/a0a33435053c43522bb687bbd793eca7ea5eaa272b3413834b7a6aebeeb9/lupa-2.2-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:6e8027ad53daa511e4a049eb0eb9f71b46fd2c5be6897fc68d75288b04086d4d", size = 1912261 },
+    { url = "https://files.pythonhosted.org/packages/d3/f9/34dc3eea329078b56985c2e69f8dbc1abe51b199e31ce00917408810b389/lupa-2.2-cp312-cp312-macosx_11_0_x86_64.whl", hash = "sha256:0a7bd2841fd41b718d415162ec53b7d00079c27b1c5c1a2f2d0fb8080dd64d73", size = 998174 },
+    { url = "https://files.pythonhosted.org/packages/ce/7e/cbd913765bde8edd43a80793670d66a7523dab17597b06e611cb6bf3e35f/lupa-2.2-cp312-cp312-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:63eff3aa68791b5c9a400f89f18018f4f63b8619adaa603fcd09392b87ca6b9b", size = 1136614 },
+    { url = "https://files.pythonhosted.org/packages/ce/73/6705216ef717839b199add72efd673c6c9551d2ad495425058d3e2f95700/lupa-2.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8ab43356bb269ca4f03d25200b7559581cd791fbc631104c3e7d186d3c37221f", size = 1030581 },
+    { url = "https://files.pythonhosted.org/packages/e2/c9/43d475bcd457aa42f1da2e40603e792e42f2fad7f66be514968581260fb1/lupa-2.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:556779c0c28a2948749817ffd62dec882c834a6445aeff5d31ae862e14eebb21", size = 2026751 },
+    { url = "https://files.pythonhosted.org/packages/f9/a5/a726d10c18bca0be35106166d8ab70c1d6acb031429e47533f614960ff97/lupa-2.2-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:42fd611a099ab1804a8d23154d4c7b2221557c94d34f8964da0dc03760f15d3d", size = 1058229 },
+    { url = "https://files.pythonhosted.org/packages/d1/ee/0e0b9f848a75ac2ad4105f2c4cf9e865654f7163067e1dc996d966094270/lupa-2.2-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:63d5ae8ccbafe0aa0034da32f18fc692963df1b5e1ebf91e76f504de1d5aecff", size = 1158526 },
+    { url = "https://files.pythonhosted.org/packages/3a/30/397b43a8acffd29401588239331dd3ebc62cc06599497076cd3c1c57365a/lupa-2.2-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:3d3d9e5991861d8ee28709d94e673b89bdea10188b34a155835ba2dbbc7d26a7", size = 2097333 },
+    { url = "https://files.pythonhosted.org/packages/2b/ec/b11d6452a63e0cf3f2021605a6d1839370dcf504893001db49c870a1d1e9/lupa-2.2-cp312-cp312-win32.whl", hash = "sha256:58a3621579b26ad5a524c1c41623ec551160653e915cf4aa41453f4339821b89", size = 827168 },
+    { url = "https://files.pythonhosted.org/packages/00/77/9a93d4c3998b4820de015b49801f4da44bd4f922b08c98c5bfd912985a61/lupa-2.2-cp312-cp312-win_amd64.whl", hash = "sha256:8e8ff117eca26f5cedcd2b2467cf56d0c64cfcb804b5083a36d818b57edc4036", size = 1016595 },
 ]
 
 [[package]]
@@ -1208,7 +1232,7 @@ backoffice = [
 dev = [
     { name = "boto3-stubs", extra = ["s3"] },
     { name = "coverage" },
-    { name = "fakeredis" },
+    { name = "fakeredis", extra = ["lua"] },
     { name = "freezegun" },
     { name = "minio" },
     { name = "mypy" },
@@ -1290,7 +1314,7 @@ backoffice = [
 dev = [
     { name = "boto3-stubs", extras = ["s3"], specifier = ">=1.35.10" },
     { name = "coverage", specifier = ">=7.6.0" },
-    { name = "fakeredis", specifier = ">=2.25.1" },
+    { name = "fakeredis", extras = ["lua"], specifier = ">=2.26.1" },
     { name = "freezegun", specifier = ">=1.5.1" },
     { name = "minio", specifier = ">=7.2.9" },
     { name = "mypy", specifier = ">=1.11" },

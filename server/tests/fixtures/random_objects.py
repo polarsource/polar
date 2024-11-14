@@ -731,6 +731,9 @@ async def create_discount(
     code: str | None = None,
     duration_in_months: int | None = None,
     stripe_coupon_id: str = "STRIPE_COUPON_ID",
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+    max_redemptions: int | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
 async def create_discount(
@@ -744,6 +747,9 @@ async def create_discount(
     code: str | None = None,
     duration_in_months: int | None = None,
     stripe_coupon_id: str = "STRIPE_COUPON_ID",
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+    max_redemptions: int | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
     save_fixture: SaveFixture,
@@ -758,6 +764,9 @@ async def create_discount(
     code: str | None = None,
     duration_in_months: int | None = None,
     stripe_coupon_id: str = "STRIPE_COUPON_ID",
+    starts_at: datetime | None = None,
+    ends_at: datetime | None = None,
+    max_redemptions: int | None = None,
 ) -> Discount:
     model = type.get_model()
     custom_field = model(
@@ -768,6 +777,9 @@ async def create_discount(
         duration_in_months=duration_in_months,
         organization=organization,
         stripe_coupon_id=stripe_coupon_id,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        max_redemptions=max_redemptions,
     )
     if isinstance(custom_field, DiscountFixed):
         assert amount is not None

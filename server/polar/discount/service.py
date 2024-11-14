@@ -1,8 +1,9 @@
+import contextlib
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
@@ -11,7 +12,10 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.models import Discount, Organization, User, UserOrganization
+from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
@@ -20,6 +24,11 @@ from .sorting import DiscountSortProperty
 
 
 class DiscountError(PolarError): ...
+
+
+class DiscountNotRedeemableError(DiscountError):
+    def __init__(self, discount: Discount):
+        super().__init__(f"Discount {discount.id} is not redeemable.")
 
 
 class DiscountService(ResourceServiceReader[Discount]):
@@ -133,7 +142,12 @@ class DiscountService(ResourceServiceReader[Discount]):
         return discount
 
     async def get_by_id_and_organization(
-        self, session: AsyncSession, id: uuid.UUID, organization: Organization
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        organization: Organization,
+        *,
+        redeemable: bool = True,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.id == id,
@@ -141,10 +155,23 @@ class DiscountService(ResourceServiceReader[Discount]):
             Discount.deleted_at.is_(None),
         )
         result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        discount = result.scalar_one_or_none()
+
+        if discount is None:
+            return None
+
+        if redeemable and not await self.is_redeemable_discount(session, discount):
+            return None
+
+        return discount
 
     async def get_by_code_and_organization(
-        self, session: AsyncSession, code: str, organization: Organization
+        self,
+        session: AsyncSession,
+        code: str,
+        organization: Organization,
+        *,
+        redeemable: bool = True,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.code == code,
@@ -152,7 +179,15 @@ class DiscountService(ResourceServiceReader[Discount]):
             Discount.deleted_at.is_(None),
         )
         result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        discount = result.scalar_one_or_none()
+
+        if discount is None:
+            return None
+
+        if redeemable and not await self.is_redeemable_discount(session, discount):
+            return None
+
+        return discount
 
     async def get_by_stripe_coupon_id(
         self, session: AsyncSession, stripe_coupon_id: str
@@ -162,6 +197,42 @@ class DiscountService(ResourceServiceReader[Discount]):
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def is_redeemable_discount(
+        self, session: AsyncSession, discount: Discount
+    ) -> bool:
+        if discount.starts_at is not None and discount.starts_at > utc_now():
+            return False
+
+        if discount.ends_at is not None and discount.ends_at < utc_now():
+            return False
+
+        if discount.max_redemptions is not None:
+            statement = select(func.count(DiscountRedemption.id)).where(
+                DiscountRedemption.discount_id == discount.id
+            )
+            result = await session.execute(statement)
+            redemptions_count = result.scalar_one()
+            return redemptions_count < discount.max_redemptions
+
+        return True
+
+    @contextlib.asynccontextmanager
+    async def redeem_discount(
+        self, session: AsyncSession, locker: Locker, discount: Discount
+    ) -> AsyncIterator[DiscountRedemption]:
+        async with locker.lock(
+            f"discount:{discount.id}", timeout=5, blocking_timeout=5
+        ):
+            if not await self.is_redeemable_discount(session, discount):
+                raise DiscountNotRedeemableError(discount)
+
+            discount_redemption = DiscountRedemption(discount=discount)
+
+            yield discount_redemption
+
+            session.add(discount_redemption)
+            await session.flush()
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization]

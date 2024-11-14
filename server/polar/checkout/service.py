@@ -24,6 +24,7 @@ from polar.checkout.schemas import (
 from polar.checkout.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
+from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish
@@ -37,6 +38,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -648,11 +650,42 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def confirm(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
         checkout = await self._update_checkout(session, checkout, checkout_confirm)
 
+        # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
+        if checkout.discount is not None:
+            try:
+                async with discount_service.redeem_discount(
+                    session, locker, checkout.discount
+                ) as discount_redemption:
+                    discount_redemption.checkout = checkout
+                    return await self._confirm_inner(
+                        session, checkout, checkout_confirm
+                    )
+            except DiscountNotRedeemableError as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "discount_id"),
+                            "msg": "Discount is no longer redeemable.",
+                            "input": checkout.discount.id,
+                        }
+                    ]
+                ) from e
+
+        return await self._confirm_inner(session, checkout, checkout_confirm)
+
+    async def _confirm_inner(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        checkout_confirm: CheckoutConfirm,
+    ) -> Checkout:
         errors: list[ValidationError] = []
         try:
             checkout = await self._update_checkout_tax(session, checkout)

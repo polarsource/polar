@@ -1,6 +1,7 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
+import { getDiscountDisplay } from '@/utils/discount'
 import { CloseOutlined } from '@mui/icons-material'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import {
@@ -35,7 +36,13 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { PropsWithChildren, useCallback, useEffect, useState } from 'react'
+import {
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { useFormContext, WatchObserver } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/LogoType'
@@ -144,6 +151,27 @@ const BaseCheckoutForm = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedWatcher = useCallback(debounce(watcher, 500), [watcher])
 
+  const discountCode = watch('discount_code')
+  const addDiscountCode = useCallback(async () => {
+    if (!onCheckoutUpdate || !discountCode) {
+      return
+    }
+    clearErrors('discount_code')
+    try {
+      await onCheckoutUpdate({ discount_code: discountCode })
+    } catch {}
+  }, [onCheckoutUpdate, discountCode, clearErrors])
+  const removeDiscountCode = useCallback(async () => {
+    if (!onCheckoutUpdate) {
+      return
+    }
+    clearErrors('discount_code')
+    try {
+      await onCheckoutUpdate({ discount_code: null })
+      resetField('discount_code')
+    } catch {}
+  }, [onCheckoutUpdate, clearErrors, resetField])
+
   useEffect(() => {
     const subscription = watch(debouncedWatcher)
     return () => subscription.unsubscribe()
@@ -185,7 +213,7 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              {checkout.is_payment_required && (
+              {checkout.is_payment_form_required && (
                 <>
                   <FormField
                     control={control}
@@ -367,20 +395,22 @@ const BaseCheckoutForm = ({
                             <FormLabel>Tax ID</FormLabel>
                           </div>
                           <FormControl>
-                            <div className="relative flex items-center gap-2">
+                            <div className="relative">
                               <Input
                                 type="text"
                                 autoComplete="off"
                                 {...field}
                                 value={field.value || ''}
                               />
-                              <button
-                                type="button"
-                                onClick={() => setShowTaxID(false)}
-                                className="text-gray-400 hover:text-gray-200"
-                              >
-                                <CloseOutlined className="h-4 w-4" />
-                              </button>
+                              <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => setShowTaxID(false)}
+                                >
+                                  <CloseOutlined className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -388,26 +418,56 @@ const BaseCheckoutForm = ({
                       )}
                     />
                   )}
-                  {/*
-              <FormField
-                control={control}
-                name="discount"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex flex-row items-center justify-between">
-                      <FormLabel>Discount Code</FormLabel>
-                      <span className="dark:text-polar-500 text-xs text-gray-500">
-                        Optional
-                      </span>
-                    </div>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              /> */}
                 </>
+              )}
+              {!checkout.is_free_product_price && (
+                <FormField
+                  control={control}
+                  name="discount_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        <div className="flex flex-row items-center justify-between">
+                          <div>Discount Code</div>
+                          <span className="dark:text-polar-500 text-xs text-gray-500">
+                            Optional
+                          </span>
+                        </div>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            autoComplete="off"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                          <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                            {!checkout.discount && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={addDiscountCode}
+                              >
+                                Apply
+                              </Button>
+                            )}
+                            {checkout.discount && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={removeDiscountCode}
+                              >
+                                <CloseOutlined className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
               {checkout.attached_custom_fields.map(
                 ({ custom_field, required }) => (
@@ -428,7 +488,7 @@ const BaseCheckoutForm = ({
                 ),
               )}
             </div>
-            {checkout.is_payment_required && (
+            {!checkout.is_free_product_price && (
               <div className="flex flex-col gap-y-2">
                 {checkout.amount !== null && checkout.currency ? (
                   <>
@@ -439,6 +499,16 @@ const BaseCheckoutForm = ({
                         interval={interval}
                       />
                     </DetailRow>
+                    {checkout.discount && (
+                      <DetailRow
+                        title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
+                      >
+                        {formatCurrencyAndAmount(
+                          (checkout.subtotal_amount || 0) - checkout.amount,
+                          checkout.currency,
+                        )}
+                      </DetailRow>
+                    )}
                     {checkout.tax_amount !== null && (
                       <DetailRow title="VAT / Sales Tax">
                         {formatCurrencyAndAmount(
@@ -447,11 +517,6 @@ const BaseCheckoutForm = ({
                         )}
                       </DetailRow>
                     )}
-                    {/* {discountCode && (
-                  <DetailRow title={`Discount Code (${discountCode})`}>
-                    <span>$19</span>
-                  </DetailRow>
-                )} */}
                     <DetailRow title="Total" emphasis>
                       <AmountLabel
                         amount={checkout.total_amount || 0}
@@ -472,7 +537,7 @@ const BaseCheckoutForm = ({
               disabled={disabled}
               loading={loading}
             >
-              {!checkout.is_payment_required
+              {!checkout.is_payment_form_required
                 ? 'Submit'
                 : interval
                   ? 'Subscribe'
@@ -513,6 +578,16 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const { setError } = useFormContext<CheckoutUpdatePublic>()
   const { checkout, onCheckoutUpdate, onCheckoutConfirm, theme, embed } = props
   const [loading, setLoading] = useState(false)
+
+  const elementsMode = useMemo<'subscription' | 'payment' | 'setup'>(() => {
+    if (checkout.is_payment_setup_required && checkout.is_payment_required) {
+      return 'subscription'
+    }
+    if (checkout.is_payment_setup_required) {
+      return 'setup'
+    }
+    return 'payment'
+  }, [checkout])
 
   const onSuccess = useCallback(
     async (url: string) => {
@@ -557,7 +632,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
 
     setLoading(true)
 
-    if (!checkout.is_payment_required) {
+    if (!checkout.is_payment_form_required) {
       let updatedCheckout: CheckoutPublic
       try {
         updatedCheckout = await onCheckoutConfirm(data)
@@ -636,12 +711,12 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       return
     }
 
-    const { payment_intent_status, payment_intent_client_secret } =
+    const { intent_status, intent_client_secret } =
       updatedCheckout.payment_processor_metadata as Record<string, string>
 
-    if (payment_intent_status === 'requires_action') {
+    if (intent_status === 'requires_action') {
       const { error } = await stripe.handleNextAction({
-        clientSecret: payment_intent_client_secret,
+        clientSecret: intent_client_secret,
       })
       if (error) {
         setLoading(false)
@@ -666,16 +741,12 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     <Elements
       stripe={stripePromise}
       options={{
-        ...(checkout.is_payment_required
+        ...(checkout.is_payment_form_required
           ? {
-              mode:
-                checkout.product_price.type === 'recurring'
-                  ? 'subscription'
-                  : 'payment',
-              setupFutureUsage:
-                checkout.product_price.type === 'recurring'
-                  ? 'off_session'
-                  : undefined,
+              mode: elementsMode,
+              setupFutureUsage: checkout.is_payment_setup_required
+                ? 'off_session'
+                : undefined,
               paymentMethodCreation: 'manual',
               amount: checkout.amount || 0,
               currency: checkout.currency || 'usd',
@@ -765,7 +836,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             onCheckoutUpdate={onCheckoutUpdate}
             loading={loading}
           >
-            {checkout.is_payment_required && (
+            {checkout.is_payment_form_required && (
               <PaymentElement
                 options={{
                   fields: {

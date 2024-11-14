@@ -179,8 +179,12 @@ export const createCheckoutPreview = (
     product_price_id: price.id,
     amount,
     tax_amount: null,
+    subtotal_amount: amount,
     total_amount: amount,
-    is_payment_required: price.amount_type !== 'free',
+    is_free_product_price: price.amount_type === 'free',
+    is_payment_required: amount > 0,
+    is_payment_setup_required: price.type === 'recurring',
+    is_payment_form_required: amount > 0 || price.type === 'recurring',
     currency: 'usd',
     customer_id: null,
     customer_email: 'janedoe@gmail.com',
@@ -194,6 +198,8 @@ export const createCheckoutPreview = (
     embed_origin: null,
     organization: ORGANIZATION,
     attached_custom_fields: [],
+    discount: null,
+    discount_id: null,
   }
 }
 

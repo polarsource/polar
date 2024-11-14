@@ -13,7 +13,7 @@ def get_expires_at() -> datetime:
 class EmailVerification(RecordModel):
     __tablename__ = "email_verification"
 
-    user_email: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, nullable=False)
     token_hash: Mapped[str] = mapped_column(String, index=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=get_expires_at

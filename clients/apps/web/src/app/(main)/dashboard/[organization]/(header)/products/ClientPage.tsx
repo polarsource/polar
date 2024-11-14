@@ -1,7 +1,5 @@
 'use client'
 
-import { CheckoutInfo } from '@/components/Checkout/CheckoutInfo'
-import { createCheckoutPreview } from '@/components/Customization/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -55,13 +53,7 @@ export default function ClientPage({
   sorting: DataTableSortingState
   query: string | undefined
 }) {
-  const {
-    isShown: isCheckoutModalShown,
-    hide: hideCheckoutModal,
-    show: showCheckoutModal,
-  } = useModal()
   const { organization: org } = useContext(MaintainerOrganizationContext)
-  const [selectedProduct, setSelectedProduct] = useState<Product | undefined>()
   const [query, setQuery] = useState(_query)
 
   const router = useRouter()
@@ -111,46 +103,7 @@ export default function ClientPage({
   })
 
   return (
-    <DashboardBody
-      contextView={
-        selectedProduct ? (
-          <div className="flex h-full flex-col justify-between">
-            <div className="flex h-full flex-col overflow-y-auto p-8 py-12">
-              <CheckoutInfo
-                className="md:w-full md:p-0"
-                organization={org}
-                checkout={createCheckoutPreview(
-                  selectedProduct,
-                  selectedProduct?.prices[0],
-                )}
-              />
-            </div>
-            <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-200 p-8">
-              {org.profile_settings?.enabled ? (
-                <Link
-                  href={`/${org.slug}/products/${selectedProduct.id}`}
-                  target="_blank"
-                >
-                  <Button>View Product Page</Button>
-                </Link>
-              ) : (
-                <Button onClick={showCheckoutModal}>Share</Button>
-              )}
-              <Link
-                href={`/dashboard/${org.slug}/products/${selectedProduct.id}`}
-              >
-                <Button variant="secondary">Edit Product</Button>
-              </Link>
-            </div>
-            <InlineModal
-              isShown={isCheckoutModalShown}
-              hide={hideCheckoutModal}
-              modalContent={<ProductCheckoutModal product={selectedProduct} />}
-            />
-          </div>
-        ) : undefined
-      }
-    >
+    <DashboardBody>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between gap-6">
           <Input
@@ -181,8 +134,6 @@ export default function ClientPage({
                   key={product.id}
                   organization={org}
                   product={product}
-                  onSelect={setSelectedProduct}
-                  selected={selectedProduct?.id === product.id}
                 />
               ))}
             </List>
@@ -241,21 +192,16 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
 interface ProductListItemProps {
   product: Product
   organization: Organization
-  onSelect?: (product: Product) => void
-  selected?: boolean
 }
 
-const ProductListItem = ({
-  product,
-  organization,
-  onSelect,
-  selected,
-}: ProductListItemProps) => {
+const ProductListItem = ({ product, organization }: ProductListItemProps) => {
   const {
     isShown: isCheckoutModalShown,
     hide: hideCheckoutModal,
     show: showCheckoutModal,
   } = useModal()
+
+  const router = useRouter()
 
   const handleContextMenuCallback = (
     callback: (e: React.MouseEvent) => void,
@@ -298,10 +244,9 @@ const ProductListItem = ({
   return (
     <ListItem
       className="flex flex-row items-center justify-between"
-      onSelect={() => {
-        onSelect?.(product)
-      }}
-      selected={selected}
+      onSelect={handleContextMenuCallback(() =>
+        router.push(`/dashboard/${organization.slug}/products/${product.id}`),
+      )}
     >
       <div className="flex flex-grow flex-row items-center gap-x-4">
         <ProductListCoverImage product={product} />
@@ -317,8 +262,13 @@ const ProductListItem = ({
         </span>
         <Button
           size="sm"
-          variant={selected ? 'default' : 'secondary'}
-          onClick={showCheckoutModal}
+          variant="secondary"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+
+            showCheckoutModal()
+          }}
         >
           Share
         </Button>
@@ -338,18 +288,6 @@ const ProductListItem = ({
             align="end"
             className="dark:bg-polar-800 bg-gray-50 shadow-lg"
           >
-            <DropdownMenuItem
-              onClick={handleContextMenuCallback(() => {
-                if (typeof window !== 'undefined') {
-                  window.open(
-                    `/dashboard/${organization.slug}/products/${product.id}`,
-                    '_self',
-                  )
-                }
-              })}
-            >
-              Edit
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleContextMenuCallback(() => {
                 showCheckoutModal()

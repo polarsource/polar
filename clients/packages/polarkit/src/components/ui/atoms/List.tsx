@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react'
+import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface ListProps extends PropsWithChildren {
@@ -26,7 +26,7 @@ export interface ListItemProps extends PropsWithChildren {
   selectedClassName?: string
   children: React.ReactNode
   selected?: boolean
-  onSelect?: () => void
+  onSelect?: (e: React.MouseEvent) => void
   size?: 'small' | 'default'
 }
 

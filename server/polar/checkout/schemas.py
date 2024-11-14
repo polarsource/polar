@@ -220,9 +220,25 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
     )
+    is_free_product_price: bool = Field(
+        description="Whether the product price is free, regardless of discounts."
+    )
     is_payment_required: bool = Field(
         description=(
-            "Whether the checkout requires payment. " "Useful to detect free products."
+            "Whether the checkout requires payment, e.g. in case of free products "
+            "or discounts that cover the total amount."
+        )
+    )
+    is_payment_setup_required: bool = Field(
+        description=(
+            "Whether the checkout requires setting up a payment method, "
+            "regardless of the amount, e.g. subscriptions that have first free cycles."
+        )
+    )
+    is_payment_form_required: bool = Field(
+        description=(
+            "Whether the checkout requires a payment form, "
+            "whether because of a payment or payment method setup."
         )
     )
 
@@ -245,6 +261,7 @@ class CheckoutProduct(ProductBase):
 
 
 class CheckoutDiscountBase(IDSchema):
+    name: str
     type: DiscountType
     duration: DiscountDuration
     code: str | None

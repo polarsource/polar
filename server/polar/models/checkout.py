@@ -182,8 +182,20 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return subtotal_amount + (self.tax_amount or 0)
 
     @property
+    def is_free_product_price(self) -> bool:
+        return isinstance(self.product_price, ProductPriceFree)
+
+    @property
     def is_payment_required(self) -> bool:
-        return not isinstance(self.product_price, ProductPriceFree)
+        return self.total_amount is not None and self.total_amount > 0
+
+    @property
+    def is_payment_setup_required(self) -> bool:
+        return self.product_price.is_recurring
+
+    @property
+    def is_payment_form_required(self) -> bool:
+        return self.is_payment_required or self.is_payment_setup_required
 
     @property
     def url(self) -> str:

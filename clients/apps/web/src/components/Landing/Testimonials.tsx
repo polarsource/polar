@@ -85,8 +85,8 @@ const testimonials = [
     avatar: '/assets/landing/testamonials/linus.jpg',
     text: (
       <p>
-        I've been waiting for this so hard. LFG, congratulations on the launch
-        guys!
+        I&apos;ve been waiting for this so hard. LFG, congratulations on the
+        launch guys!
       </p>
     ),
   },

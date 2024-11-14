@@ -1219,7 +1219,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             # User explicitly removed the discount
             elif "discount_id" in checkout_update.model_fields_set:
                 checkout.discount = None
-        elif isinstance(checkout_update, CheckoutUpdatePublic):
+        elif (
+            isinstance(checkout_update, CheckoutUpdatePublic)
+            and checkout.allow_discount_codes
+        ):
             if checkout_update.discount_code is not None:
                 discount = await discount_service.get_by_code_and_organization(
                     session,

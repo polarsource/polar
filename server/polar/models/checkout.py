@@ -4,7 +4,16 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Connection, ForeignKey, Integer, String, Uuid, event
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    Connection,
+    ForeignKey,
+    Integer,
+    String,
+    Uuid,
+    event,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -62,6 +71,9 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         "success_url", String, nullable=True, default=None
     )
     embed_origin: Mapped[str | None] = mapped_column(String, nullable=True)
+    allow_discount_codes: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
 
     amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)

@@ -28,7 +28,7 @@ import {
 import { ControllerRenderProps } from 'react-hook-form'
 
 const markdownOptions: MarkdownToJSX.Options = {
-  disableParsingRawHTML: false,
+  disableParsingRawHTML: true,
   forceBlock: false,
   overrides: {
     h1: (props) => <span {...props} />,

@@ -1,1 +1,4 @@
-Local storage of the OpenAPI schema for our API which `pnpm generate` stores before generating our Axios client library
+Local cache storage of our OpenAPI schema & updates during generation & build with `pnpm generate && pnpm build`
+
+The cached files are ignored by .gitignore since we only care about revisioning
+the actual TS model changes & internal SDK code.

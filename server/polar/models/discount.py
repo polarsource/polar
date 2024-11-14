@@ -14,7 +14,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
-    from . import Organization
+    from . import DiscountRedemption, Organization
 
 
 def get_expires_at() -> datetime:
@@ -71,6 +71,10 @@ class Discount(MetadataMixin, RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    discount_redemptions: Mapped[list["DiscountRedemption"]] = relationship(
+        "DiscountRedemption", back_populates="discount", lazy="raise"
+    )
 
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()

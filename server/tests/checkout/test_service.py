@@ -9,6 +9,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from pydantic_core import Url
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
 from polar.checkout.schemas import (
@@ -30,12 +31,14 @@ from polar.checkout.service import (
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.checkout.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
+from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.models import (
     Checkout,
     Discount,
@@ -1567,11 +1570,13 @@ class TestConfirm:
     async def test_missing_amount_on_custom_price(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                locker,
                 checkout_one_time_custom,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -1595,21 +1600,27 @@ class TestConfirm:
         self,
         payload: dict[str, str],
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(payload),
             )
 
     async def test_not_open(
-        self, session: AsyncSession, checkout_confirmed_one_time: Checkout
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.confirm(
                 session,
+                locker,
                 checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
                     {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
@@ -1620,6 +1631,7 @@ class TestConfirm:
         self,
         calculate_tax_mock: AsyncMock,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         calculate_tax_mock.side_effect = IncompleteTaxLocation(
@@ -1629,6 +1641,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -1656,6 +1669,7 @@ class TestConfirm:
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -1666,6 +1680,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -1709,7 +1724,9 @@ class TestConfirm:
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        locker: Locker,
         checkout_discount_percentage_100: Checkout,
+        discount_percentage_100: Discount,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -1719,6 +1736,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
+            locker,
             checkout_discount_percentage_100,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -1746,11 +1764,21 @@ class TestConfirm:
             **expected_tax_metadata,
         }
 
+        updated_discount = await discount_service.get(
+            session,
+            discount_percentage_100.id,
+            options=(joinedload(Discount.discount_redemptions),),
+        )
+        assert updated_discount is not None
+        assert len(updated_discount.discount_redemptions) == 1
+        assert updated_discount.discount_redemptions[0].checkout_id == checkout.id
+
     async def test_valid_stripe_free(
         self,
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
@@ -1761,6 +1789,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            locker,
             checkout_one_time_free,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -1787,6 +1816,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         user = await create_user(save_fixture, stripe_customer_id="STRIPE_CUSTOMER_ID")
@@ -1800,6 +1830,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {

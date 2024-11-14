@@ -9,6 +9,7 @@ from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.locker import Locker, get_locker
 from polar.models import Checkout
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -222,6 +223,7 @@ async def client_confirm(
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """
     Confirm a checkout session by client secret.
@@ -233,7 +235,7 @@ async def client_confirm(
     if checkout is None:
         raise ResourceNotFound()
 
-    return await checkout_service.confirm(session, checkout, checkout_confirm)
+    return await checkout_service.confirm(session, locker, checkout, checkout_confirm)
 
 
 @router.get("/client/{client_secret}/stream", include_in_schema=False)

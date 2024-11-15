@@ -35,7 +35,7 @@ class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
         description="Payment processor to use. Currently only Stripe is supported."
     )
     label: str | None = Field(
-        description="Optional label to distinguish links internally"
+        description="Optional label to distinguish links internally", default=None
     )
     success_url: SuccessURL = None
 

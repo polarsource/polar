@@ -982,7 +982,9 @@ class TestCheckoutLinkCreate:
             type=ProductPriceType.one_time,
             is_archived=True,
         )
-        checkout_link = await create_checkout_link(save_fixture, price=price)
+        checkout_link = await create_checkout_link(
+            save_fixture, product=product_one_time, price=price
+        )
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.checkout_link_create(session, checkout_link)
 
@@ -995,7 +997,7 @@ class TestCheckoutLinkCreate:
         product_one_time.is_archived = True
         await save_fixture(product_one_time)
         checkout_link = await create_checkout_link(
-            save_fixture, price=product_one_time.prices[0]
+            save_fixture, product=product_one_time, price=product_one_time.prices[0]
         )
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.checkout_link_create(session, checkout_link)
@@ -1009,6 +1011,7 @@ class TestCheckoutLinkCreate:
         price = product_one_time.prices[0]
         checkout_link = await create_checkout_link(
             save_fixture,
+            product=product_one_time,
             price=price,
             success_url="https://example.com/success",
             user_metadata={"key": "value"},

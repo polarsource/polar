@@ -5,7 +5,7 @@ import pytest_asyncio
 from pydantic_core import Url
 
 from polar.auth.models import AuthSubject
-from polar.checkout_link.schemas import CheckoutLinkCreate, CheckoutLinkUpdate
+from polar.checkout_link.schemas import CheckoutLinkPriceCreate, CheckoutLinkUpdate
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
@@ -25,6 +25,7 @@ from tests.fixtures.random_objects import (
 async def checkout_link(save_fixture: SaveFixture, product: Product) -> CheckoutLink:
     return await create_checkout_link(
         save_fixture,
+        product=product,
         price=product.prices[0],
         success_url="https://example.com/success",
         user_metadata={"key": "value"},
@@ -41,7 +42,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=uuid.uuid4(),
                 ),
@@ -61,7 +62,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time.prices[0].id,
                 ),
@@ -89,7 +90,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkPriceCreate(
                     payment_processor=PaymentProcessor.stripe, product_price_id=price.id
                 ),
                 auth_subject,
@@ -112,7 +113,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time.prices[0].id,
                 ),
@@ -131,7 +132,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout_link = await checkout_link_service.create(
             session,
-            CheckoutLinkCreate(
+            CheckoutLinkPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 success_url=Url(
@@ -154,8 +155,11 @@ class TestCreate:
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestUpdate:
-    async def test_valid(
-        self, session: AsyncSession, checkout_link: CheckoutLink
+    async def test_update_metadata(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        checkout_link: CheckoutLink,
     ) -> None:
         updated_checkout_link = await checkout_link_service.update(
             session,
@@ -163,6 +167,7 @@ class TestUpdate:
             CheckoutLinkUpdate(
                 metadata={"key": "updated"},
             ),
+            auth_subject,
         )
 
         assert updated_checkout_link.user_metadata == {"key": "updated"}

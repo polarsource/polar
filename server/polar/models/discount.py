@@ -5,8 +5,24 @@ from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
 import stripe as stripe_lib
-from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, UniqueConstraint, Uuid
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy import (
+    TIMESTAMP,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    Uuid,
+    func,
+    select,
+)
+from sqlalchemy.dialects.postgresql import CITEXT
+from sqlalchemy.orm import (
+    Mapped,
+    column_property,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
@@ -45,7 +61,7 @@ class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
     __table_args__ = (UniqueConstraint("organization_id", "code"),)
 
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(CITEXT, nullable=False)
     type: Mapped[DiscountType] = mapped_column(String, nullable=False)
     code: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
@@ -75,6 +91,17 @@ class Discount(MetadataMixin, RecordModel):
     discount_redemptions: Mapped[list["DiscountRedemption"]] = relationship(
         "DiscountRedemption", back_populates="discount", lazy="raise"
     )
+
+    @declared_attr
+    def redemptions_count(cls) -> Mapped[int]:
+        from .discount_redemption import DiscountRedemption
+
+        return column_property(
+            select(func.count(DiscountRedemption.id))
+            .where(DiscountRedemption.discount_id == cls.id)
+            .correlate_except(DiscountRedemption)
+            .scalar_subquery()
+        )
 
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()

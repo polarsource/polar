@@ -12,6 +12,7 @@ from polar.kit.metadata import (
 )
 from polar.kit.schemas import (
     ClassName,
+    EmptyStrToNone,
     IDSchema,
     MergeJSONSchema,
     Schema,
@@ -32,7 +33,7 @@ Name = Annotated[
 ]
 
 Code = Annotated[
-    str | None,
+    EmptyStrToNone,
     Field(
         default=None,
         description=(
@@ -164,7 +165,7 @@ class DiscountPercentageBaseCreate(Schema):
             For example, to create a 25.5% discount, set this to 2550.
             """)
         ),
-        ge=0,
+        ge=1,
         le=10000,
     )
 
@@ -206,7 +207,8 @@ class DiscountUpdate(OptionalMetadataInputMixin, Schema):
     Schema to update a discount.
     """
 
-    name: Name
+    name: Name | None = None
+    code: Code | None = None
 
 
 class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
@@ -230,6 +232,10 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     )
     max_redemptions: int | None = Field(
         description="Maximum number of times the discount can be redeemed."
+    )
+
+    redemptions_count: int = Field(
+        description="Number of times the discount has been redeemed."
     )
 
     organization_id: OrganizationID

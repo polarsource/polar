@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.worker import ArqHealthCheckKey
 
 router = APIRouter(tags=["health"], include_in_schema=False)
 
@@ -24,4 +25,13 @@ async def healthz(
     except RedisError as e:
         raise HTTPException(status_code=503, detail="Redis is not available") from e
 
-    return {"status": "ok"}
+    # check worker health using health check key of arq
+    try:
+        data = await redis.get(ArqHealthCheckKey.default.value)
+
+        if data is None:
+            raise Exception("Worker health check failed")
+    except RedisError as e:
+        raise HTTPException(status_code=503, detail="Worker is not available") from e
+
+    return {"api_status": "ok", "worker_status": "ok"}

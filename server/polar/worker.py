@@ -76,6 +76,11 @@ class QueueName(Enum):
     github_crawl = "arq:queue:github_crawl"
 
 
+class ArqHealthCheckKey(Enum):
+    default = QueueName.default.value + ":health-check"
+    github_crawl = QueueName.github_crawl.value + ":health-check"
+
+
 def get_redis_settings() -> RedisSettings:
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     redis_settings.retry_on_error = REDIS_RETRY_ON_ERRROR  # type: ignore  # https://github.com/python-arq/arq/pull/446

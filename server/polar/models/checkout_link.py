@@ -48,6 +48,10 @@ class CheckoutLink(MetadataMixin, RecordModel):
     def checkout_price(self) -> ProductPrice:
         # Default to the first price unless one is explicitly set
         price = self.product_price
+        if price.is_archived:
+            # Ensure we fallback to the first active
+            price = None
+
         if not price:
             price = self.product.prices[0]
 

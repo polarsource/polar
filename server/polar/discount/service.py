@@ -3,7 +3,7 @@ import uuid
 from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
@@ -51,7 +51,10 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if query is not None:
             statement = statement.where(
-                Discount.name.ilike(f"%{query}%"),
+                or_(
+                    Discount.name.like(f"%{query}%"),
+                    Discount.code.ilike(f"%{query}%"),
+                )
             )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
@@ -61,6 +64,10 @@ class DiscountService(ResourceServiceReader[Discount]):
                 order_by_clauses.append(clause_function(Discount.created_at))
             elif criterion == DiscountSortProperty.discount_name:
                 order_by_clauses.append(clause_function(Discount.name))
+            elif criterion == DiscountSortProperty.code:
+                order_by_clauses.append(clause_function(Discount.code))
+            elif criterion == DiscountSortProperty.redemptions_count:
+                order_by_clauses.append(clause_function(Discount.redemptions_count))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)
@@ -101,12 +108,30 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
+        if discount_create.code is not None:
+            existing_discount = await self.get_by_code_and_organization(
+                session, discount_create.code, organization, redeemable=False
+            )
+            if existing_discount is not None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "code"),
+                            "msg": "Discount with this code already exists.",
+                            "input": discount_create.code,
+                        }
+                    ]
+                )
+
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
         discount = discount_model(
             **discount_create.model_dump(exclude={"organization_id"}),
             id=discount_id,
             organization=organization,
+            discount_redemptions=[],
+            redemptions_count=0,
         )
         stripe_coupon = await stripe_service.create_coupon(
             **discount.get_stripe_coupon_params()
@@ -131,6 +156,10 @@ class DiscountService(ResourceServiceReader[Discount]):
             )
 
         session.add(discount)
+
+        await session.flush()
+        await session.refresh(discount)
+
         return discount
 
     async def delete(self, session: AsyncSession, discount: Discount) -> Discount:

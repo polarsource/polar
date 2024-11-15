@@ -56,6 +56,8 @@ CheckoutLinkCreate = CheckoutLinkProductCreate | CheckoutLinkPriceCreate
 class CheckoutLinkUpdate(OptionalMetadataInputMixin):
     """Schema to update an existing checkout link."""
 
+    label: str | None = None
+    product_price_id: UUID4 | None = None
     success_url: SuccessURL = None
 
 

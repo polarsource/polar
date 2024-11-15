@@ -127,7 +127,7 @@ async def update(
         raise ResourceNotFound()
 
     return await checkout_link_service.update(
-        session, checkout_link, checkout_link_update
+        session, checkout_link, checkout_link_update, auth_subject
     )
 
 

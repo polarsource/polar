@@ -1,9 +1,10 @@
-import { useCreateCustomField } from '@/hooks/queries'
+import { useCreateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
-  CustomField,
-  CustomFieldCreate,
-  CustomFieldType,
+  Discount,
+  DiscountCreate,
+  DiscountDuration,
+  DiscountType,
   Organization,
   ResponseError,
   ValidationError,
@@ -12,27 +13,27 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import CustomFieldForm from './CustomFieldForm'
+import DiscountForm from './DiscountForm'
 
-interface CreateCustomFieldModalContentProps {
+interface CreateDiscountModalContentProps {
   organization: Organization
-  onCustomFieldCreated: (customField: CustomField) => void
+  onDiscountCreated: (discount: Discount) => void
   hideModal: () => void
 }
 
-const CreateCustomFieldModalContent = ({
+const CreateDiscountModalContent = ({
   organization,
-  onCustomFieldCreated,
+  onDiscountCreated,
   hideModal,
-}: CreateCustomFieldModalContentProps) => {
+}: CreateDiscountModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
-  const createCustomField = useCreateCustomField(organization.id)
+  const createDiscount = useCreateDiscount(organization.id)
 
-  const form = useForm<CustomFieldCreate>({
+  const form = useForm<DiscountCreate>({
     defaultValues: {
       organization_id: organization.id,
-      type: CustomFieldType.TEXT,
-      properties: {},
+      type: DiscountType.PERCENTAGE,
+      duration: DiscountDuration.ONCE,
     },
   })
 
@@ -42,42 +43,36 @@ const CreateCustomFieldModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit: SubmitHandler<CustomFieldCreate> = useCallback(
-    async (customFieldCreate) => {
+  const onSubmit: SubmitHandler<DiscountCreate> = useCallback(
+    async (discountCreate) => {
       try {
         setIsLoading(true)
-        const customField =
-          await createCustomField.mutateAsync(customFieldCreate)
-        onCustomFieldCreated(customField)
+        const discount = await createDiscount.mutateAsync(discountCreate)
+        onDiscountCreated(discount)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
           if (e.response.status === 422) {
             const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(
-              validationErrors,
-              setError,
-              1,
-              Object.values(CustomFieldType),
-            )
+            setValidationErrors(validationErrors, setError, 1, [
+              'fixed.once_forever',
+              'fixed.repeat',
+              'percentage.once_forever',
+              'percentage.repeat',
+            ])
           }
         }
       } finally {
         setIsLoading(false)
       }
     },
-    [createCustomField, onCustomFieldCreated, setError],
+    [createDiscount, onDiscountCreated, setError],
   )
 
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
       <div>
-        <h2 className="text-lg">Create Custom Field</h2>
-        <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
-          Custom Fields allow you to ask additional information from your
-          customers at checkout, and will be available for use in all products
-          of your organization.
-        </p>
+        <h2 className="text-lg">Create Discount</h2>
       </div>
       <div className="flex flex-col gap-y-6">
         <Form {...form}>
@@ -85,7 +80,7 @@ const CreateCustomFieldModalContent = ({
             className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(onSubmit)}
           >
-            <CustomFieldForm update={false} />
+            <DiscountForm update={false} />
             {errors.root && (
               <p className="text-destructive-foreground text-sm">
                 {errors.root.message}
@@ -110,4 +105,4 @@ const CreateCustomFieldModalContent = ({
   )
 }
 
-export default CreateCustomFieldModalContent
+export default CreateDiscountModalContent

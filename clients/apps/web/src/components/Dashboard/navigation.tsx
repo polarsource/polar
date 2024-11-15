@@ -159,6 +159,16 @@ const generalRoutesList = (org: Organization): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
     },
     if: true,
+    subs: [
+      {
+        title: 'Products',
+        link: `/dashboard/${org.slug}/products`,
+      },
+      {
+        title: 'Discounts',
+        link: `/dashboard/${org.slug}/products/discounts`,
+      },
+    ],
   },
   {
     id: 'benefits',

@@ -16,6 +16,8 @@
     "./components/ui/atoms/input": "./src/components/ui/atoms/Input.tsx",
     "./components/ui/atoms/list": "./src/components/ui/atoms/List.tsx",
     "./components/ui/atoms/moneyinput": "./src/components/ui/atoms/MoneyInput.tsx",
+    "./components/ui/atoms/percentageinput": "./src/components/ui/atoms/PercentageInput.tsx",
+    "./components/ui/atoms/datetimepicker": "./src/components/ui/atoms/DateTimePicker.tsx",
     "./components/ui/atoms/select": "./src/components/ui/atoms/Select.tsx",
     "./components/ui/atoms/shadowbox": "./src/components/ui/atoms/ShadowBox.tsx",
     "./components/ui/atoms/switch": "./src/components/ui/atoms/Switch.tsx",

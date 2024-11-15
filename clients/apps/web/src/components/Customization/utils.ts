@@ -200,6 +200,7 @@ export const createCheckoutPreview = (
     attached_custom_fields: [],
     discount: null,
     discount_id: null,
+    allow_discount_codes: true,
   }
 }
 

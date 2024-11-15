@@ -213,12 +213,65 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         session: AsyncSession,
         checkout_link: CheckoutLink,
         checkout_link_update: CheckoutLinkUpdate,
+        auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        for attr, value in checkout_link_update.model_dump(
-            exclude_unset=True, by_alias=True
-        ).items():
-            setattr(checkout_link, attr, value)
+        changes = checkout_link_update.model_dump(exclude_unset=True, by_alias=True)
+        change_price = "product_price_id" in changes
+        for attr, value in changes.items():
+            if attr != "product_price_id":
+                setattr(checkout_link, attr, value)
 
+        if not change_price:
+            session.add(checkout_link)
+            return checkout_link
+
+        price_id = checkout_link_update.product_price_id
+        if not price_id:
+            checkout_link.product_price = None
+            session.add(checkout_link)
+            return checkout_link
+
+        price = await product_price_service.get_writable_by_id(
+            session, price_id, auth_subject
+        )
+        if price is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not exist.",
+                        "input": checkout_link_update.product_price_id,
+                    }
+                ]
+            )
+
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": checkout_link_update.product_price_id,
+                    }
+                ]
+            )
+
+        different_product = price.product.id != checkout_link.product.id
+        if different_product:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not belong to the same product.",
+                        "input": checkout_link_update.product_price_id,
+                    }
+                ]
+            )
+
+        checkout_link.product_price = price
         session.add(checkout_link)
         return checkout_link
 

@@ -4909,17 +4909,35 @@ export interface CheckoutLink {
      */
     success_url: string | null;
     /**
-     * ID of the product price to checkout.
+     * 
      * @type {string}
      * @memberof CheckoutLink
      */
-    product_price_id: string;
+    label: string | null;
+    /**
+     * ID of the product to checkout.
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    product_price_id: string | null;
+    /**
+     * 
+     * @type {CheckoutLinkProduct}
+     * @memberof CheckoutLink
+     */
+    product: CheckoutLinkProduct;
     /**
      * 
      * @type {ProductPrice}
      * @memberof CheckoutLink
      */
-    product_price: ProductPrice;
+    product_price: ProductPrice | null;
     /**
      * 
      * @type {string}
@@ -4930,11 +4948,17 @@ export interface CheckoutLink {
 
 
 /**
- * Schema to create a new checkout link.
+ * @type CheckoutLinkCreate
  * @export
- * @interface CheckoutLinkCreate
  */
-export interface CheckoutLinkCreate {
+export type CheckoutLinkCreate = CheckoutLinkPriceCreate | CheckoutLinkProductCreate;
+
+/**
+ * 
+ * @export
+ * @interface CheckoutLinkPriceCreate
+ */
+export interface CheckoutLinkPriceCreate {
     /**
      * Key-value object allowing you to store additional information.
      * 
@@ -4946,37 +4970,171 @@ export interface CheckoutLinkCreate {
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
-     * @memberof CheckoutLinkCreate
+     * @memberof CheckoutLinkPriceCreate
      */
     metadata?: { [key: string]: MetadataValue1; };
     /**
      * Payment processor to use. Currently only Stripe is supported.
      * @type {string}
-     * @memberof CheckoutLinkCreate
+     * @memberof CheckoutLinkPriceCreate
      */
-    payment_processor: CheckoutLinkCreatePaymentProcessorEnum;
-    /**
-     * ID of the product price to checkout.
-     * @type {string}
-     * @memberof CheckoutLinkCreate
-     */
-    product_price_id: string;
+    payment_processor: CheckoutLinkPriceCreatePaymentProcessorEnum;
     /**
      * 
      * @type {string}
-     * @memberof CheckoutLinkCreate
+     * @memberof CheckoutLinkPriceCreate
+     */
+    label: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkPriceCreate
      */
     success_url?: string | null;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutLinkPriceCreate
+     */
+    product_price_id: string;
 }
 
 
 /**
  * @export
  */
-export const CheckoutLinkCreatePaymentProcessorEnum = {
+export const CheckoutLinkPriceCreatePaymentProcessorEnum = {
     STRIPE: 'stripe'
 } as const;
-export type CheckoutLinkCreatePaymentProcessorEnum = typeof CheckoutLinkCreatePaymentProcessorEnum[keyof typeof CheckoutLinkCreatePaymentProcessorEnum];
+export type CheckoutLinkPriceCreatePaymentProcessorEnum = typeof CheckoutLinkPriceCreatePaymentProcessorEnum[keyof typeof CheckoutLinkPriceCreatePaymentProcessorEnum];
+
+/**
+ * Product data for a checkout link.
+ * @export
+ * @interface CheckoutLinkProduct
+ */
+export interface CheckoutLinkProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CheckoutLinkProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkProduct
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof CheckoutLinkProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof CheckoutLinkProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkProduct
+     */
+    description: string | null;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof CheckoutLinkProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof CheckoutLinkProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof CheckoutLinkProduct
+     */
+    organization_id: string;
+    /**
+     * List of prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof CheckoutLinkProduct
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * List of benefits granted by the product.
+     * @type {Array<BenefitPublicInner>}
+     * @memberof CheckoutLinkProduct
+     */
+    benefits: Array<BenefitPublicInner>;
+    /**
+     * List of medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof CheckoutLinkProduct
+     */
+    medias: Array<ProductMediaFileRead>;
+}
+/**
+ * 
+ * @export
+ * @interface CheckoutLinkProductCreate
+ */
+export interface CheckoutLinkProductCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     *     * A string with a maximum length of **500 characters**
+     *     * An integer
+     *     * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof CheckoutLinkProductCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * Payment processor to use. Currently only Stripe is supported.
+     * @type {string}
+     * @memberof CheckoutLinkProductCreate
+     */
+    payment_processor: CheckoutLinkProductCreatePaymentProcessorEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkProductCreate
+     */
+    label: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkProductCreate
+     */
+    success_url?: string | null;
+    /**
+     * ID of the product to checkout. First available price will be selected.
+     * @type {string}
+     * @memberof CheckoutLinkProductCreate
+     */
+    product_id: string;
+}
+
+
+/**
+ * @export
+ */
+export const CheckoutLinkProductCreatePaymentProcessorEnum = {
+    STRIPE: 'stripe'
+} as const;
+export type CheckoutLinkProductCreatePaymentProcessorEnum = typeof CheckoutLinkProductCreatePaymentProcessorEnum[keyof typeof CheckoutLinkProductCreatePaymentProcessorEnum];
 
 
 /**
@@ -5001,6 +5159,18 @@ export interface CheckoutLinkUpdate {
      * @memberof CheckoutLinkUpdate
      */
     metadata?: { [key: string]: MetadataValue1; } | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkUpdate
+     */
+    label?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkUpdate
+     */
+    product_price_id?: string | null;
     /**
      * 
      * @type {string}

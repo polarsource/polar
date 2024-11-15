@@ -34,7 +34,7 @@ export const useCreateCheckoutLink = () =>
         {
           queryKey: [
             'checkout_links',
-            { productId: result.product_price.product_id },
+            { productId: result.product.id },
           ],
         },
         (old) => {
@@ -70,7 +70,7 @@ export const useUpdateCheckoutLink = () =>
         {
           queryKey: [
             'checkout_links',
-            { productId: result.product_price.product_id },
+            { productId: result.product.id },
           ],
         },
         (old) => {

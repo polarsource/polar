@@ -3,9 +3,11 @@ import multiprocessing
 import os
 import signal
 import sys
+import threading
 from types import FrameType
 
 import structlog
+from arq import check_health
 from arq import run_worker as arq_run_worker
 
 from polar.logfire import configure_logfire
@@ -42,10 +44,45 @@ def _run_worker(settings_cls: type[WorkerSettings]) -> None:
     arq_run_worker(settings_cls)  # type: ignore
 
 
+def _worker_health_check(
+    settings_cls: type[WorkerSettings], interval: int = 60
+) -> None:
+    logger: Logger = structlog.get_logger(
+        "run_worker._worker_health_check",
+        pid=os.getpid(),
+        queue=settings_cls.queue_name,
+    )
+    logger.debug("Starting worker health check")
+    stop_event = threading.Event()
+
+    def handle_signal(signum: int, frame: FrameType | None) -> None:
+        nonlocal stop_event
+        logger.debug(f"Received signal {signum}, shutting down process")
+        stop_event.set()
+
+    for sig in {signal.SIGTERM, signal.SIGINT}:
+        signal.signal(sig, handle_signal)
+
+    worker_started = False
+    while not stop_event.is_set():
+        return_code = check_health(settings_cls)  # type: ignore
+        if return_code != 0:
+            if not worker_started:
+                logger.debug("Worker not started yet, waiting")
+            else:
+                logger.error("Worker health check failed, shutting down")
+                break
+        elif not worker_started:
+            worker_started = True
+            logger.debug("Worker started")
+
+        stop_event.wait(interval)
+
+
 def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> int:
     running = True
 
-    logger: Logger = structlog.get_logger(pid=os.getpid())
+    logger: Logger = structlog.get_logger("run_worker._main", pid=os.getpid())
     logger.info("Starting worker processes")
 
     processes: list[multiprocessing.Process] = []
@@ -70,6 +107,14 @@ def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> int:
         github_worker_process.start()
         processes.append(github_worker_process)
     logger.debug(f"Triggered {github_worker_num} GitHub worker processes")
+
+    for worker_class in {WorkerSettings, WorkerSettingsGitHubCrawl}:
+        health_check_process = multiprocessing.Process(
+            target=_worker_health_check, args=(worker_class,)
+        )
+        health_check_process.start()
+        processes.append(health_check_process)
+        logger.debug(f"Triggered worker health check process for {worker_class}")
 
     def stop_processes(signum: signal.Signals) -> None:
         logger.debug("Stopping worker processes")

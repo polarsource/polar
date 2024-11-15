@@ -87,7 +87,7 @@ class WorkerSettings:
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
     queue_name: str = QueueName.default.value
-
+    health_check_interval = settings.WORKER_HEALTH_CHECK_INTERVAL
     redis_settings = get_redis_settings()
 
     @staticmethod
@@ -158,7 +158,7 @@ class WorkerSettingsGitHubCrawl(WorkerSettings):
     queue_name: str = QueueName.github_crawl.value
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
-
+    health_check_interval = settings.WORKER_HEALTH_CHECK_INTERVAL
     redis_settings = get_redis_settings()
 
     @staticmethod

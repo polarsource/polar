@@ -14,6 +14,7 @@ from tests.fixtures.random_objects import create_checkout_link
 async def checkout_link(save_fixture: SaveFixture, product: Product) -> CheckoutLink:
     return await create_checkout_link(
         save_fixture,
+        product=product,
         price=product.prices[0],
         success_url="https://example.com/success",
         user_metadata={"key": "value"},

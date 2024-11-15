@@ -31,7 +31,7 @@ async def healthz(
 
         if data is None:
             raise Exception("Worker health check failed")
-    except RedisError as e:
+    except Exception as e:
         raise HTTPException(status_code=503, detail="Worker is not available") from e
 
     return {"api_status": "ok", "worker_status": "ok"}

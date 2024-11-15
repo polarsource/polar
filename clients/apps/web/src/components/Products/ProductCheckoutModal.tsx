@@ -4,6 +4,7 @@ import {
   useUpdateCheckoutLink,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { twMerge } from 'tailwind-merge'
 import { CONFIG } from '@/utils/config'
 import { ClearOutlined, SettingsOutlined } from '@mui/icons-material'
 import {
@@ -162,6 +163,11 @@ const LinkList = ({
       <List size="small">
         {links.map((link) => {
           const url = new URL(link.url)
+          let displayLabel = link.label
+          if (displayLabel && displayLabel.length > 20) {
+            displayLabel = displayLabel.slice(0, 20) + '...'
+          }
+
           return (
             <ListItem
               size="small"
@@ -172,28 +178,34 @@ const LinkList = ({
               selected={current === link.id}
               onSelect={() => onSelect(link, false)}
             >
-              {link.label}
-              {link.product_price && (
-                <ProductPriceLabel price={link.product_price} />
-              )}
-              {link.success_url && (
-                <Pill color="blue" className="truncate">
-                  {url.host}
-                </Pill>
-              )}
-              <Button
-                size="icon"
-                variant="secondary"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onSelect(link, true)
-                }}
-              >
-                <SettingsOutlined
-                  fontSize="inherit"
-                />
-              </Button>
+              <p className={twMerge(
+                !link.label && "text-xxs",
+              )}>
+                {link.label ? displayLabel : 'No label'}
+              </p>
+              <div className="flex flex-row justify-end grow items-center gap-x-6">
+                {link.success_url && (
+                  <Pill color="blue" className="truncate">
+                    {url.host}
+                  </Pill>
+                )}
+                {link.product_price && (
+                  <ProductPriceLabel price={link.product_price} />
+                )}
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onSelect(link, true)
+                  }}
+                >
+                  <SettingsOutlined
+                    fontSize="inherit"
+                  />
+                </Button>
+              </div>
             </ListItem>
           )
         })}

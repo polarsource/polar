@@ -9,6 +9,7 @@ import { ClearOutlined, SettingsOutlined } from '@mui/icons-material'
 import {
   CheckoutLink,
   CheckoutLinkCreate,
+  CheckoutLinkProductCreate,
   Product,
   ResponseError,
   ValidationError,
@@ -58,11 +59,14 @@ const LinkView = ({
   const [embedType, setEmbedType] = useState<string>('link')
 
   const svgEmbed = useMemo(() => {
-    const query = new URLSearchParams({
+    let params = {
       organizationId: product.organization_id,
       productId: product.id,
-      productPriceId: link.product_price_id,
-    }).toString()
+      ...(link.product_price_id ? {
+        product_price_id: link.product_price_id
+      } : {})
+    }
+    const query = new URLSearchParams(params).toString()
 
     const addDarkmode = darkmode ? '&darkmode' : ''
     const url = `${CONFIG.FRONTEND_BASE_URL}/embed/product.svg?${query}${addDarkmode}`
@@ -168,7 +172,10 @@ const LinkList = ({
               selected={current === link.id}
               onSelect={() => onSelect(link, false)}
             >
-              <ProductPriceLabel price={link.product_price} />
+              {link.label}
+              {link.product_price && (
+                <ProductPriceLabel price={link.product_price} />
+              )}
               {link.success_url && (
                 <Pill color="blue" className="truncate">
                   {url.host}
@@ -200,13 +207,19 @@ export interface ProductCheckoutModalProps {
 }
 
 type ProductCheckoutForm = Omit<
-  CheckoutLinkCreate,
+  CheckoutLinkProductCreate,
   'payment_processor' | 'metadata'
-> & { metadata: { key: string; value: string | number | boolean }[] }
+> & {
+  product_price_id?: string
+  metadata: { key: string; value: string | number | boolean }[]
+}
 
 export const ProductCheckoutModal = ({
   product,
 }: ProductCheckoutModalProps) => {
+  const [selectedLink, setSelectedLink] = useState<CheckoutLink | null>(null)
+  const [showForm, setShowForm] = useState<boolean>(true)
+
   const { data: checkoutLinks, isFetched } = useCheckoutLinks(
     product.organization_id,
     {
@@ -216,8 +229,10 @@ export const ProductCheckoutModal = ({
 
   const generateDefaultValues = () => {
     return {
-      product_price_id: product.prices[0].id,
+      label: null,
       metadata: [],
+      product_id: product.id,
+      product_price_id: undefined,
     }
   }
 
@@ -233,9 +248,6 @@ export const ProductCheckoutModal = ({
     },
   })
 
-  const [selectedLink, setSelectedLink] = useState<CheckoutLink | null>(null)
-  const [showForm, setShowForm] = useState<boolean>(true)
-
   const showCreateForm = () => {
     setSelectedLink(null)
     setShowForm(true)
@@ -244,11 +256,14 @@ export const ProductCheckoutModal = ({
 
   const onSelectLink = useCallback(
     (link: CheckoutLink, showForm: boolean) => {
-      console.log('select', link, showForm)
       setSelectedLink(link)
+      let { product_price_id, ...data } = link
       reset({
-        ...link,
-        metadata: Object.entries(link.metadata).map(([key, value]) => ({
+        ...data,
+        ...(product_price_id ? {
+          product_price_id
+        } : {}),
+        metadata: Object.entries(data.metadata).map(([key, value]) => ({
           key,
           value,
         })),
@@ -272,14 +287,21 @@ export const ProductCheckoutModal = ({
   const onSubmit: SubmitHandler<ProductCheckoutForm> = useCallback(
     async (data) => {
       try {
+        const { product_price_id, product_id, ...params } = data
         const body: CheckoutLinkCreate = {
           payment_processor: 'stripe',
-          ...data,
+          ...params,
+          ...(product_price_id ? {
+            product_price_id,
+          } : {
+            product_id,
+          }),
           metadata: data.metadata.reduce(
             (acc, { key, value }) => ({ ...acc, [key]: value }),
             {},
           ),
         }
+
         let checkoutLink: CheckoutLink
         if (selectedLink) {
           checkoutLink = await updateCheckoutLink({
@@ -358,34 +380,56 @@ export const ProductCheckoutModal = ({
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-y-6"
             >
-              {!selectedLink && product.prices.length > 1 && (
+              {((selectedLink && selectedLink.product_price_id) || product.prices.length > 1) && (
                 <FormField
                   control={control}
                   name="product_price_id"
-                  rules={{ required: 'This field is required' }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Price</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a price" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {product.prices.map((price) => (
-                            <SelectItem key={price.id} value={price.id}>
-                              <ProductPriceLabel price={price} />
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a price" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {product.prices.map((price) => (
+                              <SelectItem key={price.id} value={price.id}>
+                                <ProductPriceLabel price={price} />
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">
+                          By default the first price will be used.
+                        </FormDescription>
+                        <FormMessage />
                     </FormItem>
                   )}
                 />
               )}
+              <FormField
+                control={control}
+                name="label"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Label</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder=""
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Helpful if you have multiple links - internal &amp; optional.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={control}
                 name="success_url"

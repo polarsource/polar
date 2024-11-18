@@ -192,7 +192,7 @@ const LinkList = ({
                     {url.host}
                   </Pill>
                 )}
-                {link.product_price && (
+                {link.product_price && !link.product_price.is_archived && (
                   <ProductPriceLabel price={link.product_price} />
                 )}
                 <Button

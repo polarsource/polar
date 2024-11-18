@@ -38,18 +38,25 @@ import { useFormContext } from 'react-hook-form'
 
 interface DiscountFormProps {
   update: boolean
+  redemptionsCount?: number
 }
 
-const DiscountForm: React.FC<DiscountFormProps> = ({ update }) => {
+const DiscountForm: React.FC<DiscountFormProps> = ({
+  update,
+  redemptionsCount,
+}) => {
   const { control, watch, setValue } = useFormContext<
     DiscountCreate | DiscountUpdate
   >()
-  const type = watch('type')
-  const duration = watch('duration')
+  const type = watch('type') as DiscountType
+  const duration = watch('duration') as DiscountDuration
 
   const now = useMemo(() => new Date(), [])
   const startsAt = watch('starts_at')
   const endsAt = watch('ends_at')
+
+  const canUpdateAmount =
+    redemptionsCount === undefined || redemptionsCount === 0
 
   const generateDiscountCode = useCallback(() => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -122,254 +129,267 @@ const DiscountForm: React.FC<DiscountFormProps> = ({ update }) => {
         }}
       />
       {!update && (
-        <>
-          <Tabs
-            value={type}
-            onValueChange={(value: string) =>
-              setValue('type', value as DiscountType)
-            }
-          >
-            <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
-              <TabsTrigger
-                className="flex-grow"
-                value={DiscountType.PERCENTAGE}
-              >
-                Percentage discount
-              </TabsTrigger>
-              <TabsTrigger className="flex-grow" value={DiscountType.FIXED}>
-                Fixed amount discount
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <Tabs
+          value={type}
+          onValueChange={(value: string) =>
+            setValue('type', value as DiscountType)
+          }
+        >
+          <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
+            <TabsTrigger className="flex-grow" value={DiscountType.PERCENTAGE}>
+              Percentage discount
+            </TabsTrigger>
+            <TabsTrigger className="flex-grow" value={DiscountType.FIXED}>
+              Fixed amount discount
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
-          {type === DiscountType.PERCENTAGE && (
+      {type === DiscountType.PERCENTAGE && (
+        <FormField
+          control={control}
+          name="basis_points"
+          shouldUnregister={type !== DiscountType.PERCENTAGE}
+          rules={{
+            required: 'This field is required',
+            min: { value: 1, message: 'This field must be at least 0.01%' },
+            max: {
+              value: 10000,
+              message: 'This field must be at most 100%',
+            },
+          }}
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <FormLabel>Percentage</FormLabel>
+                <FormControl>
+                  <PercentageInput
+                    {...field}
+                    value={field.value || undefined}
+                    placeholder={1000}
+                    disabled={!canUpdateAmount}
+                  />
+                </FormControl>
+                {!canUpdateAmount && (
+                  <FormDescription>
+                    The percentage cannot be changed once the discount has been
+                    redeemed by a customer.
+                  </FormDescription>
+                )}
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      )}
+
+      {type === DiscountType.FIXED && (
+        <FormField
+          control={control}
+          name="amount"
+          shouldUnregister={type !== DiscountType.FIXED}
+          rules={{
+            required: 'This field is required',
+            min: { value: 1, message: 'This field must be at least 1' },
+          }}
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <FormLabel>Amount</FormLabel>
+                <FormControl>
+                  <MoneyInput
+                    {...field}
+                    value={field.value || undefined}
+                    placeholder={1000}
+                    disabled={!canUpdateAmount}
+                  />
+                </FormControl>
+                {!canUpdateAmount && (
+                  <FormDescription>
+                    The amount cannot be changed once the discount has been
+                    redeemed by a customer.
+                  </FormDescription>
+                )}
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      )}
+
+      <Accordion type="single" collapsible className="flex flex-col gap-y-6">
+        <AccordionItem
+          value="form-input-options"
+          className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
+        >
+          <AccordionTrigger className="hover:no-underline">
+            Recurring options
+          </AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-y-6">
             <FormField
               control={control}
-              name="basis_points"
-              shouldUnregister={type !== DiscountType.PERCENTAGE}
+              name="duration"
               rules={{
                 required: 'This field is required',
-                min: { value: 1, message: 'This field must be at least 0.01%' },
-                max: {
-                  value: 10000,
-                  message: 'This field must be at most 100%',
-                },
               }}
               render={({ field }) => {
                 return (
                   <FormItem>
-                    <FormLabel>Percentage</FormLabel>
                     <FormControl>
-                      <PercentageInput {...field} placeholder={1000} />
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value || undefined}
+                        disabled={update}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={DiscountDuration.ONCE}>
+                            Once
+                          </SelectItem>
+                          <SelectItem value={DiscountDuration.FOREVER}>
+                            Forever
+                          </SelectItem>
+                          <SelectItem value={DiscountDuration.REPEATING}>
+                            For several months
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
+                    <FormDescription>
+                      {duration === DiscountDuration.ONCE &&
+                        'The discount is applied once on the first invoice.'}
+                      {duration === DiscountDuration.FOREVER &&
+                        'The discount is applied on every invoice.'}
+                      {duration === DiscountDuration.REPEATING &&
+                        'The discount is applied for a set number of months.'}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )
               }}
             />
-          )}
+            {duration === DiscountDuration.REPEATING && (
+              <FormField
+                control={control}
+                name="duration_in_months"
+                shouldUnregister={duration !== DiscountDuration.REPEATING}
+                rules={{
+                  required: 'This field is required',
+                  min: {
+                    value: 1,
+                    message: 'This field must be at least 1',
+                  },
+                }}
+                defaultValue={1}
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel>Number of months</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || undefined}
+                          type="number"
+                          min={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <FormDescription>
+                        The discount will be applied the first{' '}
+                        {Number.parseInt(field.value as unknown as string) === 1
+                          ? 'month'
+                          : `${field.value} months`}
+                        .
+                      </FormDescription>
+                    </FormItem>
+                  )
+                }}
+              />
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
-          {type === DiscountType.FIXED && (
+      <Accordion type="single" collapsible className="flex flex-col gap-y-6">
+        <AccordionItem
+          value="form-input-options"
+          className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
+        >
+          <AccordionTrigger className="hover:no-underline">
+            Restrictions
+          </AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-y-6">
             <FormField
               control={control}
-              name="amount"
-              shouldUnregister={type !== DiscountType.FIXED}
+              name="starts_at"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Starts at</FormLabel>
+                    <DateTimePicker
+                      value={field.value || undefined}
+                      onChange={field.onChange}
+                      disabled={[
+                        { before: now },
+                        ...(endsAt ? [{ after: new Date(endsAt) }] : []),
+                      ]}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={control}
+              name="ends_at"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Ends at</FormLabel>
+                    <DateTimePicker
+                      value={field.value || undefined}
+                      onChange={field.onChange}
+                      disabled={{
+                        before: startsAt ? new Date(startsAt) : now,
+                      }}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={control}
+              name="max_redemptions"
               rules={{
-                required: 'This field is required',
                 min: { value: 1, message: 'This field must be at least 1' },
               }}
               render={({ field }) => {
                 return (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Maximum number of redemptions</FormLabel>
                     <FormControl>
-                      <MoneyInput {...field} placeholder={1000} />
+                      <Input
+                        {...field}
+                        type="number"
+                        value={field.value || undefined}
+                        min={1}
+                      />
                     </FormControl>
                     <FormMessage />
+                    <FormDescription>
+                      Limit applies across all customers, not per customer.
+                    </FormDescription>
                   </FormItem>
                 )
               }}
             />
-          )}
-
-          <Accordion
-            type="single"
-            collapsible
-            className="flex flex-col gap-y-6"
-          >
-            <AccordionItem
-              value="form-input-options"
-              className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
-            >
-              <AccordionTrigger className="hover:no-underline">
-                Recurring options
-              </AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-y-6">
-                <FormField
-                  control={control}
-                  name="duration"
-                  rules={{
-                    required: 'This field is required',
-                  }}
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select duration" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={DiscountDuration.ONCE}>
-                                Once
-                              </SelectItem>
-                              <SelectItem value={DiscountDuration.FOREVER}>
-                                Forever
-                              </SelectItem>
-                              <SelectItem value={DiscountDuration.REPEATING}>
-                                For several months
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormDescription>
-                          {duration === DiscountDuration.ONCE &&
-                            'The discount is applied once on the first invoice.'}
-                          {duration === DiscountDuration.FOREVER &&
-                            'The discount is applied on every invoice.'}
-                          {duration === DiscountDuration.REPEATING &&
-                            'The discount is applied for a set number of months.'}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )
-                  }}
-                />
-                {duration === DiscountDuration.REPEATING && (
-                  <FormField
-                    control={control}
-                    name="duration_in_months"
-                    shouldUnregister={duration !== DiscountDuration.REPEATING}
-                    rules={{
-                      required: 'This field is required',
-                      min: {
-                        value: 1,
-                        message: 'This field must be at least 1',
-                      },
-                    }}
-                    defaultValue={1}
-                    render={({ field }) => {
-                      return (
-                        <FormItem>
-                          <FormLabel>Number of months</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="number" min={1} />
-                          </FormControl>
-                          <FormMessage />
-                          <FormDescription>
-                            The discount will be applied the first{' '}
-                            {Number.parseInt(
-                              field.value as unknown as string,
-                            ) === 1
-                              ? 'month'
-                              : `${field.value} months`}
-                            .
-                          </FormDescription>
-                        </FormItem>
-                      )
-                    }}
-                  />
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          <Accordion
-            type="single"
-            collapsible
-            className="flex flex-col gap-y-6"
-          >
-            <AccordionItem
-              value="form-input-options"
-              className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
-            >
-              <AccordionTrigger className="hover:no-underline">
-                Restrictions
-              </AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-y-6">
-                <FormField
-                  control={control}
-                  name="starts_at"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Starts at</FormLabel>
-                        <DateTimePicker
-                          value={field.value || undefined}
-                          onChange={field.onChange}
-                          disabled={[
-                            { before: now },
-                            ...(endsAt ? [{ after: new Date(endsAt) }] : []),
-                          ]}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )
-                  }}
-                />
-                <FormField
-                  control={control}
-                  name="ends_at"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Ends at</FormLabel>
-                        <DateTimePicker
-                          value={field.value || undefined}
-                          onChange={field.onChange}
-                          disabled={{
-                            before: startsAt ? new Date(startsAt) : now,
-                          }}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )
-                  }}
-                />
-                <FormField
-                  control={control}
-                  name="max_redemptions"
-                  rules={{
-                    min: { value: 1, message: 'This field must be at least 1' },
-                  }}
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Maximum number of redemptions</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            value={field.value || undefined}
-                            min={1}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <FormDescription>
-                          Limit applies across all customers, not per customer.
-                        </FormDescription>
-                      </FormItem>
-                    )
-                  }}
-                />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </>
-      )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </>
   )
 }

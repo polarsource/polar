@@ -78,7 +78,10 @@ const UpdateDiscountModalContent = ({
             className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(onSubmit)}
           >
-            <DiscountForm update={true} />
+            <DiscountForm
+              update={true}
+              redemptionsCount={discount.redemptions_count}
+            />
             {errors.root && (
               <p className="text-destructive-foreground text-sm">
                 {errors.root.message}

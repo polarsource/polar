@@ -55,7 +55,7 @@ def construct_stripe_invoice(
     metadata: dict[str, str] = {},
     billing_reason: str = "subscription_create",
     paid_out_of_band: bool = False,
-    coupon_id: str | None = None,
+    discount: Discount | None = None,
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
         {
@@ -80,7 +80,14 @@ def construct_stripe_invoice(
             "metadata": metadata,
             "billing_reason": billing_reason,
             "paid_out_of_band": paid_out_of_band,
-            "discount": {"coupon": {"id": coupon_id}} if coupon_id else None,
+            "discount": {
+                "coupon": {
+                    "id": discount.stripe_coupon_id,
+                    "metadata": {"discount_id": str(discount.id)},
+                }
+            }
+            if discount is not None
+            else None,
         },
         None,
     )
@@ -507,7 +514,7 @@ class TestCreateOrderFromStripe:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[(product.prices[0].stripe_price_id, False, None)],
-            coupon_id=discount_fixed_once.stripe_coupon_id,
+            discount=discount_fixed_once,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -624,7 +631,7 @@ class TestCreateOrderFromStripe:
             lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
             subscription_id=None,
             billing_reason="manual",
-            coupon_id=discount_fixed_once.stripe_coupon_id,
+            discount=discount_fixed_once,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 

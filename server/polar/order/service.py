@@ -298,12 +298,15 @@ class OrderService(ResourceServiceReader[Order]):
         # Get Discount if available
         discount: Discount | None = None
         if invoice.discount is not None:
-            coupon_id = invoice.discount.coupon.id
-            discount = await discount_service.get_by_stripe_coupon_id(
-                session, coupon_id
+            coupon = invoice.discount.coupon
+            if (metadata := coupon.metadata) is None:
+                raise DiscountDoesNotExist(invoice.id, coupon.id)
+            discount_id = metadata["discount_id"]
+            discount = await discount_service.get(
+                session, uuid.UUID(discount_id), allow_deleted=True
             )
             if discount is None:
-                raise DiscountDoesNotExist(invoice.id, coupon_id)
+                raise DiscountDoesNotExist(invoice.id, coupon.id)
 
         # Get Checkout if available
         checkout: Checkout | None = None

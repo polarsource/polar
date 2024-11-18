@@ -47,7 +47,7 @@ def construct_stripe_subscription(
     latest_invoice: stripe_lib.Invoice | None = None,
     cancel_at_period_end: bool = False,
     metadata: dict[str, str] = {},
-    coupon_id: str | None = None,
+    discount: Discount | None = None,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     base_metadata: dict[str, str] = {
@@ -74,8 +74,13 @@ def construct_stripe_subscription(
             "ended_at": None,
             "latest_invoice": latest_invoice,
             "metadata": {**base_metadata, **metadata},
-            "discount": {"coupon": {"id": coupon_id}}
-            if coupon_id is not None
+            "discount": {
+                "coupon": {
+                    "id": discount.stripe_coupon_id,
+                    "metadata": {"discount_id": str(discount.id)},
+                }
+            }
+            if discount is not None
             else None,
         },
         None,
@@ -413,8 +418,7 @@ class TestCreateSubscriptionFromStripe:
 
         assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
-            price_id=product.prices[0].stripe_price_id,
-            coupon_id=discount_fixed_once.stripe_coupon_id,
+            price_id=product.prices[0].stripe_price_id, discount=discount_fixed_once
         )
 
         # then
@@ -602,7 +606,7 @@ class TestUpdateSubscriptionFromStripe:
         stripe_subscription = construct_stripe_subscription(
             status=SubscriptionStatus.active,
             price_id=price.stripe_price_id,
-            coupon_id=discount_fixed_once.stripe_coupon_id,
+            discount=discount_fixed_once,
         )
         subscription = await create_subscription(
             save_fixture,

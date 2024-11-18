@@ -780,6 +780,7 @@ async def create_discount(
         starts_at=starts_at,
         ends_at=ends_at,
         max_redemptions=max_redemptions,
+        redemptions_count=0,
     )
     if isinstance(custom_field, DiscountFixed):
         assert amount is not None

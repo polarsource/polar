@@ -379,12 +379,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         # Get Discount if available
         discount: Discount | None = None
         if stripe_subscription.discount is not None:
-            coupon_id = stripe_subscription.discount.coupon.id
-            discount = await discount_service.get_by_stripe_coupon_id(
-                session, coupon_id
+            coupon = stripe_subscription.discount.coupon
+            if (metadata := coupon.metadata) is None:
+                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
+            discount_id = metadata["discount_id"]
+            discount = await discount_service.get(
+                session, uuid.UUID(discount_id), allow_deleted=True
             )
             if discount is None:
-                raise DiscountDoesNotExist(stripe_subscription.id, coupon_id)
+                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
 
         # Get Checkout if available
         checkout: Checkout | None = None
@@ -549,13 +552,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.product = price.product
 
         # Get Discount if available
+        discount: Discount | None = None
         if stripe_subscription.discount is not None:
-            coupon_id = stripe_subscription.discount.coupon.id
-            discount = await discount_service.get_by_stripe_coupon_id(
-                session, coupon_id
+            coupon = stripe_subscription.discount.coupon
+            if (metadata := coupon.metadata) is None:
+                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
+            discount_id = metadata["discount_id"]
+            discount = await discount_service.get(
+                session, uuid.UUID(discount_id), allow_deleted=True
             )
             if discount is None:
-                raise DiscountDoesNotExist(stripe_subscription.id, coupon_id)
+                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
             subscription.discount = discount
 
         # Get Checkout if available

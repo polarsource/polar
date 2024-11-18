@@ -81,6 +81,24 @@ MaxRedemptions = Annotated[
     ),
     Ge(1),
 ]
+DurationOnceForever = Annotated[
+    Literal[DiscountDuration.once, DiscountDuration.forever],
+    Field(
+        description=(
+            "For subscriptions, determines if the discount should be applied "
+            "once on the first invoice or forever."
+        )
+    ),
+]
+DurationRepeating = Annotated[
+    Literal[DiscountDuration.repeating],
+    Field(
+        description=(
+            "For subscriptions, the discount should be applied on every invoice "
+            "for a certain number of months, determined by `duration_in_months`."
+        )
+    ),
+]
 DurationInMonths = Annotated[
     int,
     Field(
@@ -92,6 +110,36 @@ DurationInMonths = Annotated[
         """)
     ),
     Ge(1),
+]
+Amount = Annotated[
+    int,
+    Field(
+        description="Fixed amount to discount from the invoice total.",
+        ge=0,
+    ),
+]
+Currency = Annotated[
+    str,
+    Field(
+        default="usd",
+        pattern="usd",
+        description="The currency. Currently, only `usd` is supported.",
+    ),
+]
+BasisPoints = Annotated[
+    int,
+    Field(
+        description=(
+            inspect.cleandoc("""
+            Discount percentage in basis points.
+
+            A basis point is 1/100th of a percent.
+            For example, to create a 25.5% discount, set this to 2550.
+            """)
+        ),
+        ge=1,
+        le=10000,
+    ),
 ]
 
 
@@ -120,64 +168,34 @@ class DiscountCreateBase(MetadataInputMixin, Schema):
         return self
 
 
-class DiscountCreateOnceForeverDurationBase(Schema):
-    duration: Literal[DiscountDuration.once, DiscountDuration.forever] = Field(
-        description=(
-            "For subscriptions, determines if the discount should be applied "
-            "once on the first invoice or forever."
-        )
-    )
+class DiscountOnceForeverDurationCreateBase(Schema):
+    duration: DurationOnceForever
 
 
-class DiscountCreateRepeatDurationBase(Schema):
-    duration: Literal[DiscountDuration.repeating] = Field(
-        description=(
-            "For subscriptions, the discount should be applied on every invoice "
-            "for a certain number of months, determined by `duration_in_months`."
-        )
-    )
+class DiscountRepeatDurationCreateBase(Schema):
+    duration: DurationRepeating
     duration_in_months: DurationInMonths
 
 
-class DiscountFixedBaseCreate(Schema):
+class DiscountFixedCreateBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
-    amount: int = Field(
-        description="Fixed amount to discount from the invoice total.",
-        ge=0,
-    )
-    currency: str = Field(
-        Field(
-            default="usd",
-            pattern="usd",
-            description="The currency. Currently, only `usd` is supported.",
-        ),
-    )
+    amount: Amount
+    currency: Currency
 
 
-class DiscountPercentageBaseCreate(Schema):
+class DiscountPercentageCreateBase(Schema):
     type: Literal[DiscountType.percentage] = DiscountType.percentage
-    basis_points: int = Field(
-        description=(
-            inspect.cleandoc("""
-            Discount percentage in basis points.
-
-            A basis point is 1/100th of a percent.
-            For example, to create a 25.5% discount, set this to 2550.
-            """)
-        ),
-        ge=1,
-        le=10000,
-    )
+    basis_points: BasisPoints
 
 
 class DiscountFixedOnceForeverDurationCreate(
-    DiscountCreateBase, DiscountFixedBaseCreate, DiscountCreateOnceForeverDurationBase
+    DiscountCreateBase, DiscountFixedCreateBase, DiscountOnceForeverDurationCreateBase
 ):
     """Schema to create a fixed amount discount that is applied once or forever."""
 
 
 class DiscountFixedRepeatDurationCreate(
-    DiscountCreateBase, DiscountFixedBaseCreate, DiscountCreateRepeatDurationBase
+    DiscountCreateBase, DiscountFixedCreateBase, DiscountRepeatDurationCreateBase
 ):
     """
     Schema to create a fixed amount discount that is applied on every invoice
@@ -187,14 +205,14 @@ class DiscountFixedRepeatDurationCreate(
 
 class DiscountPercentageOnceForeverDurationCreate(
     DiscountCreateBase,
-    DiscountPercentageBaseCreate,
-    DiscountCreateOnceForeverDurationBase,
+    DiscountPercentageCreateBase,
+    DiscountOnceForeverDurationCreateBase,
 ):
     """Schema to create a percentage discount that is applied once or forever."""
 
 
 class DiscountPercentageRepeatDurationCreate(
-    DiscountCreateBase, DiscountPercentageBaseCreate, DiscountCreateRepeatDurationBase
+    DiscountCreateBase, DiscountPercentageCreateBase, DiscountRepeatDurationCreateBase
 ):
     """
     Schema to create a percentage discount that is applied on every invoice
@@ -209,6 +227,23 @@ class DiscountUpdate(OptionalMetadataInputMixin, Schema):
 
     name: Name | None = None
     code: Code | None = None
+
+    starts_at: StartsAt | None = None
+    ends_at: EndsAt | None = None
+    max_redemptions: MaxRedemptions | None = None
+
+    duration: DiscountDuration | None = None
+    duration_in_months: DurationInMonths | None = None
+
+    type: DiscountType | None = None
+    amount: Amount | None = None
+    currency: Currency | None = None
+    basis_points: BasisPoints | None = None
+
+    @model_validator(mode="after")
+    def validate_starts_at_ends_at(self) -> Self:
+        _starts_at_ends_at_validator(self.starts_at, self.ends_at)
+        return self
 
 
 class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):

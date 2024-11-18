@@ -1,10 +1,17 @@
 import asyncio
 from datetime import timedelta
+from types import SimpleNamespace
+from typing import Literal
+from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 
+from polar.discount.schemas import DiscountUpdate
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
+from polar.exceptions import PolarRequestValidationError
+from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Checkout, Discount, DiscountRedemption, Organization, Product
@@ -20,6 +27,172 @@ async def create_discount_redemption(
     discount_redemption = DiscountRedemption(discount=discount, checkout=checkout)
     await save_fixture(discount_redemption)
     return discount_redemption
+
+
+@pytest.fixture(autouse=True)
+def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=StripeService)
+    mocker.patch("polar.discount.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestUpdate:
+    async def test_duration_change(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=1,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate(duration=DiscountDuration.once),
+            )
+
+    async def test_type_change(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=1,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate(type=DiscountType.fixed),
+            )
+
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("amount", 1000),
+            ("basis_points", 1000),
+        ],
+    )
+    async def test_update_forbidden_field_with_redemptions(
+        self,
+        field: Literal["amount", "basis_points"],
+        value: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount: Discount
+        if field == "amount":
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.fixed,
+                amount=5000,
+                currency="usd",
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
+        else:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=5000,
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
+        checkout = await create_checkout(save_fixture, price=product.prices[0])
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=checkout
+        )
+        await session.refresh(discount)
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate.model_validate({field: value}),
+            )
+
+    async def test_update_sensitive_fields(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        stripe_service_mock.create_coupon.return_value = SimpleNamespace(
+            id="NEW_STRIPE_COUPON_ID"
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            starts_at=utc_now() - timedelta(days=1),
+            ends_at=utc_now() + timedelta(days=1),
+        )
+        old_stripe_coupon_id = discount.stripe_coupon_id
+
+        updated_ends_at = utc_now() + timedelta(days=2)
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(ends_at=updated_ends_at),
+        )
+
+        assert updated_discount.ends_at == updated_ends_at
+        assert updated_discount.stripe_coupon_id == "NEW_STRIPE_COUPON_ID"
+
+        stripe_service_mock.delete_coupon.assert_called_once_with(old_stripe_coupon_id)
+        stripe_service_mock.create_coupon.assert_called_once()
+
+    async def test_update_name(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        old_stripe_coupon_id = discount.stripe_coupon_id
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(name="Updated Name"),
+        )
+
+        assert updated_discount.name == "Updated Name"
+        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
+
+        stripe_service_mock.update_coupon.assert_called_once_with(
+            old_stripe_coupon_id, name="Updated Name"
+        )
 
 
 @pytest.mark.asyncio

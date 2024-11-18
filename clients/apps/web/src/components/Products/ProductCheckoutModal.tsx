@@ -424,36 +424,6 @@ export const ProductCheckoutModal = ({
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-y-6"
             >
-              {((selectedLink && selectedLink.product_price_id) || product.prices.length > 1) && (
-                <FormField
-                  control={control}
-                  name="product_price_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a price" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {product.prices.map((price) => (
-                              <SelectItem key={price.id} value={price.id}>
-                                <ProductPriceLabel price={price} />
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription className="text-xs">
-                          By default the first price will be used.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
               <FormField
                 control={control}
                 name="label"
@@ -474,6 +444,44 @@ export const ProductCheckoutModal = ({
                   </FormItem>
                 )}
               />
+              {((selectedLink && selectedLink.product_price_id) || product.prices.length > 1) && (
+                <FormField
+                  control={control}
+                  name="product_price_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value ?? product.prices[0].id }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select price" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selectedLink && selectedLink.product_price?.is_archived && (
+                              <SelectItem key={selectedLink.product_price.id} value={selectedLink.product_price.id}>
+                                <div className="flex flex-row items-center">
+                                  <ProductPriceLabel price={selectedLink.product_price} />
+                                  <span className="ml-2 text-xs">(Archived)</span>
+                                </div>
+                              </SelectItem>
+                            )}
+                            {product.prices.map((price) => (
+                              <SelectItem key={price.id} value={price.id}>
+                                <ProductPriceLabel price={price} />
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">
+                          Default checkout price
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={control}
                 name="success_url"

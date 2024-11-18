@@ -1,12 +1,15 @@
 import {
   useCheckoutLinks,
+  useDeleteCheckoutLink,
   useCreateCheckoutLink,
   useUpdateCheckoutLink,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { twMerge } from 'tailwind-merge'
 import { CONFIG } from '@/utils/config'
-import { ClearOutlined, SettingsOutlined } from '@mui/icons-material'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { useModal } from '@/components/Modal/useModal'
+import { ClearOutlined, CloseOutlined, SettingsOutlined } from '@mui/icons-material'
 import {
   CheckoutLink,
   CheckoutLinkCreate,
@@ -260,10 +263,29 @@ export const ProductCheckoutModal = ({
     },
   })
 
+  const {
+    isShown: isDeleteModalShown,
+    hide: hideDeleteModal,
+    show: showDeleteModal,
+  } = useModal()
+
+  const { mutateAsync: deleteCheckoutLink, isPending: isDeletePending } =
+    useDeleteCheckoutLink()
+  const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
+    useCreateCheckoutLink()
+  const { mutateAsync: updateCheckoutLink, isPending: isUpdatePending } =
+    useUpdateCheckoutLink()
+
   const showCreateForm = () => {
     setSelectedLink(null)
     setShowForm(true)
     reset(generateDefaultValues())
+  }
+
+  const onDelete = async () => {
+    if (selectedLink) {
+      await deleteCheckoutLink(selectedLink)
+    }
   }
 
   const onSelectLink = useCallback(
@@ -292,10 +314,6 @@ export const ProductCheckoutModal = ({
     }
   }, [isFetched, checkoutLinks, setSelectedLink])
 
-  const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
-    useCreateCheckoutLink()
-  const { mutateAsync: updateCheckoutLink, isPending: isUpdatePending } =
-    useUpdateCheckoutLink()
   const onSubmit: SubmitHandler<ProductCheckoutForm> = useCallback(
     async (data) => {
       try {
@@ -387,7 +405,17 @@ export const ProductCheckoutModal = ({
       {showForm && (
         <ShadowBox className="dark:bg-polar-800 bg-white flex flex-col gap-y-6 p-6 rounded-xl">
           <Form {...form}>
-            <h2>{selectedLink ? 'Edit Link' : 'Create Link'}</h2>
+            <div className="flex flex-row items-center">
+              <h2 className="grow">{selectedLink ? 'Edit Link' : 'Create Link'}</h2>
+              {selectedLink && (
+                <a href="#" onClick={(e) => {
+                  e.preventDefault()
+                  setShowForm(false)
+                }}>
+                  <CloseOutlined fontSize="inherit" />
+                </a>
+              )}
+            </div>
             <form
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-y-6"
@@ -542,15 +570,28 @@ export const ProductCheckoutModal = ({
                   {selectedLink ? 'Save' : 'Create'}
                 </Button>
                 {selectedLink && (
-                  <Button
-                    className="self-start"
-                    variant="secondary"
-                    onClick={() => {
-                      setShowForm(false)
-                    }}
-                  >
-                    Cancel
-                  </Button>
+                  <>
+                    <Button
+                      className="self-start"
+                      variant="secondary"
+                      loading={isDeletePending}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        showDeleteModal()
+                      }}
+                    >
+                      Delete
+                    </Button>
+                    <ConfirmModal
+                      title="Confirm Deletion of Checkout Link"
+                      description="It will cause 404 responses in case the link is still in use anywhere."
+                      onConfirm={onDelete}
+                      isShown={isDeleteModalShown}
+                      hide={hideDeleteModal}
+                      destructiveText="Delete"
+                      destructive
+                    />
+                  </>
                 )}
               </div>
             </form>

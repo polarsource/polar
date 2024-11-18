@@ -976,6 +976,7 @@ class TestCheckoutLinkCreate:
         session: AsyncSession,
         product_one_time: Product,
     ) -> None:
+        first_price = product_one_time.prices[0]
         price = await create_product_price_fixed(
             save_fixture,
             product=product_one_time,
@@ -985,8 +986,8 @@ class TestCheckoutLinkCreate:
         checkout_link = await create_checkout_link(
             save_fixture, product=product_one_time, price=price
         )
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.checkout_link_create(session, checkout_link)
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+        assert checkout.product_price.id == first_price.id
 
     async def test_archived_product(
         self,

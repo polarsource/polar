@@ -122,8 +122,67 @@ services:
       - fromGroup: stripe-production
       - fromGroup: logfire-worker
 
+  - type: worker
+    name: worker-new
+    runtime: image
+    image:
+      url: ghcr.io/polarsource/polar:latest
+      creds:
+        fromRegistryCreds:
+          name: Registry Credentials (by fvoron)
+    plan: standard
+    dockerCommand: uv run python -m run_worker --default-worker-num 2
+    region: ohio
+    numInstances: 1
+    autoDeploy: false # deploys are triggered by github actions
+    envVars:
+      - key: POLAR_POSTGRES_DATABASE
+        fromDatabase:
+          name: db
+          property: database
+      - key: POLAR_POSTGRES_HOST
+        fromDatabase:
+          name: db
+          property: host
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: db
+          property: port
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: db
+          property: password
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: db
+          property: user
+      - key: POLAR_REDIS_HOST
+        fromService:
+          type: redis
+          name: redis-new
+          property: host
+      - key: POLAR_REDIS_PORT
+        fromService:
+          type: redis
+          name: redis-new
+          property: port
+      - key: POLAR_REDIS_DB
+        value: 0
+      - fromGroup: google-production
+      - fromGroup: github-production
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
+      - fromGroup: logfire-worker
+
   - type: redis
     name: redis
+    plan: standard
+    region: ohio
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  - type: redis
+    name: redis-new
     plan: standard
     region: ohio
     maxmemoryPolicy: noeviction
@@ -237,6 +296,55 @@ services:
         fromService:
           type: redis
           name: redis
+          property: port
+      - key: POLAR_REDIS_DB
+        value: 1
+      - fromGroup: google-sandbox
+      - fromGroup: github-sandbox
+      - fromGroup: backend-sandbox
+      - fromGroup: stripe-sandbox
+
+  - type: worker
+    name: worker-default-sandbox-new
+    runtime: image
+    image:
+      url: ghcr.io/polarsource/polar:latest
+      creds:
+        fromRegistryCreds:
+          name: Registry Credentials (by fvoron)
+    plan: standard
+    dockerCommand: uv run python -m run_worker --default-worker-num 2
+    region: ohio
+    numInstances: 1
+    autoDeploy: false # deploys are triggered by github actions
+    envVars:
+      - key: POLAR_POSTGRES_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_HOST
+        fromDatabase:
+          name: db
+          property: host
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: db
+          property: port
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: db
+          property: password
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: db
+          property: user
+      - key: POLAR_REDIS_HOST
+        fromService:
+          type: redis
+          name: redis-new
+          property: host
+      - key: POLAR_REDIS_PORT
+        fromService:
+          type: redis
+          name: redis-new
           property: port
       - key: POLAR_REDIS_DB
         value: 1

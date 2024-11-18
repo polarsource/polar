@@ -93,16 +93,17 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_create: CheckoutLinkCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        if hasattr(checkout_link_create, "product_price_id"):
+        price: ProductPrice | None
+        if isinstance(checkout_link_create, CheckoutLinkPriceCreate):
             product, price = await self._get_validated_price(
                 session,
-                cast(CheckoutLinkPriceCreate, checkout_link_create),
+                checkout_link_create,
                 auth_subject,
             )
         else:
             product, price = await self._get_validated_product(
                 session,
-                cast(CheckoutLinkProductCreate, checkout_link_create),
+                checkout_link_create,
                 auth_subject,
             )
 

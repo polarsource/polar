@@ -194,6 +194,63 @@ class TestUpdate:
             old_stripe_coupon_id, name="Updated Name"
         )
 
+    async def test_update_products(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        product_one_time: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[product],
+        )
+        old_stripe_coupon_id = discount.stripe_coupon_id
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(products=[product_one_time.id]),
+        )
+
+        assert updated_discount.products == [product_one_time]
+        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
+        stripe_service_mock.update_coupon.assert_not_called()
+
+    async def test_update_products_reset(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            products=[product],
+        )
+        old_stripe_coupon_id = discount.stripe_coupon_id
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(products=[]),
+        )
+
+        assert updated_discount.products == []
+        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
+        stripe_service_mock.update_coupon.assert_not_called()
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

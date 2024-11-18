@@ -10,6 +10,7 @@ from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .custom_field import CustomField
 from .discount import Discount
+from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
 from .downloadable import Downloadable
 from .external_organization import ExternalOrganization
@@ -64,6 +65,7 @@ __all__ = [
     "CheckoutLink",
     "CustomField",
     "Discount",
+    "DiscountProduct",
     "DiscountRedemption",
     "Downloadable",
     "ExternalOrganization",

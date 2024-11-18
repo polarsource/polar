@@ -246,6 +246,20 @@ class ProductService(ResourceServiceReader[Product]):
 
         return result.scalar_one_or_none()
 
+    async def get_by_id_and_organization(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        organization: Organization,
+    ) -> Product | None:
+        statement = select(Product).where(
+            Product.id == id,
+            Product.organization_id == organization.id,
+            Product.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def create(
         self,
         session: AsyncSession,

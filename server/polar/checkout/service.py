@@ -287,8 +287,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
-            discount = await discount_service.get_by_id_and_organization(
-                session, checkout_create.discount_id, product.organization
+            discount = await discount_service.get_by_id_and_product(
+                session, checkout_create.discount_id, product
             )
             if discount is None:
                 raise PolarRequestValidationError(
@@ -1201,8 +1201,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         if isinstance(checkout_update, CheckoutUpdate):
             if checkout_update.discount_id is not None:
-                discount = await discount_service.get_by_id_and_organization(
-                    session, checkout_update.discount_id, checkout.product.organization
+                discount = await discount_service.get_by_id_and_product(
+                    session, checkout_update.discount_id, checkout.product
                 )
                 if discount is None:
                     raise PolarRequestValidationError(
@@ -1224,10 +1224,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             and checkout.allow_discount_codes
         ):
             if checkout_update.discount_code is not None:
-                discount = await discount_service.get_by_code_and_organization(
+                discount = await discount_service.get_by_code_and_product(
                     session,
                     checkout_update.discount_code,
-                    checkout.product.organization,
+                    checkout.product,
                 )
                 if discount is None:
                     raise PolarRequestValidationError(

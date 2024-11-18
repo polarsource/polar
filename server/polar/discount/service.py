@@ -15,10 +15,18 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Discount, Organization, User, UserOrganization
+from polar.models import (
+    Discount,
+    DiscountProduct,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
+from polar.product.service.product import product as product_service
 
 from .schemas import DiscountCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
@@ -127,12 +135,32 @@ class DiscountService(ResourceServiceReader[Discount]):
                     ]
                 )
 
+        discount_products: list[DiscountProduct] = []
+        if discount_create.products:
+            for index, product_id in enumerate(discount_create.products):
+                product = await product_service.get_by_id_and_organization(
+                    session, product_id, organization
+                )
+                if product is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "products", index),
+                                "msg": "Product not found.",
+                                "input": product_id,
+                            }
+                        ]
+                    )
+                discount_products.append(DiscountProduct(product=product))
+
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
         discount = discount_model(
-            **discount_create.model_dump(exclude={"organization_id"}),
+            **discount_create.model_dump(exclude={"organization_id", "products"}),
             id=discount_id,
             organization=organization,
+            discount_products=discount_products,
             discount_redemptions=[],
             redemptions_count=0,
         )
@@ -202,7 +230,32 @@ class DiscountService(ResourceServiceReader[Discount]):
                         ]
                     )
 
-        for attr, value in discount_update.model_dump(exclude_unset=True).items():
+        if discount_update.products is not None:
+            nested = await session.begin_nested()
+            discount.discount_products = []
+            await session.flush()
+
+            for index, product_id in enumerate(discount_update.products):
+                product = await product_service.get_by_id_and_organization(
+                    session, product_id, discount.organization
+                )
+                if product is None:
+                    await nested.rollback()
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "products", index),
+                                "msg": "Product not found.",
+                                "input": product_id,
+                            }
+                        ]
+                    )
+                discount.discount_products.append(DiscountProduct(product=product))
+
+        for attr, value in discount_update.model_dump(
+            exclude_unset=True, exclude={"products"}
+        ).items():
             setattr(discount, attr, value)
 
         sensitive_fields = {
@@ -239,23 +292,26 @@ class DiscountService(ResourceServiceReader[Discount]):
         session.add(discount)
         return discount
 
-    async def get_by_id_and_organization(
+    async def get_by_id_and_product(
         self,
         session: AsyncSession,
         id: uuid.UUID,
-        organization: Organization,
+        product: Product,
         *,
         redeemable: bool = True,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.id == id,
-            Discount.organization_id == organization.id,
+            Discount.organization_id == product.organization_id,
             Discount.deleted_at.is_(None),
         )
         result = await session.execute(statement)
         discount = result.scalar_one_or_none()
 
         if discount is None:
+            return None
+
+        if len(discount.products) > 0 and product not in discount.products:
             return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
@@ -283,6 +339,26 @@ class DiscountService(ResourceServiceReader[Discount]):
             return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
+            return None
+
+        return discount
+
+    async def get_by_code_and_product(
+        self,
+        session: AsyncSession,
+        code: str,
+        product: Product,
+        *,
+        redeemable: bool = True,
+    ) -> Discount | None:
+        discount = await self.get_by_code_and_organization(
+            session, code, product.organization, redeemable=redeemable
+        )
+
+        if discount is None:
+            return None
+
+        if len(discount.products) > 0 and product not in discount.products:
             return None
 
         return discount

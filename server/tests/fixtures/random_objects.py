@@ -25,6 +25,7 @@ from polar.models import (
     CheckoutLink,
     CustomField,
     Discount,
+    DiscountProduct,
     ExternalOrganization,
     Order,
     Organization,
@@ -734,6 +735,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    products: list[Product] | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
 async def create_discount(
@@ -750,6 +752,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    products: list[Product] | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
     save_fixture: SaveFixture,
@@ -767,6 +770,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    products: list[Product] | None = None,
 ) -> Discount:
     model = type.get_model()
     custom_field = model(
@@ -779,6 +783,7 @@ async def create_discount(
         stripe_coupon_id=stripe_coupon_id,
         starts_at=starts_at,
         ends_at=ends_at,
+        discount_products=[],
         max_redemptions=max_redemptions,
         redemptions_count=0,
     )
@@ -790,6 +795,10 @@ async def create_discount(
     elif isinstance(custom_field, DiscountPercentage):
         assert basis_points is not None
         custom_field.basis_points = basis_points
+
+    if products is not None:
+        for product in products:
+            custom_field.discount_products.append(DiscountProduct(product=product))
 
     await save_fixture(custom_field)
     return custom_field

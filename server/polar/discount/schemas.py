@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge
-from pydantic import Discriminator, Field, Tag, TypeAdapter, model_validator
+from pydantic import UUID4, Discriminator, Field, Tag, TypeAdapter, model_validator
 
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -20,6 +20,7 @@ from polar.kit.schemas import (
 )
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
+from polar.product.schemas import ProductBase
 
 Name = Annotated[
     str,
@@ -141,6 +142,10 @@ BasisPoints = Annotated[
         le=10000,
     ),
 ]
+ProductsList = Annotated[
+    list[UUID4],
+    Field(description="List of product IDs the discount can be applied to."),
+]
 
 
 class DiscountCreateBase(MetadataInputMixin, Schema):
@@ -153,6 +158,8 @@ class DiscountCreateBase(MetadataInputMixin, Schema):
     max_redemptions: MaxRedemptions
 
     duration: DiscountDuration
+
+    products: ProductsList | None = None
 
     organization_id: OrganizationID | None = Field(
         default=None,
@@ -240,10 +247,18 @@ class DiscountUpdate(OptionalMetadataInputMixin, Schema):
     currency: Currency | None = None
     basis_points: BasisPoints | None = None
 
+    products: ProductsList | None = None
+
     @model_validator(mode="after")
     def validate_starts_at_ends_at(self) -> Self:
         _starts_at_ends_at_validator(self.starts_at, self.ends_at)
         return self
+
+
+class DiscountProduct(ProductBase):
+    """A product that a discount can be applied to."""
+
+    ...
 
 
 class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
@@ -272,6 +287,8 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     redemptions_count: int = Field(
         description="Number of times the discount has been redeemed."
     )
+
+    products: list[DiscountProduct]
 
     organization_id: OrganizationID
 

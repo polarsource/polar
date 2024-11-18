@@ -29,6 +29,19 @@ class TestCreateCheckoutLink:
             "/v1/checkout-links/",
             json={
                 "payment_processor": "stripe",
+                "product_id": str(product.id),
+            },
+        )
+
+        assert response.status_code == 401
+
+    async def test_anonymous_with_price(
+        self, client: AsyncClient, product: Product
+    ) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={
+                "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
             },
         )
@@ -37,6 +50,20 @@ class TestCreateCheckoutLink:
 
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={
+                "payment_processor": "stripe",
+                "product_id": str(product.id),
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope_with_price(
+        self, client: AsyncClient, product: Product
+    ) -> None:
         response = await client.post(
             "/v1/checkout-links/",
             json={
@@ -55,7 +82,7 @@ class TestCreateCheckoutLink:
             "/v1/checkout-links/",
             json={
                 "payment_processor": "stripe",
-                "product_price_id": str(product.prices[0].id),
+                "product_id": str(product.id),
             },
         )
 
@@ -65,6 +92,31 @@ class TestCreateCheckoutLink:
         assert "client_secret" in json
         assert json["client_secret"] in json["url"]
         assert "metadata" in json
+        assert json["product_price"] is None
+        assert json["product_price_id"] is None
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_valid_with_price(
+        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+    ) -> None:
+        price_id = product.prices[0].id
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={
+                "payment_processor": "stripe",
+                "product_price_id": str(price_id),
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert "client_secret" in json
+        assert json["client_secret"] in json["url"]
+        assert "metadata" in json
+        assert json["product_price"] is not None
+        assert json["product_price"]["id"] == str(price_id)
+        assert json["product_price_id"] == str(price_id)
 
 
 @pytest.mark.asyncio

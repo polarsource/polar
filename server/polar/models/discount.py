@@ -16,6 +16,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.dialects.postgresql import CITEXT
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import (
     Mapped,
     column_property,
@@ -30,7 +31,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
-    from . import DiscountRedemption, Organization
+    from . import DiscountProduct, DiscountRedemption, Organization, Product
 
 
 def get_expires_at() -> datetime:
@@ -90,6 +91,18 @@ class Discount(MetadataMixin, RecordModel):
 
     discount_redemptions: Mapped[list["DiscountRedemption"]] = relationship(
         "DiscountRedemption", back_populates="discount", lazy="raise"
+    )
+
+    discount_products: Mapped[list["DiscountProduct"]] = relationship(
+        "DiscountProduct",
+        back_populates="discount",
+        cascade="all, delete-orphan",
+        # Products are almost always needed, so eager loading makes sense
+        lazy="selectin",
+    )
+
+    products: AssociationProxy[list["Product"]] = association_proxy(
+        "discount_products", "product"
     )
 
     @declared_attr

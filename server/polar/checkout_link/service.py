@@ -228,6 +228,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         price_id = checkout_link_update.product_price_id
         if not price_id:
             checkout_link.product_price = None
+            checkout_link.product_price_id = None
             session.add(checkout_link)
             return checkout_link
 

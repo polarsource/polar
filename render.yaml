@@ -53,12 +53,12 @@ services:
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: port
       - key: POLAR_REDIS_DB
         value: 0
@@ -71,7 +71,7 @@ services:
 
   # Worker
   - type: worker
-    name: worker-new
+    name: worker
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
@@ -107,12 +107,12 @@ services:
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: port
       - key: POLAR_REDIS_DB
         value: 0
@@ -123,7 +123,7 @@ services:
       - fromGroup: logfire-worker
 
   - type: redis
-    name: redis-new
+    name: redis
     plan: standard
     region: ohio
     maxmemoryPolicy: noeviction
@@ -180,12 +180,12 @@ services:
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: port
       - key: POLAR_REDIS_DB
         value: 1
@@ -197,7 +197,7 @@ services:
 
   # Worker
   - type: worker
-    name: worker-default-sandbox-new
+    name: worker-sandbox
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest
@@ -231,12 +231,12 @@ services:
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: redis-new
+          name: redis
           property: port
       - key: POLAR_REDIS_DB
         value: 1

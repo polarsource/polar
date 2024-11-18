@@ -53,12 +53,12 @@ services:
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: redis
+          name: redis-new
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: redis
+          name: redis-new
           property: port
       - key: POLAR_REDIS_DB
         value: 0
@@ -239,12 +239,12 @@ services:
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
-          name: redis
+          name: redis-new
           property: host
       - key: POLAR_REDIS_PORT
         fromService:
           type: redis
-          name: redis
+          name: redis-new
           property: port
       - key: POLAR_REDIS_DB
         value: 1

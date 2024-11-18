@@ -172,6 +172,86 @@ class TestUpdate:
 
         assert updated_checkout_link.user_metadata == {"key": "updated"}
 
+    async def test_change_label(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        checkout_link: CheckoutLink,
+    ) -> None:
+        updated_checkout_link = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(
+                label="Hello world link",
+            ),
+            auth_subject,
+        )
+
+        assert updated_checkout_link.label == "Hello world link"
+
+    async def test_update_unset_price(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        checkout_link: CheckoutLink,
+    ) -> None:
+        assert checkout_link.product_price
+        updated_checkout_link = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(product_price_id=None),
+            auth_subject,
+        )
+
+        assert updated_checkout_link.product_price is None
+        assert updated_checkout_link.product_price_id is None
+
+    async def test_change_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_monthly_and_yearly: Product,
+    ) -> None:
+        product = product_recurring_monthly_and_yearly
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            product=product,
+            price=product.prices[1],
+        )
+        new_price_id = product.prices[1].id
+        updated_checkout_link = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(product_price_id=new_price_id),
+            auth_subject,
+        )
+
+        assert updated_checkout_link.product_price_id == new_price_id
+
+    async def test_deny_change_product_via_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_one_time: Product,
+        product_recurring_monthly_and_yearly: Product,
+    ) -> None:
+        product = product_recurring_monthly_and_yearly
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            product=product,
+            price=product.prices[1],
+        )
+        new_price_id = product_one_time.prices[0].id
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.update(
+                session,
+                checkout_link,
+                CheckoutLinkUpdate(product_price_id=new_price_id),
+                auth_subject,
+            )
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

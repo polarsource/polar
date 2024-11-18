@@ -4,7 +4,7 @@ from httpx import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
-from polar.models import CheckoutLink, Product, UserOrganization
+from polar.models import CheckoutLink, Product, ProductPrice, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout_link
@@ -185,6 +185,25 @@ class TestDeleteCheckoutLink:
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestRedirect:
+    def client_secret_from_redirect_url(self, url: str) -> str:
+        client_secret = url.split("/")[-1]
+        return client_secret
+
+    async def assert_checkout_price(
+        self, client: AsyncClient, link: CheckoutLink, price: ProductPrice
+    ) -> None:
+        response = await client.get(f"/v1/checkout-links/{link.client_secret}/redirect")
+        assert response.status_code == 307
+        client_secret = self.client_secret_from_redirect_url(
+            response.headers["location"]
+        )
+        assert CHECKOUT_CLIENT_SECRET_PREFIX in client_secret
+
+        response = await client.get(f"/v1/checkouts/custom/client/{client_secret}")
+        assert response.status_code == 200
+        checkout = response.json()
+        assert checkout.get("product_price_id") == str(price.id)
+
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get("/v1/checkout-links/not-existing/redirect")
 
@@ -199,3 +218,50 @@ class TestRedirect:
 
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_valid_with_explicit_price(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product_recurring_monthly_and_yearly: Product,
+    ) -> None:
+        product = product_recurring_monthly_and_yearly
+        second_price = product.prices[1]
+        checkout_link = await create_checkout_link(
+            save_fixture, product=product, price=second_price
+        )
+        await self.assert_checkout_price(client, checkout_link, second_price)
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_no_explicit_price_set(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product_recurring_monthly_and_yearly: Product,
+    ) -> None:
+        product = product_recurring_monthly_and_yearly
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            product=product,
+        )
+        await self.assert_checkout_price(client, checkout_link, product.prices[0])
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_archived_price_set(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product_recurring_monthly_and_yearly: Product,
+    ) -> None:
+        product = product_recurring_monthly_and_yearly
+        first_price = product.prices[0]
+        second_price = product.prices[1]
+        checkout_link = await create_checkout_link(
+            save_fixture, product=product, price=product.prices[0]
+        )
+
+        await self.assert_checkout_price(client, checkout_link, first_price)
+        first_price.is_archived = True
+        await save_fixture(first_price)
+        await self.assert_checkout_price(client, checkout_link, second_price)

@@ -30,7 +30,7 @@ class CheckoutLink(MetadataMixin, RecordModel):
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
     )
 
-    product_price_id: Mapped[UUID] = mapped_column(
+    product_price_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=True
     )
 
@@ -48,14 +48,15 @@ class CheckoutLink(MetadataMixin, RecordModel):
     def checkout_price(self) -> ProductPrice:
         # Default to the first price unless one is explicitly set
         price = self.product_price
-        if price.is_archived:
-            # Ensure we fallback to the first active
-            price = None
+        if price and not price.is_archived:
+            return price
 
-        if not price:
-            price = self.product.prices[0]
+        for inner_price in self.product.prices:
+            if not inner_price.is_archived:
+                return inner_price
 
-        return price
+        # Going to return the first archived
+        return self.product.prices[0]
 
     @property
     def success_url(self) -> str | None:

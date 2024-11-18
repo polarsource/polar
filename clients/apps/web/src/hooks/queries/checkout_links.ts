@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { api, queryClient } from '@/utils/api'
 import {
+  CheckoutLink,
   CheckoutLinksApiCreateRequest,
   CheckoutLinksApiListRequest,
   CheckoutLinksApiUpdateRequest,
@@ -92,5 +93,21 @@ export const useUpdateCheckoutLink = () =>
           }
         },
       )
+    },
+  })
+
+export const useDeleteCheckoutLink = () =>
+  useMutation({
+    mutationFn: (checkoutLink: CheckoutLink) => {
+      return api.checkoutLinks.delete({
+        id: checkoutLink.id,
+      })
+    },
+    onSuccess: (_result, variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['checkout_links', {
+          productId: variables.product.id
+        }],
+      })
     },
   })

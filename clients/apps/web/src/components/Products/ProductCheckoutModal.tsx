@@ -284,7 +284,11 @@ export const ProductCheckoutModal = ({
 
   const onDelete = async () => {
     if (selectedLink) {
+      const wasLast = (checkoutLinks?.items?.length || 0) == 1
       await deleteCheckoutLink(selectedLink)
+      if (wasLast) {
+        showCreateForm()
+      }
     }
   }
 

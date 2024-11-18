@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
@@ -78,8 +79,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Discount | None:
-        statement = self._get_readable_discount_statement(auth_subject).where(
-            Discount.id == id
+        statement = (
+            self._get_readable_discount_statement(auth_subject)
+            .where(Discount.id == id)
+            .options(joinedload(Discount.organization))
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -143,20 +146,86 @@ class DiscountService(ResourceServiceReader[Discount]):
         return discount
 
     async def update(
-        self, session: AsyncSession, discount: Discount, discount_update: DiscountUpdate
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        discount_update: DiscountUpdate,
     ) -> Discount:
         previous_name = discount.name
+
+        if (
+            discount_update.duration is not None
+            and discount_update.duration != discount.duration
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "duration"),
+                        "msg": "Duration cannot be changed.",
+                        "input": discount_update.duration,
+                    }
+                ]
+            )
+
+        if discount_update.type is not None and discount_update.type != discount.type:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "type"),
+                        "msg": "Type cannot be changed.",
+                        "input": discount_update.type,
+                    }
+                ]
+            )
+
+        if discount.redemptions_count > 0:
+            forbidden_fields = {"amount", "currency", "basis_points"}
+            for field in forbidden_fields:
+                discount_update_value = getattr(discount_update, field, None)
+                if (
+                    discount_update_value is not None
+                    and discount_update_value != getattr(discount, field, None)
+                ):
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", field),
+                                "msg": (
+                                    "This field cannot be changed because "
+                                    "the discount has already been redeemed."
+                                ),
+                                "input": getattr(discount, field),
+                            }
+                        ]
+                    )
 
         for attr, value in discount_update.model_dump(exclude_unset=True).items():
             setattr(discount, attr, value)
 
-        if previous_name != discount.name:
+        sensitive_fields = {
+            "starts_at",
+            "ends_at",
+            "max_redemptions",
+            "amount",
+            "currency",
+            "basis_points",
+            "duration_in_months",
+        }
+        if len(discount_update.model_fields_set.intersection(sensitive_fields)) > 0:
+            await stripe_service.delete_coupon(discount.stripe_coupon_id)
+            stripe_coupon = await stripe_service.create_coupon(
+                **discount.get_stripe_coupon_params()
+            )
+            discount.stripe_coupon_id = stripe_coupon.id
+        elif previous_name != discount.name:
             await stripe_service.update_coupon(
                 discount.stripe_coupon_id, name=discount.name
             )
 
         session.add(discount)
-
         await session.flush()
         await session.refresh(discount)
 

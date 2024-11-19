@@ -276,6 +276,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         modalContent={
           selectedDiscount ? (
             <UpdateDiscountModalContent
+              organization={organization}
               discount={selectedDiscount}
               onDiscountUpdated={() => setShowUpdateModal(false)}
               hideModal={() => setShowUpdateModal(false)}

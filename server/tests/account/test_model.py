@@ -27,7 +27,7 @@ class TestAccountFeeCalulations:
         self,
         session: AsyncSession,
         user: User,
-    ):
+    ) -> None:
         session.expunge_all()
         # 4% + 40c
         account = generate_account(
@@ -56,9 +56,9 @@ class TestAccountFeeCalulations:
         self,
         session: AsyncSession,
         user: User,
-    ):
+    ) -> None:
         session.expunge_all()
-        # 4% + 40c
+        # 3.49% + 35c
         account = generate_account(
             user,
             fee_basis_points=349,

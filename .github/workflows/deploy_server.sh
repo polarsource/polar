@@ -9,17 +9,17 @@ curl -X POST \
     --silent --show-error --fail-with-body \
     "https://api.render.com/deploy/srv-ci4r87h8g3ne0dmvvl60?key=${RENDER_DEPLOY_KEY_API}&imgURL=${IMG}"
 
-# Deploy worker-default
+# Deploy worker
 curl -X POST \
     --silent --show-error --fail-with-body \
-    "https://api.render.com/deploy/srv-cojpsb0cmk4c73c0pndg?key=${RENDER_DEPLOY_KEY_WORKER_DEFAULT}&imgURL=${IMG}"
+    "https://api.render.com/deploy/srv-csth45d6l47c73ekphf0?key=${RENDER_DEPLOY_KEY_WORKER}&imgURL=${IMG}"
 
 # Deploy api-sandbox
 curl -X POST \
     --silent --show-error --fail-with-body \
     "https://api.render.com/deploy/srv-crkocgbtq21c73ddsdbg?key=${RENDER_DEPLOY_KEY_API_SANDBOX}&imgURL=${IMG}"
 
-# Deploy worker-default-sandbox
+# Deploy worker-sandbox
 curl -X POST \
     --silent --show-error --fail-with-body \
-    "https://api.render.com/deploy/srv-crkocgbtq21c73ddsda0?key=${RENDER_DEPLOY_KEY_WORKER_DEFAULT_SANDBOX}&imgURL=${IMG}"
+    "https://api.render.com/deploy/srv-csth45d6l47c73ekphdg?key=${RENDER_DEPLOY_KEY_WORKER_SANDBOX}&imgURL=${IMG}"

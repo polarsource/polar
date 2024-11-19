@@ -17,7 +17,7 @@ export default async function Page({
 }: {
   params: { organization: string }
   searchParams: DataTableSearchParams & {
-    product_id?: string
+    product_id?: string[] | string
     product_price_type?: ProductPriceType
   }
 }) {
@@ -31,13 +31,18 @@ export default async function Page({
     { id: 'created_at', desc: true },
   ])
 
+  const productId = searchParams.product_id
+    ? Array.isArray(searchParams.product_id)
+      ? searchParams.product_id
+      : [searchParams.product_id]
+    : undefined
+
   return (
     <ClientPage
       organization={organization}
       pagination={pagination}
       sorting={sorting}
-      productId={searchParams.product_id}
-      productPriceType={searchParams.product_price_type}
+      productId={productId}
     />
   )
 }

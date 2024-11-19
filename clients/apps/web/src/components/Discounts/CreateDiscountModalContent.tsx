@@ -80,7 +80,7 @@ const CreateDiscountModalContent = ({
             className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(onSubmit)}
           >
-            <DiscountForm update={false} />
+            <DiscountForm organization={organization} update={false} />
             {errors.root && (
               <p className="text-destructive-foreground text-sm">
                 {errors.root.message}

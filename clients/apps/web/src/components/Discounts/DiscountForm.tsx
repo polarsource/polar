@@ -4,6 +4,7 @@ import {
   DiscountDuration,
   DiscountType,
   DiscountUpdate,
+  Organization,
 } from '@polar-sh/sdk'
 import {
   Accordion,
@@ -35,18 +36,21 @@ import {
 } from 'polarkit/components/ui/form'
 import React, { useCallback, useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
+import ProductSelect from '../Products/ProductSelect'
 
 interface DiscountFormProps {
+  organization: Organization
   update: boolean
   redemptionsCount?: number
 }
 
 const DiscountForm: React.FC<DiscountFormProps> = ({
+  organization,
   update,
   redemptionsCount,
 }) => {
   const { control, watch, setValue } = useFormContext<
-    DiscountCreate | DiscountUpdate
+    (DiscountCreate | DiscountUpdate) & { products: { id: string }[] }
   >()
   const type = watch('type') as DiscountType
   const duration = watch('duration') as DiscountDuration
@@ -322,6 +326,29 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
             Restrictions
           </AccordionTrigger>
           <AccordionContent className="flex flex-col gap-y-6">
+            <FormField
+              control={control}
+              name="products"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Products</FormLabel>
+                    <FormControl>
+                      <ProductSelect
+                        organization={organization}
+                        value={field.value || []}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      Only the selected products will be eligible for the
+                      discount.
+                    </FormDescription>
+                  </FormItem>
+                )
+              }}
+            />
             <FormField
               control={control}
               name="starts_at"

@@ -3,6 +3,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import {
   Discount,
   DiscountUpdate,
+  Organization,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
@@ -13,12 +14,14 @@ import { useForm } from 'react-hook-form'
 import DiscountForm from './DiscountForm'
 
 interface UpdateDiscountModalContentProps {
+  organization: Organization
   discount: Discount
   onDiscountUpdated: (discount: Discount) => void
   hideModal: () => void
 }
 
 const UpdateDiscountModalContent = ({
+  organization,
   discount,
   onDiscountUpdated,
   hideModal,
@@ -29,6 +32,7 @@ const UpdateDiscountModalContent = ({
   const form = useForm<DiscountUpdate>({
     defaultValues: {
       ...discount,
+      products: discount.products.map((product) => product.id),
     },
   })
 
@@ -79,6 +83,7 @@ const UpdateDiscountModalContent = ({
             onSubmit={handleSubmit(onSubmit)}
           >
             <DiscountForm
+              organization={organization}
               update={true}
               redemptionsCount={discount.redemptions_count}
             />

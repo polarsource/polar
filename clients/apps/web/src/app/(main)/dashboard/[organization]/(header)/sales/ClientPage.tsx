@@ -2,10 +2,7 @@
 
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import ProductSelect, {
-  ProductSelectType,
-} from '@/components/Products/ProductSelect'
-import { useProductsByPriceType } from '@/hooks/products'
+import ProductSelect from '@/components/Products/ProductSelect'
 import { useCustomFields } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import {
@@ -14,13 +11,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import {
-  Order,
-  OrderUser,
-  Organization,
-  Product,
-  ProductPriceType,
-} from '@polar-sh/sdk'
+import { Order, OrderUser, Organization, Product } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -30,14 +21,13 @@ import {
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
-import React, { useMemo } from 'react'
+import React from 'react'
 
 interface ClientPageProps {
   organization: Organization
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  productId?: string
-  productPriceType?: ProductPriceType
+  productId?: string[]
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -45,22 +35,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
   pagination,
   sorting,
   productId,
-  productPriceType,
 }) => {
-  const productsByPriceType = useProductsByPriceType(organization.id)
-
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
-    productId?: string,
-    productPriceType?: ProductPriceType,
+    productId?: string[],
   ) => {
     const params = serializeSearchParams(pagination, sorting)
 
     if (productId) {
-      params.append('product_id', productId)
-    } else if (productPriceType) {
-      params.append('product_price_type', productPriceType)
+      productId.forEach((id) => params.append('product_id', id))
     }
 
     return params
@@ -83,7 +67,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         updatedPagination,
         sorting,
         productId,
-        productPriceType,
       )}`,
     )
   }
@@ -103,28 +86,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
         pagination,
         updatedSorting,
         productId,
-        productPriceType,
       )}`,
     )
   }
 
-  const productSelectValue = useMemo(() => {
-    if (productId) {
-      return { productId }
-    } else if (productPriceType) {
-      return { productPriceType }
-    }
-    return undefined
-  }, [productId, productPriceType])
-  const onProductSelect = (value: ProductSelectType | undefined) => {
+  const onProductSelect = (value: string[]) => {
     router.push(
       `/dashboard/${organization.slug}/sales?${getSearchParams(
         pagination,
         sorting,
-        value && 'productId' in value ? value.productId : undefined,
-        value && 'productPriceType' in value
-          ? value.productPriceType
-          : undefined,
+        value,
       )}`,
     )
   }
@@ -132,7 +103,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     productId,
-    productPriceType,
   })
 
   const orders = ordersHook.data?.items || []
@@ -225,9 +195,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex items-center justify-between gap-2">
           <div className="w-auto">
             <ProductSelect
-              productsByPriceType={productsByPriceType}
-              value={productSelectValue}
+              organization={organization}
+              value={productId || []}
               onChange={onProductSelect}
+              className="w-[300px]"
             />
           </div>
         </div>

@@ -4,10 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
-import ProductSelect, {
-  ProductSelectType,
-} from '@/components/Products/ProductSelect'
-import { useProductsByPriceType } from '@/hooks/products'
+import ProductSelect from '@/components/Products/ProductSelect'
 import { useMetrics } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import {
@@ -15,7 +12,6 @@ import {
   MetricPeriod,
   MetricsLimits,
   Organization,
-  ProductPriceType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
@@ -27,7 +23,6 @@ export default function ClientPage({
   endDate,
   interval,
   productId,
-  productPriceType,
   focus,
 }: {
   organization: Organization
@@ -35,12 +30,10 @@ export default function ClientPage({
   startDate: Date
   endDate: Date
   interval: Interval
-  productId?: string
-  productPriceType?: ProductPriceType
+  productId?: string[]
   focus: keyof Omit<MetricPeriod, 'timestamp'>
 }) {
   const router = useRouter()
-  const productsByPriceType = useProductsByPriceType(organization.id)
 
   const minDate = useMemo(() => fromISODate(limits.min_date), [limits])
   const maxDaysRange = useMemo(
@@ -53,8 +46,7 @@ export default function ClientPage({
     endDate,
     interval,
     organizationId: organization.id,
-    productId,
-    productPriceType,
+    ...(productId ? { productId } : {}),
   })
 
   const dateRange = useMemo(
@@ -66,8 +58,7 @@ export default function ClientPage({
     dateRange: { from: Date; to: Date },
     interval: Interval,
     focus: keyof Omit<MetricPeriod, 'timestamp'>,
-    productId?: string,
-    productPriceType?: ProductPriceType,
+    productId?: string[],
   ) => {
     const params = new URLSearchParams()
     params.append('start_date', toISODate(dateRange.from))
@@ -76,9 +67,7 @@ export default function ClientPage({
     params.append('focus', focus)
 
     if (productId) {
-      params.append('product_id', productId)
-    } else if (productPriceType) {
-      params.append('product_price_type', productPriceType)
+      productId.forEach((id) => params.append('product_id', id))
     }
 
     return params
@@ -91,54 +80,27 @@ export default function ClientPage({
         interval,
         focus,
         productId,
-        productPriceType,
       )
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
-    [
-      router,
-      organization,
-      startDate,
-      endDate,
-      focus,
-      productId,
-      productPriceType,
-    ],
+    [router, organization, startDate, endDate, focus, productId],
   )
 
   const onDateChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const params = getSearchParams(
-        dateRange,
-        interval,
-        focus,
-        productId,
-        productPriceType,
-      )
+      const params = getSearchParams(dateRange, interval, focus, productId)
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
-    [router, organization, interval, focus, productId, productPriceType],
+    [router, organization, interval, focus, productId],
   )
 
-  const productSelectValue = useMemo(() => {
-    if (productId) {
-      return { productId }
-    } else if (productPriceType) {
-      return { productPriceType }
-    }
-    return undefined
-  }, [productId, productPriceType])
-
   const onProductSelect = useCallback(
-    (value: ProductSelectType | undefined) => {
+    (value: string[]) => {
       const params = getSearchParams(
         { from: startDate, to: endDate },
         interval,
         focus,
-        value && 'productId' in value ? value.productId : undefined,
-        value && 'productPriceType' in value
-          ? value.productPriceType
-          : undefined,
+        value,
       )
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
@@ -152,19 +114,10 @@ export default function ClientPage({
         interval,
         focus,
         productId,
-        productPriceType,
       )
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
-    [
-      router,
-      organization,
-      startDate,
-      endDate,
-      interval,
-      productId,
-      productPriceType,
-    ],
+    [router, organization, startDate, endDate, interval, productId],
   )
 
   return (
@@ -185,9 +138,10 @@ export default function ClientPage({
           </div>
           <div className="w-full lg:w-1/6">
             <ProductSelect
-              productsByPriceType={productsByPriceType}
-              value={productSelectValue}
+              organization={organization}
+              value={productId || []}
               onChange={onProductSelect}
+              className="w-[300px]"
             />
           </div>
         </div>

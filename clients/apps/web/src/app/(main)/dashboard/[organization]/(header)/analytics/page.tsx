@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Interval, MetricPeriod, ProductPriceType } from '@polar-sh/sdk'
+import { Interval, MetricPeriod } from '@polar-sh/sdk'
 import {
   addDays,
   endOfMonth,
@@ -22,8 +22,7 @@ export default async function Page({
     start_date?: string
     end_date?: string
     interval?: Interval
-    product_id?: string
-    product_price_type?: ProductPriceType
+    product_id?: string | string[]
     focus?: keyof Omit<MetricPeriod, 'timestamp'>
   }
 }) {
@@ -40,11 +39,19 @@ export default async function Page({
 
   const interval = searchParams.interval || defaultInterval
 
+  const { product_id, ...restSearchParams } = searchParams
+  const productId = product_id
+    ? Array.isArray(product_id)
+      ? product_id
+      : [product_id]
+    : undefined
+
   if (!Object.values(Interval).includes(interval)) {
     const urlSearchParams = new URLSearchParams({
-      ...searchParams,
+      ...restSearchParams,
       interval: defaultInterval,
     })
+    productId?.forEach((id) => urlSearchParams.append('product_id', id))
     redirect(
       `/dashboard/${organization.slug}/analytics?${urlSearchParams}`,
       RedirectType.replace,
@@ -64,10 +71,11 @@ export default async function Page({
 
   if (startDate < minDate || endDate > maxDate) {
     const urlSearchParams = new URLSearchParams({
-      ...searchParams,
+      ...restSearchParams,
       start_date: toISODate(max([minDate, startDate])),
       end_date: toISODate(min([endDate, maxDate])),
     })
+    productId?.forEach((id) => urlSearchParams.append('product_id', id))
     redirect(
       `/dashboard/${organization.slug}/analytics?${urlSearchParams}`,
       RedirectType.replace,
@@ -83,8 +91,7 @@ export default async function Page({
       startDate={startDate}
       endDate={endDate}
       interval={interval}
-      productId={searchParams.product_id}
-      productPriceType={searchParams.product_price_type}
+      productId={productId}
       focus={focus}
     />
   )

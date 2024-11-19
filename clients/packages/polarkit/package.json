@@ -24,6 +24,7 @@
     "./components/ui/atoms/tabs": "./src/components/ui/atoms/Tabs.tsx",
     "./components/ui/atoms/textarea": "./src/components/ui/atoms/TextArea.tsx",
     "./components/ui/calendar": "./src/components/ui/calendar.tsx",
+    "./components/ui/command": "./src/components/ui/command.tsx",
     "./components/ui/alert-dialog": "./src/components/ui/alert-dialog.tsx",
     "./components/ui/card": "./src/components/ui/card.tsx",
     "./components/ui/checkbox": "./src/components/ui/checkbox.tsx",

@@ -422,7 +422,7 @@ const BaseCheckoutForm = ({
                 </>
               )}
               {checkout.allow_discount_codes &&
-                !checkout.is_free_product_price && (
+                checkout.is_discount_applicable && (
                   <FormField
                     control={control}
                     name="discount_code"

@@ -131,6 +131,20 @@ async def account_processor_fees(
     )
 
 
+@pytest_asyncio.fixture
+async def account_custom_fees(
+    save_fixture: SaveFixture, organization: Organization, user: User
+) -> Account:
+    return await create_account(
+        save_fixture,
+        organization,
+        user,
+        processor_fees_applicable=True,
+        fee_basis_points=389,
+        fee_fixed=35,
+    )
+
+
 @pytest.mark.asyncio
 class TestCreateFeesReversalBalances:
     async def test_pledge(
@@ -228,6 +242,61 @@ class TestCreateFeesReversalBalances:
         assert reversal_outgoing.incurred_by_transaction == incoming
 
         assert reversal_incoming.amount == 440
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+        # Subscription fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
+
+        assert reversal_outgoing.amount == -50
+        assert reversal_outgoing.account == incoming.account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.subscription
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 50
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+    async def test_subscription_with_custom_fees(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account_custom_fees: Account,
+        transaction_order_subscription: Order,
+    ) -> None:
+        balance_transactions = await create_balance_transactions(
+            save_fixture,
+            account=account_custom_fees,
+            order=transaction_order_subscription,
+        )
+
+        # then
+        session.expunge_all()
+
+        balance_transactions = await load_balance_transactions(
+            session, balance_transactions
+        )
+        outgoing, incoming = balance_transactions
+
+        fees_reversal_balances = (
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
+        )
+
+        assert len(fees_reversal_balances) == 2
+
+        # Payment fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
+
+        assert reversal_outgoing.amount == -423
+        assert reversal_outgoing.account == incoming.account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 423
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
         assert reversal_incoming.incurred_by_transaction == outgoing

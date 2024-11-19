@@ -7,12 +7,14 @@ export const Section = ({
   description,
   children,
   className,
+  cta,
 }: {
   icon?: React.ReactNode
   title: string
   description?: string
   children: React.ReactNode
   className?: string
+  cta?: React.ReactNode
 }) => {
   return (
     <div
@@ -21,7 +23,12 @@ export const Section = ({
         className,
       )}
     >
-      <SectionDescription title={title} description={description} icon={icon} />
+      <SectionDescription
+        title={title}
+        description={description}
+        icon={icon}
+        cta={cta}
+      />
       {children}
     </div>
   )
@@ -31,10 +38,12 @@ const SectionDescription = ({
   icon,
   title,
   description,
+  cta,
 }: {
   icon?: React.ReactNode
   title: string
   description?: string
+  cta?: React.ReactNode
 }) => {
   return (
     <div className="flex w-full flex-col gap-y-6 md:max-w-96">
@@ -46,6 +55,7 @@ const SectionDescription = ({
             {description}
           </p>
         )}
+        {cta && <div className="flex flex-row gap-x-2">{cta}</div>}
       </div>
     </div>
   )

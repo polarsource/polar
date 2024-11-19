@@ -191,7 +191,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <DashboardBody>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-end gap-2">
-          <Button type="button" onClick={() => setShowNewModal(true)}>
+          <Button
+            wrapperClassNames="flex flex-row gap-x-2"
+            type="button"
+            onClick={() => setShowNewModal(true)}
+          >
             <AddOutlined className="h-4 w-4" />
             <span>New Custom Field</span>
           </Button>

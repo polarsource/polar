@@ -56,7 +56,7 @@ export const useLicenseKeyDeactivation = (licenseKeyId: string) =>
 
 export const useOrganizationLicenseKeys = ({
   organizationId,
-  benefitIds,
+  benefitId,
   page,
   limit,
 }: LicenseKeysApiListRequest) =>
@@ -65,12 +65,12 @@ export const useOrganizationLicenseKeys = ({
       'license_keys',
       'organization',
       organizationId,
-      { page, limit, benefitIds },
+      { page, limit, benefitId },
     ],
     queryFn: () =>
       api.licenseKeys.list({
         organizationId,
-        benefitIds,
+        benefitId,
         page,
         limit,
       }),

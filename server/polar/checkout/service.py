@@ -53,7 +53,10 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.product_price import ProductPriceAmountType, ProductPriceFree
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceFree,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -287,6 +290,17 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
+            if price.amount_type != ProductPriceAmountType.fixed:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "discount_id"),
+                            "msg": "Discounts are only applicable to fixed prices.",
+                            "input": checkout_create.discount_id,
+                        }
+                    ]
+                )
             discount = await discount_service.get_by_id_and_product(
                 session, checkout_create.discount_id, product
             )
@@ -1201,6 +1215,17 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         if isinstance(checkout_update, CheckoutUpdate):
             if checkout_update.discount_id is not None:
+                if not checkout.is_discount_applicable:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "discount_id"),
+                                "msg": "Discounts are only applicable to fixed prices.",
+                                "input": checkout_update.discount_id,
+                            }
+                        ]
+                    )
                 discount = await discount_service.get_by_id_and_product(
                     session, checkout_update.discount_id, checkout.product
                 )
@@ -1224,6 +1249,17 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             and checkout.allow_discount_codes
         ):
             if checkout_update.discount_code is not None:
+                if not checkout.is_discount_applicable:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "discount_code"),
+                                "msg": "Discounts are only applicable to fixed prices.",
+                                "input": checkout_update.discount_code,
+                            }
+                        ]
+                    )
                 discount = await discount_service.get_by_code_and_product(
                     session,
                     checkout_update.discount_code,

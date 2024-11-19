@@ -233,6 +233,12 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         description="ID of the discount applied to the checkout."
     )
     allow_discount_codes: bool = Field(description=_allow_discount_codes_description)
+    is_discount_applicable: bool = Field(
+        description=(
+            "Whether the discount is applicable to the checkout. "
+            "Typically, free and custom prices are not discountable."
+        )
+    )
     is_free_product_price: bool = Field(
         description="Whether the product price is free, regardless of discounts."
     )

@@ -1,5 +1,4 @@
 import datetime
-import math
 from uuid import UUID
 
 import structlog
@@ -118,8 +117,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         fees_balances: list[tuple[Transaction, Transaction]] = []
 
         # Payment fee
-        fee_percent, fee_fixed = account.platform_fee
-        fee_amount = math.floor(total_amount * (fee_percent / 100) + fee_fixed)
+        fee_amount = account.calculate_fee_in_cents(total_amount)
         fee_balances = await balance_transaction_service.create_reversal_balance(
             session,
             balance_transactions=balance_transactions,

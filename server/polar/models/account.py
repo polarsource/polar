@@ -1,5 +1,6 @@
+import math
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
@@ -14,6 +15,11 @@ from polar.kit.extensions.sqlalchemy import StringEnum
 if TYPE_CHECKING:
     from .organization import Organization
     from .user import User
+
+
+FeeBasisPoints: TypeAlias = int
+FeeFixedCents: TypeAlias = int
+Fees: TypeAlias = tuple[FeeBasisPoints, FeeFixedCents]
 
 
 class Account(RecordModel):
@@ -108,13 +114,18 @@ class Account(RecordModel):
         return associations_names
 
     @property
-    def platform_fee(self) -> tuple[int, int]:
-        percent = self._platform_fee_percent
-        if percent is None:
-            percent = settings.PLATFORM_FEE_PERCENT
+    def platform_fee(self) -> Fees:
+        basis_points = self._platform_fee_percent
+        if basis_points is None:
+            basis_points = settings.PLATFORM_FEE_BASIS_POINTS
 
         fixed = self._platform_fee_fixed
         if fixed is None:
             fixed = settings.PLATFORM_FEE_FIXED
 
-        return percent, fixed
+        return (basis_points, fixed)
+
+    def calculate_fee_in_cents(self, amount_in_cents: int) -> int:
+        basis_points, fixed = self.platform_fee
+        fee_in_cents = math.floor((amount_in_cents * (basis_points / 10_000)) + fixed)
+        return fee_in_cents

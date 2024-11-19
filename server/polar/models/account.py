@@ -127,5 +127,10 @@ class Account(RecordModel):
 
     def calculate_fee_in_cents(self, amount_in_cents: int) -> int:
         basis_points, fixed = self.platform_fee
-        fee_in_cents = math.floor((amount_in_cents * (basis_points / 10_000)) + fixed)
-        return fee_in_cents
+        fee_in_cents = (amount_in_cents * (basis_points / 10_000)) + fixed
+        # Apply same logic as Stripe fee rounding
+        return (
+            math.ceil(fee_in_cents)
+            if fee_in_cents - int(fee_in_cents) >= 0.5
+            else math.floor(fee_in_cents)
+        )

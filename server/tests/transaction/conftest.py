@@ -79,6 +79,8 @@ async def create_account(
     currency: str = "usd",
     account_type: AccountType = AccountType.stripe,
     processor_fees_applicable: bool = False,
+    fee_basis_points: int | None = None,
+    fee_fixed: int | None = None,
 ) -> Account:
     account = Account(
         status=Account.Status.ACTIVE,
@@ -90,6 +92,8 @@ async def create_account(
         is_charges_enabled=True,
         is_payouts_enabled=True,
         processor_fees_applicable=processor_fees_applicable,
+        _platform_fee_percent=fee_basis_points,
+        _platform_fee_fixed=fee_fixed,
     )
     await save_fixture(account)
     organization.account = account

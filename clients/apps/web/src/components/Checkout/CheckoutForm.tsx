@@ -725,8 +725,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               boxShadow: focusBoxShadow,
             },
             '.Tab': {
-              backgroundColor: 'transparent',
-              borderColor: theme === 'dark' ? '#353641' : '#EEE',
+              backgroundColor: theme === 'dark' ? 'rgb(21 22 25)' : 'white',
+              borderColor: theme === 'dark' ? 'rgb(28, 29, 33)' : '#EEE',
             },
             '.Tab--selected': {
               backgroundColor: 'rgb(51, 129, 255)',

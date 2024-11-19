@@ -32,7 +32,7 @@ from polar.kit.utils import utc_now
 from .discount import Discount
 from .organization import Organization
 from .product import Product
-from .product_price import ProductPrice, ProductPriceFree
+from .product_price import ProductPrice, ProductPriceFixed, ProductPriceFree
 from .subscription import Subscription
 from .user import User
 
@@ -192,6 +192,10 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if subtotal_amount is None:
             return None
         return subtotal_amount + (self.tax_amount or 0)
+
+    @property
+    def is_discount_applicable(self) -> bool:
+        return isinstance(self.product_price, ProductPriceFixed)
 
     @property
     def is_free_product_price(self) -> bool:

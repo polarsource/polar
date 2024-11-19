@@ -432,6 +432,32 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_invalid_not_applicable_discount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time_custom_price: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        price = product_one_time_custom_price.prices[0]
+        assert isinstance(price, ProductPriceCustom)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    discount_id=discount_fixed_once.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_invalid_paid_subscription(
         self,
         save_fixture: SaveFixture,
@@ -1258,6 +1284,32 @@ class TestUpdate:
                 CheckoutUpdatePublic(
                     discount_code="invalid",
                 ),
+            )
+
+    async def test_invalid_discount_id_not_applicable(
+        self,
+        session: AsyncSession,
+        checkout_one_time_custom: Checkout,
+        discount_fixed_once: Discount,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_custom,
+                CheckoutUpdate(discount_id=discount_fixed_once.id),
+            )
+
+    async def test_invalid_discount_code_not_applicable(
+        self,
+        session: AsyncSession,
+        checkout_one_time_custom: Checkout,
+        discount_fixed_once: Discount,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_custom,
+                CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
 
     async def test_valid_price_fixed_change(

@@ -5198,7 +5198,7 @@ export interface CheckoutLinkPriceCreate {
      * @type {string}
      * @memberof CheckoutLinkPriceCreate
      */
-    label: string | null;
+    label?: string | null;
     /**
      * 
      * @type {string}
@@ -5326,7 +5326,7 @@ export interface CheckoutLinkProductCreate {
      * @type {string}
      * @memberof CheckoutLinkProductCreate
      */
-    label: string | null;
+    label?: string | null;
     /**
      * 
      * @type {string}
@@ -5591,6 +5591,12 @@ export interface CheckoutPublic {
      * @memberof CheckoutPublic
      */
     allow_discount_codes: boolean;
+    /**
+     * Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
+     * @type {boolean}
+     * @memberof CheckoutPublic
+     */
+    is_discount_applicable: boolean;
     /**
      * Whether the product price is free, regardless of discounts.
      * @type {boolean}
@@ -14293,6 +14299,12 @@ export interface PolarCheckoutSchemasCheckout {
      * @memberof PolarCheckoutSchemasCheckout
      */
     allow_discount_codes: boolean;
+    /**
+     * Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
+     * @type {boolean}
+     * @memberof PolarCheckoutSchemasCheckout
+     */
+    is_discount_applicable: boolean;
     /**
      * Whether the product price is free, regardless of discounts.
      * @type {boolean}

@@ -181,6 +181,7 @@ export const createCheckoutPreview = (
     tax_amount: null,
     subtotal_amount: amount,
     total_amount: amount,
+    is_discount_applicable: price.amount_type === 'fixed',
     is_free_product_price: price.amount_type === 'free',
     is_payment_required: amount > 0,
     is_payment_setup_required: price.type === 'recurring',

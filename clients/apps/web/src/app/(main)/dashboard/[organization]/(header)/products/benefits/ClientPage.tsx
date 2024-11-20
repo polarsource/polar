@@ -283,7 +283,7 @@ ${formattedDisplays}
         <p className="dark:text-polar-400 text-sm text-gray-600">
           Use this ID when{' '}
           <Link
-            href="/docs/ads"
+            href="/docs/benefits/ads"
             target="_blank"
             rel="noopener"
             className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"

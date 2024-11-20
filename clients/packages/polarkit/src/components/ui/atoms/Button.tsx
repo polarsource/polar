@@ -24,7 +24,7 @@ const buttonVariants = cva(
         default: 'h-8 px-4 py-1.5 rounded-full text-sm',
         sm: 'h-7 rounded-full px-3 py-1.5 text-xs',
         lg: 'h-10 rounded-full px-5 py-4 text-sm',
-        icon: 'flex items-center justify-center h-8 h-8 p-2 text-sm',
+        icon: 'flex items-center justify-center h-8 w-8 p-2 text-sm',
       },
     },
     defaultVariants: {

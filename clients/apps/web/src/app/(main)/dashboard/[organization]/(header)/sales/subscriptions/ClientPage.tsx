@@ -253,6 +253,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )
       },
     },
+    {
+      id: 'discount',
+      accessorKey: 'discount',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Discount" />
+      ),
+      cell: ({ row: { original: subscription } }) => (
+        <>{subscription.discount ? subscription.discount.name : '—'}</>
+      ),
+    },
     ...(customFields
       ? customFields.items.map<DataTableColumnDef<Subscription>>((field) => ({
           accessorKey: `custom_field_data.${field.slug}`,

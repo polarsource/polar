@@ -170,6 +170,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <>{formatCurrencyAndAmount(order.amount, order.currency)}</>
       ),
     },
+    {
+      accessorKey: 'discount',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Discount" />
+      ),
+      cell: ({ row: { original: order } }) => (
+        <>{order.discount ? order.discount.name : '—'}</>
+      ),
+    },
     ...(customFields
       ? customFields.items.map<DataTableColumnDef<Order>>((field) => ({
           accessorKey: `custom_field_data.${field.slug}`,

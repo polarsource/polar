@@ -3,7 +3,15 @@ from datetime import datetime
 from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge
-from pydantic import UUID4, Discriminator, Field, Tag, TypeAdapter, model_validator
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    Discriminator,
+    Field,
+    Tag,
+    TypeAdapter,
+    model_validator,
+)
 
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -33,8 +41,20 @@ Name = Annotated[
     ),
 ]
 
+
+def _code_validator(value: str | None) -> str | None:
+    if value is None:
+        return None
+    if not value.isalnum():
+        raise ValueError("Code must contain only alphanumeric characters.")
+    if not 3 <= len(value) <= 256:
+        raise ValueError("Code must be between 3 and 256 characters long.")
+    return value
+
+
 Code = Annotated[
     EmptyStrToNone,
+    AfterValidator(_code_validator),
     Field(
         default=None,
         description=(
@@ -43,9 +63,6 @@ Code = Annotated[
             "contain only alphanumeric characters."
             "If not provided, the discount can only be applied via the API."
         ),
-        min_length=3,
-        max_length=256,
-        pattern=r"^[a-zA-Z0-9]*$",
     ),
 ]
 
@@ -288,8 +305,6 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
         description="Number of times the discount has been redeemed."
     )
 
-    products: list[DiscountProduct]
-
     organization_id: OrganizationID
 
 
@@ -323,14 +338,38 @@ class DiscountPercentageBase(Schema):
     basis_points: int
 
 
-class DiscountFixedOnceForeverDuration(
+class DiscountFixedOnceForeverDurationBase(
     DiscountBase, DiscountFixedBase, DiscountOnceForeverDurationBase
+): ...
+
+
+class DiscountFixedRepeatDurationBase(
+    DiscountBase, DiscountFixedBase, DiscountRepeatDurationBase
+): ...
+
+
+class DiscountPercentageOnceForeverDurationBase(
+    DiscountBase, DiscountPercentageBase, DiscountOnceForeverDurationBase
+): ...
+
+
+class DiscountPercentageRepeatDurationBase(
+    DiscountBase, DiscountPercentageBase, DiscountRepeatDurationBase
+): ...
+
+
+class DiscountFullBase(DiscountBase):
+    products: list[DiscountProduct]
+
+
+class DiscountFixedOnceForeverDuration(
+    DiscountFullBase, DiscountFixedBase, DiscountOnceForeverDurationBase
 ):
     """Schema for a fixed amount discount that is applied once or forever."""
 
 
 class DiscountFixedRepeatDuration(
-    DiscountBase, DiscountFixedBase, DiscountRepeatDurationBase
+    DiscountFullBase, DiscountFixedBase, DiscountRepeatDurationBase
 ):
     """
     Schema for a fixed amount discount that is applied on every invoice
@@ -339,13 +378,13 @@ class DiscountFixedRepeatDuration(
 
 
 class DiscountPercentageOnceForeverDuration(
-    DiscountBase, DiscountPercentageBase, DiscountOnceForeverDurationBase
+    DiscountFullBase, DiscountPercentageBase, DiscountOnceForeverDurationBase
 ):
     """Schema for a percentage discount that is applied once or forever."""
 
 
 class DiscountPercentageRepeatDuration(
-    DiscountBase, DiscountPercentageBase, DiscountRepeatDurationBase
+    DiscountFullBase, DiscountPercentageBase, DiscountRepeatDurationBase
 ):
     """
     Schema for a percentage discount that is applied on every invoice
@@ -375,6 +414,15 @@ DiscountCreate = Annotated[
         DiscountPercentageOnceForeverDurationCreate, Tag("percentage.once_forever")
     ]
     | Annotated[DiscountPercentageRepeatDurationCreate, Tag("percentage.repeat")],
+    Discriminator(get_discriminator_value),
+]
+DiscountMinimal = Annotated[
+    Annotated[DiscountFixedOnceForeverDurationBase, Tag("fixed.once_forever")]
+    | Annotated[DiscountFixedRepeatDurationBase, Tag("fixed.repeat")]
+    | Annotated[
+        DiscountPercentageOnceForeverDurationBase, Tag("percentage.once_forever")
+    ]
+    | Annotated[DiscountPercentageRepeatDurationBase, Tag("percentage.repeat")],
     Discriminator(get_discriminator_value),
 ]
 Discount = Annotated[

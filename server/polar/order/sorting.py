@@ -11,6 +11,7 @@ class OrderSortProperty(StrEnum):
     amount = "amount"
     user = "user"
     product = "product"
+    discount = "discount"
     subscription = "subscription"
 
 

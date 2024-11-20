@@ -147,6 +147,7 @@ class SubscriptionSortProperty(StrEnum):
     current_period_end = "current_period_end"
     amount = "amount"
     product = "product"
+    discount = "discount"
 
 
 class SubscriptionService(ResourceServiceReader[Subscription]):
@@ -173,6 +174,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
                 ),
+                joinedload(Subscription.discount),
             )
 
         res = await session.execute(query)
@@ -185,6 +187,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
@@ -195,8 +198,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             Subscription.started_at.is_not(None)
         )
 
-        statement = statement.join(Subscription.user).join(
-            Subscription.price, isouter=True
+        statement = (
+            statement.join(Subscription.user)
+            .join(Subscription.price, isouter=True)
+            .join(Subscription.discount, isouter=True)
         )
 
         if organization_id is not None:
@@ -204,6 +209,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if product_id is not None:
             statement = statement.where(Product.id.in_(product_id))
+
+        if discount_id is not None:
+            statement = statement.where(Subscription.discount_id.in_(discount_id))
 
         if active is not None:
             if active:
@@ -265,6 +273,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
             if criterion == SubscriptionSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
+            if criterion == SubscriptionSortProperty.discount:
+                order_by_clauses.append(clause_function(Discount.name))
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
@@ -273,6 +283,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 selectinload(Product.attached_custom_fields),
             ),
             contains_eager(Subscription.price),
+            contains_eager(Subscription.discount),
             contains_eager(Subscription.user),
         )
 

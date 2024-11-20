@@ -47,6 +47,9 @@ async def list(
             "`one_time` will return orders corresponding to one-time purchases."
         ),
     ),
+    discount_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    ),
     user_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="UserID Filter", description="Filter by customer's user ID."
     ),
@@ -59,6 +62,7 @@ async def list(
         organization_id=organization_id,
         product_id=product_id,
         product_price_type=product_price_type,
+        discount_id=discount_id,
         user_id=user_id,
         pagination=pagination,
         sorting=sorting,

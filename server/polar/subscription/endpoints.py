@@ -46,6 +46,9 @@ async def list(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
+    discount_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    ),
     active: bool | None = Query(
         None, description="Filter by active or inactive subscription."
     ),
@@ -57,6 +60,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
+        discount_id=discount_id,
         active=active,
         pagination=pagination,
         sorting=sorting,

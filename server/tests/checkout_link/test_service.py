@@ -9,7 +9,7 @@ from polar.checkout_link.schemas import CheckoutLinkPriceCreate, CheckoutLinkUpd
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, Product, User, UserOrganization
+from polar.models import Discount, Organization, Product, User, UserOrganization
 from polar.models.checkout_link import CheckoutLink
 from polar.models.product_price import ProductPriceFixed, ProductPriceType
 from polar.postgres import AsyncSession
@@ -151,6 +151,33 @@ class TestCreate:
         assert checkout_link.user_metadata == {"key": "value"}
         assert checkout_link.client_secret is not None
 
+    @pytest.mark.auth
+    async def test_valid_discount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout_link = await checkout_link_service.create(
+            session,
+            CheckoutLinkPriceCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                discount_id=discount_fixed_once.id,
+                success_url=Url(
+                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
+                ),
+                metadata={"key": "value"},
+            ),
+            auth_subject,
+        )
+
+        assert checkout_link.discount == discount_fixed_once
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -204,7 +231,6 @@ class TestUpdate:
         )
 
         assert updated_checkout_link.product_price is None
-        assert updated_checkout_link.product_price_id is None
 
     async def test_change_price(
         self,
@@ -251,6 +277,22 @@ class TestUpdate:
                 CheckoutLinkUpdate(product_price_id=new_price_id),
                 auth_subject,
             )
+
+    async def test_set_discount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        checkout_link: CheckoutLink,
+        discount_fixed_once: Discount,
+    ) -> None:
+        updated_checkout_link = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(discount_id=discount_fixed_once.id),
+            auth_subject,
+        )
+
+        assert updated_checkout_link.discount == discount_fixed_once
 
 
 @pytest.mark.asyncio

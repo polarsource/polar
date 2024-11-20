@@ -46,6 +46,7 @@ from polar.models import (
     Discount,
     Organization,
     Product,
+    ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
     Subscription,
@@ -290,31 +291,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
-            if price.amount_type != ProductPriceAmountType.fixed:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "discount_id"),
-                            "msg": "Discounts are only applicable to fixed prices.",
-                            "input": checkout_create.discount_id,
-                        }
-                    ]
-                )
-            discount = await discount_service.get_by_id_and_product(
-                session, checkout_create.discount_id, product
+            discount = await self._get_validated_discount(
+                session, checkout_create.discount_id, product, price
             )
-            if discount is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "discount_id"),
-                            "msg": "Discount does not exist.",
-                            "input": checkout_create.discount_id,
-                        }
-                    ]
-                )
 
         customer_tax_id: TaxID | None = None
         if checkout_create.customer_tax_id is not None:
@@ -613,12 +592,24 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             amount = None
             currency = None
 
+        discount: Discount | None = None
+        if checkout_link.discount_id is not None:
+            try:
+                discount = await self._get_validated_discount(
+                    session, checkout_link.discount_id, product, price
+                )
+            # If the discount is not valid, just ignore it
+            except PolarRequestValidationError:
+                pass
+
         checkout = Checkout(
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            allow_discount_codes=checkout_link.allow_discount_codes,
             product=product,
             product_price=price,
+            discount=discount,
             embed_origin=embed_origin,
             customer_ip_address=ip_address,
             payment_processor=checkout_link.payment_processor,
@@ -1096,6 +1087,43 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
         await session.execute(statement)
 
+    async def _get_validated_discount(
+        self,
+        session: AsyncSession,
+        discount_id: uuid.UUID,
+        product: Product,
+        price: ProductPrice,
+    ) -> Discount:
+        if price.amount_type != ProductPriceAmountType.fixed:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_id"),
+                        "msg": "Discounts are only applicable to fixed prices.",
+                        "input": discount_id,
+                    }
+                ]
+            )
+
+        discount = await discount_service.get_by_id_and_product(
+            session, discount_id, product
+        )
+
+        if discount is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_id"),
+                        "msg": "Discount does not exist.",
+                        "input": discount_id,
+                    }
+                ]
+            )
+
+        return discount
+
     async def _get_upgradable_subscription(
         self, session: AsyncSession, id: uuid.UUID, organization_id: uuid.UUID
     ) -> Subscription | None:
@@ -1215,32 +1243,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         if isinstance(checkout_update, CheckoutUpdate):
             if checkout_update.discount_id is not None:
-                if not checkout.is_discount_applicable:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "discount_id"),
-                                "msg": "Discounts are only applicable to fixed prices.",
-                                "input": checkout_update.discount_id,
-                            }
-                        ]
-                    )
-                discount = await discount_service.get_by_id_and_product(
-                    session, checkout_update.discount_id, checkout.product
+                checkout.discount = await self._get_validated_discount(
+                    session,
+                    checkout_update.discount_id,
+                    checkout.product,
+                    checkout.product_price,
                 )
-                if discount is None:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "discount_id"),
-                                "msg": "Discount does not exist.",
-                                "input": checkout_update.discount_id,
-                            }
-                        ]
-                    )
-                checkout.discount = discount
             # User explicitly removed the discount
             elif "discount_id" in checkout_update.model_fields_set:
                 checkout.discount = None

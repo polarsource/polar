@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import Boolean, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 
+from .discount import Discount
 from .product import Product
 from .product_price import ProductPrice
 
@@ -25,13 +26,20 @@ class CheckoutLink(MetadataMixin, RecordModel):
     )
 
     label: Mapped[UUID] = mapped_column(String, nullable=True)
+    allow_discount_codes: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
     )
 
     product_price_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=True
+        Uuid, ForeignKey("product_prices.id", ondelete="set null"), nullable=True
+    )
+
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
     )
 
     @declared_attr
@@ -40,9 +48,14 @@ class CheckoutLink(MetadataMixin, RecordModel):
         return relationship(Product, lazy="joined", innerjoin=True)
 
     @declared_attr
-    def product_price(cls) -> Mapped[ProductPrice]:
+    def product_price(cls) -> Mapped[ProductPrice | None]:
         # Eager load in case an explicit `product_price_id` is set
         return relationship(ProductPrice, lazy="joined")
+
+    @declared_attr
+    def discount(cls) -> Mapped[Discount | None]:
+        # Eager loading makes sense here because we always need the discount when present
+        return relationship(Discount, lazy="joined")
 
     @property
     def checkout_price(self) -> ProductPrice:

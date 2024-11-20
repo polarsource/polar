@@ -1156,6 +1156,7 @@ async def create_checkout_link(
     payment_processor: PaymentProcessor = PaymentProcessor.stripe,
     product: Product,
     price: ProductPrice | None = None,
+    discount: Discount | None = None,
     client_secret: str | None = None,
     success_url: str | None = None,
     user_metadata: dict[str, Any] = {},
@@ -1169,6 +1170,7 @@ async def create_checkout_link(
         success_url=success_url,
         product=product,
         product_price=price,
+        discount=discount,
         user_metadata=user_metadata,
     )
     await save_fixture(checkout_link)

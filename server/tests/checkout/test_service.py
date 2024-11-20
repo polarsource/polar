@@ -1127,6 +1127,25 @@ class TestCheckoutLinkCreate:
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_valid_with_discount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        price = product_one_time.prices[0]
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            product=product_one_time,
+            price=price,
+            discount=discount_fixed_once,
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product_price == price
+        assert checkout.discount == discount_fixed_once
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

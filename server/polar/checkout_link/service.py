@@ -6,11 +6,8 @@ import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import (
-    AuthSubject,
-    is_organization,
-    is_user,
-)
+from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams, paginate
@@ -19,6 +16,7 @@ from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import (
     CheckoutLink,
+    Discount,
     Organization,
     Product,
     ProductPrice,
@@ -32,7 +30,6 @@ from polar.product.service.product_price import product_price as product_price_s
 from .schemas import (
     CheckoutLinkCreate,
     CheckoutLinkPriceCreate,
-    CheckoutLinkProductCreate,
     CheckoutLinkUpdate,
 )
 from .sorting import CheckoutLinkSortProperty
@@ -73,6 +70,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             if criterion == CheckoutLinkSortProperty.created_at:
                 order_by_clauses.append(clause_function(CheckoutLink.created_at))
         statement = statement.order_by(*order_by_clauses)
+
+        statement = statement.options(joinedload(CheckoutLink.discount))
+
         return await paginate(session, statement, pagination=pagination)
 
     async def get_by_id(
@@ -81,8 +81,10 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> CheckoutLink | None:
-        statement = self._get_readable_checkout_link_statement(auth_subject).where(
-            CheckoutLink.id == id
+        statement = (
+            self._get_readable_checkout_link_statement(auth_subject)
+            .where(CheckoutLink.id == id)
+            .options(joinedload(CheckoutLink.discount))
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
@@ -93,121 +95,39 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_create: CheckoutLinkCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        price: ProductPrice | None
+        price: ProductPrice | None = None
         if isinstance(checkout_link_create, CheckoutLinkPriceCreate):
             product, price = await self._get_validated_price(
                 session,
-                checkout_link_create,
+                checkout_link_create.product_price_id,
                 auth_subject,
             )
         else:
             product, price = await self._get_validated_product(
                 session,
-                checkout_link_create,
+                checkout_link_create.product_id,
                 auth_subject,
+            )
+
+        discount: Discount | None = None
+        if checkout_link_create.discount_id is not None:
+            discount = await self._get_validated_discount(
+                session, checkout_link_create.discount_id, product
             )
 
         checkout_link = CheckoutLink(
             client_secret=generate_token(prefix=CHECKOUT_LINK_CLIENT_SECRET_PREFIX),
             product=product,
+            product_price=price,
+            discount=discount,
             **checkout_link_create.model_dump(
-                exclude={
-                    "product_price_id",
-                    "product_id",
-                },
+                exclude={"product_price_id", "product_id", "discount_id"},
                 by_alias=True,
             ),
         )
-        if price:
-            checkout_link.product_price = price
 
         session.add(checkout_link)
         return checkout_link
-
-    async def _get_validated_product(
-        self,
-        session: AsyncSession,
-        checkout_link_create: CheckoutLinkProductCreate,
-        auth_subject: AuthSubject[User | Organization],
-    ) -> tuple[Product, None]:
-        product = await product_service.get_by_id(
-            session, auth_subject, checkout_link_create.product_id
-        )
-        if not product:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product does not exist.",
-                        "input": checkout_link_create.product_id,
-                    }
-                ]
-            )
-
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product is archived.",
-                        "input": checkout_link_create.product_id,
-                    }
-                ]
-            )
-
-        return (product, None)
-
-    async def _get_validated_price(
-        self,
-        session: AsyncSession,
-        checkout_link_create: CheckoutLinkPriceCreate,
-        auth_subject: AuthSubject[User | Organization],
-    ) -> tuple[Product, ProductPrice]:
-        price = await product_price_service.get_writable_by_id(
-            session, checkout_link_create.product_price_id, auth_subject
-        )
-
-        if price is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not exist.",
-                        "input": checkout_link_create.product_price_id,
-                    }
-                ]
-            )
-
-        if price.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": checkout_link_create.product_price_id,
-                    }
-                ]
-            )
-
-        product = price.product
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Product is archived.",
-                        "input": checkout_link_create.product_price_id,
-                    }
-                ]
-            )
-
-        product = cast(Product, await product_service.get_loaded(session, product.id))
-        return (product, price)
 
     async def update(
         self,
@@ -216,64 +136,42 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_update: CheckoutLinkUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        changes = checkout_link_update.model_dump(exclude_unset=True, by_alias=True)
-        change_price = "product_price_id" in changes
-        for attr, value in changes.items():
-            if attr != "product_price_id":
-                setattr(checkout_link, attr, value)
+        if "product_price_id" in checkout_link_update.model_fields_set:
+            if checkout_link_update.product_price_id is None:
+                checkout_link.product_price = None
+            else:
+                product, price = await self._get_validated_price(
+                    session, checkout_link_update.product_price_id, auth_subject
+                )
+                if product.id != checkout_link.product_id:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "product_price_id"),
+                                "msg": "Price does not belong to the same product.",
+                                "input": checkout_link_update.product_price_id,
+                            }
+                        ]
+                    )
+                checkout_link.product_price = price
 
-        if not change_price:
-            session.add(checkout_link)
-            return checkout_link
+        if "discount_id" in checkout_link_update.model_fields_set:
+            if checkout_link_update.discount_id is None:
+                checkout_link.discount = None
+            else:
+                discount = await self._get_validated_discount(
+                    session, checkout_link_update.discount_id, checkout_link.product
+                )
+                checkout_link.discount = discount
 
-        price_id = checkout_link_update.product_price_id
-        if not price_id:
-            checkout_link.product_price = None
-            checkout_link.product_price_id = None
-            session.add(checkout_link)
-            return checkout_link
+        for attr, value in checkout_link_update.model_dump(
+            exclude_unset=True,
+            exclude={"product_price_id", "discount_id"},
+            by_alias=True,
+        ).items():
+            setattr(checkout_link, attr, value)
 
-        price = await product_price_service.get_writable_by_id(
-            session, price_id, auth_subject
-        )
-        if price is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not exist.",
-                        "input": checkout_link_update.product_price_id,
-                    }
-                ]
-            )
-
-        if price.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": checkout_link_update.product_price_id,
-                    }
-                ]
-            )
-
-        different_product = price.product.id != checkout_link.product.id
-        if different_product:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not belong to the same product.",
-                        "input": checkout_link_update.product_price_id,
-                    }
-                ]
-            )
-
-        checkout_link.product_price = price
         session.add(checkout_link)
         return checkout_link
 
@@ -293,6 +191,113 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def _get_validated_product(
+        self,
+        session: AsyncSession,
+        product_id: uuid.UUID,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> tuple[Product, None]:
+        product = await product_service.get_by_id(session, auth_subject, product_id)
+        if not product:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        return (product, None)
+
+    async def _get_validated_price(
+        self,
+        session: AsyncSession,
+        price_id: uuid.UUID,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> tuple[Product, ProductPrice]:
+        price = await product_price_service.get_writable_by_id(
+            session, price_id, auth_subject
+        )
+
+        if price is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not exist.",
+                        "input": price_id,
+                    }
+                ]
+            )
+
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": price_id,
+                    }
+                ]
+            )
+
+        product = price.product
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is archived.",
+                        "input": price_id,
+                    }
+                ]
+            )
+
+        product = cast(Product, await product_service.get_loaded(session, product.id))
+        return (product, price)
+
+    async def _get_validated_discount(
+        self, session: AsyncSession, discount_id: uuid.UUID, product: Product
+    ) -> Discount:
+        discount = await discount_service.get_by_id_and_product(
+            session, discount_id, product, redeemable=False
+        )
+
+        if discount is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_id"),
+                        "msg": (
+                            "Discount does not exist or "
+                            "is not applicable to this product."
+                        ),
+                        "input": discount_id,
+                    }
+                ]
+            )
+
+        return discount
 
     def _get_readable_checkout_link_statement(
         self, auth_subject: AuthSubject[User | Organization]

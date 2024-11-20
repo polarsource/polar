@@ -264,4 +264,5 @@ export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
     modified_at: new Date().toDateString(),
     product_id: '123',
   },
+  discount_id: null,
 }

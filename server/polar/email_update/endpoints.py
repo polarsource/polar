@@ -1,5 +1,6 @@
 from uuid import UUID
 from fastapi import Depends
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.config import settings
 from polar.email_update.schemas import EmailUpdateRequest
 from polar.kit.db.postgres import AsyncSession
@@ -8,11 +9,12 @@ from polar.routing import APIRouter
 
 from .service import email_update as email_upate_service
 
-router = APIRouter(prefix="/email-update")
+router = APIRouter(prefix="/email_update")
     
 @router.post("/request")
 async def request_email_update(
     email_update_request: EmailUpdateRequest,
+    auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     user_id = UUID("ed226214-a1a4-4a10-9ead-edc26c69e8f7")

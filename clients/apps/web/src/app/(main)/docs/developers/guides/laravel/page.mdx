@@ -236,11 +236,43 @@ POLAR_WEBHOOK_SECRET="..."
 
 #### Setting up the Webhook handler
 
-Go back to your `routes/web.php` file and add the following entry:
+First, we need to install the standard-webhooks package to properly decode the
+incoming webhook payloads.
+
+```bash
+composer require standard-webhooks/standard-webhooks:dev-main
+```
+
+Go and add a `routes/api.php` file and add the following entry:
 
 ```php
-// routes/web.php
+// routes/api.php
 Route::webhooks('/webhook/polar');
+```
+
+Make sure that it is included in the Bootstrap file.
+
+```php
+// bootstrap/app.php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        //
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
 ```
 
 We will use Spatie's Webhook Client to handle the webhook events. It will automatically verify the signature of the requests, and dispatch the payload to a job queue for processing.
@@ -320,9 +352,9 @@ return [
              * This should be set to a class that extends \Spatie\WebhookClient\Jobs\ProcessWebhookJob.
              */
             'process_webhook_job' => App\Handler\ProcessWebhook::class,
-        ],        
+        ],
     ],
-    
+
     /*
      * The integer amount of days after which models should be deleted.
      *
@@ -375,16 +407,14 @@ class PolarSignature implements SignatureValidator
 {
     public function isValid(Request $request, WebhookConfig $config): bool
     {
-        $signature = $request->header($config->signatureHeaderName);
-        if (!$signature) {
-            return false;
-        }
-        $signingSecret = $config->signingSecret;
-        if (empty($signingSecret)) {
-            throw WebhookFailed::signingSecretNotSet();
-        }
-        $computedSignature = hash_hmac('sha512', $request->getContent(), $signingSecret);
-        return hash_equals($signature, $computedSignature);
+        $signingSecret = base64_encode($config->signingSecret);
+        $wh = new \StandardWebhooks\Webhook($signingSecret);
+
+        return boolval( $wh->verify($request->getContent(), array(
+            "webhook-id" => $request->header("webhook-id"),
+            "webhook-signature" => $request->header("webhook-signature"),
+            "webhook-timestamp" => $request->header("webhook-timestamp"),
+        )));
     }
 }
 ```
@@ -407,7 +437,7 @@ class ProcessWebhook extends ProcessWebhookJob
         $decoded = json_decode($this->webhookCall, true);
         $data = $decoded['payload'];
 
-        switch ($data['event']) {
+        switch ($data['type']) {
             case "checkout.created":
                 // Handle the checkout created event
                 break;
@@ -431,7 +461,7 @@ class ProcessWebhook extends ProcessWebhookJob
                 break;
             default:
                 // Handle unknown event
-                Log::info("Unknown event", $data['event']);
+                Log::info($data['type']);
                 break;
         }
 

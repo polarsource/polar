@@ -158,6 +158,7 @@ class OrderService(ResourceServiceReader[Order]):
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         product_price_type: Sequence[ProductPriceType] | None = None,
+        discount_id: Sequence[uuid.UUID] | None = None,
         user_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
@@ -166,8 +167,9 @@ class OrderService(ResourceServiceReader[Order]):
     ) -> tuple[Sequence[Order], int]:
         statement = self._get_readable_order_statement(auth_subject)
 
-        statement = statement.options(
+        statement = statement.join(Order.discount, isouter=True).options(
             joinedload(Order.subscription),
+            contains_eager(Order.discount),
         )
 
         OrderProductPrice = aliased(ProductPrice)
@@ -189,6 +191,9 @@ class OrderService(ResourceServiceReader[Order]):
         if product_price_type is not None:
             statement = statement.where(OrderProductPrice.type.in_(product_price_type))
 
+        if discount_id is not None:
+            statement = statement.where(Order.discount_id.in_(discount_id))
+
         if user_id is not None:
             statement = statement.where(Order.user_id.in_(user_id))
 
@@ -203,6 +208,8 @@ class OrderService(ResourceServiceReader[Order]):
                 order_by_clauses.append(clause_function(OrderUser.email))
             elif criterion == OrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
+            elif criterion == OrderSortProperty.discount:
+                order_by_clauses.append(clause_function(Discount.name))
             elif criterion == OrderSortProperty.subscription:
                 order_by_clauses.append(clause_function(Order.subscription_id))
         statement = statement.order_by(*order_by_clauses)
@@ -222,6 +229,7 @@ class OrderService(ResourceServiceReader[Order]):
                 joinedload(Order.user),
                 joinedload(Order.product_price),
                 joinedload(Order.subscription),
+                joinedload(Order.discount),
             )
         )
 

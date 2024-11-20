@@ -1,12 +1,20 @@
 from datetime import datetime
+from typing import Annotated
 
 from babel.numbers import format_currency
 from pydantic import UUID4, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
+from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataOutputMixin
-from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    EmailStrDNS,
+    IDSchema,
+    MergeJSONSchema,
+    Schema,
+    TimestampedSchema,
+)
 from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPriceRecurring
 
@@ -32,6 +40,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     user_id: UUID4
     product_id: UUID4
     price_id: UUID4
+    discount_id: UUID4 | None
     checkout_id: UUID4 | None
 
     def get_amount_display(self) -> str:
@@ -44,10 +53,16 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
         )}/{self.recurring_interval}"
 
 
+SubscriptionDiscount = Annotated[
+    DiscountMinimal, MergeJSONSchema({"title": "SubscriptionDiscount"})
+]
+
+
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     user: SubscriptionUser
     product: Product
     price: ProductPriceRecurring
+    discount: SubscriptionDiscount | None
 
 
 class SubscriptionCreateEmail(Schema):

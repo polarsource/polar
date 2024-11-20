@@ -7,10 +7,13 @@ import { redirect } from 'next/navigation'
 
 export default async function Page({
   params: { clientSecret },
-  searchParams: { embed: _embed, theme },
+  searchParams: { embed: _embed, theme, ...prefilledParameters },
 }: {
   params: { clientSecret: string }
-  searchParams: { embed?: string; theme?: 'light' | 'dark' }
+  searchParams: { embed?: string; theme?: 'light' | 'dark' } & Record<
+    string,
+    string
+  >
 }) {
   const embed = _embed === 'true'
   const api = getServerSideAPI()
@@ -28,6 +31,7 @@ export default async function Page({
         checkout={checkout}
         theme={theme}
         embed={embed}
+        prefilledParameters={prefilledParameters}
       />
     </CheckoutLayout>
   )

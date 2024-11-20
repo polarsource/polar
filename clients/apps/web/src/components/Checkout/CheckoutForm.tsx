@@ -95,6 +95,7 @@ const BaseCheckoutForm = ({
     watch,
     clearErrors,
     resetField,
+    setValue,
     formState: { errors },
   } = form
 
@@ -108,7 +109,20 @@ const BaseCheckoutForm = ({
       let payload: CheckoutUpdatePublic = {}
       // Update Tax ID
       if (name === 'customer_tax_id') {
-        payload = { ...payload, customer_tax_id: value.customer_tax_id }
+        payload = {
+          ...payload,
+          customer_tax_id: value.customer_tax_id,
+          // Make sure the address is up-to-date while updating the tax ID
+          ...(value.customer_billing_address &&
+          value.customer_billing_address.country
+            ? {
+                customer_billing_address: {
+                  ...value.customer_billing_address,
+                  country: value.customer_billing_address.country,
+                },
+              }
+            : {}),
+        }
         clearErrors('customer_tax_id')
         // Update country, make sure to reset other address fields
       } else if (name === 'customer_billing_address.country') {
@@ -178,7 +192,17 @@ const BaseCheckoutForm = ({
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 
+  const taxId = watch('customer_tax_id')
   const [showTaxId, setShowTaxID] = useState(false)
+  const clearTaxId = useCallback(() => {
+    setValue('customer_tax_id', '')
+    setShowTaxID(false)
+  }, [setValue])
+  useEffect(() => {
+    if (taxId) {
+      setShowTaxID(true)
+    }
+  }, [taxId])
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -407,7 +431,7 @@ const BaseCheckoutForm = ({
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  onClick={() => setShowTaxID(false)}
+                                  onClick={() => clearTaxId()}
                                 >
                                   <CloseOutlined className="h-4 w-4" />
                                 </Button>

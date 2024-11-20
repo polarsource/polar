@@ -25,17 +25,39 @@ export interface CheckoutProps {
   checkout: CheckoutPublic
   embed?: boolean
   theme?: 'light' | 'dark'
+  prefilledParameters?: Record<string, string>
 }
+
+const unflatten = (entries: Record<string, string>): Record<string, any> =>
+  Object.entries(entries).reduce(
+    (acc, [key, value]) =>
+      key.split('.').reduceRight(
+        (current, part, index, parts) => ({
+          ...current,
+          [part]:
+            index === parts.length - 1
+              ? value
+              : { ...current[part], ...current },
+        }),
+        acc,
+      ),
+    {} as Record<string, any>,
+  )
 
 export const Checkout = ({
   checkout: _checkout,
   organization,
   embed,
   theme,
+  prefilledParameters,
 }: CheckoutProps) => {
   const [checkout, setCheckout] = useState(_checkout)
+
   const form = useForm<CheckoutUpdatePublic>({
-    defaultValues: checkout,
+    defaultValues: {
+      ...checkout,
+      ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
+    },
     shouldUnregister: true,
   })
   const { setError } = form

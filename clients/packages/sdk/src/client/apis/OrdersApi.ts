@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  DiscountIDFilter1,
   HTTPValidationError,
   ListResourceOrder,
   Order,
@@ -39,6 +40,7 @@ export interface OrdersApiListRequest {
     organizationId?: OrganizationIDFilter;
     productId?: ProductIDFilter;
     productPriceType?: ProductPriceTypeFilter;
+    discountId?: DiscountIDFilter1;
     userId?: UserIDFilter;
     page?: number;
     limit?: number;
@@ -153,6 +155,10 @@ export class OrdersApi extends runtime.BaseAPI {
 
         if (requestParameters['productPriceType'] != null) {
             queryParameters['product_price_type'] = requestParameters['productPriceType'];
+        }
+
+        if (requestParameters['discountId'] != null) {
+            queryParameters['discount_id'] = requestParameters['discountId'];
         }
 
         if (requestParameters['userId'] != null) {

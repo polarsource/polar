@@ -7334,15 +7334,114 @@ export interface DiscountFixedOnceForeverDuration {
      */
     redemptions_count: number;
     /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDuration
+     */
+    organization_id: string;
+    /**
      * 
      * @type {Array<DiscountProduct>}
      * @memberof DiscountFixedOnceForeverDuration
      */
     products: Array<DiscountProduct>;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface DiscountFixedOnceForeverDurationBase
+ */
+export interface DiscountFixedOnceForeverDurationBase {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    currency: string;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountFixedOnceForeverDurationBase
+     */
+    redemptions_count: number;
     /**
      * The organization ID.
      * @type {string}
-     * @memberof DiscountFixedOnceForeverDuration
+     * @memberof DiscountFixedOnceForeverDurationBase
      */
     organization_id: string;
 }
@@ -7535,15 +7634,120 @@ export interface DiscountFixedRepeatDuration {
      */
     redemptions_count: number;
     /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDuration
+     */
+    organization_id: string;
+    /**
      * 
      * @type {Array<DiscountProduct>}
      * @memberof DiscountFixedRepeatDuration
      */
     products: Array<DiscountProduct>;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface DiscountFixedRepeatDurationBase
+ */
+export interface DiscountFixedRepeatDurationBase {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    currency: string;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountFixedRepeatDurationBase
+     */
+    redemptions_count: number;
     /**
      * The organization ID.
      * @type {string}
-     * @memberof DiscountFixedRepeatDuration
+     * @memberof DiscountFixedRepeatDurationBase
      */
     organization_id: string;
 }
@@ -7649,6 +7853,20 @@ export interface DiscountFixedRepeatDurationCreate {
 
 
 /**
+ * @type DiscountIDFilter
+ * Filter by discount ID.
+ * @export
+ */
+export type DiscountIDFilter = Array<string> | string;
+
+/**
+ * @type DiscountIDFilter1
+ * Filter by discount ID.
+ * @export
+ */
+export type DiscountIDFilter1 = Array<string> | string;
+
+/**
  * Schema for a percentage discount that is applied once or forever.
  * @export
  * @interface DiscountPercentageOnceForeverDuration
@@ -7733,15 +7951,108 @@ export interface DiscountPercentageOnceForeverDuration {
      */
     redemptions_count: number;
     /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDuration
+     */
+    organization_id: string;
+    /**
      * 
      * @type {Array<DiscountProduct>}
      * @memberof DiscountPercentageOnceForeverDuration
      */
     products: Array<DiscountProduct>;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface DiscountPercentageOnceForeverDurationBase
+ */
+export interface DiscountPercentageOnceForeverDurationBase {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    basis_points: number;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountPercentageOnceForeverDurationBase
+     */
+    redemptions_count: number;
     /**
      * The organization ID.
      * @type {string}
-     * @memberof DiscountPercentageOnceForeverDuration
+     * @memberof DiscountPercentageOnceForeverDurationBase
      */
     organization_id: string;
 }
@@ -7925,15 +8236,114 @@ export interface DiscountPercentageRepeatDuration {
      */
     redemptions_count: number;
     /**
+     * The organization ID.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDuration
+     */
+    organization_id: string;
+    /**
      * 
      * @type {Array<DiscountProduct>}
      * @memberof DiscountPercentageRepeatDuration
      */
     products: Array<DiscountProduct>;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface DiscountPercentageRepeatDurationBase
+ */
+export interface DiscountPercentageRepeatDurationBase {
+    /**
+     * 
+     * @type {DiscountDuration}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    duration: DiscountDuration;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    duration_in_months: number;
+    /**
+     * 
+     * @type {DiscountType}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    type: DiscountType;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    basis_points: number;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Name of the discount. Will be displayed to the customer when the discount is applied.
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    code: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    starts_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    ends_at: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    max_redemptions: number | null;
+    /**
+     * Number of times the discount has been redeemed.
+     * @type {number}
+     * @memberof DiscountPercentageRepeatDurationBase
+     */
+    redemptions_count: number;
     /**
      * The organization ID.
      * @type {string}
-     * @memberof DiscountPercentageRepeatDuration
+     * @memberof DiscountPercentageRepeatDurationBase
      */
     organization_id: string;
 }
@@ -12379,6 +12789,12 @@ export interface Order {
      * @type {string}
      * @memberof Order
      */
+    discount_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
     subscription_id: string | null;
     /**
      * 
@@ -12406,6 +12822,12 @@ export interface Order {
     product_price: ProductPrice;
     /**
      * 
+     * @type {OrderDiscount}
+     * @memberof Order
+     */
+    discount: OrderDiscount | null;
+    /**
+     * 
      * @type {OrderSubscription}
      * @memberof Order
      */
@@ -12426,6 +12848,12 @@ export const OrderBillingReason = {
 } as const;
 export type OrderBillingReason = typeof OrderBillingReason[keyof typeof OrderBillingReason];
 
+/**
+ * @type OrderDiscount
+ * 
+ * @export
+ */
+export type OrderDiscount = DiscountFixedOnceForeverDurationBase | DiscountFixedRepeatDurationBase | DiscountPercentageOnceForeverDurationBase | DiscountPercentageRepeatDurationBase;
 /**
  * @type OrderIDFilter
  * Filter by order ID.
@@ -12515,6 +12943,8 @@ export const OrderSortProperty = {
     USER2: '-user',
     PRODUCT: 'product',
     PRODUCT2: '-product',
+    DISCOUNT: 'discount',
+    DISCOUNT2: '-discount',
     SUBSCRIPTION: 'subscription',
     SUBSCRIPTION2: '-subscription'
 } as const;
@@ -12622,6 +13052,12 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    discount_id: string | null;
     /**
      * 
      * @type {string}
@@ -16996,6 +17432,12 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
+    discount_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
     checkout_id: string | null;
     /**
      * 
@@ -17027,9 +17469,21 @@ export interface Subscription {
      * @memberof Subscription
      */
     price: ProductPriceRecurring;
+    /**
+     * 
+     * @type {SubscriptionDiscount}
+     * @memberof Subscription
+     */
+    discount: SubscriptionDiscount | null;
 }
 
 
+/**
+ * @type SubscriptionDiscount
+ * 
+ * @export
+ */
+export type SubscriptionDiscount = DiscountFixedOnceForeverDurationBase | DiscountFixedRepeatDurationBase | DiscountPercentageOnceForeverDurationBase | DiscountPercentageRepeatDurationBase;
 /**
  * @type SubscriptionIDFilter
  * Filter by subscription ID.
@@ -17065,7 +17519,9 @@ export const SubscriptionSortProperty = {
     AMOUNT: 'amount',
     AMOUNT2: '-amount',
     PRODUCT: 'product',
-    PRODUCT2: '-product'
+    PRODUCT2: '-product',
+    DISCOUNT: 'discount',
+    DISCOUNT2: '-discount'
 } as const;
 export type SubscriptionSortProperty = typeof SubscriptionSortProperty[keyof typeof SubscriptionSortProperty];
 
@@ -18758,6 +19214,12 @@ export interface UserOrderSubscription {
      * @type {string}
      * @memberof UserOrderSubscription
      */
+    discount_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
     checkout_id: string | null;
 }
 
@@ -19033,6 +19495,12 @@ export interface UserSubscription {
      * @memberof UserSubscription
      */
     price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    discount_id: string | null;
     /**
      * 
      * @type {string}

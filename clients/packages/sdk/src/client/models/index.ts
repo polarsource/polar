@@ -5129,6 +5129,12 @@ export interface CheckoutLink {
      */
     label: string | null;
     /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof CheckoutLink
+     */
+    allow_discount_codes: boolean;
+    /**
      * ID of the product to checkout.
      * @type {string}
      * @memberof CheckoutLink
@@ -5142,6 +5148,12 @@ export interface CheckoutLink {
     product_price_id: string | null;
     /**
      * 
+     * @type {string}
+     * @memberof CheckoutLink
+     */
+    discount_id: string | null;
+    /**
+     * 
      * @type {CheckoutLinkProduct}
      * @memberof CheckoutLink
      */
@@ -5152,6 +5164,12 @@ export interface CheckoutLink {
      * @memberof CheckoutLink
      */
     product_price: ProductPrice | null;
+    /**
+     * 
+     * @type {CheckoutLinkDiscount}
+     * @memberof CheckoutLink
+     */
+    discount: CheckoutLinkDiscount | null;
     /**
      * 
      * @type {string}
@@ -5167,6 +5185,12 @@ export interface CheckoutLink {
  */
 export type CheckoutLinkCreate = CheckoutLinkPriceCreate | CheckoutLinkProductCreate;
 
+/**
+ * @type CheckoutLinkDiscount
+ * 
+ * @export
+ */
+export type CheckoutLinkDiscount = DiscountFixedOnceForeverDurationBase | DiscountFixedRepeatDurationBase | DiscountPercentageOnceForeverDurationBase | DiscountPercentageRepeatDurationBase;
 /**
  * 
  * @export
@@ -5199,6 +5223,18 @@ export interface CheckoutLinkPriceCreate {
      * @memberof CheckoutLinkPriceCreate
      */
     label?: string | null;
+    /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof CheckoutLinkPriceCreate
+     */
+    allow_discount_codes?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkPriceCreate
+     */
+    discount_id?: string | null;
     /**
      * 
      * @type {string}
@@ -5328,6 +5364,18 @@ export interface CheckoutLinkProductCreate {
      */
     label?: string | null;
     /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof CheckoutLinkProductCreate
+     */
+    allow_discount_codes?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkProductCreate
+     */
+    discount_id?: string | null;
+    /**
      * 
      * @type {string}
      * @memberof CheckoutLinkProductCreate
@@ -5381,10 +5429,22 @@ export interface CheckoutLinkUpdate {
     label?: string | null;
     /**
      * 
+     * @type {boolean}
+     * @memberof CheckoutLinkUpdate
+     */
+    allow_discount_codes?: boolean | null;
+    /**
+     * 
      * @type {string}
      * @memberof CheckoutLinkUpdate
      */
     product_price_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutLinkUpdate
+     */
+    discount_id?: string | null;
     /**
      * 
      * @type {string}

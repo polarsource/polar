@@ -18,6 +18,7 @@ from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutCreate,
     CheckoutCreatePublic,
+    CheckoutPriceCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -61,6 +62,7 @@ from polar.models.product_price import (
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.user.service.user import user as user_service
 from polar.user_organization.service import (
@@ -216,45 +218,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         auth_subject: AuthSubject[User | Organization],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        price = await product_price_service.get_writable_by_id(
-            session, checkout_create.product_price_id, auth_subject
-        )
-
-        if price is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not exist.",
-                        "input": checkout_create.product_price_id,
-                    }
-                ]
+        if isinstance(checkout_create, CheckoutPriceCreate):
+            product, price = await self._get_validated_price(
+                session, auth_subject, checkout_create.product_price_id
             )
-
-        if price.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": checkout_create.product_price_id,
-                    }
-                ]
-            )
-
-        product = price.product
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Product is archived.",
-                        "input": checkout_create.product_price_id,
-                    }
-                ]
+        else:
+            product, price = await self._get_validated_product(
+                session, auth_subject, checkout_create.product_id
             )
 
         if checkout_create.amount is not None and isinstance(price, ProductPriceCustom):
@@ -1086,6 +1056,89 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .values(status=CheckoutStatus.expired)
         )
         await session.execute(statement)
+
+    async def _get_validated_price(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_price_id: uuid.UUID,
+    ) -> tuple[Product, ProductPrice]:
+        price = await product_price_service.get_writable_by_id(
+            session, product_price_id, auth_subject
+        )
+
+        if price is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not exist.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        product = price.product
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is archived.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        return product, price
+
+    async def _get_validated_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_id: uuid.UUID,
+    ) -> tuple[Product, ProductPrice]:
+        product = await product_service.get_by_id(session, auth_subject, product_id)
+
+        if product is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        return product, product.prices[0]
 
     async def _get_validated_discount(
         self,

@@ -94,7 +94,7 @@ _allow_discount_codes_description = (
 )
 
 
-class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
+class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     """
     Create a new checkout session.
 
@@ -105,7 +105,6 @@ class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(
         default=None, description="ID of the discount to apply to the checkout."
     )
@@ -128,6 +127,33 @@ class CheckoutCreate(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     )
     success_url: SuccessURL = None
     embed_origin: EmbedOrigin = None
+
+
+class CheckoutPriceCreate(CheckoutCreateBase):
+    """
+    Create a new checkout session from a product price.
+
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription.
+    """
+
+    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+
+
+class CheckoutProductCreate(CheckoutCreateBase):
+    """
+    Create a new checkout session from a product.
+
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription.
+    """
+
+    product_id: UUID4 = Field(
+        description="ID of the product to checkout. First available price will be selected."
+    )
+
+
+CheckoutCreate = CheckoutProductCreate | CheckoutPriceCreate
 
 
 class CheckoutCreatePublic(Schema):

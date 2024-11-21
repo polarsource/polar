@@ -14,8 +14,9 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
 from polar.checkout.schemas import (
     CheckoutConfirmStripe,
-    CheckoutCreate,
     CheckoutCreatePublic,
+    CheckoutPriceCreate,
+    CheckoutProductCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -233,7 +234,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=uuid.uuid4(),
                 ),
@@ -253,7 +254,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time.prices[0].id,
                 ),
@@ -281,7 +282,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe, product_price_id=price.id
                 ),
                 auth_subject,
@@ -304,7 +305,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time.prices[0].id,
                 ),
@@ -334,7 +335,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time_custom_price.prices[0].id,
                     amount=amount,
@@ -367,7 +368,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate.model_validate(
+                CheckoutPriceCreate.model_validate(
                     {
                         "payment_processor": PaymentProcessor.stripe,
                         "product_price_id": price.id,
@@ -394,7 +395,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     subscription_id=uuid.uuid4(),
@@ -420,7 +421,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     discount_id=uuid.uuid4(),
@@ -446,7 +447,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     discount_id=discount_fixed_once.id,
@@ -477,7 +478,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     subscription_id=subscription.id,
@@ -503,7 +504,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
@@ -535,7 +536,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFree)
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
@@ -570,7 +571,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
@@ -603,7 +604,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "FR"}),
@@ -627,7 +628,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 success_url=Url(
@@ -654,7 +655,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 success_url=Url(
@@ -686,7 +687,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "US"}),
@@ -713,7 +714,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "FR"}),
@@ -748,7 +749,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 subscription_id=subscription.id,
@@ -782,7 +783,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.create(
                 session,
-                CheckoutCreate(
+                CheckoutPriceCreate(
                     payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     custom_field_data=custom_field_data,
@@ -805,7 +806,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 custom_field_data={"text": "abc", "select": "a"},
@@ -832,7 +833,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
@@ -855,7 +856,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "FR"}),
@@ -880,7 +881,7 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutCreate(
+            CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 discount_id=discount_fixed_once.id,
@@ -895,6 +896,86 @@ class TestCreate:
             == price.price_amount
             - discount_fixed_once.get_discount_amount(price.price_amount)
         )
+
+    @pytest.mark.auth
+    async def test_product_not_existing(
+        self, session: AsyncSession, auth_subject: AuthSubject[User]
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_id=uuid.uuid4(),
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user_second"),
+        AuthSubjectFixture(subject="organization_second"),
+    )
+    async def test_product_not_writable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_id=product_one_time.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_product_archived(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+    ) -> None:
+        product_one_time.is_archived = True
+        await save_fixture(product_one_time)
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_id=product_one_time.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_product_valid(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_id=product_one_time.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product == product_one_time
+        assert checkout.product_price == product_one_time.prices[0]
 
 
 @pytest.mark.asyncio

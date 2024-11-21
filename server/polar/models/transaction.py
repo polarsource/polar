@@ -240,13 +240,12 @@ class Transaction(RecordModel):
     fee_balance_transaction_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
-
-    """Payment risk level."""
-    risk_level: Mapped[str | None] = mapped_column(String, nullable=True, index=False)
-    """Payment risk score (0-100) for payments."""
-    risk_score: Mapped[str | None] = mapped_column(Integer, nullable=True, index=False)
-
     """ID of the fee's balance transaction in the payment processor system."""
+
+    risk_level: Mapped[str | None] = mapped_column(String, nullable=True, index=False)
+    """Payment risk level."""
+    risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True, index=False)
+    """Payment risk score (0-100) for payments."""
 
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid,

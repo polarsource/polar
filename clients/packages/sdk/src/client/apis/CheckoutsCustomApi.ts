@@ -15,7 +15,9 @@
 
 import * as runtime from '../runtime';
 import type {
+  Checkout,
   CheckoutConfirmStripe,
+  CheckoutCreate,
   CheckoutCreatePublic,
   CheckoutPublic,
   CheckoutSortProperty,
@@ -24,8 +26,6 @@ import type {
   HTTPValidationError,
   ListResourceCheckout,
   OrganizationIDFilter,
-  PolarCheckoutSchemasCheckout,
-  PolarCheckoutSchemasCheckoutCreate,
   ProductIDFilter,
   ResourceNotFound,
 } from '../models/index';
@@ -49,7 +49,7 @@ export interface CheckoutsCustomApiClientUpdateRequest {
 }
 
 export interface CheckoutsCustomApiCreateRequest {
-    body: PolarCheckoutSchemasCheckoutCreate;
+    body: CheckoutCreate;
 }
 
 export interface CheckoutsCustomApiGetRequest {
@@ -249,7 +249,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Create a checkout session.
      * Create Checkout Session
      */
-    async createRaw(requestParameters: CheckoutsCustomApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarCheckoutSchemasCheckout>> {
+    async createRaw(requestParameters: CheckoutsCustomApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -286,7 +286,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Create a checkout session.
      * Create Checkout Session
      */
-    async create(requestParameters: CheckoutsCustomApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarCheckoutSchemasCheckout> {
+    async create(requestParameters: CheckoutsCustomApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -295,7 +295,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Get a checkout session by ID.
      * Get Checkout Session
      */
-    async getRaw(requestParameters: CheckoutsCustomApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarCheckoutSchemasCheckout>> {
+    async getRaw(requestParameters: CheckoutsCustomApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -329,7 +329,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Get a checkout session by ID.
      * Get Checkout Session
      */
-    async get(requestParameters: CheckoutsCustomApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarCheckoutSchemasCheckout> {
+    async get(requestParameters: CheckoutsCustomApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -394,7 +394,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Update a checkout session.
      * Update Checkout Session
      */
-    async updateRaw(requestParameters: CheckoutsCustomApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarCheckoutSchemasCheckout>> {
+    async updateRaw(requestParameters: CheckoutsCustomApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -438,7 +438,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Update a checkout session.
      * Update Checkout Session
      */
-    async update(requestParameters: CheckoutsCustomApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarCheckoutSchemasCheckout> {
+    async update(requestParameters: CheckoutsCustomApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

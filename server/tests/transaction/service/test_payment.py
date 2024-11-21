@@ -54,21 +54,27 @@ def build_stripe_charge(
     balance_transaction: str | None = None,
     type: ProductType | None = None,
     metadata: dict[str, str] | None = None,
+    risk_level: str | None = None,
+    risk_score: int | None = None,
 ) -> stripe_lib.Charge:
     metadata = metadata or {}
-    return stripe_lib.Charge.construct_from(
-        {
-            "id": "STRIPE_CHARGE_ID",
-            "customer": customer,
-            "currency": "usd",
-            "amount": 1100,
-            "invoice": invoice,
-            "payment_intent": payment_intent,
-            "balance_transaction": balance_transaction,
-            "metadata": {"type": type, **metadata} if type is not None else metadata,
-        },
-        None,
-    )
+    obj = {
+        "id": "STRIPE_CHARGE_ID",
+        "customer": customer,
+        "currency": "usd",
+        "amount": 1100,
+        "invoice": invoice,
+        "payment_intent": payment_intent,
+        "balance_transaction": balance_transaction,
+        "metadata": {"type": type, **metadata} if type is not None else metadata,
+    }
+    if risk_level or risk_score:
+        obj["outcome"] = {
+            "risk_level": risk_level if risk_level else "normal",
+            "risk_score": risk_score if risk_score else 0,
+        }
+
+    return stripe_lib.Charge.construct_from(obj, None)
 
 
 @pytest.fixture(autouse=True)
@@ -161,6 +167,48 @@ class TestCreatePayment:
         assert transaction.customer_id == user.stripe_customer_id
         assert transaction.payment_user == user
         assert transaction.payment_organization is None
+        assert transaction.risk_level is None
+        assert transaction.risk_score is None
+
+    async def test_customer_user_with_risk(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        pledge: Pledge,
+        user: User,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
+        await save_fixture(user)
+        pledge.payment_id = "STRIPE_PAYMENT_ID"
+        await save_fixture(pledge)
+
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer=user.stripe_customer_id,
+            payment_intent=pledge.payment_id,
+            balance_transaction=stripe_balance_transaction.id,
+            risk_level="normal",
+            risk_score=23,
+        )
+
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        # then
+        session.expunge_all()
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.type == TransactionType.payment
+        assert transaction.customer_id == user.stripe_customer_id
+        assert transaction.payment_user == user
+        assert transaction.payment_organization is None
+        assert transaction.risk_level == "normal"
+        assert transaction.risk_score == 23
 
     async def test_customer_organization(
         self,

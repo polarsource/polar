@@ -100,7 +100,7 @@ class PaymentTransactionService(BaseTransactionService):
                 payment_user = pledge.user
                 payment_organization = pledge.by_organization
 
-        risk = charge.outcome or {}
+        risk = getattr(charge, "outcome", {})
         transaction = Transaction(
             type=TransactionType.payment,
             processor=PaymentProcessor.stripe,

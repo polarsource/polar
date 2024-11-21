@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  Discount,
   DiscountCreate,
   DiscountSortProperty,
   DiscountUpdate,
@@ -22,9 +23,6 @@ import type {
   ListResourceDiscount,
   OrganizationIDFilter,
   ResourceNotFound,
-  ResponseDiscountsCreate,
-  ResponseDiscountsGet,
-  ResponseDiscountsUpdate,
 } from '../models/index';
 
 export interface DiscountsApiCreateRequest {
@@ -61,7 +59,7 @@ export class DiscountsApi extends runtime.BaseAPI {
      * Create a discount.
      * Create Discount
      */
-    async createRaw(requestParameters: DiscountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseDiscountsCreate>> {
+    async createRaw(requestParameters: DiscountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Discount>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -98,7 +96,7 @@ export class DiscountsApi extends runtime.BaseAPI {
      * Create a discount.
      * Create Discount
      */
-    async create(requestParameters: DiscountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseDiscountsCreate> {
+    async create(requestParameters: DiscountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Discount> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -149,7 +147,7 @@ export class DiscountsApi extends runtime.BaseAPI {
      * Get a discount by ID.
      * Get Discount
      */
-    async getRaw(requestParameters: DiscountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseDiscountsGet>> {
+    async getRaw(requestParameters: DiscountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Discount>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -183,7 +181,7 @@ export class DiscountsApi extends runtime.BaseAPI {
      * Get a discount by ID.
      * Get Discount
      */
-    async get(requestParameters: DiscountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseDiscountsGet> {
+    async get(requestParameters: DiscountsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Discount> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -248,7 +246,7 @@ export class DiscountsApi extends runtime.BaseAPI {
      * Update a discount.
      * Update Discount
      */
-    async updateRaw(requestParameters: DiscountsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseDiscountsUpdate>> {
+    async updateRaw(requestParameters: DiscountsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Discount>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -292,7 +290,7 @@ export class DiscountsApi extends runtime.BaseAPI {
      * Update a discount.
      * Update Discount
      */
-    async update(requestParameters: DiscountsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseDiscountsUpdate> {
+    async update(requestParameters: DiscountsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Discount> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

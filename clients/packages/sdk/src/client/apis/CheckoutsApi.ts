@@ -15,13 +15,13 @@
 
 import * as runtime from '../runtime';
 import type {
+  CheckoutLegacy,
+  CheckoutLegacyCreate,
   HTTPValidationError,
-  PolarCheckoutLegacySchemasCheckout,
-  PolarCheckoutLegacySchemasCheckoutCreate,
 } from '../models/index';
 
 export interface CheckoutsApiCreateRequest {
-    body: PolarCheckoutLegacySchemasCheckoutCreate;
+    body: CheckoutLegacyCreate;
 }
 
 export interface CheckoutsApiGetRequest {
@@ -38,7 +38,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
      * Create Checkout
      * @deprecated
      */
-    async createRaw(requestParameters: CheckoutsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarCheckoutLegacySchemasCheckout>> {
+    async createRaw(requestParameters: CheckoutsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CheckoutLegacy>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -76,7 +76,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
      * Create Checkout
      * @deprecated
      */
-    async create(requestParameters: CheckoutsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarCheckoutLegacySchemasCheckout> {
+    async create(requestParameters: CheckoutsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CheckoutLegacy> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -86,7 +86,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
      * Get Checkout
      * @deprecated
      */
-    async getRaw(requestParameters: CheckoutsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PolarCheckoutLegacySchemasCheckout>> {
+    async getRaw(requestParameters: CheckoutsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CheckoutLegacy>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -113,7 +113,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
      * Get Checkout
      * @deprecated
      */
-    async get(requestParameters: CheckoutsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PolarCheckoutLegacySchemasCheckout> {
+    async get(requestParameters: CheckoutsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CheckoutLegacy> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }

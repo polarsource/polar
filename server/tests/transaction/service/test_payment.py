@@ -133,10 +133,11 @@ class TestCreatePayment:
         assert transaction.id == existing_transaction.id
 
     @pytest.mark.parametrize(
-        "risk",
+        "risk_level,risk_score",
         [
-            pytest.param({"risk_level": None, "risk_score": None}),
-            pytest.param({"risk_level": "normal", "risk_score": 20}),
+            pytest.param(None, None),
+            pytest.param("normal", 20),
+            pytest.param("normal", 4),
         ],
     )
     async def test_customer_user(
@@ -146,20 +147,13 @@ class TestCreatePayment:
         pledge: Pledge,
         user: User,
         stripe_service_mock: MagicMock,
-        risk: dict[str, Any],
+        risk_level: str | None,
+        risk_score: int | None,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
         await save_fixture(user)
         pledge.payment_id = "STRIPE_PAYMENT_ID"
         await save_fixture(pledge)
-
-        risk_level = risk["risk_level"]
-        if risk_level:
-            risk_level = str(risk_level)
-
-        risk_score = risk["risk_score"]
-        if risk_score is not None:
-            risk_score = int(risk_score)
 
         stripe_balance_transaction = build_stripe_balance_transaction()
         stripe_charge = build_stripe_charge(

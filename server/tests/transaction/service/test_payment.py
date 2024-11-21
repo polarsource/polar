@@ -58,7 +58,7 @@ def build_stripe_charge(
     risk_score: int | None = None,
 ) -> stripe_lib.Charge:
     metadata = metadata or {}
-    obj = {
+    obj: dict[str, Any] = {
         "id": "STRIPE_CHARGE_ID",
         "customer": customer,
         "currency": "usd",

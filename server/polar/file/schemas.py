@@ -11,7 +11,7 @@ from polar.integrations.aws.s3.schemas import (
     S3FileUpload,
     S3FileUploadCompleted,
 )
-from polar.kit.schemas import ClassName, MergeJSONSchema, Schema
+from polar.kit.schemas import ClassName, MergeJSONSchema, Schema, SetSchemaReference
 from polar.models.file import File, FileServiceTypes
 
 from .s3 import S3_SERVICES
@@ -67,6 +67,7 @@ class OrganizationAvatarFileCreate(FileCreateBase):
 FileCreate = Annotated[
     DownloadableFileCreate | ProductMediaFileCreate | OrganizationAvatarFileCreate,
     Discriminator("service"),
+    SetSchemaReference("FileCreate"),
 ]
 
 

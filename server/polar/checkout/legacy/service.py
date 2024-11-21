@@ -12,7 +12,7 @@ from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 
-from .schemas import Checkout, CheckoutCreate
+from .schemas import CheckoutLegacy, CheckoutLegacyCreate
 
 
 class CheckoutError(PolarError): ...
@@ -22,9 +22,9 @@ class CheckoutService:
     async def create(
         self,
         session: AsyncSession,
-        create_schema: CheckoutCreate,
+        create_schema: CheckoutLegacyCreate,
         auth_subject: AuthSubject[User | Anonymous],
-    ) -> Checkout:
+    ) -> CheckoutLegacy:
         price = await product_price_service.get_by_id(
             session, create_schema.product_price_id
         )
@@ -107,7 +107,7 @@ class CheckoutService:
             subscription_metadata=metadata,
         )
 
-        return Checkout(
+        return CheckoutLegacy(
             id=checkout_session.id,
             url=checkout_session.url,
             customer_email=checkout_session.customer_details["email"]
@@ -120,7 +120,7 @@ class CheckoutService:
             product_price=price,  # type: ignore
         )
 
-    async def get_by_id(self, session: AsyncSession, id: str) -> Checkout:
+    async def get_by_id(self, session: AsyncSession, id: str) -> CheckoutLegacy:
         try:
             checkout_session = await stripe_service.get_checkout_session(id)
         except stripe_lib.InvalidRequestError as e:
@@ -146,7 +146,7 @@ class CheckoutService:
             raise ResourceNotFound()
         assert product.id == product_price.product_id
 
-        return Checkout(
+        return CheckoutLegacy(
             id=checkout_session.id,
             url=checkout_session.url,
             customer_email=checkout_session.customer_details["email"]

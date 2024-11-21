@@ -319,6 +319,7 @@ class ProductOneTimeCreate(ProductCreateBase):
 ProductCreate = Annotated[
     ProductRecurringCreate | ProductOneTimeCreate,
     MergeJSONSchema({"title": "ProductCreate"}),
+    SetSchemaReference("ProductCreate"),
 ]
 
 

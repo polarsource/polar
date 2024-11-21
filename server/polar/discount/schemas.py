@@ -24,6 +24,7 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.models.discount import DiscountDuration, DiscountType
@@ -431,6 +432,7 @@ Discount = Annotated[
     | Annotated[DiscountPercentageOnceForeverDuration, Tag("percentage.once_forever")]
     | Annotated[DiscountPercentageRepeatDuration, Tag("percentage.repeat")],
     Discriminator(get_discriminator_value),
+    SetSchemaReference("Discount"),
     MergeJSONSchema({"title": "Discount"}),
     ClassName("Discount"),
 ]

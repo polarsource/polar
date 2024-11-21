@@ -7,7 +7,7 @@ from pydantic_core import Url
 from pytest_mock import MockerFixture
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
-from polar.checkout.legacy.schemas import CheckoutCreate
+from polar.checkout.legacy.schemas import CheckoutLegacyCreate
 from polar.checkout.legacy.service import checkout as checkout_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
@@ -36,7 +36,7 @@ class TestCreate:
     async def test_not_existing_price(
         self, auth_subject: AuthSubject[Anonymous], session: AsyncSession
     ) -> None:
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=uuid.uuid4(), success_url=SUCCESS_URL, customer_email=None
         )
         with pytest.raises(PolarRequestValidationError):
@@ -53,7 +53,7 @@ class TestCreate:
         price.is_archived = True
         await save_fixture(price)
 
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         with pytest.raises(PolarRequestValidationError):
@@ -70,7 +70,7 @@ class TestCreate:
         await save_fixture(product)
 
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         with pytest.raises(PolarRequestValidationError):
@@ -83,7 +83,7 @@ class TestCreate:
         product: Product,
     ) -> None:
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id,
             success_url=SUCCESS_URL,
             customer_email=None,
@@ -111,7 +111,7 @@ class TestCreate:
         )
 
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         checkout = await checkout_service.create(session, create_schema, auth_subject)
@@ -163,7 +163,7 @@ class TestCreate:
         )
 
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         checkout = await checkout_service.create(session, create_schema, auth_subject)
@@ -218,7 +218,7 @@ class TestCreate:
         )
 
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         checkout = await checkout_service.create(session, create_schema, auth_subject)
@@ -270,7 +270,7 @@ class TestCreate:
         )
 
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id,
             success_url=SUCCESS_URL,
             customer_email="backer@example.com",
@@ -328,7 +328,7 @@ class TestCreate:
         )
 
         price = product.prices[0]
-        create_schema = CheckoutCreate(
+        create_schema = CheckoutLegacyCreate(
             product_price_id=price.id, success_url=SUCCESS_URL, customer_email=None
         )
         checkout = await checkout_service.create(session, create_schema, auth_subject)

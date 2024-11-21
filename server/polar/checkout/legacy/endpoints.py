@@ -5,7 +5,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import auth
-from .schemas import Checkout, CheckoutCreate
+from .schemas import CheckoutLegacy, CheckoutLegacyCreate
 from .service import checkout as checkout_service
 
 router = APIRouter(
@@ -23,7 +23,7 @@ _deprecation_message = (
 @router.post(
     "/",
     summary="Create Checkout",
-    response_model=Checkout,
+    response_model=CheckoutLegacy,
     status_code=201,
     openapi_extra={
         "x-speakeasy-deprecation-replacement": "checkouts:custom:create",
@@ -31,10 +31,10 @@ _deprecation_message = (
     },
 )
 async def create(
-    checkout_create: CheckoutCreate,
+    checkout_create: CheckoutLegacyCreate,
     auth_subject: auth.Checkout,
     session: AsyncSession = Depends(get_db_session),
-) -> Checkout:
+) -> CheckoutLegacy:
     """Create a checkout session."""
     return await checkout_service.create(session, checkout_create, auth_subject)
 
@@ -42,11 +42,13 @@ async def create(
 @router.get(
     "/{id}",
     summary="Get Checkout",
-    response_model=Checkout,
+    response_model=CheckoutLegacy,
     openapi_extra={
         "x-speakeasy-deprecation-message": _deprecation_message,
     },
 )
-async def get(id: str, session: AsyncSession = Depends(get_db_session)) -> Checkout:
+async def get(
+    id: str, session: AsyncSession = Depends(get_db_session)
+) -> CheckoutLegacy:
     """Get an active checkout session by ID."""
     return await checkout_service.get_by_id(session, id)

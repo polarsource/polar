@@ -27,6 +27,7 @@ from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.models.checkout import CheckoutStatus
@@ -153,7 +154,10 @@ class CheckoutProductCreate(CheckoutCreateBase):
     )
 
 
-CheckoutCreate = CheckoutProductCreate | CheckoutPriceCreate
+CheckoutCreate = Annotated[
+    CheckoutProductCreate | CheckoutPriceCreate,
+    SetSchemaReference("CheckoutCreate"),
+]
 
 
 class CheckoutCreatePublic(Schema):

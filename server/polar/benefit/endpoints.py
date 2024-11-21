@@ -1,4 +1,4 @@
-from fastapi import Body, Depends, Query
+from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.authz.service import Authz
@@ -148,7 +148,7 @@ async def grants(
 )
 async def create(
     auth_subject: auth.BenefitsWrite,
-    benefit_create: BenefitCreate = Body(..., discriminator="type"),
+    benefit_create: BenefitCreate,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),

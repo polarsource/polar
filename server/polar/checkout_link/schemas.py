@@ -10,7 +10,13 @@ from polar.kit.metadata import (
     MetadataOutputMixin,
     OptionalMetadataInputMixin,
 )
-from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    MergeJSONSchema,
+    Schema,
+    SetSchemaReference,
+    TimestampedSchema,
+)
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
@@ -68,7 +74,10 @@ class CheckoutLinkProductCreate(CheckoutLinkCreateBase):
     )
 
 
-CheckoutLinkCreate = CheckoutLinkProductCreate | CheckoutLinkPriceCreate
+CheckoutLinkCreate = Annotated[
+    CheckoutLinkProductCreate | CheckoutLinkPriceCreate,
+    SetSchemaReference("CheckoutLinkCreate"),
+]
 
 
 class CheckoutLinkUpdate(OptionalMetadataInputMixin):

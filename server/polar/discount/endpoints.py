@@ -1,12 +1,12 @@
 from typing import Annotated
 
 from fastapi import Body, Depends, Path, Query
-from pydantic import UUID4, Discriminator
+from pydantic import UUID4
 
 from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
 from polar.models import Discount
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -19,7 +19,6 @@ from .schemas import (
     DiscountAdapter,
     DiscountCreate,
     DiscountUpdate,
-    get_discriminator_value,
 )
 from .service import discount as discount_service
 
@@ -92,10 +91,12 @@ async def get(
 )
 async def create(
     auth_subject: auth.DiscountWrite,
-    discount_create: DiscountCreate = Body(
-        ...,
-        discriminator=Discriminator(get_discriminator_value),  # type: ignore
-    ),
+    # This is a workaround for FastAPI bug: https://github.com/fastapi/fastapi/discussions/12941
+    discount_create: Annotated[
+        DiscountCreate,
+        Body(...),
+        SetSchemaReference("DiscountCreate"),
+    ],
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Discount:

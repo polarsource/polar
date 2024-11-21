@@ -360,14 +360,16 @@ class BenefitLicenseKeysCreate(BenefitCreateBase):
     properties: BenefitLicenseKeysCreateProperties
 
 
-BenefitCreate = (
+BenefitCreate = Annotated[
     BenefitCustomCreate
     | BenefitAdsCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
     | BenefitDownloadablesCreate
-    | BenefitLicenseKeysCreate
-)
+    | BenefitLicenseKeysCreate,
+    Discriminator("type"),
+    SetSchemaReference("BenefitCreate"),
+]
 
 
 # BenefitUpdate

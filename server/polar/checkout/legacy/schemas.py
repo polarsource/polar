@@ -5,7 +5,7 @@ from polar.kit.schemas import EmailStrDNS, Schema
 from polar.product.schemas import ProductPrice
 
 
-class CheckoutCreate(Schema):
+class CheckoutLegacyCreate(Schema):
     product_price_id: UUID4 = Field(
         ...,
         description="ID of the product price to subscribe to.",
@@ -34,7 +34,7 @@ class CheckoutCreate(Schema):
     )
 
 
-class Checkout(Schema):
+class CheckoutLegacy(Schema):
     """A checkout session."""
 
     id: str = Field(..., description="The ID of the checkout.")

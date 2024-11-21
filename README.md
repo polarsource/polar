@@ -66,7 +66,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ### Polar API & SDK
 
-You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api/) and [Webhook API](https://docs.polar.sh/api/webhooks).
+You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api/) and [Webhook API](https://docs.polar.sh/developers/webhooks).
 
 We also maintain SDK for the following languages:
 

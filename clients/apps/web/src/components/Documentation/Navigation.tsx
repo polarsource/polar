@@ -446,6 +446,13 @@ export const MainNavigation = () => {
       </div>
 
       <div>
+        <NavigationHeadline>Checkout</NavigationHeadline>
+        <NavigationItem href="/docs/checkout">Sell products</NavigationItem>
+        <NavigationItem href="/docs/checkout/custom-fields">
+          Custom Fields
+        </NavigationItem>
+      </div>
+      <div>
         <NavigationHeadline>Orders &amp; Subscribers</NavigationHeadline>
         <NavigationItem href="/docs/sales">Sales Dashboard</NavigationItem>
         <NavigationItem href="/docs/sales/orders">
@@ -546,9 +553,6 @@ export const GuidesNavigation = () => {
       </NavigationItem>
       <NavigationItem href="/docs/developers/guides/laravel">
         Integrate with Laravel
-      </NavigationItem>
-      <NavigationItem href="/docs/developers/guides/checkout">
-        Integrate Checkouts
       </NavigationItem>
       <NavigationItem href="/docs/developers/guides/figma">
         Figma Plugins with License Keys

@@ -100,6 +100,7 @@ class PaymentTransactionService(BaseTransactionService):
                 payment_user = pledge.user
                 payment_organization = pledge.by_organization
 
+        risk = charge.outcome or {}
         transaction = Transaction(
             type=TransactionType.payment,
             processor=PaymentProcessor.stripe,
@@ -115,6 +116,8 @@ class PaymentTransactionService(BaseTransactionService):
             payment_organization=payment_organization,
             charge_id=charge.id,
             pledge=pledge,
+            risk_level=risk.get("risk_level"),
+            risk_score=risk.get("risk_score"),
             order=None,
         )
 

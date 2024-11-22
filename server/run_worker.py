@@ -118,9 +118,6 @@ def _main(queue: str, worker_num: int = 1, scheduler: bool = False) -> int:
 
     def stop_processes(signum: signal.Signals) -> None:
         logger.debug("Stopping worker processes")
-        nonlocal running
-        running = False
-
         for p in processes:
             logger.debug(f"Stopping process {p.pid}")
             if p.pid is None:
@@ -134,6 +131,10 @@ def _main(queue: str, worker_num: int = 1, scheduler: bool = False) -> int:
 
     def handle_signal(signum: int, frame: FrameType | None) -> None:
         logger.info(f"Received signal {signum}, shutting down worker processes")
+
+        nonlocal running
+        running = False
+
         stop_processes(signal.Signals(signum))
 
     for sig in {signal.SIGTERM, signal.SIGINT}:
@@ -154,11 +155,13 @@ def _main(queue: str, worker_num: int = 1, scheduler: bool = False) -> int:
                 continue
 
             if running:
-                logger.error(
+                running = False
+                logger.info(
                     f"Worker process {p.pid} exited with code {p.exitcode}. "
                     "Shutting down."
                 )
                 stop_processes(signal.SIGTERM)
+                break
             else:
                 exit_code = exit_code or p.exitcode
 

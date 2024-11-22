@@ -130,7 +130,7 @@ services:
       creds:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
-    plan: starter
+    plan: standard
     dockerCommand: uv run python -m run_worker github
     region: ohio
     numInstances: 1

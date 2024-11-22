@@ -1,4 +1,3 @@
-import Accordion from './Accordion'
 import FormattedDateTime from './FormattedDateTime'
 import IssueBodyRenderer from './IssueBodyRenderer'
 import LabeledRadioButton from './LabeledRadioButton'
@@ -15,7 +14,6 @@ import Switch from './Switch'
 // See datatable, Select.tsx, etc, for examples.
 
 export {
-  Accordion,
   FormattedDateTime,
   IssueBodyRenderer,
   LabeledRadioButton,

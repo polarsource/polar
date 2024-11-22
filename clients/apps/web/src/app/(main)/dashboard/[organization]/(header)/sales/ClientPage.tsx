@@ -134,7 +134,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={user.avatar_url}
               name={user.public_name}
             />
-            <div className="fw-medium">{user.public_name ?? user.email}</div>
+            <div className="fw-medium">{user.email}</div>
           </div>
         )
       },

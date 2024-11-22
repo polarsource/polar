@@ -11,7 +11,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/ui/accordion'
+} from 'polarkit/components/ui/atoms/Accordion'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -117,7 +117,7 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                       variant="outline"
                       onClick={generateDiscountCode}
                     >
-                      <AutorenewOutlined className="h-4 w-4" />
+                      <AutorenewOutlined fontSize="small" />
                     </Button>
                   </div>
                 </div>

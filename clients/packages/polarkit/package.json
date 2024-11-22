@@ -3,8 +3,8 @@
   "version": "0.0.4",
   "private": true,
   "exports": {
-    "./components/ui/accordion": "./src/components/ui/accordion.tsx",
     "./components/ui/atoms": "./src/components/ui/atoms/index.ts",
+    "./components/ui/atoms/Accordion": "./src/components/ui/atoms/Accordion.tsx",
     "./components/ui/atoms/alert": "./src/components/ui/atoms/Alert.tsx",
     "./components/ui/atoms/avatar": "./src/components/ui/atoms/Avatar.tsx",
     "./components/ui/atoms/button": "./src/components/ui/atoms/Button.tsx",

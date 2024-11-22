@@ -23,13 +23,13 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import { Pill, Switch } from 'polarkit/components/ui/atoms'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/ui/accordion'
-import { Pill, Switch } from 'polarkit/components/ui/atoms'
+} from 'polarkit/components/ui/atoms/Accordion'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'

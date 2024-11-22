@@ -69,21 +69,21 @@ const PercentageInput = (props: Props) => {
       id={id}
       name={name}
       className={twMerge(
-        'dark:placeholder:text-polar-500 block w-full px-4 pl-8 text-base placeholder:text-gray-400',
+        'dark:placeholder:text-polar-500 block w-full px-4 text-base placeholder:text-gray-400',
         props.className ?? '',
       )}
       value={internalValue}
       onChange={onChange}
       onInput={onInput}
       placeholder={placeholder ? `${placeholder / 100}` : undefined}
-      preSlot={
-        preSlot ? (
-          preSlot
+      postSlot={
+        postSlot ? (
+          postSlot
         ) : (
           <PercentOutlined className="text-lg" fontSize="inherit" />
         )
       }
-      postSlot={postSlot}
+      preSlot={preSlot}
       onBlur={onBlur}
       onFocus={onFocus}
       onWheel={(e) => {

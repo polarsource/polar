@@ -16,6 +16,7 @@ flowchart TD
         REDIS["Redis"]
         S3["S3 Storage"]
         WORKER["Worker"]
+        WORKER_GITHUB["Worker GitHub"]
     end
     subgraph "Frontend"
         WEB["Web client"]
@@ -28,7 +29,9 @@ flowchart TD
     API --> POSTGRESQL
     API --> REDIS
     REDIS <--> WORKER
+    REDIS <--> WORKER_GITHUB
     WORKER --> POSTGRESQL
+    WORKER_GITHUB --> POSTGRESQL
     API --> S3
     WEB --> S3
 
@@ -181,3 +184,24 @@ By default, the web client will be available at [http://127.0.0.1:3000](http://1
 
 > [!NOTE]
 > On **GitHub Codespaces**, both API backend and web frontend will be routed on the 8080 port.
+
+## Work with emails
+
+We have a mechanism to render emails into a file and preview it in the browser. If changes are made to the codebase, they are automatically refreshed.
+
+This can be triggered with the following commands:
+
+### Order confirmation email
+
+```bash
+uv run task watch_email email_order_confirmation
+```
+
+### Subscription confirmation email
+
+```bash
+uv run task watch_email email_subscription_confirmation
+```
+
+> [!NOTE]
+> Other emails are not yet supported, but can be added if needed.

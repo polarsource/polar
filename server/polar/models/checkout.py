@@ -207,7 +207,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_payment_setup_required(self) -> bool:
-        return self.product_price.is_recurring
+        return self.product_price.is_recurring and not self.is_free_product_price
 
     @property
     def is_payment_form_required(self) -> bool:

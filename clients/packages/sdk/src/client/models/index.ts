@@ -5110,6 +5110,12 @@ export interface CheckoutCreatePublic {
      * @memberof CheckoutCreatePublic
      */
     from_legacy_checkout_link?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutCreatePublic
+     */
+    subscription_id?: string | null;
 }
 /**
  * @type CheckoutDiscount

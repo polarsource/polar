@@ -173,6 +173,7 @@ class TestUpdate:
             subscription.stripe_subscription_id,
             old_price=product.prices[0].stripe_price_id,
             new_price=product_second.prices[0].stripe_price_id,
+            error_if_incomplete=False,
         )
 
 

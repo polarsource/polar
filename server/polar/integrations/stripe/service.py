@@ -22,18 +22,31 @@ instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
 
 
-class MissingOrganizationBillingEmail(PolarError):
+class StripeError(PolarError): ...
+
+
+class MissingOrganizationBillingEmail(StripeError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"The organization {organization_id} billing email is not set."
         super().__init__(message)
 
 
-class MissingLatestInvoiceForOutofBandSubscription(PolarError):
+class MissingLatestInvoiceForOutofBandSubscription(StripeError):
     def __init__(self, subscription_id: str) -> None:
         self.subscription_id = subscription_id
         message = f"The subscription {subscription_id} does not have a latest invoice."
         super().__init__(message)
+
+
+class MissingPaymentMethod(StripeError):
+    def __init__(self, subscription_id: str) -> None:
+        self.subscription_id = subscription_id
+        message = (
+            f"Tried to upgrade subscription {subscription_id} "
+            "but the customer has no attached payment method."
+        )
+        super().__init__(message, 400)
 
 
 class StripeService:
@@ -425,7 +438,7 @@ class StripeService:
         return None
 
     async def update_subscription_price(
-        self, id: str, *, old_price: str, new_price: str
+        self, id: str, *, old_price: str, new_price: str, error_if_incomplete: bool
     ) -> stripe_lib.Subscription:
         subscription = await stripe_lib.Subscription.retrieve_async(id)
 
@@ -436,7 +449,24 @@ class StripeService:
                 new_items.append({"id": item.id, "deleted": True})
         new_items.append({"price": new_price, "quantity": 1})
 
-        return await stripe_lib.Subscription.modify_async(id, items=new_items)
+        try:
+            return await stripe_lib.Subscription.modify_async(
+                id,
+                items=new_items,
+                payment_behavior="error_if_incomplete"
+                if error_if_incomplete
+                else "allow_incomplete",
+            )
+        except stripe_lib.InvalidRequestError as e:
+            error = e.error
+            if (
+                error is not None
+                and error.code == "resource_missing"
+                and error.message is not None
+                and "payment method" in error.message.lower()
+            ):
+                raise MissingPaymentMethod(id)
+            raise
 
     async def cancel_subscription(self, id: str) -> stripe_lib.Subscription:
         return await stripe_lib.Subscription.modify_async(

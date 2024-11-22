@@ -298,32 +298,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         subscription: Subscription | None = None
         customer: User | None = None
         if checkout_create.subscription_id is not None:
-            subscription = await self._get_upgradable_subscription(
+            subscription, customer = await self._get_validated_subscription(
                 session, checkout_create.subscription_id, product.organization_id
             )
-            if subscription is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "subscription_id"),
-                            "msg": "Subscription does not exist.",
-                            "input": checkout_create.subscription_id,
-                        }
-                    ]
-                )
-            if subscription.price.amount_type != ProductPriceAmountType.free:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "subscription_id"),
-                            "msg": "Only free subscriptions can be upgraded.",
-                            "input": checkout_create.subscription_id,
-                        }
-                    ]
-                )
-            customer = subscription.user
 
         product = await self._eager_load_product(session, product)
 
@@ -460,10 +437,19 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             product=product,
             product_price=price,
             customer=None,
+            subscription=None,
         )
         if is_direct_user(auth_subject):
             checkout.customer = auth_subject.subject
             checkout.customer_email = auth_subject.subject.email
+            if checkout_create.subscription_id is not None:
+                subscription, _ = await self._get_validated_subscription(
+                    session,
+                    checkout_create.subscription_id,
+                    product.organization_id,
+                    auth_subject.subject.id,
+                )
+                checkout.subscription = subscription
         elif checkout_create.customer_email is not None:
             checkout.customer_email = checkout_create.customer_email
 
@@ -1177,14 +1163,18 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         return discount
 
-    async def _get_upgradable_subscription(
-        self, session: AsyncSession, id: uuid.UUID, organization_id: uuid.UUID
-    ) -> Subscription | None:
+    async def _get_validated_subscription(
+        self,
+        session: AsyncSession,
+        subscription_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        user_id: uuid.UUID | None = None,
+    ) -> tuple[Subscription, User]:
         statement = (
             select(Subscription)
             .join(Product)
             .where(
-                Subscription.id == id,
+                Subscription.id == subscription_id,
                 Product.organization_id == organization_id,
             )
             .options(
@@ -1193,8 +1183,36 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 joinedload(Subscription.user),
             )
         )
+        if user_id is not None:
+            statement = statement.where(Subscription.user_id == user_id)
+
         result = await session.execute(statement)
-        return result.scalars().unique().one_or_none()
+        subscription = result.scalars().unique().one_or_none()
+
+        if subscription is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "subscription_id"),
+                        "msg": "Subscription does not exist.",
+                        "input": subscription_id,
+                    }
+                ]
+            )
+        if subscription.price.amount_type != ProductPriceAmountType.free:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "subscription_id"),
+                        "msg": "Only free subscriptions can be upgraded.",
+                        "input": subscription_id,
+                    }
+                ]
+            )
+
+        return subscription, subscription.user
 
     async def _update_checkout(
         self,

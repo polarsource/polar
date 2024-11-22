@@ -13,6 +13,7 @@ import {
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useStorefront, useUpdateSubscription } from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -134,6 +135,14 @@ const ChangePlanModal = ({
             router.push(
               `/${organization.slug}/products/${subscription.product_id}`,
             )
+          } else if (body.error === 'MissingPaymentMethod') {
+            const { url } = await api.checkouts.clientCreate({
+              body: {
+                product_price_id: selectedPrice.id,
+                subscription_id: subscription.id,
+              },
+            })
+            router.push(url)
           }
         }
       }

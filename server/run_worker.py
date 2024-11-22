@@ -79,42 +79,42 @@ def _worker_health_check(
         stop_event.wait(interval)
 
 
-def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> int:
+_worker_settings_class = {
+    "default": WorkerSettings,
+    "github": WorkerSettingsGitHubCrawl,
+}
+
+
+def _main(queue: str, worker_num: int = 1, scheduler: bool = False) -> int:
     running = True
 
-    logger: Logger = structlog.get_logger("run_worker._main", pid=os.getpid())
+    logger: Logger = structlog.get_logger(
+        "run_worker._main", pid=os.getpid(), queue=queue
+    )
     logger.info("Starting worker processes")
 
     processes: list[multiprocessing.Process] = []
 
-    scheduler_process = multiprocessing.Process(target=_run_scheduler)
-    scheduler_process.start()
-    processes.append(scheduler_process)
-    logger.debug("Triggered scheduler process")
+    if scheduler:
+        scheduler_process = multiprocessing.Process(target=_run_scheduler)
+        scheduler_process.start()
+        processes.append(scheduler_process)
+        logger.debug("Triggered scheduler process")
 
-    for _ in range(default_worker_num):
+    for _ in range(worker_num):
         default_worker_process = multiprocessing.Process(
-            target=_run_worker, args=(WorkerSettings,)
+            target=_run_worker, args=(_worker_settings_class[queue],)
         )
         default_worker_process.start()
         processes.append(default_worker_process)
-    logger.debug(f"Triggered {default_worker_num} default worker processes")
+    logger.debug(f"Triggered {worker_num} worker processes")
 
-    for _ in range(github_worker_num):
-        github_worker_process = multiprocessing.Process(
-            target=_run_worker, args=(WorkerSettingsGitHubCrawl,)
-        )
-        github_worker_process.start()
-        processes.append(github_worker_process)
-    logger.debug(f"Triggered {github_worker_num} GitHub worker processes")
-
-    for worker_class in {WorkerSettings, WorkerSettingsGitHubCrawl}:
-        health_check_process = multiprocessing.Process(
-            target=_worker_health_check, args=(worker_class,)
-        )
-        health_check_process.start()
-        processes.append(health_check_process)
-        logger.debug(f"Triggered worker health check process for {worker_class}")
+    health_check_process = multiprocessing.Process(
+        target=_worker_health_check, args=(_worker_settings_class[queue],)
+    )
+    health_check_process.start()
+    processes.append(health_check_process)
+    logger.debug("Triggered worker health check process")
 
     def stop_processes(signum: signal.Signals) -> None:
         logger.debug("Stopping worker processes")
@@ -169,17 +169,23 @@ def _main(default_worker_num: int = 1, github_worker_num: int = 1) -> int:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run worker processes.")
     parser.add_argument(
-        "--default-worker-num",
-        type=int,
-        default=1,
-        help="Number of default worker processes to start (default: 1)",
+        "queue",
+        type=str,
+        choices={"default", "github"},
+        help="Name of the queue to process (default or github)",
     )
     parser.add_argument(
-        "--github-worker-num",
+        "--worker-num",
         type=int,
         default=1,
-        help="Number of GitHub worker processes to start (default: 1)",
+        help="Number of worker processes to start (default: 1)",
+    )
+    parser.add_argument(
+        "--scheduler",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Run the scheduler process (default: False)",
     )
     args = parser.parse_args()
 
-    sys.exit(_main(args.default_worker_num, args.github_worker_num))
+    sys.exit(_main(args.queue, args.worker_num, args.scheduler))

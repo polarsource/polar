@@ -65,6 +65,8 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
+from ..product.service.product import product as product_service
+
 log: Logger = structlog.get_logger()
 
 
@@ -489,7 +491,8 @@ class OrderService(ResourceServiceReader[Order]):
         email_renderer = get_email_renderer({"order": "polar.order"})
         email_sender = get_email_sender()
 
-        product = order.product
+        product = await product_service.get_loaded(session, order.product_id)
+
         user = order.user
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} order confirmation",
@@ -497,6 +500,7 @@ class OrderService(ResourceServiceReader[Order]):
             {
                 "featured_organization": organization,
                 "product": product,
+                "order": order,
                 "url": f"{settings.FRONTEND_BASE_URL}/purchases/products/{order.id}",
                 "current_year": datetime.now().year,
             },

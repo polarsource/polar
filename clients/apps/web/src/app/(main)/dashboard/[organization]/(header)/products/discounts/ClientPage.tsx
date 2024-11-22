@@ -241,8 +241,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
           />
-          <Button type="button" onClick={() => setShowNewModal(true)}>
-            <AddOutlined className="h-4 w-4" />
+          <Button
+            type="button"
+            wrapperClassNames="flex flex-row items-center gap-x-2"
+            onClick={() => setShowNewModal(true)}
+          >
+            <AddOutlined fontSize="small" />
             <span>New Discount</span>
           </Button>
         </div>

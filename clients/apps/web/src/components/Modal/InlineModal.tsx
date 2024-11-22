@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -56,30 +57,40 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
           role="dialog"
           onKeyDown={onKeyDown}
         >
-          <div
-            className="flex h-screen flex-col items-center bg-black/50 md:w-full md:flex-row md:items-start md:justify-end md:p-4"
+          <motion.div
+            initial={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
+            animate={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            exit={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
+            className="relative flex h-screen flex-col items-center md:w-full md:flex-row"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               hide()
             }}
           >
-            <div
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
               className={twMerge(
-                'dark:bg-polar-900 rounded-4xl relative z-10 flex  h-full max-h-full w-full flex-col overflow-hidden bg-gray-50 shadow md:w-[540px] dark:text-white',
+                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-gray-50 shadow md:fixed md:bottom-4 md:right-4 md:top-4 md:h-auto md:w-[540px] dark:text-white',
                 className,
               )}
               onClick={onInnerClick}
             >
               {modalContent}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </FocusLock>
     </React.Fragment>
   )
 
-  return isShown ? ReactDOM.createPortal(modal, document.body) : null
+  return ReactDOM.createPortal(
+    <AnimatePresence>{isShown && modal}</AnimatePresence>,
+    document.body,
+  )
 }
 
 export const InlineModalHeader = (props: {

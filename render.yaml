@@ -168,10 +168,10 @@ services:
           property: port
       - key: POLAR_REDIS_DB
         value: 0
-      # - fromGroup: google-production
-      # - fromGroup: github-production
-      # - fromGroup: backend-production
-      # - fromGroup: stripe-production
+      - fromGroup: google-production
+      - fromGroup: github-production
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
 
   - type: redis
     name: redis
@@ -340,10 +340,10 @@ services:
           property: port
       - key: POLAR_REDIS_DB
         value: 1
-      # - fromGroup: google-sandbox
-      # - fromGroup: github-sandbox
-      # - fromGroup: backend-sandbox
-      # - fromGroup: stripe-sandbox
+      - fromGroup: google-sandbox
+      - fromGroup: github-sandbox
+      - fromGroup: backend-sandbox
+      - fromGroup: stripe-sandbox
 
 databases:
   - name: db

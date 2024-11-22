@@ -132,7 +132,7 @@ const ChangePlanModal = ({
           const body = await err.response.json()
           if (body.error === 'SubscriptionNotActiveOnStripe') {
             router.push(
-              `/api/checkout?price=${selectedPrice.id}&subscription=${subscription.id}`,
+              `/${organization.slug}/products/${subscription.product_id}`,
             )
           }
         }
@@ -141,6 +141,7 @@ const ChangePlanModal = ({
   }, [
     updateSubscription,
     selectedPrice,
+    organization,
     subscription,
     onUserSubscriptionUpdate,
     hide,

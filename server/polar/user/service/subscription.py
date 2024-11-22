@@ -258,6 +258,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             subscription.stripe_subscription_id,
             old_price=subscription.price.stripe_price_id,
             new_price=price.stripe_price_id,
+            error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
         )
 
         subscription.product = product

@@ -166,6 +166,14 @@ class CheckoutCreatePublic(Schema):
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     customer_email: CustomerEmail | None = None
     from_legacy_checkout_link: bool = False
+    subscription_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of a subscription to upgrade. It must be on a free pricing. "
+            "If checkout is successful, metadata set on this checkout "
+            "will be copied to the subscription, and existing keys will be overwritten."
+        ),
+    )
 
 
 class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):

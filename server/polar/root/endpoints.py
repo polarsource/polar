@@ -4,11 +4,7 @@ router = APIRouter()
 
 
 @router.get("/")
-def get() -> dict[str, str]:
+async def get() -> dict[str, str]:
     return {
-        "message": """
-            Hello, World! This is the Polar API.
-
-            For more information, please visit the documentation at: https://docs.polar.sh/
-        """
+        "message": """Hello, World! Welcome to the Polar API for polar.sh. For more information on endpoints, please visit the documentation at: `https://docs.polar.sh/developers`"""
     }

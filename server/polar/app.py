@@ -41,7 +41,7 @@ from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
-from polar.root import router as root_router
+from polar.root.endpoints import router as root_router
 from polar.sentry import configure_sentry
 from polar.webhook.webhooks import document_webhooks
 from polar.worker import ArqRedis

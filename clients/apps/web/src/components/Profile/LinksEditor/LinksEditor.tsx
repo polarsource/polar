@@ -2,12 +2,14 @@ import { Modal } from '@/components/Modal'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { LanguageOutlined } from '@mui/icons-material'
-import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
+import type { SuccessResult } from 'open-graph-scraper-lite'
 import { twMerge } from 'tailwind-merge'
 import { useModal } from '../../Modal/useModal'
 import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
 import { DraggableLinkCard, LinkCard } from './LinkCard'
 import { LinksModal } from './LinksModal'
+
+type OgObject = SuccessResult['result']
 
 export interface Link {
   id: string

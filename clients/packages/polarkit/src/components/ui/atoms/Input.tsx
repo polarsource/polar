@@ -15,8 +15,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <ShadInput
           className={twMerge(
             'dark:placeholder:text-polar-500 dark:border-polar-700 dark:bg-polar-800 h-10 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-950 shadow-sm outline-none placeholder:text-gray-400 focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
-            preSlot && 'pl-10',
-            postSlot && 'pr-10',
+            preSlot ? 'pl-10' : '',
+            postSlot ? 'pr-10' : '',
             className,
           )}
           ref={ref}

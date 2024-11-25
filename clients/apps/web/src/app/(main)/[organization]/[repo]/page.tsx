@@ -15,8 +15,10 @@ import {
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
+import type { SuccessResult } from 'open-graph-scraper-lite'
 import ClientPage from './ClientPage'
+
+type OgObject = SuccessResult['result']
 
 const cacheConfig = {
   next: {

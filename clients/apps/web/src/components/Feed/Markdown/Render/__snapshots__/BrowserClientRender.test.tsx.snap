@@ -157,6 +157,7 @@ exports[`code 1`] = `
       >
         func main() {
 }
+
       </code>
     </pre>
   </div>
@@ -203,6 +204,7 @@ exports[`mermaid 1`] = `
     "Dogs" : 386
     "Cats" : 85
     "Rats" : 15
+
       </code>
     </pre>
   </div>

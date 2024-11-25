@@ -23,10 +23,12 @@ import {
   RepositoryProfileSettingsUpdate,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
+import type { SuccessResult } from 'open-graph-scraper-lite'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useMemo } from 'react'
+
+type OgObject = SuccessResult['result']
 
 const ClientPage = ({
   organization,

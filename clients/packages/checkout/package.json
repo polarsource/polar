@@ -18,7 +18,7 @@
   "devDependencies": {
     "terser": "^5.36.0",
     "tsconfig": "workspace:*",
-    "tsup": "^7.2.0",
+    "tsup": "^8.3.5",
     "typescript": "latest"
   },
   "publishConfig": {

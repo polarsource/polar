@@ -289,7 +289,7 @@ const OrderModal = ({ order }: OrderModalProps) => {
         <div className="flex flex-col gap-4">
           <h3 className="text-lg">Custom Fields</h3>
           <div className="flex flex-col gap-2">
-            {customFields.items.map((field) => (
+            {customFields?.items?.map((field) => (
               <div
                 key={field.slug}
                 className="flex flex-row items-center justify-between"

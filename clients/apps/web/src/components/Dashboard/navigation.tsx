@@ -185,6 +185,10 @@ const generalRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/benefits`,
       },
       {
+        title: 'Activity',
+        link: `/dashboard/${org.slug}/benefits/activity`,
+      },
+      {
         title: 'License Keys',
         link: `/dashboard/${org.slug}/benefits/license-keys`,
       },

@@ -178,10 +178,31 @@ export const isArraySchema = (
   s: OpenAPIV3_1.SchemaObject,
 ): s is OpenAPIV3_1.ArraySchemaObject => s.type === 'array'
 
+const SCALAR_TYPES = ['boolean', 'number', 'string', 'integer', 'null']
+
+export const isScalarSchema = (
+  s: OpenAPIV3_1.SchemaObject,
+): s is OpenAPIV3_1.NonArraySchemaObject =>
+  !isArraySchema(s) &&
+  !Array.isArray(s.type) &&
+  s.type !== undefined &&
+  SCALAR_TYPES.includes(s.type)
+
+export const isScalarUnionSchema = (
+  schema: OpenAPIV3_1.SchemaObject,
+): boolean => {
+  return (
+    isDereferenced(schema) &&
+    getUnionSchemas(schema)?.every(
+      (s) => isScalarSchema(s) || (isArraySchema(s) && isScalarArraySchema(s)),
+    ) === true
+  )
+}
+
 export const isScalarArraySchema = (
   schema: OpenAPIV3_1.ArraySchemaObject,
 ): boolean => {
-  return isDereferenced(schema.items) && schema.items.type !== 'object'
+  return isDereferenced(schema.items) && isScalarSchema(schema.items)
 }
 
 export const resolveSchemaMinMax = (

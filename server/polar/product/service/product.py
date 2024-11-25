@@ -93,17 +93,6 @@ class ProductService(ResourceServiceReader[Product]):
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
-        elif not is_organization(auth_subject):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "missing",
-                        "loc": ("query", "organization_id"),
-                        "msg": "Field is required.",
-                        "input": None,
-                    }
-                ]
-            )
 
         if query is not None:
             statement = statement.where(Product.name.ilike(f"%{query}%"))

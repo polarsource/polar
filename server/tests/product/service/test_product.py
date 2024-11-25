@@ -70,7 +70,6 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(1, 10),
-            organization_id=[products[0].organization_id],
         )
 
         assert count == 0
@@ -91,7 +90,6 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(1, 10),
-            organization_id=[products[0].organization_id],
         )
 
         assert count == 2

@@ -20,6 +20,7 @@ import { OpenAPIV3_1 } from 'openapi-types'
 import { Parameters } from '../../../../../components/Documentation/Parameters'
 import { resolveEndpointMetadata } from '../../../../../components/Documentation/openapi'
 
+export const dynamic = 'force-static'
 export const dynamicParams = false
 
 export async function generateStaticParams(): Promise<

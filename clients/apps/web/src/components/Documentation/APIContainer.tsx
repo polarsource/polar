@@ -19,14 +19,12 @@ export const APIContainer = ({
   path,
   method,
   highlighter,
-  params,
 }: {
   className?: string
   operation: OpenAPIV3_1.OperationObject
   path: string
   method: string
   highlighter: Highlighter
-  params?: Record<string, any>
 }) => {
   const triggerClassName = 'py-1'
 
@@ -64,7 +62,7 @@ export const APIContainer = ({
                   method,
                   `${CONFIG.BASE_URL}${path}`,
                   operation,
-                  params,
+                  {},
                 )}
               />
             </TabsContent>

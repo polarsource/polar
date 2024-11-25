@@ -9,7 +9,6 @@ import {
 import AnchoredElement from './AnchoredElement'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
-import ParameterWidget from './ParameterWidget'
 import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
 import ProseWrapper from './ProseWrapper'
@@ -27,14 +26,12 @@ const UnionSchema = ({
   parentsProperties,
   showRequired,
   showDefault,
-  showWidgets,
 }: {
   schemas: OpenAPIV3_1.SchemaObject[]
   idPrefix: string[]
   parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
-  showWidgets?: boolean
 }) => {
   const schemas = _schemas.filter(isDereferenced)
   const schemaValues = schemas.map((schema, index) =>
@@ -65,7 +62,6 @@ const UnionSchema = ({
               parentsProperties={parentsProperties}
               showRequired={showRequired}
               showDefault={showDefault}
-              showWidgets={showWidgets}
             />
           </div>
         </TabsContent>
@@ -82,7 +78,6 @@ const SchemaProperty = ({
   parentsProperties,
   showRequired,
   showDefault,
-  showWidgets,
 }: {
   name: string
   property: OpenAPIV3_1.SchemaObject
@@ -91,7 +86,6 @@ const SchemaProperty = ({
   parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
-  showWidgets?: boolean
 }) => {
   return (
     <ParameterItem>
@@ -112,15 +106,6 @@ const SchemaProperty = ({
           <Markdown>{property.description}</Markdown>
         </ProseWrapper>
       )}
-      {showWidgets &&
-        property.type != 'object' &&
-        (!isArraySchema(property) || isScalarArraySchema(property)) && (
-          <ParameterWidget
-            schema={property}
-            parameterName={[...parentsProperties, name].join('.')}
-            parameterIn="body"
-          />
-        )}
       {property.type == 'object' && (
         <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
           <Schema
@@ -129,7 +114,6 @@ const SchemaProperty = ({
             parentsProperties={[...parentsProperties, name]}
             showRequired={showRequired}
             showDefault={showDefault}
-            showWidgets={showWidgets}
           />
         </div>
       )}
@@ -143,7 +127,6 @@ const SchemaProperty = ({
               parentsProperties={[...parentsProperties, name]}
               showRequired={showRequired}
               showDefault={showDefault}
-              showWidgets={showWidgets}
             />
           </div>
         )}
@@ -158,7 +141,6 @@ const SchemaProperties = ({
   parentsProperties,
   showRequired,
   showDefault,
-  showWidgets,
 }: {
   properties: {
     [name: string]: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject
@@ -168,7 +150,6 @@ const SchemaProperties = ({
   parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
-  showWidgets?: boolean
 }) => {
   return (
     <div className="flex flex-col gap-y-4">
@@ -186,7 +167,6 @@ const SchemaProperties = ({
             parentsProperties={parentsProperties}
             showRequired={showRequired}
             showDefault={showDefault}
-            showWidgets={showWidgets}
           />
         ),
       )}
@@ -199,14 +179,12 @@ export const Schema = ({
   idPrefix,
   showRequired,
   showDefault,
-  showWidgets,
   parentsProperties,
 }: {
   schema: OpenAPIV3_1.SchemaObject
   idPrefix: string[]
   showRequired?: boolean
   showDefault?: boolean
-  showWidgets?: boolean
   parentsProperties?: string[]
 }) => {
   const unionSchemas = getUnionSchemas(schema)
@@ -217,7 +195,6 @@ export const Schema = ({
         idPrefix={idPrefix}
         showRequired={showRequired}
         showDefault={showDefault}
-        showWidgets={showWidgets}
         parentsProperties={parentsProperties ?? []}
       />
     )
@@ -231,7 +208,6 @@ export const Schema = ({
         idPrefix={idPrefix}
         showRequired={showRequired}
         showDefault={showDefault}
-        showWidgets={showWidgets}
         parentsProperties={parentsProperties ?? []}
       />
     )

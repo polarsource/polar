@@ -17611,7 +17611,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "payment_processor": {
             "type": "string",
@@ -17812,7 +17812,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "payment_processor": {
             "type": "string",
@@ -17919,7 +17919,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "label": {
             "anyOf": [
@@ -18010,7 +18010,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "custom_field_data": {
             "type": "object",
@@ -18302,7 +18302,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "custom_field_data": {
             "type": "object",
@@ -18944,7 +18944,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "discount_id": {
             "anyOf": [
@@ -19331,7 +19331,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "type": {
             "type": "string",
@@ -19408,7 +19408,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "type": {
             "type": "string",
@@ -19485,7 +19485,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "type": {
             "type": "string",
@@ -19562,7 +19562,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "type": {
             "type": "string",
@@ -19639,7 +19639,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "type": {
             "type": "string",
@@ -20289,7 +20289,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [
@@ -20372,7 +20372,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [
@@ -20455,7 +20455,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [
@@ -20538,7 +20538,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [
@@ -20621,7 +20621,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [
@@ -21067,7 +21067,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "type": "string",
@@ -21538,7 +21538,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "type": "string",
@@ -21978,7 +21978,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "type": "string",
@@ -22433,7 +22433,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "type": "string",
@@ -22664,7 +22664,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [
@@ -27685,7 +27685,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "type": "string",
@@ -27722,7 +27722,7 @@
             "type": "array",
             "maxItems": 1,
             "minItems": 1,
-            "title": "One-time price",
+            "title": "ProductPriceOneTimeCreate",
             "description": "List of available prices for this product."
           },
           "medias": {
@@ -28635,7 +28635,7 @@
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "type": "string",
@@ -28664,7 +28664,7 @@
                 "type": "array",
                 "maxItems": 2,
                 "minItems": 1,
-                "title": "Recurring prices",
+                "title": "ProductPriceRecurringFixedCreate",
                 "description": "List of recurring prices. Only one price per interval (one monthly and one yearly) is allowed."
               },
               {
@@ -28674,7 +28674,7 @@
                 "type": "array",
                 "maxItems": 1,
                 "minItems": 1,
-                "title": "Free recurring price",
+                "title": "ProductPriceRecurringFreeCreate",
                 "description": "List with a single free recurring price."
               }
             ],
@@ -28777,7 +28777,7 @@
               }
             ],
             "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n    * A string with a maximum length of **500 characters**\n    * An integer\n    * A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
             "anyOf": [

@@ -235,7 +235,7 @@ ProductPriceRecurringFixedCreateList = Annotated[
     AfterValidator(_check_intervals),
     MergeJSONSchema(
         {
-            "title": "Recurring prices",
+            "title": "ProductPriceRecurringFixedCreate",
             "description": (
                 "List of recurring prices. "
                 "Only one price per interval (one monthly and one yearly) is allowed."
@@ -249,7 +249,7 @@ ProductPriceRecurringFreeCreateList = Annotated[
     Field(min_length=1, max_length=1),
     MergeJSONSchema(
         {
-            "title": "Free recurring price",
+            "title": "ProductPriceRecurringFreeCreate",
             "description": "List with a single free recurring price.",
         }
     ),
@@ -264,7 +264,7 @@ ProductPriceOneTimeCreateList = Annotated[
     Field(min_length=1, max_length=1),
     MergeJSONSchema(
         {
-            "title": "One-time price",
+            "title": "ProductPriceOneTimeCreate",
             "description": "List with a single one-time price.",
         }
     ),

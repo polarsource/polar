@@ -285,7 +285,7 @@ const OrderModal = ({ order }: OrderModalProps) => {
           <span>{formatCurrencyAndAmount(order.amount, order.currency)}</span>
         </div>
       </div>
-      {customFields && (
+      {(customFields.items?.length ?? 0) > 0 && (
         <div className="flex flex-col gap-4">
           <h3 className="text-lg">Custom Fields</h3>
           <div className="flex flex-col gap-2">

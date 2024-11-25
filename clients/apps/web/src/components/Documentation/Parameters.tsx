@@ -3,7 +3,6 @@ import { OpenAPIV3_1 } from 'openapi-types'
 import AnchoredElement from './AnchoredElement'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
-import ParameterWidget from './ParameterWidget'
 import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
 import ProseWrapper from './ProseWrapper'
@@ -50,14 +49,6 @@ export const Parameters = ({
                 <Markdown>{parameter.description}</Markdown>
               </ProseWrapper>
             )}
-            {parameter.schema &&
-              isDereferenced<OpenAPIV3_1.SchemaObject>(parameter.schema) && (
-                <ParameterWidget
-                  schema={parameter.schema}
-                  parameterName={parameter.name}
-                  parameterIn={parameter.in as 'query' | 'path'}
-                />
-              )}
           </ParameterItem>
         ))}
       </div>

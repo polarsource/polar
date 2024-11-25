@@ -67,10 +67,8 @@ export async function generateMetadata({
 
 export default async function Page({
   params: { endpoint },
-  searchParams,
 }: {
   params: { endpoint: string[] }
-  searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const schema = await fetchSchema()
   const highlighter = await getHighlighter()
@@ -143,7 +141,6 @@ export default async function Page({
           method={method}
           path={apiEndpointPath}
           highlighter={highlighter}
-          params={searchParams}
         />
         {operation.responses && (
           <ResponseContainer

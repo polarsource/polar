@@ -17,7 +17,8 @@ import {
   getUnionSchemas,
   isArraySchema,
   isDereferenced,
-  isScalarArraySchema,
+  isScalarSchema,
+  isScalarUnionSchema,
 } from './openapi'
 
 const UnionSchema = ({
@@ -33,7 +34,9 @@ const UnionSchema = ({
   showRequired?: boolean
   showDefault?: boolean
 }) => {
-  const schemas = _schemas.filter(isDereferenced)
+  const schemas = _schemas
+    .filter(isDereferenced)
+    .filter((s) => !isScalarSchema(s))
   const schemaValues = schemas.map((schema, index) =>
     [...idPrefix, schema.title || `schema_${index}`].join('_'),
   )
@@ -106,7 +109,7 @@ const SchemaProperty = ({
           <Markdown>{property.description}</Markdown>
         </ProseWrapper>
       )}
-      {property.type == 'object' && (
+      {!isScalarSchema(property) && !isScalarUnionSchema(property) && (
         <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
           <Schema
             schema={property}
@@ -117,19 +120,6 @@ const SchemaProperty = ({
           />
         </div>
       )}
-      {isArraySchema(property) &&
-        !isScalarArraySchema(property) &&
-        isDereferenced(property.items) && (
-          <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-            <Schema
-              schema={property.items}
-              idPrefix={[...idPrefix, name]}
-              parentsProperties={[...parentsProperties, name]}
-              showRequired={showRequired}
-              showDefault={showDefault}
-            />
-          </div>
-        )}
     </ParameterItem>
   )
 }
@@ -188,6 +178,7 @@ export const Schema = ({
   parentsProperties?: string[]
 }) => {
   const unionSchemas = getUnionSchemas(schema)
+
   if (unionSchemas) {
     return (
       <UnionSchema
@@ -196,6 +187,18 @@ export const Schema = ({
         showRequired={showRequired}
         showDefault={showDefault}
         parentsProperties={parentsProperties ?? []}
+      />
+    )
+  }
+
+  if (isArraySchema(schema)) {
+    return (
+      <Schema
+        schema={schema.items}
+        idPrefix={idPrefix}
+        parentsProperties={parentsProperties ?? []}
+        showRequired={showRequired}
+        showDefault={showDefault}
       />
     )
   }

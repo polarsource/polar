@@ -122,6 +122,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
     [debouncedQueryChange],
   )
 
+  const handleCopyDiscountId = useCallback(
+    (discount: Discount) => () => {
+      if (typeof navigator !== 'undefined') {
+        navigator.clipboard.writeText(discount.id)
+      }
+    },
+    [],
+  )
+
   const discountsHook = useDiscounts(organization.id, {
     ...getAPIParams(pagination, sorting),
     query: _query,
@@ -210,6 +219,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
             >
               <DropdownMenuItem onClick={() => onDiscountSelected(discount)}>
                 Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyDiscountId(discount)}>
+                Copy Discount ID
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => deleteDiscount.mutate(discount)}>
                 Delete

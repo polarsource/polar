@@ -2,7 +2,7 @@
   "private": true,
   "name": "polar",
   "scripts": {
-    "build": "turbo run build --filter=!astro-example --filter=!@examples/checkout-embed",
+    "build": "turbo run build --filter=!@examples/checkout-embed",
     "dev": "turbo run dev",
     "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
@@ -17,7 +17,7 @@
   "dependencies": {
     "@changesets/cli": "^2.27.9",
     "@manypkg/cli": "^0.21.4",
-    "eslint": "^8.55.0",
+    "eslint": "^8.57.1",
     "eslint-config-custom": "workspace:*",
     "only-allow": "1.1.1",
     "prettier": "^3.3.3",

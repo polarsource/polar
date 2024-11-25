@@ -34,9 +34,10 @@ _description = inspect.cleandoc(
 
     The key must be a string with a maximum length of **{_MAXIMUM_KEY_LENGTH} characters**.
     The value must be either:
-        * A string with a maximum length of **{_MAXIMUM_VALUE_LENGTH} characters**
-        * An integer
-        * A boolean
+
+    * A string with a maximum length of **{_MAXIMUM_VALUE_LENGTH} characters**
+    * An integer
+    * A boolean
 
     You can store up to **{_MAXIMUM_KEYS} key-value pairs**.
     """

@@ -7,6 +7,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.discount.schemas import (
     DiscountMinimal,
 )
+from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason
@@ -21,6 +22,7 @@ class OrderBase(
     tax_amount: int
     currency: str
     billing_reason: OrderBillingReason
+    billing_address: Address | None
 
     user_id: UUID4
     product_id: UUID4

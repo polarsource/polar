@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
+from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -55,6 +56,7 @@ def construct_stripe_invoice(
     lines: list[tuple[str, bool, dict[str, str] | None]] = [("PRICE_ID", False, None)],
     metadata: dict[str, str] = {},
     billing_reason: str = "subscription_create",
+    customer_address: dict[str, Any] | None = {"country": "FR"},
     paid_out_of_band: bool = False,
     discount: Discount | None = None,
 ) -> stripe_lib.Invoice:
@@ -69,6 +71,7 @@ def construct_stripe_invoice(
             "subscription": subscription_id,
             "subscription_details": subscription_details,
             "customer": customer_id,
+            "customer_address": customer_address,
             "lines": {
                 "data": [
                     {
@@ -604,6 +607,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product_one_time.prices[0]
         assert order.subscription is None
         assert order.billing_reason == OrderBillingReason.purchase
+        assert order.billing_address == Address(country="FR")  # pyright: ignore
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",
@@ -861,6 +865,131 @@ class TestCreateOrderFromStripe:
             product_id=product_one_time.id,
             order_id=order.id,
         )
+
+    @pytest.mark.parametrize(
+        "customer_address",
+        [
+            None,
+            {"country": None},
+        ],
+    )
+    async def test_no_billing_address(
+        self,
+        customer_address: dict[str, Any] | None,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        product: Product,
+        user: User,
+        organization_account: Account,
+    ) -> None:
+        mock = MagicMock(spec=StripeService)
+        mocker.patch("polar.order.service.stripe_service", new=mock)
+        mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+            {"id": "CHARGE_ID", "payment_method_details": None},
+            key=None,
+        )
+        invoice = construct_stripe_invoice(
+            lines=[(product.prices[0].stripe_price_id, False, None)],
+            customer_address=customer_address,
+            subscription_id=None,
+            billing_reason="manual",
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+        assert order.billing_address is None
+
+    async def test_billing_address_from_payment_method(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        user: User,
+        organization_account: Account,
+    ) -> None:
+        mock = MagicMock(spec=StripeService)
+        mocker.patch("polar.order.service.stripe_service", new=mock)
+        mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+            {
+                "id": "CHARGE_ID",
+                "payment_method_details": {
+                    "card": {
+                        "country": "US",
+                    }
+                },
+            },
+            key=None,
+        )
+        invoice = construct_stripe_invoice(
+            charge_id="CHARGE_ID",
+            lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
+            customer_address=None,
+            subscription_id=None,
+            billing_reason="manual",
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+        assert order.billing_address == Address(country="US")  # type: ignore
 
 
 @pytest.mark.asyncio

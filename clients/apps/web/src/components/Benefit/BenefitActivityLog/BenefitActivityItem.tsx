@@ -115,12 +115,12 @@ export const BenefitActivityItem = ({
         <div className="relative pt-3">
           {event.type === BenefitActivityLogType.REVOKED && (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 backdrop-blur-2xl dark:bg-red-900/20">
-              <CloseOutlined className="h-4 w-4 text-red-500" />
+              <CloseOutlined fontSize="inherit" className="text-red-500" />
             </div>
           )}
           {event.type === BenefitActivityLogType.GRANTED && (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 backdrop-blur-2xl dark:bg-green-900/20">
-              <CheckOutlined className="h-4 w-4 text-green-500" />
+              <CheckOutlined fontSize="inherit" className="text-green-500" />
             </div>
           )}
           {event.type === BenefitActivityLogType.LIFECYCLE && (
@@ -131,7 +131,7 @@ export const BenefitActivityItem = ({
         </div>
         <div
           className={twMerge(
-            'dark:bg-polar-800 dark:hover:bg-polar-700 flex flex-grow cursor-pointer flex-col gap-y-3 rounded-2xl bg-white p-3 shadow-sm hover:bg-gray-100',
+            'dark:bg-polar-800 dark:hover:bg-polar-700 flex flex-grow cursor-pointer flex-col gap-y-3 rounded-2xl bg-white px-4 py-3 shadow-sm hover:bg-white/50',
           )}
           onClick={() => onToggle(event, !expanded)}
         >
@@ -153,16 +153,42 @@ export const BenefitActivityItem = ({
               )}
             </div>
             <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-              {new Date(event.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-              {' · '}
-              {new Date(event.createdAt).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {(() => {
+                const now = new Date()
+                const createdAt = new Date(event.createdAt)
+                const diffInSeconds = Math.floor(
+                  (now.getTime() - createdAt.getTime()) / 1000,
+                )
+                const diffInMinutes = Math.floor(diffInSeconds / 60)
+                const diffInHours = Math.floor(diffInMinutes / 60)
+                const diffInDays = Math.floor(diffInHours / 24)
+
+                if (expanded) {
+                  return createdAt.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                  })
+                } else if (diffInSeconds < 60) {
+                  return 'Just now'
+                } else if (diffInMinutes < 60) {
+                  return `${diffInMinutes} minutes ago`
+                } else if (diffInHours < 24) {
+                  return `${diffInHours} hours ago`
+                } else if (diffInDays < 7) {
+                  return `${diffInDays} days ago`
+                } else {
+                  return createdAt.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                }
+              })()}
             </span>
           </div>
           {expanded && (

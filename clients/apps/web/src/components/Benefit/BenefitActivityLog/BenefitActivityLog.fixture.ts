@@ -15,7 +15,7 @@ export const benefitActivityLogEvents = (
       name: currentUser.email ?? '',
       avatar: currentUser?.avatar_url ?? '',
     },
-    createdAt: '2025-01-15T08:15:00Z',
+    createdAt: new Date().toISOString(),
     message: 'App Basic License was revoked',
     context: {
       type: ActivityEventContextType.DOWNGRADE,
@@ -30,7 +30,7 @@ export const benefitActivityLogEvents = (
       name: currentUser?.email ?? '',
       avatar: currentUser?.avatar_url ?? '',
     },
-    createdAt: '2025-01-15T08:15:00Z',
+    createdAt: '2024-11-26T08:15:00Z',
     message: 'App Pro License was granted',
     context: {
       type: ActivityEventContextType.ORDER,
@@ -44,7 +44,7 @@ export const benefitActivityLogEvents = (
       name: currentUser?.email ?? '',
       avatar: currentUser?.avatar_url ?? '',
     },
-    createdAt: '2025-01-15T08:15:00Z',
+    createdAt: '2024-01-15T08:15:00Z',
     message: 'App Pro License was enabled on product App Pro Version',
     context: {
       type: ActivityEventContextType.ENABLED,
@@ -58,7 +58,7 @@ export const benefitActivityLogEvents = (
       name: currentUser?.email ?? '',
       avatar: currentUser?.avatar_url ?? '',
     },
-    createdAt: '2025-01-15T08:15:00Z',
+    createdAt: '2024-01-15T08:15:00Z',
     message: 'App Pro License was created',
     context: {
       type: ActivityEventContextType.CREATED,

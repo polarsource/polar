@@ -3,6 +3,7 @@ import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
 import { Interval, Metric } from '@polar-sh/sdk'
 import * as d3 from 'd3'
+import { GeistSans } from 'geist/font/sans'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const primaryColor = 'rgb(0 98 255)'
@@ -174,13 +175,13 @@ const MetricChart: React.FC<MetricChartProps> = ({
           ticks,
           label: null,
           stroke: 'none',
-          fontFamily: 'Inter',
+          fontFamily: GeistSans.style.fontFamily,
         }),
         Plot.axisY({
           tickFormat: valueFormatter,
           label: null,
           stroke: 'none',
-          fontFamily: 'Inter',
+          fontFamily: GeistSans.style.fontFamily,
         }),
         Plot.areaY(data, {
           x: 'timestamp',

@@ -3,7 +3,8 @@
 import { LicenseKeyActivations } from '@/components/Benefit/LicenseKeys/LicenseKeyActivations'
 import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDetails'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
 import {
   useBenefits,
   useLicenseKeyUpdate,
@@ -25,30 +26,28 @@ import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'polarkit/components/ui/atoms/select'
 import { useCallback, useMemo, useState } from 'react'
 
 export const ClientPage = ({
   organization,
   sorting,
   pagination,
+  selectedBenefitId,
 }: {
   organization: Organization
   sorting: SortingState
   pagination: PaginationState
+  selectedBenefitId: string | undefined
 }) => {
-  const [selectedBenefitId, setSelectedBenefitId] = useState<
-    string | undefined
-  >()
   const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeys, setSelectedLicenseKeys] =
     useState<RowSelectionState>({})
+
+  const {
+    isShown: isModalShown,
+    toggle: toggleModal,
+    hide: hideModal,
+  } = useModal(!!selectedBenefitId)
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organizationId: organization.id,
@@ -141,82 +140,60 @@ export const ClientPage = ({
     [updateLicenseKey, selectedLicenseKey, setStatusLoading],
   )
 
-  const LicenseKeyContextView = selectedLicenseKey ? (
-    <div className="flex flex-col gap-y-8 p-8">
-      <h1 className="text-xl">License Key</h1>
-      <div className="flex flex-row items-center gap-x-3">
-        <Avatar
-          className="h-10 w-10"
-          avatar_url={selectedLicenseKey.user?.avatar_url}
-          name={selectedLicenseKey.user?.public_name}
-        />
-        <div className="flex flex-col">
-          <span>{selectedLicenseKey.user?.public_name}</span>
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            {selectedLicenseKey.user?.email}
-          </span>
+  const LicenseKeyContextView = () =>
+    selectedLicenseKey ? (
+      <div className="flex flex-col gap-y-8 p-8">
+        <h1 className="text-xl">License Key</h1>
+        <div className="flex flex-row items-center gap-x-3">
+          <Avatar
+            className="h-10 w-10"
+            avatar_url={selectedLicenseKey.user?.avatar_url}
+            name={selectedLicenseKey.user?.public_name}
+          />
+          <div className="flex flex-col">
+            <span>{selectedLicenseKey.user?.public_name}</span>
+            <span className="dark:text-polar-500 text-xs text-gray-500">
+              {selectedLicenseKey.user?.email}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-y-6">
+          <CopyToClipboardInput value={selectedLicenseKey.key} />
+          <LicenseKeyDetails licenseKey={selectedLicenseKey} />
+        </div>
+        <LicenseKeyActivations licenseKeyId={selectedLicenseKey.id} />
+        <div className="flex flex-row gap-x-4">
+          {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('granted')}
+              loading={statusLoading}
+            >
+              Enable
+            </Button>
+          )}
+          {selectedLicenseKey.status === 'granted' && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('disabled')}
+              loading={statusLoading}
+            >
+              Disable
+            </Button>
+          )}
+          {selectedLicenseKey.status === 'granted' && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('revoked')}
+              loading={statusLoading}
+              variant="destructive"
+            >
+              Revoke
+            </Button>
+          )}
         </div>
       </div>
-      <div className="flex flex-col gap-y-6">
-        <CopyToClipboardInput value={selectedLicenseKey.key} />
-        <LicenseKeyDetails licenseKey={selectedLicenseKey} />
-      </div>
-      <LicenseKeyActivations licenseKeyId={selectedLicenseKey.id} />
-      <div className="flex flex-row gap-x-4">
-        {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('granted')}
-            loading={statusLoading}
-          >
-            Enable
-          </Button>
-        )}
-        {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('disabled')}
-            loading={statusLoading}
-          >
-            Disable
-          </Button>
-        )}
-        {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('revoked')}
-            loading={statusLoading}
-            variant="destructive"
-          >
-            Revoke
-          </Button>
-        )}
-      </div>
-    </div>
-  ) : undefined
+    ) : undefined
 
   return (
-    <DashboardBody
-      className="flex flex-col gap-y-6"
-      contextView={LicenseKeyContextView}
-    >
-      <Select
-        defaultValue="all"
-        onValueChange={(value) => {
-          setSelectedBenefitId(value != 'all' ? value : undefined)
-        }}
-      >
-        <SelectTrigger className="w-fit min-w-64">
-          <SelectValue placeholder="Filter by Benefit" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem key="all" value="all">
-            All License Keys
-          </SelectItem>
-          {licenseKeyBenefits?.items.map((benefit) => (
-            <SelectItem key={benefit.id} value={benefit.id}>
-              {benefit.description}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <>
       <LicenseKeysList
         isLoading={isLoading}
         pageCount={licenseKeys?.pagination.max_page ?? 1}
@@ -228,6 +205,11 @@ export const ClientPage = ({
         onSelectLicenseKeyChange={setSelectedLicenseKeys}
         selectedLicenseKey={selectedLicenseKeys}
       />
-    </DashboardBody>
+      <InlineModal
+        isShown={isModalShown}
+        hide={hideModal}
+        modalContent={<LicenseKeyContextView />}
+      />
+    </>
   )
 }

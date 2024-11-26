@@ -7,6 +7,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
+from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 
@@ -38,6 +39,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
         String, nullable=False, index=True
     )
+    billing_address: Mapped[Address | None] = mapped_column(AddressType, nullable=True)
     stripe_invoice_id: Mapped[str | None] = mapped_column(
         String, nullable=True, unique=True
     )

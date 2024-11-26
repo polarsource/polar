@@ -20,6 +20,7 @@ from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -147,6 +148,10 @@ class InvoiceNotAvailable(OrderError):
         self.order = order
         message = "The invoice is not available for this order."
         super().__init__(message, 404)
+
+
+def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
+    return customer_address is None or customer_address["country"] is None
 
 
 class OrderService(ResourceServiceReader[Order]):
@@ -303,6 +308,16 @@ class OrderService(ResourceServiceReader[Order]):
 
         product = product_price.product
 
+        billing_address: Address | None = None
+        if not _is_empty_customer_address(invoice.customer_address):
+            billing_address = Address.model_validate(invoice.customer_address)
+        # Try to retrieve the country from the payment method
+        elif invoice.charge is not None:
+            charge = await stripe_service.get_charge(get_expandable_id(invoice.charge))
+            if payment_method_details := charge.payment_method_details:
+                if card := getattr(payment_method_details, "card", None):
+                    billing_address = Address.model_validate({"country": card.country})
+
         # Get Discount if available
         discount: Discount | None = None
         if invoice.discount is not None:
@@ -329,7 +344,6 @@ class OrderService(ResourceServiceReader[Order]):
         user: User | None = None
 
         billing_reason: OrderBillingReason = OrderBillingReason.purchase
-
         tax = invoice.tax or 0
         amount = invoice.total - tax
 
@@ -368,6 +382,7 @@ class OrderService(ResourceServiceReader[Order]):
             tax_amount=tax,
             currency=invoice.currency,
             billing_reason=billing_reason,
+            billing_address=billing_address,
             stripe_invoice_id=invoice.id,
             product=product,
             product_price=product_price,

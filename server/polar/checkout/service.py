@@ -65,9 +65,6 @@ from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.user.service.user import user as user_service
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -479,22 +476,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         await session.flush()
         await self._after_checkout_created(session, checkout)
 
-        # Send a depreciation event to the organization's members
         if checkout_create.from_legacy_checkout_link:
-            user_organizations = await user_organization_service.list_by_org(
-                session, product.organization_id
+            log.warning(
+                "Legacy checkout link used",
+                checkout_id=checkout.id,
+                product_id=product.id,
+                organization_id=product.organization_id,
             )
-            for user_organization in user_organizations:
-                enqueue_job(
-                    "loops.send_event",
-                    user_organization.user.email,
-                    "deprecated_checkout_link_v2",
-                    event_properties={
-                        "product": product.name,
-                        "product_price_id": str(price.id),
-                        "organization": product.organization.name,
-                    },
-                )
 
         return checkout
 

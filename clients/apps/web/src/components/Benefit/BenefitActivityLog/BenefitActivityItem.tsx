@@ -153,42 +153,7 @@ export const BenefitActivityItem = ({
               )}
             </div>
             <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-              {(() => {
-                const now = new Date()
-                const createdAt = new Date(event.createdAt)
-                const diffInSeconds = Math.floor(
-                  (now.getTime() - createdAt.getTime()) / 1000,
-                )
-                const diffInMinutes = Math.floor(diffInSeconds / 60)
-                const diffInHours = Math.floor(diffInMinutes / 60)
-                const diffInDays = Math.floor(diffInHours / 24)
-
-                if (expanded) {
-                  return createdAt.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true,
-                  })
-                } else if (diffInSeconds < 60) {
-                  return 'Just now'
-                } else if (diffInMinutes < 60) {
-                  return `${diffInMinutes} minutes ago`
-                } else if (diffInHours < 24) {
-                  return `${diffInHours} hours ago`
-                } else if (diffInDays < 7) {
-                  return `${diffInDays} days ago`
-                } else {
-                  return createdAt.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                }
-              })()}
+              {relativeTime({ dateTime: event.createdAt, longform: expanded })}
             </span>
           </div>
           {expanded && (
@@ -209,6 +174,48 @@ export const BenefitActivityItem = ({
       </div>
     </div>
   )
+}
+
+const relativeTime = ({
+  dateTime,
+  longform,
+}: {
+  dateTime: string
+  longform: boolean
+}) => {
+  const now = new Date()
+  const diffInSeconds = Math.floor(
+    (now.getTime() - new Date(dateTime).getTime()) / 1000,
+  )
+  const diffInMinutes = Math.floor(diffInSeconds / 60)
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  const diffInDays = Math.floor(diffInHours / 24)
+
+  if (longform) {
+    return new Date(dateTime).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    })
+  } else if (diffInSeconds < 60) {
+    return 'Just now'
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} minutes ago`
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hours ago`
+  } else if (diffInDays < 7) {
+    return `${diffInDays} days ago`
+  } else {
+    return new Date(dateTime).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
 }
 
 const Pill = ({

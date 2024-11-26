@@ -4,90 +4,248 @@ import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { DashboardBody } from '../Layout/DashboardLayout'
 
-interface TimelineEvent {
+enum BenefitActivityLogType {
+  REVOKED = 'REVOKED',
+  GRANTED = 'GRANTED',
+  LIFECYCLE = 'LIFECYCLE',
+}
+
+enum ActivityEventContextType {
+  ORDER = 'ORDER',
+  UPGRADE = 'UPGRADE',
+  DOWNGRADE = 'DOWNGRADE',
+  ENABLE = 'ENABLE',
+  DISABLE = 'DISABLE',
+  UPDATED = 'UPDATED',
+  CREATED = 'CREATED',
+  DELETED = 'DELETED',
+}
+
+interface ActivityEventBaseContext {
+  type: ActivityEventContextType
+}
+
+interface ActivityEventOrderContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.ORDER
+  product: string
+}
+
+interface ActivityEventUpgradeContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.UPGRADE
+  fromProduct: string
+  toProduct: string
+}
+
+interface ActivityEventDowngradeContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.DOWNGRADE
+  fromProduct: string
+  toProduct: string
+}
+
+interface ActivityEventCreatedContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.CREATED
+}
+
+interface ActivityEventUpdatedContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.UPDATED
+}
+
+interface ActivityEventDeletedContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.DELETED
+}
+
+interface ActivityEventEnableContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.ENABLE
+  product: string
+}
+
+interface ActivityEventDisableContext extends ActivityEventBaseContext {
+  type: ActivityEventContextType.DISABLE
+  product: string
+}
+
+type ActivityEventLifecycleContext =
+  | ActivityEventEnableContext
+  | ActivityEventDisableContext
+  | ActivityEventCreatedContext
+  | ActivityEventUpdatedContext
+  | ActivityEventDeletedContext
+
+interface ActivityEventBase {
   id: string
-  type: 'revoked' | 'granted' | 'enabled' | 'created'
   user: {
     name: string
     avatar: string
   }
-  date: string
-  time: string
-  title: string
-  metadata: {
-    fromVersion?: string
-    toVersion?: string
-    version?: string
-    licenseKey: string
-    action?: string
-  }
+  createdAt: string
+  message: string
 }
+
+interface ActivityEventRevoked extends ActivityEventBase {
+  type: BenefitActivityLogType.REVOKED
+  context:
+    | ActivityEventOrderContext
+    | ActivityEventUpgradeContext
+    | ActivityEventDowngradeContext
+}
+
+interface ActivityEventGranted extends ActivityEventBase {
+  type: BenefitActivityLogType.GRANTED
+  context:
+    | ActivityEventOrderContext
+    | ActivityEventUpgradeContext
+    | ActivityEventDowngradeContext
+}
+
+interface ActivityEventLifecycle extends ActivityEventBase {
+  type: BenefitActivityLogType.LIFECYCLE
+  context: ActivityEventLifecycleContext
+}
+
+type ActivityEvent =
+  | ActivityEventRevoked
+  | ActivityEventGranted
+  | ActivityEventLifecycle
 
 export const BenefitActivityLog = () => {
   const { currentUser } = useAuth()
 
-  const events: TimelineEvent[] = [
+  const events: ActivityEvent[] = [
     {
       id: '1',
-      type: 'revoked',
+      type: BenefitActivityLogType.REVOKED,
       user: {
         name: currentUser?.email ?? '',
         avatar: currentUser?.avatar_url ?? '',
       },
-      date: 'Jan 15th 2025',
-      time: '08:15 AM',
-      title: 'App Basic License was revoked',
-      metadata: {
-        fromVersion: 'App Pro Version',
-        toVersion: 'App Basic Version',
-        licenseKey: '*****-EAC04D',
-        action: 'Downgrade',
+      createdAt: '2025-01-15T08:15:00Z',
+      message: 'App Basic License was revoked',
+      context: {
+        type: ActivityEventContextType.DOWNGRADE,
+        fromProduct: 'App Pro Version',
+        toProduct: 'App Basic Version',
       },
     },
     {
       id: '2',
-      type: 'granted',
+      type: BenefitActivityLogType.GRANTED,
       user: {
         name: currentUser?.email ?? '',
         avatar: currentUser?.avatar_url ?? '',
       },
-      date: 'Jan 15th 2025',
-      time: '08:15 AM',
-      title: 'App Pro License was granted',
-      metadata: {
-        version: 'App Pro Version',
-        licenseKey: '*****-EAC04D',
-        action: 'Purchase',
+      createdAt: '2025-01-15T08:15:00Z',
+      message: 'App Pro License was granted',
+      context: {
+        type: ActivityEventContextType.ORDER,
+        product: 'App Pro Version',
       },
     },
     {
       id: '3',
-      type: 'enabled',
+      type: BenefitActivityLogType.LIFECYCLE,
       user: {
         name: currentUser?.email ?? '',
         avatar: currentUser?.avatar_url ?? '',
       },
-      date: 'Dec 15th 2024',
-      time: '11:23 AM',
-      title: 'App Pro License was enabled on product App Pro Version',
-      metadata: {
-        version: 'App Pro Version',
-        action: 'Enabled',
+      createdAt: '2025-01-15T08:15:00Z',
+      message: 'App Pro License was enabled on product App Pro Version',
+      context: {
+        type: ActivityEventContextType.ENABLE,
+        product: 'App Pro Version',
       },
     },
     {
       id: '4',
-      type: 'created',
+      type: BenefitActivityLogType.LIFECYCLE,
       user: {
         name: currentUser?.email ?? '',
         avatar: currentUser?.avatar_url ?? '',
       },
-      date: 'Dec 15th 2024',
-      time: '11:20 AM',
-      title: 'App Pro License was created',
-      metadata: {},
+      createdAt: '2025-01-15T08:15:00Z',
+      message: 'App Pro License was created',
+      context: {
+        type: ActivityEventContextType.CREATED,
+      },
     },
   ]
+
+  const renderOrderEvent = useCallback((event: ActivityEvent) => {
+    const { type } = event.context
+
+    switch (type) {
+      case ActivityEventContextType.DOWNGRADE:
+      case ActivityEventContextType.UPGRADE: {
+        const { fromProduct, toProduct } = event.context as
+          | ActivityEventUpgradeContext
+          | ActivityEventDowngradeContext
+        return (
+          <div className="dark:text-polar-500 flex items-center gap-x-2 text-xs text-gray-500">
+            <span>{fromProduct}</span>
+            <svg
+              className="dark:text-polar-500 h-4 w-4 text-gray-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+            <span>{toProduct}</span>
+          </div>
+        )
+      }
+      case ActivityEventContextType.ENABLE:
+      case ActivityEventContextType.DISABLE:
+      case ActivityEventContextType.ORDER: {
+        const { product } = event.context as ActivityEventOrderContext
+        return (
+          <div className="dark:text-polar-500 flex items-center gap-x-2 text-xs text-gray-500">
+            <span>{product}</span>
+          </div>
+        )
+      }
+      default:
+        return null
+    }
+  }, [])
+
+  const resolvePill = useCallback((event: ActivityEvent) => {
+    let color: 'gray' | 'blue' | 'green' | 'red'
+    switch (event.type) {
+      case BenefitActivityLogType.REVOKED:
+        color = 'red'
+        break
+      case BenefitActivityLogType.GRANTED:
+        color = 'green'
+        break
+      case BenefitActivityLogType.LIFECYCLE:
+        color = 'blue'
+        break
+      default:
+        color = 'gray'
+    }
+
+    const contextTypeMap: { [key in ActivityEventContextType]: string } = {
+      [ActivityEventContextType.ORDER]: 'Purchase',
+      [ActivityEventContextType.DOWNGRADE]: 'Downgrade',
+      [ActivityEventContextType.UPGRADE]: 'Upgrade',
+      [ActivityEventContextType.ENABLE]: 'Enable',
+      [ActivityEventContextType.DISABLE]: 'Disable',
+      [ActivityEventContextType.CREATED]: 'Created',
+      [ActivityEventContextType.UPDATED]: 'Updated',
+      [ActivityEventContextType.DELETED]: 'Deleted',
+    }
+
+    return (
+      <Pill className="capitalize" color={color}>
+        {contextTypeMap[event.context.type]}
+      </Pill>
+    )
+  }, [])
 
   return (
     <DashboardBody>
@@ -103,17 +261,17 @@ export const BenefitActivityLog = () => {
               )}
               <div className="relative flex items-start gap-x-4 space-x-3">
                 <div className="relative pt-5">
-                  {event.type === 'revoked' && (
+                  {event.type === BenefitActivityLogType.REVOKED && (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 backdrop-blur-2xl dark:bg-red-900/20">
                       <CloseOutlined className="h-4 w-4 text-red-500" />
                     </div>
                   )}
-                  {event.type === 'granted' && (
+                  {event.type === BenefitActivityLogType.GRANTED && (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 backdrop-blur-2xl dark:bg-green-900/20">
                       <CheckOutlined className="h-4 w-4 text-green-500" />
                     </div>
                   )}
-                  {(event.type === 'enabled' || event.type === 'created') && (
+                  {event.type === BenefitActivityLogType.LIFECYCLE && (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 backdrop-blur-2xl dark:bg-blue-900/20">
                       <div className="h-2 w-2 rounded-full bg-blue-500" />
                     </div>
@@ -132,56 +290,27 @@ export const BenefitActivityLog = () => {
                       </span>
                     </div>
                     <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-                      {event.date} · {event.time}
+                      {new Date(event.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                      {' · '}
+                      {new Date(event.createdAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                   </div>
                   <h3 className="dark:text-polar-100 text-base text-gray-900">
-                    {event.title}
+                    {event.message}
                   </h3>
                   <div className="flex items-center justify-between gap-6 font-mono">
                     <div className="flex items-center gap-3 rounded-full p-1 pr-4">
-                      {event.metadata.action && (
-                        <Pill
-                          color={
-                            event.type === 'revoked'
-                              ? 'red'
-                              : event.type === 'granted'
-                                ? 'green'
-                                : 'blue'
-                          }
-                        >
-                          {event.metadata.action}
-                        </Pill>
-                      )}
-                      {event.metadata.fromVersion &&
-                        event.metadata.toVersion && (
-                          <div className="dark:text-polar-500 flex items-center gap-x-2 text-xs text-gray-500">
-                            <span>{event.metadata.fromVersion}</span>
-                            <svg
-                              className="dark:text-polar-500 h-4 w-4 text-gray-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13 7l5 5m0 0l-5 5m5-5H6"
-                              />
-                            </svg>
-                            <span>{event.metadata.toVersion}</span>
-                          </div>
-                        )}
-                      {event.metadata.version && (
-                        <span className="dark:text-polar-500 text-xs text-gray-500">
-                          {event.metadata.version}
-                        </span>
-                      )}
+                      {resolvePill(event)}
+                      {renderOrderEvent(event)}
                     </div>
-                    {event.metadata.licenseKey && (
-                      <Pill color="gray">{event.metadata.licenseKey}</Pill>
-                    )}
+                    <Pill color="gray">*****-SJKN23</Pill>
                   </div>
                 </div>
               </div>
@@ -194,6 +323,7 @@ export const BenefitActivityLog = () => {
 }
 
 import { useAuth } from '@/hooks'
+import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const Pill = ({

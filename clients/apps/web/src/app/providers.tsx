@@ -50,6 +50,9 @@ export function PolarThemeProvider({
   children: React.ReactElement
 }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const theme = searchParams.get('theme')
+
   const PAGES_WITH_FORCED_DARK_THEME: string[] = []
 
   const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.includes(pathname)
@@ -61,7 +64,7 @@ export function PolarThemeProvider({
       defaultTheme="system"
       enableSystem
       attribute="class"
-      forcedTheme={forcedTheme}
+      forcedTheme={theme ?? forcedTheme}
     >
       {children}
     </ThemeProvider>

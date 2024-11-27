@@ -2,9 +2,9 @@ import datetime
 from math import ceil
 from urllib.parse import urlencode
 
-from pydantic import UUID4
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -19,7 +19,7 @@ from polar.postgres import AsyncSession
 
 from .schemas import EmailUpdateCreate
 
-TOKEN_PREFIX = "polar_ml_"
+TOKEN_PREFIX = "polar_ev_"
 
 
 class EmailUpdateError(PolarError): ...
@@ -37,9 +37,11 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         self,
         email: str,
         session: AsyncSession,
-        user_id: UUID4,
+        auth_subject: AuthSubject[User],
         expire_at: datetime.datetime | None = None,
     ) -> tuple[EmailVerification, str]:
+        user = auth_subject.subject
+        user_id = user.id
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=TOKEN_PREFIX
         )
@@ -52,7 +54,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         )
 
         session.add(email_update_record)
-        await session.commit()
+        await session.flush()
 
         return email_update_record, token
 
@@ -85,7 +87,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             to_email_addr=email_update_record.email, subject=subject, html_content=body
         )
 
-    async def authenticate(self, session: AsyncSession, token: str) -> User:
+    async def verify(self, session: AsyncSession, token: str) -> User:
         token_hash = get_token_hash(token, secret=settings.SECRET)
         email_update_record = await self._get_email_update_record_by_token_hash(
             session, token_hash
@@ -98,7 +100,6 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         user.email = email_update_record.email
 
         await session.delete(email_update_record)
-        await session.commit()
 
         return user
 

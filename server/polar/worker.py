@@ -34,7 +34,7 @@ from polar.kit.db.postgres import (
 from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import generate_correlation_id
 from polar.postgres import create_async_engine
-from polar.redis import REDIS_RETRY, REDIS_RETRY_ON_ERRROR, Redis
+from polar.redis import REDIS_RETRY, REDIS_RETRY_ON_ERRROR, Redis, create_redis
 
 log = structlog.get_logger()
 
@@ -49,6 +49,7 @@ class WorkerContext(TypedDict):
     raw_redis: Redis
     async_engine: AsyncEngine
     async_sessionmaker: AsyncSessionMakerType
+    exit_stack: contextlib.AsyncExitStack
 
 
 class JobContext(WorkerContext):
@@ -56,7 +57,7 @@ class JobContext(WorkerContext):
     job_try: int
     enqueue_time: datetime
     score: int
-    exit_stack: contextlib.ExitStack
+    job_exit_stack: contextlib.ExitStack
     logfire_span: logfire.LogfireSpan
 
 
@@ -99,15 +100,17 @@ class WorkerSettings:
         instrument_sqlalchemy(async_engine.sync_engine)
         instrument_httpx()
 
+        exit_stack = contextlib.AsyncExitStack()
         # Create a dedicated Redis instance instead of sharing the ARQ one,
         # because we need to have decode_responses=True.
-        redis = Redis.from_url(settings.redis_url, decode_responses=True)
+        redis = await exit_stack.enter_async_context(create_redis())
 
         ctx.update(
             {
                 "async_engine": async_engine,
                 "async_sessionmaker": async_sessionmaker,
                 "raw_redis": redis,
+                "exit_stack": exit_stack,
             }
         )
 
@@ -116,8 +119,8 @@ class WorkerSettings:
         engine = ctx["async_engine"]
         await engine.dispose()
 
-        redis = ctx["raw_redis"]
-        await redis.close()
+        exit_stack = ctx["exit_stack"]
+        await exit_stack.aclose()
 
         log.info("polar.worker.shutdown")
 
@@ -132,12 +135,12 @@ class WorkerSettings:
         To circumvent this limitation, we implement this behavior
         through the `task_hooks` decorator.
         """
-        exit_stack = contextlib.ExitStack()
+        job_exit_stack = contextlib.ExitStack()
         function_name = ":".join(ctx["job_id"].split(":")[0:-1])
-        logfire_span = exit_stack.enter_context(
+        logfire_span = job_exit_stack.enter_context(
             logfire.span("TASK {function_name}", function_name=function_name)
         )
-        ctx.update({"exit_stack": exit_stack, "logfire_span": logfire_span})
+        ctx.update({"job_exit_stack": job_exit_stack, "logfire_span": logfire_span})
 
     @staticmethod
     async def on_job_end(ctx: JobContext) -> None:
@@ -150,8 +153,8 @@ class WorkerSettings:
         To circumvent this limitation, we implement this behavior
         through the `task_hooks` decorator.
         """
-        exit_stack = ctx["exit_stack"]
-        exit_stack.close()
+        job_exit_stack = ctx["job_exit_stack"]
+        job_exit_stack.close()
 
 
 class WorkerSettingsGitHubCrawl(WorkerSettings):

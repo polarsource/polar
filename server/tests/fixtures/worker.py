@@ -27,11 +27,12 @@ async def job_context(session: AsyncSession, redis: Redis) -> AsyncIterator[JobC
         "raw_redis": redis,
         "async_engine": engine,
         "async_sessionmaker": cast(AsyncSessionMaker, sessionmaker),
+        "exit_stack": contextlib.AsyncExitStack(),
         "job_id": "fake_job_id",
         "job_try": 1,
         "enqueue_time": utc_now(),
         "score": 0,
-        "exit_stack": contextlib.ExitStack(),
+        "job_exit_stack": contextlib.ExitStack(),
         "logfire_span": MagicMock(),
     }
 

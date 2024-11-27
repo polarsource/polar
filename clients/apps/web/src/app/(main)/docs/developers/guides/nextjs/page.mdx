@@ -11,13 +11,19 @@ import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
 In this guide, we'll show you how to integrate Polar with Next.js.
 
 Feel free to use our quick-start binary to get started inside a new Next.js project:
+
 ```bash
 # Inside a new Next.js project
 npx polar-init
 ```
 
 <BrowserCallout type="TIP">
-Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data. <a href="https://sandbox.polar.sh/start" target='_blank'>You can find the Sandbox environment here.</a>
+  Consider following this guide while using the Polar Sandbox Environment. This
+  will allow you to test your integration without affecting your production
+  data.{' '}
+  <a href="https://sandbox.polar.sh/start" target="_blank">
+    You can find the Sandbox environment here.
+  </a>
 </BrowserCallout>
 
 [A complete code-example of this guide can be found on GitHub](https://github.com/polarsource/polar-next).
@@ -35,7 +41,10 @@ pnpm install @polar-sh/sdk
 #### Polar Access Token
 
 To authenticate with Polar, you need create an access token, and supply it to Next.js using a `POLAR_ACCESS_TOKEN` environment variable.
-<a href="https://sandbox.polar.sh/settings" target='_blank'>You can create a personal access token on the Polar account settings page.</a>
+
+<a href="https://sandbox.polar.sh/settings" target="_blank">
+  You can create a personal access token on the Polar account settings page.
+</a>
 
 #### Polar Organization ID
 
@@ -54,11 +63,11 @@ To interact with the Polar API, you need to create a new instance of the `Polar`
 
 ```typescript
 // src/polar.ts
-import { Polar } from "@polar-sh/sdk"
+import { Polar } from '@polar-sh/sdk'
 
 export const api = new Polar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN!,
-    server: 'sandbox' // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  server: 'sandbox', // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
 })
 ```
 
@@ -70,8 +79,8 @@ Fetching products using the Polar API is simple using the `polar.products.list` 
 
 ```typescript
 const { result } = await api.products.list({
-    organizationId: process.env.POLAR_ORGANIZATION_ID!,
-    isArchived: false // Only fetch products which are published
+  organizationId: process.env.POLAR_ORGANIZATION_ID!,
+  isArchived: false, // Only fetch products which are published
 })
 ```
 
@@ -137,14 +146,14 @@ Let's create a simple server-side rendered page that fetches products from Polar
 
 ```tsx
 // src/app/page.tsx
-import Link from "next/link";
-import { api } from "@/polar";
-import { ProductCard } from "@/components/ProductCard";
+import Link from 'next/link'
+import { api } from '@/polar'
+import { ProductCard } from '@/components/ProductCard'
 
 export default async function Page() {
   const { result } = await api.products.list({
     organizationId: process.env.POLAR_ORGANIZATION_ID!,
-    isArchived: false // Only fetch products which are published
+    isArchived: false, // Only fetch products which are published
   })
 
   return (
@@ -152,11 +161,11 @@ export default async function Page() {
       <h1 className="text-5xl">Products</h1>
       <div className="grid grid-cols-4 gap-12">
         {result.items.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
     </div>
-  );
+  )
 }
 ```
 
@@ -168,26 +177,26 @@ Go ahead and create a new GET route in Next.js.
 
 ```typescript
 // src/app/checkout/route.ts
-import { api } from "@/polar";
-import { type NextRequest, NextResponse } from "next/server";
+import { api } from '@/polar'
+import { type NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
-	const url = new URL(req.url);
-	const productPriceId = url.searchParams.get("priceId") ?? "";
-    // Polar will replace {CHECKOUT_ID} with the actual checkout ID upon a confirmed checkout
-	const confirmationUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}/confirmation?checkout_id={CHECKOUT_ID}`;
+  const url = new URL(req.url)
+  const productPriceId = url.searchParams.get('priceId') ?? ''
+  // Polar will replace {CHECKOUT_ID} with the actual checkout ID upon a confirmed checkout
+  const confirmationUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}/confirmation?checkout_id={CHECKOUT_ID}`
 
-	try {
-		const result = await api.checkouts.custom.create({
-			productPriceId,
-			successUrl: confirmationUrl,
-		});
+  try {
+    const result = await api.checkouts.custom.create({
+      productPriceId,
+      successUrl: confirmationUrl,
+    })
 
-		return NextResponse.redirect(result.url);
-	} catch (error) {
-		console.error(error);
-		return NextResponse.error();
-	}
+    return NextResponse.redirect(result.url)
+  } catch (error) {
+    console.error(error)
+    return NextResponse.error()
+  }
 }
 ```
 
@@ -200,22 +209,20 @@ Create a new page in Next.js to handle the confirmation page. This is where the 
 ```tsx
 // src/app/confirmation/page.tsx
 export default function Page({
-	searchParams: { checkout_id },
+  searchParams: { checkout_id },
 }: {
-	searchParams: {
-		checkout_id: string;
-	};
+  searchParams: {
+    checkout_id: string
+  }
 }) {
-	return (
-        <div>
-            Thank you! Your checkout is now being processed.
-        </div>
-    )
+  return <div>Thank you! Your checkout is now being processed.</div>
 }
 ```
 
 <BrowserCallout type="IMPORTANT">
-The checkout is not considered "successful" yet however. It's initially marked as `confirmed` until you've received a webhook event `checkout.updated` with a status set to `succeeded`. We'll cover this in the next section.
+  The checkout is not considered "successful" yet however. It's initially marked
+  as `confirmed` until you've received a webhook event `checkout.updated` with a
+  status set to `succeeded`. We'll cover this in the next section.
 </BrowserCallout>
 
 ## Handling Polar Webhooks
@@ -252,29 +259,38 @@ POLAR_WEBHOOK_SECRET="..."
 
 #### Verifying the signature
 
-It's important to verify that the requests are truly coming from Polar. As it follows the [Standard Webhooks](https://www.standardwebhooks.com/) specification, you can use one of their libraries to verify the signature:
+It's important to verify that the requests are truly coming from Polar. Our SDK comes with a builtin utility function that validates and parses the webhook payload:
 
 ```typescript
 // src/app/api/webhook/polar/route.ts
-import { Webhook } from "standardwebhooks";
+import {
+	validateEvent,
+	WebhookVerificationError,
+} from "@polar-sh/sdk/webhooks";
 
 export async function POST(request: NextRequest) {
-	const requestBody = await request.text();
-
+  const requestBody = await request.text();
 	const webhookHeaders = {
 		"webhook-id": request.headers.get("webhook-id") ?? "",
 		"webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
 		"webhook-signature": request.headers.get("webhook-signature") ?? "",
 	};
 
-    // The standardwebhooks library requires the secret to be base64 encoded when verifying the signature
-	const webhookSecret = Buffer.from(process.env.POLAR_WEBHOOK_SECRET!).toString(
-		"base64",
-	);
-	const wh = new Webhook(webhookSecret);
-	const webhookPayload = wh.verify(requestBody, webhookHeaders);
+	let webhookPayload: ReturnType<typeof validateEvent>;
+	try {
+		webhookPayload = validateEvent(
+			requestBody,
+			webhookHeaders,
+			env.POLAR_WEBHOOK_SECRET,
+		);
+	} catch (error) {
+		if (error instanceof WebhookVerificationError) {
+			return new NextResponse("", { status: 403 });
+		}
+		throw error;
+	}
 
-    // webhookPayload is now verified and holds the event data
+  // webhookPayload is now verified and holds the event data
 }
 ```
 
@@ -287,47 +303,50 @@ Depending on which events you've subscribed to, you'll receive different payload
 ```typescript
 // src/app/api/webhook/polar/route.ts
 export async function POST(request: NextRequest) {
-    // ...
-    const webhookPayload = wh.verify(requestBody, webhookHeaders);
+  // ...
 
-    switch (webhookPayload.event) {
-        case "checkout.created":
-            // Handle the checkout created event
-            // supabase.from('checkouts').insert(webhookPayload.data)
-            break;
-        case "checkout.updated":
-            // Handle the checkout updated event
-            // supabase.from('checkouts').update(webhookPayload.data).match({ id: webhookPayload.data.id })
-            break;
-        case "subscription.created":
-            // Handle the subscription created event
-            break;
-        case "subscription.updated":
-            // Handle the subscription updated event
-            break;
-        case "subscription.active":
-            // Handle the subscription active event
-            break;
-        case "subscription.revoked":
-            // Handle the subscription revoked event
-            break;
-        case "subscription.canceled":
-            // Handle the subscription canceled event
-            break;
-        default:
-            // Handle unknown event
-            console.log("Unknown event", webhookPayload.event);
-            break;
-    }
+  switch (webhookPayload.event) {
+    case 'checkout.created':
+      // Handle the checkout created event
+      // supabase.from('checkouts').insert(webhookPayload.data)
+      break
+    case 'checkout.updated':
+      // Handle the checkout updated event
+      // supabase.from('checkouts').update(webhookPayload.data).match({ id: webhookPayload.data.id })
+      break
+    case 'subscription.created':
+      // Handle the subscription created event
+      break
+    case 'subscription.updated':
+      // Handle the subscription updated event
+      break
+    case 'subscription.active':
+      // Handle the subscription active event
+      break
+    case 'subscription.revoked':
+      // Handle the subscription revoked event
+      break
+    case 'subscription.canceled':
+      // Handle the subscription canceled event
+      break
+    default:
+      // Handle unknown event
+      console.log('Unknown event', webhookPayload.event)
+      break
+  }
 
-	return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true })
 }
 ```
 
 If you're keeping track of active and inactive subscriptions in your database, make sure to handle the `subscription.active` and `subscription.revoked` events accordingly.
 
 <BrowserCallout type="CAUTION">
-The cancellation of a subscription is handled by the `subscription.canceled` event. The user has probably canceled their subscription before the end of the billing period. Do not revoke any kind of access immediately, but rather wait until the end of the billing period or when you receive the `subscription.revoked` event.
+  The cancellation of a subscription is handled by the `subscription.canceled`
+  event. The user has probably canceled their subscription before the end of the
+  billing period. Do not revoke any kind of access immediately, but rather wait
+  until the end of the billing period or when you receive the
+  `subscription.revoked` event.
 </BrowserCallout>
 
 ### Notifying the client about the event

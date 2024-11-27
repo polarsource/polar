@@ -1,6 +1,6 @@
-from uuid import UUID
 from fastapi import Depends, Form
 from fastapi.responses import RedirectResponse
+
 from polar.auth.dependencies import WebUser
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
@@ -12,11 +12,12 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
 from .schemas import EmailUpdateRequest
-from .service import email_update as email_upate_service
 from .service import EmailUpdateError
+from .service import email_update as email_upate_service
 
 router = APIRouter(prefix="/email_update", tags=["email_update", APITag.private])
-    
+
+
 @router.post("/request")
 async def request_email_update(
     email_update_request: EmailUpdateRequest,
@@ -30,7 +31,7 @@ async def request_email_update(
         session,
         user_id,
     )
-    
+
     await email_upate_service.send_email(
         email_update_record,
         token,
@@ -38,8 +39,8 @@ async def request_email_update(
         extra_url_params=(
             {"return_to": email_update_request.return_to}
             if email_update_request.return_to
-            else {}            
-        )
+            else {}
+        ),
     )
 
 
@@ -49,13 +50,12 @@ async def authenticate_email_update(
     token: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    
     try:
         user = await email_upate_service.authenticate(session, token)
     except EmailUpdateError as e:
         raise PolarRedirectionError(
             e.message, e.status_code, return_to=return_to
-        ) from e       
+        ) from e
 
     await loops_service.user_update(session, user, emailLogin=True)
 

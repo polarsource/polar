@@ -7,6 +7,7 @@ from polar.exceptions import PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo, get_safe_return_url
+from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
@@ -14,7 +15,7 @@ from .schemas import EmailUpdateRequest
 from .service import email_update as email_upate_service
 from .service import EmailUpdateError
 
-router = APIRouter(prefix="/email_update")
+router = APIRouter(prefix="/email_update", tags=["email_update", APITag.private])
     
 @router.post("/request")
 async def request_email_update(

@@ -21,6 +21,7 @@ export * from './CustomerPortalSubscriptionsApi';
 export * from './CustomersApi';
 export * from './DashboardApi';
 export * from './DiscountsApi';
+export * from './EmailUpdateApi';
 export * from './EmbedsApi';
 export * from './ExternalOrganizationsApi';
 export * from './FilesApi';

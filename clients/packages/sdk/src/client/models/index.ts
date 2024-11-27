@@ -4041,6 +4041,12 @@ export interface Checkout {
      * @memberof Checkout
      */
     attached_custom_fields: Array<AttachedCustomField>;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof Checkout
+     */
+    customer_metadata: { [key: string]: MetadataValue; };
 }
 
 
@@ -4779,7 +4785,16 @@ export type CheckoutLinkSortProperty = typeof CheckoutLinkSortProperty[keyof typ
  */
 export interface CheckoutLinkUpdate {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CheckoutLinkUpdate
      */
@@ -4905,6 +4920,21 @@ export interface CheckoutPriceCreate {
      * @memberof CheckoutPriceCreate
      */
     customer_tax_id?: string | null;
+    /**
+     * Key-value object allowing you to store additional information that'll be copied to the created customer.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof CheckoutPriceCreate
+     */
+    customer_metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5103,6 +5133,21 @@ export interface CheckoutProductCreate {
      * @memberof CheckoutProductCreate
      */
     customer_tax_id?: string | null;
+    /**
+     * Key-value object allowing you to store additional information that'll be copied to the created customer.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof CheckoutProductCreate
+     */
+    customer_metadata?: { [key: string]: MetadataValue1; };
     /**
      * 
      * @type {string}
@@ -5693,7 +5738,16 @@ export interface CheckoutUpdate {
      */
     customer_tax_id?: string | null;
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CheckoutUpdate
      */
@@ -5716,6 +5770,21 @@ export interface CheckoutUpdate {
      * @memberof CheckoutUpdate
      */
     customer_ip_address?: string | null;
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof CheckoutUpdate
+     */
+    customer_metadata?: { [key: string]: MetadataValue1; } | null;
     /**
      * 
      * @type {string}
@@ -6811,7 +6880,16 @@ export type CustomFieldUpdate = { type: 'checkbox' } & CustomFieldUpdateCheckbox
  */
 export interface CustomFieldUpdateCheckbox {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateCheckbox
      */
@@ -6858,7 +6936,16 @@ export type CustomFieldUpdateCheckboxTypeEnum = typeof CustomFieldUpdateCheckbox
  */
 export interface CustomFieldUpdateDate {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateDate
      */
@@ -6905,7 +6992,16 @@ export type CustomFieldUpdateDateTypeEnum = typeof CustomFieldUpdateDateTypeEnum
  */
 export interface CustomFieldUpdateNumber {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateNumber
      */
@@ -6952,7 +7048,16 @@ export type CustomFieldUpdateNumberTypeEnum = typeof CustomFieldUpdateNumberType
  */
 export interface CustomFieldUpdateSelect {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateSelect
      */
@@ -6999,7 +7104,16 @@ export type CustomFieldUpdateSelectTypeEnum = typeof CustomFieldUpdateSelectType
  */
 export interface CustomFieldUpdateText {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof CustomFieldUpdateText
      */
@@ -9989,7 +10103,16 @@ export type DiscountType = typeof DiscountType[keyof typeof DiscountType];
  */
 export interface DiscountUpdate {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof DiscountUpdate
      */
@@ -10305,6 +10428,25 @@ export interface DownloadableRead {
      * @memberof DownloadableRead
      */
     file: FileDownload;
+}
+/**
+ * 
+ * @export
+ * @interface EmailUpdateRequest
+ */
+export interface EmailUpdateRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof EmailUpdateRequest
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EmailUpdateRequest
+     */
+    return_to?: string | null;
 }
 /**
  * 
@@ -17536,7 +17678,16 @@ export interface ProductStorefront {
  */
 export interface ProductUpdate {
     /**
+     * Key-value object allowing you to store additional information.
      * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
      * @memberof ProductUpdate
      */

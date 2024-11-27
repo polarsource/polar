@@ -2,12 +2,14 @@ import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
 import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
 import { OAuthAccountRead } from '@polar-sh/sdk'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { useEffect, useState } from 'react'
+import EmailUpdateForm from '../Form/EmailUpdateForm'
 
 interface AuthenticationMethodProps {
   icon: React.ReactNode
@@ -135,10 +137,71 @@ const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
 }
 
 const AuthenticationSettings = () => {
-  const { currentUser } = useAuth()
+  const { currentUser, reloadUser } = useAuth()
   const pathname = usePathname()
   const githubAccount = useGitHubAccount()
   const googleAccount = useGoogleAccount()
+
+  const searchParams = useSearchParams()
+  const [updateEmailStage, setUpdateEmailStage] = useState<
+    'off' | 'form' | 'request' | 'verified' | 'exists'
+  >((searchParams.get('update_email') as 'verified' | null) || 'off')
+  const [userReloaded, setUserReloaded] = useState(false)
+  const [errMsg, setErrMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!userReloaded && updateEmailStage === 'verified') {
+      reloadUser()
+      setUserReloaded(true)
+    }
+  }, [updateEmailStage, reloadUser, userReloaded])
+
+  const updateEmailContent: Record<
+    'off' | 'form' | 'request' | 'verified' | 'exists',
+    React.ReactNode
+  > = {
+    off: (
+      <div className="flex flex-row items-center gap-2">
+        {currentUser && (
+          <>
+            <div className="text-sm">
+              Connected{' '}
+              <FormattedDateTime
+                datetime={currentUser?.created_at}
+                dateStyle="medium"
+              />
+            </div>
+            <Button onClick={() => setUpdateEmailStage('form')}>
+              Change email
+            </Button>
+          </>
+        )}
+      </div>
+    ),
+    form: (
+      <EmailUpdateForm
+        onEmailUpdateRequest={() => setUpdateEmailStage('request')}
+        onEmailUpdateExists={() => setUpdateEmailStage('exists')}
+        onEmailUpdateForm={() => setUpdateEmailStage('form')}
+        setErr={setErrMsg}
+      />
+    ),
+    request: (
+      <div className="dark:text-polar-400 text-center text-sm text-gray-500">
+        A verification email was sent to this address.
+      </div>
+    ),
+    verified: (
+      <div className="text-center text-sm text-green-700 dark:text-green-500">
+        Your email has been updated!
+      </div>
+    ),
+    exists: (
+      <div className="text-center text-sm text-red-700 dark:text-red-500">
+        {errMsg}
+      </div>
+    ),
+  }
 
   return (
     <>
@@ -161,15 +224,7 @@ const AuthenticationSettings = () => {
               icon={<AlternateEmailOutlined />}
               title={currentUser.email}
               subtitle="You can sign in with magic links sent to your email."
-              action={
-                <div className="text-sm">
-                  Connected{' '}
-                  <FormattedDateTime
-                    datetime={currentUser.created_at}
-                    dateStyle="medium"
-                  />
-                </div>
-              }
+              action={updateEmailContent[updateEmailStage]}
             />
           </ShadowListGroup.Item>
         </ShadowListGroup>

@@ -9,6 +9,7 @@ import {
   Configuration,
   DashboardApi,
   DiscountsApi,
+  EmailUpdateApi,
   ExternalOrganizationsApi,
   FilesApi,
   FundingApi,
@@ -71,6 +72,7 @@ export class PolarAPI {
   public readonly discounts: DiscountsApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
+  public readonly emailUpdate: EmailUpdateApi
   public readonly externalOrganizations: ExternalOrganizationsApi
   public readonly funding: FundingApi
   public readonly integrationsDiscord: IntegrationsDiscordApi
@@ -120,6 +122,7 @@ export class PolarAPI {
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
     this.discounts = new DiscountsApi(config)
+    this.emailUpdate = new EmailUpdateApi(config)
     this.externalOrganizations = new ExternalOrganizationsApi(config)
     this.funding = new FundingApi(config)
     this.integrationsDiscord = new IntegrationsDiscordApi(config)

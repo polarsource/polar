@@ -19,79 +19,19 @@ import type {
   HTTPValidationError,
 } from '../models/index';
 
-export interface EmailUpdateApiAuthenticateEmailUpdateRequest {
-    token: string;
-    returnTo?: string;
-}
-
 export interface EmailUpdateApiRequestEmailUpdateRequest {
     body: EmailUpdateRequest;
+}
+
+export interface EmailUpdateApiVerifyEmailUpdateRequest {
+    token: string;
+    returnTo?: string;
 }
 
 /**
  * 
  */
 export class EmailUpdateApi extends runtime.BaseAPI {
-
-    /**
-     * Authenticate Email Update
-     */
-    async authenticateEmailUpdateRaw(requestParameters: EmailUpdateApiAuthenticateEmailUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['token'] == null) {
-            throw new runtime.RequiredError(
-                'token',
-                'Required parameter "token" was null or undefined when calling authenticateEmailUpdate().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['returnTo'] != null) {
-            queryParameters['return_to'] = requestParameters['returnTo'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const consumes: runtime.Consume[] = [
-            { contentType: 'application/x-www-form-urlencoded' },
-        ];
-        // @ts-ignore: canConsumeForm may be unused
-        const canConsumeForm = runtime.canConsumeForm(consumes);
-
-        let formParams: { append(param: string, value: any): any };
-        let useForm = false;
-        if (useForm) {
-            formParams = new FormData();
-        } else {
-            formParams = new URLSearchParams();
-        }
-
-        if (requestParameters['token'] != null) {
-            formParams.append('token', requestParameters['token'] as any);
-        }
-
-        const response = await this.request({
-            path: `/v1/email_update/authenticate`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: formParams,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Authenticate Email Update
-     */
-    async authenticateEmailUpdate(requestParameters: EmailUpdateApiAuthenticateEmailUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.authenticateEmailUpdateRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Request Email Update
@@ -138,6 +78,66 @@ export class EmailUpdateApi extends runtime.BaseAPI {
      */
     async requestEmailUpdate(requestParameters: EmailUpdateApiRequestEmailUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.requestEmailUpdateRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Verify Email Update
+     */
+    async verifyEmailUpdateRaw(requestParameters: EmailUpdateApiVerifyEmailUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['token'] == null) {
+            throw new runtime.RequiredError(
+                'token',
+                'Required parameter "token" was null or undefined when calling verifyEmailUpdate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['returnTo'] != null) {
+            queryParameters['return_to'] = requestParameters['returnTo'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const consumes: runtime.Consume[] = [
+            { contentType: 'application/x-www-form-urlencoded' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['token'] != null) {
+            formParams.append('token', requestParameters['token'] as any);
+        }
+
+        const response = await this.request({
+            path: `/v1/email_update/verify`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: formParams,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Verify Email Update
+     */
+    async verifyEmailUpdate(requestParameters: EmailUpdateApiVerifyEmailUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.verifyEmailUpdateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

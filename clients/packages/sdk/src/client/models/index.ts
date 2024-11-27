@@ -9502,12 +9502,6 @@ export interface EmailUpdateRequest {
      * @memberof EmailUpdateRequest
      */
     return_to?: string | null;
-    /**
-     * 
-     * @type {UserSignupAttribution}
-     * @memberof EmailUpdateRequest
-     */
-    attribution?: UserSignupAttribution | null;
 }
 /**
  * 
@@ -13417,6 +13411,12 @@ export interface Order {
      * @memberof Order
      */
     billing_reason: OrderBillingReason;
+    /**
+     * 
+     * @type {Address}
+     * @memberof Order
+     */
+    billing_address: Address | null;
     /**
      * 
      * @type {string}

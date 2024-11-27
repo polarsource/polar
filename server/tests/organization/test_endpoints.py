@@ -184,6 +184,7 @@ async def test_update_organization_profile_settings(
         "description": None,
         "links": None,
         "enabled": None,
+        "forced_theme": None,
         "accent_color": None,
         "subscribe": {
             "promote": True,
@@ -397,6 +398,48 @@ async def test_update_organization_profile_settings_enabled(
     assert response.status_code == 200
     assert response.json()["id"] == str(organization.id)
     assert response.json()["profile_settings"]["enabled"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_update_organiozation_profile_settings_forced_theme(
+    organization: Organization,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+) -> None:
+    # then
+    session.expunge_all()
+
+    # set forced_theme
+    response = await client.patch(
+        f"/v1/organizations/{organization.id}",
+        json={"profile_settings": {"forced_theme": "dark"}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["forced_theme"] == "dark"
+
+    # omit forced_theme should not affect it
+    response = await client.patch(
+        f"/v1/organizations/{organization.id}",
+        json={"profile_settings": {}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["forced_theme"] == "dark"
+
+    # unset forced_theme
+    response = await client.patch(
+        f"/v1/organizations/{organization.id}",
+        json={"profile_settings": {"forced_theme": None}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["profile_settings"]["forced_theme"] is None
 
 
 @pytest.mark.asyncio

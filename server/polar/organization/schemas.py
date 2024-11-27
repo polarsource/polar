@@ -76,6 +76,9 @@ class OrganizationProfileSettings(Schema):
     accent_color: str | None = Field(
         None, description="Accent color for the organization"
     )
+    forced_theme: str | None = Field(
+        None, description="Forced theme for storefront and checkout"
+    )
 
 
 # Public API

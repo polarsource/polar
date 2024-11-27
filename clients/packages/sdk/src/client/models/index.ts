@@ -5531,9 +5531,10 @@ export interface CheckoutLinkPriceCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5671,9 +5672,10 @@ export interface CheckoutLinkProductCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5795,9 +5797,10 @@ export interface CheckoutPriceCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5986,9 +5989,10 @@ export interface CheckoutProductCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6714,9 +6718,10 @@ export interface CustomFieldCreateCheckbox {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6775,9 +6780,10 @@ export interface CustomFieldCreateDate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6836,9 +6842,10 @@ export interface CustomFieldCreateNumber {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6897,9 +6904,10 @@ export interface CustomFieldCreateSelect {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6958,9 +6966,10 @@ export interface CustomFieldCreateText {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8101,9 +8110,10 @@ export interface DiscountFixedOnceForeverDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8417,9 +8427,10 @@ export interface DiscountFixedRepeatDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8709,9 +8720,10 @@ export interface DiscountPercentageOnceForeverDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -9010,9 +9022,10 @@ export interface DiscountPercentageRepeatDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -13320,12 +13333,6 @@ export const OAuthPlatform = {
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
 
 /**
- * @type OneTimePriceInner
- * @export
- */
-export type OneTimePriceInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
-
-/**
  * 
  * @export
  * @interface Order
@@ -13385,6 +13392,12 @@ export interface Order {
      * @memberof Order
      */
     billing_reason: OrderBillingReason;
+    /**
+     * 
+     * @type {Address}
+     * @memberof Order
+     */
+    billing_address: Address | null;
     /**
      * 
      * @type {string}
@@ -14247,6 +14260,12 @@ export interface OrganizationProfileSettings {
      * @memberof OrganizationProfileSettings
      */
     accent_color?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationProfileSettings
+     */
+    forced_theme?: string | null;
 }
 /**
  * 
@@ -15574,9 +15593,10 @@ export interface ProductOneTimeCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -15597,10 +15617,10 @@ export interface ProductOneTimeCreate {
     description?: string | null;
     /**
      * List of available prices for this product.
-     * @type {Array<OneTimePriceInner>}
+     * @type {Array<ProductPriceOneTimeCreateInner>}
      * @memberof ProductOneTimeCreate
      */
-    prices: Array<OneTimePriceInner>;
+    prices: Array<ProductPriceOneTimeCreateInner>;
     /**
      * 
      * @type {Array<string>}
@@ -15632,6 +15652,12 @@ export type ProductPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 
  * @export
  */
 export type ProductPriceOneTime = { amount_type: 'custom' } & ProductPriceOneTimeCustom | { amount_type: 'fixed' } & ProductPriceOneTimeFixed | { amount_type: 'free' } & ProductPriceOneTimeFree;
+/**
+ * @type ProductPriceOneTimeCreateInner
+ * @export
+ */
+export type ProductPriceOneTimeCreateInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
+
 /**
  * A pay-what-you-want price for a one-time product.
  * @export
@@ -16411,9 +16437,10 @@ export interface ProductRecurringCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}

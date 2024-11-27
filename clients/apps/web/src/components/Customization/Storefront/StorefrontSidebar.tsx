@@ -1,10 +1,10 @@
 'use client'
 
-import { CONFIG } from '@/utils/config'
 import { computeComplementaryColor } from '@/components/Profile/utils'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
 import {
@@ -20,6 +20,13 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import {
@@ -29,13 +36,13 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { Label } from 'polarkit/components/ui/label'
+import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
-import { Separator } from 'polarkit/components/ui/separator'
-import { Label } from 'polarkit/components/ui/label'
 
 const colorThemes = [
   '#121316',
@@ -59,7 +66,7 @@ const StorefrontSidebarContentWrapper = ({
   organization: Organization
 }>) => {
   return (
-    <ShadowBox className="dark:border-transparent shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto p-8">
+    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto p-8 dark:border-transparent">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -225,7 +232,7 @@ const StorefrontForm = () => {
         render={({ field }) => (
           <FormItem className="flex flex-col gap-y-1">
             <div className="flex flex-row items-center justify-between">
-              <FormLabel>Theme</FormLabel>
+              <FormLabel>Accent Color</FormLabel>
             </div>
             <FormControl>
               <div className="flex flex-col gap-y-4">
@@ -259,6 +266,38 @@ const StorefrontForm = () => {
                   </div>
                 </div>
               </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="profile_settings.forced_theme"
+        defaultValue={undefined}
+        render={({ field }) => (
+          <FormItem className="flex flex-col gap-y-1">
+            <div className="flex flex-col gap-y-2">
+              <FormLabel>Forced Theme</FormLabel>
+              <p className="dark:text-polar-500 text-xs text-gray-500">
+                Enforce light or dark theme on your Storefront & Checkout
+              </p>
+            </div>
+            <FormControl>
+              <Select
+                value={field.value ?? 'system'}
+                onValueChange={(value) => field.onChange(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                </SelectContent>
+              </Select>
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -340,7 +379,10 @@ export const StorefrontSidebar = () => {
       organization={organization}
     >
       <div className="flex flex-col gap-y-8">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-y-8"
+        >
           <StorefrontForm />
           <div className="flex flex-row items-center gap-x-4">
             <Button
@@ -364,9 +406,15 @@ export const StorefrontSidebar = () => {
                 buttonLabel="Copy"
                 className="bg-white"
               />
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-center text-xs text-gray-500">
                 Add an official link from GitHub to Polar.{' '}
-                <a href="/docs/github/funding-yaml" target="_blank" className="underline">Learn more.</a>
+                <a
+                  href="/docs/github/funding-yaml"
+                  target="_blank"
+                  className="underline"
+                >
+                  Learn more.
+                </a>
               </p>
             </div>
           </>

@@ -20,6 +20,7 @@ from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
+from polar.eventstream.service import publish
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -497,6 +498,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             "create",
             {"subscription_id": subscription.id},
         )
+
+        # Notify checkout channel that a subscription has been created from it
+        if checkout is not None:
+            await publish(
+                "checkout.subscription_created",
+                {},
+                checkout_client_secret=checkout.client_secret,
+            )
 
         await self._after_subscription_created(session, subscription)
 

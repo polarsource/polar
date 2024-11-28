@@ -15,6 +15,7 @@ from polar.config import settings
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
+from polar.eventstream.service import publish
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -474,6 +475,14 @@ class OrderService(ResourceServiceReader[Order]):
             enqueue_job(
                 "order.discord_notification",
                 order_id=order.id,
+            )
+
+        # Notify checkout channel that an order has been created from it
+        if checkout is not None:
+            await publish(
+                "checkout.order_created",
+                {},
+                checkout_client_secret=checkout.client_secret,
             )
 
         await self._send_webhook(session, order)

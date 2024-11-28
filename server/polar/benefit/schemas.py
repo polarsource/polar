@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
+from annotated_types import Len
 from pydantic import (
     UUID4,
     Discriminator,
@@ -233,7 +234,7 @@ class BenefitGitHubRepositorySubscriberProperties(Schema):
 
 class BenefitDownloadablesCreateProperties(Schema):
     archived: dict[UUID4, bool] = {}
-    files: list[UUID4]
+    files: Annotated[list[UUID4], Len(min_length=1)]
 
 
 class BenefitDownloadablesProperties(Schema):

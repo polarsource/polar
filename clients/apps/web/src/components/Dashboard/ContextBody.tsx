@@ -39,7 +39,7 @@ export const ContextBody = ({
 
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
-      <div className="dark:md:bg-polar-900 dark:border-polar-700 dark:divide-polar-700 relative flex w-full flex-col divide-x rounded-2xl border-gray-200 md:flex-row md:overflow-y-auto md:border md:bg-gray-50 md:shadow-sm">
+      <div className="dark:md:bg-polar-900 dark:border-polar-700 dark:divide-polar-700 relative flex w-full flex-col divide-x rounded-2xl border-gray-200 md:flex-row md:items-stretch md:overflow-y-auto md:border md:bg-gray-50 md:shadow-sm">
         <div className="flex w-full max-w-80 flex-col items-start gap-y-8 overflow-y-auto py-8">
           <div className="flex w-full flex-col gap-y-4 px-6 md:flex-row md:items-center md:justify-between">
             <h4 className="whitespace-nowrap text-xl font-medium dark:text-white">
@@ -59,14 +59,16 @@ export const ContextBody = ({
                 )}
                 onClick={() => item.onSelect(item.id)}
               >
-                <h5 className="text-black text-sm dark:text-white">{item.title}</h5>
+                <h5 className="text-sm text-black dark:text-white">
+                  {item.title}
+                </h5>
                 <p className="text-sm text-gray-500">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mx-auto flex h-full w-full flex-col items-center px-4 md:px-12">
+        <div className="mx-auto flex w-full flex-col items-center overflow-y-auto px-4 md:px-12">
           <div className="flex w-full max-w-screen-lg flex-col gap-y-8">
             <div className="flex w-full flex-col gap-y-4 py-6 md:flex-row md:items-center md:justify-between md:py-8">
               <h1 className="text-2xl font-medium">

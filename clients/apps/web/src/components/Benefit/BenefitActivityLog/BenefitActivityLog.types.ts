@@ -1,3 +1,5 @@
+import { LicenseKeyRead } from '@polar-sh/sdk'
+
 export enum BenefitActivityLogType {
   REVOKED = 'REVOKED',
   GRANTED = 'GRANTED',
@@ -8,6 +10,7 @@ export enum ActivityEventContextType {
   ORDER = 'ORDER',
   UPGRADE = 'UPGRADE',
   DOWNGRADE = 'DOWNGRADE',
+  VALIDATED = 'VALIDATED',
   ENABLED = 'ENABLED',
   DISABLED = 'DISABLED',
   UPDATED = 'UPDATED',
@@ -59,9 +62,16 @@ export interface ActivityEventDisabledContext extends ActivityEventBaseContext {
   product: string
 }
 
+export interface ActivityEventValidatedContext
+  extends ActivityEventBaseContext {
+  type: ActivityEventContextType.VALIDATED
+  licenseKey: LicenseKeyRead
+}
+
 export type ActivityEventLifecycleContext =
   | ActivityEventEnabledContext
   | ActivityEventDisabledContext
+  | ActivityEventValidatedContext
   | ActivityEventCreatedContext
   | ActivityEventUpdatedContext
   | ActivityEventDeletedContext

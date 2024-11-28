@@ -11,7 +11,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
-import { useEffect } from 'react'
+import { PropsWithChildren, useEffect } from 'react'
 
 if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
   posthog.init(CONFIG.POSTHOG_TOKEN, {
@@ -101,10 +101,6 @@ export function PolarToploaderProvider({
   )
 }
 
-export function PolarNuqsProvider({
-  children,
-}: {
-  children: React.ReactElement
-}) {
+export function PolarNuqsProvider({ children }: PropsWithChildren) {
   return <NuqsAdapter>{children}</NuqsAdapter>
 }

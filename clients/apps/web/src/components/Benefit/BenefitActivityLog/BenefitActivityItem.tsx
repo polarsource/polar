@@ -5,6 +5,7 @@ import {
   ActivityEventDowngradeContext,
   ActivityEventOrderContext,
   ActivityEventUpgradeContext,
+  ActivityEventValidatedContext,
   BenefitActivityLogType,
 } from './BenefitActivityLog.types'
 
@@ -64,6 +65,16 @@ export const BenefitActivityItem = ({
           </div>
         )
       }
+      case ActivityEventContextType.VALIDATED:
+        const { licenseKey } = event.context as ActivityEventValidatedContext
+        return (
+          <div className="dark:text-polar-500 flex items-center gap-x-2 text-xs text-gray-500">
+            <span>
+              {licenseKey.validations}{' '}
+              {licenseKey.validations === 1 ? 'Validation' : 'Validations'}
+            </span>
+          </div>
+        )
       default:
         return null
     }
@@ -89,6 +100,7 @@ export const BenefitActivityItem = ({
       [ActivityEventContextType.ORDER]: 'Purchase',
       [ActivityEventContextType.DOWNGRADE]: 'Downgrade',
       [ActivityEventContextType.UPGRADE]: 'Upgrade',
+      [ActivityEventContextType.VALIDATED]: 'Validated',
       [ActivityEventContextType.ENABLED]: 'Enabled',
       [ActivityEventContextType.DISABLED]: 'Disabled',
       [ActivityEventContextType.CREATED]: 'Created',
@@ -239,10 +251,10 @@ const Pill = ({
           ? 'bg-blue-100 text-blue-500 dark:bg-blue-500/20 dark:text-blue-500'
           : '',
         color === 'green'
-          ? 'bg-green-100 text-green-500 dark:bg-green-500/20 dark:text-green-500  '
+          ? 'bg-green-100 text-green-500 dark:bg-green-500/20 dark:text-green-500'
           : '',
         color === 'red'
-          ? 'bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-500  '
+          ? 'bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-500'
           : '',
         className,
       )}

@@ -8,13 +8,13 @@ import { useModal } from '@/components/Modal/useModal'
 import { useBenefits } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { AddOutlined } from '@mui/icons-material'
-import { BenefitPublicInner } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
+import { useQueryState } from 'nuqs'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo } from 'react'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [selectedBenefit, setSelectedBenefit] = useState<BenefitPublicInner>()
+  const [selectedBenefitId, setSelectedBenefitId] = useQueryState('benefitId')
 
   const { organization } = useContext(MaintainerOrganizationContext)
   const { data: benefits } = useBenefits(organization.id, 100)
@@ -24,20 +24,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     searchParams?.get('create_benefit') === 'true',
   )
 
+  const selectedBenefit = useMemo(() => {
+    return benefits?.items.find((b) => b.id === selectedBenefitId)
+  }, [selectedBenefitId, benefits])
+
   useEffect(() => {
-    setSelectedBenefit(benefits?.items[0])
+    const benefitId = benefits?.items[0]?.id
+    if (!selectedBenefit && benefitId) {
+      setSelectedBenefitId(benefitId)
+    }
   }, [benefits])
+
+  const sortedBenefits =
+    benefits?.items.sort((a, b) =>
+      new Date(a.created_at) > new Date(b.created_at) ? -1 : 1,
+    ) ?? []
 
   return (
     <ContextBody
       items={
-        benefits?.items.map((benefit) => ({
+        sortedBenefits.map((benefit) => ({
           id: benefit.id,
           title: benefit.description,
           description: resolveBenefitTypeDisplayName(benefit.type),
           active: selectedBenefit?.id === benefit.id,
-          onSelect: (id) =>
-            setSelectedBenefit(benefits?.items.find((b) => b.id === id)),
+          onSelect: setSelectedBenefitId,
         })) ?? []
       }
       cta={
@@ -55,7 +66,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <CreateBenefitModalContent
             organization={organization}
             hideModal={hide}
-            onSelectBenefit={hide}
+            onSelectBenefit={(benefit) => {
+              setSelectedBenefitId(benefit.id)
+              hide()
+            }}
           />
         }
       />

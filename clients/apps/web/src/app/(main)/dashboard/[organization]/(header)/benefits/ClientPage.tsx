@@ -10,7 +10,6 @@ interface BenefitActivityPageProps {
 export default function ClientPage({ organization }: BenefitActivityPageProps) {
   return (
     <div className="flex flex-col gap-y-8">
-      <h1 className="text-xl">Benefit Activity</h1>
       <BenefitActivityLog />
     </div>
   )

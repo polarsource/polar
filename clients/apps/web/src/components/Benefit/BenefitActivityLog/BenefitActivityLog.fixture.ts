@@ -1,4 +1,4 @@
-import { UserRead } from '@polar-sh/sdk'
+import { LicenseKeyStatus, UserRead } from '@polar-sh/sdk'
 import {
   ActivityEvent,
   ActivityEventContextType,
@@ -8,6 +8,56 @@ import {
 export const benefitActivityLogEvents = (
   currentUser: UserRead,
 ): ActivityEvent[] => [
+  {
+    id: '-1',
+    type: BenefitActivityLogType.LIFECYCLE,
+    user: {
+      name: currentUser.email ?? '',
+      avatar: currentUser?.avatar_url ?? '',
+    },
+    createdAt: new Date().toISOString(),
+    message: 'App Pro License Key was validated',
+    context: {
+      type: ActivityEventContextType.VALIDATED,
+      licenseKey: {
+        organization_id: '1',
+        user_id: '1',
+        id: '1',
+        key: '123456789',
+        user: {
+          id: '1',
+          public_name: 'John Doe',
+          email: '',
+          avatar_url: '',
+        },
+        display_key: '1234-5678-9',
+        benefit_id: '1',
+        status: LicenseKeyStatus.GRANTED,
+        limit_activations: 10,
+        usage: 0,
+        limit_usage: 10,
+        validations: 1,
+        last_validated_at: null,
+        expires_at: null,
+      },
+    },
+  },
+  {
+    id: '0',
+    type: BenefitActivityLogType.GRANTED,
+    user: {
+      name: currentUser.email ?? '',
+      avatar: currentUser?.avatar_url ?? '',
+    },
+    createdAt: new Date().toISOString(),
+    message: 'App Pro License was granted',
+    context: {
+      type: ActivityEventContextType.UPGRADE,
+
+      fromProduct: 'App Basic Version',
+      toProduct: 'App Pro Version',
+    },
+  },
   {
     id: '1',
     type: BenefitActivityLogType.REVOKED,

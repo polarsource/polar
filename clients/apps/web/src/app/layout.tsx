@@ -11,6 +11,7 @@ import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
 import {
+  PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
   PolarToploaderProvider,
@@ -91,10 +92,10 @@ export default async function RootLayout({
           <PolarPostHogProvider>
             <PolarToploaderProvider>
               <PolarQueryClientProvider>
-                <>
+                <PolarNuqsProvider>
                   <SandboxBanner />
                   {children}
-                </>
+                </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarToploaderProvider>
           </PolarPostHogProvider>

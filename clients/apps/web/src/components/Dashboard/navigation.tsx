@@ -181,7 +181,7 @@ const generalRoutesList = (org: Organization): Route[] => [
     if: true,
     subs: [
       {
-        title: 'Overview',
+        title: 'Activity',
         link: `/dashboard/${org.slug}/benefits`,
       },
       {

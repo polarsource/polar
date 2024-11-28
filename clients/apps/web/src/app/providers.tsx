@@ -8,6 +8,7 @@ import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experime
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
 import { useEffect } from 'react'
@@ -98,4 +99,12 @@ export function PolarToploaderProvider({
       />
     </>
   )
+}
+
+export function PolarNuqsProvider({
+  children,
+}: {
+  children: React.ReactElement
+}) {
+  return <NuqsAdapter>{children}</NuqsAdapter>
 }

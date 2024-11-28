@@ -59,7 +59,7 @@ export const ContextBody = ({
                 )}
                 onClick={() => item.onSelect(item.id)}
               >
-                <h5 className="text-black dark:text-white">{item.title}</h5>
+                <h5 className="text-black text-sm dark:text-white">{item.title}</h5>
                 <p className="text-sm text-gray-500">{item.description}</p>
               </div>
             ))}

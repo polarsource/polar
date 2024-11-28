@@ -498,22 +498,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             {"subscription_id": subscription.id},
         )
 
-        # Send notification to managing org
-        await notifications_service.send_to_org_members(
-            session,
-            org_id=subscription_tier_org.id,
-            notif=PartialNotification(
-                type=NotificationType.maintainer_new_paid_subscription,
-                payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                    subscriber_name=customer_email,
-                    tier_name=subscription_tier.name,
-                    tier_price_amount=subscription.amount,
-                    tier_price_recurring_interval=price.recurring_interval,
-                    tier_organization_name=subscription_tier_org.slug,
-                ),
-            ),
-        )
-
         await self._after_subscription_created(session, subscription)
 
         return subscription
@@ -630,6 +614,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         previous_status: SubscriptionStatus,
         previous_cancel_at_period_end: bool,
     ) -> None:
+        # Webhooks
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_updated
         )
@@ -644,6 +629,25 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.cancel_at_period_end and not previous_cancel_at_period_end:
             await self._send_webhook(
                 session, subscription, WebhookEventType.subscription_canceled
+            )
+
+        # New active subscription, notify organization members
+        if previous_status in {SubscriptionStatus.incomplete} and subscription.active:
+            product = subscription.product
+            price = subscription.price
+            await notifications_service.send_to_org_members(
+                session,
+                org_id=product.organization_id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_new_paid_subscription,
+                    payload=MaintainerNewPaidSubscriptionNotificationPayload(
+                        subscriber_name=subscription.user.email,
+                        tier_name=product.name,
+                        tier_price_amount=subscription.amount,
+                        tier_price_recurring_interval=price.recurring_interval,
+                        tier_organization_name=subscription.organization.name,
+                    ),
+                ),
             )
 
     async def _send_webhook(

@@ -1,5 +1,7 @@
 'use client'
 
+import { useCheckoutClientSSE } from '@/hooks/sse'
+import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { getDiscountDisplay } from '@/utils/discount'
 import { CloseOutlined } from '@mui/icons-material'
@@ -635,6 +637,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     }
   }, [checkout])
 
+  const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)
+
   const onSuccess = useCallback(
     async (url: string) => {
       const parsedURL = new URL(url)
@@ -647,6 +651,57 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             parsedURL.searchParams.set('theme', theme)
           }
         }
+      }
+
+      // For external success URL, make sure the checkout is processed before redirecting
+      // It ensures the user will have an up-to-date status when they are redirected,
+      // especially if the external URL doesn't implement proper webhook handling
+      if (!isInternalURL) {
+        await new Promise<void>((resolve) => {
+          let checkoutSuccessful = false
+          let orderCreated = false
+          let subscriptionCreated = checkout.product_price.type !== 'recurring'
+
+          const checkResolution = () => {
+            if (checkoutSuccessful && orderCreated && subscriptionCreated) {
+              resolve()
+            }
+          }
+
+          const checkoutUpdatedListener = async () => {
+            const updatedCheckout = await api.checkouts.clientGet({
+              clientSecret: checkout.client_secret,
+            })
+            if (updatedCheckout.status === 'succeeded') {
+              checkoutSuccessful = true
+              checkoutEvents.off('checkout.updated', checkoutUpdatedListener)
+              checkResolution()
+            }
+          }
+          checkoutEvents.on('checkout.updated', checkoutUpdatedListener)
+
+          const orderCreatedListener = async () => {
+            orderCreated = true
+            checkoutEvents.off('checkout.order_created', orderCreatedListener)
+            checkResolution()
+          }
+          checkoutEvents.on('checkout.order_created', orderCreatedListener)
+
+          const subscriptionCreatedListener = async () => {
+            subscriptionCreated = true
+            checkoutEvents.off(
+              'checkout.subscription_created',
+              subscriptionCreatedListener,
+            )
+            checkResolution()
+          }
+          if (!subscriptionCreated) {
+            checkoutEvents.on(
+              'checkout.subscription_created',
+              subscriptionCreatedListener,
+            )
+          }
+        })
       }
 
       if (checkout.embed_origin) {
@@ -664,7 +719,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         router.push(parsedURL.toString())
       }
     },
-    [router, embed, theme, checkout],
+    [router, embed, theme, checkout, checkoutEvents],
   )
 
   const onSubmit = async (

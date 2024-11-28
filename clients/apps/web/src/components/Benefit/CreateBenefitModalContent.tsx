@@ -3,6 +3,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import {
   BenefitCreate,
   BenefitPublicInner,
+  BenefitType,
   Organization,
   ResponseError,
   ValidationError,
@@ -86,7 +87,12 @@ const CreateBenefitModalContent = ({
           const body = await e.response.json()
           if (e.response.status === 422) {
             const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError, 2)
+            setValidationErrors(
+              validationErrors,
+              setError,
+              1,
+              Object.values(BenefitType),
+            )
           }
         }
       } finally {
@@ -125,7 +131,6 @@ const CreateBenefitModalContent = ({
                 className="self-start"
                 type="button"
                 loading={isLoading}
-                disabled={!form.formState.isValid}
                 onClick={handleSubmit(handleCreateNewBenefit)}
               >
                 Create

@@ -1,5 +1,13 @@
 import { useUpdateBenefit } from '@/hooks/queries'
-import { BenefitPublicInner, BenefitUpdate, Organization } from '@polar-sh/sdk'
+import { setValidationErrors } from '@/utils/api/errors'
+import {
+  BenefitPublicInner,
+  BenefitType,
+  BenefitUpdate,
+  Organization,
+  ResponseError,
+  ValidationError,
+} from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
@@ -19,8 +27,12 @@ const UpdateBenefitModalContent = ({
 }: UpdateBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
-  const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
+  const form = useForm<Omit<BenefitUpdate, 'type'>>({
+    defaultValues: benefit,
+  })
+  const { setError } = form
 
+  const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
   const handleUpdateNewBenefit = useCallback(
     async (benefitUpdate: Omit<BenefitUpdate, 'type'>) => {
       try {
@@ -34,18 +46,27 @@ const UpdateBenefitModalContent = ({
         })
 
         hideModal()
-      } catch (err) {
-        console.error(err)
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (e.response.status === 422) {
+            const validationErrors = body['detail'] as ValidationError[]
+            setValidationErrors(
+              validationErrors,
+              setError,
+              1,
+              Object.values(BenefitType),
+            )
+          } else {
+            setError('root', { message: e.message })
+          }
+        }
       } finally {
         setIsLoading(false)
       }
     },
-    [hideModal, updateSubscriptionBenefit, benefit],
+    [hideModal, updateSubscriptionBenefit, benefit, setError],
   )
-
-  const form = useForm<Omit<BenefitUpdate, 'type'>>({
-    defaultValues: benefit,
-  })
 
   const { handleSubmit } = form
 
@@ -68,12 +89,7 @@ const UpdateBenefitModalContent = ({
               type={benefit.type}
             />
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button
-                className="self-start"
-                type="submit"
-                loading={isLoading}
-                disabled={!form.formState.isValid}
-              >
+              <Button className="self-start" type="submit" loading={isLoading}>
                 Update
               </Button>
               <Button

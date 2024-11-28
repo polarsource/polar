@@ -62,7 +62,22 @@ const DownloadablesForm = ({
   initialFiles: FileRead[]
   initialArchivedFiles: { [key: string]: boolean }
 }) => {
-  const { setValue } = useFormContext<BenefitDownloadablesCreate>()
+  const {
+    setValue,
+    register,
+    clearErrors,
+    formState: { errors },
+  } = useFormContext<BenefitDownloadablesCreate>()
+
+  register('properties.files', {
+    minLength: 1,
+    required: 'Please upload at least one file',
+    validate: {
+      notUploading: () =>
+        files.filter((file) => !file.is_uploaded).length === 0 ||
+        'Please wait for all files to finish uploading',
+    },
+  })
 
   const [archivedFiles, setArchivedFiles] = useState<{
     [key: string]: boolean
@@ -75,6 +90,10 @@ const DownloadablesForm = ({
       if (file.is_uploaded) {
         files.push(file.id)
       }
+    }
+
+    if (files.length > 0) {
+      clearErrors('properties.files')
     }
 
     setValue('properties.files', files)
@@ -121,6 +140,11 @@ const DownloadablesForm = ({
         archivedFiles={archivedFiles}
         setArchivedFile={setArchivedFile}
       />
+      {errors.properties?.files && (
+        <p className="text-destructive-foreground text-sm">
+          {errors.properties.files.message}
+        </p>
+      )}
     </>
   )
 }

@@ -442,6 +442,9 @@ export const MainNavigation = () => {
               Sponsorship Placement
             </NavigationItem>
           </NavigationSection>
+          <NavigationItem href="/docs/products/paritydeals">
+            Purchasing Parity Pricing
+          </NavigationItem>
         </div>
       </div>
 

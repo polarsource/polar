@@ -44,9 +44,16 @@ def _run_worker(settings_cls: type[WorkerSettings]) -> None:
     arq_run_worker(settings_cls)  # type: ignore
 
 
-def _worker_health_check(
-    settings_cls: type[WorkerSettings], interval: int = 60
-) -> None:
+def _worker_health_check(settings_cls: type[WorkerSettings]) -> None:
+    if not settings_cls.health_check_interval:
+        raise RuntimeError("Health check interval not set")
+
+    # Because of the ARQ implementation, the health check record may be slightly delayed
+    # It creates a race condition where this process may proceed with reading the health
+    # check milliseconds before it's recorded.
+    # To avoid this, we set the interval to be twice the health check interval.
+    interval = settings_cls.health_check_interval.total_seconds() * 2
+
     logger: Logger = structlog.get_logger(
         "run_worker._worker_health_check",
         pid=os.getpid(),

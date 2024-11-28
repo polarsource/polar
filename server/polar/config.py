@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
 
-    WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(minutes=1)
+    WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
 
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")

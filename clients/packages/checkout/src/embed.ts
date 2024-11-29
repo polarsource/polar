@@ -143,7 +143,7 @@ class EmbedCheckout {
     iframe.style.height = '100%'
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
-    iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.2)'
+    iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = 'auto'
     document.body.appendChild(iframe)
 

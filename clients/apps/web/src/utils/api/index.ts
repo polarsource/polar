@@ -24,3 +24,39 @@ export const buildAPI = (opts: { token?: string }) =>
       accessToken: opts.token,
     }),
   )
+
+export const buildServerSideAPI = (
+  headers: Headers,
+  cookies: any,
+): PolarAPI => {
+  let apiHeaders = {}
+
+  const xForwardedFor = headers.get('X-Forwarded-For')
+  if (xForwardedFor) {
+    apiHeaders = {
+      ...apiHeaders,
+      'X-Forwarded-For': xForwardedFor,
+    }
+  }
+
+  apiHeaders = {
+    ...apiHeaders,
+    Cookie: cookies.toString(),
+  }
+
+  // When running inside GitHub Codespaces, we need to pass a token to access forwarded ports
+  if (process.env.GITHUB_TOKEN) {
+    apiHeaders = {
+      ...apiHeaders,
+      'X-Github-Token': process.env.GITHUB_TOKEN,
+    }
+  }
+
+  return new PolarAPI(
+    new Configuration({
+      basePath: getServerURL(),
+      credentials: 'include',
+      headers: apiHeaders,
+    }),
+  )
+}

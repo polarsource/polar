@@ -9,7 +9,7 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const authenticatedUser = await getAuthenticatedUser(api)
+  const authenticatedUser = await getAuthenticatedUser()
   const userOrganizations = await getUserOrganizations(api)
 
   return (

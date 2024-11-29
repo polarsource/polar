@@ -1,6 +1,5 @@
 'use client'
 
-import { useLogout } from '@/hooks'
 import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
@@ -17,7 +16,7 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
+import { LinkItem, ListItem, Profile } from './Navigation'
 
 const PublicProfileDropdown = ({
   className,
@@ -27,7 +26,6 @@ const PublicProfileDropdown = ({
   authenticatedUser: UserRead | undefined
 }) => {
   const classNames = twMerge('relative', className)
-  const logout = useLogout()
 
   const [isOpen, setOpen] = useState<boolean>(false)
 
@@ -36,10 +34,6 @@ const PublicProfileDropdown = ({
   useOutsideClick([ref], () => {
     setOpen(false)
   })
-
-  const onLogout = async () => {
-    await logout()
-  }
 
   const loggedUser = authenticatedUser
 
@@ -114,12 +108,12 @@ const PublicProfileDropdown = ({
 
               <Separator className="my-2" />
 
-              <TextItem
-                onClick={onLogout}
+              <LinkItem
+                href={`${CONFIG.BASE_URL}/v1/auth/logout`}
                 icon={<LogoutOutlined fontSize="small" />}
               >
                 <span className="mx-2 py-2">Log out</span>
-              </TextItem>
+              </LinkItem>
             </ul>
           </div>
         )}

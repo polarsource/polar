@@ -46,7 +46,7 @@ export default async function Page({
         await revalidate(`organizations:${organization.id}`)
         await revalidate(`organizations:${organization.slug}`)
         await revalidate(`storefront:${organization.slug}`)
-        const currentUser = await getAuthenticatedUser(api)
+        const currentUser = await getAuthenticatedUser()
         await revalidate(`users:${currentUser?.id}:organizations`)
         return redirect(`/dashboard/${organization.slug}`)
       }

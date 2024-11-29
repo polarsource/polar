@@ -1,7 +1,15 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, HttpUrl, IPvAnyAddress, Tag
+from pydantic import (
+    UUID4,
+    AliasChoices,
+    Discriminator,
+    Field,
+    HttpUrl,
+    IPvAnyAddress,
+    Tag,
+)
 
 from polar.custom_field.attachment import AttachedCustomField
 from polar.custom_field.data import (
@@ -304,7 +312,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     customer_email: CustomerEmail | None
     customer_ip_address: CustomerIPAddress | None
     customer_billing_address: CustomerBillingAddress | None
-    customer_tax_id: str | None = Field(validation_alias="customer_tax_id_number")
+    customer_tax_id: str | None = Field(
+        validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
+    )
 
     payment_processor_metadata: dict[str, Any]
 

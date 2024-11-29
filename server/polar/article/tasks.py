@@ -4,7 +4,6 @@ import httpx
 import structlog
 from sqlalchemy.orm import joinedload
 
-from polar.auth.service import AuthService
 from polar.config import settings
 from polar.email.sender import get_email_sender
 from polar.logging import Logger
@@ -52,7 +51,7 @@ async def articles_send_to_user(
         subject = "[TEST] " if is_test else ""
         subject += article.title
 
-        (jwt, _) = AuthService.generate_token(user)
+        (jwt, _) = "", ""
 
         # _, magic_link_token = await magic_link_service.request(
         #     session,

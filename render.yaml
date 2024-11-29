@@ -366,7 +366,7 @@ envVarGroups:
 
   - name: backend-production
     envVars:
-      - key: POLAR_AUTH_COOKIE_DOMAIN
+      - key: POLAR_USER_SESSION_COOKIE_DOMAIN
         value: polar.sh
       - key: POLAR_BASE_URL
         value: https://api.polar.sh/v1
@@ -479,9 +479,9 @@ envVarGroups:
 
   - name: backend-sandbox
     envVars:
-      - key: POLAR_AUTH_COOKIE_KEY
+      - key: POLAR_USER_SESSION_COOKIE_KEY
         value: polar_sandbox_session
-      - key: POLAR_AUTH_COOKIE_DOMAIN
+      - key: POLAR_USER_SESSION_COOKIE_DOMAIN
         value: polar.sh
       - key: POLAR_BASE_URL
         value: https://sandbox-api.polar.sh/v1

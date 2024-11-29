@@ -8,7 +8,7 @@ from httpx_oauth.oauth2 import OAuth2Token
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
-from polar.auth.service import AuthService
+from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
@@ -126,6 +126,6 @@ async def google_callback(
         posthog.user_login(user, "google")
         await loops_service.user_update(session, user, googleLogin=True)
 
-    return AuthService.generate_login_cookie_response(
-        request=request, user=user, return_to=return_to
+    return await auth_service.get_login_response(
+        session, request, user, return_to=return_to
     )

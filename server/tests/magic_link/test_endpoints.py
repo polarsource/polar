@@ -94,7 +94,7 @@ async def test_authenticate_valid_token(
     assert response.status_code == 303
     assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/")
 
-    assert settings.AUTH_COOKIE_KEY in response.cookies
+    assert settings.USER_SESSION_COOKIE_KEY in response.cookies
 
     assert magic_link_service_mock.called
     assert magic_link_service_mock.call_args[0][1] == "TOKEN"

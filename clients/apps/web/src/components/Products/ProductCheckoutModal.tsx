@@ -59,7 +59,7 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { Label } from 'polarkit/components/ui/label'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from './ProductPriceLabel'
@@ -180,11 +180,6 @@ const LinkList = ({
       <List size="small">
         {links.map((link) => {
           const url = new URL(link.url)
-          let displayLabel = link.label
-          if (displayLabel && displayLabel.length > 20) {
-            displayLabel = displayLabel.slice(0, 20) + '...'
-          }
-
           return (
             <ListItem
               size="small"
@@ -195,8 +190,13 @@ const LinkList = ({
               selected={current === link.id}
               onSelect={() => onSelect(link, false)}
             >
-              <p className={twMerge(!link.label && 'text-xxs')}>
-                {link.label ? displayLabel : 'No label'}
+              <p
+                className={twMerge(
+                  'overflow-hidden text-ellipsis',
+                  !link.label && 'italic',
+                )}
+              >
+                {link.label || 'No label'}
               </p>
               <div className="flex grow flex-row items-center justify-end gap-x-6">
                 {link.success_url && (
@@ -329,13 +329,6 @@ export const ProductCheckoutModal = ({
     [reset],
   )
 
-  useEffect(() => {
-    if (checkoutLinks && checkoutLinks.items.length > 0) {
-      setSelectedLink(checkoutLinks.items[0])
-      setShowForm(false)
-    }
-  }, [isFetched, checkoutLinks, setSelectedLink])
-
   const onSubmit: SubmitHandler<ProductCheckoutForm> = useCallback(
     async (data) => {
       try {
@@ -434,15 +427,9 @@ export const ProductCheckoutModal = ({
                 {selectedLink ? 'Edit Link' : 'Create Link'}
               </h2>
               {selectedLink && (
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setShowForm(false)
-                  }}
-                >
+                <button type="button" onClick={() => setShowForm(false)}>
                   <CloseOutlined fontSize="inherit" />
-                </a>
+                </button>
               )}
             </div>
             <form

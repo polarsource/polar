@@ -12,5 +12,5 @@ class CheckoutLinkSortProperty(StrEnum):
 
 ListSorting = Annotated[
     list[Sorting[CheckoutLinkSortProperty]],
-    Depends(SortingGetter(CheckoutLinkSortProperty, ["-created_at"])),
+    Depends(SortingGetter(CheckoutLinkSortProperty, ["created_at"])),
 ]

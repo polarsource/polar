@@ -519,6 +519,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             await self._send_webhook(
                 session, subscription, WebhookEventType.subscription_active
             )
+            await self._send_new_subscription_notification(session, subscription)
 
     async def update_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
@@ -638,24 +639,29 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 session, subscription, WebhookEventType.subscription_canceled
             )
 
-        # New active subscription, notify organization members
-        if previous_status in {SubscriptionStatus.incomplete} and subscription.active:
-            product = subscription.product
-            price = subscription.price
-            await notifications_service.send_to_org_members(
-                session,
-                org_id=product.organization_id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_new_paid_subscription,
-                    payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                        subscriber_name=subscription.user.email,
-                        tier_name=product.name,
-                        tier_price_amount=subscription.amount,
-                        tier_price_recurring_interval=price.recurring_interval,
-                        tier_organization_name=subscription.organization.name,
-                    ),
+        # Notifications
+        if subscription.active and SubscriptionStatus.is_incomplete(previous_status):
+            await self._send_new_subscription_notification(session, subscription)
+
+    async def _send_new_subscription_notification(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        product = subscription.product
+        price = subscription.price
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=product.organization_id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_new_paid_subscription,
+                payload=MaintainerNewPaidSubscriptionNotificationPayload(
+                    subscriber_name=subscription.user.email,
+                    tier_name=product.name,
+                    tier_price_amount=subscription.amount,
+                    tier_price_recurring_interval=price.recurring_interval,
+                    tier_organization_name=subscription.organization.name,
                 ),
-            )
+            ),
+        )
 
     async def _send_webhook(
         self,

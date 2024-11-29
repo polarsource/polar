@@ -1,13 +1,11 @@
 'use client'
 
-import { CheckoutCard } from '@/components/Checkout/CheckoutCard'
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
-import { createCheckoutPreview } from '@/components/Customization/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { useCustomFields, useProduct } from '@/hooks/queries'
+import { useCustomFields } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
@@ -241,7 +239,6 @@ interface OrderModalProps {
 
 const OrderModal = ({ order }: OrderModalProps) => {
   const { organization } = useContext(MaintainerOrganizationContext)
-  const { data: product } = useProduct(order?.product_id)
   const { data: customFields } = useCustomFields(organization.id)
 
   if (!order) return null
@@ -290,33 +287,24 @@ const OrderModal = ({ order }: OrderModalProps) => {
           <h3 className="text-lg">Custom Fields</h3>
           <div className="flex flex-col gap-2">
             {customFields?.items?.map((field) => (
-              <div
-                key={field.slug}
-                className="flex flex-row items-center justify-between"
-              >
-                <span className="dark:text-polar-500 text-gray-500">
-                  {field.name}
-                </span>
-                <CustomFieldValue
-                  field={field}
-                  value={
-                    order.custom_field_data
-                      ? order.custom_field_data[
-                          field.slug as keyof typeof order.custom_field_data
-                        ]
-                      : undefined
-                  }
-                />
+              <div key={field.slug} className="flex flex-col gap-y-2">
+                <span>{field.name}</span>
+                <div className="font-mono text-sm">
+                  <CustomFieldValue
+                    field={field}
+                    value={
+                      order.custom_field_data
+                        ? order.custom_field_data[
+                            field.slug as keyof typeof order.custom_field_data
+                          ]
+                        : undefined
+                    }
+                  />
+                </div>
               </div>
             ))}
           </div>
         </div>
-      )}
-      {product && (
-        <CheckoutCard
-          checkout={createCheckoutPreview(product, order.product_price)}
-          disabled
-        />
       )}
     </div>
   )

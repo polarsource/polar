@@ -1,12 +1,7 @@
 import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
 import { CustomField } from '@polar-sh/sdk'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from 'polarkit/components/ui/tooltip'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
 
 const numberFormat = new Intl.NumberFormat(undefined, {})
 
@@ -23,18 +18,7 @@ const CustomFieldValue = ({
 
   switch (field.type) {
     case 'text':
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-left">
-              {value}
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-64 whitespace-pre-wrap">{value}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )
+      return <TextArea className="text-xs" value={`${value}`} readOnly />
     case 'number':
       return numberFormat.format(value as number)
     case 'date':

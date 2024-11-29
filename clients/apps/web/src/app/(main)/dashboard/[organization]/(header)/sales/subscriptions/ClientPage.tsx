@@ -2,6 +2,8 @@
 
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
@@ -11,6 +13,7 @@ import {
   useListSubscriptions,
   useProducts,
 } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
@@ -25,6 +28,7 @@ import {
   Subscription,
   SubscriptionStatus,
 } from '@polar-sh/sdk'
+import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -34,7 +38,50 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import React from 'react'
+import React, {
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
+import { twMerge } from 'tailwind-merge'
+
+const StatusWrapper = ({
+  children,
+  color,
+}: PropsWithChildren<{ color: string }>) => {
+  return (
+    <div className={`flex flex-row items-center gap-x-2`}>
+      <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
+      <span className="capitalize">{children}</span>
+    </div>
+  )
+}
+
+const Status = ({
+  status,
+  cancelAtPeriodEnd,
+}: {
+  status: SubscriptionStatus
+  cancelAtPeriodEnd: boolean
+}) => {
+  switch (status) {
+    case 'active':
+      return (
+        <StatusWrapper
+          color={cancelAtPeriodEnd ? 'border-yellow-500' : 'border-emerald-500'}
+        >
+          {cancelAtPeriodEnd ? 'Ending' : 'Active'}
+        </StatusWrapper>
+      )
+    default:
+      return (
+        <StatusWrapper color="border-red-500">
+          {subscriptionStatusDisplayNames[status]}
+        </StatusWrapper>
+      )
+  }
+}
 
 interface ClientPageProps {
   organization: Organization
@@ -51,6 +98,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
   productId,
   subscriptionStatus,
 }) => {
+  const [selectedSubscriptionState, setSelectedSubscriptionState] =
+    useState<RowSelectionState>({})
+  const { show: showModal, hide: hideModal, isShown: isModalShown } = useModal()
+
   const subscriptionTiers = useProducts(organization.id, { isRecurring: true })
 
   const filter = productId || 'all'
@@ -144,7 +195,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const subscriptions = subscriptionsHook.data?.items || []
   const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
 
-  const { data: customFields } = useCustomFields(organization.id)
+  const selectedSubscription = subscriptions.find(
+    (subscription) => selectedSubscriptionState[subscription.id],
+  )
+
+  useEffect(() => {
+    if (selectedSubscription) {
+      showModal()
+    } else {
+      hideModal()
+    }
+  }, [selectedSubscription, showModal, hideModal])
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
@@ -159,9 +220,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar avatar_url={user.avatar_url} name={user.public_name} />
-            {user.github_username ? (
-              <div className="fw-medium">@{user.github_username}</div>
-            ) : null}
             <div className="fw-medium">{user.email}</div>
           </div>
         )
@@ -173,20 +231,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
-      cell: ({ getValue, row: { original: subscription } }) => {
+      cell: ({ row: { original: subscription } }) => {
         return (
-          <>
-            {subscriptionStatusDisplayNames[getValue() as SubscriptionStatus]}
-            {subscription.cancel_at_period_end &&
-              subscription.current_period_end && (
-                <span className="ml-2 shrink-0 rounded-lg border border-yellow-200 bg-yellow-100 px-1.5 text-xs text-yellow-600 dark:border-yellow-600 dark:bg-yellow-700 dark:text-yellow-300">
-                  Cancels at{' '}
-                  <FormattedDateTime
-                    datetime={subscription.current_period_end}
-                  />
-                </span>
-              )}
-          </>
+          <Status
+            status={subscription.status}
+            cancelAtPeriodEnd={subscription.cancel_at_period_end}
+          />
         )
       },
     },
@@ -194,7 +244,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       accessorKey: 'started_at',
       enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Subscription date" />
+        <DataTableColumnHeader column={column} title="Subscription Date" />
       ),
       cell: (props) => (
         <FormattedDateTime datetime={props.getValue() as string} />
@@ -204,7 +254,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       accessorKey: 'current_period_end',
       enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Renewal date" />
+        <DataTableColumnHeader column={column} title="Renewal Date" />
       ),
       cell: (props) => {
         const datetime = props.getValue() as string | null
@@ -216,7 +266,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       id: 'product',
       enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Tier" />
+        <DataTableColumnHeader column={column} title="Product" />
       ),
       cell: (props) => {
         const tier = props.getValue() as Product
@@ -232,55 +282,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )
       },
     },
-    {
-      id: 'amount',
-      accessorKey: 'amount',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Amount" />
-      ),
-      cell: ({ row: { original: subscription } }) => {
-        if (!subscription.amount || !subscription.currency) {
-          return '—'
-        }
-
-        return (
-          <AmountLabel
-            amount={subscription.amount}
-            currency={subscription.currency}
-            interval={subscription.recurring_interval}
-          />
-        )
-      },
-    },
-    {
-      id: 'discount',
-      accessorKey: 'discount',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Discount" />
-      ),
-      cell: ({ row: { original: subscription } }) => (
-        <>{subscription.discount ? subscription.discount.name : '—'}</>
-      ),
-    },
-    ...(customFields
-      ? customFields.items.map<DataTableColumnDef<Subscription>>((field) => ({
-          accessorKey: `custom_field_data.${field.slug}`,
-          enableSorting: false,
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title={field.name} />
-          ),
-          cell: (props) => (
-            <div className="max-w-48">
-              <CustomFieldValue
-                field={field}
-                value={props.getValue() as string | number | boolean}
-              />
-            </div>
-          ),
-        }))
-      : []),
   ]
 
   const onExport = () => {
@@ -295,14 +296,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <DashboardBody>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-start gap-4">
-          <div className="w-full max-w-[180px]">
+          <div className="w-auto">
             <SubscriptionStatusSelect
               statuses={['active', 'canceled']}
               value={subscriptionStatus || 'active'}
               onChange={setStatus}
             />
           </div>
-          <div className="w-full max-w-[180px]">
+          <div className="w-auto">
             <SubscriptionTiersSelect
               products={subscriptionTiers.data?.items || []}
               value={productId || 'all'}
@@ -320,12 +321,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={subscriptionsHook}
+            onRowSelectionChange={(row) => {
+              setSelectedSubscriptionState(row)
+            }}
+            rowSelection={selectedSubscriptionState}
+            getRowId={(row) => row.id.toString()}
+            enableRowSelection
           />
         )}
         <div className="flex items-center justify-end gap-2">
           <Button
             onClick={onExport}
-            className="flex flex-row items-center "
+            className="flex flex-row items-center"
             variant={'secondary'}
           >
             <FileDownloadOutlined className="mr-2" fontSize="small" />
@@ -333,7 +340,133 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </Button>
         </div>
       </div>
+      <InlineModal
+        modalContent={<SubscriptionModal subscription={selectedSubscription} />}
+        isShown={isModalShown}
+        hide={() => {
+          setSelectedSubscriptionState({})
+          hideModal()
+        }}
+      />
     </DashboardBody>
+  )
+}
+
+interface SubscriptionModalProps {
+  subscription?: Subscription
+}
+
+const SubscriptionModal = ({ subscription }: SubscriptionModalProps) => {
+  const { organization } = useContext(MaintainerOrganizationContext)
+  const { data: customFields } = useCustomFields(organization.id)
+
+  if (!subscription) return null
+
+  return (
+    <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
+      <h2 className="mb-4 text-2xl">Subscription Details</h2>
+      <div className="flex flex-row items-center gap-4">
+        <Avatar
+          avatar_url={subscription.user.avatar_url}
+          name={subscription.user.public_name}
+          className="h-16 w-16"
+        />
+        <div className="flex flex-col gap-1">
+          <p className="text-xl">{subscription.user.public_name}</p>
+          <p className="dark:text-polar-500 text-gray-500">
+            {subscription.user.email}
+          </p>
+        </div>
+      </div>
+      <h2 className="text-2xl">{subscription.product.name}</h2>
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-between">
+          <span className="dark:text-polar-500 text-gray-500">Status</span>
+          <Status
+            status={subscription.status}
+            cancelAtPeriodEnd={subscription.cancel_at_period_end}
+          />
+        </div>
+        <div className="flex justify-between">
+          <span className="dark:text-polar-500 text-gray-500">
+            Started Date
+          </span>
+          <span>
+            <FormattedDateTime datetime={subscription.created_at} />
+          </span>
+        </div>
+        {subscription.current_period_end && !subscription.ended_at && (
+          <div className="flex justify-between">
+            <span className="dark:text-polar-500 text-gray-500">
+              {subscription.cancel_at_period_end
+                ? 'Ending Date'
+                : 'Renewal Date'}
+            </span>
+            <span>
+              <FormattedDateTime datetime={subscription.current_period_end} />
+            </span>
+          </div>
+        )}
+        {subscription.ended_at && (
+          <div className="flex justify-between">
+            <span className="dark:text-polar-500 text-gray-500">
+              Ended Date
+            </span>
+            <span>
+              <FormattedDateTime datetime={subscription.ended_at} />
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="dark:text-polar-500 text-gray-500">
+            Recurring Interval
+          </span>
+          <span>
+            {subscription.recurring_interval === 'month' ? 'Month' : 'Year'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="dark:text-polar-500 text-gray-500">Discount</span>
+          <span>
+            {subscription.discount ? subscription.discount.code : '—'}
+          </span>
+        </div>
+        {subscription.amount && subscription.currency && (
+          <div className="flex justify-between">
+            <span className="dark:text-polar-500 text-gray-500">Amount</span>
+            <AmountLabel
+              amount={subscription.amount}
+              currency={subscription.currency}
+              interval={subscription.recurring_interval}
+            />
+          </div>
+        )}
+      </div>
+      {(customFields?.items?.length ?? 0) > 0 && (
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg">Custom Fields</h3>
+          <div className="flex flex-col gap-2">
+            {customFields?.items?.map((field) => (
+              <div key={field.slug} className="flex flex-col gap-y-2">
+                <span>{field.name}</span>
+                <div className="font-mono text-sm">
+                  <CustomFieldValue
+                    field={field}
+                    value={
+                      subscription.custom_field_data
+                        ? subscription.custom_field_data[
+                            field.slug as keyof typeof subscription.custom_field_data
+                          ]
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

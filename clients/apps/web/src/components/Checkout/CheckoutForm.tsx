@@ -1,7 +1,6 @@
 'use client'
 
 import { useCheckoutClientSSE } from '@/hooks/sse'
-import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { getDiscountDisplay } from '@/utils/discount'
 import { CloseOutlined } from '@mui/icons-material'
@@ -9,6 +8,7 @@ import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import {
   CheckoutConfirmStripe,
   CheckoutPublic,
+  CheckoutStatus,
   CheckoutUpdatePublic,
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
@@ -661,18 +661,23 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           let checkoutSuccessful = false
           let orderCreated = false
           let subscriptionCreated = checkout.product_price.type !== 'recurring'
+          let webhookEventDelivered = false
 
           const checkResolution = () => {
-            if (checkoutSuccessful && orderCreated && subscriptionCreated) {
+            if (
+              checkoutSuccessful &&
+              orderCreated &&
+              subscriptionCreated &&
+              webhookEventDelivered
+            ) {
               resolve()
             }
           }
 
-          const checkoutUpdatedListener = async () => {
-            const updatedCheckout = await api.checkouts.clientGet({
-              clientSecret: checkout.client_secret,
-            })
-            if (updatedCheckout.status === 'succeeded') {
+          const checkoutUpdatedListener = (data: {
+            status: CheckoutStatus
+          }) => {
+            if (data.status === CheckoutStatus.SUCCEEDED) {
               checkoutSuccessful = true
               checkoutEvents.off('checkout.updated', checkoutUpdatedListener)
               checkResolution()
@@ -680,14 +685,14 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           }
           checkoutEvents.on('checkout.updated', checkoutUpdatedListener)
 
-          const orderCreatedListener = async () => {
+          const orderCreatedListener = () => {
             orderCreated = true
             checkoutEvents.off('checkout.order_created', orderCreatedListener)
             checkResolution()
           }
           checkoutEvents.on('checkout.order_created', orderCreatedListener)
 
-          const subscriptionCreatedListener = async () => {
+          const subscriptionCreatedListener = () => {
             subscriptionCreated = true
             checkoutEvents.off(
               'checkout.subscription_created',
@@ -701,6 +706,28 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               subscriptionCreatedListener,
             )
           }
+
+          const webhookEventDeliveredListener = (data?: {
+            status: CheckoutStatus
+          }) => {
+            if (!data || data.status === CheckoutStatus.SUCCEEDED) {
+              webhookEventDelivered = true
+              checkoutEvents.off(
+                'checkout.webhook_event_delivered',
+                webhookEventDeliveredListener,
+              )
+              checkResolution()
+            }
+          }
+          checkoutEvents.on(
+            'checkout.webhook_event_delivered',
+            webhookEventDeliveredListener,
+          )
+          // Wait webhook event to be delivered for 30 seconds max
+          setTimeout(
+            () => webhookEventDeliveredListener(),
+            CONFIG.CHECKOUT_EXTERNAL_WEBHOOKS_WAITING_LIMIT_MS,
+          )
         })
       }
 

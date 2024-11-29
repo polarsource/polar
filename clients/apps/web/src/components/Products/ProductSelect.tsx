@@ -182,7 +182,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         ])
       }
     },
-    [groupedProducts, onSelectProduct],
+    [groupedProducts, onChange, value],
   )
 
   return (

@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
+from polar.checkout.eventstream import CheckoutEvent
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Benefit,
@@ -20,6 +21,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
@@ -33,6 +35,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailSender, watch_email
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_checkout,
     create_subscription,
     set_product_benefits,
 )
@@ -245,7 +248,6 @@ class TestCreateSubscriptionFromStripe:
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             price_id=product.prices[0].stripe_price_id
         )
@@ -276,7 +278,6 @@ class TestCreateSubscriptionFromStripe:
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user, price_id=product.prices[0].stripe_price_id
         )
@@ -310,7 +311,6 @@ class TestCreateSubscriptionFromStripe:
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user,
             price_id=product.prices[0].stripe_price_id,
@@ -417,7 +417,6 @@ class TestCreateSubscriptionFromStripe:
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             price_id=product.prices[0].stripe_price_id, discount=discount_fixed_once
         )
@@ -430,6 +429,42 @@ class TestCreateSubscriptionFromStripe:
         )
 
         assert subscription.discount == discount_fixed_once
+
+    async def test_checkout(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        product: Product,
+    ) -> None:
+        publish_checkout_event_mock = mocker.patch(
+            "polar.subscription.service.publish_checkout_event"
+        )
+
+        stripe_customer = construct_stripe_customer()
+        get_customer_mock = stripe_service_mock.get_customer
+        get_customer_mock.return_value = stripe_customer
+
+        price = product.prices[0]
+        checkout = await create_checkout(
+            save_fixture, price=price, status=CheckoutStatus.succeeded
+        )
+        stripe_subscription = construct_stripe_subscription(
+            price_id=price.stripe_price_id, metadata={"checkout_id": str(checkout.id)}
+        )
+
+        # then
+        session.expunge_all()
+
+        subscription = await subscription_service.create_subscription_from_stripe(
+            session, stripe_subscription=stripe_subscription
+        )
+
+        assert subscription.checkout == checkout
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
 
 
 @pytest.mark.asyncio

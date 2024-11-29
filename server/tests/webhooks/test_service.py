@@ -8,9 +8,11 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.authz.service import Authz
+from polar.checkout.eventstream import CheckoutEvent
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.models import (
     Organization,
+    Product,
     User,
     UserOrganization,
     WebhookEndpoint,
@@ -19,8 +21,12 @@ from polar.models import (
 from polar.models.webhook_endpoint import WebhookFormat
 from polar.postgres import AsyncSession
 from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
+from polar.webhook.service import EventDoesNotExist, EventNotSuccessul
 from polar.webhook.service import webhook as webhook_service
+from polar.webhook.webhooks import WebhookCheckoutUpdatedPayload
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_checkout
 
 
 @pytest.fixture
@@ -406,3 +412,57 @@ class TestRedeliverEvent:
             session, authz, auth_subject, webhook_event_organization.id
         )
         enqueue_job_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestOnEventSuccess:
+    async def test_not_existing_event(self, session: AsyncSession) -> None:
+        with pytest.raises(EventDoesNotExist):
+            await webhook_service.on_event_success(session, uuid.uuid4())
+
+    async def test_not_successful_event(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            payload="{}",
+        )
+        await save_fixture(event)
+
+        with pytest.raises(EventNotSuccessul):
+            await webhook_service.on_event_success(session, event.id)
+
+    async def test_checkout_updated_event(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        publish_checkout_event_mock = mocker.patch(
+            "polar.webhook.service.publish_checkout_event"
+        )
+        checkout = await create_checkout(save_fixture, price=product.prices[0])
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=True,
+            last_http_code=200,
+            payload=WebhookCheckoutUpdatedPayload.model_validate(
+                {"type": "checkout.updated", "data": checkout}
+            ).model_dump_json(),
+        )
+        await save_fixture(event)
+
+        await webhook_service.on_event_success(session, event.id)
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret,
+            CheckoutEvent.webhook_event_delivered,
+            {"status": checkout.status},
+        )

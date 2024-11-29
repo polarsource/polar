@@ -10,12 +10,12 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
-from polar.eventstream.service import publish
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -479,10 +479,8 @@ class OrderService(ResourceServiceReader[Order]):
 
         # Notify checkout channel that an order has been created from it
         if checkout is not None:
-            await publish(
-                "checkout.order_created",
-                {},
-                checkout_client_secret=checkout.client_secret,
+            await publish_checkout_event(
+                checkout.client_secret, CheckoutEvent.order_created
             )
 
         await self._send_webhook(session, order)

@@ -7,7 +7,13 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
+from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.exceptions import (
+    NotPermitted,
+    PolarError,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -34,6 +40,23 @@ from .webhooks import (
 )
 
 log: Logger = structlog.get_logger()
+
+
+class WebhookError(PolarError): ...
+
+
+class EventDoesNotExist(WebhookError):
+    def __init__(self, event_id: UUID) -> None:
+        self.event_id = event_id
+        message = f"Event with ID {event_id} does not exist."
+        super().__init__(message)
+
+
+class EventNotSuccessul(WebhookError):
+    def __init__(self, event_id: UUID) -> None:
+        self.event_id = event_id
+        message = f"Event with ID {event_id} is not successful."
+        super().__init__(message)
 
 
 class WebhookService:
@@ -212,6 +235,28 @@ class WebhookService:
 
         enqueue_job("webhook_event.send", webhook_event_id=event.id)
 
+    async def on_event_success(self, session: AsyncSession, id: UUID) -> None:
+        """
+        Helper to hook into the event success event.
+
+        Useful to trigger logic that might wait for an event to be delivered.
+        """
+        event = await self.get_event_by_id(session, id)
+        if event is None:
+            raise EventDoesNotExist(id)
+
+        if not event.succeeded:
+            raise EventNotSuccessul(id)
+
+        payload = WebhookPayloadTypeAdapter.validate_json(event.payload)
+
+        if payload.type == WebhookEventType.checkout_updated:
+            await publish_checkout_event(
+                payload.data.client_secret,
+                CheckoutEvent.webhook_event_delivered,
+                {"status": payload.data.status},
+            )
+
     async def get_event_by_id(
         self, session: AsyncSession, id: UUID
     ) -> WebhookEvent | None:
@@ -225,19 +270,20 @@ class WebhookService:
 
     async def send(
         self, session: AsyncSession, target: Organization | User, we: WebhookTypeObject
-    ) -> None:
+    ) -> list[WebhookEvent]:
         event, data = we
         payload = WebhookPayloadTypeAdapter.validate_python(
             {"type": event, "data": data}
         )
-        await self.send_payload(session, target, payload)
+        return await self.send_payload(session, target, payload)
 
     async def send_payload(
         self,
         session: AsyncSession,
         target: Organization | User,
         payload: BaseWebhookPayload,
-    ) -> None:
+    ) -> list[WebhookEvent]:
+        events: list[WebhookEvent] = []
         for e in await self._get_event_target_endpoints(
             session, event=payload.type, target=target
         ):
@@ -247,6 +293,7 @@ class WebhookService:
                     webhook_endpoint_id=e.id, payload=payload_data
                 )
                 session.add(event_type)
+                events.append(event_type)
                 await session.flush()
                 enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
             except UnsupportedTarget as e:
@@ -255,6 +302,7 @@ class WebhookService:
                 continue
             except SkipEvent:
                 continue
+        return events
 
     def _get_readable_endpoints_statement(
         self, auth_subject: AuthSubject[User | Organization]

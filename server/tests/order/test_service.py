@@ -21,6 +21,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.order import OrderBillingReason
 from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
@@ -39,7 +40,7 @@ from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailSender, watch_email
-from tests.fixtures.random_objects import create_order
+from tests.fixtures.random_objects import create_checkout, create_order
 from tests.transaction.conftest import create_transaction
 
 
@@ -990,6 +991,67 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
         assert order.billing_address == Address(country="US")  # type: ignore
+
+    async def test_with_checkout(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time: Product,
+        organization_account: Account,
+        user: User,
+    ) -> None:
+        publish_checkout_event_mock = mocker.patch(
+            "polar.order.service.publish_checkout_event"
+        )
+
+        price = product_one_time.prices[0]
+        checkout = await create_checkout(
+            save_fixture, price=price, status=CheckoutStatus.succeeded
+        )
+        invoice = construct_stripe_invoice(
+            lines=[(price.stripe_price_id, False, None)],
+            subscription_id=None,
+            billing_reason="manual",
+            metadata={"checkout_id": str(checkout.id)},
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.order.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.checkout == checkout
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret,
+            "checkout.order_created",
+        )
 
 
 @pytest.mark.asyncio

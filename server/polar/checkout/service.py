@@ -28,7 +28,6 @@ from polar.custom_field.data import validate_custom_field_data
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
-from polar.eventstream.service import publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -69,6 +68,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from . import ip_geolocation
+from .eventstream import CheckoutEvent, publish_checkout_event
 from .sorting import CheckoutSortProperty
 from .tax import TaxCalculationError, calculate_tax
 
@@ -1561,16 +1561,23 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def _after_checkout_updated(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
-        await publish(
-            "checkout.updated", {}, checkout_client_secret=checkout.client_secret
+        await publish_checkout_event(
+            checkout.client_secret, CheckoutEvent.updated, {"status": checkout.status}
         )
         organization = await organization_service.get(
             session, checkout.product.organization_id
         )
         assert organization is not None
-        await webhook_service.send(
+        events = await webhook_service.send(
             session, organization, (WebhookEventType.checkout_updated, checkout)
         )
+        # No webhook to send, publish the webhook_event immediately
+        if len(events) == 0:
+            await publish_checkout_event(
+                checkout.client_secret,
+                CheckoutEvent.webhook_event_delivered,
+                {"status": checkout.status},
+            )
 
     async def _eager_load_product(
         self, session: AsyncSession, product: Product

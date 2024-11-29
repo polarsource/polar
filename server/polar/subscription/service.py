@@ -14,13 +14,13 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
+from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
-from polar.eventstream.service import publish
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -501,10 +501,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Notify checkout channel that a subscription has been created from it
         if checkout is not None:
-            await publish(
-                "checkout.subscription_created",
-                {},
-                checkout_client_secret=checkout.client_secret,
+            await publish_checkout_event(
+                checkout.client_secret, CheckoutEvent.subscription_created
             )
 
         await self._after_subscription_created(session, subscription)

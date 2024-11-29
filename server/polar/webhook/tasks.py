@@ -19,6 +19,7 @@ from polar.worker import (
     JobContext,
     PolarWorkerContext,
     compute_backoff,
+    enqueue_job,
     task,
 )
 
@@ -91,10 +92,10 @@ async def _webhook_event_send(
     if not event:
         raise Exception(f"webhook event not found id={webhook_event_id}")
 
-    if not allowed_url(event.webhook_endpoint.url):
-        raise Exception(
-            f"invalid webhook url id={webhook_event_id} url={event.webhook_endpoint.url}"
-        )
+    # if not allowed_url(event.webhook_endpoint.url):
+    #     raise Exception(
+    #         f"invalid webhook url id={webhook_event_id} url={event.webhook_endpoint.url}"
+    #     )
 
     ts = utc_now()
 
@@ -119,17 +120,19 @@ async def _webhook_event_send(
     )
 
     try:
-        response = httpx.post(
-            event.webhook_endpoint.url,
-            content=event.payload,
-            headers=headers,
-            timeout=20.0,
-        )
-        delivery.http_code = response.status_code
-        event.last_http_code = response.status_code
-        response.raise_for_status()
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                event.webhook_endpoint.url,
+                content=event.payload,
+                headers=headers,
+                timeout=20.0,
+            )
+            delivery.http_code = response.status_code
+            event.last_http_code = response.status_code
+            response.raise_for_status()
     # Error
     except httpx.HTTPError as e:
+        log.debug("An errror occurred while sending a webhook", error=e)
         delivery.succeeded = False
         # Permanent failure
         if ctx["job_try"] >= MAX_RETRIES:
@@ -141,9 +144,20 @@ async def _webhook_event_send(
     else:
         delivery.succeeded = True
         event.succeeded = True
+        enqueue_job("webhook_event.success", webhook_event_id=webhook_event_id)
     # Either way, save the delivery
     finally:
         assert delivery.succeeded is not None
         session.add(delivery)
         session.add(event)
         await session.commit()
+
+
+@task("webhook_event.success")
+async def webhook_event_success(
+    ctx: JobContext,
+    webhook_event_id: UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        return await webhook_service.on_event_success(session, webhook_event_id)

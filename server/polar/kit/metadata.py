@@ -1,7 +1,7 @@
 import inspect
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import AliasChoices, BaseModel, Field, StringConstraints
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -63,4 +63,6 @@ class OptionalMetadataInputMixin(BaseModel):
 
 
 class MetadataOutputMixin(BaseModel):
-    metadata: dict[str, str | int | bool] = Field(validation_alias="user_metadata")
+    metadata: dict[str, str | int | bool] = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )

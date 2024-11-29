@@ -225,9 +225,9 @@ const VerifiedBadge = () => {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           className="text-white"
         >
           <path d="M20 6 9 17l-5-5"></path>

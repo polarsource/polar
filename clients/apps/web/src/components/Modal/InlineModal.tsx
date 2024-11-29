@@ -87,6 +87,10 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
     </React.Fragment>
   )
 
+  if (typeof document === 'undefined') {
+    return null
+  }
+
   return ReactDOM.createPortal(
     <AnimatePresence>{isShown && modal}</AnimatePresence>,
     document.body,

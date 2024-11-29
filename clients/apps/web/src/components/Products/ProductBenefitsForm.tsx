@@ -3,7 +3,6 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
-  AllInclusiveOutlined,
   CheckOutlined,
   MoreVertOutlined,
   RemoveOutlined,
@@ -71,7 +70,7 @@ const BenefitRow = ({
           className={twMerge(
             'flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full text-2xl',
             checked
-              ? ' dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-white'
+              ? 'dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-white'
               : 'dark:bg-polar-800 dark:text-polar-500 bg-gray-200 text-gray-500',
           )}
         >
@@ -175,7 +174,6 @@ const ProductBenefitsForm = ({
 
   return (
     <Section
-      icon={<AllInclusiveOutlined fontSize="medium" />}
       title="Automated Benefits"
       description="Configure which benefits you want to grant to your customers when they
       purchase the product"

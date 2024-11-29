@@ -722,7 +722,7 @@ wheels = [
 
 [[package]]
 name = "logfire"
-version = "1.3.1"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "executing" },
@@ -733,9 +733,9 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/66/41/7b563b7db2490ba9090edd0ba7b70ad9a003bfd608dc132edf5f1b394140/logfire-1.3.1.tar.gz", hash = "sha256:73f9ff2691c927fc3ad28da5308ffd43af30d9bb8efedef52266a797da878381", size = 242221 }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/90/1baa613a8b3f4f3ee50e776d0ad1b476baf9c9c592d5452ee50d2742c332/logfire-2.5.0.tar.gz", hash = "sha256:207af778dec75dd758422dccd631956aa9bf11a75f974ce7a3704243e4337cb7", size = 251877 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/6e/2d1a1b116733e930e8a20e2263cc5a9968d51ef546cc473895c1b5252ee0/logfire-1.3.1-py3-none-any.whl", hash = "sha256:974657b9d775a65b5c526550baa95c121257a907ab5d9e8c99cbb715562c2673", size = 164833 },
+    { url = "https://files.pythonhosted.org/packages/93/50/81ce8a51e89015111950b03283e0fd2d63e79a5e0d7b77c922682e82313e/logfire-2.5.0-py3-none-any.whl", hash = "sha256:cae6f22cc81fc9009df939f5232d53ef94ae8c630ecbd28a31ad818745c94c19", size = 171539 },
 ]
 
 [[package]]
@@ -1273,7 +1273,7 @@ requires-dist = [
     { name = "ipinfo-db", specifier = ">=0.0.4" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "jinja2", specifier = ">=3.1.2" },
-    { name = "logfire", specifier = ">=0.51.0" },
+    { name = "logfire", specifier = ">=2.5.0" },
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "netaddr", specifier = ">=1.2.1" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.45b0" },

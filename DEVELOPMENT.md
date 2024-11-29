@@ -2,11 +2,11 @@
 
 Polar's stack consist of the following elements:
 
-* A backend written in Python, exposing a REST API and workers;
-* A frontend written in JavaScript;
-* A PostgreSQL database;
-* A Redis database;
-* A S3-compatible storage.
+-   A backend written in Python, exposing a REST API and workers;
+-   A frontend written in JavaScript;
+-   A PostgreSQL database;
+-   A Redis database;
+-   A S3-compatible storage.
 
 ```mermaid
 flowchart TD
@@ -59,6 +59,7 @@ For the Polar stack to run properly, it needs quite a bunch of settings defined 
 ```sh
 ./dev/setup-environment
 ```
+
 Once done, the script will automatically create `server/.env` and `clients/apps/web/.env.local` files with the necessary environment variables.
 
 **Optional: setup GitHub App**
@@ -75,9 +76,11 @@ Your browser will open a new page and you'll be prompted to **create a GitHub Ap
 
 > [!TIP]
 > If you run on **GitHub Codespaces**, you can just run it like this:
+>
 > ```sh
 > ./dev/setup-environment --setup-github-app
 > ```
+>
 > The script will automatically use your external GitHub Codespace URL.
 
 **Optional: setup Stripe**
@@ -137,11 +140,17 @@ pnpm install
 
 The backend consists of an API server, a general-purpose worker and a worker dedicated to GitHub synchronization. You can run them like this:
 
+**1. Create a test database**
+
+```sh
+./dev/create-test-db
+```
+
+**2. Apply the database migrations**
+
 ```sh
 cd server
 ```
-
-**1. Apply the database migrations**
 
 ```sh
 uv run task db_migrate
@@ -150,7 +159,7 @@ uv run task db_migrate
 > [!NOTE]
 > You don't necessarily need to run it each time you start the server, but it's a good idea to regularly do it nonetheless.
 
-**2. Start server and workers**
+**3. Start server and workers**
 
 ```sh
 uv run task api

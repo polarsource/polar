@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.6
+
+### Patch Changes
+
+- 8c2db45: Darken iframe backdrop
+
 ## 0.1.5
 
 ### Patch Changes

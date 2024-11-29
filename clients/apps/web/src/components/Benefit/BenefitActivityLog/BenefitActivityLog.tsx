@@ -1,6 +1,15 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { SearchOutlined } from '@mui/icons-material'
+import Input from 'polarkit/components/ui/atoms/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import { useMemo, useState } from 'react'
 import { BenefitActivityItem } from './BenefitActivityItem'
 import { benefitActivityLogEvents } from './BenefitActivityLog.fixture'
@@ -45,6 +54,33 @@ export const BenefitActivityLog = () => {
         </div>
       </div>
 
+      <div className="flex flex-row gap-x-8">
+        <Input
+          className="min-w-96"
+          placeholder="Search"
+          preSlot={<SearchOutlined fontSize="inherit" />}
+        />
+        <Select>
+          <SelectTrigger>
+            <SelectValue placeholder="All Events"></SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Events</SelectItem>
+            <SelectItem value="grants">Grants</SelectItem>
+            <SelectItem value="revocations">Revocations</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select>
+          <SelectTrigger>
+            <SelectValue placeholder="All Events"></SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Events</SelectItem>
+            <SelectItem value="grants">Grants</SelectItem>
+            <SelectItem value="revocations">Revocations</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="relative">
         {events.map((event, index) => (
           <BenefitActivityItem

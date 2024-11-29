@@ -53,7 +53,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         product_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutLinkSortProperty]] = [
-            (CheckoutLinkSortProperty.created_at, True)
+            (CheckoutLinkSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[CheckoutLink], int]:
         statement = self._get_readable_checkout_link_statement(auth_subject)

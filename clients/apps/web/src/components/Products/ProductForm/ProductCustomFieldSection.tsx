@@ -3,7 +3,7 @@
 import CustomFieldTypeIcon from '@/components/CustomFields/CustomFieldTypeIcon'
 import { Section } from '@/components/Layout/Section'
 import { useCustomFields } from '@/hooks/queries'
-import { ClearOutlined, DataArrayOutlined } from '@mui/icons-material'
+import { ClearOutlined } from '@mui/icons-material'
 import { CustomField, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -75,13 +75,8 @@ export const ProductCustomFieldSection = ({
     setSelectedField(null)
   }
 
-  if (customFields?.pagination.total_count === 0) {
-    return null
-  }
-
   return (
     <Section
-      icon={<DataArrayOutlined fontSize="medium" />}
       title="Checkout Fields"
       description="Ask for additional information from the customer during checkout"
       className={className}

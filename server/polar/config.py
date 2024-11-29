@@ -57,10 +57,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000/v1/checkout-links/{client_secret}/redirect"
     )
 
-    # Auth cookie
-    AUTH_COOKIE_KEY: str = "polar_session"
-    AUTH_COOKIE_TTL_SECONDS: int = 60 * 60 * 24 * 31  # 31 days
-    AUTH_COOKIE_DOMAIN: str = "127.0.0.1"
+    # User session
+    USER_SESSION_TTL: timedelta = timedelta(days=31)
+    USER_SESSION_COOKIE_KEY: str = "polar_session"
+    USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes

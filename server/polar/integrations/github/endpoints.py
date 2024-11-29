@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
-from polar.auth.service import AuthService
+from polar.auth.service import auth as auth_service
 from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.context import ExecutionContext
@@ -196,8 +196,8 @@ async def github_callback(
         posthog.user_login(user, "github")
         await loops_service.user_update(session, user, githubLogin=True)
 
-    return AuthService.generate_login_cookie_response(
-        request=request, user=user, return_to=return_to
+    return await auth_service.get_login_response(
+        session, request, user, return_to=return_to
     )
 
 

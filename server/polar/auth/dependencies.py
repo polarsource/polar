@@ -5,9 +5,8 @@ from fastapi import Depends, Request, Security
 from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
-from polar.config import settings
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.models import OAuth2Token, PersonalAccessToken
+from polar.models import OAuth2Token, PersonalAccessToken, UserSession
 from polar.oauth2.dependencies import get_optional_token
 from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
 from polar.personal_access_token.dependencies import get_optional_personal_access_token
@@ -24,32 +23,33 @@ from .models import (
     User,
     is_anonymous,
 )
-from .service import AuthService
+from .service import auth as auth_service
 
 
-async def _get_cookie_token(request: Request) -> str | None:
-    return request.cookies.get(settings.AUTH_COOKIE_KEY)
+async def get_user_session(
+    request: Request, session: AsyncSession = Depends(get_db_session)
+) -> UserSession | None:
+    return await auth_service.authenticate(session, request)
 
 
 async def get_auth_subject(
-    cookie_token: str | None = Depends(_get_cookie_token),
+    user_session: UserSession | None = Depends(get_user_session),
     oauth2_credentials: tuple[OAuth2Token | None, bool] = Depends(get_optional_token),
     personal_access_token_credentials: tuple[
         PersonalAccessToken | None, bool
     ] = Depends(get_optional_personal_access_token),
-    session: AsyncSession = Depends(get_db_session),
 ) -> AuthSubject[Subject]:
-    if cookie_token is not None:
-        user = await AuthService.get_user_from_cookie(session, cookie=cookie_token)
-        if user:
-            scopes = {Scope.web_default}
-            if user.github_username in {
-                "birkjernstrom",
-                "frankie567",
-                "emilwidlund",
-            }:
-                scopes.add(Scope.admin)
-            return AuthSubject(user, scopes, AuthMethod.COOKIE)
+    # Web session
+    if user_session is not None:
+        user = user_session.user
+        scopes = {Scope.web_default}
+        if user.github_username in {
+            "birkjernstrom",
+            "frankie567",
+            "emilwidlund",
+        }:
+            scopes.add(Scope.admin)
+        return AuthSubject(user, scopes, AuthMethod.COOKIE)
 
     oauth2_token, oauth2_authorization_set = oauth2_credentials
     personal_access_token, personal_access_token_authorization_set = (

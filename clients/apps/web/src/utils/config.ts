@@ -51,6 +51,10 @@ let defaults = {
   CHECKOUT_EMBED_SCRIPT_SRC:
     process.env.NEXT_PUBLIC_CHECKOUT_EMBED_SCRIPT_SRC ||
     'node_modules/@polar-sh/checkout/dist/embed.global.js',
+  CHECKOUT_EXTERNAL_WEBHOOKS_WAITING_LIMIT_MS: stringToNumber(
+    process.env.NEXT_PUBLIC_CHECKOUT_EXTERNAL_WEBHOOKS_WAITING_LIMIT_MS,
+    30000,
+  ),
 }
 
 export const CONFIG = {

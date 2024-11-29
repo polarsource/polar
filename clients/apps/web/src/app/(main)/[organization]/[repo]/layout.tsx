@@ -37,7 +37,7 @@ export default async function Layout({
 
   const [repository, organization] = resolvedRepositoryOrganization
 
-  const authenticatedUser = await getAuthenticatedUser(api)
+  const authenticatedUser = await getAuthenticatedUser()
   const userOrganizations = await getUserOrganizations(api)
 
   return (

@@ -35,21 +35,21 @@ const nextConfig = {
   // See: https://github.com/vercel/next.js/issues/58019
   ...(CODESPACES
     ? {
-        experimental: {
-          serverActions: {
-            allowedForwardedHosts: [
-              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
-              'localhost:8080',
-              '127.0.0.1:8080',
-            ],
-            allowedOrigins: [
-              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
-              'localhost:8080',
-              '127.0.0.1:8080',
-            ],
-          },
+      experimental: {
+        serverActions: {
+          allowedForwardedHosts: [
+            `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+            'localhost:8080',
+            '127.0.0.1:8080',
+          ],
+          allowedOrigins: [
+            `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+            'localhost:8080',
+            '127.0.0.1:8080',
+          ],
         },
-      }
+      },
+    }
     : {}),
 
   images: {
@@ -126,30 +126,30 @@ const nextConfig = {
       },
       ...(ENVIRONMENT === 'production'
         ? [
-            {
-              source: '/:client_secret(polar_cl_.*)',
-              destination:
-                'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
-              has: [
-                {
-                  type: 'host',
-                  value: 'buy.polar.sh',
-                },
-              ],
-              permanent: false,
-            },
-            {
-              source: '/:id',
-              destination: 'https://polar.sh/api/checkout?price=:id*',
-              has: [
-                {
-                  type: 'host',
-                  value: 'buy.polar.sh',
-                },
-              ],
-              permanent: false,
-            },
-          ]
+          {
+            source: '/:client_secret(polar_cl_.*)',
+            destination:
+              'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
+            has: [
+              {
+                type: 'host',
+                value: 'buy.polar.sh',
+              },
+            ],
+            permanent: false,
+          },
+          {
+            source: '/:id',
+            destination: 'https://polar.sh/api/checkout?price=:id*',
+            has: [
+              {
+                type: 'host',
+                value: 'buy.polar.sh',
+              },
+            ],
+            permanent: false,
+          },
+        ]
         : []),
       {
         source: '/:path*',
@@ -256,53 +256,30 @@ const nextConfig = {
       // Redirect old FAQ to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-            {
-              source: '/faq',
-              destination: 'https://docs.polar.sh/faq/overview',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-            {
-              source: '/faq/:path*',
-              destination: 'https://docs.polar.sh/faq/:path*',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-          ]
+          {
+            source: '/faq',
+            destination: 'https://docs.polar.sh/faq/overview',
+            has: [
+              {
+                type: 'host',
+                value: 'polar.sh',
+              },
+            ],
+            permanent: true,
+          },
+          {
+            source: '/faq/:path*',
+            destination: 'https://docs.polar.sh/faq/:path*',
+            has: [
+              {
+                type: 'host',
+                value: 'polar.sh',
+              },
+            ],
+            permanent: true,
+          },
+        ]
         : []),
-
-      {
-        source:
-          '/:rootPath(start|dashboard|feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
-        destination: '/login?return_to=/:rootPath:subPath',
-        missing: [
-          {
-            type: 'cookie',
-            key: POLAR_AUTH_COOKIE_KEY,
-          },
-          {
-            type: 'host',
-            value: 'polar.new',
-          },
-        ],
-        has: [
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
-        ],
-        permanent: false,
-      },
 
       // Logged-in user redirections
       {
@@ -361,12 +338,12 @@ const nextConfig = {
       // Redirect /docs to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-            {
-              source: '/docs/:path*',
-              destination: 'https://docs.polar.sh/:path*',
-              permanent: false,
-            },
-          ]
+          {
+            source: '/docs/:path*',
+            destination: 'https://docs.polar.sh/:path*',
+            permanent: false,
+          },
+        ]
         : []),
 
       {

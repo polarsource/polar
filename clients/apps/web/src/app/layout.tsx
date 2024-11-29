@@ -47,7 +47,7 @@ export default async function RootLayout({
   let userOrganizations: Organization[] = []
 
   try {
-    authenticatedUser = await getAuthenticatedUser(api)
+    authenticatedUser = await getAuthenticatedUser()
     userOrganizations = await getUserOrganizations(api)
   } catch (e) {
     // Silently swallow errors during build, typically when rendering static pages

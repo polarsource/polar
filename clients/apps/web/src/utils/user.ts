@@ -1,28 +1,14 @@
 import { Organization, PolarAPI, ResponseError, UserRead } from '@polar-sh/sdk'
-import { cookies } from 'next/headers'
+import { headers } from 'next/headers'
 import { cache } from 'react'
 
-const POLAR_AUTH_COOKIE_KEY =
-  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
-
-const _getAuthenticatedUser = async (
-  api: PolarAPI,
-): Promise<UserRead | undefined> => {
-  // Optimization: if the cookie is not set, the user is not authenticated
-  const cookieStore = cookies()
-  if (!cookieStore.has(POLAR_AUTH_COOKIE_KEY)) {
-    return undefined
+const _getAuthenticatedUser = async (): Promise<UserRead | undefined> => {
+  // Middleware set this header for authenticated requests
+  const userData = headers().get('x-polar-user')
+  if (userData) {
+    return JSON.parse(userData)
   }
-
-  try {
-    // Don't cache it on Next.js edge cache...
-    return await api.users.getAuthenticated({ cache: 'no-cache' })
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 401) {
-      return undefined
-    }
-    throw e
-  }
+  return undefined
 }
 
 // ...but tell React to memoize it for the duration of the request
@@ -31,7 +17,7 @@ export const getAuthenticatedUser = cache(_getAuthenticatedUser)
 const _getUserOrganizations = async (
   api: PolarAPI,
 ): Promise<Organization[]> => {
-  const user = await getAuthenticatedUser(api)
+  const user = await getAuthenticatedUser()
   if (!user) {
     return []
   }

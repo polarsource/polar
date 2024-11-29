@@ -1,10 +1,9 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/api'
-import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
-import { useCallback, useContext, useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 
 export const useAuth = (): {
   authenticated: boolean
@@ -48,17 +47,4 @@ export const useAuth = (): {
     userOrganizations,
     setUserOrganizations,
   }
-}
-
-export const useLogout = () => {
-  const posthog = usePostHog()
-
-  const func = useCallback(async () => {
-    // polar.sh logout
-    posthog.logout()
-    window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
-    return
-  }, [])
-
-  return func
 }

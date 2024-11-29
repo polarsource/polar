@@ -19,7 +19,7 @@ interface PostPageProps {
 export default async function Page({ article, products }: PostPageProps) {
   const api = getServerSideAPI()
   // Check if the user is the author of the article
-  const user = await getAuthenticatedUser(api)
+  const user = await getAuthenticatedUser()
   const isAuthor = user !== undefined && article.user_id === user.id
 
   // Check if the user is subscriber

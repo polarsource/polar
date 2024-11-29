@@ -3,7 +3,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { CheckoutPublic } from '@polar-sh/sdk'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 interface CheckoutEmbedCloseProps {
   checkout: CheckoutPublic
@@ -18,6 +18,24 @@ const CheckoutEmbedClose: React.FC<
     }
     PolarEmbedCheckout.postMessage({ event: 'close' }, checkout.embed_origin)
   }, [checkout])
+
+  useEffect(() => {
+    const outsideClickListener = (event: MouseEvent) => {
+      const contentElement = document.getElementById('polar-embed-content')
+      if (contentElement && !contentElement.contains(event.target as Node)) {
+        onClose()
+      }
+    }
+    document
+      .getElementById('polar-embed-layout')
+      ?.addEventListener('click', outsideClickListener)
+
+    return () => {
+      document
+        .getElementById('polar-embed-layout')
+        ?.removeEventListener('click', outsideClickListener)
+    }
+  }, [onClose])
 
   return (
     <button

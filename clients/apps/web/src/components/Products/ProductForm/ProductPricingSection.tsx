@@ -1,7 +1,7 @@
 'use client'
 
 import { ErrorMessage } from '@hookform/error-message'
-import { AttachMoneyOutlined, ClearOutlined } from '@mui/icons-material'
+import { ClearOutlined } from '@mui/icons-material'
 import {
   ProductPrice,
   ProductPriceType,
@@ -323,7 +323,6 @@ export const ProductPricingSection = ({
 
   return (
     <Section
-      icon={<AttachMoneyOutlined fontSize="medium" />}
       title="Pricing"
       description="Set a one-time price, recurring price or a “pay what you want” pricing model"
       className={className}

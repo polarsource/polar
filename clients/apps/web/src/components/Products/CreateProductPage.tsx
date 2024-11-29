@@ -161,6 +161,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   return (
     <DashboardBody
       title="Create Product"
+      wrapperClassName="!max-w-screen-sm"
       className="gap-y-16"
       contextViewClassName="hidden md:block"
       contextView={
@@ -198,7 +199,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
           onRemoveBenefit={onRemoveBenefit}
         />
       </div>
-      <div className="flex flex-row items-center gap-2">
+      <div className="flex flex-row items-center gap-2 pb-12">
         <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
           Create Product
         </Button>

@@ -1,7 +1,6 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import { AspectRatioOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import {
   FormControl,
@@ -26,7 +25,6 @@ export const ProductMediaSection = ({
 
   return (
     <Section
-      icon={<AspectRatioOutlined fontSize="medium" />}
       title="Media"
       description="Enhance the product page with medias, giving the customers a better idea of the product"
       className={className}

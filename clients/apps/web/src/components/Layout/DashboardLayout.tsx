@@ -205,10 +205,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
 
   return (
     <Tabs className="md:-mx-4" value={current?.title}>
-      <TabsList
-        className="
-          flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"
-      >
+      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>
@@ -230,12 +227,14 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
 export const DashboardBody = ({
   children,
   className,
+  wrapperClassName,
   title,
   contextView,
   contextViewClassName,
   header = true,
 }: {
   children?: React.ReactNode
+  wrapperClassName?: string
   className?: string
   title?: string
   contextView?: React.ReactElement
@@ -251,7 +250,12 @@ export const DashboardBody = ({
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
       <div className="dark:md:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-gray-50 md:px-12 md:shadow-sm">
-        <div className="flex h-full w-full max-w-screen-xl flex-col">
+        <div
+          className={twMerge(
+            'flex h-full w-full max-w-screen-xl flex-col',
+            wrapperClassName,
+          )}
+        >
           {header && (
             <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-12">
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">

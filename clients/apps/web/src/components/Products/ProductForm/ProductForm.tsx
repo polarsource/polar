@@ -24,7 +24,7 @@ interface ProductFormProps {
 
 const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
   return (
-    <div className="flex flex-col divide-y">
+    <div className="dark:divide-polar-700 flex flex-col divide-y">
       <ProductInfoSection />
       <ProductPricingSection update={update} />
       <ProductMediaSection organization={organization} />

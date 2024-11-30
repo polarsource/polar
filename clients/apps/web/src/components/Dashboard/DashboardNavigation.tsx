@@ -19,16 +19,20 @@ const MaintainerNavigation = () => {
   const communityRoutes = useCommunityRoutes(org)
   const organizationRoutes = useOrganizationRoutes(org)
 
+  const dashboardRoutes = [
+    ...generalRoutesList,
+    ...fundingRoutes,
+    ...communityRoutes,
+    ...organizationRoutes,
+  ]
+
   if (!org) {
     return <></>
   }
 
   return (
     <div className="flex flex-col gap-y-6">
-      <NavigationContainer routes={generalRoutesList} />
-      <NavigationContainer title="Funding" routes={fundingRoutes} />
-      <NavigationContainer title="Community" routes={communityRoutes} />
-      <NavigationContainer title="Organization" routes={organizationRoutes} />
+      <NavigationContainer routes={dashboardRoutes} />
     </div>
   )
 }

@@ -1,3 +1,5 @@
+from datetime import datetime
+import time
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -60,6 +62,7 @@ def construct_stripe_invoice(
     customer_address: dict[str, Any] | None = {"country": "FR"},
     paid_out_of_band: bool = False,
     discount: Discount | None = None,
+    created: int | None = None,
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
         {
@@ -93,6 +96,7 @@ def construct_stripe_invoice(
             }
             if discount is not None
             else None,
+            "created": created or int(time.time()),
         },
         None,
     )
@@ -293,10 +297,14 @@ class TestCreateOrderFromStripe:
         save_fixture: SaveFixture,
         subscription: Subscription,
         product: Product,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[(product.prices[0].stripe_price_id, False, None)],
+            created=created_unix_timestamp,
         )
 
         payment_transaction = await create_transaction(
@@ -314,6 +322,7 @@ class TestCreateOrderFromStripe:
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
+        assert order.created_at == created_datetime
 
         held_balance = await held_balance_service.get_by(
             session, organization_id=product.organization_id
@@ -338,7 +347,10 @@ class TestCreateOrderFromStripe:
         save_fixture: SaveFixture,
         subscription: Subscription,
         product: Product,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[
@@ -346,6 +358,7 @@ class TestCreateOrderFromStripe:
                 ("PRICE_2", True, None),
                 (product.prices[0].stripe_price_id, False, None),
             ],
+            created=created_unix_timestamp,
         )
 
         payment_transaction = await create_transaction(
@@ -363,6 +376,7 @@ class TestCreateOrderFromStripe:
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
+        assert order.created_at == created_datetime
 
     async def test_subscription_only_proration(
         self,
@@ -370,7 +384,10 @@ class TestCreateOrderFromStripe:
         save_fixture: SaveFixture,
         subscription: Subscription,
         product: Product,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[
@@ -380,6 +397,7 @@ class TestCreateOrderFromStripe:
             subscription_details={
                 "metadata": {"product_price_id": str(product.prices[0].id)}
             },
+            created=created_unix_timestamp,
         )
 
         payment_transaction = await create_transaction(
@@ -397,6 +415,7 @@ class TestCreateOrderFromStripe:
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
+        assert order.created_at == created_datetime
 
     async def test_subscription_with_account(
         self,
@@ -407,10 +426,14 @@ class TestCreateOrderFromStripe:
         subscription: Subscription,
         product: Product,
         organization_account: Account,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[(product.prices[0].stripe_price_id, False, None)],
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -447,6 +470,7 @@ class TestCreateOrderFromStripe:
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
+        assert order.created_at == created_datetime
 
         transaction_service_mock.create_balance_from_charge.assert_called_once()
         assert (
@@ -480,8 +504,14 @@ class TestCreateOrderFromStripe:
         )
 
     async def test_subscription_applied_balance(
-        self, session: AsyncSession, subscription: Subscription, product: Product
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        product: Product,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+        
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             amount_paid=0,
@@ -493,6 +523,7 @@ class TestCreateOrderFromStripe:
             subscription_details={
                 "metadata": {"product_price_id": str(product.prices[0].id)}
             },
+            created=created_unix_timestamp,
         )
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
@@ -504,10 +535,10 @@ class TestCreateOrderFromStripe:
         assert order.subscription == subscription
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
+        assert order.created_at == created_datetime
 
     async def test_subscription_discount(
         self,
-        enqueue_job_mock: AsyncMock,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -515,11 +546,15 @@ class TestCreateOrderFromStripe:
         product: Product,
         organization_account: Account,
         discount_fixed_once: Discount,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             lines=[(product.prices[0].stripe_price_id, False, None)],
             discount=discount_fixed_once,
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -551,6 +586,7 @@ class TestCreateOrderFromStripe:
 
         assert order.amount == invoice_total
         assert order.discount == discount_fixed_once
+        assert order.created_at == created_datetime
 
         updated_subscription = await session.get(Subscription, subscription.id)
         assert updated_subscription is not None
@@ -565,11 +601,15 @@ class TestCreateOrderFromStripe:
         product_one_time: Product,
         organization_account: Account,
         user: User,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
             subscription_id=None,
             billing_reason="manual",
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -609,6 +649,7 @@ class TestCreateOrderFromStripe:
         assert order.subscription is None
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.billing_address == Address(country="FR")  # pyright: ignore
+        assert order.created_at == created_datetime
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",
@@ -632,12 +673,16 @@ class TestCreateOrderFromStripe:
         organization_account: Account,
         user: User,
         discount_fixed_once: Discount,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
             subscription_id=None,
             billing_reason="manual",
             discount=discount_fixed_once,
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -672,6 +717,7 @@ class TestCreateOrderFromStripe:
 
         assert order.amount == invoice_total
         assert order.discount == discount_fixed_once
+        assert order.created_at == created_datetime
 
     async def test_one_time_custom_price_product(
         self,
@@ -682,7 +728,10 @@ class TestCreateOrderFromStripe:
         product_one_time_custom_price: Product,
         organization_account: Account,
         user: User,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             lines=[
                 (
@@ -697,6 +746,7 @@ class TestCreateOrderFromStripe:
             ],
             subscription_id=None,
             billing_reason="manual",
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -735,6 +785,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product_one_time_custom_price.prices[0]
         assert order.subscription is None
         assert order.billing_reason == OrderBillingReason.purchase
+        assert order.created_at == created_datetime
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",
@@ -755,9 +806,11 @@ class TestCreateOrderFromStripe:
         session: AsyncSession,
         save_fixture: SaveFixture,
         product_one_time_free_price: Product,
-        organization_account: Account,
         user: User,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             charge_id=None,
             total=0,
@@ -767,6 +820,7 @@ class TestCreateOrderFromStripe:
             ],
             subscription_id=None,
             billing_reason="manual",
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -781,6 +835,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product_one_time_free_price.prices[0]
         assert order.subscription is None
         assert order.billing_reason == OrderBillingReason.purchase
+        assert order.created_at == created_datetime
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification", order_id=order.id
@@ -803,18 +858,23 @@ class TestCreateOrderFromStripe:
         product_one_time: Product,
         organization_account: Account,
         user: User,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
         mock = MagicMock(spec=StripeService)
         mocker.patch("polar.order.service.stripe_service", new=mock)
         mock.get_payment_intent.return_value = stripe_lib.PaymentIntent.construct_from(
             {"latest_charge": "CHARGE_ID"}, key=None
         )
+
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             charge_id=None,
             metadata={"payment_intent_id": "PAYMENT_INTENT_ID"},
             lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
             subscription_id=None,
             billing_reason="manual",
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -853,6 +913,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product_one_time.prices[0]
         assert order.subscription is None
         assert order.billing_reason == OrderBillingReason.purchase
+        assert order.created_at == created_datetime
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",
@@ -883,6 +944,7 @@ class TestCreateOrderFromStripe:
         product: Product,
         user: User,
         organization_account: Account,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
         mock = MagicMock(spec=StripeService)
         mocker.patch("polar.order.service.stripe_service", new=mock)
@@ -890,11 +952,15 @@ class TestCreateOrderFromStripe:
             {"id": "CHARGE_ID", "payment_method_details": None},
             key=None,
         )
+
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             lines=[(product.prices[0].stripe_price_id, False, None)],
             customer_address=customer_address,
             subscription_id=None,
             billing_reason="manual",
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -927,6 +993,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
         assert order.billing_address is None
+        assert order.created_at == created_datetime
 
     async def test_billing_address_from_payment_method(
         self,
@@ -936,6 +1003,7 @@ class TestCreateOrderFromStripe:
         product_one_time: Product,
         user: User,
         organization_account: Account,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
         mock = MagicMock(spec=StripeService)
         mocker.patch("polar.order.service.stripe_service", new=mock)
@@ -950,12 +1018,16 @@ class TestCreateOrderFromStripe:
             },
             key=None,
         )
+        
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             charge_id="CHARGE_ID",
             lines=[(product_one_time.prices[0].stripe_price_id, False, None)],
             customer_address=None,
             subscription_id=None,
             billing_reason="manual",
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -991,16 +1063,17 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
         assert order.billing_address == Address(country="US")  # type: ignore
+        assert order.created_at == created_datetime
 
     async def test_with_checkout(
         self,
-        enqueue_job_mock: AsyncMock,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product_one_time: Product,
         organization_account: Account,
         user: User,
+        event_creation_time: tuple[datetime, int],
     ) -> None:
         publish_checkout_event_mock = mocker.patch(
             "polar.order.service.publish_checkout_event"
@@ -1010,11 +1083,15 @@ class TestCreateOrderFromStripe:
         checkout = await create_checkout(
             save_fixture, price=price, status=CheckoutStatus.succeeded
         )
+
+        created_datetime, created_unix_timestamp = event_creation_time
+
         invoice = construct_stripe_invoice(
             lines=[(price.stripe_price_id, False, None)],
             subscription_id=None,
             billing_reason="manual",
             metadata={"checkout_id": str(checkout.id)},
+            created=created_unix_timestamp,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -1048,6 +1125,8 @@ class TestCreateOrderFromStripe:
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
         assert order.checkout == checkout
+        assert order.created_at == created_datetime
+
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret,
             "checkout.order_created",

@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import stripe as stripe_lib
@@ -394,6 +394,7 @@ class OrderService(ResourceServiceReader[Order]):
             custom_field_data=checkout.custom_field_data
             if checkout is not None
             else {},
+            created_at=datetime.fromtimestamp(invoice.created, tz=timezone.utc),
         )
 
         # Get or create customer user

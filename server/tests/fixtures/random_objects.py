@@ -1305,7 +1305,7 @@ async def create_advertisement_campaign(
 
 
 @pytest.fixture
-def event_creation_time():
+def event_creation_time() -> tuple[datetime, int]:
     created_datetime = datetime.fromisoformat("2024-01-01T00:00:00Z")
     created_unix_timestamp = int(created_datetime.timestamp())
     return created_datetime, created_unix_timestamp

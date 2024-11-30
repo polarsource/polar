@@ -1,5 +1,5 @@
-from datetime import datetime
 import time
+from datetime import datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -505,7 +505,7 @@ class TestCreateOrderFromStripe:
         event_creation_time: tuple[datetime, int],
     ) -> None:
         created_datetime, created_unix_timestamp = event_creation_time
-        
+
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
             amount_paid=0,
@@ -1006,7 +1006,7 @@ class TestCreateOrderFromStripe:
             },
             key=None,
         )
-        
+
         created_datetime, created_unix_timestamp = event_creation_time
 
         invoice = construct_stripe_invoice(

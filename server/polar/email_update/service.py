@@ -2,6 +2,7 @@ import datetime
 from math import ceil
 from urllib.parse import urlencode
 
+from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
@@ -117,6 +118,13 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
 
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
+
+    async def delete_expired_record(self, session: AsyncSession) -> None:
+        statement = delete(EmailVerification).where(
+            EmailVerification.expires_at < utc_now()
+        )
+        await session.execute(statement)
+        await session.flush()
 
 
 email_update = EmailUpdateService(EmailVerification)

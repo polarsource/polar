@@ -1,4 +1,5 @@
 import { ExpandMoreOutlined } from '@mui/icons-material'
+import Link from 'next/link'
 import { ShadowListGroup } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -107,9 +108,11 @@ const GeneralSettings = () => {
               Update your account&apos;s current email
             </p>
           </div>
-          <Button asChild>
-            <a>Update</a>
-          </Button>
+          <Link href="/email-update">
+            <Button asChild>
+              <a>Update</a>
+            </Button>
+          </Link>
         </div>
       </ShadowListGroup.Item>
     </ShadowListGroup>

@@ -2,7 +2,7 @@
 
 import { api } from "@/utils/api"
 import { EmailUpdateRequest } from "@polar-sh/sdk"
-import { useRouter } from "next/router"
+import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 
 export const useSendEmailUpdate = () => {

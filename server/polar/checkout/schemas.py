@@ -364,9 +364,13 @@ class CheckoutDiscountPercentageRepeatDuration(
     """
 
 
-def get_discount_discriminator_value(v: CheckoutDiscountBase) -> str:
-    type = v.type
-    duration = v.duration
+def get_discount_discriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        type = v["type"]
+        duration = v["duration"]
+    else:
+        type = getattr(v, "type")
+        duration = getattr(v, "duration")
     duration_tag = (
         "once_forever"
         if duration in {DiscountDuration.once, DiscountDuration.forever}

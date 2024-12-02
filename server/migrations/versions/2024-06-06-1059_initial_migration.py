@@ -16,7 +16,6 @@ from sqlalchemy_utils.types.ts_vector import TSVectorType
 from polar.enums import Platforms
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.models import Account, Issue
-from polar.models.article import ArticleByline, ArticleVisibility
 
 
 # This enum has been removed from the codebase since this migration was created
@@ -341,10 +340,10 @@ def upgrade() -> None:
         sa.Column("created_by", sa.UUID(), nullable=False),
         sa.Column("organization_id", sa.UUID(), nullable=False),
         sa.Column("published_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("byline", StringEnum(ArticleByline), nullable=False),
+        sa.Column("byline", sa.String(), nullable=False),
         sa.Column(
             "visibility",
-            StringEnum(ArticleVisibility),
+            sa.String(),
             nullable=False,
         ),
         sa.Column("paid_subscribers_only", sa.Boolean(), nullable=False),

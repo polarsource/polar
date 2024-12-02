@@ -10,7 +10,6 @@ from polar.postgres import AsyncSession
 from polar.redis import Redis
 
 from .ads import BenefitAdsService
-from .articles import BenefitArticlesService
 from .base import (
     BenefitPreconditionError,
     BenefitPropertiesValidationError,
@@ -29,7 +28,6 @@ _SERVICE_CLASS_MAP: dict[
     type[BenefitServiceProtocol[Any, Any, Any]],
 ] = {
     BenefitType.custom: BenefitCustomService,
-    BenefitType.articles: BenefitArticlesService,
     BenefitType.ads: BenefitAdsService,
     BenefitType.discord: BenefitDiscordService,
     BenefitType.github_repository: BenefitGitHubRepositoryService,

@@ -11,7 +11,6 @@ from polar.external_organization.service import (
 )
 from polar.issue.service import issue as issue_service
 from polar.models.account import Account
-from polar.models.article import Article
 from polar.models.benefit import Benefit
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.external_organization import ExternalOrganization
@@ -49,7 +48,6 @@ Object = (
     | Product
     | Benefit
     | Subscription
-    | Article
     | WebhookEndpoint
     | Downloadable
     | LicenseKey
@@ -262,17 +260,6 @@ class Authz:
             and isinstance(object, Subscription)
         ):
             return object.user_id == subject.id
-
-        #
-        # Article
-        #
-
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.write
-            and isinstance(object, Article)
-        ):
-            return await self._can_user_write_article(subject, object)
 
         #
         # WebhookEndpoint
@@ -544,18 +531,6 @@ class Authz:
             and await self._can_user_write_external_organization_id(
                 subject, object.organization_id
             )
-        ):
-            return True
-
-        return False
-
-    #
-    # Article
-    #
-    async def _can_user_write_article(self, subject: User, object: Article) -> bool:
-        # If member of org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
         ):
             return True
 

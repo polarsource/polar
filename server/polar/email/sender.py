@@ -68,7 +68,7 @@ class ResendEmailSender(EmailSender):
         subject: str,
         html_content: str,
         from_name: str = DEFAULT_FROM_NAME,
-        from_email_addr: str = "polarsource@posts.polar.sh",
+        from_email_addr: str = DEFAULT_FROM_EMAIL_ADDRESS,
         email_headers: dict[str, str] = {},
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,

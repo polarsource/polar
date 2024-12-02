@@ -242,6 +242,9 @@ export const SDKNavigation = () => {
         <NavigationItem href="/docs/developers/sdk/polar-init">
           polar-init
         </NavigationItem>
+        <NavigationItem href="/docs/developers/sdk/polar-migrate">
+          polar-migrate
+        </NavigationItem>
         <NavigationItem href="/docs/developers/sdk/checkout-link">
           checkout-link
         </NavigationItem>

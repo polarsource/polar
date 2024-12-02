@@ -13,13 +13,21 @@ import {
 } from 'polarkit/components/ui/dropdown-menu'
 import { useCallback, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
+import { twMerge } from 'tailwind-merge'
+import { FilePreview } from './FileList/FileListItem'
 
 export const DownloadableItem = ({
+  className,
   downloadable,
   historic,
+  showActions = true,
+  fileIcon,
 }: {
+  className?: string
   downloadable: DownloadableRead
   historic: boolean
+  showActions?: boolean
+  fileIcon?: boolean
 }) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const isHovered = useHoverDirty(ref)
@@ -29,48 +37,58 @@ export const DownloadableItem = ({
   }, [downloadable])
 
   return (
-    <div className="dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-xl bg-white px-4 py-2">
-      <div className="flex w-full min-w-0 flex-col gap-y-1">
-        <span className="min-w-0 truncate text-sm">
-          {downloadable.file.name}
-        </span>
-        <div className="flex flex-row items-center gap-x-2 text-xs">
-          <span className="dark:text-polar-500 text-gray-500">
-            {downloadable.file.size_readable}
+    <div
+      className={twMerge(
+        'dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-xl bg-white px-4 py-2',
+        className,
+      )}
+    >
+      <div className="flex flex-row items-center gap-x-4">
+        {fileIcon && <FilePreview mimeType={downloadable.file.mime_type} />}
+        <div className="flex w-full min-w-0 flex-col gap-y-1">
+          <span className="min-w-0 truncate text-sm">
+            {downloadable.file.name}
           </span>
-          {historic && (
-            <Pill className="text-xxs" color="gray">
-              Legacy
-            </Pill>
-          )}
+          <div className="flex flex-row items-center gap-x-2 text-xs">
+            <span className="dark:text-polar-500 text-gray-500">
+              {downloadable.file.size_readable}
+            </span>
+            {historic && (
+              <Pill className="text-xxs" color="gray">
+                Legacy
+              </Pill>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex flex-row items-center gap-x-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-none" asChild>
-            <Button
-              className={
-                'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-              }
-              size="icon"
-              variant="secondary"
+        {showActions && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none" asChild>
+              <Button
+                className={
+                  'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                }
+                size="icon"
+                variant="secondary"
+              >
+                <MoreVertOutlined fontSize="inherit" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
-              <MoreVertOutlined fontSize="inherit" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="dark:bg-polar-800 bg-gray-50 shadow-lg"
-          >
-            {downloadable.file.checksum_sha256_hex && (
-              <>
-                <DropdownMenuItem onClick={onCopySHA}>
-                  Copy SHA256 Checksum
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {downloadable.file.checksum_sha256_hex && (
+                <>
+                  <DropdownMenuItem onClick={onCopySHA}>
+                    Copy SHA256 Checksum
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <a
           ref={ref}
           className="flex flex-row items-center gap-x-2"

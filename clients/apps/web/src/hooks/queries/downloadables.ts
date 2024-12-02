@@ -1,10 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { api } from '@/utils/api'
-import { DownloadableRead, ListResourceDownloadableRead } from '@polar-sh/sdk'
+import {
+  DownloadableRead,
+  ListResourceDownloadableRead,
+  UsersDownloadablesApiListRequest,
+} from '@polar-sh/sdk'
 import { defaultRetry } from './retry'
 
-export const useDownloadables = (benefitId: string, activeFileIds: string[] = []) =>
+export const useUserDownloadables = (
+  params?: UsersDownloadablesApiListRequest,
+) =>
+  useQuery({
+    queryKey: ['user', 'downloadables'],
+    queryFn: () => api.usersDownloadables.list(params),
+    retry: defaultRetry,
+  })
+
+export const useDownloadables = (
+  benefitId: string,
+  activeFileIds: string[] = [],
+) =>
   useQuery({
     queryKey: ['user', 'downloadables', benefitId, ...activeFileIds],
     queryFn: () =>

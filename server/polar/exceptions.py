@@ -33,9 +33,9 @@ class PolarError(Exception):
 
     @classmethod
     def schema(cls) -> type[BaseModel]:
-        type_literal = Literal[cls.__name__]  # type: ignore
+        error_literal = Literal[cls.__name__]  # type: ignore
 
-        return create_model(cls.__name__, type=(type_literal, ...), detail=(str, ...))
+        return create_model(cls.__name__, error=(error_literal, ...), detail=(str, ...))
 
 
 class PolarTaskError(PolarError):

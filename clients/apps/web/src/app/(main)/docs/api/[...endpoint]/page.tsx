@@ -95,7 +95,7 @@ export default async function Page({
 
   return (
     <APILayout openAPISchema={schema} activeOperationId={operation.operationId}>
-      <div className="flex w-full max-w-3xl flex-shrink flex-col">
+      <div className="flex w-full max-w-3xl flex-shrink flex-col py-16">
         <div className="flex flex-col gap-y-16">
           <div className="flex flex-col gap-y-4">
             <span className="text-lg capitalize text-blue-500 dark:text-blue-400">
@@ -135,7 +135,7 @@ export default async function Page({
           )}
         </div>
       </div>
-      <div className="sticky top-12 flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">
+      <div className="sticky right-8 top-16 flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">
         <APIContainer
           className="bg-gray-50"
           operation={operation}

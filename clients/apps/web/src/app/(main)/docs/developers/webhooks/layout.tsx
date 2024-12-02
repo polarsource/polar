@@ -1,18 +1,13 @@
 import {
-  DataObjectOutlined
-} from '@mui/icons-material'
-import {
   DocumentationPageSidebar,
   MainNavigation,
-  NavigationHeadline,
   MobileNav,
+  NavigationHeadline,
 } from '@/components/Documentation/Navigation'
-import {
-  fetchSchema,
-  getWebhooks,
-} from '@/components/Documentation/openapi'
-import { OpenAPIV3_1 } from 'openapi-types'
 import { NavigationItem } from '@/components/Documentation/NavigationItem'
+import { fetchSchema, getWebhooks } from '@/components/Documentation/openapi'
+import { DataObjectOutlined } from '@mui/icons-material'
+import { OpenAPIV3_1 } from 'openapi-types'
 
 export const dynamic = 'force-static'
 export const dynamicParams = false
@@ -24,11 +19,7 @@ const WEBHOOK_NAVIGATION_SELL = [
   'benefit_grant',
 ]
 
-const WEBHOOK_NAVIGATION_MANAGE = [
-  'product',
-  'benefit',
-  'organization',
-]
+const WEBHOOK_NAVIGATION_MANAGE = ['product', 'benefit', 'organization']
 
 const WebhookEventNavigationItem = ({
   webhooks,
@@ -51,12 +42,11 @@ const WebhookEventNavigationItem = ({
 }
 
 const WebhooksNavigation = ({
-  webhooks
+  webhooks,
 }: {
   webhooks: [string, OpenAPIV3_1.OperationObject][]
 }) => {
-
-  let nav: { [prefix: string]: [string, OpenAPIV3_1.OperationObject][] }  = {}
+  let nav: { [prefix: string]: [string, OpenAPIV3_1.OperationObject][] } = {}
   webhooks.map(([event, webhook]) => {
     const prefix = event.split('.')[0]
     if (nav[prefix]) {
@@ -68,7 +58,9 @@ const WebhooksNavigation = ({
 
   return (
     <div className="flex flex-col gap-y-6">
-      <NavigationItem href="/docs/developers/webhooks">Configuration</NavigationItem>
+      <NavigationItem href="/docs/developers/webhooks">
+        Configuration
+      </NavigationItem>
       <div>
         <NavigationHeadline>Sales Events</NavigationHeadline>
         {WEBHOOK_NAVIGATION_SELL.map((prefix) => (
@@ -85,7 +77,11 @@ const WebhooksNavigation = ({
   )
 }
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const schema = await fetchSchema()
   const webhooks = getWebhooks(schema)
 
@@ -94,11 +90,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
       <MobileNav activeSection="webhooks">
         <MainNavigation />
       </MobileNav>
-      <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="webhooks">
-          <WebhooksNavigation webhooks={webhooks} />
-        </DocumentationPageSidebar>
-      </div>
+      <DocumentationPageSidebar activeSection="webhooks">
+        <WebhooksNavigation webhooks={webhooks} />
+      </DocumentationPageSidebar>
       {children}
     </>
   )

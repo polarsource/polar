@@ -26,6 +26,7 @@ import { Pill } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { BrandingMenu } from '../Layout/Public/BrandingMenu'
 import { NavigationItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
 import {
@@ -646,8 +647,23 @@ export const DocumentationPageSidebar = ({
   const { isShown, show, hide, toggle } = useModal()
 
   return (
-    <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
-      <div className="-mx-3 hidden flex-col gap-y-12 md:flex">
+    <div className="dark:border-polar-700 bottom-0 top-0 flex flex-shrink-0 flex-col gap-y-6 overflow-y-auto border-gray-200 md:sticky md:h-screen md:w-72 md:overflow-y-auto md:border-r md:p-8">
+      <div className="hidden flex-row items-center gap-x-4 md:flex">
+        <BrandingMenu
+          className={twMerge('hidden md:flex')}
+          logoClassName="dark:text-white"
+          size={70}
+          logoVariant="logotype"
+        />
+        <BrandingMenu
+          className={twMerge('md:hidden')}
+          logoClassName="dark:text-white"
+          size={70}
+          logoVariant="logotype"
+        />
+        <h2 className="dark:text-polar-500 text-lg text-gray-500">Docs</h2>
+      </div>
+      <div className="hidden flex-col gap-y-12 md:flex">
         <CommandPaletteTrigger
           className="dark:bg-polar-800 w-full bg-white"
           onClick={show}
@@ -782,7 +798,7 @@ export const MobileNav = ({
   )
 
   return mobileNavOpen ? (
-    <div className="flex h-full flex-col px-8 py-4">
+    <div className="flex h-full flex-col py-4">
       <div className="dark:bg-polar-900 relative flex flex-row items-center justify-between bg-gray-50">
         {header}
       </div>

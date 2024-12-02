@@ -13,10 +13,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <MobileNav activeSection="open-source">
         <MainNavigation />
       </MobileNav>
-      <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="open-source">
-        </DocumentationPageSidebar>
-      </div>
+      <DocumentationPageSidebar activeSection="open-source"></DocumentationPageSidebar>
       {children}
     </>
   )

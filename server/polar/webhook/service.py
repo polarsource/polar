@@ -22,7 +22,11 @@ from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
+from polar.models.webhook_endpoint import (
+    WebhookEndpoint,
+    WebhookEventType,
+    WebhookFormat,
+)
 from polar.models.webhook_event import WebhookEvent
 from polar.organization.resolver import get_payload_organization
 from polar.webhook.schemas import (
@@ -247,6 +251,9 @@ class WebhookService:
 
         if not event.succeeded:
             raise EventNotSuccessul(id)
+
+        if event.webhook_endpoint.format != WebhookFormat.raw:
+            return
 
         payload = WebhookPayloadTypeAdapter.validate_json(event.payload)
 

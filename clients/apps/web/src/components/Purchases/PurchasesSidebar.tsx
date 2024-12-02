@@ -1,12 +1,18 @@
 'use client'
 
-import { useUserOrders, useUserSubscriptions } from '@/hooks/queries'
+import {
+  usePersonalDashboard,
+  useUserLicenseKeys,
+  useUserOrders,
+  useUserSubscriptions,
+} from '@/hooks/queries'
 import { ProductPriceType } from '@polar-sh/sdk'
 import Link, { LinkProps } from 'next/link'
 import { usePathname } from 'next/navigation'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { PropsWithChildren, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DashboardFilters, DefaultFilters } from '../Issues/filters'
 
 const PurchaseLink = ({ ...props }: PropsWithChildren<LinkProps>) => {
   const pathname = usePathname()
@@ -38,9 +44,25 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
     limit: 1,
     active: true,
   })
+  const { data: licenseKeys } = useUserLicenseKeys({ limit: 1 })
+
+  const filters: DashboardFilters = {
+    ...DefaultFilters,
+    onlyPledged: true,
+  }
+
+  const { data: dashboard } = usePersonalDashboard({
+    q: filters.q,
+    sort: filters.sort,
+    onlyPledged: filters.onlyPledged,
+    onlyBadged: filters.onlyBadged,
+    showClosed: filters.showClosed,
+  })
+
+  const fundedIssues = dashboard?.pages[0].pagination.total_count ?? 0
 
   return (
-    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6 border-gray-200 bg-gray-50">
+    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6 border-none bg-gray-50">
       <div className="flex flex-col gap-y-2">
         <h2 className="text-lg font-medium">Library</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -59,11 +81,18 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
             </span>
             <span>{subscriptions?.pagination.total_count || 0}</span>
           </PurchaseLink>
-          <PurchaseLink href="/funding">
-            <span className="flex flex-row items-center gap-x-2">
-              Funded Issues
-            </span>
+          <PurchaseLink href="/purchases/license-keys">
+            <span>License Keys</span>
+            <span>{licenseKeys?.pagination.total_count || 0}</span>
           </PurchaseLink>
+          {fundedIssues > 0 && (
+            <PurchaseLink href="/funding">
+              <span className="flex flex-row items-center gap-x-2">
+                Funded Issues
+              </span>
+              <span>{fundedIssues}</span>
+            </PurchaseLink>
+          )}
         </div>
       </div>
       <>{children}</>

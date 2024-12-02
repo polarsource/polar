@@ -4,7 +4,7 @@ from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import File, Organization
 from polar.openapi import APITag
@@ -23,16 +23,12 @@ from .schemas import (
     FileUpload,
     FileUploadCompleted,
 )
-from .service import FileNotFound
 from .service import file as file_service
 
 router = APIRouter(prefix="/files", tags=["files", APITag.documented])
 
 FileID = Annotated[UUID4, Path(description="The file ID.")]
-FileNotFoundResponse = {
-    "description": "File not found.",
-    "model": FileNotFound.schema(),
-}
+FileNotFound = {"description": "File not found.", "model": ResourceNotFound.schema()}
 
 
 # We want to name our endpoint `list` to offer a nice SDK
@@ -79,7 +75,13 @@ async def list(
     )
 
 
-@router.post("/", summary="Create File", response_model=FileUpload)
+@router.post(
+    "/",
+    response_model=FileUpload,
+    summary="Create File",
+    status_code=201,
+    responses={201: {"description": "File created."}},
+)
 async def create(
     file_create: FileCreate,
     auth_subject: auth.CreatorFilesWrite,
@@ -105,6 +107,14 @@ async def create(
     "/{id}/uploaded",
     summary="Complete File Upload",
     response_model=FileRead,
+    responses={
+        200: {"description": "File upload completed."},
+        403: {
+            "description": "You don't have the permission to update this file.",
+            "model": NotPermitted.schema(),
+        },
+        404: FileNotFound,
+    },
 )
 async def uploaded(
     id: FileID,
@@ -118,7 +128,7 @@ async def uploaded(
 
     file = await file_service.get(session, id)
     if not file:
-        raise FileNotFound(f"No file exists with ID: {id}")
+        raise ResourceNotFound()
 
     organization = await organization_service.get(session, file.organization_id)
     if not organization:
@@ -137,6 +147,14 @@ async def uploaded(
     "/{id}",
     summary="Update File",
     response_model=FileRead,
+    responses={
+        200: {"description": "File updated."},
+        403: {
+            "description": "You don't have the permission to update this file.",
+            "model": NotPermitted.schema(),
+        },
+        404: FileNotFound,
+    },
 )
 async def update(
     auth_subject: auth.CreatorFilesWrite,
@@ -150,7 +168,7 @@ async def update(
 
     file = await file_service.get(session, id)
     if not file:
-        raise FileNotFound(f"No file exists with ID: {id}")
+        raise ResourceNotFound()
 
     organization = await organization_service.get(session, file.organization_id)
     if not organization:
@@ -169,13 +187,10 @@ async def update(
     responses={
         204: {"description": "File deleted."},
         403: {
-            "description": (
-                "You don't have the permission to update this file "
-                "or it's not deletable."
-            ),
+            "description": "You don't have the permission to delete this file.",
             "model": NotPermitted.schema(),
         },
-        404: FileNotFoundResponse,
+        404: FileNotFound,
     },
 )
 async def delete(
@@ -189,7 +204,7 @@ async def delete(
 
     file = await file_service.get(session, id)
     if not file:
-        raise FileNotFound(f"No file exists with ID: {id}")
+        raise ResourceNotFound()
 
     organization = await organization_service.get(session, file.organization_id)
     if not organization:

@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckOutlined, ContentPasteOutlined } from '@mui/icons-material'
+import Button from 'polarkit/components/ui/atoms/button'
 import { useState } from 'react'
 
 const CopyToClipboardButton = (props: { text: string }) => {
@@ -16,10 +17,16 @@ const CopyToClipboardButton = (props: { text: string }) => {
   }
 
   return (
-    <button type="button" onClick={handleCopy}>
+    <Button
+      className="ml-0.5 h-6 w-6"
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={handleCopy}
+    >
       {!copied && <ContentPasteOutlined fontSize="inherit" />}
       {copied && <CheckOutlined fontSize="inherit" />}
-    </button>
+    </Button>
   )
 }
 

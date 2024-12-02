@@ -5,7 +5,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useUserBenefit, useUserDownloadables } from '@/hooks/queries'
-import { Download } from '@mui/icons-material'
+import { FileDownloadOutlined } from '@mui/icons-material'
 import { DownloadableRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -48,12 +48,14 @@ export default function ClientPage() {
 
         {downloadables?.pagination.total_count === 0 ? (
           <div className="flex h-full w-full flex-col items-center gap-y-4 py-32 text-6xl">
-            <Download
+            <FileDownloadOutlined
               className="dark:text-polar-600 text-gray-400"
               fontSize="inherit"
             />
             <div className="flex flex-col items-center gap-y-2">
-              <h3 className="p-2 text-xl font-medium">No License Keys found</h3>
+              <h3 className="p-2 text-xl font-medium">
+                No File Downloads found
+              </h3>
             </div>
           </div>
         ) : (

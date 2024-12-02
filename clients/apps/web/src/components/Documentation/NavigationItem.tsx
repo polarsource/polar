@@ -27,7 +27,7 @@ export const NavigationItem = ({
     <Link
       {...props}
       className={twMerge(
-        '-mx-3 flex flex-row items-center gap-x-3 rounded-lg px-3 py-2 text-sm transition-colors hover:text-black dark:hover:text-white',
+        'flex flex-row items-center gap-x-3 rounded-lg px-3 py-2 text-sm transition-colors hover:text-black dark:hover:text-white',
         fallbackActive
           ? 'dark:bg-polar-800 bg-white font-medium text-black shadow-sm dark:text-white'
           : 'dark:text-polar-500 text-gray-500',

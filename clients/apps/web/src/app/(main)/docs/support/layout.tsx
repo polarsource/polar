@@ -1,8 +1,8 @@
 import {
   DocumentationPageSidebar,
   MainNavigation,
-  SupportNavigation,
   MobileNav,
+  SupportNavigation,
 } from '@/components/Documentation/Navigation'
 
 export const dynamic = 'force-static'
@@ -14,11 +14,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <MobileNav activeSection="support">
         <MainNavigation />
       </MobileNav>
-      <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="support">
-          <SupportNavigation />
-        </DocumentationPageSidebar>
-      </div>
+      <DocumentationPageSidebar activeSection="support">
+        <SupportNavigation />
+      </DocumentationPageSidebar>
       {children}
     </>
   )

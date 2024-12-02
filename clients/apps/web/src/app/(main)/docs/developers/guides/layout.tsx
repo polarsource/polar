@@ -14,11 +14,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <MobileNav activeSection="guides">
         <MainNavigation />
       </MobileNav>
-      <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="guides">
-          <GuidesNavigation />
-        </DocumentationPageSidebar>
-      </div>
+      <DocumentationPageSidebar activeSection="guides">
+        <GuidesNavigation />
+      </DocumentationPageSidebar>
       {children}
     </>
   )

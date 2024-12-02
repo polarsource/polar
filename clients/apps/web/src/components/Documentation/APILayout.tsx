@@ -17,13 +17,17 @@ const APILayout = ({
   return (
     <>
       <MobileNav activeSection="api">
-        <APINavigation openAPISchema={openAPISchema} activeOperationId={activeOperationId} />
+        <APINavigation
+          openAPISchema={openAPISchema}
+          activeOperationId={activeOperationId}
+        />
       </MobileNav>
-      <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="api">
-          <APINavigation openAPISchema={openAPISchema} activeOperationId={activeOperationId} />
-        </DocumentationPageSidebar>
-      </div>
+      <DocumentationPageSidebar activeSection="api">
+        <APINavigation
+          openAPISchema={openAPISchema}
+          activeOperationId={activeOperationId}
+        />
+      </DocumentationPageSidebar>
       {children}
     </>
   )

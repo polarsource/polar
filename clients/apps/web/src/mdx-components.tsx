@@ -17,7 +17,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ...components,
     BodyWrapper(props) {
       return (
-        <article className="flex w-full max-w-3xl flex-shrink flex-col">
+        <article className="flex w-full max-w-3xl flex-shrink flex-col py-16">
           <ProseWrapper>{props.children}</ProseWrapper>
         </article>
       )

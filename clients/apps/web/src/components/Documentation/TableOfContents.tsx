@@ -14,11 +14,11 @@ export const TableOfContents = ({
   return (
     <div
       id="toc"
-      className="flex w-full flex-shrink-0 flex-col md:sticky md:top-36 md:w-64"
+      className="right-8 flex w-full flex-shrink-0 flex-col md:sticky md:top-16 md:w-64"
     >
       <nav className="hidden w-full flex-col gap-y-4 md:flex">
         <h3 className="text-black dark:text-white">On this page</h3>
-        <ul className="flex flex-col gap-y-2.5 text-sm">
+        <ul className="dark:border-polar-700 flex flex-col gap-y-2.5 border-l border-gray-200 pl-4 text-sm">
           {items.map((item) => (
             <li key={item.href}>
               <Link

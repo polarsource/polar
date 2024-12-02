@@ -107,6 +107,13 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.order.service.enqueue_job")
 
 
+@pytest.fixture
+def event_creation_time() -> tuple[datetime, int]:
+    created_datetime = datetime.fromisoformat("2024-01-01T00:00:00Z")
+    created_unix_timestamp = int(created_datetime.timestamp())
+    return created_datetime, created_unix_timestamp
+
+
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestList:

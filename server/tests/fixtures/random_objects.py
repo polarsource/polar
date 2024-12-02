@@ -7,7 +7,6 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, Unpack
 
-import pytest
 import pytest_asyncio
 
 from polar.enums import (
@@ -1302,10 +1301,3 @@ async def create_advertisement_campaign(
     )
     await save_fixture(advertisement_campaign)
     return advertisement_campaign
-
-
-@pytest.fixture
-def event_creation_time() -> tuple[datetime, int]:
-    created_datetime = datetime.fromisoformat("2024-01-01T00:00:00Z")
-    created_unix_timestamp = int(created_datetime.timestamp())
-    return created_datetime, created_unix_timestamp

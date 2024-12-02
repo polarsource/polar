@@ -85,10 +85,6 @@ interface DownloadableItemProps {
 const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {
   const { data: benefit } = useUserBenefit(downloadable.benefit_id)
 
-  const onCopySHA = useCallback(() => {
-    navigator.clipboard.writeText(downloadable.file.checksum_sha256_hex ?? '')
-  }, [downloadable])
-
   const organizationLink = useMemo(() => {
     if (benefit?.organization.profile_settings?.enabled) {
       return (

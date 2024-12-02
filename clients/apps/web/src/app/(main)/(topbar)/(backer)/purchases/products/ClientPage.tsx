@@ -54,7 +54,7 @@ export default function ClientPage() {
         <PurchaseSidebar />
       </div>
 
-      <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex w-full flex-col items-center gap-y-8 border border-gray-200 bg-gray-50 p-12">
+      <div className="dark:bg-polar-900 rounded-4xl relative flex w-full flex-col items-center gap-y-8 bg-gray-50 p-12">
         <div className="flex w-full flex-row items-center justify-between">
           <h3 className="text-2xl">Products</h3>
           <div className="w-full max-w-64">
@@ -106,7 +106,7 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
   const organization = order.product.organization
 
   return (
-    <ShadowBox className="flex w-full flex-col gap-y-6 ">
+    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-6 border-none bg-white">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-row items-center gap-x-4">
           {order.product.medias.length > 0 ? (
@@ -136,9 +136,9 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
           <Button size="sm">View Order</Button>
         </Link>
       </div>
-      <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 text-sm">
-        <div className="flex flex-row items-center justify-between py-2">
-          <span>Amount</span>
+      <div className="flex flex-col gap-y-2 text-sm">
+        <div className="flex flex-row items-center justify-between">
+          <span className="dark:text-polar-500 text-gray-500">Amount</span>
           {order.amount && order.currency ? (
             <AmountLabel amount={order.amount} currency={order.currency} />
           ) : (
@@ -146,8 +146,10 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
           )}
         </div>
         {order.created_at && (
-          <div className="flex flex-row items-center justify-between py-3">
-            <span>Purchase Date</span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">
+              Purchase Date
+            </span>
             <span>
               {new Date(order.created_at).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -158,8 +160,8 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
           </div>
         )}
         {order.product.benefits.length > 0 && (
-          <div className="flex flex-row items-center justify-between py-3">
-            <span>Benefits</span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">Benefits</span>
             <span>
               <Link href={`/purchases/products/${order.id}`}>
                 <Button size="sm" variant="secondary">

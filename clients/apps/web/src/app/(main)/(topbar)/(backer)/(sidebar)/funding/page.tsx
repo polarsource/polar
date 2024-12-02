@@ -18,7 +18,6 @@ export default function Page() {
 
   const filters: DashboardFilters = {
     ...DefaultFilters,
-
     onlyPledged: true,
   }
 

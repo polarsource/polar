@@ -69,7 +69,7 @@ export default function ClientPage() {
           </div>
         </PurchaseSidebar>
       </div>
-      <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex w-full flex-col items-center gap-y-8 border border-gray-200 bg-gray-50 p-12">
+      <div className="dark:bg-polar-900 rounded-4xl relative flex w-full flex-col items-center gap-y-8 bg-gray-50 p-12">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex flex-row items-center justify-between">
             <h3 className="text-2xl">Subscriptions</h3>
@@ -126,7 +126,7 @@ const StatusWrapper = ({
 }: PropsWithChildren<{ color: string }>) => {
   return (
     <div className="flex flex-row items-center gap-x-2">
-      <span className={twMerge('h-2 w-2 rounded-full', color)} />
+      <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
       <span className="capitalize">{children}</span>
     </div>
   )
@@ -146,8 +146,8 @@ const SubscriptionItem = ({
           <StatusWrapper
             color={
               subscription.cancel_at_period_end
-                ? 'bg-yellow-500'
-                : 'bg-green-500'
+                ? 'border-yellow-500'
+                : 'border-emerald-500'
             }
           >
             {subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'}
@@ -155,7 +155,7 @@ const SubscriptionItem = ({
         )
       default:
         return (
-          <StatusWrapper color="bg-red-400">
+          <StatusWrapper color="border-red-400">
             {subscription.status.split('_').join(' ')}
           </StatusWrapper>
         )
@@ -167,7 +167,7 @@ const SubscriptionItem = ({
   }
 
   return (
-    <ShadowBox className="flex w-full flex-col gap-y-6">
+    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-6 border-none bg-white">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>
@@ -186,9 +186,9 @@ const SubscriptionItem = ({
           <Button size="sm">Manage Subscription</Button>
         </Link>
       </div>
-      <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 text-sm">
-        <div className="flex flex-row items-center justify-between py-2">
-          <span>Amount</span>
+      <div className="flex flex-col gap-y-2 text-sm">
+        <div className="flex flex-row items-center justify-between">
+          <span className="dark:text-polar-500 text-gray-500">Amount</span>
           {subscription.amount && subscription.currency ? (
             <AmountLabel
               amount={subscription.amount}
@@ -199,13 +199,15 @@ const SubscriptionItem = ({
             'Free'
           )}
         </div>
-        <div className="flex flex-row items-center justify-between py-3">
-          <span>Status</span>
+        <div className="flex flex-row items-center justify-between">
+          <span className="dark:text-polar-500 text-gray-500">Status</span>
           {status}
         </div>
         {subscription.started_at && (
-          <div className="flex flex-row items-center justify-between py-3">
-            <span>Start Date</span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">
+              Start Date
+            </span>
             <span>
               {new Date(subscription.started_at).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -216,8 +218,8 @@ const SubscriptionItem = ({
           </div>
         )}
         {!subscription.ended_at && subscription.current_period_end && (
-          <div className="flex flex-row items-center justify-between py-3">
-            <span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">
               {subscription.cancel_at_period_end
                 ? 'Expiry Date'
                 : 'Renewal Date'}
@@ -235,8 +237,8 @@ const SubscriptionItem = ({
           </div>
         )}
         {subscription.ended_at && (
-          <div className="flex flex-row items-center justify-between py-3">
-            <span>Expired</span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">Expired</span>
             <span>
               {new Date(subscription.ended_at).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -247,8 +249,8 @@ const SubscriptionItem = ({
           </div>
         )}
         {subscription.product.benefits.length > 0 && (
-          <div className="flex flex-row items-center justify-between py-3">
-            <span>Benefits</span>
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">Benefits</span>
             <span>
               <Link href={`/purchases/subscriptions/${subscription.id}`}>
                 <Button size="sm" variant="secondary">

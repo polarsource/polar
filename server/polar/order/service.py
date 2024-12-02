@@ -36,6 +36,7 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
+    Transaction,
     User,
     UserOrganization,
 )
@@ -149,6 +150,17 @@ class InvoiceNotAvailable(OrderError):
         self.order = order
         message = "The invoice is not available for this order."
         super().__init__(message, 404)
+
+
+class AlreadyBalancedOrder(OrderError):
+    def __init__(self, order: Order, payment_transaction: Transaction) -> None:
+        self.order = order
+        self.payment_transaction = payment_transaction
+        message = (
+            f"The order {order.id} with payment {payment_transaction.id} "
+            "has already been balanced."
+        )
+        super().__init__(message)
 
 
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
@@ -581,6 +593,16 @@ class OrderService(ResourceServiceReader[Order]):
             )
             assert managing_organization is not None
             held_balance.organization_id = managing_organization.id
+
+            # Sanity check: make sure we didn't already create a held balance for this order
+            existing_held_balance = await held_balance_service.get_by(
+                session,
+                payment_transaction_id=payment_transaction.id,
+                organization_id=managing_organization.id,
+            )
+            if existing_held_balance is not None:
+                raise AlreadyBalancedOrder(order, payment_transaction)
+
             await held_balance_service.create(session, held_balance=held_balance)
 
             await notifications_service.send_to_org_members(
@@ -596,6 +618,16 @@ class OrderService(ResourceServiceReader[Order]):
             )
 
             return
+
+        # Sanity check: make sure we didn't already create a balance for this order
+        existing_balance_transaction = await balance_transaction_service.get_by(
+            session,
+            type=TransactionType.balance,
+            payment_transaction_id=payment_transaction.id,
+            account_id=account.id,
+        )
+        if existing_balance_transaction is not None:
+            raise AlreadyBalancedOrder(order, payment_transaction)
 
         # Account created, create the balance immediately
         balance_transactions = (

@@ -420,12 +420,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -448,21 +447,16 @@ class TestCreateOrderFromStripe:
         assert order.user.stripe_customer_id == invoice.customer
         assert order.billing_reason == invoice.billing_reason
 
-        transaction_service_mock.create_balance_from_charge.assert_called_once()
+        create_balance_from_charge_mock.assert_awaited_once()
         assert (
-            transaction_service_mock.create_balance_from_charge.call_args[1][
-                "destination_account"
-            ].id
+            create_balance_from_charge_mock.call_args[1]["destination_account"].id
             == organization_account.id
         )
         assert (
-            transaction_service_mock.create_balance_from_charge.call_args[1][
-                "charge_id"
-            ]
-            == invoice.charge
+            create_balance_from_charge_mock.call_args[1]["charge_id"] == invoice.charge
         )
         assert (
-            transaction_service_mock.create_balance_from_charge.call_args[1]["amount"]
+            create_balance_from_charge_mock.call_args[1]["amount"]
             == payment_transaction.amount
         )
 
@@ -529,12 +523,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -582,12 +575,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -650,12 +642,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -709,12 +700,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -827,12 +817,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -907,12 +896,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -968,12 +956,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,
@@ -1027,12 +1014,11 @@ class TestCreateOrderFromStripe:
         payment_transaction.charge_id = "CHARGE_ID"
         await save_fixture(payment_transaction)
 
-        transaction_service_mock = mocker.patch(
-            "polar.order.service.balance_transaction_service",
-            spec=BalanceTransactionService,
+        create_balance_from_charge_mock = mocker.patch(
+            "polar.order.service.balance_transaction_service.create_balance_from_charge",
+            spec=BalanceTransactionService.create_balance_from_charge,
         )
-        transaction_service_mock.get_by.return_value = payment_transaction
-        transaction_service_mock.create_balance_from_charge.return_value = (
+        create_balance_from_charge_mock.return_value = (
             Transaction(type=TransactionType.balance, amount=-invoice_total),
             Transaction(
                 type=TransactionType.balance,

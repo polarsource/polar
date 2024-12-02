@@ -135,7 +135,7 @@ class TestFile:
     def validate_create_response(
         self, response: Response, organization_id: UUID, parts: int = 1
     ) -> FileUpload:
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         valid = FileUpload(**data)
 

@@ -3,7 +3,6 @@ from uuid import UUID
 
 import structlog
 
-from polar.exceptions import ResourceNotFound
 from polar.integrations.aws.s3 import S3FileError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -24,9 +23,6 @@ log = structlog.get_logger()
 
 
 class FileError(S3FileError): ...
-
-
-class FileNotFound(ResourceNotFound): ...
 
 
 class FileService(ResourceServiceReader[File]):

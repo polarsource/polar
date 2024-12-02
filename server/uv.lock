@@ -722,7 +722,7 @@ wheels = [
 
 [[package]]
 name = "logfire"
-version = "2.5.0"
+version = "2.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "executing" },
@@ -733,9 +733,23 @@ dependencies = [
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/90/1baa613a8b3f4f3ee50e776d0ad1b476baf9c9c592d5452ee50d2742c332/logfire-2.5.0.tar.gz", hash = "sha256:207af778dec75dd758422dccd631956aa9bf11a75f974ce7a3704243e4337cb7", size = 251877 }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/1a/f84e5b4c13465e962f13bbf03aef71a25ac5f8d2836b1e438e6c7137c2df/logfire-2.6.0.tar.gz", hash = "sha256:a23378f688344b5ec7f473fcd346e70105aad2c0e28c7dd22fb3250be8ee8c85", size = 252919 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/50/81ce8a51e89015111950b03283e0fd2d63e79a5e0d7b77c922682e82313e/logfire-2.5.0-py3-none-any.whl", hash = "sha256:cae6f22cc81fc9009df939f5232d53ef94ae8c630ecbd28a31ad818745c94c19", size = 171539 },
+    { url = "https://files.pythonhosted.org/packages/dd/ce/26dab0a0b608fc109580e54e151c453cc6c31cb22e44af8e5ca51a557970/logfire-2.6.0-py3-none-any.whl", hash = "sha256:04afc7263e3294eb5ff9e1d5b6e6a2677cc3b7ef75b48c477093a634a5f0ea43", size = 172481 },
+]
+
+[package.optional-dependencies]
+fastapi = [
+    { name = "opentelemetry-instrumentation-fastapi" },
+]
+httpx = [
+    { name = "opentelemetry-instrumentation-httpx" },
+]
+redis = [
+    { name = "opentelemetry-instrumentation-redis" },
+]
+sqlalchemy = [
+    { name = "opentelemetry-instrumentation-sqlalchemy" },
 ]
 
 [[package]]
@@ -1191,13 +1205,9 @@ dependencies = [
     { name = "ipinfo-db" },
     { name = "itsdangerous" },
     { name = "jinja2" },
-    { name = "logfire" },
+    { name = "logfire", extra = ["fastapi", "httpx", "redis", "sqlalchemy"] },
     { name = "makefun" },
     { name = "netaddr" },
-    { name = "opentelemetry-instrumentation-fastapi" },
-    { name = "opentelemetry-instrumentation-httpx" },
-    { name = "opentelemetry-instrumentation-redis" },
-    { name = "opentelemetry-instrumentation-sqlalchemy" },
     { name = "posthog" },
     { name = "psycopg2-binary" },
     { name = "pycountry" },
@@ -1273,13 +1283,9 @@ requires-dist = [
     { name = "ipinfo-db", specifier = ">=0.0.4" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "jinja2", specifier = ">=3.1.2" },
-    { name = "logfire", specifier = ">=2.5.0" },
+    { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=2.6.0" },
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "netaddr", specifier = ">=1.2.1" },
-    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.45b0" },
-    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.45b0" },
-    { name = "opentelemetry-instrumentation-redis", specifier = ">=0.45b0" },
-    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.45b0" },
     { name = "posthog", specifier = ">=3.6.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.5" },
     { name = "pycountry", specifier = ">=24.6.1" },

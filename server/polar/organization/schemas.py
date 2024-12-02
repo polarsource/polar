@@ -31,9 +31,6 @@ OrganizationID = Annotated[
 
 
 class OrganizationFeatureSettings(Schema):
-    articles_enabled: bool = Field(
-        False, description="If this organization has articles enabled"
-    )
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
     )

@@ -75,9 +75,6 @@ class BenefitGrantPropertiesBase(TypedDict):
 class BenefitGrantCustomProperties(BenefitGrantPropertiesBase): ...
 
 
-class BenefitGrantArticlesProperties(BenefitGrantPropertiesBase): ...
-
-
 class BenefitGrantAdsProperties(BenefitGrantPropertiesBase):
     advertisement_campaign_id: str
 
@@ -115,7 +112,6 @@ BenefitGrantProperties = (
     | BenefitGrantLicenseKeysProperties
     | BenefitGrantAdsProperties
     | BenefitGrantCustomProperties
-    | BenefitGrantArticlesProperties
 )
 
 

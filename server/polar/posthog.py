@@ -11,7 +11,6 @@ from polar.models import Organization, User
 ORGANIZATION_EVENT_DISTINCT_ID = "organization_event"
 
 EventCategory = Literal[
-    "articles",
     "benefits",
     "subscriptions",
     "user",

@@ -1470,10 +1470,11 @@ class TestUpdateBenefits:
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
-            type=BenefitType.articles,
+            type=BenefitType.custom,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
+            properties={"note": None},
         )
 
         with pytest.raises(PolarRequestValidationError):
@@ -1501,10 +1502,11 @@ class TestUpdateBenefits:
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
-            type=BenefitType.articles,
+            type=BenefitType.custom,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
+            properties={"note": None},
         )
 
         product = await set_product_benefits(
@@ -1539,11 +1541,11 @@ class TestUpdateBenefits:
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
-            type=BenefitType.articles,
+            type=BenefitType.custom,
             is_tax_applicable=True,
             organization=organization,
             selectable=False,
-            properties={"paid_articles": False},
+            properties={"note": None},
         )
         selectable_benefit = await create_benefit(
             save_fixture,

@@ -45,9 +45,6 @@ class Scope(StrEnum):
 
     metrics_read = "metrics:read"
 
-    articles_read = "articles:read"
-    articles_write = "articles:write"
-
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
 
@@ -115,8 +112,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.license_keys_read: "Read license keys",
     Scope.license_keys_write: "Modify license keys",
     Scope.webhooks_write: "Create or modify webhooks",
-    Scope.articles_read: "Read posts",
-    Scope.articles_write: "Create or modify posts",
     Scope.user_benefits_read: "Read your granted benefits",
     Scope.user_orders_read: "Read your orders",
     Scope.user_subscriptions_read: "Read your subscriptions",

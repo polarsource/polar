@@ -82,29 +82,6 @@ class BenefitCustomSubscriberProperties(Schema):
     note: Note | None
 
 
-## Articles
-
-PaidArticles = Annotated[
-    bool, Field(description="Whether the user can access paid articles.")
-]
-
-
-class BenefitArticlesProperties(Schema):
-    """
-    Properties for a benefit of type `articles`.
-    """
-
-    paid_articles: PaidArticles
-
-
-class BenefitArticlesSubscriberProperties(Schema):
-    """
-    Properties available to subscribers for a benefit of type `articles`.
-    """
-
-    paid_articles: PaidArticles
-
-
 ## Ads
 
 
@@ -388,12 +365,6 @@ class BenefitUpdateBase(Schema):
     )
 
 
-class BenefitArticlesUpdate(BenefitUpdateBase):
-    # Don't allow to update properties, as both Free and Premium posts
-    # are pre-created by us and shouldn't change
-    type: Literal[BenefitType.articles]
-
-
 class BenefitAdsUpdate(BenefitUpdateBase):
     type: Literal[BenefitType.ads]
     properties: BenefitAdsProperties | None = None
@@ -425,8 +396,7 @@ class BenefitLicenseKeysUpdate(BenefitUpdateBase):
 
 
 BenefitUpdate = (
-    BenefitArticlesUpdate
-    | BenefitAdsUpdate
+    BenefitAdsUpdate
     | BenefitCustomUpdate
     | BenefitDiscordUpdate
     | BenefitGitHubRepositoryUpdate
@@ -461,17 +431,6 @@ class BenefitCustom(BenefitBase):
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties
     is_tax_applicable: IsTaxApplicable
-
-
-class BenefitArticles(BenefitBase):
-    """
-    A benefit of type `articles`.
-
-    Use it to grant access to posts.
-    """
-
-    type: Literal[BenefitType.articles]
-    properties: BenefitArticlesProperties
 
 
 class BenefitAds(BenefitBase):
@@ -518,8 +477,7 @@ class BenefitLicenseKeys(BenefitBase):
 
 
 Benefit = Annotated[
-    BenefitArticles
-    | BenefitAds
+    BenefitAds
     | BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
@@ -532,7 +490,6 @@ Benefit = Annotated[
 
 benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.discord: BenefitDiscord,
-    BenefitType.articles: BenefitArticles,
     BenefitType.ads: BenefitAds,
     BenefitType.custom: BenefitCustom,
     BenefitType.github_repository: BenefitGitHubRepository,
@@ -600,11 +557,6 @@ class BenefitCustomSubscriber(BenefitSubscriberBase):
     properties: BenefitCustomSubscriberProperties
 
 
-class BenefitArticlesSubscriber(BenefitSubscriberBase):
-    type: Literal[BenefitType.articles]
-    properties: BenefitArticlesSubscriberProperties
-
-
 class BenefitGrantAdsSubscriberProperties(Schema):
     advertisement_campaign_id: UUID4 | None = Field(
         None,
@@ -649,8 +601,7 @@ class BenefitLicenseKeysSubscriber(BenefitSubscriberBase):
 
 # Properties that are available to subscribers only
 BenefitSubscriber = Annotated[
-    BenefitArticlesSubscriber
-    | BenefitAdsSubscriber
+    BenefitAdsSubscriber
     | BenefitDiscordSubscriber
     | BenefitCustomSubscriber
     | BenefitGitHubRepositorySubscriber
@@ -662,4 +613,4 @@ BenefitSubscriber = Annotated[
 BenefitSubscriberAdapter = TypeAdapter[BenefitSubscriber](BenefitSubscriber)
 
 # Properties that are public (when embedding products benefits in storefront and checkout)
-BenefitPublic = BenefitBase | BenefitArticles
+BenefitPublic = BenefitBase

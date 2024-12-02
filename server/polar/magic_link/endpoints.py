@@ -31,7 +31,6 @@ async def request_magic_link(
     magic_link, token = await magic_link_service.request(
         session,
         magic_link_request.email,
-        source="user_login",
         signup_attribution=magic_link_request.attribution,
     )
 

@@ -19,7 +19,6 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     AdvertisementCampaign,
-    Article,
     Benefit,
     Checkout,
     CheckoutLink,
@@ -1270,24 +1269,6 @@ async def create_benefit_grant(
         grant.properties = properties
     await save_fixture(grant)
     return grant
-
-
-@pytest_asyncio.fixture
-async def article(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    user: User,
-) -> Article:
-    article = Article(
-        id=uuid.uuid4(),
-        slug="test",
-        title="test",
-        body="test!",
-        organization=organization,
-        user=user,
-    )
-    await save_fixture(article)
-    return article
 
 
 async def create_advertisement_campaign(

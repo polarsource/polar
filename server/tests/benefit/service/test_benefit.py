@@ -499,7 +499,7 @@ class TestUserDelete:
     ) -> None:
         benefit = await create_benefit(
             save_fixture,
-            type=BenefitType.articles,
+            type=BenefitType.custom,
             is_tax_applicable=True,
             organization=organization,
             deletable=False,

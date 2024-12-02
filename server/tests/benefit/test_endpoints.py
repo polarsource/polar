@@ -130,11 +130,6 @@ class TestCreateBenefit:
                 "description": "Th",
             },
             {"description": "Benefit", "properties": {"note": None}},
-            {
-                "type": "articles",
-                "description": "My articles benefit",
-                "properties": {"paid_articles": True},
-            },
         ],
     )
     @pytest.mark.auth
@@ -252,36 +247,6 @@ class TestUpdateBenefit:
         json = response.json()
         assert json["description"] == "Updated Description"
         assert "properties" in json
-
-    @pytest.mark.auth
-    async def test_cant_update_articles_properties(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            type=BenefitType.articles,
-            organization=organization,
-            properties={"paid_articles": False},
-        )
-        response = await client.patch(
-            f"/v1/benefits/{benefit.id}",
-            json={
-                "type": benefit.type,
-                "description": "Updated Description",
-                "properties": {"paid_articles": True},
-            },
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["description"] == "Updated Description"
-        assert "properties" in json
-        assert json["properties"]["paid_articles"] is False
 
     @pytest.mark.auth
     async def test_can_update_custom_properties(

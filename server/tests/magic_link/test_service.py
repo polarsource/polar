@@ -47,9 +47,7 @@ async def test_request(session: AsyncSession) -> None:
     # then
     session.expunge_all()
 
-    magic_link, token = await magic_link_service.request(
-        session, "user@example.com", source="user_login"
-    )
+    magic_link, token = await magic_link_service.request(session, "user@example.com")
 
     assert magic_link.user_email == "user@example.com"
     assert magic_link.token_hash == get_token_hash(token, secret=settings.SECRET)

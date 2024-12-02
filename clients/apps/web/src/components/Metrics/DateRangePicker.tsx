@@ -52,7 +52,10 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   return (
     <div className={twMerge('grid gap-2', className)}>
       <Popover>
-        <PopoverTrigger asChild>
+        <PopoverTrigger
+          asChild
+          className="dark:bg-polar-800 !rounded-full border-gray-200 bg-white"
+        >
           <Button
             id="date"
             variant={'outline'}

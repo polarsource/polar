@@ -1,13 +1,11 @@
-import React from 'react'
-import { useState, ReactNode } from 'react'
-import { resolveBenefitIcon } from '../Benefit/utils'
-import { BenefitPublicInner } from '@polar-sh/sdk'
 import {
   AddOutlined,
-  KeyboardArrowUp,
   KeyboardArrowRight,
+  KeyboardArrowUp,
 } from '@mui/icons-material'
-
+import { BenefitPublicInner } from '@polar-sh/sdk'
+import React, { ReactNode, useState } from 'react'
+import { resolveBenefitIcon } from '../Benefit/utils'
 
 const AMOUNT_SHOWN = 5
 
@@ -15,7 +13,7 @@ const BenefitRow = ({
   icon,
   children,
 }: {
-  icon: ReactNode,
+  icon: ReactNode
   children: ReactNode
 }) => {
   return (
@@ -30,7 +28,7 @@ const BenefitRow = ({
 
 export const BenefitList = ({
   benefits,
-  toggle = false
+  toggle = false,
 }: {
   benefits: BenefitPublicInner[] | undefined
   toggle?: boolean
@@ -50,20 +48,30 @@ export const BenefitList = ({
   return (
     <>
       {shown.map((benefit) => (
-        <BenefitRow key={benefit.id} icon={resolveBenefitIcon(benefit, 'inherit')}>
+        <BenefitRow
+          key={benefit.id}
+          icon={resolveBenefitIcon(benefit, 'small')}
+        >
           {benefit.description}
         </BenefitRow>
       ))}
       {toggled.length > 0 && (
         <>
-          {showAll && toggled.map((benefit) => (
-            <BenefitRow key={benefit.id} icon={resolveBenefitIcon(benefit, 'inherit')}>
-              {benefit.description}
-            </BenefitRow>
-          ))}
+          {showAll &&
+            toggled.map((benefit) => (
+              <BenefitRow
+                key={benefit.id}
+                icon={resolveBenefitIcon(benefit, 'small')}
+              >
+                {benefit.description}
+              </BenefitRow>
+            ))}
 
           {!toggle && (
-            <BenefitRow key="show" icon={<AddOutlined className="w-3 h-3" />}>
+            <BenefitRow
+              key="show"
+              icon={<AddOutlined fontSize="small" className="h-3 w-3" />}
+            >
               {toggled.length} more benefits
             </BenefitRow>
           )}
@@ -71,12 +79,18 @@ export const BenefitList = ({
           {toggle && (
             <a href="#" onClick={onToggle}>
               {showAll && (
-                <BenefitRow key="hide" icon={<KeyboardArrowUp />}>
+                <BenefitRow
+                  key="hide"
+                  icon={<KeyboardArrowUp fontSize="small" />}
+                >
                   Show less
                 </BenefitRow>
               )}
               {!showAll && (
-                <BenefitRow key="show" icon={<KeyboardArrowRight />}>
+                <BenefitRow
+                  key="show"
+                  icon={<KeyboardArrowRight fontSize="small" />}
+                >
                   Show {toggled.length} more benefits
                 </BenefitRow>
               )}

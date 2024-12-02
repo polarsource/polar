@@ -47,7 +47,7 @@ const CopyToClipboardInput = ({
       />
       {!disabled && (
         <Button
-          className="mr-0.5 text-xs"
+          className="mr-1 text-xs"
           type="button"
           variant="ghost"
           onClick={copyToClipboard}

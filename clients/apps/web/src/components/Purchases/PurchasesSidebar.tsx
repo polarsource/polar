@@ -2,6 +2,7 @@
 
 import {
   usePersonalDashboard,
+  useUserDownloadables,
   useUserLicenseKeys,
   useUserOrders,
   useUserSubscriptions,
@@ -12,7 +13,7 @@ import { usePathname } from 'next/navigation'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { PropsWithChildren, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { DashboardFilters, DefaultFilters } from '../Issues/filters'
+import { DefaultFilters } from '../Issues/filters'
 
 const PurchaseLink = ({ ...props }: PropsWithChildren<LinkProps>) => {
   const pathname = usePathname()
@@ -45,18 +46,11 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
     active: true,
   })
   const { data: licenseKeys } = useUserLicenseKeys({ limit: 1 })
-
-  const filters: DashboardFilters = {
-    ...DefaultFilters,
-    onlyPledged: true,
-  }
+  const { data: fileDownloads } = useUserDownloadables({ limit: 1 })
 
   const { data: dashboard } = usePersonalDashboard({
-    q: filters.q,
-    sort: filters.sort,
-    onlyPledged: filters.onlyPledged,
-    onlyBadged: filters.onlyBadged,
-    showClosed: filters.showClosed,
+    ...DefaultFilters,
+    onlyPledged: true,
   })
 
   const fundedIssues = dashboard?.pages[0].pagination.total_count ?? 0
@@ -66,7 +60,7 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
       <div className="flex flex-col gap-y-2">
         <h2 className="text-lg font-medium">Library</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Your purchases, subscriptions & funded issues
+          Your purchases, subscriptions & benefits
         </p>
       </div>
       <div className="flex flex-col gap-y-3">
@@ -84,6 +78,10 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
           <PurchaseLink href="/purchases/license-keys">
             <span>License Keys</span>
             <span>{licenseKeys?.pagination.total_count || 0}</span>
+          </PurchaseLink>
+          <PurchaseLink href="/purchases/file-downloads">
+            <span>File Downloads</span>
+            <span>{fileDownloads?.pagination.total_count || 0}</span>
           </PurchaseLink>
           {fundedIssues > 0 && (
             <PurchaseLink href="/funding">

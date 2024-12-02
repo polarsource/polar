@@ -35,25 +35,25 @@ import {
 } from 'polarkit/components/ui/dropdown-menu'
 import { useMemo } from 'react'
 
-const FilePreview = ({ file }: { file: FileObject }) => {
+export const FilePreview = ({ mimeType }: { mimeType: string }) => {
   const icon = useMemo(() => {
     const size: 'small' | 'large' | 'inherit' | 'medium' = 'small'
 
     switch (true) {
-      case /image\/(.*)/.test(file.mime_type):
+      case /image\/(.*)/.test(mimeType):
         return <ImageOutlined fontSize={size} />
-      case /video\/(.*)/.test(file.mime_type):
+      case /video\/(.*)/.test(mimeType):
         return <VideoFileOutlined fontSize={size} />
-      case /audio\/(.*)/.test(file.mime_type):
+      case /audio\/(.*)/.test(mimeType):
         return <AudioFileOutlined fontSize={size} />
-      case /application\/zip/.test(file.mime_type):
+      case /application\/zip/.test(mimeType):
         return <FolderZipOutlined fontSize={size} />
-      case /application\/pdf/.test(file.mime_type):
+      case /application\/pdf/.test(mimeType):
         return <DescriptionOutlined fontSize={size} />
       default:
         return <InsertDriveFileOutlined fontSize={size} />
     }
-  }, [file])
+  }, [mimeType])
 
   return (
     <div className="dark:bg-polar-600 flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white">
@@ -272,7 +272,7 @@ export const FileListItem = ({
           {...sortable?.attributes}
           {...sortable?.listeners}
         >
-          <FilePreview file={file} />
+          <FilePreview mimeType={file.mime_type} />
         </div>
         <div className="flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950 dark:text-white">
           <FilenameEditor

@@ -5,7 +5,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.benefit.benefits.downloadables import BenefitDownloadablesService
 from polar.benefit.schemas import BenefitDownloadablesCreateProperties
-from polar.models import Benefit, Downloadable, File, Organization, Product, User
+from polar.models import Benefit, Customer, Downloadable, File, Organization, Product
 from polar.models.benefit import BenefitDownloadables, BenefitType
 from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
 from polar.models.subscription import SubscriptionStatus
@@ -26,7 +26,7 @@ class TestDownloadable:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         properties: BenefitDownloadablesCreateProperties,
@@ -42,7 +42,7 @@ class TestDownloadable:
             redis,
             save_fixture,
             cast(BenefitDownloadables, benefit),
-            user=user,
+            customer=customer,
             product=product,
         )
 
@@ -53,22 +53,22 @@ class TestDownloadable:
         redis: Redis,
         save_fixture: SaveFixture,
         benefit: BenefitDownloadables,
-        user: User,
+        customer: Customer,
         product: Product,
     ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         subscription = await create_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             status=SubscriptionStatus.active,
         )
         await create_benefit_grant(
             save_fixture,
-            user,
+            customer,
             benefit,
             subscription=subscription,
         )
-        return await cls.run_grant_task(session, redis, benefit, user)
+        return await cls.run_grant_task(session, redis, benefit, customer)
 
     @classmethod
     async def run_grant_task(
@@ -76,10 +76,10 @@ class TestDownloadable:
         session: AsyncSession,
         redis: Redis,
         benefit: BenefitDownloadables,
-        user: User,
+        customer: Customer,
     ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session, redis)
-        granted = await service.grant(benefit, user, {})
+        granted = await service.grant(benefit, customer, {})
         return benefit, granted
 
     @classmethod
@@ -88,15 +88,15 @@ class TestDownloadable:
         session: AsyncSession,
         redis: Redis,
         benefit: BenefitDownloadables,
-        user: User,
+        customer: Customer,
     ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session, redis)
-        revoked = await service.revoke(benefit, user, {})
+        revoked = await service.revoke(benefit, customer, {})
         return benefit, revoked
 
     @classmethod
-    async def get_user_downloadables(
-        cls, session: AsyncSession, user: User
+    async def get_customer_downloadables(
+        cls, session: AsyncSession, customer: Customer
     ) -> Sequence[Downloadable]:
         statement = (
             sql.select(Downloadable)
@@ -104,7 +104,7 @@ class TestDownloadable:
             .join(Benefit)
             .options(contains_eager(Downloadable.file))
             .where(
-                Downloadable.user_id == user.id,
+                Downloadable.customer_id == customer.id,
                 File.deleted_at.is_(None),
                 File.is_uploaded == True,  # noqa
                 File.is_enabled == True,  # noqa

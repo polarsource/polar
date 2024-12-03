@@ -52,7 +52,7 @@ Note = Annotated[
     str | None,
     Field(
         description=(
-            "Private note to be shared with users who have this benefit granted."
+            "Private note to be shared with customers who have this benefit granted."
         ),
     ),
 ]
@@ -500,7 +500,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
 
 class BenefitGrantBase(IDSchema, TimestampedSchema):
     """
-    A grant of a benefit to a user.
+    A grant of a benefit to a customer.
     """
 
     id: UUID4 = Field(description="The ID of the grant.")
@@ -526,7 +526,12 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None = Field(
         description="The ID of the order that granted this benefit."
     )
-    user_id: UUID4 = Field(description="The ID of the user concerned by this grant.")
+    customer_id: UUID4 = Field(
+        description="The ID of the customer concerned by this grant."
+    )
+    user_id: UUID4 = Field(
+        validation_alias="customer_id", deprecated="Use `customer_id`."
+    )
     benefit_id: UUID4 = Field(
         description="The ID of the benefit concerned by this grant."
     )

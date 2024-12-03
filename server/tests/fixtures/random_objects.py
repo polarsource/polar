@@ -1273,6 +1273,18 @@ async def customer(
 
 
 @pytest_asyncio.fixture
+async def customer_second(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> Customer:
+    return await create_customer(
+        save_fixture,
+        organization=organization,
+        stripe_customer_id="STRIPE_CUSTOMER_ID_2",
+    )
+
+
+@pytest_asyncio.fixture
 async def subscription(
     save_fixture: SaveFixture,
     product: Product,
@@ -1283,13 +1295,13 @@ async def subscription(
 
 async def create_benefit_grant(
     save_fixture: SaveFixture,
-    user: User,
+    customer: Customer,
     benefit: Benefit,
     granted: bool | None = None,
     properties: BenefitGrantProperties | None = None,
     **scope: Unpack[BenefitGrantScope],
 ) -> BenefitGrant:
-    grant = BenefitGrant(benefit=benefit, user=user, **scope)
+    grant = BenefitGrant(benefit=benefit, customer=customer, **scope)
     if granted is not None:
         grant.set_granted() if granted else grant.set_revoked()
     if properties is not None:

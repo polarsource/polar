@@ -4,12 +4,12 @@ from typing import Literal, Unpack
 import structlog
 from arq import Retry
 
+from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.service.product import product as product_service
-from polar.user.service.user import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
@@ -29,10 +29,10 @@ log: Logger = structlog.get_logger()
 class BenefitTaskError(PolarTaskError): ...
 
 
-class UserDoesNotExist(BenefitTaskError):
-    def __init__(self, user_id: uuid.UUID) -> None:
-        self.user_id = user_id
-        message = f"The user with id {user_id} does not exist."
+class CustomerDoesNotExist(BenefitTaskError):
+    def __init__(self, customer_id: uuid.UUID) -> None:
+        self.customer_id = customer_id
+        message = f"The customer with id {customer_id} does not exist."
         super().__init__(message)
 
 
@@ -68,15 +68,15 @@ class OrganizationDoesNotExist(BenefitTaskError):
 async def enqueue_benefits_grants(
     ctx: JobContext,
     task: Literal["grant", "revoke"],
-    user_id: uuid.UUID,
+    customer_id: uuid.UUID,
     product_id: uuid.UUID,
     polar_context: PolarWorkerContext,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        user = await user_service.get(session, user_id)
-        if user is None:
-            raise UserDoesNotExist(user_id)
+        customer = await customer_service.get(session, customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
 
         product = await product_service.get(session, product_id)
         if product is None:
@@ -85,22 +85,22 @@ async def enqueue_benefits_grants(
         resolved_scope = await resolve_scope(session, scope)
 
         await benefit_grant_service.enqueue_benefits_grants(
-            session, task, user, product, **resolved_scope
+            session, task, customer, product, **resolved_scope
         )
 
 
 @task("benefit.grant")
 async def benefit_grant(
     ctx: JobContext,
-    user_id: uuid.UUID,
+    customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
     polar_context: PolarWorkerContext,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        user = await user_service.get(session, user_id)
-        if user is None:
-            raise UserDoesNotExist(user_id)
+        customer = await customer_service.get(session, customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
 
         benefit = await benefit_service.get(session, benefit_id, loaded=True)
         if benefit is None:
@@ -112,7 +112,7 @@ async def benefit_grant(
             await benefit_grant_service.grant_benefit(
                 session,
                 get_worker_redis(ctx),
-                user,
+                customer,
                 benefit,
                 attempt=ctx["job_try"],
                 **resolved_scope,
@@ -123,7 +123,7 @@ async def benefit_grant(
                 error=str(e),
                 defer_seconds=e.defer_seconds,
                 benefit_id=str(benefit_id),
-                user_id=str(user_id),
+                customer_id=str(customer_id),
             )
             raise Retry(e.defer_seconds) from e
 
@@ -131,15 +131,15 @@ async def benefit_grant(
 @task("benefit.revoke")
 async def benefit_revoke(
     ctx: JobContext,
-    user_id: uuid.UUID,
+    customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
     polar_context: PolarWorkerContext,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        user = await user_service.get(session, user_id)
-        if user is None:
-            raise UserDoesNotExist(user_id)
+        customer = await customer_service.get(session, customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
 
         benefit = await benefit_service.get(session, benefit_id, loaded=True)
         if benefit is None:
@@ -151,7 +151,7 @@ async def benefit_revoke(
             await benefit_grant_service.revoke_benefit(
                 session,
                 get_worker_redis(ctx),
-                user,
+                customer,
                 benefit,
                 attempt=ctx["job_try"],
                 **resolved_scope,
@@ -162,7 +162,7 @@ async def benefit_revoke(
                 error=str(e),
                 defer_seconds=e.defer_seconds,
                 benefit_id=str(benefit_id),
-                user_id=str(user_id),
+                customer_id=str(customer_id),
             )
             raise Retry(e.defer_seconds) from e
 
@@ -222,15 +222,15 @@ async def benefit_delete(
 @task("benefit.precondition_fulfilled")
 async def benefit_precondition_fulfilled(
     ctx: JobContext,
-    user_id: uuid.UUID,
+    customer_id: uuid.UUID,
     benefit_type: BenefitType,
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        user = await user_service.get(session, user_id)
-        if user is None:
-            raise UserDoesNotExist(user_id)
+        customer = await customer_service.get(session, customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
 
         await benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
-            session, user, benefit_type
+            session, customer, benefit_type
         )

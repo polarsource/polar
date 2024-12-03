@@ -11,7 +11,7 @@ from polar.benefit.service.benefit_grant import (
 from polar.benefit.service.benefit_grant import (  # type: ignore[attr-defined]
     notification_service,
 )
-from polar.models import Benefit, BenefitGrant, Product, Subscription, User
+from polar.models import Benefit, BenefitGrant, Customer, Product, Subscription
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationContextualPayload,
 )
@@ -46,7 +46,7 @@ class TestGrantBenefit:
         session: AsyncSession,
         redis: Redis,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
@@ -56,11 +56,11 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert grant.subscription_id == subscription.id
-        assert grant.user_id == user.id
+        assert grant.customer == customer
         assert grant.benefit_id == benefit_organization.id
         assert grant.is_granted
         assert grant.properties == {"external_id": "abc"}
@@ -72,14 +72,12 @@ class TestGrantBenefit:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefit_organization.id,
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         await save_fixture(grant)
 
@@ -87,7 +85,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.grant_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -100,14 +98,12 @@ class TestGrantBenefit:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefit_organization.id,
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -116,7 +112,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.grant_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -128,7 +124,7 @@ class TestGrantBenefit:
         session: AsyncSession,
         redis: Redis,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
@@ -138,7 +134,7 @@ class TestGrantBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert not grant.is_granted
@@ -148,19 +144,19 @@ class TestGrantBenefit:
         session: AsyncSession,
         redis: Redis,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         benefit_service_mock.grant.side_effect = (
-            lambda user, benefit, properties, **kwargs: properties
+            lambda customer, benefit, properties, **kwargs: properties
         )
 
         # then
         session.expunge_all()
 
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert grant.properties == {}
@@ -173,7 +169,7 @@ class TestRevokeBenefit:
         session: AsyncSession,
         redis: Redis,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
@@ -181,7 +177,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         grant = await benefit_grant_service.revoke_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert grant.subscription_id == subscription.id
@@ -195,7 +191,7 @@ class TestRevokeBenefit:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
@@ -205,15 +201,15 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefit_organization.id,
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
             properties={"external_id": "abc"},
         )
         await save_fixture(grant)
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -227,14 +223,14 @@ class TestRevokeBenefit:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefit_organization.id,
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
         )
         grant.set_revoked()
         await save_fixture(grant)
@@ -243,7 +239,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == grant.id
@@ -256,22 +252,25 @@ class TestRevokeBenefit:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
         product: Product,
     ) -> None:
         first_grant = await create_benefit_grant(
-            save_fixture, user, benefit_organization, subscription=subscription
+            save_fixture, customer, benefit_organization, subscription=subscription
         )
         first_grant.set_granted()
         await save_fixture(first_grant)
 
         second_subscription = await create_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
         second_grant = await create_benefit_grant(
-            save_fixture, user, benefit_organization, subscription=second_subscription
+            save_fixture,
+            customer,
+            benefit_organization,
+            subscription=second_subscription,
         )
         second_grant.set_granted()
         await save_fixture(second_grant)
@@ -280,7 +279,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == first_grant.id
@@ -293,7 +292,7 @@ class TestRevokeBenefit:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
         product: Product,
@@ -302,16 +301,19 @@ class TestRevokeBenefit:
         benefit_service_mock.revoke.return_value = {"message": "ok"}
 
         first_grant = await create_benefit_grant(
-            save_fixture, user, benefit_organization, subscription=subscription
+            save_fixture, customer, benefit_organization, subscription=subscription
         )
         first_grant.set_granted()
         await save_fixture(first_grant)
 
         second_subscription = await create_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
         second_grant = await create_benefit_grant(
-            save_fixture, user, benefit_organization, subscription=second_subscription
+            save_fixture,
+            customer,
+            benefit_organization,
+            subscription=second_subscription,
         )
         second_grant.set_granted()
         await save_fixture(second_grant)
@@ -320,7 +322,7 @@ class TestRevokeBenefit:
         session.expunge_all()
 
         updated_grant = await benefit_grant_service.revoke_benefit(
-            session, redis, user, benefit_organization, subscription=subscription
+            session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert updated_grant.id == first_grant.id
@@ -341,7 +343,7 @@ class TestEnqueueBenefitsGrants:
         save_fixture: SaveFixture,
         product: Product,
         benefits: list[Benefit],
-        user: User,
+        customer: Customer,
         subscription: Subscription,
     ) -> None:
         enqueue_job_mock = mocker.patch(
@@ -353,14 +355,14 @@ class TestEnqueueBenefitsGrants:
         )
 
         await benefit_grant_service.enqueue_benefits_grants(
-            session, task, user, product, subscription=subscription
+            session, task, customer, product, subscription=subscription
         )
 
         enqueue_job_mock.assert_has_calls(
             [
                 call(
                     f"benefit.{task}",
-                    user_id=subscription.user_id,
+                    customer_id=customer.id,
                     benefit_id=benefit.id,
                     subscription_id=subscription.id,
                 )
@@ -376,14 +378,14 @@ class TestEnqueueBenefitsGrants:
         product: Product,
         benefits: list[Benefit],
         subscription: Subscription,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_job_mock = mocker.patch(
             "polar.benefit.service.benefit_grant.enqueue_job"
         )
 
         grant = BenefitGrant(
-            subscription_id=subscription.id, user_id=user.id, benefit_id=benefits[0].id
+            subscription=subscription, customer=customer, benefit=benefits[0]
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -393,12 +395,12 @@ class TestEnqueueBenefitsGrants:
         )
 
         await benefit_grant_service.enqueue_benefits_grants(
-            session, "grant", user, product, subscription=subscription
+            session, "grant", customer, product, subscription=subscription
         )
 
         enqueue_job_mock.assert_any_call(
             "benefit.revoke",
-            user_id=subscription.user_id,
+            customer_id=customer.id,
             benefit_id=benefits[0].id,
             subscription_id=subscription.id,
         )
@@ -435,14 +437,14 @@ class TestEnqueueBenefitGrantUpdates:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         granted_grant = BenefitGrant(
             subscription=subscription,
-            user=user,
+            customer=customer,
             benefit=benefit_organization,
         )
         granted_grant.set_granted()
@@ -450,7 +452,7 @@ class TestEnqueueBenefitGrantUpdates:
 
         other_benefit_grant = BenefitGrant(
             subscription=subscription,
-            user=user,
+            customer=customer,
             benefit=benefit_organization_second,
         )
         other_benefit_grant.set_granted()
@@ -480,19 +482,21 @@ class TestEnqueueBenefitGrantUpdates:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         revoked_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         revoked_grant.set_revoked()
         await save_fixture(revoked_grant)
 
         other_benefit_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization_second
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization_second,
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -520,12 +524,12 @@ class TestUpdateBenefitGrant:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         grant.set_revoked()
         await save_fixture(grant)
@@ -546,7 +550,7 @@ class TestUpdateBenefitGrant:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
@@ -554,7 +558,7 @@ class TestUpdateBenefitGrant:
 
         grant = BenefitGrant(
             subscription=subscription,
-            user=user,
+            customer=customer,
             benefit=benefit_organization,
             properties={"external_id": "abc"},
         )
@@ -584,12 +588,12 @@ class TestUpdateBenefitGrant:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -618,18 +622,20 @@ class TestEnqueueBenefitGrantDeletions:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
     ) -> None:
         granted_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         granted_grant.set_granted()
         await save_fixture(granted_grant)
 
         other_benefit_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization_second
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization_second,
         )
         other_benefit_grant.set_granted()
         await save_fixture(other_benefit_grant)
@@ -658,12 +664,12 @@ class TestDeleteBenefitGrant:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         grant.set_revoked()
         await save_fixture(grant)
@@ -684,12 +690,12 @@ class TestDeleteBenefitGrant:
         redis: Redis,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         grant.set_granted()
         await save_fixture(grant)
@@ -724,7 +730,7 @@ class TestHandlePreconditionError:
         session: AsyncSession,
         subscription: Subscription,
         benefit_organization: Benefit,
-        user: User,
+        customer: Customer,
         notification_send_to_user_mock: MagicMock,
     ) -> None:
         error = BenefitPreconditionError("Error")
@@ -733,7 +739,7 @@ class TestHandlePreconditionError:
         session.expunge_all()
 
         await benefit_grant_service.handle_precondition_error(
-            session, error, user, benefit_organization, subscription=subscription
+            session, error, customer, benefit_organization, subscription=subscription
         )
 
         notification_send_to_user_mock.assert_not_called()
@@ -743,7 +749,7 @@ class TestHandlePreconditionError:
         session: AsyncSession,
         subscription: Subscription,
         benefit_organization: Benefit,
-        user: User,
+        customer: Customer,
         notification_send_to_user_mock: MagicMock,
     ) -> None:
         error = BenefitPreconditionError(
@@ -765,7 +771,7 @@ class TestHandlePreconditionError:
         await benefit_grant_service.handle_precondition_error(
             session,
             error,
-            user,
+            customer,
             benefit_organization,
             subscription=subscription_loaded,
         )
@@ -781,17 +787,19 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
-        user_second: User,
+        customer: Customer,
+        customer_second: Customer,
         benefit_organization: Benefit,
     ) -> None:
         pending_grant = BenefitGrant(
-            subscription=subscription, user=user, benefit=benefit_organization
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         await save_fixture(pending_grant)
 
         other_user_grant = BenefitGrant(
-            subscription=subscription, user=user_second, benefit=benefit_organization
+            subscription=subscription,
+            customer=customer_second,
+            benefit=benefit_organization,
         )
         await save_fixture(other_user_grant)
 
@@ -803,12 +811,12 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
         session.expunge_all()
 
         await benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
-            session, user, benefit_organization.type
+            session, customer, benefit_organization.type
         )
 
         enqueue_job_mock.assert_called_once_with(
             "benefit.grant",
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=pending_grant.benefit_id,
             **pending_grant.scope,
         )
@@ -821,14 +829,12 @@ class TestGetByBenefitAndScope:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         product: Product,
         benefit_organization: Benefit,
     ) -> None:
         grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefit_organization.id,
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         await save_fixture(grant)
 
@@ -836,13 +842,13 @@ class TestGetByBenefitAndScope:
         session.expunge_all()
 
         other_subscription = await create_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
-        order = await create_order(save_fixture, product=product, user=user)
+        order = await create_order(save_fixture, product=product, customer=customer)
 
         retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
             session,
-            user=user,
+            customer=customer,
             benefit=benefit_organization,
             subscription=other_subscription,
             order=order,
@@ -854,13 +860,11 @@ class TestGetByBenefitAndScope:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        user: User,
+        customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
         grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefit_organization.id,
+            subscription=subscription, customer=customer, benefit=benefit_organization
         )
         await save_fixture(grant)
 
@@ -868,7 +872,10 @@ class TestGetByBenefitAndScope:
         session.expunge_all()
 
         retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
-            session, user=user, benefit=benefit_organization, subscription=subscription
+            session,
+            customer=customer,
+            benefit=benefit_organization,
+            subscription=subscription,
         )
         assert retrieved_grant is not None
         assert retrieved_grant.id == grant.id

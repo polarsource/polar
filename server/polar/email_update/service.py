@@ -18,8 +18,6 @@ from polar.models import EmailVerification
 from polar.models.user import User
 from polar.postgres import AsyncSession
 
-from .schemas import EmailUpdateCreate
-
 TOKEN_PREFIX = "polar_ev_"
 
 
@@ -39,19 +37,17 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         email: str,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-        expire_at: datetime.datetime | None = None,
     ) -> tuple[EmailVerification, str]:
         user = auth_subject.subject
         user_id = user.id
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=TOKEN_PREFIX
         )
-        email_update_create = EmailUpdateCreate(
-            email=email, token_hash=token_hash, expires_at=expire_at, user_id=user_id
-        )
 
         email_update_record = EmailVerification(
-            **email_update_create.model_dump(exclude_unset=True)
+            email=email,
+            token_hash=token_hash,
+            user_id=user_id,
         )
 
         session.add(email_update_record)

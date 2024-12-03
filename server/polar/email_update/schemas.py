@@ -1,16 +1,8 @@
-import datetime
 
-from pydantic import UUID4, EmailStr, field_validator
+from pydantic import field_validator
 
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import EmailStrDNS, Schema
-
-
-class EmailUpdateCreate(Schema):
-    email: EmailStr
-    token_hash: str
-    expires_at: datetime.datetime | None = None
-    user_id: UUID4
 
 
 class EmailUpdateRequest(Schema):

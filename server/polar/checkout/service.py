@@ -8,7 +8,6 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, select, update
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
-    Anonymous,
     AuthSubject,
     is_organization,
     is_user,
@@ -211,8 +210,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Checkout | None:
-        statement = self._get_readable_checkout_statement(auth_subject).where(
-            Checkout.id == id
+        statement = (
+            self._get_readable_checkout_statement(auth_subject)
+            .where(Checkout.id == id)
+            .options(
+                joinedload(Checkout.customer),
+            )
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
@@ -375,7 +378,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self,
         session: AsyncSession,
         checkout_create: CheckoutCreatePublic,
-        auth_subject: AuthSubject[User | Anonymous],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
@@ -708,8 +710,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
-        assert checkout.customer_email is not None
-
         if checkout.payment_processor == PaymentProcessor.stripe:
             customer = await self._create_or_update_customer(session, checkout)
             checkout.customer = customer
@@ -1034,11 +1034,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
             .join(Checkout.product)
             .options(
+                joinedload(Checkout.customer),
                 contains_eager(Checkout.product).options(
                     joinedload(Product.organization),
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
-                )
+                ),
             )
         )
         result = await session.execute(statement)
@@ -1528,7 +1529,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         stripe_customer_id = customer.stripe_customer_id
-
         if stripe_customer_id is None:
             create_params: stripe_lib.Customer.CreateParams = {"email": customer.email}
             if checkout.customer_name is not None:
@@ -1554,6 +1554,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 else None,
                 **update_params,
             )
+        customer.stripe_customer_id = stripe_customer_id
 
         session.add(customer)
         await session.flush()

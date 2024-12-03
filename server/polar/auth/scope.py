@@ -41,6 +41,9 @@ class Scope(StrEnum):
     subscriptions_read = "subscriptions:read"
     subscriptions_write = "subscriptions:write"
 
+    customers_read = "customers:read"
+    customers_write = "customers:write"
+
     orders_read = "orders:read"
 
     metrics_read = "metrics:read"
@@ -106,6 +109,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.subscriptions_write: (
         "Create or modify subscriptions made on your organizations"
     ),
+    Scope.customers_read: "Read customers",
+    Scope.customers_write: "Create or modify customers",
     Scope.orders_read: "Read orders made on your organizations",
     Scope.metrics_read: "Read metrics",
     Scope.webhooks_read: "Read webhooks",

@@ -22,13 +22,13 @@ class DownloadableRead(Schema):
 
 class DownloadableCreate(Schema):
     file_id: UUID4
-    user_id: UUID4
+    customer_id: UUID4
     benefit_id: BenefitID
     status: DownloadableStatus
 
 
 class DownloadableUpdate(Schema):
     file_id: UUID4
-    user_id: UUID4
+    customer_id: UUID4
     benefit_id: BenefitID
     status: DownloadableStatus

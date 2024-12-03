@@ -12,6 +12,7 @@ from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
+    Customer,
     LicenseKey,
     LicenseKeyActivation,
     Organization,
@@ -104,13 +105,13 @@ class LicenseKeyService(
         *,
         id: UUID,
         organization_id: UUID,
-        user_id: UUID,
+        customer_id: UUID,
         benefit_id: UUID,
     ) -> LicenseKey:
         query = self._get_select_base().where(
             LicenseKey.id == id,
             LicenseKey.organization_id == organization_id,
-            LicenseKey.user_id == user_id,
+            LicenseKey.customer_id == customer_id,
             LicenseKey.benefit_id == benefit_id,
         )
         result = await session.execute(query)
@@ -328,7 +329,7 @@ class LicenseKeyService(
                 "license_key.activate.limit_reached",
                 license_key_id=license_key.id,
                 organization_id=license_key.organization_id,
-                user=license_key.user_id,
+                customer_id=license_key.customer_id,
                 benefit_id=license_key.benefit_id,
             )
             raise NotPermitted("License key activation limit already reached")
@@ -346,7 +347,7 @@ class LicenseKeyService(
             "license_key.activate",
             license_key_id=license_key.id,
             organization_id=license_key.organization_id,
-            user=license_key.user_id,
+            customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
             activation_id=instance.id,
         )
@@ -371,7 +372,7 @@ class LicenseKeyService(
             "license_key.deactivate",
             license_key_id=license_key.id,
             organization_id=license_key.organization_id,
-            user=license_key.user_id,
+            customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
             activation_id=activation.id,
         )
@@ -381,14 +382,14 @@ class LicenseKeyService(
         self,
         session: AsyncSession,
         *,
-        user: User,
+        customer: Customer,
         benefit: BenefitLicenseKeys,
         license_key_id: UUID | None = None,
     ) -> LicenseKey:
         props = benefit.properties
         create_schema = LicenseKeyCreate.build(
             organization_id=benefit.organization_id,
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=benefit.id,
             prefix=props.get("prefix", None),
             limit_usage=props.get("limit_usage", None),
@@ -398,7 +399,7 @@ class LicenseKeyService(
         log.info(
             "license_key.grant.request",
             organization_id=benefit.organization_id,
-            user=user.id,
+            customer_id=customer.id,
             benefit_id=benefit.id,
         )
         if license_key_id:
@@ -424,7 +425,7 @@ class LicenseKeyService(
             session,
             id=license_key_id,
             organization_id=create_schema.organization_id,
-            user_id=create_schema.user_id,
+            customer_id=create_schema.customer_id,
             benefit_id=create_schema.benefit_id,
         )
 
@@ -447,7 +448,7 @@ class LicenseKeyService(
             "license_key.grant.update",
             license_key_id=key.id,
             organization_id=key.organization_id,
-            user=key.user_id,
+            customer_id=key.customer_id,
             benefit_id=key.benefit_id,
         )
         return key
@@ -466,7 +467,7 @@ class LicenseKeyService(
             "license_key.grant.create",
             license_key_id=key.id,
             organization_id=key.organization_id,
-            user=key.user_id,
+            customer_id=key.customer_id,
             benefit_id=key.benefit_id,
         )
         return key
@@ -474,7 +475,7 @@ class LicenseKeyService(
     async def user_revoke(
         self,
         session: AsyncSession,
-        user: User,
+        customer: Customer,
         benefit: BenefitLicenseKeys,
         license_key_id: UUID,
     ) -> LicenseKey:
@@ -482,7 +483,7 @@ class LicenseKeyService(
             session,
             id=license_key_id,
             organization_id=benefit.organization_id,
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=benefit.id,
         )
         key.mark_revoked()
@@ -492,7 +493,7 @@ class LicenseKeyService(
             "license_key.revoke",
             license_key_id=key.id,
             organization_id=key.organization_id,
-            user=key.user_id,
+            customer_id=key.customer_id,
             benefit_id=key.benefit_id,
         )
         return key
@@ -500,9 +501,7 @@ class LicenseKeyService(
     def _get_select_base(self) -> Select[tuple[LicenseKey]]:
         return (
             select(LicenseKey)
-            .options(
-                joinedload(LicenseKey.user),
-            )
+            .options(joinedload(LicenseKey.customer))
             .where(LicenseKey.deleted_at.is_(None))
         )
 

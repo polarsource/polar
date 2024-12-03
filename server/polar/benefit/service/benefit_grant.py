@@ -434,6 +434,10 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             user_id=str(user.id),
         )
 
+        # Disable the notification for now as it's a bit noisy for some use-cases
+        # We'll change how benefits are granted in the future so this won't be needed
+        return
+
         scope_name = ""
         organization_name = ""
         if subscription := scope.get("subscription"):

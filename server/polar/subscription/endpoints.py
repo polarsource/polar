@@ -108,7 +108,7 @@ async def export(
         for sub in subscribers:
             yield csv_writer.getrow(
                 (
-                    sub.user.email,
+                    sub.customer.email,
                     sub.created_at.isoformat(),
                     "true" if sub.active else "false",
                     sub.product.name,

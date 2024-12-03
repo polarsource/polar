@@ -9,7 +9,7 @@ from polar.integrations.discord.service import DiscordAccountNotConnected
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.integrations.discord.service import discord_user as discord_user_service
 from polar.logging import Logger
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.models.benefit_grant import BenefitGrantDiscordProperties
 from polar.notifications.notification import (
@@ -70,7 +70,7 @@ class BenefitDiscordService(
     async def grant(
         self,
         benefit: BenefitDiscord,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantDiscordProperties,
         *,
         update: bool = False,
@@ -78,7 +78,7 @@ class BenefitDiscordService(
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            user_id=str(user.id),
+            customer_id=str(customer.id),
         )
         bound_logger.debug("Grant benefit")
 
@@ -94,7 +94,9 @@ class BenefitDiscordService(
                 bound_logger.debug(
                     "Revoke before granting because guild or role have changed"
                 )
-                await self.revoke(benefit, user, grant_properties, attempt=attempt)
+                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
+
+        # TODO: we need to revamp this, since we now need to get an account from a Customer instead of a User
 
         try:
             account = await discord_user_service.get_oauth_account(self.session, user)
@@ -133,14 +135,14 @@ class BenefitDiscordService(
     async def revoke(
         self,
         benefit: BenefitDiscord,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantDiscordProperties,
         *,
         attempt: int = 1,
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            user_id=str(user.id),
+            customer_id=str(customer.id),
         )
 
         guild_id = grant_properties.get("guild_id")

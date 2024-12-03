@@ -193,7 +193,7 @@ class WebhookOrderCreatedPayload(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.user.email},
+            {"name": "Customer", "value": self.data.customer.email},
         ]
         if self.data.subscription is not None:
             fields.append({"name": "Subscription", "value": "Yes"})
@@ -222,7 +222,7 @@ class WebhookOrderCreatedPayload(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
+            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.customer.email}"},
         ]
         if self.data.subscription is not None:
             fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})

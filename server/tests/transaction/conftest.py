@@ -7,6 +7,7 @@ import pytest_asyncio
 from polar.enums import AccountType
 from polar.models import (
     Account,
+    Customer,
     ExternalOrganization,
     Issue,
     IssueReward,
@@ -32,7 +33,7 @@ async def create_transaction(
     save_fixture: SaveFixture,
     *,
     account: Account | None = None,
-    payment_user: User | None = None,
+    payment_customer: Customer | None = None,
     payment_organization: Organization | None = None,
     type: TransactionType = TransactionType.balance,
     amount: int = 1000,
@@ -56,7 +57,7 @@ async def create_transaction(
         account_amount=int(amount * 0.9) if account_currency != "usd" else amount,
         tax_amount=0,
         account=account,
-        payment_user=payment_user,
+        payment_customer=payment_customer,
         payment_organization=payment_organization,
         pledge=pledge,
         issue_reward=issue_reward,
@@ -140,12 +141,14 @@ async def transaction_issue_reward(
 
 @pytest_asyncio.fixture
 async def transaction_order_subscription(
-    save_fixture: SaveFixture, organization: Organization, user: User
+    save_fixture: SaveFixture, organization: Organization, customer: Customer
 ) -> Order:
     product = await create_product(save_fixture, organization=organization)
-    subscription = await create_subscription(save_fixture, product=product, user=user)
+    subscription = await create_subscription(
+        save_fixture, product=product, customer=customer
+    )
     return await create_order(
-        save_fixture, product=product, user=user, subscription=subscription
+        save_fixture, product=product, customer=customer, subscription=subscription
     )
 
 
@@ -190,10 +193,12 @@ async def account_transactions(
 
 
 @pytest_asyncio.fixture
-async def user_transactions(save_fixture: SaveFixture, user: User) -> list[Transaction]:
+async def user_transactions(
+    save_fixture: SaveFixture, customer: Customer
+) -> list[Transaction]:
     return [
         await create_transaction(
-            save_fixture, type=TransactionType.payment, payment_user=user
+            save_fixture, type=TransactionType.payment, customer=customer
         ),
     ]
 

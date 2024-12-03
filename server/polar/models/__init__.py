@@ -16,7 +16,6 @@ from .downloadable import Downloadable
 from .external_organization import ExternalOrganization
 from .file import File
 from .held_balance import HeldBalance
-from .invites import Invite
 from .issue import Issue
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
@@ -72,7 +71,6 @@ __all__ = [
     "ExternalOrganization",
     "File",
     "HeldBalance",
-    "Invite",
     "Issue",
     "IssueReward",
     "LicenseKey",

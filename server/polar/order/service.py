@@ -414,8 +414,8 @@ class OrderService(ResourceServiceReader[Order]):
             customer = await customer_service.get_by_stripe_customer_id(
                 session, stripe_customer_id
             )
-            stripe_customer = await stripe_service.get_customer(stripe_customer_id)
             if customer is None:
+                stripe_customer = await stripe_service.get_customer(stripe_customer_id)
                 customer = await customer_service.create_from_stripe_customer(
                     session, stripe_customer, product.organization
                 )

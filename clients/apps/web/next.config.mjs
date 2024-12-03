@@ -215,28 +215,99 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/guides/:path*',
+        destination: '/developers/guides/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        permanent: true,
+      },
+
+      {
         source: '/docs/tools/:path*',
         destination: '/docs/developers/sdk/:path*',
         permanent: true,
       },
+      {
+        source: '/tools/:path*',
+        destination: '/developers/sdk/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        permanent: true,
+      },
+
       {
         source: '/docs/contribute',
         destination: '/docs/developers/open-source',
         permanent: true,
       },
       {
+        source: '/contribute',
+        destination: '/developers/open-source',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        permanent: true,
+      },
+
+      {
         source: '/docs/sandbox',
         destination: '/docs/developers/sandbox',
         permanent: true,
       },
+      {
+        source: '/sandbox',
+        destination: '/developers/sandbox',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        permanent: true,
+      },
+
       {
         source: '/docs/api/webhooks/:path*',
         destination: '/docs/developers/webhooks/:path*',
         permanent: true,
       },
       {
+        source: '/api/webhooks/:path*',
+        destination: '/developers/webhooks/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        permanent: true,
+      },
+
+      {
         source: '/docs/api/sdk/:path*',
         destination: '/docs/developers/sdk/:path*',
+        permanent: true,
+      },
+      {
+        source: '/api/sdk/:path*',
+        destination: '/developers/sdk/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
         permanent: true,
       },
 
@@ -246,10 +317,32 @@ const nextConfig = {
         destination: '/docs/:path*',
         permanent: true,
       },
+      {
+        source: '/overview/:path*',
+        destination: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        permanent: true,
+      },
 
       {
         source: '/docs/subscriptions',
         destination: '/docs/products',
+        permanent: true,
+      },
+      {
+        source: '/subscriptions',
+        destination: '/products',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
         permanent: true,
       },
 

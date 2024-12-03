@@ -13,7 +13,7 @@ from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 from polar.models.benefit import (
     BenefitGitHubRepository,
     BenefitGitHubRepositoryProperties,
@@ -80,7 +80,7 @@ class BenefitGitHubRepositoryService(
     async def grant(
         self,
         benefit: BenefitGitHubRepository,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
         update: bool = False,
@@ -88,7 +88,7 @@ class BenefitGitHubRepositoryService(
     ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            user_id=str(user.id),
+            user_id=str(customer.id),
         )
         bound_logger.debug("Grant benefit")
 
@@ -97,6 +97,8 @@ class BenefitGitHubRepositoryService(
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
         permission = benefit.properties["permission"]
+
+        # TODO: we need to revamp this, since we now need to get an account from a Customer instead of a User
 
         # When inviting users: Use the users identity from the "main" Polar GitHub App
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
@@ -159,14 +161,14 @@ class BenefitGitHubRepositoryService(
     async def revoke(
         self,
         benefit: BenefitGitHubRepository,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
         attempt: int = 1,
     ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            user_id=str(user.id),
+            customer_id=str(customer.id),
         )
 
         if benefit.properties["repository_id"]:
@@ -177,6 +179,8 @@ class BenefitGitHubRepositoryService(
 
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
+
+        # TODO: we need to revamp this, since we now need to get an account from a Customer instead of a User
 
         oauth_account = user.get_oauth_account(OAuthPlatform.github)
         if oauth_account is None or oauth_account.account_username is None:

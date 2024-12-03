@@ -10,11 +10,11 @@ from polar.kit.db.models import RecordModel
 if TYPE_CHECKING:
     from polar.models import (
         Account,
+        Customer,
         IssueReward,
         Order,
         Organization,
         Pledge,
-        User,
     )
 
 
@@ -263,17 +263,17 @@ class Transaction(RecordModel):
     def account(cls) -> Mapped["Account | None"]:
         return relationship("Account", lazy="raise")
 
-    payment_user_id: Mapped[UUID | None] = mapped_column(
+    payment_customer_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="set null"),
+        ForeignKey("customers.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
-    """ID of the `User` who made the payment."""
+    """ID of the `Customer` who made the payment."""
 
     @declared_attr
-    def payment_user(cls) -> Mapped["User | None"]:
-        return relationship("User", lazy="raise")
+    def payment_customer(cls) -> Mapped["Customer | None"]:
+        return relationship("Customer", lazy="raise")
 
     payment_organization_id: Mapped[UUID | None] = mapped_column(
         Uuid,

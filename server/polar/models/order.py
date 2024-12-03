@@ -14,12 +14,12 @@ from polar.kit.metadata import MetadataMixin
 if TYPE_CHECKING:
     from polar.models import (
         Checkout,
+        Customer,
         Discount,
         Organization,
         Product,
         ProductPrice,
         Subscription,
-        User,
     )
 
 
@@ -44,15 +44,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, nullable=True, unique=True
     )
 
-    user_id: Mapped[UUID] = mapped_column(
+    customer_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("users.id"),
+        ForeignKey("customers.id"),
         nullable=False,
     )
 
     @declared_attr
-    def user(cls) -> Mapped["User"]:
-        return relationship("User", lazy="raise")
+    def customer(cls) -> Mapped["Customer"]:
+        return relationship("Customer", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid,

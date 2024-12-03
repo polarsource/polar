@@ -21,10 +21,7 @@ class ProductStorefront(ProductBase):
     )
 
 
-class Customer(Schema):
-    public_name: str
-    github_username: str | None
-    avatar_url: str | None
+class Customer(Schema): ...
 
 
 class Customers(Schema):

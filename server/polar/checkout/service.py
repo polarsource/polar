@@ -10,7 +10,6 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import (
     Anonymous,
     AuthSubject,
-    is_direct_user,
     is_organization,
     is_user,
 )
@@ -22,7 +21,6 @@ from polar.checkout.schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
-from polar.checkout.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.discount.service import DiscountNotRedeemableError
@@ -37,12 +35,14 @@ from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
     Checkout,
     CheckoutLink,
+    Customer,
     Discount,
     Organization,
     Product,
@@ -63,14 +63,13 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
-from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from ..kit.tax import TaxCalculationError, calculate_tax
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
 from .sorting import CheckoutSortProperty
-from .tax import TaxCalculationError, calculate_tax
 
 log: Logger = structlog.get_logger()
 
@@ -303,7 +302,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ) from e
 
         subscription: Subscription | None = None
-        customer: User | None = None
+        customer: Customer | None = None
         if checkout_create.subscription_id is not None:
             subscription, customer = await self._get_validated_subscription(
                 session, checkout_create.subscription_id, product.organization_id
@@ -458,18 +457,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             customer=None,
             subscription=None,
         )
-        if is_direct_user(auth_subject):
-            checkout.customer = auth_subject.subject
-            checkout.customer_email = auth_subject.subject.email
-            if checkout_create.subscription_id is not None:
-                subscription, _ = await self._get_validated_subscription(
-                    session,
-                    checkout_create.subscription_id,
-                    product.organization_id,
-                    auth_subject.subject.id,
-                )
-                checkout.subscription = subscription
-        elif checkout_create.customer_email is not None:
+        if checkout_create.customer_email is not None:
             checkout.customer_email = checkout_create.customer_email
 
         if checkout.payment_processor == PaymentProcessor.stripe:
@@ -723,9 +711,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         assert checkout.customer_email is not None
 
         if checkout.payment_processor == PaymentProcessor.stripe:
-            stripe_customer_id = await self._create_or_update_stripe_customer(
-                session, checkout
-            )
+            customer = await self._create_or_update_customer(session, checkout)
+            checkout.customer = customer
+            stripe_customer_id = customer.stripe_customer_id
+            assert stripe_customer_id is not None
             checkout.payment_processor_metadata = {"customer_id": stripe_customer_id}
 
             if checkout.is_payment_required or checkout.is_payment_setup_required:
@@ -1192,8 +1181,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session: AsyncSession,
         subscription_id: uuid.UUID,
         organization_id: uuid.UUID,
-        user_id: uuid.UUID | None = None,
-    ) -> tuple[Subscription, User]:
+    ) -> tuple[Subscription, Customer]:
         statement = (
             select(Subscription)
             .join(Product)
@@ -1204,11 +1192,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .options(
                 contains_eager(Subscription.product),
                 joinedload(Subscription.price),
-                joinedload(Subscription.user),
+                joinedload(Subscription.customer),
             )
         )
-        if user_id is not None:
-            statement = statement.where(Subscription.user_id == user_id)
 
         result = await session.execute(statement)
         subscription = result.scalars().unique().one_or_none()
@@ -1236,7 +1222,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        return subscription, subscription.user
+        return subscription, subscription.customer
 
     async def _update_checkout(
         self,
@@ -1525,21 +1511,26 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             fields.update({"customer_name", "customer_billing_address"})
         return fields
 
-    async def _create_or_update_stripe_customer(
+    async def _create_or_update_customer(
         self, session: AsyncSession, checkout: Checkout
-    ) -> str:
-        assert checkout.customer_email is not None
+    ) -> Customer:
+        customer = checkout.customer
+        if customer is None:
+            assert checkout.customer_email is not None
+            customer = Customer(
+                email=checkout.customer_email,
+                email_verified=False,
+                stripe_customer_id=None,
+                name=checkout.customer_name,
+                billing_address=checkout.customer_billing_address,
+                tax_id=checkout.customer_tax_id,
+                organization=checkout.organization,
+            )
 
-        stripe_customer_id: str | None = None
-        if checkout.customer_id is not None:
-            user = await user_service.get(session, checkout.customer_id)
-            if user is not None and user.stripe_customer_id is not None:
-                stripe_customer_id = user.stripe_customer_id
+        stripe_customer_id = customer.stripe_customer_id
 
         if stripe_customer_id is None:
-            create_params: stripe_lib.Customer.CreateParams = {
-                "email": checkout.customer_email
-            }
+            create_params: stripe_lib.Customer.CreateParams = {"email": customer.email}
             if checkout.customer_name is not None:
                 create_params["name"] = checkout.customer_name
             if checkout.customer_billing_address is not None:
@@ -1551,9 +1542,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
-            update_params: stripe_lib.Customer.ModifyParams = {
-                "email": checkout.customer_email
-            }
+            update_params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
             if checkout.customer_name is not None:
                 update_params["name"] = checkout.customer_name
             if checkout.customer_billing_address is not None:
@@ -1566,7 +1555,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 **update_params,
             )
 
-        return stripe_customer_id
+        session.add(customer)
+        await session.flush()
+
+        return customer
 
     async def _get_eager_loaded_checkout(
         self, session: AsyncSession, checkout_id: uuid.UUID

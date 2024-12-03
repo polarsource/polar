@@ -770,7 +770,7 @@ class TestHandlePreconditionError:
             subscription=subscription_loaded,
         )
 
-        notification_send_to_user_mock.assert_called_once()
+        notification_send_to_user_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -113,7 +113,7 @@ class LicenseKeyUpdate(Schema):
 
 class LicenseKeyCreate(LicenseKeyUpdate):
     organization_id: UUID4
-    user_id: UUID4
+    customer_id: UUID4
     benefit_id: BenefitID
     key: str
 
@@ -143,7 +143,7 @@ class LicenseKeyCreate(LicenseKeyUpdate):
     def build(
         cls,
         organization_id: UUID4,
-        user_id: UUID4,
+        customer_id: UUID4,
         benefit_id: UUID4,
         prefix: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
@@ -165,7 +165,7 @@ class LicenseKeyCreate(LicenseKeyUpdate):
         key = cls.generate_key(prefix=prefix)
         return cls(
             organization_id=organization_id,
-            user_id=user_id,
+            customer_id=customer_id,
             benefit_id=benefit_id,
             key=key,
             status=status,

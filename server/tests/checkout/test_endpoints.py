@@ -9,8 +9,8 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.checkout.service import checkout as checkout_service
-from polar.checkout.tax import calculate_tax
 from polar.integrations.stripe.service import StripeService
+from polar.kit.tax import calculate_tax
 from polar.models import Checkout, Product, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture

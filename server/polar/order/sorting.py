@@ -9,7 +9,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 class OrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
-    user = "user"
+    customer = "customer"
     product = "product"
     discount = "discount"
     subscription = "subscription"

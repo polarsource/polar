@@ -15,8 +15,8 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 from .benefit import Benefit
+from .customer import Customer
 from .file import File
-from .user import User
 
 
 class DownloadableStatus(StrEnum):
@@ -26,7 +26,7 @@ class DownloadableStatus(StrEnum):
 
 class Downloadable(RecordModel):
     __tablename__ = "downloadables"
-    __table_args__ = (UniqueConstraint("user_id", "file_id", "benefit_id"),)
+    __table_args__ = (UniqueConstraint("customer_id", "file_id", "benefit_id"),)
 
     file_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("files.id"), nullable=False, index=True
@@ -38,16 +38,16 @@ class Downloadable(RecordModel):
 
     status: Mapped[DownloadableStatus] = mapped_column(String, nullable=False)
 
-    user_id: Mapped[UUID] = mapped_column(
+    customer_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="cascade"),
+        ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
 
     @declared_attr
-    def user(cls) -> Mapped[User]:
-        return relationship("User", lazy="raise")
+    def customer(cls) -> Mapped[Customer]:
+        return relationship("Customer", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
         Uuid,

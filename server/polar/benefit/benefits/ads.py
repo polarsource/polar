@@ -1,7 +1,7 @@
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitAds, BenefitAdsProperties
 from polar.models.benefit_grant import BenefitGrantAdsProperties
 
@@ -14,7 +14,7 @@ class BenefitAdsService(
     async def grant(
         self,
         benefit: BenefitAds,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantAdsProperties,
         *,
         update: bool = False,
@@ -28,7 +28,7 @@ class BenefitAdsService(
     async def revoke(
         self,
         benefit: BenefitAds,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantAdsProperties,
         *,
         attempt: int = 1,

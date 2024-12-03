@@ -17,7 +17,7 @@ from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit, User
+from polar.models import Benefit, Customer, User
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -61,7 +61,7 @@ class DownloadableService(
     async def grant_for_benefit_file(
         self,
         session: AsyncSession,
-        user: User,
+        customer: Customer,
         benefit_id: UUID,
         file_id: UUID,
     ) -> Downloadable | None:
@@ -70,7 +70,7 @@ class DownloadableService(
             log.info(
                 "downloadables.grant.file_not_found",
                 file_id=file_id,
-                user_id=user.id,
+                customer_id=customer.id,
                 benefit_id=benefit_id,
                 granted=False,
             )
@@ -78,7 +78,7 @@ class DownloadableService(
 
         create_schema = DownloadableCreate(
             file_id=file.id,
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=benefit_id,
             status=DownloadableStatus.granted,
         )
@@ -87,7 +87,7 @@ class DownloadableService(
             create_schemas=[create_schema],
             constraints=[
                 Downloadable.file_id,
-                Downloadable.user_id,
+                Downloadable.customer_id,
                 Downloadable.benefit_id,
             ],
             mutable_keys={
@@ -102,7 +102,7 @@ class DownloadableService(
         log.info(
             "downloadables.grant",
             file_id=file.id,
-            user_id=user.id,
+            customer_id=customer.id,
             downloadables_id=instance.id,
             benefit_id=benefit_id,
             granted=True,
@@ -112,13 +112,13 @@ class DownloadableService(
     async def revoke_for_benefit(
         self,
         session: AsyncSession,
-        user: User,
+        customer: Customer,
         benefit_id: UUID,
     ) -> None:
         statement = (
             sql.update(Downloadable)
             .where(
-                Downloadable.user_id == user.id,
+                Downloadable.customer_id == customer.id,
                 Downloadable.benefit_id == benefit_id,
                 Downloadable.status == DownloadableStatus.granted,
                 Downloadable.deleted_at.is_(None),
@@ -130,7 +130,7 @@ class DownloadableService(
         )
         log.info(
             "downloadables.revoked",
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=benefit_id,
         )
         await session.execute(statement)

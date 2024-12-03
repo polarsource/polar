@@ -20,6 +20,7 @@ class Receivers(BaseModel):
     user_id: UUID | None = None
     organization_id: UUID | None = None
     checkout_client_secret: str | None = None
+    customer_id: UUID | None = None
 
     def generate_channel_name(self, scope: str, resource_id: UUID | str) -> str:
         return f"{scope}:{resource_id}"
@@ -36,6 +37,9 @@ class Receivers(BaseModel):
             channels.append(
                 self.generate_channel_name("checkout", self.checkout_client_secret)
             )
+
+        if self.customer_id:
+            channels.append(self.generate_channel_name("customer", self.customer_id))
 
         return channels
 
@@ -60,6 +64,7 @@ async def publish(
     user_id: UUID | None = None,
     organization_id: UUID | None = None,
     checkout_client_secret: str | None = None,
+    customer_id: UUID | None = None,
     *,
     run_in_worker: bool = True,
     redis: Redis | None = None,
@@ -68,6 +73,7 @@ async def publish(
         user_id=user_id,
         organization_id=organization_id,
         checkout_client_secret=checkout_client_secret,
+        customer_id=customer_id,
     )
     channels = receivers.get_channels()
     event = Event(

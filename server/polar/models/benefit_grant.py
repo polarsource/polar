@@ -26,7 +26,7 @@ from sqlalchemy.orm import (
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Order, Subscription, User
+    from polar.models import Benefit, Customer, Order, Subscription
 
 
 class BenefitGrantScope(TypedDict, total=False):
@@ -119,7 +119,10 @@ class BenefitGrant(RecordModel):
     __tablename__ = "benefit_grants"
     __table_args__ = (
         UniqueConstraint(
-            "subscription_id", "user_id", "benefit_id", name="benefit_grants_sbu_key"
+            "subscription_id",
+            "customer_id",
+            "benefit_id",
+            name="benefit_grants_sbc_key",
         ),
     )
 
@@ -133,16 +136,16 @@ class BenefitGrant(RecordModel):
         "properties", JSONB, nullable=False, default=dict
     )
 
-    user_id: Mapped[UUID] = mapped_column(
+    customer_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="cascade"),
+        ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
 
     @declared_attr
-    def user(cls) -> Mapped["User"]:
-        return relationship("User", lazy="raise")
+    def customer(cls) -> Mapped["Customer"]:
+        return relationship("Customer", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
         Uuid,

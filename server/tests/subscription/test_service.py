@@ -8,9 +8,11 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.checkout.eventstream import CheckoutEvent
+from polar.customer.service import customer as customer_service
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Benefit,
+    Customer,
     Discount,
     Organization,
     Product,
@@ -29,7 +31,6 @@ from polar.subscription.service import (
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service import subscription as subscription_service
-from polar.user.service.user import user as user_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailSender, watch_email
@@ -43,9 +44,8 @@ from tests.fixtures.random_objects import (
 
 def construct_stripe_subscription(
     *,
-    user: User | None = None,
+    customer: Customer | None = None,
     organization: Organization | None = None,
-    customer_id: str = "CUSTOMER_ID",
     price_id: str = "PRICE_ID",
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     latest_invoice: stripe_lib.Invoice | None = None,
@@ -55,7 +55,6 @@ def construct_stripe_subscription(
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     base_metadata: dict[str, str] = {
-        **({"user_id": str(user.id)} if user is not None else {}),
         **(
             {"organization_subscriber_id": str(organization.id)}
             if organization is not None
@@ -65,7 +64,9 @@ def construct_stripe_subscription(
     return stripe_lib.Subscription.construct_from(
         {
             "id": "SUBSCRIPTION_ID",
-            "customer": customer_id,
+            "customer": customer.stripe_customer_id
+            if customer is not None
+            else "CUSTOMER_ID",
             "status": status,
             "items": {
                 "data": [
@@ -92,12 +93,19 @@ def construct_stripe_subscription(
 
 
 def construct_stripe_customer(
-    *, id: str = "CUSTOMER_ID", email: str = "backer@example.com"
+    *,
+    id: str = "CUSTOMER_ID",
+    email: str = "customer@example.com",
+    name: str | None = "Customer Name",
 ) -> stripe_lib.Customer:
     return stripe_lib.Customer.construct_from(
         {
             "id": id,
             "email": email,
+            "name": name,
+            "address": {
+                "country": "FR",
+            },
         },
         None,
     )
@@ -138,7 +146,7 @@ class TestCreateArbitrarySubscription:
         mocker: MockerFixture,
         session: AsyncSession,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
@@ -150,11 +158,11 @@ class TestCreateArbitrarySubscription:
         price = product.prices[0]
         assert isinstance(price, ProductPriceFixed)
         subscription = await subscription_service.create_arbitrary_subscription(
-            session, user=user, product=product, price=price
+            session, customer=customer, product=product, price=price
         )
 
         assert subscription.product_id == product.id
-        assert subscription.user_id == user.id
+        assert subscription.customer == customer
         assert subscription.amount == price.price_amount
         assert subscription.currency == price.price_currency
         assert subscription.recurring_interval == price.recurring_interval
@@ -166,7 +174,7 @@ class TestCreateArbitrarySubscription:
         mocker: MockerFixture,
         session: AsyncSession,
         product_recurring_custom_price: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
@@ -179,14 +187,14 @@ class TestCreateArbitrarySubscription:
         assert isinstance(price, ProductPriceCustom)
         subscription = await subscription_service.create_arbitrary_subscription(
             session,
-            user=user,
+            customer=customer,
             product=product_recurring_custom_price,
             price=price,
             amount=2000,
         )
 
         assert subscription.product_id == product_recurring_custom_price.id
-        assert subscription.user_id == user.id
+        assert subscription.customer == customer
         assert subscription.amount == 2000
         assert subscription.currency == price.price_currency
         assert subscription.recurring_interval == price.recurring_interval
@@ -198,7 +206,7 @@ class TestCreateArbitrarySubscription:
         mocker: MockerFixture,
         session: AsyncSession,
         product_recurring_free_price: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
@@ -211,13 +219,13 @@ class TestCreateArbitrarySubscription:
         assert isinstance(price, ProductPriceFree)
         subscription = await subscription_service.create_arbitrary_subscription(
             session,
-            user=user,
+            customer=customer,
             product=product_recurring_free_price,
             price=price,
         )
 
         assert subscription.product_id == product_recurring_free_price.id
-        assert subscription.user_id == user.id
+        assert subscription.customer == customer
         assert subscription.amount is None
         assert subscription.currency is None
         assert subscription.recurring_interval == price.recurring_interval
@@ -238,7 +246,7 @@ class TestCreateSubscriptionFromStripe:
                 session, stripe_subscription=stripe_subscription
             )
 
-    async def test_new_user(
+    async def test_new_customer(
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
@@ -262,24 +270,26 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.stripe_subscription_id == stripe_subscription.id
         assert subscription.product_id == product.id
 
-        user = await user_service.get(session, subscription.user_id)
-        assert user is not None
-        assert user.email == stripe_customer.email
-        assert user.stripe_customer_id == stripe_subscription.customer
+        customer = await customer_service.get_by_stripe_customer_id(
+            session, stripe_customer.id
+        )
+        assert customer is not None
+        assert customer.email == stripe_customer.email
+        assert customer.stripe_customer_id == stripe_subscription.customer
 
-    async def test_existing_user(
+    async def test_existing_customer(
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         stripe_customer = construct_stripe_customer()
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
         stripe_subscription = construct_stripe_subscription(
-            user=user, price_id=product.prices[0].stripe_price_id
+            customer=customer, price_id=product.prices[0].stripe_price_id
         )
 
         # then
@@ -292,27 +302,21 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.stripe_subscription_id == stripe_subscription.id
         assert subscription.product_id == product.id
 
-        assert subscription.user_id == user.id
-
-        # load user
-        user_loaded = await user_service.get(session, user.id)
-        assert user_loaded
-
-        assert user_loaded.stripe_customer_id == stripe_subscription.customer
+        assert subscription.customer == customer
 
     async def test_set_started_at(
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         stripe_customer = construct_stripe_customer()
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
         stripe_subscription = construct_stripe_subscription(
-            user=user,
+            customer=customer,
             price_id=product.prices[0].stripe_price_id,
             status=SubscriptionStatus.active,
         )
@@ -326,12 +330,6 @@ class TestCreateSubscriptionFromStripe:
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.started_at is not None
-
-        # load user
-        user_loaded = await user_service.get(session, user.id)
-        assert user_loaded
-
-        assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
     async def test_free_price(
         self,
@@ -367,21 +365,19 @@ class TestCreateSubscriptionFromStripe:
         stripe_service_mock: MagicMock,
         product_recurring_free_price: Product,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         stripe_customer = construct_stripe_customer()
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
         existing_subscription = await create_active_subscription(
-            save_fixture,
-            product=product_recurring_free_price,
-            user=user,
+            save_fixture, product=product_recurring_free_price, customer=customer
         )
 
         price = product.prices[0]
         stripe_subscription = construct_stripe_subscription(
-            user=user,
+            customer=customer,
             price_id=price.stripe_price_id,
             status=SubscriptionStatus.active,
             metadata={"subscription_id": str(existing_subscription.id)},
@@ -399,12 +395,6 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.started_at == existing_subscription.started_at
         assert subscription.price == price
         assert subscription.product == product
-
-        # load user
-        user_loaded = await user_service.get(session, user.id)
-        assert user_loaded
-
-        assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
     async def test_discount(
         self,
@@ -485,7 +475,7 @@ class TestUpdateSubscriptionFromStripe:
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         stripe_subscription = construct_stripe_subscription(
             status=SubscriptionStatus.active, price_id="NOT_EXISTING_PRICE_ID"
@@ -493,7 +483,7 @@ class TestUpdateSubscriptionFromStripe:
         subscription = await create_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             stripe_subscription_id=stripe_subscription.id,
         )
         assert subscription.started_at is None
@@ -512,7 +502,7 @@ class TestUpdateSubscriptionFromStripe:
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
@@ -526,7 +516,7 @@ class TestUpdateSubscriptionFromStripe:
             save_fixture,
             product=product,
             price=price,
-            user=user,
+            customer=customer,
             stripe_subscription_id=stripe_subscription.id,
         )
         assert subscription.started_at is None
@@ -551,7 +541,7 @@ class TestUpdateSubscriptionFromStripe:
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
@@ -567,7 +557,7 @@ class TestUpdateSubscriptionFromStripe:
             save_fixture,
             product=product,
             price=price,
-            user=user,
+            customer=customer,
             stripe_subscription_id=stripe_subscription.id,
         )
         assert subscription.started_at is None
@@ -593,7 +583,7 @@ class TestUpdateSubscriptionFromStripe:
         save_fixture: SaveFixture,
         product_recurring_free_price: Product,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
@@ -609,7 +599,7 @@ class TestUpdateSubscriptionFromStripe:
             save_fixture,
             product=product_recurring_free_price,
             price=free_price,
-            user=user,
+            customer=customer,
             stripe_subscription_id=stripe_subscription.id,
         )
         assert subscription.started_at is None
@@ -635,7 +625,7 @@ class TestUpdateSubscriptionFromStripe:
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
-        user: User,
+        customer: Customer,
         discount_fixed_once: Discount,
     ) -> None:
         price = product.prices[0]
@@ -648,7 +638,7 @@ class TestUpdateSubscriptionFromStripe:
             save_fixture,
             product=product,
             price=price,
-            user=user,
+            customer=customer,
             stripe_subscription_id=stripe_subscription.id,
         )
         assert subscription.discount is None
@@ -728,7 +718,7 @@ class TestEnqueueBenefitsGrants:
                 call(
                     "benefit.enqueue_benefits_grants",
                     task="grant",
-                    user_id=subscription.user_id,
+                    customer_id=subscription.customer_id,
                     product_id=product.id,
                     subscription_id=subscription.id,
                 )
@@ -772,7 +762,7 @@ class TestEnqueueBenefitsGrants:
                 call(
                     "benefit.enqueue_benefits_grants",
                     task="revoke",
-                    user_id=subscription.user_id,
+                    customer_id=subscription.customer_id,
                     product_id=product.id,
                     subscription_id=subscription.id,
                 )
@@ -787,7 +777,7 @@ class TestUpdateProductBenefitsGrants:
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        user: User,
+        customer: Customer,
         product: Product,
         product_second: Product,
     ) -> None:
@@ -796,15 +786,15 @@ class TestUpdateProductBenefitsGrants:
         )
 
         subscription_1 = await create_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
         subscription_2 = await create_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
         await create_subscription(
             save_fixture,
             product=product_second,
-            user=user,
+            customer=customer,
         )
 
         # then
@@ -825,13 +815,13 @@ class TestList:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        user_second: User,
         product: Product,
+        customer: Customer,
     ) -> None:
         await create_active_subscription(
             save_fixture,
             product=product,
-            user=user_second,
+            customer=customer,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -852,14 +842,14 @@ class TestList:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        user_second: User,
         user_organization: UserOrganization,
         product: Product,
+        customer: Customer,
     ) -> None:
         await create_active_subscription(
             save_fixture,
             product=product,
-            user=user_second,
+            customer=customer,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -881,13 +871,13 @@ class TestList:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user_second: User,
         product: Product,
+        customer: Customer,
     ) -> None:
         await create_active_subscription(
             save_fixture,
             product=product,
-            user=user_second,
+            customer=customer,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -911,8 +901,7 @@ async def test_send_confirmation_email(
     save_fixture: SaveFixture,
     session: AsyncSession,
     product: Product,
-    user: User,
-    organization: Organization,
+    customer: Customer,
 ) -> None:
     with WatcherEmailSender() as email_sender:
         mocker.patch(
@@ -920,7 +909,7 @@ async def test_send_confirmation_email(
         )
 
         subscription = await create_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
 
         async def _send_confirmation_email() -> None:

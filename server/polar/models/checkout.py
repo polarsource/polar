@@ -19,7 +19,6 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship
 
-from polar.checkout.tax import TaxID, TaxIDType
 from polar.config import settings
 from polar.custom_field.attachment import AttachedCustomFieldMixin
 from polar.custom_field.data import CustomFieldDataMixin
@@ -27,14 +26,15 @@ from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.utils import utc_now
 
+from .customer import Customer
 from .discount import Discount
 from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice, ProductPriceFixed, ProductPriceFree
 from .subscription import Subscription
-from .user import User
 
 
 def get_expires_at() -> datetime:
@@ -112,13 +112,13 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="cascade"),
+        ForeignKey("customers.id", ondelete="set null"),
         nullable=True,
     )
 
     @declared_attr
-    def customer(cls) -> Mapped[User | None]:
-        return relationship(User, lazy="raise")
+    def customer(cls) -> Mapped[Customer | None]:
+        return relationship(Customer, lazy="raise")
 
     customer_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

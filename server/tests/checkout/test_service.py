@@ -31,13 +31,13 @@ from polar.checkout.service import (
     PaymentRequired,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.checkout.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
+from polar.kit.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (

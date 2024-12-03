@@ -1,7 +1,7 @@
 import pytest
 from pydantic_extra_types.country import CountryAlpha2
 
-from polar.checkout.tax import TaxID, TaxIDFormat, validate_tax_id
+from polar.kit.tax import TaxID, TaxIDFormat, validate_tax_id
 
 
 @pytest.mark.parametrize(

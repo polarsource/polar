@@ -121,6 +121,14 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
         default=True, description=_allow_discount_codes_description
     )
     amount: Amount | None = None
+    customer_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of an existing customer in the organization. "
+            "The customer data will be pre-filled in the checkout form. "
+            "The resulting order will be linked to this customer."
+        ),
+    )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None

@@ -10,7 +10,7 @@ import {
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, MouseEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 
@@ -68,6 +68,12 @@ const UpdateBenefitModalContent = ({
     [hideModal, updateSubscriptionBenefit, benefit, setError],
   )
 
+  const onCancel = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    hideModal()
+  }
+
   const { handleSubmit } = form
 
   return (
@@ -95,7 +101,7 @@ const UpdateBenefitModalContent = ({
               <Button
                 variant="ghost"
                 className="self-start"
-                onClick={hideModal}
+                onClick={onCancel}
               >
                 Cancel
               </Button>

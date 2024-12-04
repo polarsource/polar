@@ -101,7 +101,7 @@ class CustomerService(ResourceServiceReader[Customer]):
         return customer
 
     async def get_by_id_and_organization(
-        self, session: AsyncSession, id: str, organization: Organization
+        self, session: AsyncSession, id: uuid.UUID, organization: Organization
     ) -> Customer | None:
         statement = select(Customer).where(
             Customer.deleted_at.is_(None),

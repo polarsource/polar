@@ -978,6 +978,62 @@ class TestCreate:
         assert checkout.product == product_one_time
         assert checkout.product_price == product_one_time.prices[0]
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_customer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    customer_id=uuid.uuid4(),
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_customer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                customer_id=customer.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer == customer
+        assert checkout.customer_email == customer.email
+        assert checkout.customer_name == customer.name
+        assert checkout.customer_billing_address == customer.billing_address
+        assert checkout.customer_tax_id == customer.tax_id
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

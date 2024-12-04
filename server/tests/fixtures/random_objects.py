@@ -839,11 +839,13 @@ async def create_customer(
     organization: Organization,
     email: str = "customer@example.com",
     email_verified: bool = False,
+    name="Customer",
     stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
 ) -> Customer:
     customer = Customer(
         email=email,
         email_verified=email_verified,
+        name=name,
         stripe_customer_id=stripe_customer_id,
         organization=organization,
     )

@@ -22,6 +22,7 @@ from polar.checkout.schemas import (
 )
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
+from polar.customer.service import customer as customer_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
@@ -304,14 +305,29 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     ]
                 ) from e
 
+        product = await self._eager_load_product(session, product)
+
         subscription: Subscription | None = None
         customer: Customer | None = None
         if checkout_create.subscription_id is not None:
             subscription, customer = await self._get_validated_subscription(
                 session, checkout_create.subscription_id, product.organization_id
             )
-
-        product = await self._eager_load_product(session, product)
+        elif checkout_create.customer_id is not None:
+            customer = await customer_service.get_by_id_and_organization(
+                session, checkout_create.customer_id, product.organization
+            )
+            if customer is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "customer_id"),
+                            "msg": "Customer does not exist.",
+                            "input": checkout_create.customer_id,
+                        }
+                    ]
+                )
 
         amount = checkout_create.amount
         currency = None
@@ -354,10 +370,24 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 by_alias=True,
             ),
         )
-        session.add(checkout)
 
-        if checkout.customer is not None and checkout.customer_email is None:
-            checkout.customer_email = checkout.customer.email
+        if checkout.customer is not None:
+            prefill_attributes = (
+                "email",
+                "name",
+                "billing_address",
+                "tax_id",
+            )
+            for attribute in prefill_attributes:
+                checkout_attribute = f"customer_{attribute}"
+                if getattr(checkout, checkout_attribute) is None:
+                    setattr(
+                        checkout,
+                        checkout_attribute,
+                        getattr(checkout.customer, attribute),
+                    )
+
+        session.add(checkout)
 
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client

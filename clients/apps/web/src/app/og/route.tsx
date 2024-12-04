@@ -1,5 +1,4 @@
 import {
-  Article,
   Issue,
   ListResourceIssue,
   ListResourceRepository,
@@ -10,7 +9,6 @@ import {
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 
-import OpenGraphImageArticle from '@/components/Organization/OpenGraphImageArticle'
 import OpenGraphImageCreator from '@/components/Organization/OpenGraphImageCreator'
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
 import { getServerURL } from '@/utils/api'
@@ -96,34 +94,6 @@ const renderCreatorOG = async (organization: Organization) => {
   )
 }
 
-const renderArticleOG = async (article: Article) => {
-  // const [interRegular, interMedium] = await Promise.all([
-  //   fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
-  //     res.arrayBuffer(),
-  //   ),
-  //   fetch(`https://polar.sh/fonts/Inter-Medium.ttf`).then((res) =>
-  //     res.arrayBuffer(),
-  //   ),
-  // ])
-
-  return new ImageResponse(<OpenGraphImageArticle article={article} />, {
-    height: 630,
-    width: 1200,
-    // fonts: [
-    //   {
-    //     name: 'Inter',
-    //     data: interRegular,
-    //     weight: 500,
-    //   },
-    //   {
-    //     name: 'Inter',
-    //     data: interMedium,
-    //     weight: 600,
-    //   },
-    // ],
-  })
-}
-
 const listIssues = async (
   org: Organization,
   repo: Repository | undefined,
@@ -191,32 +161,8 @@ const getIssue = async (externalUrl: string): Promise<Issue> => {
   })
 }
 
-const getArticle = async (id: string): Promise<Article> => {
-  return await fetch(`${getServerURL()}/v1/articles/${id}`, {
-    method: 'GET',
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
-  })
-}
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-
-  // Article image
-  try {
-    const articleId = searchParams.get('articleId')
-    if (articleId) {
-      const articleData = await getArticle(articleId)
-      return renderArticleOG(articleData)
-    }
-  } catch (error) {
-    return new Response(`Failed to generate article OG image`, {
-      status: 500,
-    })
-  }
 
   // Funding image
   try {

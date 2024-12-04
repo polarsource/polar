@@ -4,7 +4,7 @@ description: Frequently asked questions about Polar
 keywords: faq, frequently asked questions, polar
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 ## Pricing
 
@@ -66,13 +66,13 @@ You can then easily embed badges across issues in one of the following ways:
 - **Add label on GitHub.** You can label any issue via GitHub with `Fund` and
   Polar we'll shortly thereafter embed the badge.
 
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
   This updates the issue and thereby the modified_at timestamp of it on GitHub.
   However, default sorting on GitHub is by created_at so it's unaffected. We
   also update issues in reverse chronological order if you badge all historic
   issues at once. Thereby retaining the same sorting even with updated
   modified_at timestamps.
-</BrowserCallout>
+</Callout>
 
 ---
 
@@ -165,10 +165,10 @@ Finally, in case you're seeking to reward contributors, we'll prompt you to
 notify them in a comment on the issue. We'll automatically generate a suggested
 comment you can review & post easily from our dashboard as part of this process.
 
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
   We'll attempt to notify them otherwise. However, we think you deserve the
   credit & opportunity to do so first.
-</BrowserCallout>
+</Callout>
 
 ---
 

@@ -1,6 +1,5 @@
 import { BenefitDownloadablesSubscriber, DownloadableRead } from '@polar-sh/sdk'
 
-import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { useDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
 import { Pill } from 'polarkit/components/ui/atoms'
@@ -11,8 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useCallback, useRef } from 'react'
-import { useHoverDirty } from 'react-use'
+import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FilePreview } from './FileList/FileListItem'
 
@@ -29,9 +27,6 @@ export const DownloadableItem = ({
   showActions?: boolean
   fileIcon?: boolean
 }) => {
-  const ref = useRef<HTMLAnchorElement>(null)
-  const isHovered = useHoverDirty(ref)
-
   const onCopySHA = useCallback(() => {
     navigator.clipboard.writeText(downloadable.file.checksum_sha256_hex ?? '')
   }, [downloadable])
@@ -90,19 +85,13 @@ export const DownloadableItem = ({
           </DropdownMenu>
         )}
         <a
-          ref={ref}
           className="flex flex-row items-center gap-x-2"
           href={downloadable.file.download.url}
           download
         >
-          <AnimatedIconButton
-            className="hidden md:flex"
-            active={isHovered}
-            variant="secondary"
-            direction="vertical"
-          >
+          <Button className="hidden md:flex" variant="secondary">
             <ArrowDownward fontSize="inherit" />
-          </AnimatedIconButton>
+          </Button>
         </a>
       </div>
     </div>

@@ -4,7 +4,7 @@ description: Integrate Polar using Webhooks
 keywords: webhooks, events, payload, payload structure
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Webhooks
 
@@ -37,10 +37,10 @@ If you wish to send notifications to a Discord or Slack channel, you can select 
 ![Select format](./format.light.png)
 ![Select format](./format.dark.png)
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   If you paste a Discord or Slack webhook URL, the format will be automatically
   selected.
-</BrowserCallout>
+</Callout>
 
 ### Secret
 
@@ -101,31 +101,40 @@ def webhook():
 **Node.js example**
 
 ```ts
-import express, { Request, Response } from "express";
-import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
+import express, { Request, Response } from 'express'
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 
-const app = express();
+const app = express()
 
-app.post("/webhook", express.raw({ type: "application/json" }), (req: Request, res: Response) => {
-  try {
-    const event = validateEvent(req.body, req.headers, process.env["POLAR_WEBHOOK_SECRET"] ?? "");
+app.post(
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  (req: Request, res: Response) => {
+    try {
+      const event = validateEvent(
+        req.body,
+        req.headers,
+        process.env['POLAR_WEBHOOK_SECRET'] ?? '',
+      )
 
-    // Process the event
+      // Process the event
 
-    res.status(202).send('')
-  } catch (error) {
-    if (error instanceof WebhookVerificationError) {
-      res.status(403).send('')
+      res.status(202).send('')
+    } catch (error) {
+      if (error instanceof WebhookVerificationError) {
+        res.status(403).send('')
+      }
+      throw error
     }
-    throw error
-  }
-});
+  },
+)
 ```
 
 For other languages, as we follow the [Standard Webhooks](https://www.standardwebhooks.com/) specification, you can use one of their libraries to verify the signature: https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries
 
-<BrowserCallout type="WARNING">
-  When using the Standard Webhooks libraries, they expect your secret to be **encoded in Base64 first**.
-</BrowserCallout>
+<Callout type="WARNING">
+  When using the Standard Webhooks libraries, they expect your secret to be
+  **encoded in Base64 first**.
+</Callout>
 
 For a more in-depth implementation example, look at the [Polar NextJS Webhooks example](/docs/developers/guides/nextjs#handling-polar-webhooks).

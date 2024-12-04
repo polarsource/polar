@@ -4,7 +4,7 @@ description: Integrate Polar with Next.js
 keywords: next.js, polar, integrate, sell, products, payments, storefront, embedded checkout, api, example, tutorial, guide
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Integrating Polar with Next.js
 
@@ -17,14 +17,14 @@ Feel free to use our quick-start binary to get started inside a new Next.js proj
 npx polar-init
 ```
 
-<BrowserCallout type="TIP">
+<Callout type="TIP">
   Consider following this guide while using the Polar Sandbox Environment. This
   will allow you to test your integration without affecting your production
   data.{' '}
   <a href="https://sandbox.polar.sh/start" target="_blank">
     You can find the Sandbox environment here.
   </a>
-</BrowserCallout>
+</Callout>
 
 [A complete code-example of this guide can be found on GitHub](https://github.com/polarsource/polar-next).
 
@@ -219,11 +219,11 @@ export default function Page({
 }
 ```
 
-<BrowserCallout type="IMPORTANT">
+<Callout type="IMPORTANT">
   The checkout is not considered "successful" yet however. It's initially marked
   as `confirmed` until you've received a webhook event `checkout.updated` with a
   status set to `succeeded`. We'll cover this in the next section.
-</BrowserCallout>
+</Callout>
 
 ## Handling Polar Webhooks
 
@@ -263,32 +263,29 @@ It's important to verify that the requests are truly coming from Polar. Our SDK 
 
 ```typescript
 // src/app/api/webhook/polar/route.ts
-import {
-	validateEvent,
-	WebhookVerificationError,
-} from "@polar-sh/sdk/webhooks";
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 
 export async function POST(request: NextRequest) {
-  const requestBody = await request.text();
-	const webhookHeaders = {
-		"webhook-id": request.headers.get("webhook-id") ?? "",
-		"webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
-		"webhook-signature": request.headers.get("webhook-signature") ?? "",
-	};
+  const requestBody = await request.text()
+  const webhookHeaders = {
+    'webhook-id': request.headers.get('webhook-id') ?? '',
+    'webhook-timestamp': request.headers.get('webhook-timestamp') ?? '',
+    'webhook-signature': request.headers.get('webhook-signature') ?? '',
+  }
 
-	let webhookPayload: ReturnType<typeof validateEvent>;
-	try {
-		webhookPayload = validateEvent(
-			requestBody,
-			webhookHeaders,
-			env.POLAR_WEBHOOK_SECRET,
-		);
-	} catch (error) {
-		if (error instanceof WebhookVerificationError) {
-			return new NextResponse("", { status: 403 });
-		}
-		throw error;
-	}
+  let webhookPayload: ReturnType<typeof validateEvent>
+  try {
+    webhookPayload = validateEvent(
+      requestBody,
+      webhookHeaders,
+      env.POLAR_WEBHOOK_SECRET,
+    )
+  } catch (error) {
+    if (error instanceof WebhookVerificationError) {
+      return new NextResponse('', { status: 403 })
+    }
+    throw error
+  }
 
   // webhookPayload is now verified and holds the event data
 }
@@ -341,13 +338,13 @@ export async function POST(request: NextRequest) {
 
 If you're keeping track of active and inactive subscriptions in your database, make sure to handle the `subscription.active` and `subscription.revoked` events accordingly.
 
-<BrowserCallout type="CAUTION">
+<Callout type="CAUTION">
   The cancellation of a subscription is handled by the `subscription.canceled`
   event. The user has probably canceled their subscription before the end of the
   billing period. Do not revoke any kind of access immediately, but rather wait
   until the end of the billing period or when you receive the
   `subscription.revoked` event.
-</BrowserCallout>
+</Callout>
 
 ### Notifying the client about the event
 

@@ -4,8 +4,8 @@ description: Integrate Polar using PATs or OAuth
 keywords: authentication, pat, oauth, openid connect
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout';
-import OAuthSettings from '@/components/Documentation/OAuthSettings';
+import Callout from '@/components/Markdown/Callout'
+import OAuthSettings from '@/components/Documentation/OAuthSettings'
 
 # Authentication
 
@@ -26,8 +26,8 @@ Polar implements the [OpenID Connect specification](https://openid.net/developer
 
 In particular, it comes with a **discovery endpoint** allowing compatible clients to automatically work with the OpenID Connect server. Here is Polar's one:
 
-<div className="text-xl text-center">
-[https://api.polar.sh/.well-known/openid-configuration](https://api.polar.sh/.well-known/openid-configuration)
+<div className="text-center text-xl">
+  [https://api.polar.sh/.well-known/openid-configuration](https://api.polar.sh/.well-known/openid-configuration)
 </div>
 
 ### Create an OAuth2 client
@@ -40,25 +40,27 @@ You can create and manage your clients below.
   <OAuthSettings />
 </div>
 
-<BrowserCallout type="TIP">
-You can also manage them from your [user settings](https://polar.sh/settings#oauth).
-</BrowserCallout>
+<Callout type="TIP">
+  You can also manage them from your [user
+  settings](https://polar.sh/settings#oauth).
+</Callout>
 
 Here are the required fields:
 
-* *Application Name*: the name of the application that'll be shown to the final users.
-* *Client Type*: the type of client you are creating. [Read more](#public-clients).
-* *Redirect URIs*: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data. **HTTPS URL are required unless the hostname is `localhost`**.
-* *Scopes*: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
-* *Homepage URL*: the URL of your application. It'll be shown to the final users on the authorization page.
+- _Application Name_: the name of the application that'll be shown to the final users.
+- _Client Type_: the type of client you are creating. [Read more](#public-clients).
+- _Redirect URIs_: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data. **HTTPS URL are required unless the hostname is `localhost`**.
+- _Scopes_: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
+- _Homepage URL_: the URL of your application. It'll be shown to the final users on the authorization page.
 
 Optionally, you can also add a **logo**, **terms of service** and **privacy policy** URL. They'll all be shown to the final users on the authorization page.
 
 Once your client is created, you'll get a **Client ID** and a **Client Secret**. You'll need those values to make authentication requests.
 
-<BrowserCallout type="CAUTION">
-Those values are super sensitive and should be kept secret: they allow to make authentication requests on Polar!
-</BrowserCallout>
+<Callout type="CAUTION">
+  Those values are super sensitive and should be kept secret: they allow to make
+  authentication requests on Polar!
+</Callout>
 
 ### Start the authorization flow
 
@@ -70,10 +72,10 @@ https://polar.sh/oauth2/authorize?response_type=code&client_id=CLIENT_ID&redirec
 
 The parameters are the one described in the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The most important ones are:
 
-* `response_type=code`: indicates that you want to use the authorization code flow. This is the most common, and the only one supported by Polar
-* `client_id`: the Client ID you got when creating the OAuth2 client.
-* `redirect_uri`: the URL where the user will be redirected after granting access to their data. Make sure you declared it when creating the OAuth2 client.
-* `scope`: a space-separated list of scopes you want to ask for. Make sure they are part of the scopes you declared when creating the OAuth2 client.
+- `response_type=code`: indicates that you want to use the authorization code flow. This is the most common, and the only one supported by Polar
+- `client_id`: the Client ID you got when creating the OAuth2 client.
+- `redirect_uri`: the URL where the user will be redirected after granting access to their data. Make sure you declared it when creating the OAuth2 client.
+- `scope`: a space-separated list of scopes you want to ask for. Make sure they are part of the scopes you declared when creating the OAuth2 client.
 
 If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for.
 
@@ -97,12 +99,12 @@ You should get the following response:
 
 ```json
 {
-    "token_type": "Bearer",
-    "access_token": "polar_at_XXX",
-    "expires_in": 864000,
-    "refresh_token": "polar_rt_XXX",
-    "scope": "openid email",
-    "id_token": "ID_TOKEN"
+  "token_type": "Bearer",
+  "access_token": "polar_at_XXX",
+  "expires_in": 864000,
+  "refresh_token": "polar_rt_XXX",
+  "scope": "openid email",
+  "id_token": "ID_TOKEN"
 }
 ```
 
@@ -125,9 +127,11 @@ At this point, the user will be prompted to select one of their organization bef
 
 The rest of the flow remains unchanged. The access token you'll get will be tied to the selected organization.
 
-<BrowserCallout type="NOTE">
-Bear in mind that some endpoints might not support organization access tokens. Typically, user-specific endpoints like `/v1/users/benefit` will not work with organization access tokens.
-</BrowserCallout>
+<Callout type="NOTE">
+  Bear in mind that some endpoints might not support organization access tokens.
+  Typically, user-specific endpoints like `/v1/users/benefit` will not work with
+  organization access tokens.
+</Callout>
 
 ### Public Clients
 

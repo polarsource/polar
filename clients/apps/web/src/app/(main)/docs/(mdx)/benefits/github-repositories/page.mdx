@@ -4,14 +4,24 @@ description: Sell GitHub repository access with Polar
 keywords: github, repository, access, benefits
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Sell GitHub Repository Access
 
-<iframe width="840" height="472" src="https://www.youtube.com/embed/QKx4o0z-SVY?si=ofEnLtl5MCB6dIxJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe
+  width="840"
+  height="472"
+  src="https://www.youtube.com/embed/QKx4o0z-SVY?si=ofEnLtl5MCB6dIxJ"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
 
 With Polar you can seamlessly offer your customers and subscribers automated access
 to private GitHub repositories.
+
 - Fully automated collaborator invites
 - Unlimited repositories (via multiple benefits) from your organization(s)
 - Users get access upon subscribing & removed on cancellation
@@ -25,7 +35,6 @@ to private GitHub repositories.
 - Premium educational materials & code
 - Self-hosting products
 - Courses, starter kits, open core software & more...
-
 
 ## Create GitHub Repository Benefit
 
@@ -41,14 +50,15 @@ App for this benefit across the repositories you want to use it with.
 
 - Click `Connect your GitHub Account`
 
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
 **Why do I need to connect GitHub again and install a separate app?**
 
 This feature requires permission to manage repository collaborators.
 GitHub Apps does not support progressive permission scope requests.
 So instead of requesting this sensitive permission from all users (unnecessarily)
 in our core GitHub Login this feature uses a standalone app instead.
-</BrowserCallout>
+
+</Callout>
 
 ![GitHub Account Picker](./connect.png)
 ![GitHub Permission Grant](./grant.png)
@@ -63,7 +73,7 @@ redirected back to Polar and the benefit form - now connected and updated.
 
 Select the desired repository you want to automate collaborator invites for.
 
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
 **Why can I only connect organization repositories vs. personal ones?**
 
 GitHub does not support granular permissions for collaborators on personal
@@ -73,11 +83,12 @@ personal repositories by default.
 
 Want this still? [Reach out to us](/docs/support) and we can enable it.
 
-</BrowserCallout>
+</Callout>
 
 **Role**
 
 Select the role you want to grant collaborators.
+
 - **Read (Default & Highly recommended)**
 - Triage
 - Write
@@ -90,12 +101,12 @@ impact of these permissions. Checkout the [GitHub
 documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)
 for reference.
 
-<BrowserCallout type="CAUTION">
+<Callout type="CAUTION">
 **Additional Costs for Paid GitHub Organizations**
 
 GitHub treats collaborators as a seat and they will incurr charges accordingly to your
 billing unless you're using a free GitHub organization plan. So make sure to
 confirm you're on a free plan OR charge sufficiently to offset the costs you'll
 need to pay to GitHub.
-</BrowserCallout>
 
+</Callout>

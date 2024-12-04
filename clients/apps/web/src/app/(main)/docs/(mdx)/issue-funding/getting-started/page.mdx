@@ -4,7 +4,7 @@ description: Learn how to get started with issue funding
 keywords: issue funding, getting started
 ---
 
-import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import Callout from '@/components/Markdown/Callout'
 
 # Prerequisite
 
@@ -61,8 +61,7 @@ with using rewards to distribute it across your contributors. Just like [tRPC](h
   safety, we show how many issues would be updated and require you to
   explicitly confirm & trigger this action.
 
-
-<BrowserCallout type="NOTE">
+<Callout type="NOTE">
 #### How GitHub issue ordering is affected by multiple updates
 Since we update the issues to embed the Polar Badge the issues will get an
 updated `modified_at` timestamp.
@@ -74,8 +73,8 @@ However, when & if you select to badge all existing - open - issues, we do
 so in a batch and in reverse chronological `modified_at` order. So that even
 though we update them we do so in a way that should retain their previous order.
 We cannot promise, however, that it will guaranteed.
-</BrowserCallout>
 
+</Callout>
 
 ## Next Step
 

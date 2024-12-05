@@ -3,7 +3,7 @@ import pytest_asyncio
 
 from polar.custom_field.schemas import CustomFieldUpdateText
 from polar.custom_field.service import custom_field as custom_field_service
-from polar.models import Order, Organization, Product, User
+from polar.models import Customer, Order, Organization, Product
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -24,14 +24,17 @@ async def text_field(
 
 @pytest_asyncio.fixture
 async def order_text_field_data(
-    save_fixture: SaveFixture, product: Product, user: User, text_field: CustomFieldText
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+    text_field: CustomFieldText,
 ) -> Order:
     custom_field_data = {"foo": "bar"}
     custom_field_data[text_field.slug] = "text1"
     return await create_order(
         save_fixture,
         product=product,
-        user=user,
+        customer=customer,
         custom_field_data=custom_field_data,
     )
 

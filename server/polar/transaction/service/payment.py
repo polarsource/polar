@@ -7,7 +7,7 @@ from polar.customer.service import customer as customer_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Pledge, Transaction
+from polar.models import Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
@@ -86,6 +86,7 @@ class PaymentTransactionService(BaseTransactionService):
                 pledge_invoice = True
 
         # Try to link with a Pledge
+        payment_user: User | None = None
         if pledge_invoice or charge.metadata.get("type") == ProductType.pledge:
             assert charge.payment_intent is not None
             payment_intent = get_expandable_id(charge.payment_intent)
@@ -97,7 +98,7 @@ class PaymentTransactionService(BaseTransactionService):
             # link from the pledge data. Happens for anonymous pledges.
             if payment_customer is None and payment_organization is None:
                 await session.refresh(pledge, {"user", "by_organization"})
-                payment_customer = None  # TODO: Pledge customers?
+                payment_user = pledge.user
                 payment_organization = pledge.by_organization
 
         risk = getattr(charge, "outcome", {})
@@ -114,6 +115,7 @@ class PaymentTransactionService(BaseTransactionService):
             customer_id=customer_id,
             payment_customer=payment_customer,
             payment_organization=payment_organization,
+            payment_user=payment_user,
             charge_id=charge.id,
             pledge=pledge,
             risk_level=risk.get("risk_level"),

@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING
+import dataclasses
+import time
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -10,6 +12,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.address import Address, AddressType
@@ -19,6 +22,21 @@ from polar.kit.tax import TaxID, TaxIDType
 
 if TYPE_CHECKING:
     from .organization import Organization
+
+
+@dataclasses.dataclass
+class CustomerOAuthAccount:
+    access_token: str
+    account_id: str
+    account_username: str | None = None
+    expires_at: int | None = None
+    refresh_token: str | None = None
+    refresh_token_expires_at: int | None = None
+
+    def is_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        return time.time() > self.expires_at
 
 
 class Customer(MetadataMixin, RecordModel):
@@ -45,6 +63,10 @@ class Customer(MetadataMixin, RecordModel):
     )
     tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
 
+    _oauth_accounts: Mapped[dict[str, dict[str, Any]]] = mapped_column(
+        "oauth_accounts", JSONB, nullable=False, default=dict
+    )
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
@@ -54,3 +76,18 @@ class Customer(MetadataMixin, RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    def get_oauth_account(self, account_key: str) -> CustomerOAuthAccount | None:
+        oauth_account_data = self._oauth_accounts.get(account_key)
+        if oauth_account_data is None:
+            return None
+
+        return CustomerOAuthAccount(**oauth_account_data)
+
+    def set_oauth_account(
+        self, account_key: str, oauth_account: CustomerOAuthAccount
+    ) -> None:
+        self._oauth_accounts[account_key] = dataclasses.asdict(oauth_account)
+
+    def remove_oauth_account(self, account_key: str) -> None:
+        self._oauth_accounts.pop(account_key, None)

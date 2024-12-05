@@ -4,9 +4,6 @@ from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.models import Benefit, Customer, Organization, User
 from polar.models.benefit import BenefitProperties
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationContextualPayload,
-)
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 
@@ -46,27 +43,12 @@ class BenefitRetriableError(BenefitServiceError):
         super().__init__(message)
 
 
-class BenefitPreconditionError(BenefitServiceError):
+class BenefitActionRequiredError(BenefitServiceError):
     """
-    Some conditions are missing to grant the benefit.
+    An action is required from the customer before granting the benefit.
 
-    It accepts a payload schema.
-    When set, a notification will be sent to the backer to explain them what happened.
+    Typically, we need the customer to connect an external OAuth account.
     """
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        payload: BenefitPreconditionErrorNotificationContextualPayload | None = None,
-    ) -> None:
-        """
-        Args:
-            message: The plain error message.
-            payload: The payload to build the notification.
-        """
-        self.payload = payload
-        super().__init__(message)
 
 
 B = TypeVar("B", bound=Benefit, contravariant=True)
@@ -122,7 +104,6 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
         Raises:
             BenefitRetriableError: An temporary error occured,
             we should be able to retry later.
-            BenefitPreconditionError: Some conditions are missing to grant the benefit.
         """
         ...
 

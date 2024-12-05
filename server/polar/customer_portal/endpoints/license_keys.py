@@ -2,7 +2,7 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitID
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -48,7 +48,7 @@ ActivationNotPermitted = {
     },
 )
 async def list(
-    auth_subject: auth.UserLicenseKeysRead,
+    auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
@@ -58,9 +58,9 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[LicenseKeyRead]:
-    results, count = await license_key_service.get_user_list(
+    results, count = await license_key_service.get_customer_list(
         session,
-        user=auth_subject.subject,
+        auth_subject,
         organization_ids=organization_id,
         benefit_id=benefit_id,
         pagination=pagination,
@@ -77,28 +77,21 @@ async def list(
     "/{id}",
     summary="Get License Key",
     response_model=LicenseKeyWithActivations,
-    responses={
-        401: UnauthorizedResponse,
-        404: NotFoundResponse,
-    },
+    responses={404: NotFoundResponse},
 )
 async def get(
-    auth_subject: auth.UserLicenseKeysRead,
+    auth_subject: auth.CustomerPortalRead,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyWithActivations:
     """Get a license key."""
-    lk = await license_key_service.get_loaded(session, id)
+    lk = await license_key_service.get_customer_license_key(session, auth_subject, id)
     if not lk:
         raise ResourceNotFound()
 
-    user_id = auth_subject.subject.id
-    if user_id != lk.user_id:
-        raise Unauthorized()
-
     ret = LicenseKeyWithActivations.model_validate(lk)
     activations = lk.benefit.properties.get("activations")
-    if not (activations and activations.get("enable_user_admin")):
+    if not (activations and activations.get("enable_customer_admin")):
         ret.activations = []
 
     return ret

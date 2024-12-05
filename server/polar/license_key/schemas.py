@@ -6,7 +6,10 @@ from pydantic import UUID4, Field
 
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.kit.schemas import Schema
+from polar.kit.address import Address
+from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.tax import TaxID
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.benefit import (
     BenefitLicenseKeyActivationProperties,
@@ -39,7 +42,7 @@ class LicenseKeyValidate(Schema):
     organization_id: UUID4
     activation_id: UUID4 | None = None
     benefit_id: BenefitID | None = None
-    user_id: UUID4 | None = None
+    customer_id: UUID4 | None = None
     increment_usage: int | None = None
     conditions: dict[str, Any] = {}
 
@@ -58,18 +61,26 @@ class LicenseKeyDeactivate(Schema):
     activation_id: UUID4
 
 
-class LicenseKeyUser(Schema):
-    id: UUID4
-    public_name: str
+class LicenseKeyCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
     email: str
-    avatar_url: str | None
+    email_verified: bool
+    name: str | None
+    billing_address: Address | None
+    tax_id: TaxID | None
+    organization_id: UUID4
 
 
 class LicenseKeyRead(Schema):
     id: UUID4
     organization_id: UUID4
-    user_id: UUID4
-    user: LicenseKeyUser
+    user_id: UUID4 = Field(
+        validation_alias="customer_id", deprecated="Use `customer_id`."
+    )
+    customer_id: UUID4
+    user: LicenseKeyCustomer = Field(
+        validation_alias="customer", deprecated="Use `customer`."
+    )
+    customer: LicenseKeyCustomer
     benefit_id: BenefitID
     key: str
     display_key: str

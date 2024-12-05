@@ -6,28 +6,28 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_customer, is_user
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Order, Organization, Product, ProductPrice, User
+from polar.models import Customer, Order, Organization, Product, ProductPrice, User
 from polar.models.product_price import ProductPriceType
 
 
-class UserOrderError(PolarError): ...
+class CustomerOrderError(PolarError): ...
 
 
-class InvoiceNotAvailable(UserOrderError):
+class InvoiceNotAvailable(CustomerOrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
         message = "The invoice is not available for this order."
         super().__init__(message, 404)
 
 
-class UserOrderSortProperty(StrEnum):
+class CustomerOrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
     organization = "organization"
@@ -35,11 +35,11 @@ class UserOrderSortProperty(StrEnum):
     subscription = "subscription"
 
 
-class UserOrderService(ResourceServiceReader[Order]):
+class CustomerOrderService(ResourceServiceReader[Order]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Customer],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -47,8 +47,8 @@ class UserOrderService(ResourceServiceReader[Order]):
         subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[UserOrderSortProperty]] = [
-            (UserOrderSortProperty.created_at, True)
+        sorting: list[Sorting[CustomerOrderSortProperty]] = [
+            (CustomerOrderSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Order], int]:
         statement = self._get_readable_order_statement(auth_subject)
@@ -91,15 +91,15 @@ class UserOrderService(ResourceServiceReader[Order]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == UserOrderSortProperty.created_at:
+            if criterion == CustomerOrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion == UserOrderSortProperty.amount:
+            elif criterion == CustomerOrderSortProperty.amount:
                 order_by_clauses.append(clause_function(Order.amount))
-            elif criterion == UserOrderSortProperty.organization:
+            elif criterion == CustomerOrderSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
-            elif criterion == UserOrderSortProperty.product:
+            elif criterion == CustomerOrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
-            elif criterion == UserOrderSortProperty.subscription:
+            elif criterion == CustomerOrderSortProperty.subscription:
                 order_by_clauses.append(clause_function(Order.subscription_id))
         statement = statement.order_by(*order_by_clauses)
 
@@ -108,7 +108,7 @@ class UserOrderService(ResourceServiceReader[Order]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Customer],
         id: uuid.UUID,
     ) -> Order | None:
         statement = (
@@ -139,15 +139,22 @@ class UserOrderService(ResourceServiceReader[Order]):
         return stripe_invoice.hosted_invoice_url
 
     def _get_readable_order_statement(
-        self, auth_subject: AuthSubject[User]
+        self, auth_subject: AuthSubject[User | Customer]
     ) -> Select[tuple[Order]]:
         statement = (
             select(Order)
-            .where(Order.deleted_at.is_(None), Order.user_id == auth_subject.subject.id)
+            .where(Order.deleted_at.is_(None))
             .join(Order.product)
             .options(contains_eager(Order.product))
         )
+
+        if is_user(auth_subject):
+            raise NotImplementedError("TODO")
+        elif is_customer(auth_subject):
+            customer = auth_subject.subject
+            statement = statement.where(Order.customer_id == customer.id)
+
         return statement
 
 
-user_order = UserOrderService(Order)
+customer_order = CustomerOrderService(Order)

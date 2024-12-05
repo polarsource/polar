@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_customer, is_user
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
@@ -15,6 +15,7 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
+    Customer,
     Organization,
     Product,
     ProductPrice,
@@ -30,13 +31,13 @@ from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.subscription.service import subscription as subscription_service
 
-from ..schemas.subscription import UserSubscriptionUpdate
+from ..schemas.subscription import CustomerSubscriptionUpdate
 
 
-class UserSubscriptionError(PolarError): ...
+class CustomerSubscriptionError(PolarError): ...
 
 
-class AlreadyCanceledSubscription(UserSubscriptionError):
+class AlreadyCanceledSubscription(CustomerSubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = (
@@ -45,14 +46,14 @@ class AlreadyCanceledSubscription(UserSubscriptionError):
         super().__init__(message, 403)
 
 
-class SubscriptionNotActiveOnStripe(UserSubscriptionError):
+class SubscriptionNotActiveOnStripe(CustomerSubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = "This subscription is not active on Stripe."
         super().__init__(message, 400)
 
 
-class UserSubscriptionSortProperty(StrEnum):
+class CustomerSubscriptionSortProperty(StrEnum):
     started_at = "started_at"
     amount = "amount"
     status = "status"
@@ -60,19 +61,19 @@ class UserSubscriptionSortProperty(StrEnum):
     product = "product"
 
 
-class UserSubscriptionService(ResourceServiceReader[Subscription]):
+class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Customer],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[UserSubscriptionSortProperty]] = [
-            (UserSubscriptionSortProperty.started_at, True)
+        sorting: list[Sorting[CustomerSubscriptionSortProperty]] = [
+            (CustomerSubscriptionSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:
         statement = self._get_readable_subscription_statement(auth_subject).where(
@@ -120,17 +121,17 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == UserSubscriptionSortProperty.started_at:
+            if criterion == CustomerSubscriptionSortProperty.started_at:
                 order_by_clauses.append(clause_function(Subscription.started_at))
-            elif criterion == UserSubscriptionSortProperty.amount:
+            elif criterion == CustomerSubscriptionSortProperty.amount:
                 order_by_clauses.append(
                     nulls_first(clause_function(Subscription.amount))
                 )
-            elif criterion == UserSubscriptionSortProperty.status:
+            elif criterion == CustomerSubscriptionSortProperty.status:
                 order_by_clauses.append(clause_function(Subscription.status))
-            elif criterion == UserSubscriptionSortProperty.organization:
+            elif criterion == CustomerSubscriptionSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
-            elif criterion == UserSubscriptionSortProperty.product:
+            elif criterion == CustomerSubscriptionSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 
@@ -139,7 +140,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Customer],
         id: uuid.UUID,
     ) -> Subscription | None:
         statement = (
@@ -162,7 +163,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         *,
         subscription: Subscription,
-        subscription_update: UserSubscriptionUpdate,
+        subscription_update: CustomerSubscriptionUpdate,
     ) -> Subscription:
         price = await product_price_service.get_by_id(
             session, subscription_update.product_price_id
@@ -299,13 +300,18 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         return subscription
 
     def _get_readable_subscription_statement(
-        self, auth_subject: AuthSubject[User]
+        self, auth_subject: AuthSubject[User | Customer]
     ) -> Select[tuple[Subscription]]:
-        statement = select(Subscription).where(
-            Subscription.deleted_at.is_(None),
-            Subscription.user_id == auth_subject.subject.id,
-        )
+        statement = select(Subscription).where(Subscription.deleted_at.is_(None))
+
+        if is_user(auth_subject):
+            raise NotImplementedError("TODO")
+        elif is_customer(auth_subject):
+            statement = statement.where(
+                Subscription.customer_id == auth_subject.subject.id
+            )
+
         return statement
 
 
-user_subscription = UserSubscriptionService(Subscription)
+customer_subscription = CustomerSubscriptionService(Subscription)

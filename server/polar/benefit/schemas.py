@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -26,7 +25,6 @@ from polar.kit.schemas import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
-    BenefitGrantLicenseKeysProperties,
     BenefitGrantProperties,
 )
 from polar.organization.schemas import Organization, OrganizationID
@@ -277,7 +275,7 @@ class BenefitLicenseKeyExpirationProperties(Schema):
 
 class BenefitLicenseKeyActivationProperties(Schema):
     limit: int = Field(gt=0, le=50)
-    enable_user_admin: bool
+    enable_customer_admin: bool
 
 
 class BenefitLicenseKeysCreateProperties(Schema):
@@ -592,11 +590,7 @@ class BenefitGrantWebhook(BenefitGrant):
 # BenefitSubscriber
 
 
-class BenefitGrantSubscriber(BenefitGrantBase): ...
-
-
 class BenefitSubscriberBase(BenefitBase):
-    grants: Sequence[BenefitGrantSubscriber]
     organization: Organization
 
 
@@ -617,14 +611,9 @@ class BenefitGrantAdsSubscriberProperties(Schema):
     )
 
 
-class BenefitGrantAds(BenefitGrantSubscriber):
-    properties: BenefitGrantAdsSubscriberProperties
-
-
 class BenefitAdsSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.ads]
     properties: BenefitAdsProperties
-    grants: Sequence[BenefitGrantAds]
 
 
 class BenefitDiscordSubscriber(BenefitSubscriberBase):
@@ -642,14 +631,9 @@ class BenefitDownloadablesSubscriber(BenefitSubscriberBase):
     properties: BenefitDownloadablesSubscriberProperties
 
 
-class BenefitGrantLicenseKeys(BenefitGrantSubscriber):
-    properties: BenefitGrantLicenseKeysProperties
-
-
 class BenefitLicenseKeysSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.license_keys]
     properties: BenefitLicenseKeysSubscriberProperties
-    grants: Sequence[BenefitGrantLicenseKeys]
 
 
 # Properties that are available to subscribers only

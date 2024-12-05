@@ -17,26 +17,24 @@ from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.order import UserOrder, UserOrderInvoice
-from ..service.order import UserOrderSortProperty
-from ..service.order import user_order as user_order_service
+from ..schemas.order import CustomerOrder, CustomerOrderInvoice
+from ..service.order import CustomerOrderSortProperty
+from ..service.order import customer_order as customer_order_service
 
-router = APIRouter(
-    prefix="/orders", tags=["orders", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 
 ListSorting = Annotated[
-    list[Sorting[UserOrderSortProperty]],
-    Depends(SortingGetter(UserOrderSortProperty, ["-created_at"])),
+    list[Sorting[CustomerOrderSortProperty]],
+    Depends(SortingGetter(CustomerOrderSortProperty, ["-created_at"])),
 ]
 
 
-@router.get("/", summary="List Orders", response_model=ListResource[UserOrder])
+@router.get("/", summary="List Orders", response_model=ListResource[CustomerOrder])
 async def list(
-    auth_subject: auth.UserOrdersRead,
+    auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -62,9 +60,9 @@ async def list(
         None, description="Search by product or organization name."
     ),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[UserOrder]:
-    """List my orders."""
-    results, count = await user_order_service.list(
+) -> ListResource[CustomerOrder]:
+    """List orders of the authenticated customer or user."""
+    results, count = await customer_order_service.list(
         session,
         auth_subject,
         organization_id=organization_id,
@@ -77,7 +75,7 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [UserOrder.model_validate(result) for result in results],
+        [CustomerOrder.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -86,16 +84,16 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Order",
-    response_model=UserOrder,
+    response_model=CustomerOrder,
     responses={404: OrderNotFound},
 )
 async def get(
     id: OrderID,
-    auth_subject: auth.UserOrdersRead,
+    auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
-    """Get an order by ID."""
-    order = await user_order_service.get_by_id(session, auth_subject, id)
+    """Get an order by ID for the authenticated customer or user."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()
@@ -106,20 +104,20 @@ async def get(
 @router.get(
     "/{id}/invoice",
     summary="Get Order Invoice",
-    response_model=UserOrderInvoice,
+    response_model=CustomerOrderInvoice,
     responses={404: OrderNotFound},
 )
 async def invoice(
     id: OrderID,
-    auth_subject: auth.UserOrdersRead,
+    auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
-) -> UserOrderInvoice:
+) -> CustomerOrderInvoice:
     """Get an order's invoice data."""
-    order = await user_order_service.get_by_id(session, auth_subject, id)
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()
 
-    invoice_url = await user_order_service.get_order_invoice_url(order)
+    invoice_url = await customer_order_service.get_order_invoice_url(order)
 
-    return UserOrderInvoice(url=invoice_url)
+    return CustomerOrderInvoice(url=invoice_url)

@@ -41,7 +41,7 @@ class BenefitLicenseKeysService(
         if update and "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
-        key = await license_key_service.user_grant(
+        key = await license_key_service.customer_grant(
             self.session,
             customer=customer,
             benefit=benefit,
@@ -70,7 +70,7 @@ class BenefitLicenseKeysService(
             )
             return grant_properties
 
-        await license_key_service.user_revoke(
+        await license_key_service.customer_revoke(
             self.session,
             customer=customer,
             benefit=benefit,

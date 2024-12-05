@@ -12,7 +12,7 @@ from polar.benefit.schemas import (
 )
 from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
-from polar.models import Organization, Product, User
+from polar.models import Customer, Organization, Product
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
@@ -21,14 +21,14 @@ from tests.fixtures.license_key import TestLicenseKey
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestUserLicenseKeyEndpoints:
+class TestCustomerLicenseKeyEndpoints:
     async def test_validate(
         self,
         session: AsyncSession,
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -36,7 +36,7 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -48,7 +48,7 @@ class TestUserLicenseKeyEndpoints:
         assert lk
 
         key_only_response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -59,7 +59,7 @@ class TestUserLicenseKeyEndpoints:
         assert data.get("validations") == 1
 
         scope_benefit_404_response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -69,7 +69,7 @@ class TestUserLicenseKeyEndpoints:
         assert scope_benefit_404_response.status_code == 404
 
         scope_benefit_response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -81,12 +81,12 @@ class TestUserLicenseKeyEndpoints:
         assert data.get("validations") == 2
 
         full_response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
                 "benefit_id": str(lk.benefit_id),
-                "user_id": str(lk.user_id),
+                "customer_id": str(lk.customer_id),
             },
         )
         assert full_response.status_code == 200
@@ -101,7 +101,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -110,7 +110,7 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -122,7 +122,7 @@ class TestUserLicenseKeyEndpoints:
         assert lk
 
         response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -131,7 +131,7 @@ class TestUserLicenseKeyEndpoints:
         assert response.status_code == 200
         with freeze_time(now + relativedelta(years=10)):
             response = await client.post(
-                "/v1/users/license-keys/validate",
+                "/v1/customer-portal/license-keys/validate",
                 json={
                     "key": lk.key,
                     "organization_id": str(organization.id),
@@ -143,7 +143,7 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -156,7 +156,7 @@ class TestUserLicenseKeyEndpoints:
         assert day_lk
 
         response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": day_lk.key,
                 "organization_id": str(organization.id),
@@ -165,7 +165,7 @@ class TestUserLicenseKeyEndpoints:
         assert response.status_code == 200
         with freeze_time(now + relativedelta(days=1, minutes=5)):
             response = await client.post(
-                "/v1/users/license-keys/validate",
+                "/v1/customer-portal/license-keys/validate",
                 json={
                     "key": day_lk.key,
                     "organization_id": str(organization.id),
@@ -177,7 +177,7 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -190,7 +190,7 @@ class TestUserLicenseKeyEndpoints:
         assert month_lk
 
         response = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": month_lk.key,
                 "organization_id": str(organization.id),
@@ -200,7 +200,7 @@ class TestUserLicenseKeyEndpoints:
 
         with freeze_time(now + relativedelta(days=28, minutes=5)):
             response = await client.post(
-                "/v1/users/license-keys/validate",
+                "/v1/customer-portal/license-keys/validate",
                 json={
                     "key": month_lk.key,
                     "organization_id": str(organization.id),
@@ -210,7 +210,7 @@ class TestUserLicenseKeyEndpoints:
 
         with freeze_time(now + relativedelta(months=1, minutes=5)):
             response = await client.post(
-                "/v1/users/license-keys/validate",
+                "/v1/customer-portal/license-keys/validate",
                 json={
                     "key": month_lk.key,
                     "organization_id": str(organization.id),
@@ -224,7 +224,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -232,7 +232,7 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -244,7 +244,7 @@ class TestUserLicenseKeyEndpoints:
         assert lk
 
         increment = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -257,7 +257,7 @@ class TestUserLicenseKeyEndpoints:
         assert data.get("usage") == 1
 
         increment = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -270,7 +270,7 @@ class TestUserLicenseKeyEndpoints:
         assert data.get("usage") == 9
 
         increment = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -289,7 +289,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -297,13 +297,13 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 activations=BenefitLicenseKeyActivationProperties(
-                    limit=1, enable_user_admin=True
+                    limit=1, enable_customer_admin=True
                 ),
             ),
         )
@@ -312,7 +312,7 @@ class TestUserLicenseKeyEndpoints:
         assert lk
 
         activate = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -325,7 +325,7 @@ class TestUserLicenseKeyEndpoints:
 
         random_id = generate_uuid()
         activation_404 = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -335,7 +335,7 @@ class TestUserLicenseKeyEndpoints:
         assert activation_404.status_code == 404
 
         validate_activation = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -353,7 +353,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -361,13 +361,13 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 activations=BenefitLicenseKeyActivationProperties(
-                    limit=1, enable_user_admin=True
+                    limit=1, enable_customer_admin=True
                 ),
             ),
         )
@@ -378,7 +378,7 @@ class TestUserLicenseKeyEndpoints:
         conditions = dict(ip="127.0.0.1", fingerprint="sdfsd23:uuojj8:sdfsdf")
 
         activate = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -391,7 +391,7 @@ class TestUserLicenseKeyEndpoints:
         activation_id = data["id"]
 
         activation_404 = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -401,7 +401,7 @@ class TestUserLicenseKeyEndpoints:
         assert activation_404.status_code == 404
 
         validate_activation = await client.post(
-            "/v1/users/license-keys/validate",
+            "/v1/customer-portal/license-keys/validate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -420,7 +420,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -428,13 +428,13 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 activations=BenefitLicenseKeyActivationProperties(
-                    limit=1, enable_user_admin=True
+                    limit=1, enable_customer_admin=True
                 ),
             ),
         )
@@ -445,7 +445,7 @@ class TestUserLicenseKeyEndpoints:
         label = "test"
         metadata = {"test": "test"}
         response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -465,7 +465,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -473,7 +473,7 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -485,7 +485,7 @@ class TestUserLicenseKeyEndpoints:
         assert lk
 
         response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -501,7 +501,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -509,13 +509,13 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 activations=BenefitLicenseKeyActivationProperties(
-                    limit=1, enable_user_admin=True
+                    limit=1, enable_customer_admin=True
                 ),
             ),
         )
@@ -526,7 +526,7 @@ class TestUserLicenseKeyEndpoints:
         label = "test"
         metadata = {"test": "test"}
         response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -538,7 +538,7 @@ class TestUserLicenseKeyEndpoints:
         data = response.json()
 
         second_response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -554,7 +554,7 @@ class TestUserLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -562,13 +562,13 @@ class TestUserLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 activations=BenefitLicenseKeyActivationProperties(
-                    limit=1, enable_user_admin=True
+                    limit=1, enable_customer_admin=True
                 ),
             ),
         )
@@ -577,7 +577,7 @@ class TestUserLicenseKeyEndpoints:
         assert lk
 
         response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -590,7 +590,7 @@ class TestUserLicenseKeyEndpoints:
         activation_id = data["id"]
 
         response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -601,7 +601,7 @@ class TestUserLicenseKeyEndpoints:
         assert response.status_code == 403
 
         response = await client.post(
-            "/v1/users/license-keys/deactivate",
+            "/v1/customer-portal/license-keys/deactivate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -611,7 +611,7 @@ class TestUserLicenseKeyEndpoints:
         assert response.status_code == 204
 
         response = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),

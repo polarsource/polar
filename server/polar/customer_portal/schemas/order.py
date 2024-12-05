@@ -12,35 +12,38 @@ from polar.product.schemas import (
 from polar.subscription.schemas import SubscriptionBase
 
 
-class UserOrderBase(TimestampedSchema):
+class CustomerOrderBase(TimestampedSchema):
     id: UUID4
     amount: int
     tax_amount: int
     currency: str
 
-    user_id: UUID4
+    customer_id: UUID4
+    user_id: UUID4 = Field(
+        validation_alias="customer_id", deprecated="Use `customer_id`."
+    )
     product_id: UUID4
     product_price_id: UUID4
     subscription_id: UUID4 | None
 
 
-class UserOrderProduct(ProductBase):
+class CustomerOrderProduct(ProductBase):
     prices: ProductPriceList
     benefits: BenefitPublicList
     medias: ProductMediaList
     organization: Organization
 
 
-class UserOrderSubscription(SubscriptionBase): ...
+class CustomerOrderSubscription(SubscriptionBase): ...
 
 
-class UserOrder(UserOrderBase):
-    product: UserOrderProduct
+class CustomerOrder(CustomerOrderBase):
+    product: CustomerOrderProduct
     product_price: ProductPrice
-    subscription: UserOrderSubscription | None
+    subscription: CustomerOrderSubscription | None
 
 
-class UserOrderInvoice(Schema):
+class CustomerOrderInvoice(Schema):
     """Order's invoice data."""
 
     url: str = Field(..., description="The URL to the invoice.")

@@ -1548,15 +1548,19 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         customer = checkout.customer
         if customer is None:
             assert checkout.customer_email is not None
-            customer = Customer(
-                email=checkout.customer_email,
-                email_verified=False,
-                stripe_customer_id=None,
-                name=checkout.customer_name,
-                billing_address=checkout.customer_billing_address,
-                tax_id=checkout.customer_tax_id,
-                organization=checkout.organization,
+            customer = await customer_service.get_by_email_and_organization(
+                session, checkout.customer_email, checkout.organization
             )
+            if customer is None:
+                customer = Customer(
+                    email=checkout.customer_email,
+                    email_verified=False,
+                    stripe_customer_id=None,
+                    name=checkout.customer_name,
+                    billing_address=checkout.customer_billing_address,
+                    tax_id=checkout.customer_tax_id,
+                    organization=checkout.organization,
+                )
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:

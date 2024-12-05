@@ -1,5 +1,6 @@
 import time
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -101,6 +102,21 @@ def construct_stripe_invoice(
         },
         None,
     )
+
+
+@pytest.fixture(autouse=True)
+def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
+    mock = MagicMock(spec=StripeService)
+    mocker.patch("polar.order.service.stripe_service", new=mock)
+
+    mock.get_customer.return_value = SimpleNamespace(
+        id=customer.stripe_customer_id,
+        email=customer.email,
+        name=customer.name,
+        address=customer.billing_address,
+    )
+
+    return mock
 
 
 @pytest.fixture
@@ -837,6 +853,7 @@ class TestCreateOrderFromStripe:
     async def test_charge_from_metadata(
         self,
         enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -845,10 +862,10 @@ class TestCreateOrderFromStripe:
         customer: Customer,
         event_creation_time: tuple[datetime, int],
     ) -> None:
-        mock = MagicMock(spec=StripeService)
-        mocker.patch("polar.order.service.stripe_service", new=mock)
-        mock.get_payment_intent.return_value = stripe_lib.PaymentIntent.construct_from(
-            {"latest_charge": "CHARGE_ID"}, key=None
+        stripe_service_mock.get_payment_intent.return_value = (
+            stripe_lib.PaymentIntent.construct_from(
+                {"latest_charge": "CHARGE_ID"}, key=None
+            )
         )
 
         created_datetime, created_unix_timestamp = event_creation_time
@@ -919,17 +936,15 @@ class TestCreateOrderFromStripe:
     async def test_no_billing_address(
         self,
         customer_address: dict[str, Any] | None,
+        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
         session: AsyncSession,
         product: Product,
-        customer: Customer,
         organization_account: Account,
         event_creation_time: tuple[datetime, int],
     ) -> None:
-        mock = MagicMock(spec=StripeService)
-        mocker.patch("polar.order.service.stripe_service", new=mock)
-        mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+        stripe_service_mock.get_charge.return_value = stripe_lib.Charge.construct_from(
             {"id": "CHARGE_ID", "payment_method_details": None},
             key=None,
         )
@@ -975,16 +990,14 @@ class TestCreateOrderFromStripe:
     async def test_billing_address_from_payment_method(
         self,
         mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
-        customer: Customer,
         organization_account: Account,
         event_creation_time: tuple[datetime, int],
     ) -> None:
-        mock = MagicMock(spec=StripeService)
-        mocker.patch("polar.order.service.stripe_service", new=mock)
-        mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+        stripe_service_mock.get_charge.return_value = stripe_lib.Charge.construct_from(
             {
                 "id": "CHARGE_ID",
                 "payment_method_details": {

@@ -1,7 +1,15 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Uuid
+from sqlalchemy import (
+    Boolean,
+    Column,
+    ForeignKey,
+    Index,
+    String,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.address import Address, AddressType
@@ -15,6 +23,15 @@ if TYPE_CHECKING:
 
 class Customer(MetadataMixin, RecordModel):
     __tablename__ = "customers"
+    __table_args__ = (
+        Index("ix_customers_email_case_insensitive", func.lower(Column("email"))),
+        Index(
+            "ix_customers_organization_id_email_case_insensitive",
+            "organization_id",
+            func.lower(Column("email")),
+            unique=True,
+        ),
+    )
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

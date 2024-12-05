@@ -459,15 +459,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Take customer from existing subscription, or retrieve it from Stripe Customer ID
         if subscription.customer is None:
-            stripe_customer_id = get_expandable_id(stripe_subscription.customer)
-            customer = await customer_service.get_by_stripe_customer_id(
-                session, stripe_customer_id
+            stripe_customer = await stripe_service.get_customer(
+                get_expandable_id(stripe_subscription.customer)
             )
-            if customer is None:
-                stripe_customer = await stripe_service.get_customer(stripe_customer_id)
-                customer = await customer_service.create_from_stripe_customer(
-                    session, stripe_customer, subscription_tier_org
-                )
+            customer = await customer_service.get_or_create_from_stripe_customer(
+                session, stripe_customer, subscription_tier_org
+            )
             subscription.customer = customer
 
         session.add(subscription)

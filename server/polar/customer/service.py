@@ -43,7 +43,7 @@ class CustomerService(ResourceServiceReader[Customer]):
                 order_by_clauses.append(clause_function(Customer.created_at))
             elif criterion == CustomerSortProperty.email:
                 order_by_clauses.append(clause_function(Customer.email))
-            elif criterion == CustomerSortProperty.name:
+            elif criterion == CustomerSortProperty.customer_name:
                 order_by_clauses.append(clause_function(Customer.name))
         statement = statement.order_by(*order_by_clauses)
 

@@ -12,7 +12,7 @@ from polar.benefit.schemas import (
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
-from polar.models import Organization, Product, User, UserOrganization
+from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
@@ -42,15 +42,15 @@ class TestLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
         organization: Organization,
         product: Product,
+        customer: Customer,
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -74,16 +74,16 @@ class TestLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
         user_organization: UserOrganization,
         organization: Organization,
         product: Product,
+        customer: Customer,
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -110,16 +110,16 @@ class TestLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
         user_organization: UserOrganization,
         organization: Organization,
         product: Product,
+        customer: Customer,
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -159,16 +159,16 @@ class TestLicenseKeyEndpoints:
         client: AsyncClient,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User | Organization],
-        user: User,
         user_organization: UserOrganization,
         organization: Organization,
         product: Product,
+        customer: Customer,
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -179,7 +179,7 @@ class TestLicenseKeyEndpoints:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
@@ -211,16 +211,16 @@ class TestLicenseKeyEndpoints:
         redis: Redis,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        user: User,
         user_organization: UserOrganization,
         organization: Organization,
         product: Product,
+        customer: Customer,
     ) -> None:
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitLicenseKeysCreateProperties(

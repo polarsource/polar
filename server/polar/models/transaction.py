@@ -15,6 +15,7 @@ if TYPE_CHECKING:
         Order,
         Organization,
         Pledge,
+        User,
     )
 
 
@@ -286,6 +287,22 @@ class Transaction(RecordModel):
     @declared_attr
     def payment_organization(cls) -> Mapped["Organization | None"]:
         return relationship("Organization", lazy="raise")
+
+    payment_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """
+    ID of the `User` who made the payment.
+
+    Used for pledges. Orders and subscriptions should use `payment_customer_id`.
+    """
+
+    @declared_attr
+    def payment_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
 
     pledge_id: Mapped[UUID | None] = mapped_column(
         Uuid,

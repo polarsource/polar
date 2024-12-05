@@ -35,6 +35,7 @@ async def create_transaction(
     account: Account | None = None,
     payment_customer: Customer | None = None,
     payment_organization: Organization | None = None,
+    payment_user: User | None = None,
     type: TransactionType = TransactionType.balance,
     amount: int = 1000,
     account_currency: str = "eur",
@@ -59,6 +60,7 @@ async def create_transaction(
         account=account,
         payment_customer=payment_customer,
         payment_organization=payment_organization,
+        payment_user=payment_user,
         pledge=pledge,
         issue_reward=issue_reward,
         order=order,
@@ -193,12 +195,10 @@ async def account_transactions(
 
 
 @pytest_asyncio.fixture
-async def user_transactions(
-    save_fixture: SaveFixture, customer: Customer
-) -> list[Transaction]:
+async def user_transactions(save_fixture: SaveFixture, user: User) -> list[Transaction]:
     return [
         await create_transaction(
-            save_fixture, type=TransactionType.payment, customer=customer
+            save_fixture, type=TransactionType.payment, payment_user=user
         ),
     ]
 

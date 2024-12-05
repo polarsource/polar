@@ -13,7 +13,7 @@ from tests.fixtures.downloadable import TestDownloadable
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestDownloadblesBenefit:
     @pytest.mark.auth
     async def test_grant_one(

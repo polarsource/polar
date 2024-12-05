@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -16,6 +16,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -23,6 +24,10 @@ from polar.kit.db.models import RecordModel
 from polar.kit.schemas import Schema
 
 from .account import Account
+
+if TYPE_CHECKING:
+    from .customer import Customer
+    from .user_customer import UserCustomer
 
 
 class OAuthPlatform(StrEnum):
@@ -109,6 +114,14 @@ class User(RecordModel):
     @declared_attr
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:
         return relationship(OAuthAccount, lazy="joined", back_populates="user")
+
+    @declared_attr
+    def user_customers(cls) -> Mapped[list["UserCustomer"]]:
+        return relationship("UserCustomer", lazy="raise", back_populates="user")
+
+    customers: AssociationProxy[list["Customer"]] = association_proxy(
+        "user_customers", "customer"
+    )
 
     accepted_terms_of_service: Mapped[bool] = mapped_column(
         Boolean,

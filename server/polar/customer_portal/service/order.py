@@ -13,7 +13,15 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Order, Organization, Product, ProductPrice, User
+from polar.models import (
+    Customer,
+    Order,
+    Organization,
+    Product,
+    ProductPrice,
+    User,
+    UserCustomer,
+)
 from polar.models.product_price import ProductPriceType
 
 
@@ -149,7 +157,13 @@ class CustomerOrderService(ResourceServiceReader[Order]):
         )
 
         if is_user(auth_subject):
-            raise NotImplementedError("TODO")
+            statement = statement.where(
+                Order.customer_id.in_(
+                    select(UserCustomer.customer_id).where(
+                        UserCustomer.user_id == auth_subject.subject.id
+                    )
+                )
+            )
         elif is_customer(auth_subject):
             customer = auth_subject.subject
             statement = statement.where(Order.customer_id == customer.id)

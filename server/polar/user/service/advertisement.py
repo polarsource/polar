@@ -6,6 +6,9 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, select, update
 
 from polar.auth.models import AuthSubject
+from polar.customer_portal.service.benefit_grant import (
+    customer_benefit_grant as customer_benefit_grant_service,
+)
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -19,7 +22,6 @@ from ..schemas.advertisement import (
     UserAdvertisementCampaignEnable,
     UserAdvertisementCampaignUpdate,
 )
-from .benefit import user_benefit as user_benefit_service
 
 
 class UserAdvertisementError(PolarError): ...
@@ -111,9 +113,10 @@ class UserAdvertisementService(ResourceServiceReader[AdvertisementCampaign]):
         advertisement_campaign: AdvertisementCampaign,
         advertisement_campaign_enable: UserAdvertisementCampaignEnable,
     ) -> Sequence[BenefitGrant]:
-        benefit = await user_benefit_service.get_by_id(
+        grant = await customer_benefit_grant_service.get_by_id(
             session, auth_subject, advertisement_campaign_enable.benefit_id
         )
+        benefit = grant.benefit
 
         if benefit is None:
             raise PolarRequestValidationError(

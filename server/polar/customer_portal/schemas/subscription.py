@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import UUID4, Field
 
-from polar.kit.schemas import EmailStrDNS, Schema
+from polar.kit.schemas import Schema
 from polar.models.subscription import SubscriptionStatus
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -15,7 +15,7 @@ from polar.product.schemas import (
 from polar.subscription.schemas import SubscriptionBase
 
 
-class UserSubscriptionBase(SubscriptionBase):
+class CustomerSubscriptionBase(SubscriptionBase):
     status: SubscriptionStatus
     current_period_start: datetime
     current_period_end: datetime | None
@@ -23,36 +23,25 @@ class UserSubscriptionBase(SubscriptionBase):
     started_at: datetime | None
     ended_at: datetime | None
 
-    user_id: UUID4
+    customer_id: UUID4
+    user_id: UUID4 = Field(
+        validation_alias="customer_id", deprecated="Use `customer_id`."
+    )
     product_id: UUID4
     price_id: UUID4
 
 
-class UserSubscriptionProduct(ProductBase):
+class CustomerSubscriptionProduct(ProductBase):
     prices: ProductPriceList
     benefits: BenefitPublicList
     medias: ProductMediaList
     organization: Organization
 
 
-class UserSubscription(UserSubscriptionBase):
-    product: UserSubscriptionProduct
+class CustomerSubscription(CustomerSubscriptionBase):
+    product: CustomerSubscriptionProduct
     price: ProductPrice
 
 
-class UserFreeSubscriptionCreate(Schema):
-    product_id: UUID4 = Field(
-        ...,
-        description="ID of the free tier to subscribe to.",
-    )
-    customer_email: EmailStrDNS | None = Field(
-        None,
-        description=(
-            "Email of the customer. "
-            "This field is required if the API is called outside the Polar app."
-        ),
-    )
-
-
-class UserSubscriptionUpdate(Schema):
+class CustomerSubscriptionUpdate(Schema):
     product_price_id: UUID4

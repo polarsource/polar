@@ -4,8 +4,7 @@ import pytest
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject, Subject
 from polar.auth.scope import Scope
-from polar.models import User
-from polar.models.organization import Organization
+from polar.models import Customer, Organization, User
 
 
 class AuthSubjectFixture:
@@ -20,6 +19,7 @@ class AuthSubjectFixture:
             "organization",
             "organization_second",
             "organization_blocked",
+            "customer",
         ] = "user",
         scopes: set[Scope] = {Scope.web_default},
         method: AuthMethod = AuthMethod.COOKIE,
@@ -47,6 +47,7 @@ def auth_subject(
     organization: Organization,
     organization_second: Organization,
     organization_blocked: Organization,
+    customer: Customer,
 ) -> AuthSubject[Subject]:
     """
     This fixture generates an AuthSubject instance used by the `client` fixture
@@ -57,7 +58,7 @@ def auth_subject(
     See `pytest_generate_tests` below for more information.
     """
     auth_subject_fixture: AuthSubjectFixture = request.param
-    subjects_map: dict[str, Anonymous | User | Organization] = {
+    subjects_map: dict[str, Anonymous | Customer | User | Organization] = {
         "anonymous": Anonymous(),
         "user": user,
         "user_second": user_second,
@@ -65,6 +66,7 @@ def auth_subject(
         "organization": organization,
         "organization_second": organization_second,
         "organization_blocked": organization_blocked,
+        "customer": customer,
     }
     return AuthSubject(
         subjects_map[auth_subject_fixture.subject],

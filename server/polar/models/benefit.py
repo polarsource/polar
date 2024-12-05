@@ -83,7 +83,7 @@ class BenefitLicenseKeyExpirationProperties(TypedDict):
 
 class BenefitLicenseKeyActivationProperties(TypedDict):
     limit: int
-    enable_user_admin: bool
+    enable_customer_admin: bool
 
 
 class BenefitLicenseKeysProperties(BenefitProperties):

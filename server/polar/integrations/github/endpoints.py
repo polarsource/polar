@@ -32,7 +32,6 @@ from polar.kit import jwt
 from polar.kit.http import ReturnTo
 from polar.locker import Locker, get_locker
 from polar.models import ExternalOrganization
-from polar.models.benefit import BenefitType
 from polar.openapi import APITag
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
@@ -180,13 +179,6 @@ async def github_callback(
 
     # connect dangling rewards
     await reward_service.connect_by_username(session, user)
-
-    # Make sure potential GitHub benefits are granted
-    enqueue_job(
-        "benefit.precondition_fulfilled",
-        user_id=user.id,
-        benefit_type=BenefitType.github_repository,
-    )
 
     # Event tracking last to ensure business critical data is stored first
     if is_signup:

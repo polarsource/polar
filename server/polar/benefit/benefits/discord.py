@@ -4,62 +4,23 @@ import httpx
 import structlog
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
-from polar.integrations.discord.service import DiscordAccountNotConnected
 from polar.integrations.discord.service import discord_bot as discord_bot_service
-from polar.integrations.discord.service import discord_user as discord_user_service
+from polar.integrations.discord.service import (
+    discord_customer as discord_customer_service,
+)
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.models.benefit_grant import BenefitGrantDiscordProperties
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationContextualPayload,
-)
 
 from .base import (
-    BenefitPreconditionError,
+    BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,
     BenefitServiceProtocol,
 )
 
 log: Logger = structlog.get_logger()
-
-precondition_error_subject_template = (
-    "Action required: get access to {organization_name}'s Discord server"
-)
-precondition_error_body_template = """
-<h1>Hi,</h1>
-<p>You just subscribed to <strong>{scope_name}</strong> from {organization_name}. Thank you!</p>
-<p>As you may know, it includes an access to a private Discord server. To grant you access, we need you to link your Discord account on Polar.</p>
-<p>Once done, you'll automatically be added to {organization_name}'s Discord server.</p>
-<!-- Action -->
-<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
-    <tr>
-        <td align="center">
-            <!-- Border based button
-https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-                <tr>
-                    <td align="center">
-                        <a href="{extra_context[url]}" class="f-fallback button">Link Discord account</a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-<!-- Sub copy -->
-<table class="body-sub" role="presentation">
-    <tr>
-        <td>
-            <p class="f-fallback sub">If you're having trouble with the button above, copy and paste the URL below into
-                your web browser.</p>
-            <p class="f-fallback sub"><a href="{extra_context[url]}">{extra_context[url]}</a></p>
-        </td>
-    </tr>
-</table>
-"""
 
 
 class BenefitDiscordService(
@@ -96,22 +57,19 @@ class BenefitDiscordService(
                 )
                 await self.revoke(benefit, customer, grant_properties, attempt=attempt)
 
-        # TODO: we need to revamp this, since we now need to get an account from a Customer instead of a User
+        if (account_id := grant_properties.get("account_id")) is None:
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their Discord account"
+            )
+
+        oauth_account = await discord_customer_service.get_oauth_account(
+            self.session, customer, account_id
+        )
 
         try:
-            account = await discord_user_service.get_oauth_account(self.session, user)
-        except DiscordAccountNotConnected as e:
-            raise BenefitPreconditionError(
-                "Discord account not linked",
-                payload=BenefitPreconditionErrorNotificationContextualPayload(
-                    subject_template=precondition_error_subject_template,
-                    body_template=precondition_error_body_template,
-                    extra_context={"url": settings.generate_frontend_url("/settings")},
-                ),
-            ) from e
-
-        try:
-            await discord_bot_service.add_member(self.session, guild_id, role_id, user)
+            await discord_bot_service.add_member(
+                guild_id, role_id, oauth_account.account_id, oauth_account.access_token
+            )
         except httpx.HTTPError as e:
             error_bound_logger = bound_logger.bind(error=str(e))
             if isinstance(e, httpx.HTTPStatusError):
@@ -123,13 +81,11 @@ class BenefitDiscordService(
 
         bound_logger.debug("Benefit granted")
 
-        # Store guild, role and account IDs as it may change for various reasons:
-        # * The benefit is updated
-        # * The user disconnects or changes their Discord account
+        # Store guild, and role an as it may change if the benefit is updated
         return {
+            **grant_properties,
             "guild_id": guild_id,
             "role_id": role_id,
-            "account_id": account.account_id,
         }
 
     async def revoke(

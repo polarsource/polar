@@ -4,21 +4,11 @@ from unittest.mock import MagicMock, call
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.benefit.benefits import BenefitPreconditionError, BenefitServiceProtocol
-from polar.benefit.service.benefit_grant import (
-    benefit_grant as benefit_grant_service,
-)
-from polar.benefit.service.benefit_grant import (  # type: ignore[attr-defined]
-    notification_service,
-)
+from polar.benefit.benefits import BenefitActionRequiredError, BenefitServiceProtocol
+from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
 from polar.models import Benefit, BenefitGrant, Customer, Product, Subscription
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationContextualPayload,
-)
-from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit_grant,
@@ -119,7 +109,7 @@ class TestGrantBenefit:
         assert updated_grant.is_granted
         benefit_service_mock.grant.assert_not_called()
 
-    async def test_precondition_error(
+    async def test_action_required_error(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -128,7 +118,7 @@ class TestGrantBenefit:
         benefit_organization: Benefit,
         benefit_service_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.grant.side_effect = BenefitPreconditionError("Error")
+        benefit_service_mock.grant.side_effect = BenefitActionRequiredError("Error")
 
         # then
         session.expunge_all()
@@ -582,7 +572,7 @@ class TestUpdateBenefitGrant:
         benefit_service_mock.grant.assert_called_once()
         assert benefit_service_mock.grant.call_args[1]["update"] is True
 
-    async def test_precondition_error(
+    async def test_TODO_error(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -598,7 +588,7 @@ class TestUpdateBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        benefit_service_mock.grant.side_effect = BenefitPreconditionError("Error")
+        benefit_service_mock.grant.side_effect = BenefitActionRequiredError("Error")
 
         # then
         session.expunge_all()
@@ -714,112 +704,6 @@ class TestDeleteBenefitGrant:
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
         benefit_service_mock.revoke.assert_called_once()
-
-
-@pytest.fixture
-def notification_send_to_user_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch.object(
-        notification_service, "send_to_user", spec=NotificationsService.send_to_user
-    )
-
-
-@pytest.mark.asyncio
-class TestHandlePreconditionError:
-    async def test_no_notification(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        benefit_organization: Benefit,
-        customer: Customer,
-        notification_send_to_user_mock: MagicMock,
-    ) -> None:
-        error = BenefitPreconditionError("Error")
-
-        # then
-        session.expunge_all()
-
-        await benefit_grant_service.handle_precondition_error(
-            session, error, customer, benefit_organization, subscription=subscription
-        )
-
-        notification_send_to_user_mock.assert_not_called()
-
-    async def test_email(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        benefit_organization: Benefit,
-        customer: Customer,
-        notification_send_to_user_mock: MagicMock,
-    ) -> None:
-        error = BenefitPreconditionError(
-            "Error",
-            payload=BenefitPreconditionErrorNotificationContextualPayload(
-                subject_template="Action required for granting {subscription_benefit_name}",
-                body_template="Go here to fix this: {extra_context[url]}",
-                extra_context={"url": "https://polar.sh"},
-            ),
-        )
-
-        # then
-        session.expunge_all()
-
-        # load
-        subscription_loaded = await subscription_service.get(session, subscription.id)
-        assert subscription_loaded
-
-        await benefit_grant_service.handle_precondition_error(
-            session,
-            error,
-            customer,
-            benefit_organization,
-            subscription=subscription_loaded,
-        )
-
-        notification_send_to_user_mock.assert_not_called()
-
-
-@pytest.mark.asyncio
-class TestEnqueueGrantsAfterPreconditionFulfilled:
-    async def test_required_update(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        customer: Customer,
-        customer_second: Customer,
-        benefit_organization: Benefit,
-    ) -> None:
-        pending_grant = BenefitGrant(
-            subscription=subscription, customer=customer, benefit=benefit_organization
-        )
-        await save_fixture(pending_grant)
-
-        other_user_grant = BenefitGrant(
-            subscription=subscription,
-            customer=customer_second,
-            benefit=benefit_organization,
-        )
-        await save_fixture(other_user_grant)
-
-        enqueue_job_mock = mocker.patch(
-            "polar.benefit.service.benefit_grant.enqueue_job"
-        )
-
-        # then
-        session.expunge_all()
-
-        await benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
-            session, customer, benefit_organization.type
-        )
-
-        enqueue_job_mock.assert_called_once_with(
-            "benefit.grant",
-            customer_id=customer.id,
-            benefit_id=pending_grant.benefit_id,
-            **pending_grant.scope,
-        )
 
 
 @pytest.mark.asyncio

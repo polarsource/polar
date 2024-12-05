@@ -80,17 +80,13 @@ class BenefitGrantAdsProperties(BenefitGrantPropertiesBase):
 
 
 class BenefitGrantDiscordProperties(BenefitGrantPropertiesBase, total=False):
+    account_id: str
     guild_id: str
     role_id: str
-    account_id: str
 
 
 class BenefitGrantGitHubRepositoryProperties(BenefitGrantPropertiesBase, total=False):
-    # repository_id was set previously (before 2024-13-15), for benefits using the "main"
-    # Polar GitHub App for granting benefits. Benefits created after this date are using
-    # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
-    # and repository_name fields.
-    repository_id: str | None
+    account_id: str
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]

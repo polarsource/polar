@@ -76,7 +76,7 @@ class TestCreate:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        payload: dict[str, Any] = {"email": "customer@example.com"}
+        payload: dict[str, Any] = {"email": "customer.new@example.com"}
         if is_user(auth_subject):
             payload["organization_id"] = str(organization.id)
 
@@ -88,7 +88,7 @@ class TestCreate:
         )
         await session.flush()
 
-        assert customer.email == "customer@example.com"
+        assert customer.email == "customer.new@example.com"
 
 
 @pytest.mark.asyncio

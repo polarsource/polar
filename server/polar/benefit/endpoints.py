@@ -100,16 +100,8 @@ async def grants(
             "If `false`, only revoked benefits will be returned. "
         ),
     ),
-    user_id: UUID4 | None = Query(
-        None,
-        description=("Filter by user ID."),
-    ),
-    github_user_id: int | None = Query(
-        None,
-        description=(
-            "Filter by GitHub user ID. "
-            "Only available for users who have linked their GitHub account on Polar."
-        ),
+    customer_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer."
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitGrant]:
@@ -127,8 +119,7 @@ async def grants(
         session,
         benefit,
         is_granted=is_granted,
-        user_id=user_id,
-        github_user_id=github_user_id,
+        customer_id=customer_id,
         pagination=pagination,
     )
 

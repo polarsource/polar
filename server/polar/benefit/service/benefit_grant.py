@@ -6,7 +6,8 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.benefit.benefits import BenefitPreconditionError, get_benefit_service
+from polar.benefit.benefits import get_benefit_service
+from polar.benefit.benefits.base import BenefitActionRequiredError
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.customer.service import customer as customer_service
 from polar.eventstream.service import publish as eventstream_publish
@@ -18,20 +19,13 @@ from polar.models import Benefit, BenefitGrant, Customer, Product, ProductBenefi
 from polar.models.benefit import BenefitProperties, BenefitType
 from polar.models.benefit_grant import BenefitGrantPropertiesBase, BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationPayload,
-    NotificationType,
-)
-from polar.notifications.service import PartialNotification
-from polar.notifications.service import notifications as notification_service
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
-from .benefit_grant_scope import resolve_scope, scope_to_args
+from .benefit_grant_scope import scope_to_args
 
 log: Logger = structlog.get_logger()
 
@@ -159,8 +153,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
             )
-        except BenefitPreconditionError as e:
-            await self.handle_precondition_error(session, e, customer, benefit, **scope)
+        except BenefitActionRequiredError:
             grant.granted_at = None
         else:
             grant.properties = properties
@@ -331,9 +324,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 update=True,
                 attempt=attempt,
             )
-        except BenefitPreconditionError as e:
-            scope = await resolve_scope(session, grant.scope)
-            await self.handle_precondition_error(session, e, customer, benefit, **scope)
+        except BenefitActionRequiredError:
             grant.granted_at = None
         else:
             grant.properties = properties
@@ -396,87 +387,6 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             previous_grant_properties=previous_properties,
         )
         return grant
-
-    async def handle_precondition_error(
-        self,
-        session: AsyncSession,
-        error: BenefitPreconditionError,
-        customer: Customer,
-        benefit: Benefit,
-        **scope: Unpack[BenefitGrantScope],
-    ) -> None:
-        if error.payload is None:
-            log.warning(
-                "A precondition error was raised but the customer was not notified. "
-                "We probably should implement a notification for this error.",
-                benefit_id=str(benefit.id),
-                customer_id=str(customer.id),
-                scope=scope,
-            )
-            return
-
-        log.info(
-            "Precondition error while granting benefit. Customer was informed.",
-            benefit_id=str(benefit.id),
-            customer_id=str(customer.id),
-        )
-
-        # Disable the notification for now as it's a bit noisy for some use-cases
-        # We'll change how benefits are granted in the future so this won't be needed
-        return
-
-        scope_name = ""
-        organization_name = ""
-        if subscription := scope.get("subscription"):
-            await session.refresh(subscription, {"product"})
-            scope_name = subscription.product.name
-            subscription_tier = subscription.product
-            managing_organization = await organization_service.get(
-                session, subscription_tier.organization_id
-            )
-            assert managing_organization is not None
-            organization_name = managing_organization.slug
-
-        notification_payload = BenefitPreconditionErrorNotificationPayload(
-            scope_name=scope_name,
-            benefit_id=benefit.id,
-            benefit_description=benefit.description,
-            organization_name=organization_name,
-            **error.payload.model_dump(),
-        )
-
-        await notification_service.send_to_user(
-            session=session,
-            user_id=user.id,
-            notif=PartialNotification(
-                type=NotificationType.benefit_precondition_error,
-                payload=notification_payload,
-            ),
-        )
-
-    async def enqueue_grants_after_precondition_fulfilled(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        benefit_type: BenefitType,
-    ) -> None:
-        log.info(
-            "Enqueueing benefit grants after precondition fulfilled",
-            customer_id=str(customer.id),
-            benefit_type=benefit_type,
-        )
-
-        grants = await self._get_by_customer_and_benefit_type(
-            session, customer, benefit_type
-        )
-        for grant in grants:
-            if not grant.is_granted and not grant.is_revoked:
-                enqueue_job(
-                    "benefit.grant",
-                    customer_id=customer.id,
-                    benefit_id=grant.benefit_id,
-                    **grant.scope,
-                )
 
     async def get_by_benefit_and_scope(
         self,

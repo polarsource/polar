@@ -62,14 +62,11 @@ class Scope(StrEnum):
     issues_read = "issues:read"
     issues_write = "issues:write"
 
-    user_benefits_read = "user:benefits:read"
-    user_orders_read = "user:orders:read"
-    user_subscriptions_read = "user:subscriptions:read"
-    user_subscriptions_write = "user:subscriptions:write"
-    user_downloadables_read = "user:downloadables:read"
-    user_license_keys_read = "user:license_keys:read"
     user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
     user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
+
+    customer_portal_read = "customer_portal:read"
+    customer_portal_write = "customer_portal:write"
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -117,12 +114,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.license_keys_read: "Read license keys",
     Scope.license_keys_write: "Modify license keys",
     Scope.webhooks_write: "Create or modify webhooks",
-    Scope.user_benefits_read: "Read your granted benefits",
-    Scope.user_orders_read: "Read your orders",
-    Scope.user_subscriptions_read: "Read your subscriptions",
-    Scope.user_subscriptions_write: "Create or modify your subscriptions",
-    Scope.user_downloadables_read: "Read your downloadable files",
-    Scope.user_license_keys_read: "Read license keys you have access to",
+    Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
+    Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
     Scope.user_advertisement_campaigns_read: "Read your advertisement campaigns",
     Scope.user_advertisement_campaigns_write: (
         "Create or modify your advertisement campaigns"

@@ -14,7 +14,6 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.sentry import set_sentry_user
 
 from .models import (
-    SUBJECTS,
     Anonymous,
     AuthMethod,
     AuthSubject,
@@ -78,7 +77,7 @@ class _Authenticator:
     def __init__(
         self,
         *,
-        allowed_subjects: set[SubjectType] = SUBJECTS,
+        allowed_subjects: set[SubjectType],
         required_scopes: set[Scope] | None = None,
     ) -> None:
         self.allowed_subjects = allowed_subjects
@@ -121,7 +120,7 @@ class _Authenticator:
 
 
 def Authenticator(
-    allowed_subjects: set[SubjectType] = SUBJECTS,
+    allowed_subjects: set[SubjectType],
     required_scopes: set[Scope] | None = None,
 ) -> _Authenticator:
     """

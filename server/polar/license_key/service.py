@@ -5,7 +5,7 @@ import structlog
 from sqlalchemy import Select, and_, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_customer, is_organization, is_user
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -166,28 +166,6 @@ class LicenseKeyService(
 
         return await paginate(session, query, pagination=pagination)
 
-    async def get_user_list(
-        self,
-        session: AsyncSession,
-        *,
-        user: User,
-        pagination: PaginationParams,
-        benefit_id: UUID | None = None,
-        organization_ids: Sequence[UUID] | None = None,
-    ) -> tuple[Sequence[LicenseKey], int]:
-        query = (
-            self._get_select_base()
-            .where(LicenseKey.user_id == user.id)
-            .order_by(LicenseKey.created_at.asc())
-        )
-        if organization_ids:
-            query = query.where(LicenseKey.organization_id.in_(organization_ids))
-
-        if benefit_id:
-            query = query.where(LicenseKey.benefit_id == benefit_id)
-
-        return await paginate(session, query, pagination=pagination)
-
     async def update(
         self,
         session: AsyncSession,
@@ -210,25 +188,19 @@ class LicenseKeyService(
         license_key: LicenseKey,
         validate: LicenseKeyValidate,
     ) -> tuple[LicenseKey, LicenseKeyActivation | None]:
+        bound_logger = log.bind(
+            license_key_id=license_key.id,
+            organization_id=license_key.organization_id,
+            customer_id=license_key.customer_id,
+            benefit_id=license_key.benefit_id,
+        )
         if not license_key.is_active():
-            log.info(
-                "license_key.validate.invalid_status",
-                license_key_id=license_key.id,
-                organization_id=license_key.organization_id,
-                user=license_key.user_id,
-                benefit_id=license_key.benefit_id,
-            )
+            bound_logger.info("license_key.validate.invalid_status")
             raise ResourceNotFound("License key is no longer active.")
 
         if license_key.expires_at:
             if utc_now() >= license_key.expires_at:
-                log.info(
-                    "license_key.validate.invalid_ttl",
-                    license_key_id=license_key.id,
-                    organization_id=license_key.organization_id,
-                    user=license_key.user_id,
-                    benefit_id=license_key.benefit_id,
-                )
+                bound_logger.info("license_key.validate.invalid_ttl")
                 raise ResourceNotFound("License key has expired.")
 
         activation = None
@@ -240,46 +212,25 @@ class LicenseKeyService(
             )
             if activation.conditions and validate.conditions != activation.conditions:
                 # Skip logging UGC conditions
-                log.info(
-                    "license_key.validate.invalid_conditions",
-                    license_key_id=license_key.id,
-                    organization_id=license_key.organization_id,
-                    user=license_key.user_id,
-                    benefit_id=license_key.benefit_id,
-                )
+                bound_logger.info("license_key.validate.invalid_conditions")
                 raise ResourceNotFound("License key does not match required conditions")
 
         if validate.benefit_id and validate.benefit_id != license_key.benefit_id:
-            log.info(
-                "license_key.validate.invalid_benefit",
-                license_key_id=license_key.id,
-                organization_id=license_key.organization_id,
-                user=license_key.user_id,
-                benefit_id=license_key.benefit_id,
-                validate_benefit_id=validate.benefit_id,
-            )
+            bound_logger.info("license_key.validate.invalid_benefit")
             raise ResourceNotFound("License key does not match given benefit.")
 
-        if validate.user_id and validate.user_id != license_key.user_id:
-            log.warn(
+        if validate.customer_id and validate.customer_id != license_key.customer_id:
+            bound_logger.warn(
                 "license_key.validate.invalid_owner",
-                license_key_id=license_key.id,
-                organization_id=license_key.organization_id,
-                user=license_key.user_id,
-                benefit_id=license_key.benefit_id,
-                validate_user_id=validate.user_id,
+                validate_customer_id=validate.customer_id,
             )
             raise ResourceNotFound("License key does not match given user.")
 
         if validate.increment_usage and license_key.limit_usage:
             remaining = license_key.limit_usage - license_key.usage
             if validate.increment_usage > remaining:
-                log.info(
+                bound_logger.info(
                     "license_key.validate.insufficient_usage",
-                    license_key_id=license_key.id,
-                    organization_id=license_key.organization_id,
-                    user=license_key.user_id,
-                    benefit_id=license_key.benefit_id,
                     usage_remaining=remaining,
                     usage_requested=validate.increment_usage,
                 )
@@ -287,13 +238,7 @@ class LicenseKeyService(
 
         license_key.mark_validated(increment_usage=validate.increment_usage)
         session.add(license_key)
-        log.info(
-            "license_key.validate",
-            license_key_id=license_key.id,
-            organization_id=license_key.organization_id,
-            user=license_key.user_id,
-            benefit_id=license_key.benefit_id,
-        )
+        bound_logger.info("license_key.validate")
         return (license_key, activation)
 
     async def get_activation_count(
@@ -378,7 +323,7 @@ class LicenseKeyService(
         )
         return True
 
-    async def user_grant(
+    async def customer_grant(
         self,
         session: AsyncSession,
         *,
@@ -403,18 +348,18 @@ class LicenseKeyService(
             benefit_id=benefit.id,
         )
         if license_key_id:
-            return await self.user_update_grant(
+            return await self.customer_update_grant(
                 session,
                 create_schema=create_schema,
                 license_key_id=license_key_id,
             )
 
-        return await self.user_create_grant(
+        return await self.customer_create_grant(
             session,
             create_schema=create_schema,
         )
 
-    async def user_update_grant(
+    async def customer_update_grant(
         self,
         session: AsyncSession,
         *,
@@ -453,7 +398,7 @@ class LicenseKeyService(
         )
         return key
 
-    async def user_create_grant(
+    async def customer_create_grant(
         self,
         session: AsyncSession,
         *,
@@ -472,7 +417,7 @@ class LicenseKeyService(
         )
         return key
 
-    async def user_revoke(
+    async def customer_revoke(
         self,
         session: AsyncSession,
         customer: Customer,
@@ -498,12 +443,55 @@ class LicenseKeyService(
         )
         return key
 
+    async def get_customer_list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Customer],
+        *,
+        pagination: PaginationParams,
+        benefit_id: UUID | None = None,
+        organization_ids: Sequence[UUID] | None = None,
+    ) -> tuple[Sequence[LicenseKey], int]:
+        query = self._get_select_customer_base(auth_subject).order_by(
+            LicenseKey.created_at.asc()
+        )
+
+        if organization_ids:
+            query = query.where(LicenseKey.organization_id.in_(organization_ids))
+
+        if benefit_id:
+            query = query.where(LicenseKey.benefit_id == benefit_id)
+
+        return await paginate(session, query, pagination=pagination)
+
+    async def get_customer_license_key(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Customer],
+        license_key_id: UUID,
+    ) -> LicenseKey | None:
+        query = self._get_select_customer_base(auth_subject).where(
+            LicenseKey.id == license_key_id
+        )
+        result = await session.execute(query)
+        return result.unique().scalar_one_or_none()
+
     def _get_select_base(self) -> Select[tuple[LicenseKey]]:
         return (
             select(LicenseKey)
             .options(joinedload(LicenseKey.customer))
             .where(LicenseKey.deleted_at.is_(None))
         )
+
+    def _get_select_customer_base(
+        self, auth_subject: AuthSubject[User | Customer]
+    ) -> Select[tuple[LicenseKey]]:
+        query = self._get_select_base()
+        if is_user(auth_subject):
+            raise NotImplementedError("TODO")
+        elif is_customer(auth_subject):
+            query = query.where(LicenseKey.customer_id == auth_subject.subject.id)
+        return query
 
 
 license_key = LicenseKeyService(LicenseKey)

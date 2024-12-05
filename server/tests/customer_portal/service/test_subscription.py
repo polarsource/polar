@@ -6,23 +6,30 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.exceptions import PolarRequestValidationError
-from polar.integrations.stripe.service import StripeService
-from polar.kit.pagination import PaginationParams
-from polar.models import Organization, Product, ProductPriceFixed, Subscription, User
-from polar.models.product_price import ProductPriceType
-from polar.models.subscription import SubscriptionStatus
-from polar.postgres import AsyncSession
-from polar.user.schemas.subscription import (
-    UserSubscriptionUpdate,
+from polar.customer_portal.schemas.subscription import (
+    CustomerSubscriptionUpdate,
 )
-from polar.user.service.subscription import (
+from polar.customer_portal.service.subscription import (
     AlreadyCanceledSubscription,
     SubscriptionNotActiveOnStripe,
 )
-from polar.user.service.subscription import (
-    user_subscription as user_subscription_service,
+from polar.customer_portal.service.subscription import (
+    customer_subscription as customer_subscription_service,
 )
+from polar.exceptions import PolarRequestValidationError
+from polar.integrations.stripe.service import StripeService
+from polar.kit.pagination import PaginationParams
+from polar.models import (
+    Customer,
+    Organization,
+    Product,
+    ProductPriceFixed,
+    Subscription,
+)
+from polar.models.product_price import ProductPriceType
+from polar.models.subscription import SubscriptionStatus
+from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -35,47 +42,47 @@ from tests.fixtures.random_objects import (
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.user.service.subscription.stripe_service", new=mock)
+    mocker.patch("polar.customer_portal.service.subscription.stripe_service", new=mock)
     return mock
 
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestList:
-    @pytest.mark.auth
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_valid(
         self,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[Customer],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        user: User,
-        user_second: User,
+        customer: Customer,
+        customer_second: Customer,
         product: Product,
         product_second: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             save_fixture,
             product=product_second,
-            user=user,
+            customer=customer,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             save_fixture,
             product=product,
-            user=user_second,
+            customer=customer_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
 
-        results, count = await user_subscription_service.list(
+        results, count = await customer_subscription_service.list(
             session,
             auth_subject,
             pagination=PaginationParams(1, 10),
@@ -92,10 +99,10 @@ class TestUpdate:
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
-            await user_subscription_service.update(
+            await customer_subscription_service.update(
                 session,
                 subscription=subscription,
-                subscription_update=UserSubscriptionUpdate(
+                subscription_update=CustomerSubscriptionUpdate(
                     product_price_id=uuid.uuid4()
                 ),
             )
@@ -112,10 +119,12 @@ class TestUpdate:
             save_fixture, product=product, type=ProductPriceType.one_time
         )
         with pytest.raises(PolarRequestValidationError):
-            await user_subscription_service.update(
+            await customer_subscription_service.update(
                 session,
                 subscription=subscription,
-                subscription_update=UserSubscriptionUpdate(product_price_id=price.id),
+                subscription_update=CustomerSubscriptionUpdate(
+                    product_price_id=price.id
+                ),
             )
 
     async def test_extraneous_tier(
@@ -125,10 +134,10 @@ class TestUpdate:
         product_organization_second: Product,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
-            await user_subscription_service.update(
+            await customer_subscription_service.update(
                 session,
                 subscription=subscription,
-                subscription_update=UserSubscriptionUpdate(
+                subscription_update=CustomerSubscriptionUpdate(
                     product_price_id=product_organization_second.all_prices[0].id
                 ),
             )
@@ -138,10 +147,10 @@ class TestUpdate:
     ) -> None:
         subscription.stripe_subscription_id = None
         with pytest.raises(SubscriptionNotActiveOnStripe):
-            await user_subscription_service.update(
+            await customer_subscription_service.update(
                 session,
                 subscription=subscription,
-                subscription_update=UserSubscriptionUpdate(
+                subscription_update=CustomerSubscriptionUpdate(
                     product_price_id=product_second.prices[0].id
                 ),
             )
@@ -155,10 +164,10 @@ class TestUpdate:
         product_second: Product,
     ) -> None:
         new_price = product_second.prices[0]
-        updated_subscription = await user_subscription_service.update(
+        updated_subscription = await customer_subscription_service.update(
             session,
             subscription=subscription,
-            subscription_update=UserSubscriptionUpdate(
+            subscription_update=CustomerSubscriptionUpdate(
                 product_price_id=product_second.prices[0].id,
             ),
         )
@@ -187,17 +196,19 @@ class TestCancel:
         save_fixture: SaveFixture,
         subscription: Subscription,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         subscription = await create_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             status=SubscriptionStatus.canceled,
         )
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await user_subscription_service.cancel(session, subscription=subscription)
+            await customer_subscription_service.cancel(
+                session, subscription=subscription
+            )
 
     @pytest.mark.auth
     async def test_cancel_at_period_end(
@@ -206,16 +217,18 @@ class TestCancel:
         save_fixture: SaveFixture,
         subscription: Subscription,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, product=product, user=user
+            save_fixture, product=product, customer=customer
         )
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await user_subscription_service.cancel(session, subscription=subscription)
+            await customer_subscription_service.cancel(
+                session, subscription=subscription
+            )
 
     @pytest.mark.auth
     async def test_free_subscription(
@@ -224,16 +237,16 @@ class TestCancel:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             stripe_subscription_id=None,
         )
 
-        updated_subscription = await user_subscription_service.cancel(
+        updated_subscription = await customer_subscription_service.cancel(
             session, subscription=subscription
         )
 
@@ -251,15 +264,15 @@ class TestCancel:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         product: Product,
-        user: User,
+        customer: Customer,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
         )
 
-        updated_subscription = await user_subscription_service.cancel(
+        updated_subscription = await customer_subscription_service.cancel(
             session, subscription=subscription
         )
 

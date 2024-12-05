@@ -1282,6 +1282,7 @@ async def customer_second(
     return await create_customer(
         save_fixture,
         organization=organization,
+        email="customer.second@example.com",
         stripe_customer_id="STRIPE_CUSTOMER_ID_2",
     )
 

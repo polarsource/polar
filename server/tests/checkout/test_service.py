@@ -2036,6 +2036,36 @@ class TestConfirm:
         assert checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.update_customer.assert_called_once()
 
+    async def test_valid_stripe_existing_customer_email(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_fixed: Checkout,
+        customer: Customer,
+    ) -> None:
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_email": customer.email,
+                    "customer_name": "Customer Name",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer == customer
+        stripe_service_mock.update_customer.assert_called_once()
+
 
 def build_stripe_payment_intent(
     *,

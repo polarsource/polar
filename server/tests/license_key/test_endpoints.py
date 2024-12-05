@@ -226,7 +226,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 activations=BenefitLicenseKeyActivationProperties(
-                    limit=2, enable_user_admin=True
+                    limit=2, enable_customer_admin=True
                 ),
             ),
         )

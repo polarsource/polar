@@ -15,16 +15,10 @@ from botocore.config import Config
 from httpx import AsyncClient, Response
 from minio import Minio
 
-from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.file.s3 import S3_SERVICES
-from polar.file.schemas import (
-    DownloadableFileCreate,
-    FileRead,
-    FileReadAdapter,
-    FileUpload,
-    FileUploadCompleted,
-)
+from polar.file.schemas import DownloadableFileCreate, FileUpload, FileUploadCompleted
+from polar.file.service import file as file_service
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
     S3FileCreatePart,
@@ -32,8 +26,9 @@ from polar.integrations.aws.s3.schemas import (
     S3FileUploadCompletedPart,
     S3FileUploadPart,
 )
-from polar.models import Organization, User, UserOrganization
+from polar.models import File, Organization
 from polar.models.file import FileServiceTypes
+from polar.postgres import AsyncSession
 
 pwd = Path(__file__).parent.absolute()
 
@@ -85,23 +80,23 @@ class TestFile:
     #####################################################################
 
     async def create(
-        self, client: AsyncClient, organization_id: UUID, parts: int = 1
+        self, session: AsyncSession, organization: Organization, parts: int = 1
     ) -> FileUpload:
-        response = await client.post(
-            "/v1/files/",
-            json=self.build_create_json(organization_id, parts=parts),
+        return await file_service.generate_presigned_upload(
+            session,
+            organization=organization,
+            create_schema=self.build_create(organization.id, parts=parts),
         )
-        return self.validate_create_response(response, organization_id)
 
-    def build_create_json(
+    def build_create(
         self, organization_id: UUID, parts: int = 1
-    ) -> dict[str, Any]:
+    ) -> DownloadableFileCreate:
         create_parts = []
         for i in range(parts):
             part = self.build_create_part(i + 1, parts)
             create_parts.append(part)
 
-        create = DownloadableFileCreate(
+        return DownloadableFileCreate(
             service=FileServiceTypes.downloadable,
             organization_id=organization_id,
             name=self.name,
@@ -110,8 +105,6 @@ class TestFile:
             checksum_sha256_base64=self.base64,
             upload=S3FileCreateMultipart(parts=create_parts),
         )
-        data = create.model_dump(mode="json")
-        return data
 
     def build_create_part(self, number: int, parts: int) -> S3FileCreatePart:
         chunk_size = self.size // parts
@@ -204,23 +197,19 @@ class TestFile:
 
     async def complete(
         self,
-        client: AsyncClient,
+        session: AsyncSession,
         created: FileUpload,
         uploaded: list[S3FileUploadCompletedPart],
-    ) -> FileRead:
-        payload = FileUploadCompleted(
-            id=created.upload.id, path=created.path, parts=uploaded
+    ) -> File:
+        file = await file_service.get(session, created.id)
+        assert file is not None
+        completed = await file_service.complete_upload(
+            session,
+            file=file,
+            completed_schema=FileUploadCompleted(
+                id=created.upload.id, path=created.path, parts=uploaded
+            ),
         )
-        payload_json = payload.model_dump(mode="json")
-
-        response = await client.post(
-            f"/v1/files/{created.id}/uploaded",
-            json=payload_json,
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        completed = FileReadAdapter.validate_python(data)
 
         assert completed.id == created.id
         assert completed.is_uploaded is True
@@ -293,13 +282,13 @@ def empty_test_bucket(worker_id: str) -> Iterable[Any]:
 
 
 async def uploaded_fixture(
-    client: AsyncClient,
-    organization_id: UUID,
+    session: AsyncSession,
+    organization: Organization,
     file: TestFile,
-) -> FileRead:
-    created = await file.create(client, organization_id)
+) -> File:
+    created = await file.create(session, organization)
     uploaded = await file.upload(created)
-    completed = await file.complete(client, created, uploaded)
+    completed = await file.complete(session, created, uploaded)
     return completed
 
 
@@ -314,14 +303,9 @@ def non_ascii_file_name() -> TestFile:
 
 
 @pytest_asyncio.fixture
-async def uploaded_logo_png(
-    client: AsyncClient,
-    auth_subject: AuthSubject[User],
-    user_organization: UserOrganization,
-    organization: Organization,
-) -> FileRead:
+async def uploaded_logo_png(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.png")
-    return await uploaded_fixture(client, user_organization.organization_id, img)
+    return await uploaded_fixture(session, organization, img)
 
 
 @pytest.fixture
@@ -330,14 +314,9 @@ def logo_jpg() -> TestFile:
 
 
 @pytest_asyncio.fixture
-async def uploaded_logo_jpg(
-    client: AsyncClient,
-    auth_subject: AuthSubject[User],
-    user_organization: UserOrganization,
-    organization: Organization,
-) -> FileRead:
+async def uploaded_logo_jpg(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.jpg")
-    return await uploaded_fixture(client, user_organization.organization_id, img)
+    return await uploaded_fixture(session, organization, img)
 
 
 @pytest.fixture

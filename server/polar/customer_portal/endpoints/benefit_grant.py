@@ -8,7 +8,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Benefit
+from polar.models import BenefitGrant
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -16,29 +16,35 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.benefit import UserBenefit, UserBenefitAdapter
-from ..service.benefit import UserBenefitSortProperty
-from ..service.benefit import user_benefit as user_benefit_service
-
-router = APIRouter(
-    prefix="/benefits", tags=["benefits", APITag.documented, APITag.featured]
+from ..schemas.benefit_grant import BenefitGrant as BenefitGrantSchema
+from ..schemas.benefit_grant import BenefitGrantAdapter
+from ..service.benefit_grant import CustomerBenefitGrantSortProperty
+from ..service.benefit_grant import (
+    customer_benefit_grant as customer_benefit_grant_service,
 )
 
-BenefitID = Annotated[UUID4, Path(description="The benefit ID.")]
-BenefitNotFound = {
-    "description": "Benefit not found or not granted.",
+router = APIRouter(
+    prefix="/benefit-grants",
+    tags=["benefit-grants", APITag.documented],
+)
+
+BenefitGrantID = Annotated[UUID4, Path(description="The benefit grant ID.")]
+BenefitGrantNotFound = {
+    "description": "Benefit grant not found.",
     "model": ResourceNotFound.schema(),
 }
 
 ListSorting = Annotated[
-    list[Sorting[UserBenefitSortProperty]],
-    Depends(SortingGetter(UserBenefitSortProperty, ["-granted_at"])),
+    list[Sorting[CustomerBenefitGrantSortProperty]],
+    Depends(SortingGetter(CustomerBenefitGrantSortProperty, ["-granted_at"])),
 ]
 
 
-@router.get("/", summary="List Benefits", response_model=ListResource[UserBenefit])
+@router.get(
+    "/", summary="List Benefit Grants", response_model=ListResource[BenefitGrantSchema]
+)
 async def list(
-    auth_subject: auth.UserBenefitsRead,
+    auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     type: MultipleQueryFilter[BenefitType] | None = Query(
@@ -54,9 +60,9 @@ async def list(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[UserBenefit]:
-    """List my granted benefits."""
-    results, count = await user_benefit_service.list(
+) -> ListResource[BenefitGrantSchema]:
+    """List benefits grants of the authenticated customer or user."""
+    results, count = await customer_benefit_grant_service.list(
         session,
         auth_subject,
         type=type,
@@ -68,7 +74,7 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [UserBenefitAdapter.validate_python(result) for result in results],
+        [BenefitGrantAdapter.validate_python(result) for result in results],
         count,
         pagination,
     )
@@ -76,19 +82,21 @@ async def list(
 
 @router.get(
     "/{id}",
-    summary="Get Benefit",
-    response_model=UserBenefit,
-    responses={404: BenefitNotFound},
+    summary="Get Benefit Grant",
+    response_model=BenefitGrantSchema,
+    responses={404: BenefitGrantNotFound},
 )
 async def get(
-    id: BenefitID,
-    auth_subject: auth.UserBenefitsRead,
+    id: BenefitGrantID,
+    auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
-) -> Benefit:
-    """Get a granted benefit by ID."""
-    benefit = await user_benefit_service.get_by_id(session, auth_subject, id)
+) -> BenefitGrant:
+    """Get a benefit grant by ID for the authenticated customer or user."""
+    benefit_grant = await customer_benefit_grant_service.get_by_id(
+        session, auth_subject, id
+    )
 
-    if benefit is None:
+    if benefit_grant is None:
         raise ResourceNotFound()
 
-    return benefit
+    return benefit_grant

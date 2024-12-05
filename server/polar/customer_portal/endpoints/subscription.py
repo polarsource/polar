@@ -17,14 +17,14 @@ from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.subscription import (
-    UserSubscription,
-    UserSubscriptionUpdate,
+    CustomerSubscription,
+    CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
     AlreadyCanceledSubscription,
-    UserSubscriptionSortProperty,
+    CustomerSubscriptionSortProperty,
 )
-from ..service.subscription import user_subscription as user_subscription_service
+from ..service.subscription import customer_subscription as user_subscription_service
 
 router = APIRouter(
     prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
@@ -37,16 +37,16 @@ SubscriptionNotFound = {
 }
 
 ListSorting = Annotated[
-    list[Sorting[UserSubscriptionSortProperty]],
-    Depends(SortingGetter(UserSubscriptionSortProperty, ["-started_at"])),
+    list[Sorting[CustomerSubscriptionSortProperty]],
+    Depends(SortingGetter(CustomerSubscriptionSortProperty, ["-started_at"])),
 ]
 
 
 @router.get(
-    "/", summary="List Subscriptions", response_model=ListResource[UserSubscription]
+    "/", summary="List Subscriptions", response_model=ListResource[CustomerSubscription]
 )
 async def list(
-    auth_subject: auth.UserSubscriptionsRead,
+    auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -63,8 +63,8 @@ async def list(
         None, description="Search by product or organization name."
     ),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[UserSubscription]:
-    """List my subscriptions."""
+) -> ListResource[CustomerSubscription]:
+    """List subscriptions of the authenticated customer or user."""
     results, count = await user_subscription_service.list(
         session,
         auth_subject,
@@ -77,7 +77,7 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [UserSubscription.model_validate(result) for result in results],
+        [CustomerSubscription.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -86,15 +86,15 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Subscription",
-    response_model=UserSubscription,
+    response_model=CustomerSubscription,
     responses={404: SubscriptionNotFound},
 )
 async def get(
     id: SubscriptionID,
-    auth_subject: auth.UserSubscriptionsRead,
+    auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Get a subscription by ID."""
+    """Get a subscription for the authenticated customer or user."""
     subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
 
     if subscription is None:
@@ -106,7 +106,7 @@ async def get(
 @router.patch(
     "/{id}",
     summary="Update Subscription",
-    response_model=UserSubscription,
+    response_model=CustomerSubscription,
     responses={
         200: {"description": "Subscription updated."},
         404: SubscriptionNotFound,
@@ -114,11 +114,11 @@ async def get(
 )
 async def update(
     id: SubscriptionID,
-    subscription_update: UserSubscriptionUpdate,
-    auth_subject: auth.UserSubscriptionsWrite,
+    subscription_update: CustomerSubscriptionUpdate,
+    auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Update a subscription."""
+    """Update a subscription of the authenticated customer or user."""
     subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
 
     if subscription is None:
@@ -132,7 +132,7 @@ async def update(
 @router.delete(
     "/{id}",
     summary="Cancel Subscription",
-    response_model=UserSubscription,
+    response_model=CustomerSubscription,
     responses={
         200: {"description": "Subscription canceled."},
         403: {
@@ -147,10 +147,10 @@ async def update(
 )
 async def cancel(
     id: SubscriptionID,
-    auth_subject: auth.UserSubscriptionsWrite,
+    auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Cancel a subscription."""
+    """Cancel a subscription of the authenticated customer or user."""
     subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
 
     if subscription is None:

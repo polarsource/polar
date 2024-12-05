@@ -13,9 +13,7 @@ from .. import auth
 from ..schemas.downloadables import DownloadableRead
 from ..service.downloadables import downloadable as downloadable_service
 
-router = APIRouter(
-    prefix="/downloadables", tags=["downloadables", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.documented])
 
 
 @router.get(
@@ -24,23 +22,19 @@ router = APIRouter(
     response_model=ListResource[DownloadableRead],
 )
 async def list(
-    auth_subject: auth.UserDownloadablesRead,
+    auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
-        None,
-        title="BenefitID Filter",
-        description=("Filter by given benefit ID. "),
+        None, title="BenefitID Filter", description="Filter by benefit ID."
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[DownloadableRead]:
-    subject = auth_subject.subject
-
     results, count = await downloadable_service.get_list(
         session,
-        user=subject,
+        auth_subject,
         pagination=pagination,
         organization_id=organization_id,
         benefit_id=benefit_id,
@@ -62,16 +56,15 @@ async def list(
         404: {"description": "Downloadable not found"},
         410: {"description": "Expired signature"},
     },
+    name="customer_portal.downloadables.get",
 )
 async def get(
     token: str,
-    auth_subject: auth.UserDownloadablesRead,
+    auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    subject = auth_subject.subject
-
     downloadable = await downloadable_service.get_from_token_or_raise(
-        session, user=subject, token=token
+        session, auth_subject, token=token
     )
     signed = downloadable_service.generate_download_schema(downloadable)
     return RedirectResponse(signed.file.download.url, 302)

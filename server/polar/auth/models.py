@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from typing import Generic, TypeGuard, TypeVar
 
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 
 from .scope import Scope
 
@@ -9,9 +9,8 @@ from .scope import Scope
 class Anonymous: ...
 
 
-Subject = User | Organization | Anonymous
-SubjectType = type[User] | type[Organization] | type[Anonymous]
-SUBJECTS: set[SubjectType] = {User, Organization, Anonymous}
+Subject = User | Organization | Customer | Anonymous
+SubjectType = type[User] | type[Organization] | type[Customer] | type[Anonymous]
 
 
 class AuthMethod(Enum):
@@ -66,10 +65,13 @@ def is_organization(
     return isinstance(auth_subject.subject, Organization)
 
 
+def is_customer(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Customer]]:
+    return isinstance(auth_subject.subject, Customer)
+
+
 __all__ = [
     "Subject",
     "SubjectType",
-    "SUBJECTS",
     "AuthMethod",
     "AuthSubject",
     "is_anonymous",
@@ -79,4 +81,5 @@ __all__ = [
     "Anonymous",
     "User",
     "Organization",
+    "Customer",
 ]

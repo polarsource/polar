@@ -29,7 +29,7 @@ class TestEndpoints:
     ) -> None:
         response = await client.post(
             "/v1/files/",
-            json=logo_png.build_create_json(organization.id),
+            json=logo_png.build_create(organization.id),
         )
 
         assert response.status_code == 403

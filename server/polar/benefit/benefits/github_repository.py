@@ -19,55 +19,17 @@ from polar.models.benefit import (
     BenefitGitHubRepositoryProperties,
 )
 from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
-from polar.models.user import OAuthPlatform
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationContextualPayload,
-)
 from polar.posthog import posthog
 from polar.repository.service import repository as repository_service
 
 from .base import (
-    BenefitPreconditionError,
+    BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,
     BenefitServiceProtocol,
 )
 
 log: Logger = structlog.get_logger()
-
-precondition_error_subject_template = "Action required: get access to {extra_context[repository_owner]}/{extra_context[repository_name]} repository"
-precondition_error_body_template = """
-<h1>Hi,</h1>
-<p>You just subscribed to <strong>{scope_name}</strong> from {organization_name}. Thank you!</p>
-<p>As you may know, it includes an access to {extra_context[repository_owner]}/{extra_context[repository_name]} repository on GitHub. To grant you access, we need you to link your GitHub account on Polar.</p>
-<p>Once done, you'll automatically be invited to the repository.</p>
-<!-- Action -->
-<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
-    <tr>
-        <td align="center">
-            <!-- Border based button
-https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-                <tr>
-                    <td align="center">
-                        <a href="{extra_context[url]}" class="f-fallback button">Link GitHub account</a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-<!-- Sub copy -->
-<table class="body-sub" role="presentation">
-    <tr>
-        <td>
-            <p class="f-fallback sub">If you're having trouble with the button above, copy and paste the URL below into
-                your web browser.</p>
-            <p class="f-fallback sub"><a href="{extra_context[url]}">{extra_context[url]}</a></p>
-        </td>
-    </tr>
-</table>
-"""
 
 
 class BenefitGitHubRepositoryService(
@@ -92,28 +54,24 @@ class BenefitGitHubRepositoryService(
         )
         bound_logger.debug("Grant benefit")
 
-        client = await self._get_github_app_client(bound_logger, benefit)
+        client = await self._get_github_app_client(benefit)
 
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
         permission = benefit.properties["permission"]
 
-        # TODO: we need to revamp this, since we now need to get an account from a Customer instead of a User
+        if (account_id := grant_properties.get("account_id")) is None:
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their GitHub account"
+            )
 
-        # When inviting users: Use the users identity from the "main" Polar GitHub App
-        oauth_account = user.get_oauth_account(OAuthPlatform.github)
+        oauth_account = customer.get_oauth_account(
+            f"github:{settings.GITHUB_CLIENT_ID}:{account_id}"
+        )
+
         if oauth_account is None or oauth_account.account_username is None:
-            raise BenefitPreconditionError(
-                "GitHub account not linked",
-                payload=BenefitPreconditionErrorNotificationContextualPayload(
-                    subject_template=precondition_error_subject_template,
-                    body_template=precondition_error_body_template,
-                    extra_context={
-                        "repository_owner": repository_owner,
-                        "repository_name": repository_name,
-                        "url": settings.generate_frontend_url("/settings"),
-                    },
-                ),
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their GitHub account"
             )
 
         # If we already granted this benefit, make sure we revoke the previous config
@@ -131,7 +89,7 @@ class BenefitGitHubRepositoryService(
                 or repository_name != grant_properties.get("repository_name")
                 or invitation is not None
             ):
-                await self.revoke(benefit, user, grant_properties, attempt=attempt)
+                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
             # The permission changed, and the invitation is already accepted
             elif permission != grant_properties.get("permission"):
                 # The permission change will be handled by the add_collaborator call
@@ -153,6 +111,7 @@ class BenefitGitHubRepositoryService(
 
         # Store repository and permission to compare on update
         return {
+            **grant_properties,
             "repository_owner": repository_owner,
             "repository_name": repository_name,
             "permission": permission,
@@ -175,16 +134,24 @@ class BenefitGitHubRepositoryService(
             bound_logger.info("skipping revoke for old version of this benefit type")
             return {}
 
-        client = await self._get_github_app_client(bound_logger, benefit)
+        client = await self._get_github_app_client(benefit)
 
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
 
-        # TODO: we need to revamp this, since we now need to get an account from a Customer instead of a User
+        if (account_id := grant_properties.get("account_id")) is None:
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their GitHub account"
+            )
 
-        oauth_account = user.get_oauth_account(OAuthPlatform.github)
+        oauth_account = customer.get_oauth_account(
+            f"github:{settings.GITHUB_CLIENT_ID}:{account_id}"
+        )
+
         if oauth_account is None or oauth_account.account_username is None:
-            raise
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their GitHub account"
+            )
 
         invitation = await self._get_invitation(
             client,
@@ -250,14 +217,9 @@ class BenefitGitHubRepositoryService(
         assert is_user(auth_subject)
         user = auth_subject.subject
 
-        # old style
-        if properties["repository_id"]:
-            return await self._validate_properties_repository_id(user, properties)
-
         repository_owner = properties["repository_owner"]
         repository_name = properties["repository_name"]
 
-        # new style
         oauth = await github_repository_benefit_user_service.get_oauth_account(
             self.session, user
         )
@@ -418,29 +380,8 @@ class BenefitGitHubRepositoryService(
         return None
 
     async def _get_github_app_client(
-        self,
-        logger: Logger,
-        benefit: BenefitGitHubRepository,
+        self, benefit: BenefitGitHubRepository
     ) -> GitHub[AppInstallationAuthStrategy]:
-        # Old integrations, using the "Polar" GitHub App
-        if benefit.properties["repository_id"]:
-            logger.debug("using legacy integration")
-            repository_id = benefit.properties["repository_id"]
-            repository = await repository_service.get(
-                self.session, repository_id, load_organization=True
-            )
-            assert repository is not None
-            organization = repository.organization
-            assert organization is not None
-            installation_id = organization.installation_id
-            assert installation_id is not None
-            return github.get_app_installation_client(
-                installation_id, redis=self.redis, app=github.GitHubApp.polar
-            )
-
-        # New integration, using the "Repository Benefit" GitHub App
-        logger.debug("using Repository Benefit app integration")
-
         repository_owner = benefit.properties["repository_owner"]
         repository_name = benefit.properties["repository_name"]
         installation = (

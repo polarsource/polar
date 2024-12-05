@@ -2,12 +2,12 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -74,7 +74,30 @@ class CustomerService(ResourceServiceReader[Customer]):
             session, auth_subject, customer_create
         )
         if not await authz.can(subject, AccessType.write, organization):
-            raise NotPermitted()
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "organization_id"),
+                        "msg": "Organization not found.",
+                        "input": organization.id,
+                    }
+                ]
+            )
+
+        if await self.get_by_email_and_organization(
+            session, customer_create.email, organization
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "A customer with this email address already exists.",
+                        "input": customer_create.email,
+                    }
+                ]
+            )
 
         customer = Customer(
             organization=organization,
@@ -87,6 +110,24 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def update(
         self, session: AsyncSession, customer: Customer, customer_update: CustomerUpdate
     ) -> Customer:
+        if (
+            customer_update.email is not None
+            and customer.email.lower() != customer_update.email.lower()
+            and await self.get_by_email_and_organization(
+                session, customer_update.email, customer.organization
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "A customer with this email address already exists.",
+                        "input": customer_update.email,
+                    }
+                ]
+            )
+
         for attr, value in customer_update.model_dump(exclude_unset=True).items():
             setattr(customer, attr, value)
 
@@ -111,6 +152,16 @@ class CustomerService(ResourceServiceReader[Customer]):
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_by_email_and_organization(
+        self, session: AsyncSession, email: str, organization: Organization
+    ) -> Customer | None:
+        statement = select(Customer).where(
+            func.lower(Customer.email) == email.lower(),
+            Customer.organization_id == organization.id,
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_by_stripe_customer_id(
         self, session: AsyncSession, stripe_customer_id: str
     ) -> Customer | None:
@@ -121,21 +172,36 @@ class CustomerService(ResourceServiceReader[Customer]):
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def create_from_stripe_customer(
+    async def get_or_create_from_stripe_customer(
         self,
         session: AsyncSession,
         stripe_customer: StripeCustomer,
         organization: Organization,
     ) -> Customer:
-        customer = Customer(
-            email=stripe_customer.email,
-            email_verified=False,
-            stripe_customer_id=stripe_customer.id,
-            name=stripe_customer.name,
-            billing_address=stripe_customer.address,
-            # TODO: tax_id,
-            organization=organization,
-        )
+        """
+        Get or create a customer from a Stripe customer object.
+
+        Make a first lookup by the Stripe customer ID, then by the email address.
+
+        If the customer does not exist, create a new one.
+        """
+        customer = await self.get_by_stripe_customer_id(session, stripe_customer.id)
+        assert stripe_customer.email is not None
+        if customer is None:
+            customer = await self.get_by_email_and_organization(
+                session, stripe_customer.email, organization
+            )
+        if customer is None:
+            customer = Customer(
+                email=stripe_customer.email,
+                email_verified=False,
+                stripe_customer_id=stripe_customer.id,
+                name=stripe_customer.name,
+                billing_address=stripe_customer.address,
+                # TODO: tax_id,
+                organization=organization,
+            )
+        customer.stripe_customer_id = stripe_customer.id
 
         session.add(customer)
         return customer

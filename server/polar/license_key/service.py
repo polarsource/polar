@@ -17,6 +17,7 @@ from polar.models import (
     LicenseKeyActivation,
     Organization,
     User,
+    UserCustomer,
     UserOrganization,
 )
 from polar.models.benefit import BenefitLicenseKeys
@@ -486,12 +487,20 @@ class LicenseKeyService(
     def _get_select_customer_base(
         self, auth_subject: AuthSubject[User | Customer]
     ) -> Select[tuple[LicenseKey]]:
-        query = self._get_select_base()
+        statement = self._get_select_base()
         if is_user(auth_subject):
-            raise NotImplementedError("TODO")
+            statement = statement.where(
+                LicenseKey.customer_id.in_(
+                    select(UserCustomer.customer_id).where(
+                        UserCustomer.user_id == auth_subject.subject.id
+                    )
+                )
+            )
         elif is_customer(auth_subject):
-            query = query.where(LicenseKey.customer_id == auth_subject.subject.id)
-        return query
+            statement = statement.where(
+                LicenseKey.customer_id == auth_subject.subject.id
+            )
+        return statement
 
 
 license_key = LicenseKeyService(LicenseKey)

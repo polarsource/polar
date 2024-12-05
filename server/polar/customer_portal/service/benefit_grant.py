@@ -17,6 +17,7 @@ from polar.models import (
     Customer,
     Organization,
     User,
+    UserCustomer,
 )
 from polar.models.benefit import BenefitType
 
@@ -106,7 +107,13 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
 
         if is_user(auth_subject):
-            raise NotImplementedError("TODO")
+            statement = statement.where(
+                BenefitGrant.customer_id.in_(
+                    select(UserCustomer.customer_id).where(
+                        UserCustomer.user_id == auth_subject.subject.id
+                    )
+                )
+            )
         elif is_customer(auth_subject):
             statement = statement.where(
                 BenefitGrant.customer_id == auth_subject.subject.id

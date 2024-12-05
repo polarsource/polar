@@ -44,6 +44,7 @@ from .repository import Repository
 from .subscription import Subscription
 from .transaction import Transaction
 from .user import OAuthAccount, User
+from .user_customer import UserCustomer
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
 from .user_session import UserSession
@@ -97,6 +98,7 @@ __all__ = [
     "Subscription",
     "Transaction",
     "User",
+    "UserCustomer",
     "UserNotification",
     "UserOrganization",
     "UserSession",

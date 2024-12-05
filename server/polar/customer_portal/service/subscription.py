@@ -24,6 +24,7 @@ from polar.models import (
     ProductPriceFree,
     Subscription,
     User,
+    UserCustomer,
 )
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
@@ -305,7 +306,13 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         statement = select(Subscription).where(Subscription.deleted_at.is_(None))
 
         if is_user(auth_subject):
-            raise NotImplementedError("TODO")
+            statement = statement.where(
+                Subscription.customer_id.in_(
+                    select(UserCustomer.customer_id).where(
+                        UserCustomer.user_id == auth_subject.subject.id
+                    )
+                )
+            )
         elif is_customer(auth_subject):
             statement = statement.where(
                 Subscription.customer_id == auth_subject.subject.id

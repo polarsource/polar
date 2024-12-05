@@ -15,12 +15,10 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     benefit_delete,
     benefit_grant,
     benefit_grant_service,
-    benefit_precondition_fulfilled,
     benefit_revoke,
     benefit_update,
 )
 from polar.models import Benefit, BenefitGrant, Customer, Subscription
-from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.database import SaveFixture
@@ -378,46 +376,3 @@ class TestBenefitDelete:
 
         with pytest.raises(Retry):
             await benefit_delete(job_context, grant.id, polar_worker_context)
-
-
-@pytest.mark.asyncio
-class TestBenefitPreconditionFulfilled:
-    async def test_not_existing_customer(
-        self,
-        job_context: JobContext,
-        polar_worker_context: PolarWorkerContext,
-        session: AsyncSession,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(CustomerDoesNotExist):
-            await benefit_precondition_fulfilled(
-                job_context,
-                uuid.uuid4(),
-                BenefitType.custom,
-                polar_worker_context,
-            )
-
-    async def test_existing_customer(
-        self,
-        mocker: MockerFixture,
-        job_context: JobContext,
-        polar_worker_context: PolarWorkerContext,
-        session: AsyncSession,
-        customer: Customer,
-    ) -> None:
-        enqueue_grants_after_precondition_fulfilled_mock = mocker.patch.object(
-            benefit_grant_service,
-            "enqueue_grants_after_precondition_fulfilled",
-            spec=BenefitGrantService.enqueue_grants_after_precondition_fulfilled,
-        )
-
-        # then
-        session.expunge_all()
-
-        await benefit_precondition_fulfilled(
-            job_context, customer.id, BenefitType.custom, polar_worker_context
-        )
-
-        enqueue_grants_after_precondition_fulfilled_mock.assert_called_once()

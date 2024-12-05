@@ -7,7 +7,6 @@ from arq import Retry
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.service.product import product as product_service
 from polar.worker import (
@@ -217,20 +216,3 @@ async def benefit_delete(
                 benefit_grant_id=str(benefit_grant_id),
             )
             raise Retry(e.defer_seconds) from e
-
-
-@task("benefit.precondition_fulfilled")
-async def benefit_precondition_fulfilled(
-    ctx: JobContext,
-    customer_id: uuid.UUID,
-    benefit_type: BenefitType,
-    polar_context: PolarWorkerContext,
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        customer = await customer_service.get(session, customer_id)
-        if customer is None:
-            raise CustomerDoesNotExist(customer_id)
-
-        await benefit_grant_service.enqueue_grants_after_precondition_fulfilled(
-            session, customer, benefit_type
-        )

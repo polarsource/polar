@@ -409,16 +409,13 @@ class OrderService(ResourceServiceReader[Order]):
 
         # Get or create customer
         assert invoice.customer is not None
-        stripe_customer_id = get_expandable_id(invoice.customer)
         if customer is None:
-            customer = await customer_service.get_by_stripe_customer_id(
-                session, stripe_customer_id
+            stripe_customer = await stripe_service.get_customer(
+                get_expandable_id(invoice.customer)
             )
-            if customer is None:
-                stripe_customer = await stripe_service.get_customer(stripe_customer_id)
-                customer = await customer_service.create_from_stripe_customer(
-                    session, stripe_customer, product.organization
-                )
+            customer = await customer_service.get_or_create_from_stripe_customer(
+                session, stripe_customer, product.organization
+            )
 
         order.customer = customer
         session.add(order)

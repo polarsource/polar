@@ -6,7 +6,6 @@ from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.config import settings
 from polar.integrations.github import client as github
 from polar.integrations.github import types
 from polar.integrations.github_repository_benefit.service import (
@@ -19,6 +18,7 @@ from polar.models.benefit import (
     BenefitGitHubRepositoryProperties,
 )
 from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
+from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
 from polar.repository.service import repository as repository_service
 
@@ -66,7 +66,7 @@ class BenefitGitHubRepositoryService(
             )
 
         oauth_account = customer.get_oauth_account(
-            f"github:{settings.GITHUB_CLIENT_ID}:{account_id}"
+            account_id, CustomerOAuthPlatform.github
         )
 
         if oauth_account is None or oauth_account.account_username is None:
@@ -145,7 +145,7 @@ class BenefitGitHubRepositoryService(
             )
 
         oauth_account = customer.get_oauth_account(
-            f"github:{settings.GITHUB_CLIENT_ID}:{account_id}"
+            account_id, CustomerOAuthPlatform.github
         )
 
         if oauth_account is None or oauth_account.account_username is None:

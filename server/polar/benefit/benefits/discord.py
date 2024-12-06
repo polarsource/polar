@@ -2,16 +2,16 @@ from typing import Any, cast
 
 import httpx
 import structlog
+from httpx_oauth.clients.discord import DiscordOAuth2
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.integrations.discord.service import discord_bot as discord_bot_service
-from polar.integrations.discord.service import (
-    discord_customer as discord_customer_service,
-)
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.models.benefit_grant import BenefitGrantDiscordProperties
+from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
 from .base import (
     BenefitActionRequiredError,
@@ -62,9 +62,7 @@ class BenefitDiscordService(
                 "The customer needs to connect their Discord account"
             )
 
-        oauth_account = await discord_customer_service.get_oauth_account(
-            self.session, customer, account_id
-        )
+        oauth_account = await self._get_customer_oauth_account(customer, account_id)
 
         try:
             await discord_bot_service.add_member(
@@ -81,7 +79,7 @@ class BenefitDiscordService(
 
         bound_logger.debug("Benefit granted")
 
-        # Store guild, and role an as it may change if the benefit is updated
+        # Store guild, and role as it may change if the benefit is updated
         return {
             **grant_properties,
             "guild_id": guild_id,
@@ -168,3 +166,41 @@ class BenefitDiscordService(
             )
 
         return cast(BenefitDiscordProperties, properties)
+
+    async def _get_customer_oauth_account(
+        self, customer: Customer, account_id: str
+    ) -> CustomerOAuthAccount:
+        oauth_account = customer.get_oauth_account(
+            account_id, CustomerOAuthPlatform.discord
+        )
+        if oauth_account is None:
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their Discord account"
+            )
+
+        if oauth_account.is_expired():
+            if oauth_account.refresh_token is None:
+                raise BenefitActionRequiredError(
+                    "The customer needs to reconnect their Discord account"
+                )
+
+            log.debug(
+                "Refresh Discord access token",
+                oauth_account_id=oauth_account.account_id,
+                customer_id=str(customer.id),
+            )
+            client = DiscordOAuth2(
+                settings.DISCORD_CLIENT_ID,
+                settings.DISCORD_CLIENT_SECRET,
+                scopes=["identify", "email", "guilds.join"],
+            )
+            refreshed_token_data = await client.refresh_token(
+                oauth_account.refresh_token
+            )
+            oauth_account.access_token = refreshed_token_data["access_token"]
+            oauth_account.expires_at = refreshed_token_data["expires_at"]
+            oauth_account.refresh_token = refreshed_token_data["refresh_token"]
+            customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+            self.session.add(customer)
+
+        return oauth_account

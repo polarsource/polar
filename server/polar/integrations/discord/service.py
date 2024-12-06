@@ -5,7 +5,6 @@ from polar.config import settings
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.models import Customer, OAuthAccount, User
-from polar.models.customer import CustomerOAuthAccount
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 
@@ -126,59 +125,6 @@ class DiscordUserService:
         return account
 
 
-class DiscordCustomerService:
-    async def create_oauth_account(
-        self, session: AsyncSession, customer: Customer, oauth2_token_data: OAuth2Token
-    ) -> CustomerOAuthAccount:
-        access_token = oauth2_token_data["access_token"]
-
-        client = DiscordClient("Bearer", access_token)
-        data = await client.get_me()
-
-        account_id = data["id"]
-        oauth_account = CustomerOAuthAccount(
-            access_token=access_token,
-            expires_at=oauth2_token_data["expires_at"],
-            refresh_token=oauth2_token_data["refresh_token"],
-            account_id=data["id"],
-        )
-        customer.set_oauth_account(self._get_account_key(account_id), oauth_account)
-        session.add(customer)
-
-        return oauth_account
-
-    async def get_oauth_account(
-        self, session: AsyncSession, customer: Customer, account_id: str
-    ) -> CustomerOAuthAccount:
-        account_key = self._get_account_key(account_id)
-        oauth_account = customer.get_oauth_account(account_key)
-        if oauth_account is None:
-            raise DiscordCustomerAccountDoesNotExist(customer, account_id)
-
-        if oauth_account.is_expired():
-            if oauth_account.refresh_token is None:
-                raise DiscordCustomerExpiredAccessToken(customer, account_id)
-
-            log.debug(
-                "Refresh Discord access token",
-                oauth_account_id=oauth_account.account_id,
-                customer_id=str(customer.id),
-            )
-            refreshed_token_data = await oauth.user_client.refresh_token(
-                oauth_account.refresh_token
-            )
-            oauth_account.access_token = refreshed_token_data["access_token"]
-            oauth_account.expires_at = refreshed_token_data["expires_at"]
-            oauth_account.refresh_token = refreshed_token_data["refresh_token"]
-            customer.set_oauth_account(account_key, oauth_account)
-            session.add(customer)
-
-        return oauth_account
-
-    def _get_account_key(self, account_id: str) -> str:
-        return f"discord:{oauth.user_client.client_id}:{account_id}"
-
-
 class DiscordBotService:
     async def get_guild(self, id: str) -> DiscordGuild:
         guild = await bot_client.get_guild(id)
@@ -239,5 +185,4 @@ class DiscordBotService:
 
 
 discord_user = DiscordUserService()
-discord_customer = DiscordCustomerService()
 discord_bot = DiscordBotService()

@@ -23,6 +23,7 @@ from polar.models import (
     Benefit,
     Checkout,
     CheckoutLink,
+    Customer,
     CustomField,
     Discount,
     DiscountProduct,
@@ -833,11 +834,31 @@ async def discount_percentage_100(
     )
 
 
+async def create_customer(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    email: str = "customer@example.com",
+    email_verified: bool = False,
+    name: str = "Customer",
+    stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
+) -> Customer:
+    customer = Customer(
+        email=email,
+        email_verified=email_verified,
+        name=name,
+        stripe_customer_id=stripe_customer_id,
+        organization=organization,
+    )
+    await save_fixture(customer)
+    return customer
+
+
 async def create_order(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    user: User,
+    customer: Customer,
     product_price: ProductPrice | None = None,
     subscription: Subscription | None = None,
     amount: int = 1000,
@@ -854,7 +875,7 @@ async def create_order(
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
-        user=user,
+        customer=customer,
         product=product,
         product_price=product_price
         if product_price is not None
@@ -911,7 +932,7 @@ async def create_subscription(
     *,
     product: Product,
     price: ProductPrice | None = None,
-    user: User,
+    customer: Customer,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -941,7 +962,7 @@ async def create_subscription(
         cancel_at_period_end=False,
         started_at=started_at,
         ended_at=ended_at,
-        user=user,
+        customer=customer,
         product=product,
         price=price,
         discount=discount,
@@ -955,7 +976,7 @@ async def create_active_subscription(
     *,
     product: Product,
     price: ProductPrice | None = None,
-    user: User,
+    customer: Customer,
     organization: Organization | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -965,7 +986,7 @@ async def create_active_subscription(
         save_fixture,
         product=product,
         price=price,
-        user=user,
+        customer=customer,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
         ended_at=ended_at,
@@ -1114,7 +1135,7 @@ async def create_checkout(
     amount: int | None = None,
     tax_amount: int | None = None,
     currency: str | None = None,
-    customer: User | None = None,
+    customer: Customer | None = None,
     subscription: Subscription | None = None,
     discount: Discount | None = None,
 ) -> Checkout:
@@ -1247,23 +1268,44 @@ async def organization_second_members(
 
 
 @pytest_asyncio.fixture
+async def customer(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> Customer:
+    return await create_customer(save_fixture, organization=organization)
+
+
+@pytest_asyncio.fixture
+async def customer_second(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> Customer:
+    return await create_customer(
+        save_fixture,
+        organization=organization,
+        email="customer.second@example.com",
+        stripe_customer_id="STRIPE_CUSTOMER_ID_2",
+    )
+
+
+@pytest_asyncio.fixture
 async def subscription(
     save_fixture: SaveFixture,
     product: Product,
-    user: User,
+    customer: Customer,
 ) -> Subscription:
-    return await create_subscription(save_fixture, product=product, user=user)
+    return await create_subscription(save_fixture, product=product, customer=customer)
 
 
 async def create_benefit_grant(
     save_fixture: SaveFixture,
-    user: User,
+    customer: Customer,
     benefit: Benefit,
     granted: bool | None = None,
     properties: BenefitGrantProperties | None = None,
     **scope: Unpack[BenefitGrantScope],
 ) -> BenefitGrant:
-    grant = BenefitGrant(benefit=benefit, user=user, **scope)
+    grant = BenefitGrant(benefit=benefit, customer=customer, **scope)
     if granted is not None:
         grant.set_granted() if granted else grant.set_revoked()
     if properties is not None:

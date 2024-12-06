@@ -13,7 +13,6 @@ from polar.issue.service import issue as issue_service
 from polar.models.account import Account
 from polar.models.article import Article
 from polar.models.benefit import Benefit
-from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
@@ -22,7 +21,6 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.product import Product
 from polar.models.repository import Repository
-from polar.models.subscription import Subscription
 from polar.models.user import User
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_session
@@ -48,10 +46,8 @@ Object = (
     | Pledge
     | Product
     | Benefit
-    | Subscription
     | Article
     | WebhookEndpoint
-    | Downloadable
     | LicenseKey
 )
 
@@ -254,16 +250,6 @@ class Authz:
                 return object.organization_id == subject.id
 
         #
-        # Subscription
-        #
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.write
-            and isinstance(object, Subscription)
-        ):
-            return object.user_id == subject.id
-
-        #
         # Article
         #
 
@@ -284,16 +270,6 @@ class Authz:
             if isinstance(subject, Organization):
                 return object.organization_id == subject.id
 
-        #
-        # Downloadable
-        #
-
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.read
-            and isinstance(object, Downloadable)
-        ):
-            return await self._can_user_download_file(subject, object)
         #
         # License Key
         #
@@ -560,17 +536,6 @@ class Authz:
             return True
 
         return False
-
-    #
-    # Downloadable
-    #
-    async def _can_user_download_file(
-        self, subject: User, object: Downloadable
-    ) -> bool:
-        if subject.id != object.user_id:
-            return False
-
-        return object.status == DownloadableStatus.granted.value
 
     #
     # WebhookEndpoint

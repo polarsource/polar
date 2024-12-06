@@ -12,7 +12,7 @@ from polar.redis import Redis
 from .ads import BenefitAdsService
 from .articles import BenefitArticlesService
 from .base import (
-    BenefitPreconditionError,
+    BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,
     BenefitServiceError,
@@ -45,9 +45,9 @@ def get_benefit_service(
 
 
 __all__ = [
+    "BenefitActionRequiredError",
     "BenefitServiceProtocol",
     "BenefitPropertiesValidationError",
-    "BenefitPreconditionError",
     "BenefitRetriableError",
     "BenefitServiceError",
     "get_benefit_service",

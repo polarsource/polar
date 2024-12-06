@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Organization, Product, User, UserOrganization
+from polar.models import Customer, Organization, Product, UserOrganization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_active_subscription
 
@@ -23,14 +23,14 @@ class TestListSubscriptions:
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
-        user: User,
         user_organization: UserOrganization,
         product: Product,
+        customer: Customer,
     ) -> None:
         await create_active_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -43,5 +43,5 @@ class TestListSubscriptions:
         assert json["pagination"]["total_count"] == 1
         for item in json["items"]:
             assert "user" in item
-            assert "github_username" in item["user"]
-            assert "email" in item["user"]
+            assert "customer" in item
+            assert item["user"]["id"] == item["customer"]["id"]

@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
-import polar.checkout.tax
+import polar.kit.tax
 
 # revision identifiers, used by Alembic.
 revision = "e4473617a8e9"
@@ -25,7 +25,7 @@ def upgrade() -> None:
         "checkouts",
         sa.Column(
             "customer_tax_id",
-            polar.checkout.tax.TaxIDType(astext_type=sa.Text()),
+            polar.kit.tax.TaxIDType(astext_type=sa.Text()),
             nullable=True,
         ),
     )

@@ -4,11 +4,9 @@ from httpx_oauth.oauth2 import OAuth2Token
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.logging import Logger
-from polar.models import OAuthAccount, User
-from polar.models.benefit import BenefitType
+from polar.models import Customer, OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
-from polar.worker import enqueue_job
 
 from . import oauth
 from .client import DiscordClient, bot_client
@@ -30,6 +28,25 @@ class DiscordAccountNotConnected(DiscordError):
 class DiscordExpiredAccessToken(DiscordError):
     def __init__(self, user: User) -> None:
         self.user = user
+        message = "The access token is expired and no refresh token is available."
+        super().__init__(message, 401)
+
+
+class DiscordCustomerAccountDoesNotExist(DiscordError):
+    def __init__(self, customer: Customer, account_id: str) -> None:
+        self.customer = customer
+        self.account_id = account_id
+        message = (
+            f"The Discord account {account_id} does not exist "
+            f"on customer {customer.id}."
+        )
+        super().__init__(message)
+
+
+class DiscordCustomerExpiredAccessToken(DiscordError):
+    def __init__(self, customer: Customer, account_id: str) -> None:
+        self.customer = customer
+        self.account_id = account_id
         message = "The access token is expired and no refresh token is available."
         super().__init__(message, 401)
 
@@ -59,13 +76,6 @@ class DiscordUserService:
         )
         session.add(oauth_account)
         await session.commit()
-
-        # Make sure potential Discord benefits are granted
-        enqueue_job(
-            "benefit.precondition_fulfilled",
-            user_id=user.id,
-            benefit_type=BenefitType.discord,
-        )
 
         return oauth_account
 
@@ -138,13 +148,12 @@ class DiscordBotService:
         return DiscordGuild(name=guild["name"], roles=roles)
 
     async def add_member(
-        self, session: AsyncSession, guild_id: str, role_id: str, user: User
+        self, guild_id: str, role_id: str, account_id: str, access_token: str
     ) -> None:
-        oauth_account = await DiscordUserService().get_oauth_account(session, user)
         await bot_client.add_member(
             guild_id=guild_id,
-            discord_user_id=oauth_account.account_id,
-            discord_user_access_token=oauth_account.access_token,
+            discord_user_id=account_id,
+            discord_user_access_token=access_token,
             role_id=role_id,
         )
 

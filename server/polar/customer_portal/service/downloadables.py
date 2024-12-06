@@ -6,6 +6,7 @@ import structlog
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import contains_eager
 
+from polar.auth.models import AuthSubject, is_customer, is_user
 from polar.config import settings
 from polar.exceptions import (
     BadRequest,
@@ -17,7 +18,7 @@ from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit, User
+from polar.models import Benefit, Customer, User, UserCustomer
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -42,13 +43,13 @@ class DownloadableService(
     async def get_list(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Customer],
         *,
-        user: User,
         pagination: PaginationParams,
         organization_id: Sequence[UUID] | None = None,
         benefit_id: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
-        statement = self._get_base_query(user)
+        statement = self._get_base_query(auth_subject)
 
         if organization_id:
             statement = statement.where(File.organization_id.in_(organization_id))
@@ -61,7 +62,7 @@ class DownloadableService(
     async def grant_for_benefit_file(
         self,
         session: AsyncSession,
-        user: User,
+        customer: Customer,
         benefit_id: UUID,
         file_id: UUID,
     ) -> Downloadable | None:
@@ -70,7 +71,7 @@ class DownloadableService(
             log.info(
                 "downloadables.grant.file_not_found",
                 file_id=file_id,
-                user_id=user.id,
+                customer_id=customer.id,
                 benefit_id=benefit_id,
                 granted=False,
             )
@@ -78,7 +79,7 @@ class DownloadableService(
 
         create_schema = DownloadableCreate(
             file_id=file.id,
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=benefit_id,
             status=DownloadableStatus.granted,
         )
@@ -87,7 +88,7 @@ class DownloadableService(
             create_schemas=[create_schema],
             constraints=[
                 Downloadable.file_id,
-                Downloadable.user_id,
+                Downloadable.customer_id,
                 Downloadable.benefit_id,
             ],
             mutable_keys={
@@ -102,7 +103,7 @@ class DownloadableService(
         log.info(
             "downloadables.grant",
             file_id=file.id,
-            user_id=user.id,
+            customer_id=customer.id,
             downloadables_id=instance.id,
             benefit_id=benefit_id,
             granted=True,
@@ -112,13 +113,13 @@ class DownloadableService(
     async def revoke_for_benefit(
         self,
         session: AsyncSession,
-        user: User,
+        customer: Customer,
         benefit_id: UUID,
     ) -> None:
         statement = (
             sql.update(Downloadable)
             .where(
-                Downloadable.user_id == user.id,
+                Downloadable.customer_id == customer.id,
                 Downloadable.benefit_id == benefit_id,
                 Downloadable.status == DownloadableStatus.granted,
                 Downloadable.deleted_at.is_(None),
@@ -130,7 +131,7 @@ class DownloadableService(
         )
         log.info(
             "downloadables.revoked",
-            user_id=user.id,
+            customer_id=customer.id,
             benefit_id=benefit_id,
         )
         await session.execute(statement)
@@ -185,11 +186,14 @@ class DownloadableService(
                 last_downloaded_at=last_downloaded_at,
             )
         )
-        redirect_to = f"{settings.BASE_URL}/users/downloadables/{token}"
+        redirect_to = f"{settings.BASE_URL}/customer-portal/downloadables/{token}"
         return DownloadableURL(url=redirect_to, expires_at=expires_at)
 
     async def get_from_token_or_raise(
-        self, session: AsyncSession, user: User, token: str
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Customer],
+        token: str,
     ) -> Downloadable:
         try:
             unpacked = token_serializer.loads(
@@ -203,7 +207,7 @@ class DownloadableService(
         except KeyError:
             raise BadRequest()
 
-        statement = self._get_base_query(user).where(Downloadable.id == id)
+        statement = self._get_base_query(auth_subject).where(Downloadable.id == id)
         res = await session.execute(statement)
         downloadable = res.scalars().one_or_none()
         if not downloadable:
@@ -220,14 +224,15 @@ class DownloadableService(
             file=file_schema,
         )
 
-    def _get_base_query(self, user: User) -> sql.Select[tuple[Downloadable]]:
+    def _get_base_query(
+        self, auth_subject: AuthSubject[User | Customer]
+    ) -> sql.Select[tuple[Downloadable]]:
         statement = (
             sql.select(Downloadable)
             .join(File)
             .join(Benefit)
             .options(contains_eager(Downloadable.file))
             .where(
-                Downloadable.user_id == user.id,
                 Downloadable.status == DownloadableStatus.granted,
                 Downloadable.deleted_at.is_(None),
                 File.deleted_at.is_(None),
@@ -237,6 +242,20 @@ class DownloadableService(
             )
             .order_by(Downloadable.created_at.desc())
         )
+
+        if is_user(auth_subject):
+            statement = statement.where(
+                Downloadable.customer_id.in_(
+                    sql.select(UserCustomer.customer_id).where(
+                        UserCustomer.user_id == auth_subject.subject.id
+                    )
+                )
+            )
+        elif is_customer(auth_subject):
+            statement = statement.where(
+                Downloadable.customer_id == auth_subject.subject.id
+            )
+
         return statement
 
 

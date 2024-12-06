@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -26,7 +25,6 @@ from polar.kit.schemas import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
-    BenefitGrantLicenseKeysProperties,
     BenefitGrantProperties,
 )
 from polar.organization.schemas import Organization, OrganizationID
@@ -52,7 +50,7 @@ Note = Annotated[
     str | None,
     Field(
         description=(
-            "Private note to be shared with users who have this benefit granted."
+            "Private note to be shared with customers who have this benefit granted."
         ),
     ),
 ]
@@ -85,7 +83,7 @@ class BenefitCustomSubscriberProperties(Schema):
 ## Articles
 
 PaidArticles = Annotated[
-    bool, Field(description="Whether the user can access paid articles.")
+    bool, Field(description="Whether the customer can access paid articles.")
 ]
 
 
@@ -277,7 +275,7 @@ class BenefitLicenseKeyExpirationProperties(Schema):
 
 class BenefitLicenseKeyActivationProperties(Schema):
     limit: int = Field(gt=0, le=50)
-    enable_user_admin: bool
+    enable_customer_admin: bool
 
 
 class BenefitLicenseKeysCreateProperties(Schema):
@@ -543,7 +541,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
 
 class BenefitGrantBase(IDSchema, TimestampedSchema):
     """
-    A grant of a benefit to a user.
+    A grant of a benefit to a customer.
     """
 
     id: UUID4 = Field(description="The ID of the grant.")
@@ -569,7 +567,12 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None = Field(
         description="The ID of the order that granted this benefit."
     )
-    user_id: UUID4 = Field(description="The ID of the user concerned by this grant.")
+    customer_id: UUID4 = Field(
+        description="The ID of the customer concerned by this grant."
+    )
+    user_id: UUID4 = Field(
+        validation_alias="customer_id", deprecated="Use `customer_id`."
+    )
     benefit_id: UUID4 = Field(
         description="The ID of the benefit concerned by this grant."
     )
@@ -587,11 +590,7 @@ class BenefitGrantWebhook(BenefitGrant):
 # BenefitSubscriber
 
 
-class BenefitGrantSubscriber(BenefitGrantBase): ...
-
-
 class BenefitSubscriberBase(BenefitBase):
-    grants: Sequence[BenefitGrantSubscriber]
     organization: Organization
 
 
@@ -612,14 +611,9 @@ class BenefitGrantAdsSubscriberProperties(Schema):
     )
 
 
-class BenefitGrantAds(BenefitGrantSubscriber):
-    properties: BenefitGrantAdsSubscriberProperties
-
-
 class BenefitAdsSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.ads]
     properties: BenefitAdsProperties
-    grants: Sequence[BenefitGrantAds]
 
 
 class BenefitDiscordSubscriber(BenefitSubscriberBase):
@@ -637,14 +631,9 @@ class BenefitDownloadablesSubscriber(BenefitSubscriberBase):
     properties: BenefitDownloadablesSubscriberProperties
 
 
-class BenefitGrantLicenseKeys(BenefitGrantSubscriber):
-    properties: BenefitGrantLicenseKeysProperties
-
-
 class BenefitLicenseKeysSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.license_keys]
     properties: BenefitLicenseKeysSubscriberProperties
-    grants: Sequence[BenefitGrantLicenseKeys]
 
 
 # Properties that are available to subscribers only

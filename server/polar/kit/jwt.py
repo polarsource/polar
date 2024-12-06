@@ -23,6 +23,7 @@ TYPE = Literal[
     "discord_guild_token",
     "auth",
     "github_repository_benefit_oauth",
+    "customer_oauth",
 ]
 
 

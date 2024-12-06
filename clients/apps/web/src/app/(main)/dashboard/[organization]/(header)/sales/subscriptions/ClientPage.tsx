@@ -11,6 +11,8 @@ import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils
 import {
   useCustomFields,
   useListSubscriptions,
+  useCancelSubscription,
+  invalidateSubscriptionCache,
   useProducts,
 } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -33,6 +35,7 @@ import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import { useOrganizationSSE } from '@/hooks/sse'
 import {
   DataTable,
   DataTableColumnDef,
@@ -40,6 +43,7 @@ import {
 } from 'polarkit/components/ui/atoms/datatable'
 import React, {
   PropsWithChildren,
+  MouseEvent,
   useContext,
   useEffect,
   useState,
@@ -341,7 +345,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       </div>
       <InlineModal
-        modalContent={<SubscriptionModal subscription={selectedSubscription} />}
+        modalContent={<SubscriptionModal organization={organization} subscription={selectedSubscription} />}
         isShown={isModalShown}
         hide={() => {
           setSelectedSubscriptionState({})
@@ -353,18 +357,46 @@ const ClientPage: React.FC<ClientPageProps> = ({
 }
 
 interface SubscriptionModalProps {
+  organization: Organization,
   subscription?: Subscription
 }
 
-const SubscriptionModal = ({ subscription }: SubscriptionModalProps) => {
-  const { organization } = useContext(MaintainerOrganizationContext)
+const SubscriptionModal = ({ organization, subscription }: SubscriptionModalProps) => {
   const { data: customFields } = useCustomFields(organization.id)
+  const eventstream = useOrganizationSSE(organization.id)
+  const cancelSubscription = useCancelSubscription()
 
   if (!subscription) return null
+
+  const isCancelled = subscription.status == 'canceled'
+
+  const onCancel = async (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+
+    const onSubscriptionCanceledEvent = (sub: {
+      id: string,
+      status: string
+    }) => {
+      if (sub.id !== subscription.id) return
+
+      invalidateSubscriptionCache(organization.id)
+      eventstream.off('subscription.canceled', onSubscriptionCanceledEvent)
+    }
+    eventstream.on('subscription.canceled', onSubscriptionCanceledEvent)
+
+    await cancelSubscription.mutateAsync({
+      id: subscription.id
+    })
+  }
 
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="mb-4 text-2xl">Subscription Details</h2>
+      {!isCancelled && (
+        <a href="#" onClick={onCancel}>
+          Cancel Subscription
+        </a>
+      )}
       <div className="flex flex-row items-center gap-4">
         <Avatar
           avatar_url={subscription.user.avatar_url}

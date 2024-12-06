@@ -25,8 +25,6 @@ const useSSE = (streamURL: string): EventEmitter => {
     const cleanup = () => {
       connection.close()
     }
-    // TODO: Add types for event. Just want to get the structure
-    // up and running first before getting stuck in protocol land.
     connection.onmessage = async (event) => {
       const data = JSON.parse(event.data)
       const handler = ACTIONS[data.key]

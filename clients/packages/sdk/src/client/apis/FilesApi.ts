@@ -16,13 +16,13 @@
 import * as runtime from '../runtime';
 import type {
   FileCreate,
-  FileNotFound,
   FilePatch,
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
   ListResourceFileRead,
   NotPermitted,
+  ResourceNotFound,
   ResponseFilesUpdate,
   ResponseFilesUploaded,
 } from '../models/index';

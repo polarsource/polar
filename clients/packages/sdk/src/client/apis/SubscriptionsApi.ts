@@ -15,14 +15,21 @@
 
 import * as runtime from '../runtime';
 import type {
+  AlreadyCanceledSubscription,
   DiscountIDFilter,
   HTTPValidationError,
   ListResourceSubscription,
   OrganizationIDFilter,
   OrganizationId,
   ProductIDFilter,
+  ResourceNotFound,
+  Subscription,
   SubscriptionSortProperty,
 } from '../models/index';
+
+export interface SubscriptionsApiCancelRequest {
+    id: string;
+}
 
 export interface SubscriptionsApiExportRequest {
     organizationId?: OrganizationId;
@@ -42,6 +49,49 @@ export interface SubscriptionsApiListRequest {
  * 
  */
 export class SubscriptionsApi extends runtime.BaseAPI {
+
+    /**
+     * Cancel a subscription.
+     * Cancel Subscription
+     */
+    async cancelRaw(requestParameters: SubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling cancel().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Cancel a subscription.
+     * Cancel Subscription
+     */
+    async cancel(requestParameters: SubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.cancelRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Export subscriptions as a CSV file.

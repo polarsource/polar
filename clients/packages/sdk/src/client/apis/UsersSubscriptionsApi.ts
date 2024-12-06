@@ -15,7 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
-  AlreadyCanceledSubscription,
+  AlreadyCanceledUserSubscription,
   HTTPValidationError,
   ListResourceUserSubscription,
   OrganizationIDFilter,

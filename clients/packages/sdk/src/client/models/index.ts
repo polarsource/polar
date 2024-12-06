@@ -271,7 +271,7 @@ export interface AlreadyCanceledSubscription {
      * @type {string}
      * @memberof AlreadyCanceledSubscription
      */
-    type: AlreadyCanceledSubscriptionTypeEnum;
+    error: AlreadyCanceledSubscriptionErrorEnum;
     /**
      * 
      * @type {string}
@@ -284,10 +284,39 @@ export interface AlreadyCanceledSubscription {
 /**
  * @export
  */
-export const AlreadyCanceledSubscriptionTypeEnum = {
+export const AlreadyCanceledSubscriptionErrorEnum = {
     ALREADY_CANCELED_SUBSCRIPTION: 'AlreadyCanceledSubscription'
 } as const;
-export type AlreadyCanceledSubscriptionTypeEnum = typeof AlreadyCanceledSubscriptionTypeEnum[keyof typeof AlreadyCanceledSubscriptionTypeEnum];
+export type AlreadyCanceledSubscriptionErrorEnum = typeof AlreadyCanceledSubscriptionErrorEnum[keyof typeof AlreadyCanceledSubscriptionErrorEnum];
+
+/**
+ * 
+ * @export
+ * @interface AlreadyCanceledUserSubscription
+ */
+export interface AlreadyCanceledUserSubscription {
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyCanceledUserSubscription
+     */
+    error: AlreadyCanceledUserSubscriptionErrorEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyCanceledUserSubscription
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const AlreadyCanceledUserSubscriptionErrorEnum = {
+    ALREADY_CANCELED_USER_SUBSCRIPTION: 'AlreadyCanceledUserSubscription'
+} as const;
+export type AlreadyCanceledUserSubscriptionErrorEnum = typeof AlreadyCanceledUserSubscriptionErrorEnum[keyof typeof AlreadyCanceledUserSubscriptionErrorEnum];
 
 /**
  * App Permissions
@@ -5531,9 +5560,10 @@ export interface CheckoutLinkPriceCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5671,9 +5701,10 @@ export interface CheckoutLinkProductCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5795,9 +5826,10 @@ export interface CheckoutPriceCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5986,9 +6018,10 @@ export interface CheckoutProductCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6714,9 +6747,10 @@ export interface CustomFieldCreateCheckbox {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6775,9 +6809,10 @@ export interface CustomFieldCreateDate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6836,9 +6871,10 @@ export interface CustomFieldCreateNumber {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6897,9 +6933,10 @@ export interface CustomFieldCreateSelect {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6958,9 +6995,10 @@ export interface CustomFieldCreateText {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8101,9 +8139,10 @@ export interface DiscountFixedOnceForeverDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8417,9 +8456,10 @@ export interface DiscountFixedRepeatDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8709,9 +8749,10 @@ export interface DiscountPercentageOnceForeverDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -9010,9 +9051,10 @@ export interface DiscountPercentageRepeatDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -9746,35 +9788,6 @@ export interface FileDownload {
     readonly size_readable: string;
 }
 
-
-/**
- * 
- * @export
- * @interface FileNotFound
- */
-export interface FileNotFound {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileNotFound
-     */
-    type: FileNotFoundTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileNotFound
-     */
-    detail: string;
-}
-
-
-/**
- * @export
- */
-export const FileNotFoundTypeEnum = {
-    FILE_NOT_FOUND: 'FileNotFound'
-} as const;
-export type FileNotFoundTypeEnum = typeof FileNotFoundTypeEnum[keyof typeof FileNotFoundTypeEnum];
 
 /**
  * 
@@ -12820,7 +12833,7 @@ export interface NotPermitted {
      * @type {string}
      * @memberof NotPermitted
      */
-    type: NotPermittedTypeEnum;
+    error: NotPermittedErrorEnum;
     /**
      * 
      * @type {string}
@@ -12833,10 +12846,10 @@ export interface NotPermitted {
 /**
  * @export
  */
-export const NotPermittedTypeEnum = {
+export const NotPermittedErrorEnum = {
     NOT_PERMITTED: 'NotPermitted'
 } as const;
-export type NotPermittedTypeEnum = typeof NotPermittedTypeEnum[keyof typeof NotPermittedTypeEnum];
+export type NotPermittedErrorEnum = typeof NotPermittedErrorEnum[keyof typeof NotPermittedErrorEnum];
 
 /**
  * @type NotificationsInner
@@ -13320,12 +13333,6 @@ export const OAuthPlatform = {
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
 
 /**
- * @type OneTimePriceInner
- * @export
- */
-export type OneTimePriceInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
-
-/**
  * 
  * @export
  * @interface Order
@@ -13385,6 +13392,12 @@ export interface Order {
      * @memberof Order
      */
     billing_reason: OrderBillingReason;
+    /**
+     * 
+     * @type {Address}
+     * @memberof Order
+     */
+    billing_address: Address | null;
     /**
      * 
      * @type {string}
@@ -15574,9 +15587,10 @@ export interface ProductOneTimeCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -15597,10 +15611,10 @@ export interface ProductOneTimeCreate {
     description?: string | null;
     /**
      * List of available prices for this product.
-     * @type {Array<OneTimePriceInner>}
+     * @type {Array<ProductPriceOneTimeCreateInner>}
      * @memberof ProductOneTimeCreate
      */
-    prices: Array<OneTimePriceInner>;
+    prices: Array<ProductPriceOneTimeCreateInner>;
     /**
      * 
      * @type {Array<string>}
@@ -15632,6 +15646,12 @@ export type ProductPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 
  * @export
  */
 export type ProductPriceOneTime = { amount_type: 'custom' } & ProductPriceOneTimeCustom | { amount_type: 'fixed' } & ProductPriceOneTimeFixed | { amount_type: 'free' } & ProductPriceOneTimeFree;
+/**
+ * @type ProductPriceOneTimeCreateInner
+ * @export
+ */
+export type ProductPriceOneTimeCreateInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
+
 /**
  * A pay-what-you-want price for a one-time product.
  * @export
@@ -16411,9 +16431,10 @@ export interface ProductRecurringCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -16983,7 +17004,7 @@ export interface ResourceNotFound {
      * @type {string}
      * @memberof ResourceNotFound
      */
-    type: ResourceNotFoundTypeEnum;
+    error: ResourceNotFoundErrorEnum;
     /**
      * 
      * @type {string}
@@ -16996,10 +17017,10 @@ export interface ResourceNotFound {
 /**
  * @export
  */
-export const ResourceNotFoundTypeEnum = {
+export const ResourceNotFoundErrorEnum = {
     RESOURCE_NOT_FOUND: 'ResourceNotFound'
 } as const;
-export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typeof ResourceNotFoundTypeEnum];
+export type ResourceNotFoundErrorEnum = typeof ResourceNotFoundErrorEnum[keyof typeof ResourceNotFoundErrorEnum];
 
 /**
  * @type ResponseFilesUpdate
@@ -18767,7 +18788,7 @@ export interface Unauthorized {
      * @type {string}
      * @memberof Unauthorized
      */
-    type: UnauthorizedTypeEnum;
+    error: UnauthorizedErrorEnum;
     /**
      * 
      * @type {string}
@@ -18780,10 +18801,10 @@ export interface Unauthorized {
 /**
  * @export
  */
-export const UnauthorizedTypeEnum = {
+export const UnauthorizedErrorEnum = {
     UNAUTHORIZED: 'Unauthorized'
 } as const;
-export type UnauthorizedTypeEnum = typeof UnauthorizedTypeEnum[keyof typeof UnauthorizedTypeEnum];
+export type UnauthorizedErrorEnum = typeof UnauthorizedErrorEnum[keyof typeof UnauthorizedErrorEnum];
 
 /**
  * 

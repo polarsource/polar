@@ -5,8 +5,9 @@ from fastapi import Depends, Request, Security
 from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
+from polar.customer_session.dependencies import get_optional_customer_session_token
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.models import OAuth2Token, PersonalAccessToken, UserSession
+from polar.models import CustomerSession, OAuth2Token, PersonalAccessToken, UserSession
 from polar.oauth2.dependencies import get_optional_token
 from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
 from polar.personal_access_token.dependencies import get_optional_personal_access_token
@@ -37,6 +38,9 @@ async def get_auth_subject(
     personal_access_token_credentials: tuple[
         PersonalAccessToken | None, bool
     ] = Depends(get_optional_personal_access_token),
+    customer_session_credentials: tuple[CustomerSession | None, bool] = Depends(
+        get_optional_customer_session_token
+    ),
 ) -> AuthSubject[Subject]:
     # Web session
     if user_session is not None:
@@ -54,6 +58,7 @@ async def get_auth_subject(
     personal_access_token, personal_access_token_authorization_set = (
         personal_access_token_credentials
     )
+    customer_session, customer_session_authorization_set = customer_session_credentials
 
     if oauth2_token:
         return AuthSubject(
@@ -67,7 +72,20 @@ async def get_auth_subject(
             AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
 
-    if oauth2_authorization_set or personal_access_token_authorization_set:
+    if customer_session:
+        return AuthSubject(
+            customer_session.customer,
+            {Scope.customer_portal_write},
+            AuthMethod.CUSTOMER_SESSION_TOKEN,
+        )
+
+    if any(
+        (
+            oauth2_authorization_set,
+            personal_access_token_authorization_set,
+            customer_session_authorization_set,
+        )
+    ):
         raise InvalidTokenError()
 
     return AuthSubject(Anonymous(), set(), AuthMethod.NONE)

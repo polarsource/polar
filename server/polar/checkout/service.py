@@ -23,6 +23,7 @@ from polar.checkout.schemas import (
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.service import customer as customer_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
@@ -54,10 +55,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.product_price import (
-    ProductPriceAmountType,
-    ProductPriceFree,
-)
+from polar.models.product_price import ProductPriceAmountType, ProductPriceFree
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -814,6 +812,15 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session.add(checkout)
 
         await self._after_checkout_updated(session, checkout)
+
+        assert checkout.customer is not None
+        (
+            customer_session_token,
+            _,
+        ) = await customer_session_service.create_customer_session(
+            session, checkout.customer
+        )
+        checkout.customer_session_token = customer_session_token
 
         return checkout
 

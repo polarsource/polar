@@ -25,3 +25,11 @@ _CustomerPortalWrite = Authenticator(
 CustomerPortalWrite = Annotated[
     AuthSubject[User | Customer], Depends(_CustomerPortalWrite)
 ]
+
+_CustomerPortalOAuthAccount = Authenticator(
+    required_scopes={Scope.web_default, Scope.customer_portal_write},
+    allowed_subjects={Customer},
+)
+CustomerPortalOAuthAccount = Annotated[
+    AuthSubject[Customer], Depends(_CustomerPortalOAuthAccount)
+]

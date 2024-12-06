@@ -1,5 +1,6 @@
 import dataclasses
 import time
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -22,6 +23,28 @@ from polar.kit.tax import TaxID, TaxIDType
 
 if TYPE_CHECKING:
     from .organization import Organization
+
+
+class CustomerOAuthPlatform(StrEnum):
+    github = "github"
+    discord = "discord"
+
+    def get_account_key(self, account_id: str) -> str:
+        return f"{self.value}:{account_id}"
+
+    def get_account_id(self, data: dict[str, Any]) -> str:
+        if self == CustomerOAuthPlatform.github:
+            return data["id"]
+        if self == CustomerOAuthPlatform.discord:
+            return data["id"]
+        raise NotImplementedError()
+
+    def get_account_username(self, data: dict[str, Any]) -> str:
+        if self == CustomerOAuthPlatform.github:
+            return data["login"]
+        if self == CustomerOAuthPlatform.discord:
+            return data["username"]
+        raise NotImplementedError()
 
 
 @dataclasses.dataclass
@@ -77,17 +100,25 @@ class Customer(MetadataMixin, RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
-    def get_oauth_account(self, account_key: str) -> CustomerOAuthAccount | None:
-        oauth_account_data = self._oauth_accounts.get(account_key)
+    def get_oauth_account(
+        self, account_id: str, platform: CustomerOAuthPlatform
+    ) -> CustomerOAuthAccount | None:
+        oauth_account_data = self._oauth_accounts.get(
+            platform.get_account_key(account_id)
+        )
         if oauth_account_data is None:
             return None
 
         return CustomerOAuthAccount(**oauth_account_data)
 
     def set_oauth_account(
-        self, account_key: str, oauth_account: CustomerOAuthAccount
+        self, oauth_account: CustomerOAuthAccount, platform: CustomerOAuthPlatform
     ) -> None:
+        account_key = platform.get_account_key(oauth_account.account_id)
         self._oauth_accounts[account_key] = dataclasses.asdict(oauth_account)
 
-    def remove_oauth_account(self, account_key: str) -> None:
+    def remove_oauth_account(
+        self, account_id: str, platform: CustomerOAuthPlatform
+    ) -> None:
+        account_key = platform.get_account_key(account_id)
         self._oauth_accounts.pop(account_key, None)

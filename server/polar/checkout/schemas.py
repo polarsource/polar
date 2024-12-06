@@ -416,3 +416,15 @@ class CheckoutPublic(CheckoutBase):
     discount: CheckoutDiscount | None
     organization: Organization
     attached_custom_fields: list[AttachedCustomField]
+
+
+class CheckoutPublicConfirmed(CheckoutPublic):
+    """
+    Checkout session data retrieved using the client secret after confirmation.
+
+    It contains a customer session token to retrieve order information
+    right after the checkout.
+    """
+
+    status: Literal[CheckoutStatus.confirmed]
+    customer_session_token: str

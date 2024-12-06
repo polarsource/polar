@@ -25,6 +25,7 @@ from .schemas import (
     CheckoutCreate,
     CheckoutCreatePublic,
     CheckoutPublic,
+    CheckoutPublicConfirmed,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -212,7 +213,7 @@ async def client_update(
 
 @router.post(
     "/client/{client_secret}/confirm",
-    response_model=CheckoutPublic,
+    response_model=CheckoutPublicConfirmed,
     summary="Confirm Checkout Session from Client",
     responses={
         200: {"description": "Checkout session confirmed."},

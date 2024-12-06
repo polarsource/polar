@@ -30,9 +30,9 @@ router = APIRouter(
     prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
 )
 
-SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
+SubscriptionID = Annotated[UUID4, Path(description="Your subscription ID.")]
 SubscriptionNotFound = {
-    "description": "Subscription not found.",
+    "description": "Your subscription was not found.",
     "model": ResourceNotFound.schema(),
 }
 
@@ -134,10 +134,10 @@ async def update(
     summary="Cancel Subscription",
     response_model=UserSubscription,
     responses={
-        200: {"description": "Subscription canceled."},
+        200: {"description": "Your subscription is canceled."},
         403: {
             "description": (
-                "This subscription is already canceled "
+                "Your subscription is already canceled "
                 "or will be at the end of the period."
             ),
             "model": AlreadyCanceledUserSubscription.schema(),

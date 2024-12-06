@@ -169,25 +169,23 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Subscription | None:
         query = select(Subscription).where(Subscription.id == id)
-
         if not allow_deleted:
             query = query.where(Subscription.deleted_at.is_(None))
 
-        if options is not None:
-            query = query.options(*options)
-        else:
-            query = query.options(
-                joinedload(Subscription.user),
-                joinedload(Subscription.price),
-                joinedload(Subscription.product).options(
-                    selectinload(Product.product_medias),
-                    selectinload(Product.attached_custom_fields),
-                ),
-                joinedload(Subscription.discount),
-            )
+        return await self._get_loaded(session, query, id, options=options)
 
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
+    async def user_get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> Subscription | None:
+        query = self._get_readable_subscriptions_statement(auth_subject).where(
+            Subscription.started_at.is_not(None)
+        )
+        return await self._get_loaded(session, query, id, options=options)
 
     async def list(
         self,
@@ -812,6 +810,32 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         email_sender.send_to_user(
             to_email_addr=user.email, subject=subject, html_content=body
         )
+
+    async def _get_loaded(
+        self,
+        session: AsyncSession,
+        query: Select[Any],
+        id: uuid.UUID,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> Subscription | None:
+        query = query.where(Subscription.id == id)
+
+        if options is not None:
+            query = query.options(*options)
+        else:
+            query = query.options(
+                joinedload(Subscription.user),
+                joinedload(Subscription.price),
+                joinedload(Subscription.product).options(
+                    selectinload(Product.product_medias),
+                    selectinload(Product.attached_custom_fields),
+                ),
+                joinedload(Subscription.discount),
+            )
+
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
 
     def _get_readable_subscriptions_statement(
         self, auth_subject: AuthSubject[User | Organization]

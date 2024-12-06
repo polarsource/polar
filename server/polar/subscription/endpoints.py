@@ -2,15 +2,18 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 import structlog
-from fastapi import Depends, Query, Response
+from fastapi import Depends, Path, Query, Response
 from fastapi.responses import StreamingResponse
+from pydantic import UUID4
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.csv import (
     IterableCSVWriter,
 )
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.models import Subscription
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -19,12 +22,18 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
-from .service import SubscriptionSortProperty
+from .service import AlreadyCanceledSubscription, SubscriptionSortProperty
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.documented])
+
+SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
+SubscriptionNotFound = {
+    "description": "Subscription not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
 SearchSorting = Annotated[
@@ -124,3 +133,32 @@ async def export(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.delete(
+    "/{id}",
+    summary="Cancel Subscription",
+    response_model=SubscriptionSchema,
+    responses={
+        200: {"description": "Subscription canceled."},
+        403: {
+            "description": (
+                "This subscription is already canceled "
+                "or will be at the end of the period."
+            ),
+            "model": AlreadyCanceledSubscription.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def cancel(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Cancel a subscription."""
+    subscription = await subscription_service.user_get(session, auth_subject, id)
+    if not subscription:
+        raise ResourceNotFound()
+
+    return await subscription_service.cancel(session, subscription=subscription)

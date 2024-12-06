@@ -316,3 +316,6 @@ class TestClientConfirm:
         )
 
         assert response.status_code == 200
+
+        json = response.json()
+        assert "customer_session_token" in json

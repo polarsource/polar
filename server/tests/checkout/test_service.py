@@ -31,6 +31,7 @@ from polar.checkout.service import (
     PaymentRequired,
 )
 from polar.checkout.service import checkout as checkout_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
@@ -1894,6 +1895,13 @@ class TestConfirm:
             "tax_amount": "0",
             **expected_tax_metadata,
         }
+
+        assert checkout.customer_session_token is not None
+        customer_session = await customer_session_service.get_by_token(
+            session, checkout.customer_session_token
+        )
+        assert customer_session is not None
+        assert customer_session.customer == checkout.customer
 
     @pytest.mark.parametrize(
         "customer_billing_address,expected_tax_metadata",

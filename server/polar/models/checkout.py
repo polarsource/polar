@@ -217,6 +217,14 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def url(self) -> str:
         return settings.generate_frontend_url(f"/checkout/{self.client_secret}")
 
+    @property
+    def customer_session_token(self) -> str | None:
+        return getattr(self, "_customer_session_token", None)
+
+    @customer_session_token.setter
+    def customer_session_token(self, value: str) -> None:
+        self._customer_session_token = value
+
     attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
         association_proxy("product", "attached_custom_fields")
     )

@@ -18,6 +18,7 @@ class AuthMethod(Enum):
     COOKIE = auto()
     PERSONAL_ACCESS_TOKEN = auto()
     OAUTH2_ACCESS_TOKEN = auto()
+    CUSTOMER_SESSION_TOKEN = auto()
 
 
 S = TypeVar("S", bound=Subject, covariant=True)

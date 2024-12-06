@@ -21,7 +21,7 @@ from ..schemas.subscription import (
     UserSubscriptionUpdate,
 )
 from ..service.subscription import (
-    AlreadyCanceledSubscription,
+    AlreadyCanceledUserSubscription,
     UserSubscriptionSortProperty,
 )
 from ..service.subscription import user_subscription as user_subscription_service
@@ -140,7 +140,7 @@ async def update(
                 "This subscription is already canceled "
                 "or will be at the end of the period."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledUserSubscription.schema(),
         },
         404: SubscriptionNotFound,
     },

@@ -127,6 +127,14 @@ class EndDateInTheFuture(SubscriptionError):
         super().__init__(message)
 
 
+class AlreadyCanceledSubscription(SubscriptionError):
+    def __init__(self) -> None:
+        message = (
+            "This subscription is already canceled or will be at the end of the period."
+        )
+        super().__init__(message, 403)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -613,6 +621,28 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         elif subscription.cancel_at_period_end:
             await self.send_cancellation_email(session, subscription)
 
+        return subscription
+
+    async def cancel(
+        self, session: AsyncSession, *, subscription: Subscription
+    ) -> Subscription:
+        if not subscription.active or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription()
+
+        if subscription.stripe_subscription_id is not None:
+            await stripe_service.cancel_subscription(
+                subscription.stripe_subscription_id
+            )
+        else:
+            subscription.ended_at = utc_now()
+            subscription.cancel_at_period_end = True
+            subscription.status = SubscriptionStatus.canceled
+
+            # free subscriptions end immediately (vs at end of billing period)
+            # queue removal of grants
+            await self.enqueue_benefits_grants(session, subscription)
+
+        session.add(subscription)
         return subscription
 
     async def _after_subscription_updated(

@@ -63,6 +63,7 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
+from .eventstream import publish_subscription_cancel_event
 
 
 class SubscriptionError(PolarError): ...
@@ -666,6 +667,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             await self._send_webhook(
                 session, subscription, WebhookEventType.subscription_canceled
             )
+            await publish_subscription_cancel_event(subscription)
 
         # Notifications
         if subscription.active and SubscriptionStatus.is_incomplete(previous_status):

@@ -48,9 +48,10 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
         <h2 className="text-xl">
           $
           {getCentsInDollarString(
-            revenueMetrics.data?.periods[
-              revenueMetrics.data?.periods.length - 1
-            ].revenue ?? 0,
+            revenueMetrics.data?.periods.reduce(
+              (acc, curr) => acc + curr.revenue,
+              0,
+            ) ?? 0,
             false,
           )}
         </h2>

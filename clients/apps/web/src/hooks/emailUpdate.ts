@@ -14,8 +14,6 @@ export const useSendEmailUpdate = () => {
         return_to
       }
       await api.emailUpdate.requestEmailUpdate({ body })
-      const searchParams = new URLSearchParams({ email: email })
-      router.push(`email-update/request?${searchParams}`)
     },
     [router],
   )

@@ -21,5 +21,6 @@ depends_on: tuple[str] | None = None
 def upgrade() -> None:
     pass
 
+
 def downgrade() -> None:
     pass

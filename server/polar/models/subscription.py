@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     Uuid,
     type_coerce,
 )
@@ -66,6 +67,17 @@ class SubscriptionStatus(StrEnum):
     @classmethod
     def is_revoked(cls, status: Self) -> bool:
         return status in cls.revoked_statuses()
+
+
+class CustomerCancellationReason(StrEnum):
+    customer_service = "customer_service"
+    low_quality = "low_quality"
+    missing_features = "missing_features"
+    switched_service = "switched_service"
+    too_complex = "too_complex"
+    too_expensive = "too_expensive"
+    unused = "unused"
+    other = "other"
 
 
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
@@ -141,6 +153,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     checkout_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
+    )
+
+    customer_cancellation_reason: Mapped[CustomerCancellationReason | None] = (
+        mapped_column(String, nullable=True)
+    )
+    customer_cancellation_comment: Mapped[str | None] = mapped_column(
+        Text, nullable=True
     )
 
     @declared_attr

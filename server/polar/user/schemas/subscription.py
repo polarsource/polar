@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import UUID4, Field
 
 from polar.kit.schemas import EmailStrDNS, Schema
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
@@ -38,6 +38,11 @@ class UserSubscriptionProduct(ProductBase):
 class UserSubscription(UserSubscriptionBase):
     product: UserSubscriptionProduct
     price: ProductPrice
+
+
+class CustomerSubscriptionCancel(Schema):
+    reason: CustomerCancellationReason | None
+    comment: str | None
 
 
 class UserFreeSubscriptionCreate(Schema):

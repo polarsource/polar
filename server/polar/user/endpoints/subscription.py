@@ -17,6 +17,7 @@ from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.subscription import (
+    CustomerSubscriptionCancel,
     UserSubscription,
     UserSubscriptionUpdate,
 )
@@ -147,13 +148,18 @@ async def update(
 )
 async def cancel(
     id: SubscriptionID,
+    customer_cancellation: CustomerSubscriptionCancel,
     auth_subject: auth.UserSubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Cancel a subscription."""
+    """Cancel a users subscription."""
     subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
 
     if subscription is None:
         raise ResourceNotFound()
 
-    return await user_subscription_service.cancel(session, subscription=subscription)
+    return await user_subscription_service.cancel(
+        session,
+        subscription=subscription,
+        customer_cancellation=customer_cancellation,
+    )

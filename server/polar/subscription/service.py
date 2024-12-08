@@ -44,7 +44,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -623,14 +623,21 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         return subscription
 
     async def cancel(
-        self, session: AsyncSession, *, subscription: Subscription
+        self,
+        session: AsyncSession,
+        *,
+        subscription: Subscription,
+        customer_reason: CustomerCancellationReason | None = None,
+        customer_comment: str | None = None,
     ) -> Subscription:
         if not subscription.active or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription()
 
         if subscription.stripe_subscription_id is not None:
             await stripe_service.cancel_subscription(
-                subscription.stripe_subscription_id
+                subscription.stripe_subscription_id,
+                customer_reason=customer_reason.value if customer_reason else "",
+                customer_comment=customer_comment if customer_comment else "",
             )
         else:
             subscription.ended_at = utc_now()
@@ -640,6 +647,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # free subscriptions end immediately (vs at end of billing period)
             # queue removal of grants
             await self.enqueue_benefits_grants(session, subscription)
+
+        if customer_reason:
+            subscription.customer_cancellation_reason = customer_reason
+
+        if customer_comment:
+            subscription.customer_cancellation_comment = customer_comment
 
         session.add(subscription)
         return subscription

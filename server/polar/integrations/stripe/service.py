@@ -468,10 +468,35 @@ class StripeService:
                 raise MissingPaymentMethod(id)
             raise
 
-    async def cancel_subscription(self, id: str) -> stripe_lib.Subscription:
+    async def cancel_subscription(
+        self,
+        id: str,
+        customer_reason: (
+            Literal[""]
+            | Literal[
+                "customer_service",
+                "low_quality",
+                "missing_features",
+                "other",
+                "switched_service",
+                "too_complex",
+                "too_expensive",
+                "unused",
+            ]
+        ) = "",
+        customer_comment: str | Literal[""] = "",
+    ) -> stripe_lib.Subscription:
+        details: stripe_lib.Subscription.ModifyParamsCancellationDetails = {}
+        if customer_reason:
+            details["feedback"] = customer_reason
+
+        if customer_comment:
+            details["comment"] = customer_comment
+
         return await stripe_lib.Subscription.modify_async(
             id,
             cancel_at_period_end=True,
+            cancellation_details=details,
         )
 
     async def update_invoice(

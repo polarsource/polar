@@ -29,7 +29,7 @@ from polar.product.service.product_price import product_price as product_price_s
 from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
-from ..schemas.subscription import UserSubscriptionUpdate
+from ..schemas.subscription import CustomerSubscriptionCancel, UserSubscriptionUpdate
 
 
 class UserSubscriptionError(PolarError): ...
@@ -269,10 +269,19 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         return subscription
 
     async def cancel(
-        self, session: AsyncSession, *, subscription: Subscription
+        self,
+        session: AsyncSession,
+        *,
+        subscription: Subscription,
+        customer_cancellation: CustomerSubscriptionCancel,
     ) -> Subscription:
         try:
-            return await subscription_service.cancel(session, subscription=subscription)
+            return await subscription_service.cancel(
+                session,
+                subscription=subscription,
+                customer_reason=customer_cancellation.reason,
+                customer_comment=customer_cancellation.comment,
+            )
         except AlreadyCanceledSubscription:
             # Allowing us to keep a separate schema for the user endpoints
             raise AlreadyCanceledUserSubscription()

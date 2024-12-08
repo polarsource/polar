@@ -33,7 +33,7 @@ async def request_email_update(
     await email_update_service.send_email(
         email_update_record,
         token,
-        base_url=str(settings.generate_frontend_url("/email-update/verify")),
+        base_url=str(settings.generate_frontend_url("/verify-email")),
         extra_url_params=(
             {"return_to": email_update_request.return_to}
             if email_update_request.return_to

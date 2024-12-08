@@ -10,6 +10,7 @@ import {
   UsersLicenseKeysApiListRequest,
   UsersOrdersApiListRequest,
   UsersSubscriptionsApiListRequest,
+  CustomerSubscriptionCancel,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -83,10 +84,10 @@ export const useUpdateSubscription = () =>
     },
   })
 
-export const useCancelSubscription = (id: string) =>
+export const useCustomerCancelSubscription = (id: string) =>
   useMutation({
-    mutationFn: () => {
-      return api.usersSubscriptions.cancel({ id })
+    mutationFn: (body: CustomerSubscriptionCancel) => {
+      return api.usersSubscriptions.cancel({ id, body: body })
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({

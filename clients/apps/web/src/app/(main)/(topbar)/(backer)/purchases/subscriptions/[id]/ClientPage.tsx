@@ -3,27 +3,49 @@
 import BenefitDetails from '@/components/Benefit/BenefitDetails'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { markdownOpts } from '@/components/Feed/Markdown/markdown'
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
+import { Modal, ModalProps } from '@/components/Modal'
+import { setValidationErrors } from '@/utils/api/errors'
 import AmountLabel from '@/components/Shared/AmountLabel'
+import { Label } from 'polarkit/components/ui/label'
 import ChangePlanModal from '@/components/Subscriptions/ChangePlanModal'
 import {
-  useCancelSubscription,
+  useCustomerCancelSubscription,
   useUserBenefits,
   useUserOrderInvoice,
   useUserOrders,
 } from '@/hooks/queries'
 import { ArrowBackOutlined, ReceiptOutlined } from '@mui/icons-material'
-import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
+import {
+  UserBenefit,
+  UserOrder,
+  UserSubscription,
+  CustomerSubscriptionCancel,
+  ResponseError,
+  ValidationError,
+  CustomerCancellationReason,
+} from '@polar-sh/sdk'
+import TextArea from 'polarkit/components/ui/atoms/textarea'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from 'polarkit/components/ui/form'
+import { useForm } from 'react-hook-form'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { UseMutationResult } from '@tanstack/react-query'
+import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useCallback, useState } from 'react'
+import { Point } from 'framer-motion'
 
 const ClientPage = ({
   subscription: _subscription,
@@ -61,7 +83,7 @@ const ClientPage = ({
 
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
 
-  const cancelSubscription = useCancelSubscription(subscription.id)
+  const cancelSubscription = useCustomerCancelSubscription(subscription.id)
   const isCanceled =
     cancelSubscription.isPending ||
     cancelSubscription.isSuccess ||
@@ -205,19 +227,14 @@ const ClientPage = ({
                   fullWidth
                   onClick={() => setShowCancelModal(true)}
                 >
-                  Unsubscribe
+                  Cancel Subscription
                 </Button>
               )}
-              <ConfirmModal
+              <CustomerCancellationModal
                 isShown={showCancelModal}
                 hide={() => setShowCancelModal(false)}
-                title={`Unsubscribe from ${subscription.product.name}?`}
-                description={
-                  "At the end of your billing period, you won't have access to your benefits anymore."
-                }
-                destructiveText="Unsubscribe"
-                onConfirm={() => cancelSubscription.mutateAsync()}
-                destructive
+                subscription={subscription}
+                cancelSubscription={cancelSubscription}
               />
             </div>
           </ShadowBox>
@@ -291,6 +308,151 @@ const ClientPage = ({
           }
         />
       )}
+    </div>
+  )
+}
+
+interface CustomerCancellationModalProps extends Omit<ModalProps, 'modalContent'> {
+  subscription: UserSubscription,
+  cancelSubscription: UseMutationResult<UserSubscription, Error, void, unknown>,
+  onAbort?: () => void
+}
+
+const CustomerCancellationModal = ({
+  subscription,
+  cancelSubscription,
+  onAbort,
+  ...props
+}: CustomerCancellationModalProps) => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleCancel = useCallback(() => {
+    onAbort?.()
+    props.hide()
+  }, [onAbort, props])
+
+  const form = useForm<CustomerSubscriptionCancel>({
+    defaultValues: {
+      reason: null,
+      comment: null,
+    },
+  })
+  const { control, handleSubmit, watch, setError, setValue } = form
+
+  const handleCancellation = useCallback(
+    async (cancellation: CustomerSubscriptionCancel) => {
+      try {
+        setIsLoading(true)
+        console.log('foobar', cancellation)
+        await cancelSubscription.mutateAsync(cancellation)
+        props.hide()
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (e.response.status === 422) {
+            const validationErrors = body['detail'] as ValidationError[]
+            setValidationErrors(
+              validationErrors,
+              setError,
+              1,
+              Object.values(CustomerSubscriptionCancel),
+            )
+          } else {
+            setError('root', { message: e.message })
+          }
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [props.hide]
+  )
+
+  const onReasonSelect = (value: CustomerCancellationReason) => {
+    setValue('reason', value ?? '')
+  }
+
+  return (
+    <Modal
+      {...props}
+      className="md:min-w-[600px]"
+      modalContent={
+        <>
+          <div className="flex flex-col gap-y-6 px-6 py-12">
+            <>
+              <h3 className="text-xl font-medium">We&apos;re sorry to see you go!</h3>
+              <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500">
+                Please provide your feedback for leaving.
+              </p>
+              <Form {...form}>
+                <form onSubmit={handleSubmit(handleCancellation)}>
+                  <FormField
+                    control={control}
+                    name="reason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <RadioGroup value={field.value ?? 'other'} onValueChange={onReasonSelect}>
+                            <CancellationReasonRadio value="unused" label="Not using it enough" />
+                            <CancellationReasonRadio value="too_expensive" label="Too expensive" />
+                            <CancellationReasonRadio value="missing_features" label="Missing features" />
+                            <CancellationReasonRadio value="switched_service" label="Switched to another service" />
+                            <CancellationReasonRadio value="customer_service" label="Customer service" />
+                            <CancellationReasonRadio value="low_quality" label="Not satisfied with the quality" />
+                            <CancellationReasonRadio value="too_complex" label="Too complicated" />
+                            <CancellationReasonRadio value="other" label="Other (please share below)" />
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={control}
+                    name="comment"
+                    render={({ field }) => (
+                      <FormItem className="mt-8">
+                        <FormControl>
+                          <TextArea value={field.value ?? ""} {...field} placeholder="Anything else you want to share? (Optional)" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex flex-row gap-x-4 pt-6">
+                    <Button
+                      type="submit"
+                      variant="destructive"
+                    >
+                      Cancel Subscription
+                    </Button>
+                    <Button variant="ghost" onClick={handleCancel}>
+                      I don&apos;t want to cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </>
+          </div>
+        </>
+      }
+    />
+  )
+}
+
+const CancellationReasonRadio = ({
+  value,
+  label,
+}: {
+  value: CustomerCancellationReason
+  label: string
+}) => {
+  return (
+    <div className="flex flex-row">
+      <RadioGroupItem value={value} id={`reason-${value}`} />
+      <Label className="ml-4 grow" htmlFor={`reason-${value}`}>
+        {label}
+      </Label>
     </div>
   )
 }

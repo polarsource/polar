@@ -7801,6 +7801,44 @@ export interface Customer {
      */
     avatar_url: string | null;
 }
+
+/**
+ * 
+ * @export
+ */
+export const CustomerCancellationReason = {
+    CUSTOMER_SERVICE: 'customer_service',
+    LOW_QUALITY: 'low_quality',
+    MISSING_FEATURES: 'missing_features',
+    SWITCHED_SERVICE: 'switched_service',
+    TOO_COMPLEX: 'too_complex',
+    TOO_EXPENSIVE: 'too_expensive',
+    UNUSED: 'unused',
+    OTHER: 'other'
+} as const;
+export type CustomerCancellationReason = typeof CustomerCancellationReason[keyof typeof CustomerCancellationReason];
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscriptionCancel
+ */
+export interface CustomerSubscriptionCancel {
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscriptionCancel
+     */
+    reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionCancel
+     */
+    comment: string | null;
+}
+
+
 /**
  * 
  * @export

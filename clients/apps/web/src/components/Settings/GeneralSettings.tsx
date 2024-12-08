@@ -1,5 +1,5 @@
 import { ExpandMoreOutlined } from '@mui/icons-material'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ShadowListGroup } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -9,14 +9,35 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import EmailUpdateForm from '../Form/EmailUpdateForm'
 import Spinner from '../Shared/Spinner'
-
 export type Theme = 'system' | 'light' | 'dark'
+type emailStatusProps = 'form' | 'request' | 'verify'
 
-const GeneralSettings = () => {
+interface GeneralSettingsProps {
+  emailStatus?: 'verify' | null
+  returnTo?: string
+}
+
+const GeneralSettings: React.FC<GeneralSettingsProps> = ({ emailStatus }) => {
   const [theme, setTheme] = useState<Theme | undefined>()
-
+  const [emailUpdateStatus, setUpdateEmailStatus] =
+    useState<emailStatusProps>('form')
   const didSetTheme = useRef(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    emailStatus && setUpdateEmailStatus(emailStatus)
+    if (emailStatus === 'verify') {
+      setTimeout(() => {
+        setUpdateEmailStatus('form')
+        console.log('emailStatus', emailStatus)
+        router.push('/settings')
+        console.log('emailStatus', emailStatus)
+      }, 3000)
+    }
+  }, [emailStatus, router])
+
   const onInitialLoad = () => {
     if (didSetTheme.current) {
       return
@@ -62,6 +83,26 @@ const GeneralSettings = () => {
     }
   }, [])
 
+  const renderContent: Record<emailStatusProps, React.ReactNode> = {
+    form: (
+      <EmailUpdateForm
+        onEmailUpdateRequest={() => setUpdateEmailStatus('request')}
+      />
+    ),
+    request: (
+      <div className="dark:text-polar-400 text-center text-sm text-gray-500">
+        A verification email sent to the entered email.
+      </div>
+    ),
+    verify: (
+      <div className="flex w-80 flex-col items-center gap-4">
+        <div className="dark:text-polar-400 text-center text-sm text-gray-500">
+          Your email has been updated!
+        </div>
+      </div>
+    ),
+  }
+
   return (
     <ShadowListGroup>
       <ShadowListGroup.Item>
@@ -101,18 +142,14 @@ const GeneralSettings = () => {
         </div>
       </ShadowListGroup.Item>
       <ShadowListGroup.Item>
-        <div className="flex flex-row items-start justify-between">
+        <div className="flex flex-row items-start items-center justify-between">
           <div className="flex flex-col gap-y-1">
             <h3>Update email</h3>
             <p className="dark:text-polar-500 text-sm text-gray-400">
               Update your account&apos;s current email
             </p>
           </div>
-          <Link href="/email-update">
-            <Button asChild>
-              <a>Update</a>
-            </Button>
-          </Link>
+          <div>{renderContent[emailUpdateStatus]}</div>
         </div>
       </ShadowListGroup.Item>
     </ShadowListGroup>

@@ -12,10 +12,14 @@ import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
 interface EmailUpdateformProps {
-  returnTo?: string
+  returnTo?: string 
+  onEmailUpdateRequest?: () => void
 }
 
-const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({ returnTo }) => {
+const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
+  returnTo,
+  onEmailUpdateRequest
+}) => {
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
@@ -25,6 +29,7 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({ returnTo }) => {
     setLoading(true)
     try {
       sendEmailUpdate(email, returnTo)
+      onEmailUpdateRequest?.()
     } catch (e) {
       if (e instanceof ResponseError) {
         const body = await e.response.json()

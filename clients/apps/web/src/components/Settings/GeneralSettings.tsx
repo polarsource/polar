@@ -31,9 +31,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ emailStatus }) => {
     if (emailStatus === 'verify') {
       setTimeout(() => {
         setUpdateEmailStatus('form')
-        console.log('emailStatus', emailStatus)
         router.push('/settings')
-        console.log('emailStatus', emailStatus)
       }, 3000)
     }
   }, [emailStatus, router])

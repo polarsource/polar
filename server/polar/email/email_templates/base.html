@@ -116,16 +116,16 @@
         /* Buttons ------------------------------ */
 
         .button {
-            background-color: #4872c8;
-            border-top: 10px solid #4872c8;
-            border-right: 18px solid #4872c8;
-            border-bottom: 10px solid #4872c8;
-            border-left: 18px solid #4872c8;
+            background-color: #0062FF;
+            border-top: 10px solid #0062FF;
+            border-right: 18px solid #0062FF;
+            border-bottom: 10px solid #0062FF;
+            border-left: 18px solid #0062FF;
             display: inline-block;
             color: #FFF !important;
             font-weight: bold;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 99px;
             -webkit-text-size-adjust: none;
             box-sizing: border-box;
         }
@@ -326,9 +326,21 @@
         /* Masthead ----------------------- */
 
         .email-masthead {
-            padding: 25px 0;
-            text-align: center;
-            height: 30px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            -premailer-width: 100%;
+            -premailer-cellpadding: 0;
+            -premailer-cellspacing: 0;
+        }
+
+        .email-masthead_inner {
+            width: 570px;
+            margin: 0 auto;
+            padding: 0;
+            -premailer-width: 570px;
+            -premailer-cellpadding: 0;
+            -premailer-cellspacing: 0;
         }
 
         .email-masthead a {
@@ -359,11 +371,11 @@
 
         .email-masthead_feat {
           display: inline-block;
-          height: 30px;
           font-size: 18px;
           text-decoration: none;
           text-shadow: none;
           vertical-align: super;
+          padding-left: 45px;
         }
 
         .email-masthead_feat_plus {
@@ -418,11 +430,25 @@
         .body-sub {
             margin-top: 25px;
             padding-top: 25px;
-            border-top: 1px solid #EAEAEC;
         }
 
         .content-cell {
             padding: 45px;
+        }
+
+        .order-summary {
+            padding-top: 25px;
+            padding-bottom: 25px;
+        }
+
+        .product-image {
+            padding-top: 25px;
+            padding-bottom: 25px;
+        }
+
+        .order-summary .product-name {
+            font-weight: bold;
+            font-size: 18px;
         }
 
         /*Media Queries ------------------------------ */
@@ -501,19 +527,28 @@
             <td align="center">
                 <table class="email-content" width="100%" cellpadding="0" cellspacing="0" role="presentation">
                     <tr>
-                        <td class="email-masthead">
-                            <a href="https://polar.sh" class="f-fallback email-masthead_logo">
-                                <img src="https://polar.sh/email-logo.png" alt="Polar"
-                                    class="email-masthead_logo_light" />
-                                <img src="https://polar.sh/email-logo-dark.png" alt="Polar"
-                                    class="email-masthead_logo_dark" />
-                            </a>
-                            {% if featured_organization is defined %}
-                            <div class="email-masthead_feat">
-                              <span class="email-masthead_feat_plus"> + </span>
-                              <span>{{ featured_organization.slug }}</span>
-                            </div>
-                            {% endif %}
+                        <td class="email-masthead" width="570" cellpadding="0" cellspacing="0">
+                            <table class="email-body_inner" align="center" width="570" cellpadding="0" cellspacing="0"
+                                role="presentation">
+                                
+                                <tr>
+                                    <td class="content-cell">
+                                        <a href="https://polar.sh" class="f-fallback email-masthead_logo">
+                                            <img src="https://polar.sh/email-logo.png" alt="Polar"
+                                                class="email-masthead_logo_light" />
+                                            <img src="https://polar.sh/email-logo-dark.png" alt="Polar"
+                                                class="email-masthead_logo_dark" />
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% if featured_organization is defined %}
+                                <tr>
+                                    <td class="email-masthead_feat">
+                                        <span>{{ featured_organization.slug }}</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
                         </td>
                     </tr>
                     <!-- Email Body -->

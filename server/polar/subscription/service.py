@@ -739,6 +739,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             {
                 "featured_organization": featured_organization,
                 "product": product,
+                "subscription": subscription,
                 "url": (
                     f"{settings.FRONTEND_BASE_URL}"
                     f"/purchases/subscriptions/{subscription.id}"

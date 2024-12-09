@@ -6,7 +6,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.app import app
-from polar.auth.dependencies import get_auth_subject
+from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.models import AuthSubject, Subject
 from polar.checkout.ip_geolocation import _get_client_dependency
 from polar.postgres import AsyncSession, get_db_session
@@ -22,8 +22,9 @@ async def client(
 ) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_session] = lambda: session
     app.dependency_overrides[get_redis] = lambda: redis
-    app.dependency_overrides[get_auth_subject] = lambda: auth_subject
     app.dependency_overrides[_get_client_dependency] = lambda: None
+    for auth_subject_getter in _auth_subject_factory_cache.values():
+        app.dependency_overrides[auth_subject_getter] = lambda: auth_subject
 
     request_hooks = []
 
@@ -52,4 +53,3 @@ async def client(
         yield client
 
     app.dependency_overrides.pop(get_db_session)
-    app.dependency_overrides.pop(get_auth_subject)

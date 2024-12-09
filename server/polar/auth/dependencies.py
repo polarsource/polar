@@ -1,5 +1,6 @@
+from collections.abc import Awaitable, Callable
 from inspect import Parameter, Signature
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, Request, Security
 from makefun import with_signature
@@ -7,7 +8,13 @@ from makefun import with_signature
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.customer_session.dependencies import get_optional_customer_session_token
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.models import CustomerSession, OAuth2Token, PersonalAccessToken, UserSession
+from polar.models import (
+    Customer,
+    CustomerSession,
+    OAuth2Token,
+    PersonalAccessToken,
+    UserSession,
+)
 from polar.oauth2.dependencies import get_optional_token
 from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
 from polar.personal_access_token.dependencies import get_optional_personal_access_token
@@ -32,15 +39,14 @@ async def get_user_session(
     return await auth_service.authenticate(session, request)
 
 
-async def get_auth_subject(
-    user_session: UserSession | None = Depends(get_user_session),
-    oauth2_credentials: tuple[OAuth2Token | None, bool] = Depends(get_optional_token),
-    personal_access_token_credentials: tuple[
-        PersonalAccessToken | None, bool
-    ] = Depends(get_optional_personal_access_token),
-    customer_session_credentials: tuple[CustomerSession | None, bool] = Depends(
-        get_optional_customer_session_token
+async def _get_auth_subject(
+    user_session: UserSession | None = None,
+    oauth2_credentials: tuple[OAuth2Token | None, bool] = (None, False),
+    personal_access_token_credentials: tuple[PersonalAccessToken | None, bool] = (
+        None,
+        False,
     ),
+    customer_session_credentials: tuple[CustomerSession | None, bool] = (None, False),
 ) -> AuthSubject[Subject]:
     # Web session
     if user_session is not None:
@@ -91,11 +97,59 @@ async def get_auth_subject(
     return AuthSubject(Anonymous(), set(), AuthMethod.NONE)
 
 
+_auth_subject_factory_cache: dict[
+    frozenset[SubjectType], Callable[..., Awaitable[AuthSubject[Subject]]]
+] = {}
+
+
+def _get_auth_subject_factory(
+    allowed_subjects: frozenset[SubjectType],
+) -> Callable[..., Awaitable[AuthSubject[Subject]]]:
+    if allowed_subjects in _auth_subject_factory_cache:
+        return _auth_subject_factory_cache[allowed_subjects]
+
+    parameters: list[Parameter] = [
+        Parameter(
+            name="user_session",
+            kind=Parameter.KEYWORD_ONLY,
+            default=Depends(get_user_session),
+        ),
+        Parameter(
+            name="oauth2_credentials",
+            kind=Parameter.KEYWORD_ONLY,
+            default=Depends(get_optional_token),
+        ),
+        Parameter(
+            name="personal_access_token_credentials",
+            kind=Parameter.KEYWORD_ONLY,
+            default=Depends(get_optional_personal_access_token),
+        ),
+    ]
+    if Customer in allowed_subjects:
+        parameters.append(
+            Parameter(
+                name="customer_session_credentials",
+                kind=Parameter.KEYWORD_ONLY,
+                default=Depends(get_optional_customer_session_token),
+            )
+        )
+
+    signature = Signature(parameters)
+
+    @with_signature(signature)
+    async def get_auth_subject(**kwargs: Any) -> AuthSubject[Subject]:
+        return await _get_auth_subject(**kwargs)
+
+    _auth_subject_factory_cache[allowed_subjects] = get_auth_subject
+
+    return get_auth_subject
+
+
 class _Authenticator:
     def __init__(
         self,
         *,
-        allowed_subjects: set[SubjectType],
+        allowed_subjects: frozenset[SubjectType],
         required_scopes: set[Scope] | None = None,
     ) -> None:
         self.allowed_subjects = allowed_subjects
@@ -149,13 +203,15 @@ def Authenticator(
     By doing so, we can dynamically inject the required scopes into FastAPI
     dependency, so they are properrly detected by the OpenAPI generator.
     """
+    allowed_subjects_frozen = frozenset(allowed_subjects)
+
     parameters: list[Parameter] = [
         Parameter(name="self", kind=Parameter.POSITIONAL_OR_KEYWORD),
         Parameter(
             name="auth_subject",
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             default=Security(
-                get_auth_subject,
+                _get_auth_subject_factory(allowed_subjects_frozen),
                 scopes=sorted(
                     [
                         s.value
@@ -176,7 +232,7 @@ def Authenticator(
             return await super().__call__(auth_subject)
 
     return _AuthenticatorSignature(
-        allowed_subjects=allowed_subjects, required_scopes=required_scopes
+        allowed_subjects=allowed_subjects_frozen, required_scopes=required_scopes
     )
 
 

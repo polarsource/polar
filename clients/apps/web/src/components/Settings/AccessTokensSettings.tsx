@@ -180,6 +180,10 @@ const AccessTokensSettings = () => {
     setSelectAll(!allSelected)
   }
 
+  const selectableScopes = Object.values(AvailableScope).filter((scope) => {
+    return !scope.startsWith('articles:')
+  })
+
   return (
     <div className="flex w-full flex-col">
       <ShadowListGroup>
@@ -239,7 +243,7 @@ const AccessTokensSettings = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="flex max-h-96 w-80 flex-col gap-2 overflow-y-auto">
-                      {Object.values(AvailableScope).map((scope) => (
+                      {selectableScopes.map((scope) => (
                         <FormField
                           key={scope}
                           control={control}

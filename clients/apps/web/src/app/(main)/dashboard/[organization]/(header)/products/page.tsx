@@ -16,7 +16,7 @@ export default function Page({
   const { pagination, sorting } = parseSearchParams(
     searchParams,
     [{ id: 'name', desc: false }],
-    10,
+    20,
   )
 
   return (

@@ -295,21 +295,32 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-start gap-4">
-          <div className="w-auto">
-            <SubscriptionStatusSelect
-              statuses={['active', 'canceled']}
-              value={subscriptionStatus || 'active'}
-              onChange={setStatus}
-            />
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-4">
+            <div className="w-auto">
+              <SubscriptionStatusSelect
+                statuses={['active', 'canceled']}
+                value={subscriptionStatus || 'active'}
+                onChange={setStatus}
+              />
+            </div>
+            <div className="w-auto">
+              <SubscriptionTiersSelect
+                products={subscriptionTiers.data?.items || []}
+                value={productId || 'all'}
+                onChange={setFilter}
+              />
+            </div>
           </div>
-          <div className="w-auto">
-            <SubscriptionTiersSelect
-              products={subscriptionTiers.data?.items || []}
-              value={productId || 'all'}
-              onChange={setFilter}
-            />
-          </div>
+          <Button
+            onClick={onExport}
+            className="flex flex-row items-center"
+            variant={'secondary'}
+            wrapperClassNames="gap-x-2"
+          >
+            <FileDownloadOutlined fontSize="inherit" />
+            <span>Export</span>
+          </Button>
         </div>
         {subscriptions && pageCount !== undefined && (
           <DataTable
@@ -329,16 +340,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
             enableRowSelection
           />
         )}
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            onClick={onExport}
-            className="flex flex-row items-center"
-            variant={'secondary'}
-          >
-            <FileDownloadOutlined className="mr-2" fontSize="small" />
-            <span>Export</span>
-          </Button>
-        </div>
       </div>
       <InlineModal
         modalContent={<SubscriptionModal subscription={selectedSubscription} />}

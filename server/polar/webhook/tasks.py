@@ -1,6 +1,7 @@
 import base64
 import socket
 from collections.abc import Mapping
+from ssl import SSLError
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -131,7 +132,7 @@ async def _webhook_event_send(
             event.last_http_code = response.status_code
             response.raise_for_status()
     # Error
-    except httpx.HTTPError as e:
+    except (httpx.HTTPError, SSLError) as e:
         log.debug("An errror occurred while sending a webhook", error=e)
         delivery.succeeded = False
         # Permanent failure

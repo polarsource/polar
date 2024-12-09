@@ -185,9 +185,25 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def get_by_client_secret(
         self, session: AsyncSession, client_secret: str
     ) -> CheckoutLink | None:
-        statement = select(CheckoutLink).where(
-            CheckoutLink.deleted_at.is_(None),
-            CheckoutLink.client_secret == client_secret,
+        statement = (
+            select(CheckoutLink)
+            .join(
+                Product,
+                onclause=Product.id == CheckoutLink.product_id,
+            )
+            .join(Organization, onclause=Organization.id == Product.organization_id)
+            .where(
+                CheckoutLink.deleted_at.is_(None),
+                CheckoutLink.client_secret == client_secret,
+                Product.deleted_at.is_(None),
+                Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
+            )
+            .options(
+                contains_eager(CheckoutLink.product).options(
+                    contains_eager(Product.organization)
+                )
+            )
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

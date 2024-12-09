@@ -413,6 +413,18 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         product = await self._eager_load_product(session, product)
 
+        if product.organization.blocked_at is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Organization is blocked.",
+                        "input": checkout_create.product_price_id,
+                    }
+                ]
+            )
+
         amount = None
         currency = None
         if isinstance(price, ProductPriceFixed):

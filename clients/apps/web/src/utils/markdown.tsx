@@ -28,7 +28,7 @@ export const markdownOptions: MarkdownToJSX.Options = {
 export const markdownOptionsJustText: MarkdownToJSX.Options = {
   ...markdownOptions,
   wrapper: ({ children }) => <>{children}</>,
-  createElement: (tag, props, ...children) => {
+  createElement: (_, __, ...children) => {
     return <span className="[&:not(:first-child)]:ml-1">{children}</span>
   },
 }

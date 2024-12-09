@@ -1,7 +1,6 @@
 import {
   AccountsApi,
   AdvertisementsApi,
-  ArticlesApi,
   AuthApi,
   BackofficeApi,
   BenefitsApi,
@@ -49,7 +48,6 @@ import {
 export class PolarAPI {
   public readonly accounts: AccountsApi
   public readonly advertisements: AdvertisementsApi
-  public readonly articles: ArticlesApi
   public readonly auth: AuthApi
   public readonly backoffice: BackofficeApi
   public readonly legacyCheckouts: CheckoutsApi
@@ -95,7 +93,6 @@ export class PolarAPI {
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
     this.advertisements = new AdvertisementsApi(config)
-    this.articles = new ArticlesApi(config)
     this.auth = new AuthApi(config)
     this.backoffice = new BackofficeApi(config)
     this.legacyCheckouts = new CheckoutsApi(config)

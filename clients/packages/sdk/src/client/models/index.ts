@@ -271,7 +271,7 @@ export interface AlreadyCanceledSubscription {
      * @type {string}
      * @memberof AlreadyCanceledSubscription
      */
-    type: AlreadyCanceledSubscriptionTypeEnum;
+    error: AlreadyCanceledSubscriptionErrorEnum;
     /**
      * 
      * @type {string}
@@ -284,10 +284,10 @@ export interface AlreadyCanceledSubscription {
 /**
  * @export
  */
-export const AlreadyCanceledSubscriptionTypeEnum = {
+export const AlreadyCanceledSubscriptionErrorEnum = {
     ALREADY_CANCELED_SUBSCRIPTION: 'AlreadyCanceledSubscription'
 } as const;
-export type AlreadyCanceledSubscriptionTypeEnum = typeof AlreadyCanceledSubscriptionTypeEnum[keyof typeof AlreadyCanceledSubscriptionTypeEnum];
+export type AlreadyCanceledSubscriptionErrorEnum = typeof AlreadyCanceledSubscriptionErrorEnum[keyof typeof AlreadyCanceledSubscriptionErrorEnum];
 
 /**
  * App Permissions
@@ -1025,377 +1025,6 @@ export type AppPermissionsTypeStarringEnum = typeof AppPermissionsTypeStarringEn
 /**
  * 
  * @export
- * @interface Article
- */
-export interface Article {
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    slug: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    body: string;
-    /**
-     * 
-     * @type {BylineProfile}
-     * @memberof Article
-     */
-    byline: BylineProfile;
-    /**
-     * 
-     * @type {ArticleVisibility}
-     * @memberof Article
-     */
-    visibility: ArticleVisibility;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    user_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {Organization}
-     * @memberof Article
-     */
-    organization: Organization;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    published_at: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Article
-     */
-    paid_subscribers_only: boolean | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    paid_subscribers_only_ends_at: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Article
-     */
-    is_preview: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Article
-     */
-    is_pinned: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Article
-     */
-    notify_subscribers: boolean | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    notifications_sent_at: string | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof Article
-     */
-    email_sent_to_count: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    og_image_url: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Article
-     */
-    og_description: string | null;
-}
-
-
-
-/**
- * 
- * @export
- */
-export const ArticleByline = {
-    USER: 'user',
-    ORGANIZATION: 'organization'
-} as const;
-export type ArticleByline = typeof ArticleByline[keyof typeof ArticleByline];
-
-/**
- * 
- * @export
- * @interface ArticleCreate
- */
-export interface ArticleCreate {
-    /**
-     * Title of the article.
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    slug?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    body?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    body_base64?: string | null;
-    /**
-     * The organization ID.
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    organization_id?: string | null;
-    /**
-     * 
-     * @type {ArticleByline}
-     * @memberof ArticleCreate
-     */
-    byline?: ArticleByline;
-    /**
-     * 
-     * @type {ArticleVisibility}
-     * @memberof ArticleCreate
-     */
-    visibility?: ArticleVisibility;
-    /**
-     * Set to true to only make this article available for subscribers to a paid subscription tier in the organization.
-     * @type {boolean}
-     * @memberof ArticleCreate
-     */
-    paid_subscribers_only?: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    paid_subscribers_only_ends_at?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    published_at?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleCreate
-     */
-    notify_subscribers?: boolean | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleCreate
-     */
-    is_pinned?: boolean | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    og_image_url?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleCreate
-     */
-    og_description?: string | null;
-}
-
-
-/**
- * 
- * @export
- * @interface ArticlePreview
- */
-export interface ArticlePreview {
-    /**
-     * Email address to send the preview to. The user must be registered on Polar.
-     * @type {string}
-     * @memberof ArticlePreview
-     */
-    email: string;
-}
-/**
- * 
- * @export
- * @interface ArticleReceivers
- */
-export interface ArticleReceivers {
-    /**
-     * 
-     * @type {number}
-     * @memberof ArticleReceivers
-     */
-    free_subscribers: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof ArticleReceivers
-     */
-    premium_subscribers: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof ArticleReceivers
-     */
-    organization_members: number;
-}
-/**
- * 
- * @export
- * @interface ArticleUpdate
- */
-export interface ArticleUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    title?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    body?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    body_base64?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    slug?: string | null;
-    /**
-     * 
-     * @type {ArticleByline}
-     * @memberof ArticleUpdate
-     */
-    byline?: ArticleByline | null;
-    /**
-     * 
-     * @type {ArticleVisibility}
-     * @memberof ArticleUpdate
-     */
-    visibility?: ArticleVisibility | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleUpdate
-     */
-    paid_subscribers_only?: boolean | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    paid_subscribers_only_ends_at?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    published_at?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleUpdate
-     */
-    notify_subscribers?: boolean | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleUpdate
-     */
-    is_pinned?: boolean | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    og_image_url?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ArticleUpdate
-     */
-    og_description?: string | null;
-}
-
-
-
-/**
- * 
- * @export
- */
-export const ArticleVisibility = {
-    PUBLIC: 'public',
-    HIDDEN: 'hidden',
-    PRIVATE: 'private'
-} as const;
-export type ArticleVisibility = typeof ArticleVisibility[keyof typeof ArticleVisibility];
-
-/**
- * @type ArticleVisibilityFilter
- * Filter by visibility.
- * @export
- */
-export type ArticleVisibilityFilter = Array<ArticleVisibility> | ArticleVisibility;
-
-/**
- * 
- * @export
  * @interface Assignee
  */
 export interface Assignee {
@@ -1673,8 +1302,6 @@ export const AvailableScope = {
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
-    ARTICLESREAD: 'articles:read',
-    ARTICLESWRITE: 'articles:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     EXTERNAL_ORGANIZATIONSREAD: 'external_organizations:read',
@@ -1987,7 +1614,7 @@ export interface BackofficeReward {
  * @type Benefit
  * @export
  */
-export type Benefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
+export type Benefit = BenefitAds | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
 
 /**
  * A benefit of type `ads`.
@@ -2239,217 +1866,6 @@ export const BenefitAdsUpdateTypeEnum = {
     ADS: 'ads'
 } as const;
 export type BenefitAdsUpdateTypeEnum = typeof BenefitAdsUpdateTypeEnum[keyof typeof BenefitAdsUpdateTypeEnum];
-
-/**
- * A benefit of type `articles`.
- * 
- * Use it to grant access to posts.
- * @export
- * @interface BenefitArticles
- */
-export interface BenefitArticles {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the benefit.
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    type: BenefitArticlesTypeEnum;
-    /**
-     * The description of the benefit.
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    description: string;
-    /**
-     * Whether the benefit is selectable when creating a product.
-     * @type {boolean}
-     * @memberof BenefitArticles
-     */
-    selectable: boolean;
-    /**
-     * Whether the benefit is deletable.
-     * @type {boolean}
-     * @memberof BenefitArticles
-     */
-    deletable: boolean;
-    /**
-     * The ID of the organization owning the benefit.
-     * @type {string}
-     * @memberof BenefitArticles
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {BenefitArticlesProperties}
-     * @memberof BenefitArticles
-     */
-    properties: BenefitArticlesProperties;
-}
-
-
-/**
- * @export
- */
-export const BenefitArticlesTypeEnum = {
-    ARTICLES: 'articles'
-} as const;
-export type BenefitArticlesTypeEnum = typeof BenefitArticlesTypeEnum[keyof typeof BenefitArticlesTypeEnum];
-
-/**
- * Properties for a benefit of type `articles`.
- * @export
- * @interface BenefitArticlesProperties
- */
-export interface BenefitArticlesProperties {
-    /**
-     * Whether the user can access paid articles.
-     * @type {boolean}
-     * @memberof BenefitArticlesProperties
-     */
-    paid_articles: boolean;
-}
-/**
- * 
- * @export
- * @interface BenefitArticlesSubscriber
- */
-export interface BenefitArticlesSubscriber {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the benefit.
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    type: BenefitArticlesSubscriberTypeEnum;
-    /**
-     * The description of the benefit.
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    description: string;
-    /**
-     * Whether the benefit is selectable when creating a product.
-     * @type {boolean}
-     * @memberof BenefitArticlesSubscriber
-     */
-    selectable: boolean;
-    /**
-     * Whether the benefit is deletable.
-     * @type {boolean}
-     * @memberof BenefitArticlesSubscriber
-     */
-    deletable: boolean;
-    /**
-     * The ID of the organization owning the benefit.
-     * @type {string}
-     * @memberof BenefitArticlesSubscriber
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {Array<BenefitGrantSubscriber>}
-     * @memberof BenefitArticlesSubscriber
-     */
-    grants: Array<BenefitGrantSubscriber>;
-    /**
-     * 
-     * @type {Organization}
-     * @memberof BenefitArticlesSubscriber
-     */
-    organization: Organization;
-    /**
-     * 
-     * @type {BenefitArticlesSubscriberProperties}
-     * @memberof BenefitArticlesSubscriber
-     */
-    properties: BenefitArticlesSubscriberProperties;
-}
-
-
-/**
- * @export
- */
-export const BenefitArticlesSubscriberTypeEnum = {
-    ARTICLES: 'articles'
-} as const;
-export type BenefitArticlesSubscriberTypeEnum = typeof BenefitArticlesSubscriberTypeEnum[keyof typeof BenefitArticlesSubscriberTypeEnum];
-
-/**
- * Properties available to subscribers for a benefit of type `articles`.
- * @export
- * @interface BenefitArticlesSubscriberProperties
- */
-export interface BenefitArticlesSubscriberProperties {
-    /**
-     * Whether the user can access paid articles.
-     * @type {boolean}
-     * @memberof BenefitArticlesSubscriberProperties
-     */
-    paid_articles: boolean;
-}
-/**
- * 
- * @export
- * @interface BenefitArticlesUpdate
- */
-export interface BenefitArticlesUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticlesUpdate
-     */
-    description?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitArticlesUpdate
-     */
-    type: BenefitArticlesUpdateTypeEnum;
-}
-
-
-/**
- * @export
- */
-export const BenefitArticlesUpdateTypeEnum = {
-    ARTICLES: 'articles'
-} as const;
-export type BenefitArticlesUpdateTypeEnum = typeof BenefitArticlesUpdateTypeEnum[keyof typeof BenefitArticlesUpdateTypeEnum];
 
 /**
  * 
@@ -4728,12 +4144,6 @@ export interface BenefitPreconditionErrorNotificationPayload {
      */
     organization_name: string;
 }
-/**
- * @type BenefitPublicInner
- * @export
- */
-export type BenefitPublicInner = BenefitArticles | BenefitBase;
-
 
 /**
  * 
@@ -4741,7 +4151,6 @@ export type BenefitPublicInner = BenefitArticles | BenefitBase;
  */
 export const BenefitType = {
     CUSTOM: 'custom',
-    ARTICLES: 'articles',
     ADS: 'ads',
     DISCORD: 'discord',
     GITHUB_REPOSITORY: 'github_repository',
@@ -4761,27 +4170,8 @@ export type BenefitTypeFilter = Array<BenefitType> | BenefitType;
  * @type BenefitUpdate
  * @export
  */
-export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitDownloadablesUpdate | BenefitGitHubRepositoryUpdate | BenefitLicenseKeysUpdate;
+export type BenefitUpdate = BenefitAdsUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitDownloadablesUpdate | BenefitGitHubRepositoryUpdate | BenefitLicenseKeysUpdate;
 
-/**
- * 
- * @export
- * @interface BylineProfile
- */
-export interface BylineProfile {
-    /**
-     * 
-     * @type {string}
-     * @memberof BylineProfile
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BylineProfile
-     */
-    avatar_url: string | null;
-}
 /**
  * Checkout session data retrieved using an access token.
  * @export
@@ -5531,9 +4921,10 @@ export interface CheckoutLinkPriceCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5649,10 +5040,10 @@ export interface CheckoutLinkProduct {
     prices: Array<ProductPrice>;
     /**
      * List of benefits granted by the product.
-     * @type {Array<BenefitPublicInner>}
+     * @type {Array<BenefitBase>}
      * @memberof CheckoutLinkProduct
      */
-    benefits: Array<BenefitPublicInner>;
+    benefits: Array<BenefitBase>;
     /**
      * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
@@ -5671,9 +5062,10 @@ export interface CheckoutLinkProductCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5795,9 +5187,10 @@ export interface CheckoutPriceCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -5961,10 +5354,10 @@ export interface CheckoutProduct {
     prices: Array<ProductPrice>;
     /**
      * List of benefits granted by the product.
-     * @type {Array<BenefitPublicInner>}
+     * @type {Array<BenefitBase>}
      * @memberof CheckoutProduct
      */
-    benefits: Array<BenefitPublicInner>;
+    benefits: Array<BenefitBase>;
     /**
      * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
@@ -5986,9 +5379,10 @@ export interface CheckoutProductCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6714,9 +6108,10 @@ export interface CustomFieldCreateCheckbox {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6775,9 +6170,10 @@ export interface CustomFieldCreateDate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6836,9 +6232,10 @@ export interface CustomFieldCreateNumber {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6897,9 +6294,10 @@ export interface CustomFieldCreateSelect {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -6958,9 +6356,10 @@ export interface CustomFieldCreateText {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8101,9 +7500,10 @@ export interface DiscountFixedOnceForeverDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8417,9 +7817,10 @@ export interface DiscountFixedRepeatDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -8709,9 +8110,10 @@ export interface DiscountPercentageOnceForeverDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -9010,9 +8412,10 @@ export interface DiscountPercentageRepeatDurationCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -9746,35 +9149,6 @@ export interface FileDownload {
     readonly size_readable: string;
 }
 
-
-/**
- * 
- * @export
- * @interface FileNotFound
- */
-export interface FileNotFound {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileNotFound
-     */
-    type: FileNotFoundTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileNotFound
-     */
-    detail: string;
-}
-
-
-/**
- * @export
- */
-export const FileNotFoundTypeEnum = {
-    FILE_NOT_FOUND: 'FileNotFound'
-} as const;
-export type FileNotFoundTypeEnum = typeof FileNotFoundTypeEnum[keyof typeof FileNotFoundTypeEnum];
 
 /**
  * 
@@ -10950,25 +10324,6 @@ export interface ListResourceAccount {
      * 
      * @type {Pagination}
      * @memberof ListResourceAccount
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceArticle
- */
-export interface ListResourceArticle {
-    /**
-     * 
-     * @type {Array<Article>}
-     * @memberof ListResourceArticle
-     */
-    items: Array<Article>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceArticle
      */
     pagination: Pagination;
 }
@@ -12820,7 +12175,7 @@ export interface NotPermitted {
      * @type {string}
      * @memberof NotPermitted
      */
-    type: NotPermittedTypeEnum;
+    error: NotPermittedErrorEnum;
     /**
      * 
      * @type {string}
@@ -12833,10 +12188,10 @@ export interface NotPermitted {
 /**
  * @export
  */
-export const NotPermittedTypeEnum = {
+export const NotPermittedErrorEnum = {
     NOT_PERMITTED: 'NotPermitted'
 } as const;
-export type NotPermittedTypeEnum = typeof NotPermittedTypeEnum[keyof typeof NotPermittedTypeEnum];
+export type NotPermittedErrorEnum = typeof NotPermittedErrorEnum[keyof typeof NotPermittedErrorEnum];
 
 /**
  * @type NotificationsInner
@@ -13320,12 +12675,6 @@ export const OAuthPlatform = {
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
 
 /**
- * @type OneTimePriceInner
- * @export
- */
-export type OneTimePriceInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
-
-/**
  * 
  * @export
  * @interface Order
@@ -13385,6 +12734,12 @@ export interface Order {
      * @memberof Order
      */
     billing_reason: OrderBillingReason;
+    /**
+     * 
+     * @type {Address}
+     * @memberof Order
+     */
+    billing_address: Address | null;
     /**
      * 
      * @type {string}
@@ -14153,12 +13508,6 @@ export interface OrganizationCreate {
  * @interface OrganizationFeatureSettings
  */
 export interface OrganizationFeatureSettings {
-    /**
-     * If this organization has articles enabled
-     * @type {boolean}
-     * @memberof OrganizationFeatureSettings
-     */
-    articles_enabled?: boolean;
     /**
      * If this organization has issue funding enabled
      * @type {boolean}
@@ -15574,9 +14923,10 @@ export interface ProductOneTimeCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -15597,10 +14947,10 @@ export interface ProductOneTimeCreate {
     description?: string | null;
     /**
      * List of available prices for this product.
-     * @type {Array<OneTimePriceInner>}
+     * @type {Array<ProductPriceOneTimeCreateInner>}
      * @memberof ProductOneTimeCreate
      */
-    prices: Array<OneTimePriceInner>;
+    prices: Array<ProductPriceOneTimeCreateInner>;
     /**
      * 
      * @type {Array<string>}
@@ -15632,6 +14982,12 @@ export type ProductPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 
  * @export
  */
 export type ProductPriceOneTime = { amount_type: 'custom' } & ProductPriceOneTimeCustom | { amount_type: 'fixed' } & ProductPriceOneTimeFixed | { amount_type: 'free' } & ProductPriceOneTimeFree;
+/**
+ * @type ProductPriceOneTimeCreateInner
+ * @export
+ */
+export type ProductPriceOneTimeCreateInner = ProductPriceOneTimeCustomCreate | ProductPriceOneTimeFixedCreate | ProductPriceOneTimeFreeCreate;
+
 /**
  * A pay-what-you-want price for a one-time product.
  * @export
@@ -16411,9 +15767,10 @@ export interface ProductRecurringCreate {
      * 
      * The key must be a string with a maximum length of **40 characters**.
      * The value must be either:
-     *     * A string with a maximum length of **500 characters**
-     *     * An integer
-     *     * A boolean
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
      * 
      * You can store up to **50 key-value pairs**.
      * @type {{ [key: string]: MetadataValue1; }}
@@ -16538,10 +15895,10 @@ export interface ProductStorefront {
     prices: Array<ProductPrice>;
     /**
      * The benefits granted by the product.
-     * @type {Array<BenefitPublicInner>}
+     * @type {Array<BenefitBase>}
      * @memberof ProductStorefront
      */
-    benefits: Array<BenefitPublicInner>;
+    benefits: Array<BenefitBase>;
     /**
      * The medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
@@ -16983,7 +16340,7 @@ export interface ResourceNotFound {
      * @type {string}
      * @memberof ResourceNotFound
      */
-    type: ResourceNotFoundTypeEnum;
+    error: ResourceNotFoundErrorEnum;
     /**
      * 
      * @type {string}
@@ -16996,10 +16353,10 @@ export interface ResourceNotFound {
 /**
  * @export
  */
-export const ResourceNotFoundTypeEnum = {
+export const ResourceNotFoundErrorEnum = {
     RESOURCE_NOT_FOUND: 'ResourceNotFound'
 } as const;
-export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typeof ResourceNotFoundTypeEnum];
+export type ResourceNotFoundErrorEnum = typeof ResourceNotFoundErrorEnum[keyof typeof ResourceNotFoundErrorEnum];
 
 /**
  * @type ResponseFilesUpdate
@@ -17030,7 +16387,7 @@ export type ResponseOauth2Userinfo = UserInfoOrganization | UserInfoUser;
  * 
  * @export
  */
-export type ResponseUsersBenefitsGet = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
+export type ResponseUsersBenefitsGet = { type: 'ads' } & BenefitAdsSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
 /**
  * 
  * @export
@@ -17415,8 +16772,6 @@ export const Scope = {
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
-    ARTICLESREAD: 'articles:read',
-    ARTICLESWRITE: 'articles:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     EXTERNAL_ORGANIZATIONSREAD: 'external_organizations:read',
@@ -18767,7 +18122,7 @@ export interface Unauthorized {
      * @type {string}
      * @memberof Unauthorized
      */
-    type: UnauthorizedTypeEnum;
+    error: UnauthorizedErrorEnum;
     /**
      * 
      * @type {string}
@@ -18780,10 +18135,10 @@ export interface Unauthorized {
 /**
  * @export
  */
-export const UnauthorizedTypeEnum = {
+export const UnauthorizedErrorEnum = {
     UNAUTHORIZED: 'Unauthorized'
 } as const;
-export type UnauthorizedTypeEnum = typeof UnauthorizedTypeEnum[keyof typeof UnauthorizedTypeEnum];
+export type UnauthorizedErrorEnum = typeof UnauthorizedErrorEnum[keyof typeof UnauthorizedErrorEnum];
 
 /**
  * 
@@ -19016,7 +18371,7 @@ export interface UserBase {
  * 
  * @export
  */
-export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
+export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
 
 /**
  * 
@@ -19249,10 +18604,10 @@ export interface UserOrderProduct {
     prices: Array<ProductPrice>;
     /**
      * List of benefits granted by the product.
-     * @type {Array<BenefitPublicInner>}
+     * @type {Array<BenefitBase>}
      * @memberof UserOrderProduct
      */
-    benefits: Array<BenefitPublicInner>;
+    benefits: Array<BenefitBase>;
     /**
      * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}
@@ -19756,10 +19111,10 @@ export interface UserSubscriptionProduct {
     prices: Array<ProductPrice>;
     /**
      * List of benefits granted by the product.
-     * @type {Array<BenefitPublicInner>}
+     * @type {Array<BenefitBase>}
      * @memberof UserSubscriptionProduct
      */
-    benefits: Array<BenefitPublicInner>;
+    benefits: Array<BenefitBase>;
     /**
      * List of medias associated to the product.
      * @type {Array<ProductMediaFileRead>}

@@ -16,6 +16,7 @@ import {
   serializeSearchParams,
   sortingStateToQueryParam,
 } from '@/utils/datatable'
+import { markdownOptionsJustText } from '@/utils/markdown'
 import {
   AddOutlined,
   HiveOutlined,
@@ -29,6 +30,7 @@ import {
   ProductPrice,
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
+import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -43,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { useCallback, useContext, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
   pagination,
@@ -171,17 +174,17 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="flex aspect-square h-8 flex-col items-center justify-center text-center">
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex aspect-square h-10 flex-col items-center justify-center rounded-md border border-gray-200 bg-gray-100 text-center">
       {coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={coverUrl}
           alt={product.name}
-          className="aspect-square h-8 rounded object-cover"
+          className="aspect-square h-10 rounded-md object-cover"
         />
       ) : (
         <TextureOutlined
-          fontSize="large"
+          fontSize="medium"
           className="dark:text-polar-600 text-gray-300"
         />
       )}
@@ -243,14 +246,28 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
 
   return (
     <ListItem
-      className="flex flex-row items-center justify-between"
+      className="flex flex-row items-center justify-between gap-x-6"
       onSelect={handleContextMenuCallback(() =>
         router.push(`/dashboard/${organization.slug}/products/${product.id}`),
       )}
     >
-      <div className="flex flex-grow flex-row items-center gap-x-4">
+      <div className="flex flex-grow flex-row items-center gap-x-4 text-sm">
         <ProductListCoverImage product={product} />
-        <span>{product.name}</span>
+        <div className="flex flex-col">
+          <span className="truncate">{product.name}</span>
+          {product.description && (
+            <div
+              className={twMerge(
+                'prose dark:prose-invert dark:text-polar-500 flex-shrink text-sm leading-normal text-gray-500',
+                'max-w-96 truncate',
+              )}
+            >
+              <Markdown options={markdownOptionsJustText}>
+                {product.description}
+              </Markdown>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex flex-row items-center gap-x-6">
         <span className="text-sm leading-snug">

@@ -474,7 +474,7 @@ const BaseCheckoutForm = ({
                               {!checkout.discount && (
                                 <Button
                                   type="button"
-                                  variant="outline"
+                                  variant="secondary"
                                   onClick={addDiscountCode}
                                 >
                                   Apply
@@ -483,7 +483,7 @@ const BaseCheckoutForm = ({
                               {checkout.discount && (
                                 <Button
                                   type="button"
-                                  variant="outline"
+                                  variant="secondary"
                                   onClick={removeDiscountCode}
                                 >
                                   <CloseOutlined className="h-4 w-4" />

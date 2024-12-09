@@ -5,7 +5,7 @@ import {
   useRecurringBillingLabel,
   useRecurringProductPrice,
 } from '@/hooks/products'
-import { markdownOptions } from '@/utils/markdown'
+import { markdownOptionsJustText } from '@/utils/markdown'
 import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import {
@@ -81,10 +81,10 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         {subscriptionTier.description && (
           <div
             className={twMerge(
-              'prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md dark:prose-headings:text-polar-50 dark:text-polar-300 max-h-64 max-w-4xl overflow-hidden leading-normal text-gray-500',
+              'prose dark:prose-invert dark:text-polar-500 flex-shrink leading-normal text-gray-500',
             )}
           >
-            <Markdown options={markdownOptions}>
+            <Markdown options={markdownOptionsJustText}>
               {subscriptionTier.description}
             </Markdown>
           </div>

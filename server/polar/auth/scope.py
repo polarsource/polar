@@ -62,9 +62,6 @@ class Scope(StrEnum):
     issues_read = "issues:read"
     issues_write = "issues:write"
 
-    user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
-    user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
-
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
 
@@ -116,10 +113,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
     Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
-    Scope.user_advertisement_campaigns_read: "Read your advertisement campaigns",
-    Scope.user_advertisement_campaigns_write: (
-        "Create or modify your advertisement campaigns"
-    ),
 }
 
 

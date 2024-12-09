@@ -93,6 +93,7 @@ class BenefitGrantDiscordPropertiesUpdate(TypedDict):
 
 
 class BenefitGrantDiscordUpdate(BenefitGrantUpdateBase):
+    benefit_type: Literal[BenefitType.discord]
     properties: BenefitGrantDiscordPropertiesUpdate
 
     def get_oauth_platform(self) -> Literal[CustomerOAuthPlatform.discord]:
@@ -104,6 +105,7 @@ class BenefitGrantGitHubRepositoryPropertiesUpdate(TypedDict):
 
 
 class BenefitGrantGitHubRepositoryUpdate(BenefitGrantUpdateBase):
+    benefit_type: Literal[BenefitType.github_repository]
     properties: BenefitGrantGitHubRepositoryPropertiesUpdate
 
     def get_oauth_platform(self) -> Literal[CustomerOAuthPlatform.github]:
@@ -111,19 +113,19 @@ class BenefitGrantGitHubRepositoryUpdate(BenefitGrantUpdateBase):
 
 
 class BenefitGrantDownloadablesUpdate(BenefitGrantUpdateBase):
-    pass
+    benefit_type: Literal[BenefitType.downloadables]
 
 
 class BenefitGrantLicenseKeysUpdate(BenefitGrantUpdateBase):
-    pass
+    benefit_type: Literal[BenefitType.license_keys]
 
 
 class BenefitGrantAdsUpdate(BenefitGrantUpdateBase):
-    pass
+    benefit_type: Literal[BenefitType.ads]
 
 
 class BenefitGrantCustomUpdate(BenefitGrantUpdateBase):
-    pass
+    benefit_type: Literal[BenefitType.custom]
 
 
 BenefitGrantUpdate = Annotated[

@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
+    # Email update
+    EMAIL_UPDATE_TTL_SECONDS: int = 60 * 30  # 30 minutes
+
     # Checkout
     CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
     IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent

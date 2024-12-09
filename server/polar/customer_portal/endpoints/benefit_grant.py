@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -17,7 +17,7 @@ from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.benefit_grant import BenefitGrant as BenefitGrantSchema
-from ..schemas.benefit_grant import BenefitGrantAdapter
+from ..schemas.benefit_grant import BenefitGrantAdapter, BenefitGrantUpdate
 from ..service.benefit_grant import CustomerBenefitGrantSortProperty
 from ..service.benefit_grant import (
     customer_benefit_grant as customer_benefit_grant_service,
@@ -100,3 +100,35 @@ async def get(
         raise ResourceNotFound()
 
     return benefit_grant
+
+
+@router.get(
+    "/{id}",
+    summary="Update Benefit Grant",
+    response_model=BenefitGrantSchema,
+    responses={
+        200: {"description": "Benefit grant updated."},
+        403: {
+            "description": "The benefit grant is revoked and cannot be updated.",
+            "model": NotPermitted.schema(),
+        },
+        404: BenefitGrantNotFound,
+    },
+)
+async def update(
+    id: BenefitGrantID,
+    benefit_grant_update: BenefitGrantUpdate,
+    auth_subject: auth.CustomerPortalWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> BenefitGrant:
+    """Update a benefit grant for the authenticated customer or user."""
+    benefit_grant = await customer_benefit_grant_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if benefit_grant is None:
+        raise ResourceNotFound()
+
+    return await customer_benefit_grant_service.update(
+        session, benefit_grant, benefit_grant_update
+    )

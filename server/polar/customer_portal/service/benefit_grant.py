@@ -1,12 +1,14 @@
 import uuid
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_customer, is_user
+from polar.customer.service import customer as customer_service
+from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -20,6 +22,13 @@ from polar.models import (
     UserCustomer,
 )
 from polar.models.benefit import BenefitType
+from polar.worker import enqueue_job
+
+from ..schemas.benefit_grant import (
+    BenefitGrantDiscordUpdate,
+    BenefitGrantGitHubRepositoryUpdate,
+    BenefitGrantUpdate,
+)
 
 
 class CustomerBenefitGrantSortProperty(StrEnum):
@@ -88,6 +97,67 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         result = await session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def update(
+        self,
+        session: AsyncSession,
+        benefit_grant: BenefitGrant,
+        benefit_grant_update: BenefitGrantUpdate,
+    ) -> BenefitGrant:
+        if benefit_grant.is_revoked:
+            raise NotPermitted("Cannot update a revoked benefit grant.")
+
+        if benefit_grant_update.benefit_type != benefit_grant.benefit.type:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "benefit_type"),
+                        "msg": "Benefit type must match the existing granted benefit type.",
+                        "input": benefit_grant_update.benefit_type,
+                    }
+                ]
+            )
+
+        if isinstance(benefit_grant_update, BenefitGrantDiscordUpdate) or isinstance(
+            benefit_grant_update, BenefitGrantGitHubRepositoryUpdate
+        ):
+            account_id = benefit_grant_update.properties["account_id"]
+            platform = benefit_grant_update.get_oauth_platform()
+
+            customer = await customer_service.get(session, benefit_grant.customer_id)
+            assert customer is not None
+
+            oauth_account = customer.get_oauth_account(account_id, platform)
+            if oauth_account is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "properties", "account_id"),
+                            "msg": "OAuth account does not exist.",
+                            "input": account_id,
+                        }
+                    ]
+                )
+
+            benefit_grant.properties = cast(
+                Any,
+                {
+                    **benefit_grant.properties,
+                    **benefit_grant_update.properties,
+                },
+            )
+
+            enqueue_job("benefit.update", benefit_grant.id)
+
+        for attr, value in benefit_grant_update.model_dump(
+            exclude_unset=True, exclude={"properties", "benefit_type"}
+        ).items():
+            setattr(benefit_grant, attr, value)
+
+        session.add(benefit_grant)
+        return benefit_grant
 
     def _get_readable_benefit_grant_statement(
         self, auth_subject: AuthSubject[User | Customer]

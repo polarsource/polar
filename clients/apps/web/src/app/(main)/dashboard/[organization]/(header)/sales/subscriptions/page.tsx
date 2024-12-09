@@ -27,9 +27,11 @@ export default async function Page({
     params.organization,
   )
 
-  const { pagination, sorting } = parseSearchParams(searchParams, [
-    { id: 'started_at', desc: true },
-  ])
+  const { pagination, sorting } = parseSearchParams(
+    searchParams,
+    [{ id: 'started_at', desc: true }],
+    50,
+  )
 
   return (
     <ClientPage

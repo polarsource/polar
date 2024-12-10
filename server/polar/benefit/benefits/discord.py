@@ -3,6 +3,7 @@ from typing import Any, cast
 import httpx
 import structlog
 from httpx_oauth.clients.discord import DiscordOAuth2
+from httpx_oauth.oauth2 import RefreshTokenError
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -194,9 +195,20 @@ class BenefitDiscordService(
                 settings.DISCORD_CLIENT_SECRET,
                 scopes=["identify", "email", "guilds.join"],
             )
-            refreshed_token_data = await client.refresh_token(
-                oauth_account.refresh_token
-            )
+            try:
+                refreshed_token_data = await client.refresh_token(
+                    oauth_account.refresh_token
+                )
+            except RefreshTokenError as e:
+                log.warning(
+                    "Failed to refresh Discord access token",
+                    oauth_account_id=oauth_account.account_id,
+                    customer_id=str(customer.id),
+                    error=str(e),
+                )
+                raise BenefitActionRequiredError(
+                    "The customer needs to reconnect their Discord account"
+                ) from e
             oauth_account.access_token = refreshed_token_data["access_token"]
             oauth_account.expires_at = refreshed_token_data["expires_at"]
             oauth_account.refresh_token = refreshed_token_data["refresh_token"]

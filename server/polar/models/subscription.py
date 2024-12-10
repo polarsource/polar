@@ -26,11 +26,11 @@ if TYPE_CHECKING:
     from polar.models import (
         BenefitGrant,
         Checkout,
+        Customer,
         Discount,
         Organization,
         Product,
         ProductPrice,
-        User,
     )
 
 
@@ -95,16 +95,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    user_id: Mapped[UUID] = mapped_column(
+    customer_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="cascade"),
+        ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
 
     @declared_attr
-    def user(cls) -> Mapped["User"]:
-        return relationship("User", lazy="raise")
+    def customer(cls) -> Mapped["Customer"]:
+        return relationship("Customer", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid,

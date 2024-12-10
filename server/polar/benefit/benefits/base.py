@@ -2,11 +2,8 @@ from typing import Any, Protocol, TypeVar
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
-from polar.models import Benefit, Organization, User
+from polar.models import Benefit, Customer, Organization, User
 from polar.models.benefit import BenefitProperties
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationContextualPayload,
-)
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 
@@ -46,27 +43,12 @@ class BenefitRetriableError(BenefitServiceError):
         super().__init__(message)
 
 
-class BenefitPreconditionError(BenefitServiceError):
+class BenefitActionRequiredError(BenefitServiceError):
     """
-    Some conditions are missing to grant the benefit.
+    An action is required from the customer before granting the benefit.
 
-    It accepts a payload schema.
-    When set, a notification will be sent to the backer to explain them what happened.
+    Typically, we need the customer to connect an external OAuth account.
     """
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        payload: BenefitPreconditionErrorNotificationContextualPayload | None = None,
-    ) -> None:
-        """
-        Args:
-            message: The plain error message.
-            payload: The payload to build the notification.
-        """
-        self.payload = payload
-        super().__init__(message)
 
 
 B = TypeVar("B", bound=Benefit, contravariant=True)
@@ -93,19 +75,19 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
     async def grant(
         self,
         benefit: B,
-        user: User,
+        customer: Customer,
         grant_properties: BGP,
         *,
         update: bool = False,
         attempt: int = 1,
     ) -> BGP:
         """
-        Executes the logic to grant a benefit to a backer.
+        Executes the logic to grant a benefit to a customer.
 
         Args:
             benefit: The Benefit to grant.
-            user: The backer user.
-            grant_properties: Stored properties for this specific benefit and user.
+            customer: The customer.
+            grant_properties: Stored properties for this specific benefit and customer.
             Might be available at this stage if we're updating
             an already granted benefit.
             update: Whether we are updating an already granted benefit.
@@ -113,7 +95,7 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
             Useful for the worker to implement retry logic.
 
         Returns:
-            A dictionary with data to store for this specific benefit and user.
+            A dictionary with data to store for this specific benefit and customer.
             For example, it can be useful to store external identifiers
             that may help when updating the grant or revoking it.
             **Existing properties will be overriden, so be sure to include all the data
@@ -122,30 +104,29 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
         Raises:
             BenefitRetriableError: An temporary error occured,
             we should be able to retry later.
-            BenefitPreconditionError: Some conditions are missing to grant the benefit.
         """
         ...
 
     async def revoke(
         self,
         benefit: B,
-        user: User,
+        customer: Customer,
         grant_properties: BGP,
         *,
         attempt: int = 1,
     ) -> BGP:
         """
-        Executes the logic to revoke a benefit from a backer.
+        Executes the logic to revoke a benefit from a customer.
 
         Args:
             benefit: The Benefit to revoke.
-            user: The backer user.
-            grant_properties: Stored properties for this specific benefit and user.
+            customer: The customer.
+            grant_properties: Stored properties for this specific benefit and customer.
             attempt: Number of times we attempted to revoke the benefit.
             Useful for the worker to implement retry logic.
 
         Returns:
-            A dictionary with data to store for this specific benefit and user.
+            A dictionary with data to store for this specific benefit and customer.
             For example, it can be useful to store external identifiers
             that may help when updating the grant or revoking it.
             **Existing properties will be overriden, so be sure to include all the data

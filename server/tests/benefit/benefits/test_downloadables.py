@@ -4,12 +4,7 @@ import pytest
 
 from polar.benefit.schemas import BenefitDownloadablesCreateProperties
 from polar.file.schemas import FileRead
-from polar.models import (
-    Downloadable,
-    Organization,
-    Product,
-    User,
-)
+from polar.models import Customer, Downloadable, Organization, Product
 from polar.models.downloadable import DownloadableStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -18,7 +13,7 @@ from tests.fixtures.downloadable import TestDownloadable
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestDownloadblesBenefit:
     @pytest.mark.auth
     async def test_grant_one(
@@ -26,7 +21,7 @@ class TestDownloadblesBenefit:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -35,16 +30,18 @@ class TestDownloadblesBenefit:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitDownloadablesCreateProperties(
                 files=[uploaded_logo_jpg.id]
             ),
         )
-        assert granted["files"][0] == str(uploaded_logo_jpg.id)
+        assert granted.get("files", [])[0] == str(uploaded_logo_jpg.id)
 
-        downloadables = await TestDownloadable.get_user_downloadables(session, user)
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
         assert downloadables
         assert len(downloadables) == 1
 
@@ -58,7 +55,7 @@ class TestDownloadblesBenefit:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -73,7 +70,7 @@ class TestDownloadblesBenefit:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitDownloadablesCreateProperties(
@@ -81,12 +78,14 @@ class TestDownloadblesBenefit:
             ),
         )
 
-        downloadables = await TestDownloadable.get_user_downloadables(session, user)
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
         assert downloadables
         assert len(downloadables) == len(files)
 
         for i, file in enumerate(files):
-            assert granted["files"][i] == str(file.id)
+            assert granted.get("files", [])[i] == str(file.id)
             downloadable = downloadables[i]
             assert downloadable.status == DownloadableStatus.granted
             assert downloadable.file_id == file.id
@@ -98,7 +97,7 @@ class TestDownloadblesBenefit:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -108,7 +107,7 @@ class TestDownloadblesBenefit:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitDownloadablesCreateProperties(
@@ -121,10 +120,12 @@ class TestDownloadblesBenefit:
                 ],
             ),
         )
-        assert len(granted["files"]) == 1
-        assert granted["files"][0] == str(uploaded_logo_png.id)
+        assert len(granted.get("files", [])) == 1
+        assert granted.get("files", [])[0] == str(uploaded_logo_png.id)
 
-        downloadables = await TestDownloadable.get_user_downloadables(session, user)
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
         assert downloadables
         assert len(downloadables) == 1
 
@@ -138,7 +139,7 @@ class TestDownloadblesBenefit:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -147,7 +148,7 @@ class TestDownloadblesBenefit:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitDownloadablesCreateProperties(
@@ -158,10 +159,12 @@ class TestDownloadblesBenefit:
         )
 
         # First granted
-        assert len(granted["files"]) == 1
-        assert granted["files"][0] == str(uploaded_logo_jpg.id)
+        assert len(granted.get("files", [])) == 1
+        assert granted.get("files", [])[0] == str(uploaded_logo_jpg.id)
 
-        downloadables = await TestDownloadable.get_user_downloadables(session, user)
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
         assert downloadables
         assert len(downloadables) == 1
 
@@ -169,11 +172,11 @@ class TestDownloadblesBenefit:
         assert downloadable.status == DownloadableStatus.granted
         assert downloadable.file_id == uploaded_logo_jpg.id
 
-        await TestDownloadable.run_revoke_task(session, redis, benefit, user)
+        await TestDownloadable.run_revoke_task(session, redis, benefit, customer)
 
         # Now revoked
-        updated_downloadables = await TestDownloadable.get_user_downloadables(
-            session, user
+        updated_downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
         )
         assert updated_downloadables
         assert len(updated_downloadables) == 1
@@ -188,7 +191,7 @@ class TestDownloadblesBenefit:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -202,7 +205,7 @@ class TestDownloadblesBenefit:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitDownloadablesCreateProperties(
@@ -211,9 +214,9 @@ class TestDownloadblesBenefit:
         )
 
         # First granted
-        assert len(granted["files"]) == 2
-        granted_downloadables = await TestDownloadable.get_user_downloadables(
-            session, user
+        assert len(granted.get("files", [])) == 2
+        granted_downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
         )
         assert len(granted_downloadables) == 2
         for i, file in enumerate(files):
@@ -221,11 +224,11 @@ class TestDownloadblesBenefit:
             assert grant.file_id == file.id
             assert grant.status == DownloadableStatus.granted
 
-        await TestDownloadable.run_revoke_task(session, redis, benefit, user)
+        await TestDownloadable.run_revoke_task(session, redis, benefit, customer)
 
         # Now revoked
-        revoked_downloadables = await TestDownloadable.get_user_downloadables(
-            session, user
+        revoked_downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
         )
         assert len(revoked_downloadables) == 2
         for i, file in enumerate(files):
@@ -239,7 +242,7 @@ class TestDownloadblesBenefit:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -259,16 +262,18 @@ class TestDownloadblesBenefit:
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=properties,
         )
 
-        assert len(granted["files"]) == 1
-        assert granted["files"][0] == str(files[1].id)
+        assert len(granted.get("files", [])) == 1
+        assert granted.get("files", [])[0] == str(files[1].id)
 
-        downloadables = await TestDownloadable.get_user_downloadables(session, user)
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
         assert downloadables
         assert len(downloadables) == 1
 
@@ -282,11 +287,13 @@ class TestDownloadblesBenefit:
         await session.flush()
 
         _, updated_granted = await TestDownloadable.run_grant_task(
-            session, redis, benefit, user
+            session, redis, benefit, customer
         )
 
-        assert len(updated_granted["files"]) == 2
-        downloadables = await TestDownloadable.get_user_downloadables(session, user)
+        assert len(updated_granted.get("files", [])) == 2
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
         assert downloadables
         assert len(downloadables) == 2
 
@@ -297,7 +304,7 @@ class TestDownloadblesBenefit:
             return None
 
         for i, file in enumerate(files):
-            assert updated_granted["files"][i] == str(file.id)
+            assert updated_granted.get("files", [])[i] == str(file.id)
             updated_downloadable = find_downloadable(file.id)
             assert updated_downloadable
             assert updated_downloadable.status == DownloadableStatus.granted
@@ -305,13 +312,13 @@ class TestDownloadblesBenefit:
             assert updated_downloadable.deleted_at is None
 
     @pytest.mark.auth
-    async def test_archive_for_new_users(
+    async def test_archive_for_new_customers(
         self,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
-        user_second: User,
+        customer: Customer,
+        customer_second: Customer,
         organization: Organization,
         product: Product,
         uploaded_logo_jpg: FileRead,
@@ -321,11 +328,11 @@ class TestDownloadblesBenefit:
             uploaded_logo_jpg,
             uploaded_logo_png,
         ]
-        benefit, user_granted = await TestDownloadable.create_benefit_and_grant(
+        benefit, customer_granted = await TestDownloadable.create_benefit_and_grant(
             session,
             redis,
             save_fixture,
-            user=user,
+            customer=customer,
             organization=organization,
             product=product,
             properties=BenefitDownloadablesCreateProperties(
@@ -333,14 +340,14 @@ class TestDownloadblesBenefit:
             ),
         )
 
-        # First user granted all files
-        assert len(user_granted["files"]) == 2
-        user_downloadables = await TestDownloadable.get_user_downloadables(
-            session, user
+        # First customer granted all files
+        assert len(customer_granted.get("files", [])) == 2
+        customer_downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
         )
-        assert len(user_downloadables) == 2
+        assert len(customer_downloadables) == 2
         for i, file in enumerate(files):
-            grant = user_downloadables[i]
+            grant = customer_downloadables[i]
             assert grant.file_id == file.id
             assert grant.status == DownloadableStatus.granted
 
@@ -352,20 +359,20 @@ class TestDownloadblesBenefit:
         await session.flush()
         session.expunge(benefit)
 
-        # Second user granted one file
+        # Second customer granted one file
         # Since they subscribe after the 2nd file was archived
-        _, user_second_granted = await TestDownloadable.create_grant(
+        _, customer_second_granted = await TestDownloadable.create_grant(
             session,
             redis,
             save_fixture,
             benefit,
-            user=user_second,
+            customer=customer_second,
             product=product,
         )
-        assert len(user_second_granted["files"]) == 1
-        user_second_downloadables = await TestDownloadable.get_user_downloadables(
-            session, user_second
+        assert len(customer_second_granted.get("files", [])) == 1
+        customer_second_downloadables = (
+            await TestDownloadable.get_customer_downloadables(session, customer_second)
         )
-        assert len(user_second_downloadables) == 1
-        assert user_second_downloadables[0].file_id == files[1].id
-        assert user_second_downloadables[0].status == DownloadableStatus.granted
+        assert len(customer_second_downloadables) == 1
+        assert customer_second_downloadables[0].file_id == files[1].id
+        assert customer_second_downloadables[0].status == DownloadableStatus.granted

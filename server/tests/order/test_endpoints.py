@@ -5,7 +5,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.models import Order, Product, User, UserOrganization
+from polar.models import Customer, Order, Product, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
@@ -13,9 +13,9 @@ from tests.fixtures.random_objects import create_order
 
 @pytest_asyncio.fixture
 async def orders(
-    save_fixture: SaveFixture, product: Product, user_second: User
+    save_fixture: SaveFixture, product: Product, customer: Customer
 ) -> list[Order]:
-    return [await create_order(save_fixture, product=product, user=user_second)]
+    return [await create_order(save_fixture, product=product, customer=customer)]
 
 
 @pytest.mark.asyncio

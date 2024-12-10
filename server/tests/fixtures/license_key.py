@@ -3,7 +3,7 @@ from typing import cast
 
 from polar.benefit.benefits.license_keys import BenefitLicenseKeysService
 from polar.benefit.schemas import BenefitLicenseKeysCreateProperties
-from polar.models import Benefit, LicenseKey, Organization, Product, User
+from polar.models import Benefit, Customer, LicenseKey, Organization, Product
 from polar.models.benefit import BenefitLicenseKeys, BenefitType
 from polar.models.benefit_grant import BenefitGrantLicenseKeysProperties
 from polar.models.subscription import SubscriptionStatus
@@ -24,7 +24,7 @@ class TestLicenseKey:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         organization: Organization,
         product: Product,
         properties: BenefitLicenseKeysCreateProperties,
@@ -40,7 +40,7 @@ class TestLicenseKey:
             redis,
             save_fixture,
             cast(BenefitLicenseKeys, benefit),
-            user=user,
+            customer=customer,
             product=product,
         )
 
@@ -51,22 +51,22 @@ class TestLicenseKey:
         redis: Redis,
         save_fixture: SaveFixture,
         benefit: BenefitLicenseKeys,
-        user: User,
+        customer: Customer,
         product: Product,
     ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         subscription = await create_subscription(
             save_fixture,
             product=product,
-            user=user,
+            customer=customer,
             status=SubscriptionStatus.active,
         )
         await create_benefit_grant(
             save_fixture,
-            user,
+            customer,
             benefit,
             subscription=subscription,
         )
-        return await cls.run_grant_task(session, redis, benefit, user)
+        return await cls.run_grant_task(session, redis, benefit, customer)
 
     @classmethod
     async def run_grant_task(
@@ -74,10 +74,10 @@ class TestLicenseKey:
         session: AsyncSession,
         redis: Redis,
         benefit: BenefitLicenseKeys,
-        user: User,
+        customer: Customer,
     ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         service = BenefitLicenseKeysService(session, redis)
-        granted = await service.grant(benefit, user, {})
+        granted = await service.grant(benefit, customer, {})
         return benefit, granted
 
     @classmethod
@@ -86,21 +86,21 @@ class TestLicenseKey:
         session: AsyncSession,
         redis: Redis,
         benefit: BenefitLicenseKeys,
-        user: User,
+        customer: Customer,
     ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
         service = BenefitLicenseKeysService(session, redis)
-        revoked = await service.revoke(benefit, user, {})
+        revoked = await service.revoke(benefit, customer, {})
         return benefit, revoked
 
     @classmethod
-    async def get_user_licenses(
-        cls, session: AsyncSession, user: User
+    async def get_customer_licenses(
+        cls, session: AsyncSession, customer: Customer
     ) -> Sequence[LicenseKey]:
         statement = (
             sql.select(LicenseKey)
             .join(Benefit)
             .where(
-                LicenseKey.user_id == user.id,
+                LicenseKey.customer_id == customer.id,
                 Benefit.deleted_at.is_(None),
             )
         )

@@ -8,7 +8,7 @@ import structlog
 from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitLicenseKeys, BenefitLicenseKeysProperties
 from polar.models.benefit_grant import BenefitGrantLicenseKeysProperties
 
@@ -31,7 +31,7 @@ class BenefitLicenseKeysService(
     async def grant(
         self,
         benefit: BenefitLicenseKeys,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
         update: bool = False,
@@ -41,9 +41,9 @@ class BenefitLicenseKeysService(
         if update and "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
-        key = await license_key_service.user_grant(
+        key = await license_key_service.customer_grant(
             self.session,
-            user=user,
+            customer=customer,
             benefit=benefit,
             license_key_id=current_lk_id,
         )
@@ -55,7 +55,7 @@ class BenefitLicenseKeysService(
     async def revoke(
         self,
         benefit: BenefitLicenseKeys,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
         attempt: int = 1,
@@ -64,15 +64,15 @@ class BenefitLicenseKeysService(
         if not license_key_id:
             log.info(
                 "license_key.revoke.skip",
-                user_id=user.id,
+                customer_id=customer.id,
                 benefit_id=benefit.id,
                 message="No license key to revoke",
             )
             return grant_properties
 
-        await license_key_service.user_revoke(
+        await license_key_service.customer_revoke(
             self.session,
-            user=user,
+            customer=customer,
             benefit=benefit,
             license_key_id=UUID(license_key_id),
         )

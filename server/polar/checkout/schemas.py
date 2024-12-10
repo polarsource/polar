@@ -121,6 +121,14 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
         default=True, description=_allow_discount_codes_description
     )
     amount: Amount | None = None
+    customer_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of an existing customer in the organization. "
+            "The customer data will be pre-filled in the checkout form. "
+            "The resulting order will be linked to this customer."
+        ),
+    )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
@@ -408,3 +416,15 @@ class CheckoutPublic(CheckoutBase):
     discount: CheckoutDiscount | None
     organization: Organization
     attached_custom_fields: list[AttachedCustomField]
+
+
+class CheckoutPublicConfirmed(CheckoutPublic):
+    """
+    Checkout session data retrieved using the client secret after confirmation.
+
+    It contains a customer session token to retrieve order information
+    right after the checkout.
+    """
+
+    status: Literal[CheckoutStatus.confirmed]
+    customer_session_token: str

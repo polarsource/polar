@@ -25,6 +25,7 @@ from .schemas import (
     CheckoutCreate,
     CheckoutCreatePublic,
     CheckoutPublic,
+    CheckoutPublicConfirmed,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -180,7 +181,7 @@ async def client_create(
     """Create a checkout session from a client. Suitable to build checkout links."""
     ip_address = request.client.host if request.client else None
     return await checkout_service.client_create(
-        session, checkout_create, auth_subject, ip_geolocation_client, ip_address
+        session, checkout_create, ip_geolocation_client, ip_address
     )
 
 
@@ -212,7 +213,7 @@ async def client_update(
 
 @router.post(
     "/client/{client_secret}/confirm",
-    response_model=CheckoutPublic,
+    response_model=CheckoutPublicConfirmed,
     summary="Confirm Checkout Session from Client",
     responses={
         200: {"description": "Checkout session confirmed."},

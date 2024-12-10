@@ -1,4 +1,4 @@
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasPath, Field
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.organization.schemas import Organization
@@ -19,9 +19,6 @@ class CustomerOrderBase(TimestampedSchema):
     currency: str
 
     customer_id: UUID4
-    user_id: UUID4 = Field(
-        validation_alias="customer_id", deprecated="Use `customer_id`."
-    )
     product_id: UUID4
     product_price_id: UUID4
     subscription_id: UUID4 | None
@@ -38,6 +35,10 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(CustomerOrderBase):
+    user_id: UUID4 = Field(
+        validation_alias=AliasPath("customer", "legacy_user_id"),
+        deprecated="Use `customer_id`.",
+    )
     product: CustomerOrderProduct
     product_price: ProductPrice
     subscription: CustomerOrderSubscription | None

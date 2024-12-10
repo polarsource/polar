@@ -90,6 +90,22 @@ class Customer(MetadataMixin, RecordModel):
         "oauth_accounts", JSONB, nullable=False, default=dict
     )
 
+    _legacy_user_id: Mapped[UUID | None] = mapped_column(
+        "legacy_user_id",
+        Uuid,
+        ForeignKey("users.id", ondelete="set null"),
+        nullable=True,
+    )
+    """
+    Before implementing customers, every customer was a user. This field is used to
+    keep track of the user that originated this customer.
+
+    It helps us keep backwards compatibility with integrations that used the user ID as
+    reference to the customer.
+
+    For new customers, this field will be null.
+    """
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
@@ -122,3 +138,13 @@ class Customer(MetadataMixin, RecordModel):
     ) -> None:
         account_key = platform.get_account_key(account_id)
         self._oauth_accounts.pop(account_key, None)
+
+    @property
+    def legacy_user_id(self) -> UUID:
+        return self._legacy_user_id or self.id
+
+    @property
+    def legacy_user_public_name(self) -> str:
+        if self.name:
+            return self.name[0]
+        return self.email[0]

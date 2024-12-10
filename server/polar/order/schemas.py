@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from babel.numbers import format_currency
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.discount.schemas import DiscountMinimal
@@ -23,9 +23,6 @@ class OrderBase(
     billing_reason: OrderBillingReason
     billing_address: Address | None
 
-    user_id: UUID4 = Field(
-        validation_alias="customer_id", deprecated="Use `customer_id`."
-    )
     customer_id: UUID4
     product_id: UUID4
     product_price_id: UUID4
@@ -50,6 +47,12 @@ class OrderCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
     organization_id: UUID4
 
 
+class OrderUser(Schema):
+    id: UUID4 = Field(validation_alias="legacy_user_id")
+    email: str
+    public_name: str = Field(validation_alias="legacy_user_public_name")
+
+
 class OrderProduct(ProductBase): ...
 
 
@@ -61,9 +64,11 @@ class OrderSubscription(SubscriptionBase, MetadataOutputMixin): ...
 
 class Order(OrderBase):
     customer: OrderCustomer
-    user: OrderCustomer = Field(
-        validation_alias="customer", deprecated="Use `customer`."
+    user_id: UUID4 = Field(
+        validation_alias=AliasPath("customer", "legacy_user_id"),
+        deprecated="Use `customer_id`.",
     )
+    user: OrderUser = Field(validation_alias="customer", deprecated="Use `customer`.")
     product: OrderProduct
     product_price: ProductPrice
     discount: OrderDiscount | None

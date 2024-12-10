@@ -64,6 +64,7 @@ class CustomerOrderService(ResourceServiceReader[Order]):
         statement = statement.join(
             Organization, onclause=Product.organization_id == Organization.id
         ).options(
+            joinedload(Order.customer),
             joinedload(Order.subscription),
             contains_eager(Order.product).options(
                 selectinload(Product.product_medias),
@@ -123,6 +124,7 @@ class CustomerOrderService(ResourceServiceReader[Order]):
             self._get_readable_order_statement(auth_subject)
             .where(Order.id == id)
             .options(
+                joinedload(Order.customer),
                 joinedload(Order.product_price),
                 joinedload(Order.subscription),
                 contains_eager(Order.product).options(

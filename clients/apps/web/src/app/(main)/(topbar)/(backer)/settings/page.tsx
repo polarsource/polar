@@ -7,8 +7,20 @@ import GeneralSettings from '@/components/Settings/GeneralSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 export default function Page() {
+  const searchParams = useSearchParams()
+  const status = searchParams.get('emailStatus') as 'verify' | null
+  const [emailStatus, setEmailStatus] = useState<'verify' | null>(null)
+
+  useEffect(() => {
+    if (status) {
+      setEmailStatus(status)
+    }
+  }, [emailStatus, status])
+
   return (
     <div className="relative z-0">
       <div className="mb-24 flex flex-col gap-y-16">
@@ -17,7 +29,7 @@ export default function Page() {
           <div className="flex flex-col gap-y-4">
             <Section>
               <SectionDescription title="General" description="" />
-              <GeneralSettings />
+              <GeneralSettings emailStatus={emailStatus} />
             </Section>
 
             <Section>

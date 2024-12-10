@@ -11,6 +11,7 @@ from .discount import Discount
 from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
 from .downloadable import Downloadable
+from .email_verification import EmailVerification
 from .external_organization import ExternalOrganization
 from .file import File
 from .held_balance import HeldBalance
@@ -64,6 +65,7 @@ __all__ = [
     "DiscountProduct",
     "DiscountRedemption",
     "Downloadable",
+    "EmailVerification",
     "ExternalOrganization",
     "File",
     "HeldBalance",

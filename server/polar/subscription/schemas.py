@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from babel.numbers import format_currency
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.discount.schemas import DiscountMinimal
@@ -30,6 +30,12 @@ class SubscriptionCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
     organization_id: UUID4
 
 
+class SubscriptionUser(Schema):
+    id: UUID4 = Field(validation_alias="legacy_user_id")
+    email: str
+    public_name: str = Field(validation_alias="legacy_user_public_name")
+
+
 class SubscriptionBase(IDSchema, TimestampedSchema):
     amount: int | None
     currency: str | None
@@ -41,9 +47,6 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     started_at: datetime | None
     ended_at: datetime | None
 
-    user_id: UUID4 = Field(
-        validation_alias="customer_id", deprecated="Use `customer_id`."
-    )
     customer_id: UUID4
     product_id: UUID4
     price_id: UUID4
@@ -67,7 +70,11 @@ SubscriptionDiscount = Annotated[
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
-    user: SubscriptionCustomer = Field(
+    user_id: UUID4 = Field(
+        validation_alias=AliasPath("customer", "legacy_user_id"),
+        deprecated="Use `customer_id`.",
+    )
+    user: SubscriptionUser = Field(
         validation_alias="customer", deprecated="Use `customer`."
     )
     product: Product

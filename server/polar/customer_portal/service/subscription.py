@@ -85,10 +85,11 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             statement.join(Product, onclause=Subscription.product_id == Product.id)
             .join(Organization, onclause=Product.organization_id == Organization.id)
             .options(
+                joinedload(Subscription.customer),
                 contains_eager(Subscription.product).options(
                     selectinload(Product.product_medias),
                     contains_eager(Product.organization),
-                )
+                ),
             )
         )
 
@@ -148,6 +149,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             self._get_readable_subscription_statement(auth_subject)
             .where(Subscription.id == id)
             .options(
+                joinedload(Subscription.customer),
                 joinedload(Subscription.product).options(
                     selectinload(Product.product_medias),
                     joinedload(Product.organization),

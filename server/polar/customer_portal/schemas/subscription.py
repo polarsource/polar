@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasPath, Field
 
 from polar.kit.schemas import Schema
 from polar.models.subscription import SubscriptionStatus
@@ -24,9 +24,6 @@ class CustomerSubscriptionBase(SubscriptionBase):
     ended_at: datetime | None
 
     customer_id: UUID4
-    user_id: UUID4 = Field(
-        validation_alias="customer_id", deprecated="Use `customer_id`."
-    )
     product_id: UUID4
     price_id: UUID4
 
@@ -39,6 +36,10 @@ class CustomerSubscriptionProduct(ProductBase):
 
 
 class CustomerSubscription(CustomerSubscriptionBase):
+    user_id: UUID4 = Field(
+        validation_alias=AliasPath("customer", "legacy_user_id"),
+        deprecated="Use `customer_id`.",
+    )
     product: CustomerSubscriptionProduct
     price: ProductPrice
 

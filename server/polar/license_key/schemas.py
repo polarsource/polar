@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Literal, Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasPath, Field
 
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -70,14 +70,21 @@ class LicenseKeyCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
     organization_id: UUID4
 
 
+class LicenseKeyUser(Schema):
+    id: UUID4 = Field(validation_alias="legacy_user_id")
+    email: str
+    public_name: str = Field(validation_alias="legacy_user_public_name")
+
+
 class LicenseKeyRead(Schema):
     id: UUID4
     organization_id: UUID4
     user_id: UUID4 = Field(
-        validation_alias="customer_id", deprecated="Use `customer_id`."
+        validation_alias=AliasPath("customer", "legacy_user_id"),
+        deprecated="Use `customer_id`.",
     )
     customer_id: UUID4
-    user: LicenseKeyCustomer = Field(
+    user: LicenseKeyUser = Field(
         validation_alias="customer", deprecated="Use `customer`."
     )
     customer: LicenseKeyCustomer

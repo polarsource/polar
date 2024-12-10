@@ -248,6 +248,9 @@ export const SDKNavigation = () => {
         <NavigationItem href="/docs/developers/sdk/checkout-link">
           checkout-link
         </NavigationItem>
+        <NavigationItem href="/docs/developers/sdk/polar-for-framer">
+          Polar for Framer
+        </NavigationItem>
         <NavigationItem href="/docs/developers/sdk/github-actions">
           GitHub Actions
         </NavigationItem>

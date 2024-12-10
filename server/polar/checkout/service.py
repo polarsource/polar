@@ -115,6 +115,16 @@ class NotConfirmedCheckout(CheckoutError):
         super().__init__(message)
 
 
+class ArchivedPriceCheckout(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        self.price = checkout.product_price
+        message = (
+            f"Checkout {checkout.id} has an archived price: {checkout.product_price_id}"
+        )
+        super().__init__(message)
+
+
 class PaymentIntentNotSucceeded(CheckoutError):
     def __init__(self, checkout: Checkout, payment_intent_id: str) -> None:
         self.checkout = checkout
@@ -672,6 +682,17 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 }
             )
 
+        # Case where the price was archived after the checkout was created
+        if checkout.product_price.is_archived:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "product_price_id"),
+                    "msg": "Price is archived.",
+                    "input": checkout.product_price_id,
+                }
+            )
+
         for required_field in self._get_required_confirm_fields(checkout):
             if getattr(checkout, required_field) is None:
                 errors.append(
@@ -791,6 +812,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
+        product_price = checkout.product_price
+        if product_price.is_archived:
+            raise ArchivedPriceCheckout(checkout)
+
         if payment_intent.status != "succeeded":
             raise PaymentIntentNotSucceeded(checkout, payment_intent.id)
 
@@ -802,7 +827,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         stripe_customer_id = get_expandable_id(payment_intent.customer)
         stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
-        product_price = checkout.product_price
         metadata = {
             "type": ProductType.product,
             "product_id": str(checkout.product_id),

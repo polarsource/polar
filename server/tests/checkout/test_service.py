@@ -1779,6 +1779,34 @@ class TestConfirm:
                 ),
             )
 
+    async def test_archived_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        archived_price = await create_product_price_fixed(
+            save_fixture, product=checkout_one_time_fixed.product, is_archived=True
+        )
+        checkout_one_time_fixed.product_price = archived_price
+        await save_fixture(checkout_one_time_fixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.confirm(
+                session,
+                locker,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
     async def test_calculate_tax_error(
         self,
         calculate_tax_mock: AsyncMock,

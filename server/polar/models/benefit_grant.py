@@ -26,7 +26,7 @@ from sqlalchemy.orm import (
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Order, Subscription, User
+    from polar.models import Benefit, Customer, Order, Subscription
 
 
 class BenefitGrantScope(TypedDict, total=False):
@@ -80,17 +80,13 @@ class BenefitGrantAdsProperties(BenefitGrantPropertiesBase):
 
 
 class BenefitGrantDiscordProperties(BenefitGrantPropertiesBase, total=False):
+    account_id: str
     guild_id: str
     role_id: str
-    account_id: str
 
 
 class BenefitGrantGitHubRepositoryProperties(BenefitGrantPropertiesBase, total=False):
-    # repository_id was set previously (before 2024-13-15), for benefits using the "main"
-    # Polar GitHub App for granting benefits. Benefits created after this date are using
-    # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
-    # and repository_name fields.
-    repository_id: str | None
+    account_id: str
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
@@ -119,7 +115,10 @@ class BenefitGrant(RecordModel):
     __tablename__ = "benefit_grants"
     __table_args__ = (
         UniqueConstraint(
-            "subscription_id", "user_id", "benefit_id", name="benefit_grants_sbu_key"
+            "subscription_id",
+            "customer_id",
+            "benefit_id",
+            name="benefit_grants_sbc_key",
         ),
     )
 
@@ -133,16 +132,16 @@ class BenefitGrant(RecordModel):
         "properties", JSONB, nullable=False, default=dict
     )
 
-    user_id: Mapped[UUID] = mapped_column(
+    customer_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="cascade"),
+        ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
 
     @declared_attr
-    def user(cls) -> Mapped["User"]:
-        return relationship("User", lazy="raise")
+    def customer(cls) -> Mapped["Customer"]:
+        return relationship("Customer", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
         Uuid,

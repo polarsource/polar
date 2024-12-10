@@ -2,11 +2,12 @@ from datetime import datetime
 from typing import Annotated
 
 from babel.numbers import format_currency
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import (
     EmailStrDNS,
@@ -15,15 +16,24 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
+from polar.kit.tax import TaxID
 from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPriceRecurring
 
 
-class SubscriptionUser(Schema):
+class SubscriptionCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
     email: str
-    public_name: str
-    github_username: str | None
-    avatar_url: str | None
+    email_verified: bool
+    name: str | None
+    billing_address: Address | None
+    tax_id: TaxID | None
+    organization_id: UUID4
+
+
+class SubscriptionUser(Schema):
+    id: UUID4 = Field(validation_alias="legacy_user_id")
+    email: str
+    public_name: str = Field(validation_alias="legacy_user_public_name")
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
@@ -37,7 +47,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     started_at: datetime | None
     ended_at: datetime | None
 
-    user_id: UUID4
+    customer_id: UUID4
     product_id: UUID4
     price_id: UUID4
     discount_id: UUID4 | None
@@ -59,7 +69,14 @@ SubscriptionDiscount = Annotated[
 
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
-    user: SubscriptionUser
+    customer: SubscriptionCustomer
+    user_id: UUID4 = Field(
+        validation_alias=AliasPath("customer", "legacy_user_id"),
+        deprecated="Use `customer_id`.",
+    )
+    user: SubscriptionUser = Field(
+        validation_alias="customer", deprecated="Use `customer`."
+    )
     product: Product
     price: ProductPriceRecurring
     discount: SubscriptionDiscount | None

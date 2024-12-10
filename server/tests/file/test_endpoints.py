@@ -3,18 +3,16 @@ from urllib.parse import parse_qs, urlencode, urlparse
 import pytest
 from httpx import AsyncClient, ReadError
 
-from polar.auth.models import AuthSubject
 from polar.file.s3 import S3_SERVICES
 from polar.file.service import file as file_service
 from polar.integrations.aws.s3.exceptions import S3FileError
-from polar.models import Organization, User, UserOrganization
+from polar.models import Organization
 from polar.postgres import AsyncSession
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.file import TestFile
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
+@pytest.mark.skip_db_asserts
 class TestEndpoints:
     async def test_anonymous_create_401(
         self, client: AsyncClient, organization: Organization
@@ -29,51 +27,31 @@ class TestEndpoints:
     ) -> None:
         response = await client.post(
             "/v1/files/",
-            json=logo_png.build_create_json(organization.id),
+            json=logo_png.build_create(organization.id).model_dump(mode="json"),
         )
 
         assert response.status_code == 403
 
-    @pytest.mark.http_auto_expunge
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-    )
     async def test_create_downloadable_with_web_scope(
-        self,
-        client: AsyncClient,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        user_organization: UserOrganization,
-        logo_png: TestFile,
+        self, session: AsyncSession, organization: Organization, logo_png: TestFile
     ) -> None:
-        organization_id = user_organization.organization_id
-        await logo_png.create(client, organization_id)
+        await logo_png.create(session, organization)
 
-    @pytest.mark.http_auto_expunge
-    @pytest.mark.auth
     async def test_create_downloadable_with_non_ascii_name(
         self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
+        session: AsyncSession,
+        organization: Organization,
         non_ascii_file_name: TestFile,
     ) -> None:
-        organization_id = user_organization.organization_id
-        await non_ascii_file_name.create(client, organization_id)
+        await non_ascii_file_name.create(session, organization)
 
-    @pytest.mark.http_auto_expunge
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-    )
     async def test_incomplete_upload_with_web_scope(
         self,
-        client: AsyncClient,
-        auth_subject: AuthSubject[User],
         session: AsyncSession,
-        user_organization: UserOrganization,
+        organization: Organization,
         logo_jpg: TestFile,
     ) -> None:
-        organization_id = user_organization.organization_id
-        created = await logo_jpg.create(client, organization_id)
+        created = await logo_jpg.create(session, organization)
 
         await logo_jpg.upload(created)
 
@@ -86,21 +64,10 @@ class TestEndpoints:
         assert record
         assert record.is_uploaded is False
 
-    @pytest.mark.http_auto_expunge
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-    )
     async def test_upload_without_signature(
-        self,
-        client: AsyncClient,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        user_organization: UserOrganization,
-        logo_jpg: TestFile,
+        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
     ) -> None:
-        organization_id = user_organization.organization_id
-
-        created = await logo_jpg.create(client, organization_id)
+        created = await logo_jpg.create(session, organization)
 
         part = created.upload.parts[0]
 
@@ -145,22 +112,12 @@ class TestEndpoints:
         assert record
         assert record.is_uploaded is False
 
-    @pytest.mark.http_auto_expunge
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-    )
     async def test_upload_with_web_scope(
-        self,
-        client: AsyncClient,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        user_organization: UserOrganization,
-        logo_jpg: TestFile,
+        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
     ) -> None:
-        organization_id = user_organization.organization_id
-        created = await logo_jpg.create(client, organization_id)
+        created = await logo_jpg.create(session, organization)
         uploaded = await logo_jpg.upload(created)
-        await logo_jpg.complete(client, created, uploaded)
+        await logo_jpg.complete(session, created, uploaded)
 
         record = await file_service.get(session, created.id, allow_deleted=True)
         assert record

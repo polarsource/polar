@@ -3,11 +3,8 @@ from typing import cast
 import pytest
 
 from polar.benefit.benefits.ads import BenefitAdsService
-from polar.models import BenefitGrant, Organization, User
-from polar.models.benefit import (
-    BenefitAds,
-    BenefitType,
-)
+from polar.models import BenefitGrant, Customer, Organization
+from polar.models.benefit import BenefitAds, BenefitType
 from polar.models.benefit_grant import BenefitGrantAdsProperties
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -21,7 +18,7 @@ async def test_grant(
     session: AsyncSession,
     redis: Redis,
     save_fixture: SaveFixture,
-    user: User,
+    customer: Customer,
     organization: Organization,
 ) -> None:
     benefit = cast(
@@ -34,11 +31,11 @@ async def test_grant(
         ),
     )
     properties: BenefitGrantAdsProperties = {"advertisement_campaign_id": "CAMPAIGN_ID"}
-    grant = BenefitGrant(user=user, benefit=benefit, properties=properties)
+    grant = BenefitGrant(customer=customer, benefit=benefit, properties=properties)
 
     benefit_ads_service = BenefitAdsService(session, redis)
     updated_properties = await benefit_ads_service.grant(
-        benefit, user, cast(BenefitGrantAdsProperties, grant.properties)
+        benefit, customer, cast(BenefitGrantAdsProperties, grant.properties)
     )
 
     assert updated_properties == properties

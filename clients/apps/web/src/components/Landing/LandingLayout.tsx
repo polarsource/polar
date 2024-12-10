@@ -32,7 +32,7 @@ export default function Layout({ children }: PropsWithChildren) {
         </svg>
         <div className="flex flex-row items-center gap-x-1">
           <span>
-            Introducing Polar for Framer - the fastest way to sell digital
+            Introducing Polar for Framer - the simplest way to sell digital
             products on your site
           </span>
           <ChevronRightOutlined fontSize="small" />

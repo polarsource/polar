@@ -170,15 +170,11 @@ class BenefitGitHubRepositoryCreateProperties(Schema):
     Properties to create a benefit of type `github_repository`.
     """
 
-    # For benefits created before 2014-13-15 repository_id will be set
-    # no new benefits of this type are allowed to be created
-    repository_id: UUID4 | None = None
-    # For benefits created after 2014-13-15 both repository_owner and repository_name will be set
-    repository_owner: str | None = Field(
-        None, description="The owner of the repository.", examples=["polarsource"]
+    repository_owner: str = Field(
+        description="The owner of the repository.", examples=["polarsource"]
     )
-    repository_name: str | None = Field(
-        None, description="The name of the repository.", examples=["private_repo"]
+    repository_name: str = Field(
+        description="The name of the repository.", examples=["private_repo"]
     )
     permission: Permission
 
@@ -188,8 +184,6 @@ class BenefitGitHubRepositoryProperties(Schema):
     Properties for a benefit of type `github_repository`.
     """
 
-    # Is set to None for all benefits created after 2024-03-15
-    repository_id: UUID4 | None
     repository_owner: RepositoryOwner
     repository_name: RepositoryName
     permission: Permission

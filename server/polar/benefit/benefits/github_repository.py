@@ -5,7 +5,6 @@ from githubkit import AppInstallationAuthStrategy, GitHub
 from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
 from polar.integrations.github import client as github
 from polar.integrations.github import types
 from polar.integrations.github_repository_benefit.service import (
@@ -20,7 +19,6 @@ from polar.models.benefit import (
 from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
 from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
-from polar.repository.service import repository as repository_service
 
 from .base import (
     BenefitActionRequiredError,
@@ -129,10 +127,6 @@ class BenefitGitHubRepositoryService(
             benefit_id=str(benefit.id),
             customer_id=str(customer.id),
         )
-
-        if benefit.properties["repository_id"]:
-            bound_logger.info("skipping revoke for old version of this benefit type")
-            return {}
 
         client = await self._get_github_app_client(benefit)
 
@@ -299,65 +293,6 @@ class BenefitGitHubRepositoryService(
             BenefitGitHubRepositoryProperties,
             {
                 **properties,
-            },
-        )
-
-    async def _validate_properties_repository_id(
-        self, user: User, properties: dict[str, Any]
-    ) -> BenefitGitHubRepositoryProperties:
-        repository_id = properties["repository_id"]
-
-        repository = await repository_service.get(
-            self.session, repository_id, load_organization=True
-        )
-
-        if repository is None:
-            raise BenefitPropertiesValidationError(
-                [
-                    {
-                        "type": "invalid_repository",
-                        "msg": "This repository does not exist.",
-                        "loc": ("repository_id",),
-                        "input": repository_id,
-                    }
-                ]
-            )
-
-        authz = Authz(self.session)
-        if not await authz.can(user, AccessType.write, repository):
-            raise BenefitPropertiesValidationError(
-                [
-                    {
-                        "type": "no_repository_acccess",
-                        "msg": "You don't have access to this repository.",
-                        "loc": ("repository_id",),
-                        "input": repository_id,
-                    }
-                ]
-            )
-
-        if posthog.client and not posthog.client.feature_enabled(
-            "github-benefit-personal-org", user.posthog_distinct_id
-        ):
-            if repository.organization.is_personal:
-                raise BenefitPropertiesValidationError(
-                    [
-                        {
-                            "type": "personal_organization_repository",
-                            "msg": "For security reasons, "
-                            "repositories on personal organizations are not supported.",
-                            "loc": ("repository_id",),
-                            "input": repository_id,
-                        }
-                    ]
-                )
-
-        return cast(
-            BenefitGitHubRepositoryProperties,
-            {
-                **properties,
-                "repository_owner": repository.organization.name,
-                "repository_name": repository.name,
             },
         )
 

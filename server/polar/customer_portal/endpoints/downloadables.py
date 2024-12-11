@@ -60,11 +60,10 @@ async def list(
 )
 async def get(
     token: str,
-    auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     downloadable = await downloadable_service.get_from_token_or_raise(
-        session, auth_subject, token=token
+        session, token=token
     )
     signed = downloadable_service.generate_download_schema(downloadable)
     return RedirectResponse(signed.file.download.url, 302)

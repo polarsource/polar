@@ -4,7 +4,7 @@ from uuid import UUID
 
 import structlog
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_customer, is_user
 from polar.config import settings
@@ -190,10 +190,7 @@ class DownloadableService(
         return DownloadableURL(url=redirect_to, expires_at=expires_at)
 
     async def get_from_token_or_raise(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
-        token: str,
+        self, session: AsyncSession, token: str
     ) -> Downloadable:
         try:
             unpacked = token_serializer.loads(
@@ -207,9 +204,9 @@ class DownloadableService(
         except KeyError:
             raise BadRequest()
 
-        statement = self._get_base_query(auth_subject).where(Downloadable.id == id)
-        res = await session.execute(statement)
-        downloadable = res.scalars().one_or_none()
+        downloadable = await self.get(
+            session, id, options=(joinedload(Downloadable.file),)
+        )
         if not downloadable:
             raise ResourceNotFound()
 

@@ -51,6 +51,7 @@ class TestList:
         subscription: Subscription,
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
+        benefit_organization_third: Benefit,
         customer: Customer,
     ) -> None:
         await create_benefit_grant(
@@ -65,6 +66,14 @@ class TestList:
             save_fixture,
             customer,
             benefit_organization_second,
+            granted=None,
+            subscription=subscription,
+        )
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_third,
             granted=False,
             subscription=subscription,
         )
@@ -158,8 +167,42 @@ class TestGetById:
             session, auth_subject, grant.id
         )
 
+        assert result is None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_customer_pending(
+        self,
+        auth_subject: AuthSubject[Customer],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        customer_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=None,
+            subscription=subscription,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer_second,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+
+        result = await customer_benefit_grant_service.get_by_id(
+            session, auth_subject, customer_grant.id
+        )
+
         assert result is not None
-        assert result.is_revoked
+        assert result.id == customer_grant.id
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_customer_granted(

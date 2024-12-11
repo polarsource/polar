@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_customer, is_user
@@ -17,7 +17,9 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    Order,
     Organization,
+    Subscription,
     User,
     UserCustomer,
 )
@@ -46,6 +48,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         type: Sequence[BenefitType] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        checkout_id: Sequence[uuid.UUID] | None = None,
         order_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
@@ -63,6 +66,26 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))
+
+        if checkout_id is not None:
+            statement = (
+                statement.join(
+                    Subscription,
+                    onclause=Subscription.id == BenefitGrant.subscription_id,
+                    isouter=True,
+                )
+                .join(
+                    Order,
+                    onclause=Order.id == BenefitGrant.order_id,
+                    isouter=True,
+                )
+                .where(
+                    or_(
+                        Subscription.checkout_id.in_(checkout_id),
+                        Order.checkout_id.in_(checkout_id),
+                    )
+                )
+            )
 
         if order_id is not None:
             statement = statement.where(BenefitGrant.order_id.in_(order_id))

@@ -53,6 +53,9 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
+    checkout_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    ),
     order_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="OrderID Filter", description="Filter by order ID."
     ),
@@ -67,6 +70,7 @@ async def list(
         auth_subject,
         type=type,
         organization_id=organization_id,
+        checkout_id=checkout_id,
         order_id=order_id,
         subscription_id=subscription_id,
         pagination=pagination,

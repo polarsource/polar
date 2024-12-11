@@ -27,9 +27,9 @@ from polar.models.benefit import BenefitType
 from polar.worker import enqueue_job
 
 from ..schemas.benefit_grant import (
-    BenefitGrantDiscordUpdate,
-    BenefitGrantGitHubRepositoryUpdate,
-    BenefitGrantUpdate,
+    CustomerBenefitGrantDiscordUpdate,
+    CustomerBenefitGrantGitHubRepositoryUpdate,
+    CustomerBenefitGrantUpdate,
 )
 
 
@@ -125,7 +125,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         self,
         session: AsyncSession,
         benefit_grant: BenefitGrant,
-        benefit_grant_update: BenefitGrantUpdate,
+        benefit_grant_update: CustomerBenefitGrantUpdate,
     ) -> BenefitGrant:
         if benefit_grant.is_revoked:
             raise NotPermitted("Cannot update a revoked benefit grant.")
@@ -142,8 +142,10 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 ]
             )
 
-        if isinstance(benefit_grant_update, BenefitGrantDiscordUpdate) or isinstance(
-            benefit_grant_update, BenefitGrantGitHubRepositoryUpdate
+        if isinstance(
+            benefit_grant_update, CustomerBenefitGrantDiscordUpdate
+        ) or isinstance(
+            benefit_grant_update, CustomerBenefitGrantGitHubRepositoryUpdate
         ):
             account_id = benefit_grant_update.properties["account_id"]
             platform = benefit_grant_update.get_oauth_platform()

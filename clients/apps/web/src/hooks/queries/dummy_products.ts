@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api'
 import { org } from '@/utils/testdata'
-import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
+import { BenefitBase, Organization } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -10,7 +10,7 @@ export interface Product {
   description: string
   media: string[]
   price: number
-  benefits: BenefitPublicInner[]
+  benefits: BenefitBase[]
   organization: Organization
   created_at: string
   updated_at: string
@@ -79,6 +79,7 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
+        properties: {},
       },
     ],
     media: [
@@ -104,6 +105,7 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
+        properties: {},
       },
     ],
     media: [
@@ -129,6 +131,7 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
+        properties: {},
       },
       {
         id: '456',
@@ -139,6 +142,7 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
+        properties: {},
       },
     ],
     media: [

@@ -3,7 +3,7 @@ import {
   KeyboardArrowRight,
   KeyboardArrowUp,
 } from '@mui/icons-material'
-import { BenefitPublicInner } from '@polar-sh/sdk'
+import { BenefitBase } from '@polar-sh/sdk'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 
@@ -30,7 +30,7 @@ export const BenefitList = ({
   benefits,
   toggle = false,
 }: {
-  benefits: BenefitPublicInner[] | undefined
+  benefits: BenefitBase[] | undefined
   toggle?: boolean
 }) => {
   const [showAll, setShowAll] = useState(false)

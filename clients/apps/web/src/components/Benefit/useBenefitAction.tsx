@@ -1,9 +1,8 @@
 import { useDiscordAccount, useGitHubAccount } from '@/hooks'
-import { ArrowForwardOutlined, LinkOutlined } from '@mui/icons-material'
+import { LinkOutlined } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
 import { UserBenefit } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 
 interface BenefitAction {
   icon: OverridableComponent<SvgIconTypeMap<{}, 'svg'>> & {
@@ -14,22 +13,10 @@ interface BenefitAction {
 }
 
 export const useBenefitActions = (benefit: UserBenefit): BenefitAction[] => {
-  const router = useRouter()
-  const organization = benefit.organization
   const discordAccount = useDiscordAccount()
   const gitHubAccount = useGitHubAccount()
 
   switch (benefit.type) {
-    case 'articles':
-      return [
-        {
-          key: 'article',
-          icon: ArrowForwardOutlined,
-          onClick: () => {
-            router.push(`/${organization.slug}`)
-          },
-        },
-      ]
     case 'discord':
       return [
         ...(discordAccount

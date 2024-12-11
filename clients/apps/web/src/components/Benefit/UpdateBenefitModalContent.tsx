@@ -1,7 +1,7 @@
 import { useUpdateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
-  BenefitPublicInner,
+  BenefitBase,
   BenefitType,
   BenefitUpdate,
   Organization,
@@ -16,7 +16,7 @@ import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 
 interface UpdateBenefitModalContentProps {
   organization: Organization
-  benefit: BenefitPublicInner
+  benefit: BenefitBase
   hideModal: () => void
 }
 
@@ -27,20 +27,19 @@ const UpdateBenefitModalContent = ({
 }: UpdateBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<Omit<BenefitUpdate, 'type'>>({
+  const form = useForm<BenefitUpdate>({
     defaultValues: benefit,
   })
   const { setError } = form
 
   const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
   const handleUpdateNewBenefit = useCallback(
-    async (benefitUpdate: Omit<BenefitUpdate, 'type'>) => {
+    async (benefitUpdate: BenefitUpdate) => {
       try {
         setIsLoading(true)
         await updateSubscriptionBenefit.mutateAsync({
           id: benefit.id,
           body: {
-            type: benefit.type,
             ...benefitUpdate,
           },
         })

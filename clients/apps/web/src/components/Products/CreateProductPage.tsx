@@ -7,7 +7,7 @@ import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   Benefit,
-  BenefitPublicInner,
+  BenefitBase,
   Organization,
   ProductCreate,
   ProductPriceType,
@@ -46,7 +46,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   } = useStore()
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    BenefitPublicInner['id'][]
+    BenefitBase['id'][]
   >([])
 
   const [isLoading, setLoading] = useState(false)
@@ -127,14 +127,14 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: BenefitPublicInner) => {
+    (benefit: BenefitBase) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: BenefitPublicInner) => {
+    (benefit: BenefitBase) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )

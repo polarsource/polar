@@ -3,13 +3,12 @@ import {
   FileDownloadOutlined,
   GitHub,
   KeyOutlined,
-  StickyNote2,
   WebOutlined,
 } from '@mui/icons-material'
-import { BenefitArticles, BenefitPublicInner, BenefitType } from '@polar-sh/sdk'
+import { BenefitBase, BenefitType } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 
-export type CreatableBenefit = Exclude<BenefitType, 'articles'>
+export type CreatableBenefit = BenefitType;
 
 export const resolveBenefitCategoryIcon = (
   type?: BenefitType,
@@ -18,8 +17,6 @@ export const resolveBenefitCategoryIcon = (
 ) => {
   const cn = twMerge('h-4 w-4', className)
   switch (type) {
-    case BenefitType.ARTICLES:
-      return <StickyNote2 className={cn} fontSize={fontSize} />
     case BenefitType.ADS:
       return <WebOutlined className={cn} fontSize={fontSize} />
     case BenefitType.DISCORD:
@@ -36,7 +33,7 @@ export const resolveBenefitCategoryIcon = (
 }
 
 export const resolveBenefitIcon = (
-  benefit?: BenefitPublicInner,
+  benefit?: BenefitBase,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
   className?: string,
 ) => {
@@ -45,8 +42,6 @@ export const resolveBenefitIcon = (
 
 export const resolveBenefitTypeDisplayName = (type: BenefitType) => {
   switch (type) {
-    case BenefitType.ARTICLES:
-      return 'Newsletter'
     case BenefitType.ADS:
       return 'Advertisement Spot'
     case BenefitType.DISCORD:
@@ -95,15 +90,5 @@ export const benefitsDisplayNames: {
   [BenefitType.DISCORD]: 'Discord Invite',
   [BenefitType.DOWNLOADABLES]: 'File Downloads',
   [BenefitType.ADS]: 'Ad',
-  [BenefitType.ARTICLES]: 'Newsletter',
   [BenefitType.CUSTOM]: 'Custom',
 }
-
-const isArticleBenefit = (
-  benefit: BenefitPublicInner,
-): benefit is BenefitArticles => benefit.type === BenefitType.ARTICLES
-
-export const isPremiumArticlesBenefit = (
-  benefit: BenefitPublicInner,
-): boolean =>
-  isArticleBenefit(benefit) && benefit.properties.paid_articles === true

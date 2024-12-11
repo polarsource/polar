@@ -15,70 +15,60 @@
 
 import * as runtime from '../runtime';
 import type {
-  BenefitIDFilter,
+  AlreadyCanceledSubscription,
+  CustomerSubscription,
+  CustomerSubscriptionSortProperty,
+  CustomerSubscriptionUpdate,
   HTTPValidationError,
-  ListResourceProduct,
-  NotPermitted,
+  ListResourceCustomerSubscription,
   OrganizationIDFilter,
-  Product,
-  ProductBenefitsUpdate,
-  ProductCreate,
-  ProductSortProperty,
-  ProductUpdate,
+  ProductIDFilter,
   ResourceNotFound,
 } from '../models/index';
 
-export interface ProductsApiCreateRequest {
-    body: ProductCreate;
-}
-
-export interface ProductsApiGetRequest {
+export interface CustomerPortalSubscriptionsApiCancelRequest {
     id: string;
 }
 
-export interface ProductsApiListRequest {
+export interface CustomerPortalSubscriptionsApiGetRequest {
+    id: string;
+}
+
+export interface CustomerPortalSubscriptionsApiListRequest {
     organizationId?: OrganizationIDFilter;
+    productId?: ProductIDFilter;
+    active?: boolean;
     query?: string;
-    isArchived?: boolean;
-    isRecurring?: boolean;
-    benefitId?: BenefitIDFilter;
     page?: number;
     limit?: number;
-    sorting?: Array<ProductSortProperty>;
+    sorting?: Array<CustomerSubscriptionSortProperty>;
 }
 
-export interface ProductsApiUpdateRequest {
+export interface CustomerPortalSubscriptionsApiUpdateRequest {
     id: string;
-    body: ProductUpdate;
-}
-
-export interface ProductsApiUpdateBenefitsRequest {
-    id: string;
-    body: ProductBenefitsUpdate;
+    body: CustomerSubscriptionUpdate;
 }
 
 /**
  * 
  */
-export class ProductsApi extends runtime.BaseAPI {
+export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
 
     /**
-     * Create a product.
-     * Create Product
+     * Cancel a subscription of the authenticated customer or user.
+     * Cancel Subscription
      */
-    async createRaw(requestParameters: ProductsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
-        if (requestParameters['body'] == null) {
+    async cancelRaw(requestParameters: CustomerPortalSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomerSubscription>> {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling create().'
+                'id',
+                'Required parameter "id" was null or undefined when calling cancel().'
             );
         }
 
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -88,31 +78,38 @@ export class ProductsApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/products/`,
-            method: 'POST',
+            path: `/v1/customer-portal/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
 
     /**
-     * Create a product.
-     * Create Product
+     * Cancel a subscription of the authenticated customer or user.
+     * Cancel Subscription
      */
-    async create(requestParameters: ProductsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
-        const response = await this.createRaw(requestParameters, initOverrides);
+    async cancel(requestParameters: CustomerPortalSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomerSubscription> {
+        const response = await this.cancelRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Get a product by ID.
-     * Get Product
+     * Get a subscription for the authenticated customer or user.
+     * Get Subscription
      */
-    async getRaw(requestParameters: ProductsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
+    async getRaw(requestParameters: CustomerPortalSubscriptionsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomerSubscription>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -132,8 +129,16 @@ export class ProductsApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/products/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customer-portal/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -143,39 +148,35 @@ export class ProductsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a product by ID.
-     * Get Product
+     * Get a subscription for the authenticated customer or user.
+     * Get Subscription
      */
-    async get(requestParameters: ProductsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
+    async get(requestParameters: CustomerPortalSubscriptionsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomerSubscription> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List products.
-     * List Products
+     * List subscriptions of the authenticated customer or user.
+     * List Subscriptions
      */
-    async listRaw(requestParameters: ProductsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceProduct>> {
+    async listRaw(requestParameters: CustomerPortalSubscriptionsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceCustomerSubscription>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
             queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
+        if (requestParameters['productId'] != null) {
+            queryParameters['product_id'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['active'] != null) {
+            queryParameters['active'] = requestParameters['active'];
+        }
+
         if (requestParameters['query'] != null) {
             queryParameters['query'] = requestParameters['query'];
-        }
-
-        if (requestParameters['isArchived'] != null) {
-            queryParameters['is_archived'] = requestParameters['isArchived'];
-        }
-
-        if (requestParameters['isRecurring'] != null) {
-            queryParameters['is_recurring'] = requestParameters['isRecurring'];
-        }
-
-        if (requestParameters['benefitId'] != null) {
-            queryParameters['benefit_id'] = requestParameters['benefitId'];
         }
 
         if (requestParameters['page'] != null) {
@@ -200,8 +201,16 @@ export class ProductsApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/products/`,
+            path: `/v1/customer-portal/subscriptions/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -211,19 +220,19 @@ export class ProductsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List products.
-     * List Products
+     * List subscriptions of the authenticated customer or user.
+     * List Subscriptions
      */
-    async list(requestParameters: ProductsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceProduct> {
+    async list(requestParameters: CustomerPortalSubscriptionsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceCustomerSubscription> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Update a product.
-     * Update Product
+     * Update a subscription of the authenticated customer or user.
+     * Update Subscription
      */
-    async updateRaw(requestParameters: ProductsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
+    async updateRaw(requestParameters: CustomerPortalSubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomerSubscription>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -252,8 +261,16 @@ export class ProductsApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/products/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customer-portal/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -264,64 +281,11 @@ export class ProductsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a product.
-     * Update Product
+     * Update a subscription of the authenticated customer or user.
+     * Update Subscription
      */
-    async update(requestParameters: ProductsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
+    async update(requestParameters: CustomerPortalSubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomerSubscription> {
         const response = await this.updateRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Update benefits granted by a product.
-     * Update Product Benefits
-     */
-    async updateBenefitsRaw(requestParameters: ProductsApiUpdateBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling updateBenefits().'
-            );
-        }
-
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling updateBenefits().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("pat", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/products/{id}/benefits`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['body'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Update benefits granted by a product.
-     * Update Product Benefits
-     */
-    async updateBenefits(requestParameters: ProductsApiUpdateBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
-        const response = await this.updateBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

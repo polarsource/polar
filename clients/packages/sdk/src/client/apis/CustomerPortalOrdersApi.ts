@@ -15,48 +15,47 @@
 
 import * as runtime from '../runtime';
 import type {
-  CustomerIDFilter,
-  DiscountIDFilter1,
+  CustomerOrder,
+  CustomerOrderInvoice,
+  CustomerOrderSortProperty,
   HTTPValidationError,
-  ListResourceOrder,
-  Order,
-  OrderInvoice,
-  OrderSortProperty,
+  ListResourceCustomerOrder,
   OrganizationIDFilter,
   ProductIDFilter,
   ProductPriceTypeFilter,
   ResourceNotFound,
+  SubscriptionIDFilter,
 } from '../models/index';
 
-export interface OrdersApiGetRequest {
+export interface CustomerPortalOrdersApiGetRequest {
     id: string;
 }
 
-export interface OrdersApiInvoiceRequest {
+export interface CustomerPortalOrdersApiInvoiceRequest {
     id: string;
 }
 
-export interface OrdersApiListRequest {
+export interface CustomerPortalOrdersApiListRequest {
     organizationId?: OrganizationIDFilter;
     productId?: ProductIDFilter;
     productPriceType?: ProductPriceTypeFilter;
-    discountId?: DiscountIDFilter1;
-    customerId?: CustomerIDFilter;
+    subscriptionId?: SubscriptionIDFilter;
+    query?: string;
     page?: number;
     limit?: number;
-    sorting?: Array<OrderSortProperty>;
+    sorting?: Array<CustomerOrderSortProperty>;
 }
 
 /**
  * 
  */
-export class OrdersApi extends runtime.BaseAPI {
+export class CustomerPortalOrdersApi extends runtime.BaseAPI {
 
     /**
-     * Get an order by ID.
+     * Get an order by ID for the authenticated customer or user.
      * Get Order
      */
-    async getRaw(requestParameters: OrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Order>> {
+    async getRaw(requestParameters: CustomerPortalOrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomerOrder>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -76,8 +75,16 @@ export class OrdersApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customer-portal/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -87,10 +94,10 @@ export class OrdersApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get an order by ID.
+     * Get an order by ID for the authenticated customer or user.
      * Get Order
      */
-    async get(requestParameters: OrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Order> {
+    async get(requestParameters: CustomerPortalOrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomerOrder> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -99,7 +106,7 @@ export class OrdersApi extends runtime.BaseAPI {
      * Get an order\'s invoice data.
      * Get Order Invoice
      */
-    async invoiceRaw(requestParameters: OrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrderInvoice>> {
+    async invoiceRaw(requestParameters: CustomerPortalOrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomerOrderInvoice>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -119,8 +126,16 @@ export class OrdersApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customer-portal/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -133,16 +148,16 @@ export class OrdersApi extends runtime.BaseAPI {
      * Get an order\'s invoice data.
      * Get Order Invoice
      */
-    async invoice(requestParameters: OrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrderInvoice> {
+    async invoice(requestParameters: CustomerPortalOrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomerOrderInvoice> {
         const response = await this.invoiceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List orders.
+     * List orders of the authenticated customer or user.
      * List Orders
      */
-    async listRaw(requestParameters: OrdersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrder>> {
+    async listRaw(requestParameters: CustomerPortalOrdersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceCustomerOrder>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -157,12 +172,12 @@ export class OrdersApi extends runtime.BaseAPI {
             queryParameters['product_price_type'] = requestParameters['productPriceType'];
         }
 
-        if (requestParameters['discountId'] != null) {
-            queryParameters['discount_id'] = requestParameters['discountId'];
+        if (requestParameters['subscriptionId'] != null) {
+            queryParameters['subscription_id'] = requestParameters['subscriptionId'];
         }
 
-        if (requestParameters['customerId'] != null) {
-            queryParameters['customer_id'] = requestParameters['customerId'];
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
         if (requestParameters['page'] != null) {
@@ -187,8 +202,16 @@ export class OrdersApi extends runtime.BaseAPI {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
             }
         }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("customer_session", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
-            path: `/v1/orders/`,
+            path: `/v1/customer-portal/orders/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -198,10 +221,10 @@ export class OrdersApi extends runtime.BaseAPI {
     }
 
     /**
-     * List orders.
+     * List orders of the authenticated customer or user.
      * List Orders
      */
-    async list(requestParameters: OrdersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrder> {
+    async list(requestParameters: CustomerPortalOrdersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceCustomerOrder> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -15,7 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
-  BenefitIDFilter2,
+  BenefitIDFilter1,
   HTTPValidationError,
   LicenseKeyActivationRead,
   LicenseKeyRead,
@@ -38,7 +38,7 @@ export interface LicenseKeysApiGetActivationRequest {
 
 export interface LicenseKeysApiListRequest {
     organizationId?: OrganizationIDFilter;
-    benefitId?: BenefitIDFilter2;
+    benefitId?: BenefitIDFilter1;
     page?: number;
     limit?: number;
 }

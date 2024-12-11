@@ -79,7 +79,6 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
-        properties: {},
       },
     ],
     media: [
@@ -105,7 +104,6 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
-        properties: {},
       },
     ],
     media: [
@@ -131,7 +129,6 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
-        properties: {},
       },
       {
         id: '456',
@@ -142,7 +139,6 @@ export let products: Product[] = [
         created_at: new Date().toISOString(),
         modified_at: null,
         organization_id: '123',
-        properties: {},
       },
     ],
     media: [

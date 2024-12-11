@@ -71,7 +71,6 @@ export const PRODUCT_PREVIEW: ProductStorefront = {
       selectable: false,
       deletable: false,
       organization_id: '123',
-      properties: {}
     },
   ],
   created_at: new Date().toDateString(),
@@ -130,7 +129,6 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
       selectable: false,
       deletable: false,
       organization_id: '123',
-      properties: {}
     },
   ],
   created_at: new Date().toDateString(),

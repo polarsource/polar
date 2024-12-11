@@ -28,7 +28,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<ProductStorefront> = {
       selectable: false,
       deletable: false,
       organization_id: '123',
-      properties: {},
     },
     {
       id: '789',
@@ -39,7 +38,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<ProductStorefront> = {
       selectable: false,
       deletable: false,
       organization_id: '123',
-      properties: {},
     },
     {
       id: '852',
@@ -50,7 +48,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<ProductStorefront> = {
       selectable: false,
       deletable: false,
       organization_id: '123',
-      properties: {},
     },
     {
       id: '123',
@@ -61,7 +58,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<ProductStorefront> = {
       selectable: false,
       deletable: false,
       organization_id: '123',
-      properties: {},
     },
   ],
   created_at: new Date().toDateString(),

@@ -7,7 +7,7 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
-  BenefitBase,
+  type Benefit,
   Organization,
   Product,
   ProductCreate,
@@ -30,7 +30,7 @@ export const useCreateProductWizard = (
   )
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    BenefitBase['id'][]
+    Benefit['id'][]
   >([])
 
   const [isLoading, setLoading] = useState(false)
@@ -91,14 +91,14 @@ export const useCreateProductWizard = (
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: BenefitBase) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: BenefitBase) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )

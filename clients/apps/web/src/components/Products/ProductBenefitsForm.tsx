@@ -7,7 +7,7 @@ import {
   MoreVertOutlined,
   RemoveOutlined,
 } from '@mui/icons-material'
-import { BenefitBase, BenefitType, Organization } from '@polar-sh/sdk'
+import { type Benefit, BenefitType, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -33,7 +33,7 @@ import { useModal } from '../Modal/useModal'
 
 interface BenefitRowProps {
   organization: Organization
-  benefit: BenefitBase
+  benefit: Benefit
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
@@ -140,10 +140,10 @@ const BenefitRow = ({
 
 interface ProductBenefitsFormProps {
   organization: Organization
-  benefits: BenefitBase[]
-  organizationBenefits: BenefitBase[]
-  onSelectBenefit: (benefit: BenefitBase) => void
-  onRemoveBenefit: (benefit: BenefitBase) => void
+  benefits: Benefit[]
+  organizationBenefits: Benefit[]
+  onSelectBenefit: (benefit: Benefit) => void
+  onRemoveBenefit: (benefit: Benefit) => void
   className?: string
 }
 
@@ -162,7 +162,7 @@ const ProductBenefitsForm = ({
   )
 
   const handleCheckedChange = useCallback(
-    (benefit: BenefitBase) => (checked: boolean) => {
+    (benefit: Benefit) => (checked: boolean) => {
       if (checked) {
         onSelectBenefit(benefit)
       } else {
@@ -218,10 +218,10 @@ const ProductBenefitsForm = ({
 
 interface BenefitsContainerProps {
   title: string
-  benefits: BenefitBase[]
-  enabledBenefits: BenefitBase[]
+  benefits: Benefit[]
+  enabledBenefits: Benefit[]
   handleCheckedChange: (
-    benefit: BenefitBase,
+    benefit: Benefit,
   ) => (checked: boolean) => void
   type: BenefitType
   onCreateNewBenefit?: () => void

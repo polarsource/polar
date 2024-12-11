@@ -5,9 +5,10 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { useUserOrders } from '@/hooks/queries'
+import { useCustomerOrders } from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { ProductPriceType, UserOrder } from '@polar-sh/sdk'
+import { CustomerOrder, ProductPriceType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -31,7 +32,7 @@ export default function ClientPage() {
     [setPurchaseParameters],
   )
 
-  const { data: orders } = useUserOrders({
+  const { data: orders } = useCustomerOrders(api, {
     productPriceType: ProductPriceType.ONE_TIME,
     query: purchaseParameters.query,
     limit: purchaseParameters.limit,
@@ -102,7 +103,7 @@ export default function ClientPage() {
   )
 }
 
-const OrderItem = ({ order }: { order: UserOrder }) => {
+const OrderItem = ({ order }: { order: CustomerOrder }) => {
   const organization = order.product.organization
 
   return (

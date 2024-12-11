@@ -10,7 +10,7 @@ import {
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
-import { useCallback, useState, MouseEvent } from 'react'
+import { MouseEvent, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 
@@ -39,6 +39,7 @@ const UpdateBenefitModalContent = ({
         setIsLoading(true)
         await updateSubscriptionBenefit.mutateAsync({
           id: benefit.id,
+          // @ts-ignore
           body: {
             ...benefitUpdate,
           },
@@ -97,11 +98,7 @@ const UpdateBenefitModalContent = ({
               <Button className="self-start" type="submit" loading={isLoading}>
                 Update
               </Button>
-              <Button
-                variant="ghost"
-                className="self-start"
-                onClick={onCancel}
-              >
+              <Button variant="ghost" className="self-start" onClick={onCancel}>
                 Cancel
               </Button>
             </div>

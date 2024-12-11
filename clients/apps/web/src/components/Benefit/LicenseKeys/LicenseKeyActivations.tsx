@@ -1,19 +1,20 @@
-import { useLicenseKey, useLicenseKeyDeactivation } from '@/hooks/queries'
+import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import { CloseOutlined } from '@mui/icons-material'
+import { LicenseKeyWithActivations, PolarAPI } from '@polar-sh/sdk'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 
 interface LicenseKeyActivationsProps {
-  licenseKeyId: string
+  api: PolarAPI
+  licenseKey: LicenseKeyWithActivations
 }
 
 export const LicenseKeyActivations = ({
-  licenseKeyId,
+  api,
+  licenseKey,
 }: LicenseKeyActivationsProps) => {
-  const { data: licenseKey } = useLicenseKey({ licenseKeyId })
-
-  const onDeactivate = useLicenseKeyDeactivation(licenseKeyId)
+  const onDeactivate = useCustomerLicenseKeyDeactivate(api, licenseKey.id)
 
   const hasActivations = (licenseKey?.activations?.length ?? 0) > 0
 

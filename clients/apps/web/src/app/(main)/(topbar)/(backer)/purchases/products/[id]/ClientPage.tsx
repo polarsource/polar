@@ -1,13 +1,15 @@
 'use client'
 
-import BenefitDetails from '@/components/Benefit/BenefitDetails'
-import { BenefitRow } from '@/components/Benefit/BenefitRow'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useUserBenefits, useUserOrderInvoice } from '@/hooks/queries'
+import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
+import {
+  useCustomerBenefitGrants,
+  useCustomerOrderInvoice,
+} from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { markdownOptions } from '@/utils/markdown'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { UserBenefit, UserOrder } from '@polar-sh/sdk'
+import { CustomerOrder } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -15,23 +17,19 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
-const ClientPage = ({ order }: { order: UserOrder }) => {
+const ClientPage = ({ order }: { order: CustomerOrder }) => {
   const organization = order.product.organization
-  const { data: benefits } = useUserBenefits({
+  const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     orderId: order.id,
     limit: 100,
     sorting: ['type'],
   })
 
-  const [selectedBenefit, setSelectedBenefit] = useState<UserBenefit | null>(
-    null,
-  )
-
-  const orderInvoiceMutation = useUserOrderInvoice()
+  const orderInvoiceMutation = useCustomerOrderInvoice(api)
   const openInvoice = useCallback(async () => {
-    const { url } = await orderInvoiceMutation.mutateAsync(order.id)
+    const { url } = await orderInvoiceMutation.mutateAsync({ id: order.id })
     window.open(url, '_blank')
   }, [orderInvoiceMutation, order])
 
@@ -71,17 +69,13 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               <></>
             )}
           </ShadowBox>
-          {(benefits?.items.length ?? 0) > 0 && (
+          {(benefitGrants?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
               <h3 className="text-lg font-medium">Benefits</h3>
               <List>
-                {benefits?.items.map((benefit) => (
-                  <ListItem
-                    key={benefit.id}
-                    selected={benefit.id === selectedBenefit?.id}
-                    onSelect={() => setSelectedBenefit(benefit)}
-                  >
-                    <BenefitRow benefit={benefit} order={order} />
+                {benefitGrants?.items.map((benefitGrant) => (
+                  <ListItem key={benefitGrant.id}>
+                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
                   </ListItem>
                 ))}
               </List>
@@ -133,17 +127,6 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
           </ShadowBox>
         </div>
       </div>
-      <InlineModal
-        isShown={selectedBenefit !== null}
-        hide={() => setSelectedBenefit(null)}
-        modalContent={
-          <div className="px-8 py-10">
-            {selectedBenefit && (
-              <BenefitDetails benefit={selectedBenefit} order={order} />
-            )}
-          </div>
-        }
-      />
     </div>
   )
 }

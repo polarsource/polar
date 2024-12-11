@@ -1,20 +1,20 @@
 'use client'
 
-import BenefitDetails from '@/components/Benefit/BenefitDetails'
-import { BenefitRow } from '@/components/Benefit/BenefitRow'
+import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import ChangePlanModal from '@/components/Subscriptions/ChangePlanModal'
 import {
-  useCancelSubscription,
-  useUserBenefits,
-  useUserOrderInvoice,
-  useUserOrders,
+  useCustomerBenefitGrants,
+  useCustomerCancelSubscription,
+  useCustomerOrderInvoice,
+  useCustomerOrders,
 } from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { markdownOptions } from '@/utils/markdown'
 import { ArrowBackOutlined, ReceiptOutlined } from '@mui/icons-material'
-import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
+import { CustomerOrder, CustomerSubscription } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -28,30 +28,26 @@ import { useCallback, useState } from 'react'
 const ClientPage = ({
   subscription: _subscription,
 }: {
-  subscription: UserSubscription
+  subscription: CustomerSubscription
 }) => {
   const [subscription, setSubscription] = useState(_subscription)
   const organization = subscription.product.organization
-  const { data: benefits } = useUserBenefits({
+  const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscriptionId: subscription.id,
     limit: 100,
     sorting: ['type'],
   })
 
-  const [selectedBenefit, setSelectedBenefit] = useState<UserBenefit | null>(
-    null,
-  )
-
-  const { data: orders } = useUserOrders({
+  const { data: orders } = useCustomerOrders(api, {
     subscriptionId: subscription.id,
     limit: 100,
     sorting: ['-created_at'],
   })
 
-  const orderInvoiceMutation = useUserOrderInvoice()
+  const orderInvoiceMutation = useCustomerOrderInvoice(api)
   const openInvoice = useCallback(
-    async (order: UserOrder) => {
-      const { url } = await orderInvoiceMutation.mutateAsync(order.id)
+    async (order: CustomerOrder) => {
+      const { url } = await orderInvoiceMutation.mutateAsync({ id: order.id })
       window.open(url, '_blank')
     },
     [orderInvoiceMutation],
@@ -61,7 +57,7 @@ const ClientPage = ({
 
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
 
-  const cancelSubscription = useCancelSubscription(subscription.id)
+  const cancelSubscription = useCustomerCancelSubscription(api)
   const isCanceled =
     cancelSubscription.isPending ||
     cancelSubscription.isSuccess ||
@@ -107,17 +103,13 @@ const ClientPage = ({
               <></>
             )}
           </ShadowBox>
-          {(benefits?.items.length ?? 0) > 0 && (
+          {(benefitGrants?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
               <h3 className="text-lg font-medium">Benefits</h3>
               <List>
-                {benefits?.items.map((benefit) => (
-                  <ListItem
-                    key={benefit.id}
-                    selected={benefit.id === selectedBenefit?.id}
-                    onSelect={() => setSelectedBenefit(benefit)}
-                  >
-                    <BenefitRow benefit={benefit} subscription={subscription} />
+                {benefitGrants?.items.map((benefitGrant) => (
+                  <ListItem key={benefitGrant.id}>
+                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
                   </ListItem>
                 ))}
               </List>
@@ -206,7 +198,9 @@ const ClientPage = ({
                   "At the end of your billing period, you won't have access to your benefits anymore."
                 }
                 destructiveText="Unsubscribe"
-                onConfirm={() => cancelSubscription.mutateAsync()}
+                onConfirm={() =>
+                  cancelSubscription.mutateAsync({ id: subscription.id })
+                }
                 destructive
               />
             </div>
@@ -253,26 +247,13 @@ const ClientPage = ({
           )}
         </div>
       </div>
-      <InlineModal
-        isShown={selectedBenefit !== null}
-        hide={() => setSelectedBenefit(null)}
-        modalContent={
-          <div className="px-8 py-10">
-            {selectedBenefit && (
-              <BenefitDetails
-                benefit={selectedBenefit}
-                subscription={subscription}
-              />
-            )}
-          </div>
-        }
-      />
       {organization && (
         <InlineModal
           isShown={showChangePlanModal}
           hide={() => setShowChangePlanModal(false)}
           modalContent={
             <ChangePlanModal
+              api={api}
               organization={organization}
               subscription={subscription}
               hide={() => setShowChangePlanModal(false)}

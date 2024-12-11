@@ -7,10 +7,14 @@ import { redirect } from 'next/navigation'
 
 export default async function Page({
   params: { clientSecret },
-  searchParams: { embed, theme },
+  searchParams: { embed, theme, customer_session_token },
 }: {
   params: { clientSecret: string }
-  searchParams: { embed?: string; theme?: 'light' | 'dark' }
+  searchParams: {
+    embed?: string
+    theme?: 'light' | 'dark'
+    customer_session_token?: string
+  }
 }) {
   const api = getServerSideAPI()
 
@@ -25,6 +29,7 @@ export default async function Page({
       <CheckoutConfirmation
         checkout={checkout}
         organization={checkout.organization}
+        customerSessionToken={customer_session_token}
       />
     </CheckoutLayout>
   )

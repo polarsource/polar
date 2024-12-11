@@ -51,9 +51,9 @@ export const EditProductPage = ({
     [benefits],
   )
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    Benefit['id'][]
-  >(product.benefits.map((benefit) => benefit.id) ?? [])
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
+    product.benefits.map((benefit) => benefit.id) ?? [],
+  )
 
   const form = useForm<ProductUpdate & ProductFullMediasMixin>({
     defaultValues: {

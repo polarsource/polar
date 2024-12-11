@@ -47,7 +47,14 @@ async def get(slug: str, session: AsyncSession = Depends(get_db_session)) -> Sto
             "donation_product": donation_product,
             "customers": {
                 "total": total,
-                "customers": customers,
+                "customers": [
+                    {
+                        "name": customer.name[0]
+                        if customer.name
+                        else customer.email[0],
+                    }
+                    for customer in customers
+                ],
             },
         }
     )

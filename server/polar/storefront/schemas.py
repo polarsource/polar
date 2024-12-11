@@ -21,7 +21,8 @@ class ProductStorefront(ProductBase):
     )
 
 
-class Customer(Schema): ...
+class Customer(Schema):
+    name: str
 
 
 class Customers(Schema):

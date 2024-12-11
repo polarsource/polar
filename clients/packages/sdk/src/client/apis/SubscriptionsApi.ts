@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  CustomerIDFilter,
   DiscountIDFilter,
   HTTPValidationError,
   ListResourceSubscription,
@@ -31,6 +32,7 @@ export interface SubscriptionsApiExportRequest {
 export interface SubscriptionsApiListRequest {
     organizationId?: OrganizationIDFilter;
     productId?: ProductIDFilter;
+    customerId?: CustomerIDFilter;
     discountId?: DiscountIDFilter;
     active?: boolean;
     page?: number;
@@ -100,6 +102,10 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         if (requestParameters['productId'] != null) {
             queryParameters['product_id'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['customerId'] != null) {
+            queryParameters['customer_id'] = requestParameters['customerId'];
         }
 
         if (requestParameters['discountId'] != null) {

@@ -15,61 +15,51 @@
 
 import * as runtime from '../runtime';
 import type {
-  Benefit,
-  BenefitCreate,
-  BenefitTypeFilter,
-  BenefitUpdate,
-  CustomerIDFilter1,
+  Customer,
+  CustomerCreate,
+  CustomerSortProperty,
+  CustomerUpdate,
   HTTPValidationError,
-  ListResourceBenefit,
-  ListResourceBenefitGrant,
-  NotPermitted,
+  ListResourceCustomer,
   OrganizationIDFilter,
   ResourceNotFound,
 } from '../models/index';
 
-export interface BenefitsApiCreateRequest {
-    body: BenefitCreate;
+export interface CustomersApiCreateRequest {
+    body: CustomerCreate;
 }
 
-export interface BenefitsApiDeleteRequest {
+export interface CustomersApiDeleteRequest {
     id: string;
 }
 
-export interface BenefitsApiGetRequest {
+export interface CustomersApiGetRequest {
     id: string;
 }
 
-export interface BenefitsApiGrantsRequest {
-    id: string;
-    isGranted?: boolean;
-    customerId?: CustomerIDFilter1;
-    page?: number;
-    limit?: number;
-}
-
-export interface BenefitsApiListRequest {
+export interface CustomersApiListRequest {
     organizationId?: OrganizationIDFilter;
-    type?: BenefitTypeFilter;
+    query?: string;
     page?: number;
     limit?: number;
+    sorting?: Array<CustomerSortProperty>;
 }
 
-export interface BenefitsApiUpdateRequest {
+export interface CustomersApiUpdateRequest {
     id: string;
-    body: BenefitUpdate;
+    body: CustomerUpdate;
 }
 
 /**
  * 
  */
-export class BenefitsApi extends runtime.BaseAPI {
+export class CustomersApi extends runtime.BaseAPI {
 
     /**
-     * Create a benefit.
-     * Create Benefit
+     * Create a customer.
+     * Create Customer
      */
-    async createRaw(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Benefit>> {
+    async createRaw(requestParameters: CustomersApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Customer>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -92,7 +82,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/`,
+            path: `/v1/customers/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -103,19 +93,19 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a benefit.
-     * Create Benefit
+     * Create a customer.
+     * Create Customer
      */
-    async create(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Benefit> {
+    async create(requestParameters: CustomersApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Customer> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Delete a benefit.  > [!WARNING] > Every grants associated with the benefit will be revoked. > Users will lose access to the benefit.
-     * Delete Benefit
+     * Delete a customer.  Immediately cancels any active subscriptions and revokes any active benefits.
+     * Delete Customer
      */
-    async deleteRaw(requestParameters: BenefitsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async deleteRaw(requestParameters: CustomersApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -136,7 +126,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customers/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -146,18 +136,18 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete a benefit.  > [!WARNING] > Every grants associated with the benefit will be revoked. > Users will lose access to the benefit.
-     * Delete Benefit
+     * Delete a customer.  Immediately cancels any active subscriptions and revokes any active benefits.
+     * Delete Customer
      */
-    async delete(requestParameters: BenefitsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+    async delete(requestParameters: CustomersApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.deleteRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Get a benefit by ID.
-     * Get Benefit
+     * Get a customer by ID.
+     * Get Customer
      */
-    async getRaw(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Benefit>> {
+    async getRaw(requestParameters: CustomersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Customer>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -178,7 +168,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customers/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -188,86 +178,27 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a benefit by ID.
-     * Get Benefit
+     * Get a customer by ID.
+     * Get Customer
      */
-    async get(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Benefit> {
+    async get(requestParameters: CustomersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Customer> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List the individual grants for a benefit.  It\'s especially useful to check if a user has been granted a benefit.
-     * List Benefit Grants
+     * List customers.
+     * List Customers
      */
-    async grantsRaw(requestParameters: BenefitsApiGrantsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceBenefitGrant>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling grants().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['isGranted'] != null) {
-            queryParameters['is_granted'] = requestParameters['isGranted'];
-        }
-
-        if (requestParameters['customerId'] != null) {
-            queryParameters['customer_id'] = requestParameters['customerId'];
-        }
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("pat", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/benefits/{id}/grants`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * List the individual grants for a benefit.  It\'s especially useful to check if a user has been granted a benefit.
-     * List Benefit Grants
-     */
-    async grants(requestParameters: BenefitsApiGrantsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceBenefitGrant> {
-        const response = await this.grantsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * List benefits.
-     * List Benefits
-     */
-    async listRaw(requestParameters: BenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceBenefit>> {
+    async listRaw(requestParameters: CustomersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceCustomer>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
             queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
         if (requestParameters['page'] != null) {
@@ -276,6 +207,10 @@ export class BenefitsApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -289,7 +224,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/`,
+            path: `/v1/customers/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -299,19 +234,19 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List benefits.
-     * List Benefits
+     * List customers.
+     * List Customers
      */
-    async list(requestParameters: BenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceBenefit> {
+    async list(requestParameters: CustomersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceCustomer> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Update a benefit.
-     * Update Benefit
+     * Update a customer.
+     * Update Customer
      */
-    async updateRaw(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Benefit>> {
+    async updateRaw(requestParameters: CustomersApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Customer>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -341,7 +276,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/customers/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -352,10 +287,10 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a benefit.
-     * Update Benefit
+     * Update a customer.
+     * Update Customer
      */
-    async update(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Benefit> {
+    async update(requestParameters: CustomersApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Customer> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

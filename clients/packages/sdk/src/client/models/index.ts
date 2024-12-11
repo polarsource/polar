@@ -1162,6 +1162,19 @@ export interface AuthorizeOrganization {
 /**
  * 
  * @export
+ * @interface AuthorizeResponse
+ */
+export interface AuthorizeResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthorizeResponse
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
  * @interface AuthorizeResponseOrganization
  */
 export interface AuthorizeResponseOrganization {
@@ -1300,6 +1313,8 @@ export const AvailableScope = {
     FILESWRITE: 'files:write',
     SUBSCRIPTIONSREAD: 'subscriptions:read',
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
+    CUSTOMERSREAD: 'customers:read',
+    CUSTOMERSWRITE: 'customers:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
@@ -1311,14 +1326,8 @@ export const AvailableScope = {
     REPOSITORIESWRITE: 'repositories:write',
     ISSUESREAD: 'issues:read',
     ISSUESWRITE: 'issues:write',
-    USERBENEFITSREAD: 'user:benefits:read',
-    USERORDERSREAD: 'user:orders:read',
-    USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
-    USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
-    USERDOWNLOADABLESREAD: 'user:downloadables:read',
-    USERLICENSE_KEYSREAD: 'user:license_keys:read',
-    USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
-    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
+    CUSTOMER_PORTALREAD: 'customer_portal:read',
+    CUSTOMER_PORTALWRITE: 'customer_portal:write'
 } as const;
 export type AvailableScope = typeof AvailableScope[keyof typeof AvailableScope];
 
@@ -1805,12 +1814,6 @@ export interface BenefitAdsSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {Array<BenefitGrantAds>}
-     * @memberof BenefitAdsSubscriber
-     */
-    grants: Array<BenefitGrantAds>;
-    /**
-     * 
      * @type {Organization}
      * @memberof BenefitAdsSubscriber
      */
@@ -2071,7 +2074,7 @@ export interface BenefitCustomCreateProperties {
 }
 /**
  * @type BenefitCustomCreatePropertiesNote
- * Private note to be shared with users who have this benefit granted.
+ * Private note to be shared with customers who have this benefit granted.
  * @export
  */
 export type BenefitCustomCreatePropertiesNote = string;
@@ -2143,12 +2146,6 @@ export interface BenefitCustomSubscriber {
      * @memberof BenefitCustomSubscriber
      */
     organization_id: string;
-    /**
-     * 
-     * @type {Array<BenefitGrantSubscriber>}
-     * @memberof BenefitCustomSubscriber
-     */
-    grants: Array<BenefitGrantSubscriber>;
     /**
      * 
      * @type {Organization}
@@ -2434,12 +2431,6 @@ export interface BenefitDiscordSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {Array<BenefitGrantSubscriber>}
-     * @memberof BenefitDiscordSubscriber
-     */
-    grants: Array<BenefitGrantSubscriber>;
-    /**
-     * 
      * @type {Organization}
      * @memberof BenefitDiscordSubscriber
      */
@@ -2715,12 +2706,6 @@ export interface BenefitDownloadablesSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {Array<BenefitGrantSubscriber>}
-     * @memberof BenefitDownloadablesSubscriber
-     */
-    grants: Array<BenefitGrantSubscriber>;
-    /**
-     * 
      * @type {Organization}
      * @memberof BenefitDownloadablesSubscriber
      */
@@ -2911,23 +2896,17 @@ export type BenefitGitHubRepositoryCreateTypeEnum = typeof BenefitGitHubReposito
  */
 export interface BenefitGitHubRepositoryCreateProperties {
     /**
-     * 
+     * The owner of the repository.
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreateProperties
      */
-    repository_id?: string | null;
+    repository_owner: string;
     /**
-     * 
+     * The name of the repository.
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreateProperties
      */
-    repository_owner?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGitHubRepositoryCreateProperties
-     */
-    repository_name?: string | null;
+    repository_name: string;
     /**
      * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
      * @type {string}
@@ -2955,12 +2934,6 @@ export type BenefitGitHubRepositoryCreatePropertiesPermissionEnum = typeof Benef
  * @interface BenefitGitHubRepositoryProperties
  */
 export interface BenefitGitHubRepositoryProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGitHubRepositoryProperties
-     */
-    repository_id: string | null;
     /**
      * The owner of the repository.
      * @type {string}
@@ -3048,12 +3021,6 @@ export interface BenefitGitHubRepositorySubscriber {
      * @memberof BenefitGitHubRepositorySubscriber
      */
     organization_id: string;
-    /**
-     * 
-     * @type {Array<BenefitGrantSubscriber>}
-     * @memberof BenefitGitHubRepositorySubscriber
-     */
-    grants: Array<BenefitGrantSubscriber>;
     /**
      * 
      * @type {Organization}
@@ -3192,9 +3159,16 @@ export interface BenefitGrant {
      */
     order_id: string | null;
     /**
-     * The ID of the user concerned by this grant.
+     * The ID of the customer concerned by this grant.
      * @type {string}
      * @memberof BenefitGrant
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrant
+     * @deprecated
      */
     user_id: string;
     /**
@@ -3213,85 +3187,6 @@ export interface BenefitGrant {
 /**
  * 
  * @export
- * @interface BenefitGrantAds
- */
-export interface BenefitGrantAds {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the grant.
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    granted_at?: string | null;
-    /**
-     * Whether the benefit is granted.
-     * @type {boolean}
-     * @memberof BenefitGrantAds
-     */
-    is_granted: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    revoked_at?: string | null;
-    /**
-     * Whether the benefit is revoked.
-     * @type {boolean}
-     * @memberof BenefitGrantAds
-     */
-    is_revoked: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    subscription_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    order_id: string | null;
-    /**
-     * The ID of the user concerned by this grant.
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    user_id: string;
-    /**
-     * The ID of the benefit concerned by this grant.
-     * @type {string}
-     * @memberof BenefitGrantAds
-     */
-    benefit_id: string;
-    /**
-     * 
-     * @type {BenefitGrantAdsSubscriberProperties}
-     * @memberof BenefitGrantAds
-     */
-    properties: BenefitGrantAdsSubscriberProperties;
-}
-/**
- * 
- * @export
  * @interface BenefitGrantAdsProperties
  */
 export interface BenefitGrantAdsProperties {
@@ -3305,22 +3200,15 @@ export interface BenefitGrantAdsProperties {
 /**
  * 
  * @export
- * @interface BenefitGrantAdsSubscriberProperties
- */
-export interface BenefitGrantAdsSubscriberProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantAdsSubscriberProperties
-     */
-    advertisement_campaign_id?: string | null;
-}
-/**
- * 
- * @export
  * @interface BenefitGrantDiscordProperties
  */
 export interface BenefitGrantDiscordProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantDiscordProperties
+     */
+    account_id?: string;
     /**
      * 
      * @type {string}
@@ -3333,12 +3221,6 @@ export interface BenefitGrantDiscordProperties {
      * @memberof BenefitGrantDiscordProperties
      */
     role_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantDiscordProperties
-     */
-    account_id?: string;
 }
 /**
  * 
@@ -3364,7 +3246,7 @@ export interface BenefitGrantGitHubRepositoryProperties {
      * @type {string}
      * @memberof BenefitGrantGitHubRepositoryProperties
      */
-    repository_id?: string | null;
+    account_id?: string;
     /**
      * 
      * @type {string}
@@ -3401,85 +3283,6 @@ export type BenefitGrantGitHubRepositoryPropertiesPermissionEnum = typeof Benefi
 /**
  * 
  * @export
- * @interface BenefitGrantLicenseKeys
- */
-export interface BenefitGrantLicenseKeys {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the grant.
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    granted_at?: string | null;
-    /**
-     * Whether the benefit is granted.
-     * @type {boolean}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    is_granted: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    revoked_at?: string | null;
-    /**
-     * Whether the benefit is revoked.
-     * @type {boolean}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    is_revoked: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    subscription_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    order_id: string | null;
-    /**
-     * The ID of the user concerned by this grant.
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    user_id: string;
-    /**
-     * The ID of the benefit concerned by this grant.
-     * @type {string}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    benefit_id: string;
-    /**
-     * 
-     * @type {BenefitGrantLicenseKeysProperties}
-     * @memberof BenefitGrantLicenseKeys
-     */
-    properties: BenefitGrantLicenseKeysProperties;
-}
-/**
- * 
- * @export
  * @interface BenefitGrantLicenseKeysProperties
  */
 export interface BenefitGrantLicenseKeysProperties {
@@ -3495,79 +3298,6 @@ export interface BenefitGrantLicenseKeysProperties {
      * @memberof BenefitGrantLicenseKeysProperties
      */
     display_key?: string;
-}
-/**
- * 
- * @export
- * @interface BenefitGrantSubscriber
- */
-export interface BenefitGrantSubscriber {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the grant.
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    granted_at?: string | null;
-    /**
-     * Whether the benefit is granted.
-     * @type {boolean}
-     * @memberof BenefitGrantSubscriber
-     */
-    is_granted: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    revoked_at?: string | null;
-    /**
-     * Whether the benefit is revoked.
-     * @type {boolean}
-     * @memberof BenefitGrantSubscriber
-     */
-    is_revoked: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    subscription_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    order_id: string | null;
-    /**
-     * The ID of the user concerned by this grant.
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    user_id: string;
-    /**
-     * The ID of the benefit concerned by this grant.
-     * @type {string}
-     * @memberof BenefitGrantSubscriber
-     */
-    benefit_id: string;
 }
 /**
  * 
@@ -3630,9 +3360,16 @@ export interface BenefitGrantWebhook {
      */
     order_id: string | null;
     /**
-     * The ID of the user concerned by this grant.
+     * The ID of the customer concerned by this grant.
      * @type {string}
      * @memberof BenefitGrantWebhook
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantWebhook
+     * @deprecated
      */
     user_id: string;
     /**
@@ -3662,14 +3399,14 @@ export interface BenefitGrantWebhook {
 }
 /**
  * @type BenefitIDFilter
- * Filter by given benefit ID. 
+ * Filter products granting specific benefit.
  * @export
  */
 export type BenefitIDFilter = Array<string> | string;
 
 /**
  * @type BenefitIDFilter1
- * Filter products granting specific benefit.
+ * Filter by benefit ID.
  * @export
  */
 export type BenefitIDFilter1 = Array<string> | string;
@@ -3698,7 +3435,7 @@ export interface BenefitLicenseKeyActivationProperties {
      * @type {boolean}
      * @memberof BenefitLicenseKeyActivationProperties
      */
-    enable_user_admin: boolean;
+    enable_customer_admin: boolean;
 }
 /**
  * 
@@ -3961,12 +3698,6 @@ export interface BenefitLicenseKeysSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {Array<BenefitGrantLicenseKeys>}
-     * @memberof BenefitLicenseKeysSubscriber
-     */
-    grants: Array<BenefitGrantLicenseKeys>;
-    /**
-     * 
      * @type {Organization}
      * @memberof BenefitLicenseKeysSubscriber
      */
@@ -4054,96 +3785,6 @@ export const BenefitLicenseKeysUpdateTypeEnum = {
 } as const;
 export type BenefitLicenseKeysUpdateTypeEnum = typeof BenefitLicenseKeysUpdateTypeEnum[keyof typeof BenefitLicenseKeysUpdateTypeEnum];
 
-/**
- * 
- * @export
- * @interface BenefitPreconditionErrorNotification
- */
-export interface BenefitPreconditionErrorNotification {
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotification
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotification
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotification
-     */
-    type: BenefitPreconditionErrorNotificationTypeEnum;
-    /**
-     * 
-     * @type {BenefitPreconditionErrorNotificationPayload}
-     * @memberof BenefitPreconditionErrorNotification
-     */
-    payload: BenefitPreconditionErrorNotificationPayload;
-}
-
-
-/**
- * @export
- */
-export const BenefitPreconditionErrorNotificationTypeEnum = {
-    BENEFIT_PRECONDITION_ERROR_NOTIFICATION: 'BenefitPreconditionErrorNotification'
-} as const;
-export type BenefitPreconditionErrorNotificationTypeEnum = typeof BenefitPreconditionErrorNotificationTypeEnum[keyof typeof BenefitPreconditionErrorNotificationTypeEnum];
-
-/**
- * 
- * @export
- * @interface BenefitPreconditionErrorNotificationPayload
- */
-export interface BenefitPreconditionErrorNotificationPayload {
-    /**
-     * 
-     * @type {object}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    extra_context?: object;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    subject_template: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    body_template: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    scope_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    benefit_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    benefit_description: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitPreconditionErrorNotificationPayload
-     */
-    organization_name: string;
-}
 
 /**
  * 
@@ -4720,6 +4361,13 @@ export interface CheckoutDiscountPercentageRepeatDuration {
 
 
 /**
+ * @type CheckoutIDFilter
+ * Filter by checkout ID.
+ * @export
+ */
+export type CheckoutIDFilter = Array<string> | string;
+
+/**
  * A checkout session.
  * @export
  * @interface CheckoutLegacy
@@ -5228,6 +4876,12 @@ export interface CheckoutPriceCreate {
      */
     amount?: number | null;
     /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPriceCreate
+     */
+    customer_id?: string | null;
+    /**
      * Name of the customer.
      * @type {string}
      * @memberof CheckoutPriceCreate
@@ -5419,6 +5073,12 @@ export interface CheckoutProductCreate {
      * @memberof CheckoutProductCreate
      */
     amount?: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutProductCreate
+     */
+    customer_id?: string | null;
     /**
      * Name of the customer.
      * @type {string}
@@ -5714,6 +5374,254 @@ export interface CheckoutPublic {
     attached_custom_fields: Array<AttachedCustomField>;
 }
 
+
+/**
+ * Checkout session data retrieved using the client secret after confirmation.
+ * 
+ * It contains a customer session token to retrieve order information
+ * right after the checkout.
+ * @export
+ * @interface CheckoutPublicConfirmed
+ */
+export interface CheckoutPublicConfirmed {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    id: string;
+    /**
+     * Key-value object storing custom field values.
+     * @type {object}
+     * @memberof CheckoutPublicConfirmed
+     */
+    custom_field_data?: object;
+    /**
+     * 
+     * @type {PolarEnumsPaymentProcessor}
+     * @memberof CheckoutPublicConfirmed
+     */
+    payment_processor: PolarEnumsPaymentProcessor;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    status: CheckoutPublicConfirmedStatusEnum;
+    /**
+     * Client secret used to update and complete the checkout session from the client.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    client_secret: string;
+    /**
+     * URL where the customer can access the checkout session.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    url: string;
+    /**
+     * Expiration date and time of the checkout session.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    expires_at: string;
+    /**
+     * URL where the customer will be redirected after a successful payment.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    success_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    embed_origin: string | null;
+    /**
+     * Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices.
+     * @type {number}
+     * @memberof CheckoutPublicConfirmed
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublicConfirmed
+     */
+    tax_amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublicConfirmed
+     */
+    subtotal_amount: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof CheckoutPublicConfirmed
+     */
+    total_amount: number | null;
+    /**
+     * ID of the product to checkout.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    product_id: string;
+    /**
+     * ID of the product price to checkout.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    product_price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    discount_id: string | null;
+    /**
+     * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+     * @type {boolean}
+     * @memberof CheckoutPublicConfirmed
+     */
+    allow_discount_codes: boolean;
+    /**
+     * Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
+     * @type {boolean}
+     * @memberof CheckoutPublicConfirmed
+     */
+    is_discount_applicable: boolean;
+    /**
+     * Whether the product price is free, regardless of discounts.
+     * @type {boolean}
+     * @memberof CheckoutPublicConfirmed
+     */
+    is_free_product_price: boolean;
+    /**
+     * Whether the checkout requires payment, e.g. in case of free products or discounts that cover the total amount.
+     * @type {boolean}
+     * @memberof CheckoutPublicConfirmed
+     */
+    is_payment_required: boolean;
+    /**
+     * Whether the checkout requires setting up a payment method, regardless of the amount, e.g. subscriptions that have first free cycles.
+     * @type {boolean}
+     * @memberof CheckoutPublicConfirmed
+     */
+    is_payment_setup_required: boolean;
+    /**
+     * Whether the checkout requires a payment form, whether because of a payment or payment method setup.
+     * @type {boolean}
+     * @memberof CheckoutPublicConfirmed
+     */
+    is_payment_form_required: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_id: string | null;
+    /**
+     * Name of the customer.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_name: string | null;
+    /**
+     * Email address of the customer.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_email: string | null;
+    /**
+     * IP address of the customer. Used to detect tax location.
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_ip_address: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_billing_address: Address | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_tax_id: string | null;
+    /**
+     * 
+     * @type {object}
+     * @memberof CheckoutPublicConfirmed
+     */
+    payment_processor_metadata: object;
+    /**
+     * 
+     * @type {CheckoutProduct}
+     * @memberof CheckoutPublicConfirmed
+     */
+    product: CheckoutProduct;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof CheckoutPublicConfirmed
+     */
+    product_price: ProductPrice;
+    /**
+     * 
+     * @type {CheckoutDiscount}
+     * @memberof CheckoutPublicConfirmed
+     */
+    discount: CheckoutDiscount | null;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof CheckoutPublicConfirmed
+     */
+    organization: Organization;
+    /**
+     * 
+     * @type {Array<AttachedCustomField>}
+     * @memberof CheckoutPublicConfirmed
+     */
+    attached_custom_fields: Array<AttachedCustomField>;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutPublicConfirmed
+     */
+    customer_session_token: string;
+}
+
+
+/**
+ * @export
+ */
+export const CheckoutPublicConfirmedStatusEnum = {
+    CONFIRMED: 'confirmed'
+} as const;
+export type CheckoutPublicConfirmedStatusEnum = typeof CheckoutPublicConfirmedStatusEnum[keyof typeof CheckoutPublicConfirmedStatusEnum];
 
 
 /**
@@ -7138,48 +7046,1578 @@ export const CustomFieldUpdateTextTypeEnum = {
 export type CustomFieldUpdateTextTypeEnum = typeof CustomFieldUpdateTextTypeEnum[keyof typeof CustomFieldUpdateTextTypeEnum];
 
 /**
- * 
+ * A customer in an organization.
  * @export
  * @interface Customer
  */
 export interface Customer {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof Customer
      */
-    public_name: string;
+    created_at: string;
     /**
      * 
      * @type {string}
      * @memberof Customer
      */
-    github_username: string | null;
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof Customer
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof Customer
+     */
+    metadata: { [key: string]: MetadataValue; };
     /**
      * 
      * @type {string}
      * @memberof Customer
      */
-    avatar_url: string | null;
+    email: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Customer
+     */
+    email_verified: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof Customer
+     */
+    name: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof Customer
+     */
+    billing_address: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof Customer
+     */
+    tax_id: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Customer
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Customer
+     */
+    readonly avatar_url: string;
+}
+/**
+ * @type CustomerBenefitGrant
+ * @export
+ */
+export type CustomerBenefitGrant = CustomerBenefitGrantAds | CustomerBenefitGrantCustom | CustomerBenefitGrantDiscord | CustomerBenefitGrantDownloadables | CustomerBenefitGrantGitHubRepository | CustomerBenefitGrantLicenseKeys;
+
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantAds
+ */
+export interface CustomerBenefitGrantAds {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    granted_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    revoked_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAds
+     */
+    order_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantAds
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantAds
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitAdsSubscriber}
+     * @memberof CustomerBenefitGrantAds
+     */
+    benefit: BenefitAdsSubscriber;
+    /**
+     * 
+     * @type {BenefitGrantAdsProperties}
+     * @memberof CustomerBenefitGrantAds
+     */
+    properties: BenefitGrantAdsProperties;
 }
 /**
  * 
  * @export
- * @interface Customers
+ * @interface CustomerBenefitGrantAdsUpdate
  */
-export interface Customers {
+export interface CustomerBenefitGrantAdsUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantAdsUpdate
+     */
+    benefit_type: CustomerBenefitGrantAdsUpdateBenefitTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const CustomerBenefitGrantAdsUpdateBenefitTypeEnum = {
+    ADS: 'ads'
+} as const;
+export type CustomerBenefitGrantAdsUpdateBenefitTypeEnum = typeof CustomerBenefitGrantAdsUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantAdsUpdateBenefitTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantCustom
+ */
+export interface CustomerBenefitGrantCustom {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    granted_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    revoked_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    order_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitCustomSubscriber}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    benefit: BenefitCustomSubscriber;
+    /**
+     * 
+     * @type {object}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    properties: object;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantCustomUpdate
+ */
+export interface CustomerBenefitGrantCustomUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantCustomUpdate
+     */
+    benefit_type: CustomerBenefitGrantCustomUpdateBenefitTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const CustomerBenefitGrantCustomUpdateBenefitTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type CustomerBenefitGrantCustomUpdateBenefitTypeEnum = typeof CustomerBenefitGrantCustomUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantCustomUpdateBenefitTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantDiscord
+ */
+export interface CustomerBenefitGrantDiscord {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    granted_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    revoked_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    order_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitDiscordSubscriber}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    benefit: BenefitDiscordSubscriber;
+    /**
+     * 
+     * @type {BenefitGrantDiscordProperties}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    properties: BenefitGrantDiscordProperties;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantDiscordPropertiesUpdate
+ */
+export interface CustomerBenefitGrantDiscordPropertiesUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscordPropertiesUpdate
+     */
+    account_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantDiscordUpdate
+ */
+export interface CustomerBenefitGrantDiscordUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDiscordUpdate
+     */
+    benefit_type: CustomerBenefitGrantDiscordUpdateBenefitTypeEnum;
+    /**
+     * 
+     * @type {CustomerBenefitGrantDiscordPropertiesUpdate}
+     * @memberof CustomerBenefitGrantDiscordUpdate
+     */
+    properties: CustomerBenefitGrantDiscordPropertiesUpdate;
+}
+
+
+/**
+ * @export
+ */
+export const CustomerBenefitGrantDiscordUpdateBenefitTypeEnum = {
+    DISCORD: 'discord'
+} as const;
+export type CustomerBenefitGrantDiscordUpdateBenefitTypeEnum = typeof CustomerBenefitGrantDiscordUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantDiscordUpdateBenefitTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantDownloadables
+ */
+export interface CustomerBenefitGrantDownloadables {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    granted_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    revoked_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    order_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitDownloadablesSubscriber}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    benefit: BenefitDownloadablesSubscriber;
+    /**
+     * 
+     * @type {BenefitGrantDownloadablesProperties}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    properties: BenefitGrantDownloadablesProperties;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantDownloadablesUpdate
+ */
+export interface CustomerBenefitGrantDownloadablesUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantDownloadablesUpdate
+     */
+    benefit_type: CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum = {
+    DOWNLOADABLES: 'downloadables'
+} as const;
+export type CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum = typeof CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantGitHubRepository
+ */
+export interface CustomerBenefitGrantGitHubRepository {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    granted_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    revoked_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    order_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitGitHubRepositorySubscriber}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    benefit: BenefitGitHubRepositorySubscriber;
+    /**
+     * 
+     * @type {BenefitGrantGitHubRepositoryProperties}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    properties: BenefitGrantGitHubRepositoryProperties;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantGitHubRepositoryPropertiesUpdate
+ */
+export interface CustomerBenefitGrantGitHubRepositoryPropertiesUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepositoryPropertiesUpdate
+     */
+    account_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantGitHubRepositoryUpdate
+ */
+export interface CustomerBenefitGrantGitHubRepositoryUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantGitHubRepositoryUpdate
+     */
+    benefit_type: CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum;
+    /**
+     * 
+     * @type {CustomerBenefitGrantGitHubRepositoryPropertiesUpdate}
+     * @memberof CustomerBenefitGrantGitHubRepositoryUpdate
+     */
+    properties: CustomerBenefitGrantGitHubRepositoryPropertiesUpdate;
+}
+
+
+/**
+ * @export
+ */
+export const CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum = {
+    GITHUB_REPOSITORY: 'github_repository'
+} as const;
+export type CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum = typeof CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantLicenseKeys
+ */
+export interface CustomerBenefitGrantLicenseKeys {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    granted_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    revoked_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    order_id: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitLicenseKeysSubscriber}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    benefit: BenefitLicenseKeysSubscriber;
+    /**
+     * 
+     * @type {BenefitGrantLicenseKeysProperties}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    properties: BenefitGrantLicenseKeysProperties;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerBenefitGrantLicenseKeysUpdate
+ */
+export interface CustomerBenefitGrantLicenseKeysUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerBenefitGrantLicenseKeysUpdate
+     */
+    benefit_type: CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum = {
+    LICENSE_KEYS: 'license_keys'
+} as const;
+export type CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum = typeof CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum];
+
+
+/**
+ * 
+ * @export
+ */
+export const CustomerBenefitGrantSortProperty = {
+    GRANTED_AT: 'granted_at',
+    GRANTED_AT2: '-granted_at',
+    TYPE: 'type',
+    TYPE2: '-type',
+    ORGANIZATION: 'organization',
+    ORGANIZATION2: '-organization'
+} as const;
+export type CustomerBenefitGrantSortProperty = typeof CustomerBenefitGrantSortProperty[keyof typeof CustomerBenefitGrantSortProperty];
+
+/**
+ * @type CustomerBenefitGrantUpdate
+ * 
+ * @export
+ */
+export type CustomerBenefitGrantUpdate = { benefit_type: 'ads' } & CustomerBenefitGrantAdsUpdate | { benefit_type: 'custom' } & CustomerBenefitGrantCustomUpdate | { benefit_type: 'discord' } & CustomerBenefitGrantDiscordUpdate | { benefit_type: 'downloadables' } & CustomerBenefitGrantDownloadablesUpdate | { benefit_type: 'github_repository' } & CustomerBenefitGrantGitHubRepositoryUpdate | { benefit_type: 'license_keys' } & CustomerBenefitGrantLicenseKeysUpdate;
+/**
+ * 
+ * @export
+ * @interface CustomerCreate
+ */
+export interface CustomerCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerCreate
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerCreate
+     */
+    name?: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof CustomerCreate
+     */
+    billing_address?: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof CustomerCreate
+     */
+    tax_id?: Array<string> | null;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof CustomerCreate
+     */
+    organization_id?: string | null;
+}
+/**
+ * @type CustomerIDFilter
+ * Filter by customer ID.
+ * @export
+ */
+export type CustomerIDFilter = Array<string> | string;
+
+/**
+ * @type CustomerIDFilter1
+ * Filter by customer.
+ * @export
+ */
+export type CustomerIDFilter1 = Array<string> | string;
+
+
+/**
+ * 
+ * @export
+ */
+export const CustomerOAuthPlatform = {
+    GITHUB: 'github',
+    DISCORD: 'discord'
+} as const;
+export type CustomerOAuthPlatform = typeof CustomerOAuthPlatform[keyof typeof CustomerOAuthPlatform];
+
+/**
+ * 
+ * @export
+ * @interface CustomerOrder
+ */
+export interface CustomerOrder {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    modified_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    id: string;
     /**
      * 
      * @type {number}
-     * @memberof Customers
+     * @memberof CustomerOrder
      */
-    total: number;
+    amount: number;
     /**
      * 
-     * @type {Array<Customer>}
-     * @memberof Customers
+     * @type {number}
+     * @memberof CustomerOrder
      */
-    customers: Array<Customer>;
+    tax_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    currency: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    product_price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrder
+     * @deprecated
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {CustomerOrderProduct}
+     * @memberof CustomerOrder
+     */
+    product: CustomerOrderProduct;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof CustomerOrder
+     */
+    product_price: ProductPrice;
+    /**
+     * 
+     * @type {CustomerOrderSubscription}
+     * @memberof CustomerOrder
+     */
+    subscription: CustomerOrderSubscription | null;
+}
+/**
+ * Order's invoice data.
+ * @export
+ * @interface CustomerOrderInvoice
+ */
+export interface CustomerOrderInvoice {
+    /**
+     * The URL to the invoice.
+     * @type {string}
+     * @memberof CustomerOrderInvoice
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerOrderProduct
+ */
+export interface CustomerOrderProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerOrderProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderProduct
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof CustomerOrderProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof CustomerOrderProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderProduct
+     */
+    description: string | null;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof CustomerOrderProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof CustomerOrderProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof CustomerOrderProduct
+     */
+    organization_id: string;
+    /**
+     * List of prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof CustomerOrderProduct
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * List of benefits granted by the product.
+     * @type {Array<BenefitBase>}
+     * @memberof CustomerOrderProduct
+     */
+    benefits: Array<BenefitBase>;
+    /**
+     * List of medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof CustomerOrderProduct
+     */
+    medias: Array<ProductMediaFileRead>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof CustomerOrderProduct
+     */
+    organization: Organization;
+}
+
+/**
+ * 
+ * @export
+ */
+export const CustomerOrderSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
+    ORGANIZATION: 'organization',
+    ORGANIZATION2: '-organization',
+    PRODUCT: 'product',
+    PRODUCT2: '-product',
+    SUBSCRIPTION: 'subscription',
+    SUBSCRIPTION2: '-subscription'
+} as const;
+export type CustomerOrderSortProperty = typeof CustomerOrderSortProperty[keyof typeof CustomerOrderSortProperty];
+
+/**
+ * 
+ * @export
+ * @interface CustomerOrderSubscription
+ */
+export interface CustomerOrderSubscription {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomerOrderSubscription
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {SubscriptionRecurringInterval}
+     * @memberof CustomerOrderSubscription
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof CustomerOrderSubscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    current_period_end: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerOrderSubscription
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    ended_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    discount_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    checkout_id: string | null;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface CustomerPortalCustomer
+ */
+export interface CustomerPortalCustomer {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerPortalCustomer
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerPortalCustomer
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerPortalCustomer
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerPortalCustomer
+     */
+    email: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerPortalCustomer
+     */
+    email_verified: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerPortalCustomer
+     */
+    name: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof CustomerPortalCustomer
+     */
+    billing_address: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof CustomerPortalCustomer
+     */
+    tax_id: Array<string> | null;
+    /**
+     * 
+     * @type {{ [key: string]: CustomerPortalOAuthAccount; }}
+     * @memberof CustomerPortalCustomer
+     */
+    oauth_accounts: { [key: string]: CustomerPortalOAuthAccount; };
+}
+/**
+ * 
+ * @export
+ * @interface CustomerPortalOAuthAccount
+ */
+export interface CustomerPortalOAuthAccount {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerPortalOAuthAccount
+     */
+    account_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerPortalOAuthAccount
+     */
+    account_username: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerSessionCodeAuthenticateRequest
+ */
+export interface CustomerSessionCodeAuthenticateRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSessionCodeAuthenticateRequest
+     */
+    code: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerSessionCodeAuthenticateResponse
+ */
+export interface CustomerSessionCodeAuthenticateResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSessionCodeAuthenticateResponse
+     */
+    token: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerSessionCodeRequest
+ */
+export interface CustomerSessionCodeRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSessionCodeRequest
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSessionCodeRequest
+     */
+    organization_id: string;
+}
+
+/**
+ * 
+ * @export
+ */
+export const CustomerSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    EMAIL: 'email',
+    EMAIL2: '-email',
+    NAME: 'name',
+    NAME2: '-name'
+} as const;
+export type CustomerSortProperty = typeof CustomerSortProperty[keyof typeof CustomerSortProperty];
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscription
+ */
+export interface CustomerSubscription {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof CustomerSubscription
+     */
+    amount: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    currency: string | null;
+    /**
+     * 
+     * @type {SubscriptionRecurringInterval}
+     * @memberof CustomerSubscription
+     */
+    recurring_interval: SubscriptionRecurringInterval;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof CustomerSubscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    current_period_end: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerSubscription
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    ended_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    discount_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    checkout_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     * @deprecated
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {CustomerSubscriptionProduct}
+     * @memberof CustomerSubscription
+     */
+    product: CustomerSubscriptionProduct;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof CustomerSubscription
+     */
+    price: ProductPrice;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscriptionProduct
+ */
+export interface CustomerSubscriptionProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerSubscriptionProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionProduct
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof CustomerSubscriptionProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof CustomerSubscriptionProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionProduct
+     */
+    description: string | null;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof CustomerSubscriptionProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof CustomerSubscriptionProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof CustomerSubscriptionProduct
+     */
+    organization_id: string;
+    /**
+     * List of prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof CustomerSubscriptionProduct
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * List of benefits granted by the product.
+     * @type {Array<BenefitBase>}
+     * @memberof CustomerSubscriptionProduct
+     */
+    benefits: Array<BenefitBase>;
+    /**
+     * List of medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof CustomerSubscriptionProduct
+     */
+    medias: Array<ProductMediaFileRead>;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof CustomerSubscriptionProduct
+     */
+    organization: Organization;
+}
+
+/**
+ * 
+ * @export
+ */
+export const CustomerSubscriptionSortProperty = {
+    STARTED_AT: 'started_at',
+    STARTED_AT2: '-started_at',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
+    STATUS: 'status',
+    STATUS2: '-status',
+    ORGANIZATION: 'organization',
+    ORGANIZATION2: '-organization',
+    PRODUCT: 'product',
+    PRODUCT2: '-product'
+} as const;
+export type CustomerSubscriptionSortProperty = typeof CustomerSubscriptionSortProperty[keyof typeof CustomerSubscriptionSortProperty];
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscriptionUpdate
+ */
+export interface CustomerSubscriptionUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionUpdate
+     */
+    product_price_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface CustomerUpdate
+ */
+export interface CustomerUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerUpdate
+     */
+    email?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerUpdate
+     */
+    name?: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof CustomerUpdate
+     */
+    billing_address?: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof CustomerUpdate
+     */
+    tax_id?: Array<string> | null;
 }
 /**
  * 
@@ -9949,6 +11387,79 @@ export interface LicenseKeyActivationRead {
 /**
  * 
  * @export
+ * @interface LicenseKeyCustomer
+ */
+export interface LicenseKeyCustomer {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof LicenseKeyCustomer
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    email: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof LicenseKeyCustomer
+     */
+    email_verified: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    name: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof LicenseKeyCustomer
+     */
+    billing_address: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof LicenseKeyCustomer
+     */
+    tax_id: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyCustomer
+     */
+    readonly avatar_url: string;
+}
+/**
+ * 
+ * @export
  * @interface LicenseKeyDeactivate
  */
 export interface LicenseKeyDeactivate {
@@ -9993,14 +11504,27 @@ export interface LicenseKeyRead {
      * 
      * @type {string}
      * @memberof LicenseKeyRead
+     * @deprecated
      */
     user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    customer_id: string;
     /**
      * 
      * @type {LicenseKeyUser}
      * @memberof LicenseKeyRead
      */
     user: LicenseKeyUser;
+    /**
+     * 
+     * @type {LicenseKeyCustomer}
+     * @memberof LicenseKeyRead
+     */
+    customer: LicenseKeyCustomer;
     /**
      * The benefit ID.
      * @type {string}
@@ -10132,19 +11656,13 @@ export interface LicenseKeyUser {
      * @type {string}
      * @memberof LicenseKeyUser
      */
-    public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof LicenseKeyUser
-     */
     email: string;
     /**
      * 
      * @type {string}
      * @memberof LicenseKeyUser
      */
-    avatar_url: string | null;
+    public_name: string;
 }
 /**
  * 
@@ -10181,7 +11699,7 @@ export interface LicenseKeyValidate {
      * @type {string}
      * @memberof LicenseKeyValidate
      */
-    user_id?: string | null;
+    customer_id?: string | null;
     /**
      * 
      * @type {number}
@@ -10217,14 +11735,27 @@ export interface LicenseKeyWithActivations {
      * 
      * @type {string}
      * @memberof LicenseKeyWithActivations
+     * @deprecated
      */
     user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    customer_id: string;
     /**
      * 
      * @type {LicenseKeyUser}
      * @memberof LicenseKeyWithActivations
      */
     user: LicenseKeyUser;
+    /**
+     * 
+     * @type {LicenseKeyCustomer}
+     * @memberof LicenseKeyWithActivations
+     */
+    customer: LicenseKeyCustomer;
     /**
      * The benefit ID.
      * @type {string}
@@ -10438,6 +11969,82 @@ export interface ListResourceCustomField {
      * 
      * @type {Pagination}
      * @memberof ListResourceCustomField
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceCustomer
+ */
+export interface ListResourceCustomer {
+    /**
+     * 
+     * @type {Array<Customer>}
+     * @memberof ListResourceCustomer
+     */
+    items: Array<Customer>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCustomer
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceCustomerBenefitGrant
+ */
+export interface ListResourceCustomerBenefitGrant {
+    /**
+     * 
+     * @type {Array<CustomerBenefitGrant>}
+     * @memberof ListResourceCustomerBenefitGrant
+     */
+    items: Array<CustomerBenefitGrant>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCustomerBenefitGrant
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceCustomerOrder
+ */
+export interface ListResourceCustomerOrder {
+    /**
+     * 
+     * @type {Array<CustomerOrder>}
+     * @memberof ListResourceCustomerOrder
+     */
+    items: Array<CustomerOrder>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCustomerOrder
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceCustomerSubscription
+ */
+export interface ListResourceCustomerSubscription {
+    /**
+     * 
+     * @type {Array<CustomerSubscription>}
+     * @memberof ListResourceCustomerSubscription
+     */
+    items: Array<CustomerSubscription>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceCustomerSubscription
      */
     pagination: Pagination;
 }
@@ -10799,82 +12406,6 @@ export interface ListResourceTransaction {
      * 
      * @type {Pagination}
      * @memberof ListResourceTransaction
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceUserAdvertisementCampaign
- */
-export interface ListResourceUserAdvertisementCampaign {
-    /**
-     * 
-     * @type {Array<UserAdvertisementCampaign>}
-     * @memberof ListResourceUserAdvertisementCampaign
-     */
-    items: Array<UserAdvertisementCampaign>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceUserAdvertisementCampaign
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceUserBenefit
- */
-export interface ListResourceUserBenefit {
-    /**
-     * 
-     * @type {Array<UserBenefit>}
-     * @memberof ListResourceUserBenefit
-     */
-    items: Array<UserBenefit>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceUserBenefit
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceUserOrder
- */
-export interface ListResourceUserOrder {
-    /**
-     * 
-     * @type {Array<UserOrder>}
-     * @memberof ListResourceUserOrder
-     */
-    items: Array<UserOrder>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceUserOrder
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceUserSubscription
- */
-export interface ListResourceUserSubscription {
-    /**
-     * 
-     * @type {Array<UserSubscription>}
-     * @memberof ListResourceUserSubscription
-     */
-    items: Array<UserSubscription>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceUserSubscription
      */
     pagination: Pagination;
 }
@@ -12198,7 +13729,7 @@ export type NotPermittedErrorEnum = typeof NotPermittedErrorEnum[keyof typeof No
  * 
  * @export
  */
-export type NotificationsInner = { type: 'BenefitPreconditionErrorNotification' } & BenefitPreconditionErrorNotification | { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerNewProductSaleNotification' } & MaintainerNewProductSaleNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
+export type NotificationsInner = { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerNewProductSaleNotification' } & MaintainerNewProductSaleNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
 /**
  * 
  * @export
@@ -12745,7 +14276,7 @@ export interface Order {
      * @type {string}
      * @memberof Order
      */
-    user_id: string;
+    customer_id: string;
     /**
      * 
      * @type {string}
@@ -12776,6 +14307,19 @@ export interface Order {
      * @memberof Order
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {OrderCustomer}
+     * @memberof Order
+     */
+    customer: OrderCustomer;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     * @deprecated
+     */
+    user_id: string;
     /**
      * 
      * @type {OrderUser}
@@ -12822,6 +14366,79 @@ export const OrderBillingReason = {
 } as const;
 export type OrderBillingReason = typeof OrderBillingReason[keyof typeof OrderBillingReason];
 
+/**
+ * 
+ * @export
+ * @interface OrderCustomer
+ */
+export interface OrderCustomer {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof OrderCustomer
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    email: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrderCustomer
+     */
+    email_verified: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    name: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof OrderCustomer
+     */
+    billing_address: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OrderCustomer
+     */
+    tax_id: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderCustomer
+     */
+    readonly avatar_url: string;
+}
 /**
  * @type OrderDiscount
  * 
@@ -12913,8 +14530,8 @@ export const OrderSortProperty = {
     CREATED_AT2: '-created_at',
     AMOUNT: 'amount',
     AMOUNT2: '-amount',
-    USER: 'user',
-    USER2: '-user',
+    CUSTOMER: 'customer',
+    CUSTOMER2: '-customer',
     PRODUCT: 'product',
     PRODUCT2: '-product',
     DISCOUNT: 'discount',
@@ -13013,7 +14630,7 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    user_id: string;
+    customer_id: string;
     /**
      * 
      * @type {string}
@@ -13065,18 +14682,6 @@ export interface OrderUser {
      * @memberof OrderUser
      */
     public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrderUser
-     */
-    github_username: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrderUser
-     */
-    avatar_url: string | null;
 }
 /**
  * 
@@ -16383,12 +17988,6 @@ export type ResponseOauth2Authorize = { sub_type: 'organization' } & AuthorizeRe
 export type ResponseOauth2Userinfo = UserInfoOrganization | UserInfoUser;
 
 /**
- * @type ResponseUsersBenefitsGet
- * 
- * @export
- */
-export type ResponseUsersBenefitsGet = { type: 'ads' } & BenefitAdsSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
-/**
  * 
  * @export
  * @interface Reward
@@ -16770,6 +18369,8 @@ export const Scope = {
     FILESWRITE: 'files:write',
     SUBSCRIPTIONSREAD: 'subscriptions:read',
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
+    CUSTOMERSREAD: 'customers:read',
+    CUSTOMERSWRITE: 'customers:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
@@ -16781,14 +18382,8 @@ export const Scope = {
     REPOSITORIESWRITE: 'repositories:write',
     ISSUESREAD: 'issues:read',
     ISSUESWRITE: 'issues:write',
-    USERBENEFITSREAD: 'user:benefits:read',
-    USERORDERSREAD: 'user:orders:read',
-    USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
-    USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
-    USERDOWNLOADABLESREAD: 'user:downloadables:read',
-    USERLICENSE_KEYSREAD: 'user:license_keys:read',
-    USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
-    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
+    CUSTOMER_PORTALREAD: 'customer_portal:read',
+    CUSTOMER_PORTALWRITE: 'customer_portal:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 
@@ -16842,10 +18437,42 @@ export interface Storefront {
     donation_product: ProductStorefront | null;
     /**
      * 
-     * @type {Customers}
+     * @type {StorefrontCustomers}
      * @memberof Storefront
      */
-    customers: Customers;
+    customers: StorefrontCustomers;
+}
+/**
+ * 
+ * @export
+ * @interface StorefrontCustomer
+ */
+export interface StorefrontCustomer {
+    /**
+     * 
+     * @type {string}
+     * @memberof StorefrontCustomer
+     */
+    name: string;
+}
+/**
+ * 
+ * @export
+ * @interface StorefrontCustomers
+ */
+export interface StorefrontCustomers {
+    /**
+     * 
+     * @type {number}
+     * @memberof StorefrontCustomers
+     */
+    total: number;
+    /**
+     * 
+     * @type {Array<StorefrontCustomer>}
+     * @memberof StorefrontCustomers
+     */
+    customers: Array<StorefrontCustomer>;
 }
 
 /**
@@ -16941,7 +18568,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    user_id: string;
+    customer_id: string;
     /**
      * 
      * @type {string}
@@ -16980,6 +18607,19 @@ export interface Subscription {
     custom_field_data?: object;
     /**
      * 
+     * @type {SubscriptionCustomer}
+     * @memberof Subscription
+     */
+    customer: SubscriptionCustomer;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     * @deprecated
+     */
+    user_id: string;
+    /**
+     * 
      * @type {SubscriptionUser}
      * @memberof Subscription
      */
@@ -17005,6 +18645,79 @@ export interface Subscription {
 }
 
 
+/**
+ * 
+ * @export
+ * @interface SubscriptionCustomer
+ */
+export interface SubscriptionCustomer {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof SubscriptionCustomer
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    email: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCustomer
+     */
+    email_verified: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    name: string | null;
+    /**
+     * 
+     * @type {Address}
+     * @memberof SubscriptionCustomer
+     */
+    billing_address: Address | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof SubscriptionCustomer
+     */
+    tax_id: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCustomer
+     */
+    readonly avatar_url: string;
+}
 /**
  * @type SubscriptionDiscount
  * 
@@ -17035,8 +18748,8 @@ export type SubscriptionRecurringInterval = typeof SubscriptionRecurringInterval
  * @export
  */
 export const SubscriptionSortProperty = {
-    USER: 'user',
-    USER2: '-user',
+    CUSTOMER: 'customer',
+    CUSTOMER2: '-customer',
     STATUS: 'status',
     STATUS2: '-status',
     STARTED_AT: 'started_at',
@@ -17079,6 +18792,12 @@ export interface SubscriptionUser {
      * @type {string}
      * @memberof SubscriptionUser
      */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
     email: string;
     /**
      * 
@@ -17086,18 +18805,6 @@ export interface SubscriptionUser {
      * @memberof SubscriptionUser
      */
     public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionUser
-     */
-    github_username: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionUser
-     */
-    avatar_url: string | null;
 }
 /**
  * 
@@ -17119,6 +18826,91 @@ export interface SummaryPledge {
     pledger: Pledger | null;
 }
 
+
+
+/**
+ * List of supported tax ID formats.
+ * 
+ * Ref: https://docs.stripe.com/billing/customer/tax-ids#supported-tax-id
+ * @export
+ */
+export const TaxIDFormat = {
+    AD_NRT: 'ad_nrt',
+    AE_TRN: 'ae_trn',
+    AR_CUIT: 'ar_cuit',
+    AU_ABN: 'au_abn',
+    AU_ARN: 'au_arn',
+    BG_UIC: 'bg_uic',
+    BH_VAT: 'bh_vat',
+    BO_TIN: 'bo_tin',
+    BR_CNPJ: 'br_cnpj',
+    BR_CPF: 'br_cpf',
+    CA_BN: 'ca_bn',
+    CA_GST_HST: 'ca_gst_hst',
+    CA_PST_BC: 'ca_pst_bc',
+    CA_PST_MB: 'ca_pst_mb',
+    CA_PST_SK: 'ca_pst_sk',
+    CA_QST: 'ca_qst',
+    CH_UID: 'ch_uid',
+    CH_VAT: 'ch_vat',
+    CL_TIN: 'cl_tin',
+    CN_TIN: 'cn_tin',
+    CO_NIT: 'co_nit',
+    CR_TIN: 'cr_tin',
+    DE_STN: 'de_stn',
+    DO_RCN: 'do_rcn',
+    EC_RUC: 'ec_ruc',
+    EG_TIN: 'eg_tin',
+    ES_CIF: 'es_cif',
+    EU_OSS_VAT: 'eu_oss_vat',
+    EU_VAT: 'eu_vat',
+    GB_VAT: 'gb_vat',
+    GE_VAT: 'ge_vat',
+    HK_BR: 'hk_br',
+    HR_OIB: 'hr_oib',
+    HU_TIN: 'hu_tin',
+    ID_NPWP: 'id_npwp',
+    IL_VAT: 'il_vat',
+    IN_GST: 'in_gst',
+    IS_VAT: 'is_vat',
+    JP_CN: 'jp_cn',
+    JP_RN: 'jp_rn',
+    JP_TRN: 'jp_trn',
+    KE_PIN: 'ke_pin',
+    KR_BRN: 'kr_brn',
+    KZ_BIN: 'kz_bin',
+    LI_UID: 'li_uid',
+    MX_RFC: 'mx_rfc',
+    MY_FRP: 'my_frp',
+    MY_ITN: 'my_itn',
+    MY_SST: 'my_sst',
+    NG_TIN: 'ng_tin',
+    NO_VAT: 'no_vat',
+    NO_VOEC: 'no_voec',
+    NZ_GST: 'nz_gst',
+    OM_VAT: 'om_vat',
+    PE_RUC: 'pe_ruc',
+    PH_TIN: 'ph_tin',
+    RO_TIN: 'ro_tin',
+    RS_PIB: 'rs_pib',
+    RU_INN: 'ru_inn',
+    RU_KPP: 'ru_kpp',
+    SA_VAT: 'sa_vat',
+    SG_GST: 'sg_gst',
+    SG_UEN: 'sg_uen',
+    SI_TIN: 'si_tin',
+    SV_NIT: 'sv_nit',
+    TH_VAT: 'th_vat',
+    TR_TIN: 'tr_tin',
+    TW_VAT: 'tw_vat',
+    UA_VAT: 'ua_vat',
+    US_EIN: 'us_ein',
+    UY_RUC: 'uy_ruc',
+    VE_RIF: 've_rif',
+    VN_TIN: 'vn_tin',
+    ZA_VAT: 'za_vat'
+} as const;
+export type TaxIDFormat = typeof TaxIDFormat[keyof typeof TaxIDFormat];
 
 /**
  * 
@@ -18187,163 +19979,6 @@ export interface User {
 /**
  * 
  * @export
- * @interface UserAdvertisementCampaign
- */
-export interface UserAdvertisementCampaign {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    modified_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserAdvertisementCampaign
-     */
-    views: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserAdvertisementCampaign
-     */
-    clicks: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    image_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    image_url_dark: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    text: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaign
-     */
-    link_url: string;
-}
-/**
- * 
- * @export
- * @interface UserAdvertisementCampaignCreate
- */
-export interface UserAdvertisementCampaignCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignCreate
-     */
-    image_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignCreate
-     */
-    image_url_dark?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignCreate
-     */
-    text: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignCreate
-     */
-    link_url: string;
-}
-/**
- * 
- * @export
- * @interface UserAdvertisementCampaignEnable
- */
-export interface UserAdvertisementCampaignEnable {
-    /**
-     * The benefit ID.
-     * @type {string}
-     * @memberof UserAdvertisementCampaignEnable
-     */
-    benefit_id: string;
-}
-/**
- * 
- * @export
- * @interface UserAdvertisementCampaignUpdate
- */
-export interface UserAdvertisementCampaignUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignUpdate
-     */
-    image_url?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignUpdate
-     */
-    image_url_dark?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignUpdate
-     */
-    text?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserAdvertisementCampaignUpdate
-     */
-    link_url?: string | null;
-}
-
-/**
- * 
- * @export
- */
-export const UserAdvertisementSortProperty = {
-    CREATED_AT: 'created_at',
-    CREATED_AT2: '-created_at',
-    VIEWS: 'views',
-    VIEWS2: '-views',
-    CLICKS: 'clicks',
-    CLICKS2: '-clicks'
-} as const;
-export type UserAdvertisementSortProperty = typeof UserAdvertisementSortProperty[keyof typeof UserAdvertisementSortProperty];
-
-/**
- * 
- * @export
  * @interface UserBase
  */
 export interface UserBase {
@@ -18366,34 +20001,6 @@ export interface UserBase {
      */
     account_id: string | null;
 }
-/**
- * @type UserBenefit
- * 
- * @export
- */
-export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
-
-/**
- * 
- * @export
- */
-export const UserBenefitSortProperty = {
-    GRANTED_AT: 'granted_at',
-    GRANTED_AT2: '-granted_at',
-    TYPE: 'type',
-    TYPE2: '-type',
-    ORGANIZATION: 'organization',
-    ORGANIZATION2: '-organization'
-} as const;
-export type UserBenefitSortProperty = typeof UserBenefitSortProperty[keyof typeof UserBenefitSortProperty];
-
-/**
- * @type UserIDFilter
- * Filter by customer\'s user ID.
- * @export
- */
-export type UserIDFilter = Array<string> | string;
-
 /**
  * 
  * @export
@@ -18444,313 +20051,6 @@ export interface UserInfoUser {
      */
     email_verified?: boolean | null;
 }
-/**
- * 
- * @export
- * @interface UserOrder
- */
-export interface UserOrder {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof UserOrder
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    modified_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserOrder
-     */
-    amount: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserOrder
-     */
-    tax_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    currency: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    product_price_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrder
-     */
-    subscription_id: string | null;
-    /**
-     * 
-     * @type {UserOrderProduct}
-     * @memberof UserOrder
-     */
-    product: UserOrderProduct;
-    /**
-     * 
-     * @type {ProductPrice}
-     * @memberof UserOrder
-     */
-    product_price: ProductPrice;
-    /**
-     * 
-     * @type {UserOrderSubscription}
-     * @memberof UserOrder
-     */
-    subscription: UserOrderSubscription | null;
-}
-/**
- * Order's invoice data.
- * @export
- * @interface UserOrderInvoice
- */
-export interface UserOrderInvoice {
-    /**
-     * The URL to the invoice.
-     * @type {string}
-     * @memberof UserOrderInvoice
-     */
-    url: string;
-}
-/**
- * 
- * @export
- * @interface UserOrderProduct
- */
-export interface UserOrderProduct {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof UserOrderProduct
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderProduct
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the product.
-     * @type {string}
-     * @memberof UserOrderProduct
-     */
-    id: string;
-    /**
-     * The name of the product.
-     * @type {string}
-     * @memberof UserOrderProduct
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderProduct
-     */
-    description: string | null;
-    /**
-     * Whether the product is a subscription tier.
-     * @type {boolean}
-     * @memberof UserOrderProduct
-     */
-    is_recurring: boolean;
-    /**
-     * Whether the product is archived and no longer available.
-     * @type {boolean}
-     * @memberof UserOrderProduct
-     */
-    is_archived: boolean;
-    /**
-     * The ID of the organization owning the product.
-     * @type {string}
-     * @memberof UserOrderProduct
-     */
-    organization_id: string;
-    /**
-     * List of prices for this product.
-     * @type {Array<ProductPrice>}
-     * @memberof UserOrderProduct
-     */
-    prices: Array<ProductPrice>;
-    /**
-     * List of benefits granted by the product.
-     * @type {Array<BenefitBase>}
-     * @memberof UserOrderProduct
-     */
-    benefits: Array<BenefitBase>;
-    /**
-     * List of medias associated to the product.
-     * @type {Array<ProductMediaFileRead>}
-     * @memberof UserOrderProduct
-     */
-    medias: Array<ProductMediaFileRead>;
-    /**
-     * 
-     * @type {Organization}
-     * @memberof UserOrderProduct
-     */
-    organization: Organization;
-}
-
-/**
- * 
- * @export
- */
-export const UserOrderSortProperty = {
-    CREATED_AT: 'created_at',
-    CREATED_AT2: '-created_at',
-    AMOUNT: 'amount',
-    AMOUNT2: '-amount',
-    ORGANIZATION: 'organization',
-    ORGANIZATION2: '-organization',
-    PRODUCT: 'product',
-    PRODUCT2: '-product',
-    SUBSCRIPTION: 'subscription',
-    SUBSCRIPTION2: '-subscription'
-} as const;
-export type UserOrderSortProperty = typeof UserOrderSortProperty[keyof typeof UserOrderSortProperty];
-
-/**
- * 
- * @export
- * @interface UserOrderSubscription
- */
-export interface UserOrderSubscription {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the object.
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserOrderSubscription
-     */
-    amount: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    currency: string | null;
-    /**
-     * 
-     * @type {SubscriptionRecurringInterval}
-     * @memberof UserOrderSubscription
-     */
-    recurring_interval: SubscriptionRecurringInterval;
-    /**
-     * 
-     * @type {SubscriptionStatus}
-     * @memberof UserOrderSubscription
-     */
-    status: SubscriptionStatus;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    current_period_start: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    current_period_end: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserOrderSubscription
-     */
-    cancel_at_period_end: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    started_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    ended_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    price_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    discount_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    checkout_id: string | null;
-}
-
-
 /**
  * 
  * @export
@@ -18929,240 +20229,6 @@ export interface UserStripePortalSession {
 /**
  * 
  * @export
- * @interface UserSubscription
- */
-export interface UserSubscription {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the object.
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof UserSubscription
-     */
-    amount: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    currency: string | null;
-    /**
-     * 
-     * @type {SubscriptionRecurringInterval}
-     * @memberof UserSubscription
-     */
-    recurring_interval: SubscriptionRecurringInterval;
-    /**
-     * 
-     * @type {SubscriptionStatus}
-     * @memberof UserSubscription
-     */
-    status: SubscriptionStatus;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    current_period_start: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    current_period_end: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserSubscription
-     */
-    cancel_at_period_end: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    started_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    ended_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    price_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    discount_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
-    checkout_id: string | null;
-    /**
-     * 
-     * @type {UserSubscriptionProduct}
-     * @memberof UserSubscription
-     */
-    product: UserSubscriptionProduct;
-    /**
-     * 
-     * @type {ProductPrice}
-     * @memberof UserSubscription
-     */
-    price: ProductPrice;
-}
-
-
-/**
- * 
- * @export
- * @interface UserSubscriptionProduct
- */
-export interface UserSubscriptionProduct {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof UserSubscriptionProduct
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscriptionProduct
-     */
-    modified_at: string | null;
-    /**
-     * The ID of the product.
-     * @type {string}
-     * @memberof UserSubscriptionProduct
-     */
-    id: string;
-    /**
-     * The name of the product.
-     * @type {string}
-     * @memberof UserSubscriptionProduct
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscriptionProduct
-     */
-    description: string | null;
-    /**
-     * Whether the product is a subscription tier.
-     * @type {boolean}
-     * @memberof UserSubscriptionProduct
-     */
-    is_recurring: boolean;
-    /**
-     * Whether the product is archived and no longer available.
-     * @type {boolean}
-     * @memberof UserSubscriptionProduct
-     */
-    is_archived: boolean;
-    /**
-     * The ID of the organization owning the product.
-     * @type {string}
-     * @memberof UserSubscriptionProduct
-     */
-    organization_id: string;
-    /**
-     * List of prices for this product.
-     * @type {Array<ProductPrice>}
-     * @memberof UserSubscriptionProduct
-     */
-    prices: Array<ProductPrice>;
-    /**
-     * List of benefits granted by the product.
-     * @type {Array<BenefitBase>}
-     * @memberof UserSubscriptionProduct
-     */
-    benefits: Array<BenefitBase>;
-    /**
-     * List of medias associated to the product.
-     * @type {Array<ProductMediaFileRead>}
-     * @memberof UserSubscriptionProduct
-     */
-    medias: Array<ProductMediaFileRead>;
-    /**
-     * 
-     * @type {Organization}
-     * @memberof UserSubscriptionProduct
-     */
-    organization: Organization;
-}
-
-/**
- * 
- * @export
- */
-export const UserSubscriptionSortProperty = {
-    STARTED_AT: 'started_at',
-    STARTED_AT2: '-started_at',
-    AMOUNT: 'amount',
-    AMOUNT2: '-amount',
-    STATUS: 'status',
-    STATUS2: '-status',
-    ORGANIZATION: 'organization',
-    ORGANIZATION2: '-organization',
-    PRODUCT: 'product',
-    PRODUCT2: '-product'
-} as const;
-export type UserSubscriptionSortProperty = typeof UserSubscriptionSortProperty[keyof typeof UserSubscriptionSortProperty];
-
-/**
- * 
- * @export
- * @interface UserSubscriptionUpdate
- */
-export interface UserSubscriptionUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscriptionUpdate
-     */
-    product_price_id: string;
-}
-/**
- * 
- * @export
  * @interface ValidatedLicenseKey
  */
 export interface ValidatedLicenseKey {
@@ -19182,14 +20248,27 @@ export interface ValidatedLicenseKey {
      * 
      * @type {string}
      * @memberof ValidatedLicenseKey
+     * @deprecated
      */
     user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    customer_id: string;
     /**
      * 
      * @type {LicenseKeyUser}
      * @memberof ValidatedLicenseKey
      */
     user: LicenseKeyUser;
+    /**
+     * 
+     * @type {LicenseKeyCustomer}
+     * @memberof ValidatedLicenseKey
+     */
+    customer: LicenseKeyCustomer;
     /**
      * The benefit ID.
      * @type {string}

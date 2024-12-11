@@ -58,7 +58,15 @@ Note = Annotated[
 ]
 
 
-class BenefitCustomProperties(Schema):
+class BenefitBaseProperties(Schema):
+    """
+    Benefit properties.
+    """
+
+    ...
+
+
+class BenefitCustomProperties(BenefitBaseProperties):
     """
     Properties for a benefit of type `custom`.
     """
@@ -66,7 +74,7 @@ class BenefitCustomProperties(Schema):
     note: Note | None
 
 
-class BenefitCustomCreateProperties(Schema):
+class BenefitCustomCreateProperties(BenefitBaseProperties):
     """
     Properties for creating a benefit of type `custom`.
     """
@@ -74,7 +82,7 @@ class BenefitCustomCreateProperties(Schema):
     note: Note | None = None
 
 
-class BenefitCustomSubscriberProperties(Schema):
+class BenefitCustomSubscriberProperties(BenefitBaseProperties):
     """
     Properties available to subscribers for a benefit of type `custom`.
     """
@@ -85,7 +93,7 @@ class BenefitCustomSubscriberProperties(Schema):
 ## Ads
 
 
-class BenefitAdsProperties(Schema):
+class BenefitAdsProperties(BenefitBaseProperties):
     """
     Properties for a benefit of type `ads`.
     """
@@ -97,7 +105,7 @@ class BenefitAdsProperties(Schema):
 ## Discord
 
 
-class BenefitDiscordProperties(Schema):
+class BenefitDiscordProperties(BenefitBaseProperties):
     """
     Properties for a benefit of type `discord`.
     """
@@ -115,7 +123,7 @@ class BenefitDiscordProperties(Schema):
         )
 
 
-class BenefitDiscordCreateProperties(Schema):
+class BenefitDiscordCreateProperties(BenefitBaseProperties):
     """
     Properties to create a benefit of type `discord`.
     """
@@ -137,7 +145,7 @@ class BenefitDiscordCreateProperties(Schema):
             ) from e
 
 
-class BenefitDiscordSubscriberProperties(Schema):
+class BenefitDiscordSubscriberProperties(BenefitBaseProperties):
     """
     Properties available to subscribers for a benefit of type `discord`.
     """
@@ -419,6 +427,7 @@ class BenefitBase(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )
+    properties: BenefitBaseProperties
 
 
 class BenefitCustom(BenefitBase):

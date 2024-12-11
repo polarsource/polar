@@ -2,7 +2,6 @@
 /* eslint-disable */
 export * from './AccountsApi';
 export * from './AdvertisementsApi';
-export * from './ArticlesApi';
 export * from './AuthApi';
 export * from './BackofficeApi';
 export * from './BenefitsApi';

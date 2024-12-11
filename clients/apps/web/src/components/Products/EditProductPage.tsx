@@ -6,7 +6,7 @@ import {
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   Benefit,
-  BenefitPublicInner,
+  BenefitBase,
   Organization,
   Product,
   ProductUpdate,
@@ -53,7 +53,7 @@ export const EditProductPage = ({
   )
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    BenefitPublicInner['id'][]
+    BenefitBase['id'][]
   >(product.benefits.map((benefit) => benefit.id) ?? [])
 
   const form = useForm<ProductUpdate & ProductFullMediasMixin>({
@@ -123,14 +123,14 @@ export const EditProductPage = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: BenefitPublicInner) => {
+    (benefit: BenefitBase) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: BenefitPublicInner) => {
+    (benefit: BenefitBase) => {
       setEnabledBenefitIds((benefits) =>
         benefits.filter((b) => b !== benefit.id),
       )

@@ -180,9 +180,7 @@ const AccessTokensSettings = () => {
     setSelectAll(!allSelected)
   }
 
-  const selectableScopes = Object.values(AvailableScope).filter((scope) => {
-    return !scope.startsWith('articles:')
-  })
+  const selectableScopes = Object.values(AvailableScope)
 
   return (
     <div className="flex w-full flex-col">

@@ -64,13 +64,14 @@ export const PRODUCT_PREVIEW: ProductStorefront = {
   benefits: [
     {
       id: '123',
-      description: 'Weekly Newsletter',
-      type: 'articles',
+      description: 'Premium feature',
+      type: 'custom',
       created_at: new Date().toDateString(),
       modified_at: null,
       selectable: false,
       deletable: false,
       organization_id: '123',
+      properties: {}
     },
   ],
   created_at: new Date().toDateString(),
@@ -122,13 +123,14 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
   benefits: [
     {
       id: '123',
-      description: 'Weekly Newsletter',
-      type: 'articles',
+      description: 'Premium feature',
+      type: 'custom',
       created_at: new Date().toDateString(),
       modified_at: null,
       selectable: false,
       deletable: false,
       organization_id: '123',
+      properties: {}
     },
   ],
   created_at: new Date().toDateString(),

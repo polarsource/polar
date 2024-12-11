@@ -375,14 +375,6 @@ const BenefitTypeSelect = ({}) => {
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(BenefitType)
-                    .filter((value) => {
-                      switch (value) {
-                        case BenefitType.ARTICLES:
-                          return false
-                        default:
-                          return true
-                      }
-                    })
                     .map((value) => (
                       <SelectItem key={value} value={value}>
                         {benefitsDisplayNames[value]}

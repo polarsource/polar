@@ -7,7 +7,7 @@ import {
   MoreVertOutlined,
   RemoveOutlined,
 } from '@mui/icons-material'
-import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
+import { BenefitBase, BenefitType, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -33,7 +33,7 @@ import { useModal } from '../Modal/useModal'
 
 interface BenefitRowProps {
   organization: Organization
-  benefit: BenefitPublicInner
+  benefit: BenefitBase
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
@@ -140,10 +140,10 @@ const BenefitRow = ({
 
 interface ProductBenefitsFormProps {
   organization: Organization
-  benefits: BenefitPublicInner[]
-  organizationBenefits: BenefitPublicInner[]
-  onSelectBenefit: (benefit: BenefitPublicInner) => void
-  onRemoveBenefit: (benefit: BenefitPublicInner) => void
+  benefits: BenefitBase[]
+  organizationBenefits: BenefitBase[]
+  onSelectBenefit: (benefit: BenefitBase) => void
+  onRemoveBenefit: (benefit: BenefitBase) => void
   className?: string
 }
 
@@ -162,7 +162,7 @@ const ProductBenefitsForm = ({
   )
 
   const handleCheckedChange = useCallback(
-    (benefit: BenefitPublicInner) => (checked: boolean) => {
+    (benefit: BenefitBase) => (checked: boolean) => {
       if (checked) {
         onSelectBenefit(benefit)
       } else {
@@ -190,14 +190,10 @@ const ProductBenefitsForm = ({
             benefits={organizationBenefits.filter(
               (benefit) => benefit.type === type,
             )}
-            onCreateNewBenefit={
-              type !== 'articles'
-                ? () => {
-                    setType(type as CreatableBenefit)
-                    show()
-                  }
-                : undefined
-            }
+            onCreateNewBenefit={() => {
+              setType(type as CreatableBenefit)
+              show()
+            }}
           />
         ))}
       </div>
@@ -222,10 +218,10 @@ const ProductBenefitsForm = ({
 
 interface BenefitsContainerProps {
   title: string
-  benefits: BenefitPublicInner[]
-  enabledBenefits: BenefitPublicInner[]
+  benefits: BenefitBase[]
+  enabledBenefits: BenefitBase[]
   handleCheckedChange: (
-    benefit: BenefitPublicInner,
+    benefit: BenefitBase,
   ) => (checked: boolean) => void
   type: BenefitType
   onCreateNewBenefit?: () => void

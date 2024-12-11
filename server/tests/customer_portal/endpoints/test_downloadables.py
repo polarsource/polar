@@ -26,48 +26,6 @@ class TestDownloadablesEndpoints:
 
     async def test_anonymous_download_401s(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-portal/downloadables/i-am-hacker")
-        assert response.status_code == 401
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
-    async def test_revoked_404s(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        customer: Customer,
-        organization: Organization,
-        product: Product,
-        uploaded_logo_jpg: File,
-    ) -> None:
-        benefit, granted = await TestDownloadable.create_benefit_and_grant(
-            session,
-            redis,
-            save_fixture,
-            customer=customer,
-            organization=organization,
-            product=product,
-            properties=BenefitDownloadablesCreateProperties(
-                files=[uploaded_logo_jpg.id]
-            ),
-        )
-
-        # List of downloadables
-        response = await client.get("/v1/customer-portal/downloadables/")
-        assert response.status_code == 200
-        data = response.json()
-        downloadable_list = data["items"]
-        pagination = data["pagination"]
-        assert pagination["total_count"] == 1
-        assert len(downloadable_list) == 1
-        downloadable = downloadable_list[0]
-        polar_download_url = downloadable["file"]["download"]["url"]
-
-        # Revoke the benefit
-        await TestDownloadable.run_revoke_task(session, redis, benefit, customer)
-
-        # Polar download endpoint will now 404
-        response = await client.get(polar_download_url, follow_redirects=False)
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))

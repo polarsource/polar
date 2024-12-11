@@ -453,8 +453,12 @@ class LicenseKeyService(
         benefit_id: UUID | None = None,
         organization_ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
-        query = self._get_select_customer_base(auth_subject).order_by(
-            LicenseKey.created_at.asc()
+        query = (
+            self._get_select_customer_base(auth_subject)
+            .order_by(LicenseKey.created_at.asc())
+            .options(
+                joinedload(LicenseKey.benefit),
+            )
         )
 
         if organization_ids:
@@ -471,8 +475,10 @@ class LicenseKeyService(
         auth_subject: AuthSubject[User | Customer],
         license_key_id: UUID,
     ) -> LicenseKey | None:
-        query = self._get_select_customer_base(auth_subject).where(
-            LicenseKey.id == license_key_id
+        query = (
+            self._get_select_customer_base(auth_subject)
+            .where(LicenseKey.id == license_key_id)
+            .options(joinedload(LicenseKey.activations), joinedload(LicenseKey.benefit))
         )
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()

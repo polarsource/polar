@@ -10,7 +10,7 @@ _CustomerPortalRead = Authenticator(
     required_scopes={
         Scope.web_default,
         Scope.customer_portal_read,
-        Scope.custom_fields_write,
+        Scope.customer_portal_write,
     },
     allowed_subjects={User, Customer},
 )

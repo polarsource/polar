@@ -16,8 +16,11 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.benefit_grant import BenefitGrant as BenefitGrantSchema
-from ..schemas.benefit_grant import BenefitGrantAdapter, BenefitGrantUpdate
+from ..schemas.benefit_grant import (
+    CustomerBenefitGrant,
+    CustomerBenefitGrantAdapter,
+    CustomerBenefitGrantUpdate,
+)
 from ..service.benefit_grant import CustomerBenefitGrantSortProperty
 from ..service.benefit_grant import (
     customer_benefit_grant as customer_benefit_grant_service,
@@ -41,7 +44,9 @@ ListSorting = Annotated[
 
 
 @router.get(
-    "/", summary="List Benefit Grants", response_model=ListResource[BenefitGrantSchema]
+    "/",
+    summary="List Benefit Grants",
+    response_model=ListResource[CustomerBenefitGrant],
 )
 async def list(
     auth_subject: auth.CustomerPortalRead,
@@ -63,7 +68,7 @@ async def list(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[BenefitGrantSchema]:
+) -> ListResource[CustomerBenefitGrant]:
     """List benefits grants of the authenticated customer or user."""
     results, count = await customer_benefit_grant_service.list(
         session,
@@ -78,7 +83,7 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [BenefitGrantAdapter.validate_python(result) for result in results],
+        [CustomerBenefitGrantAdapter.validate_python(result) for result in results],
         count,
         pagination,
     )
@@ -87,7 +92,7 @@ async def list(
 @router.get(
     "/{id}",
     summary="Get Benefit Grant",
-    response_model=BenefitGrantSchema,
+    response_model=CustomerBenefitGrant,
     responses={404: BenefitGrantNotFound},
 )
 async def get(
@@ -109,7 +114,7 @@ async def get(
 @router.get(
     "/{id}",
     summary="Update Benefit Grant",
-    response_model=BenefitGrantSchema,
+    response_model=CustomerBenefitGrant,
     responses={
         200: {"description": "Benefit grant updated."},
         403: {
@@ -121,7 +126,7 @@ async def get(
 )
 async def update(
     id: BenefitGrantID,
-    benefit_grant_update: BenefitGrantUpdate,
+    benefit_grant_update: CustomerBenefitGrantUpdate,
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrant:

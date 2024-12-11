@@ -58,15 +58,7 @@ Note = Annotated[
 ]
 
 
-class BenefitBaseProperties(Schema):
-    """
-    Benefit properties.
-    """
-
-    ...
-
-
-class BenefitCustomProperties(BenefitBaseProperties):
+class BenefitCustomProperties(Schema):
     """
     Properties for a benefit of type `custom`.
     """
@@ -74,7 +66,7 @@ class BenefitCustomProperties(BenefitBaseProperties):
     note: Note | None
 
 
-class BenefitCustomCreateProperties(BenefitBaseProperties):
+class BenefitCustomCreateProperties(Schema):
     """
     Properties for creating a benefit of type `custom`.
     """
@@ -82,7 +74,7 @@ class BenefitCustomCreateProperties(BenefitBaseProperties):
     note: Note | None = None
 
 
-class BenefitCustomSubscriberProperties(BenefitBaseProperties):
+class BenefitCustomSubscriberProperties(Schema):
     """
     Properties available to subscribers for a benefit of type `custom`.
     """
@@ -93,7 +85,7 @@ class BenefitCustomSubscriberProperties(BenefitBaseProperties):
 ## Ads
 
 
-class BenefitAdsProperties(BenefitBaseProperties):
+class BenefitAdsProperties(Schema):
     """
     Properties for a benefit of type `ads`.
     """
@@ -105,7 +97,7 @@ class BenefitAdsProperties(BenefitBaseProperties):
 ## Discord
 
 
-class BenefitDiscordProperties(BenefitBaseProperties):
+class BenefitDiscordProperties(Schema):
     """
     Properties for a benefit of type `discord`.
     """
@@ -123,7 +115,7 @@ class BenefitDiscordProperties(BenefitBaseProperties):
         )
 
 
-class BenefitDiscordCreateProperties(BenefitBaseProperties):
+class BenefitDiscordCreateProperties(Schema):
     """
     Properties to create a benefit of type `discord`.
     """
@@ -145,7 +137,7 @@ class BenefitDiscordCreateProperties(BenefitBaseProperties):
             ) from e
 
 
-class BenefitDiscordSubscriberProperties(BenefitBaseProperties):
+class BenefitDiscordSubscriberProperties(Schema):
     """
     Properties available to subscribers for a benefit of type `discord`.
     """
@@ -427,7 +419,6 @@ class BenefitBase(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )
-    properties: BenefitBaseProperties
 
 
 class BenefitCustom(BenefitBase):

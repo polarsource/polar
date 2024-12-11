@@ -55,6 +55,9 @@ async def list(
     type: MultipleQueryFilter[BenefitType] | None = Query(
         None, title="BenefitType Filter", description="Filter by benefit type."
     ),
+    benefit_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="BenefitID Filter", description="Filter by benefit ID."
+    ),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -74,6 +77,7 @@ async def list(
         session,
         auth_subject,
         type=type,
+        benefit_id=benefit_id,
         organization_id=organization_id,
         checkout_id=checkout_id,
         order_id=order_id,

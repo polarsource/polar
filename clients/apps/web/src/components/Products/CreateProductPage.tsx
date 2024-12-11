@@ -44,9 +44,9 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     clearDraft,
   } = useStore()
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    Benefit['id'][]
-  >([])
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
+    [],
+  )
 
   const [isLoading, setLoading] = useState(false)
 

@@ -41,7 +41,7 @@ export const LicenseKeysBenefitForm = () => {
   const showActivationFields = !!activations
   const defaultActivations: BenefitLicenseKeyActivationProperties = {
     limit: 5,
-    enable_user_admin: true,
+    enable_customer_admin: true,
   }
 
   const limitUsage = watch('properties.limit_usage', undefined)
@@ -174,18 +174,18 @@ export const LicenseKeysBenefitForm = () => {
           <div className="flex flex-row items-center gap-x-3">
             <FormField
               control={control}
-              name="properties.activations.enable_user_admin"
+              name="properties.activations.enable_customer_admin"
               render={({ field }) => {
                 return (
                   <FormItem>
                     <Checkbox
-                      id="license-key-activations-user-admin"
+                      id="license-key-activations-customer-admin"
                       checked={field.value}
                       onCheckedChange={(checked) => {
                         // String | boolean type for some reason
                         const value = checked ? true : false
                         setValue(
-                          'properties.activations.enable_user_admin',
+                          'properties.activations.enable_customer_admin',
                           value,
                         )
                       }}

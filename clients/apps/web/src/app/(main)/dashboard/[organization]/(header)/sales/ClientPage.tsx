@@ -14,7 +14,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Order, OrderUser, Organization, Product } from '@polar-sh/sdk'
+import { Order, OrderCustomer, Organization, Product } from '@polar-sh/sdk'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -118,21 +118,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const columns: DataTableColumnDef<Order>[] = [
     {
-      accessorKey: 'user',
+      accessorKey: 'customer',
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Customer" />
       ),
       cell: (props) => {
-        const user = props.getValue() as OrderUser
+        const customer = props.getValue() as OrderCustomer
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
               className="h-8 w-8"
-              avatar_url={user.avatar_url}
-              name={user.public_name}
+              avatar_url={null}
+              name={customer.name || customer.email}
             />
-            <div className="fw-medium">{user.email}</div>
+            <div className="fw-medium">{customer.email}</div>
           </div>
         )
       },
@@ -248,12 +248,12 @@ const OrderModal = ({ order }: OrderModalProps) => {
       <h2 className="mb-4 text-2xl">Order Details</h2>
       <div className="flex flex-row items-center gap-4">
         <Avatar
-          avatar_url={order.user.avatar_url}
-          name={order.user.public_name}
+          avatar_url={null}
+          name={order.customer.name || order.customer.email}
           className="h-16 w-16"
         />
         <div className="flex flex-col gap-1">
-          <p className="text-xl">{order.user.public_name}</p>
+          <p className="text-xl">{order.customer.email}</p>
           <p className="dark:text-polar-500 text-gray-500">
             {order.user.email}
           </p>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useUserOrders } from '@/hooks/queries'
+import { useCustomerOrders } from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -28,7 +29,7 @@ export const StorefrontNav = ({
   const currentTab = routeSegment ?? 'products'
   const router = useRouter()
 
-  const { data: orders } = useUserOrders({
+  const { data: orders } = useCustomerOrders(api, {
     organizationId: organization.id,
   })
 

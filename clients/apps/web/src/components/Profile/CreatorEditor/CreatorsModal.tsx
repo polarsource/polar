@@ -1,5 +1,5 @@
 import ProductPill from '@/components/Products/ProductPill'
-import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
+import { useCustomerSubscriptions, useOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { CloseOutlined } from '@mui/icons-material'
@@ -27,7 +27,7 @@ export const CreatorsModal = ({
   const [username, setUsername] = useState('')
   const [showOrgNotFound, toggleOrgNotFound] = useState(false)
 
-  const subscriptions = useUserSubscriptions().data?.items || []
+  const subscriptions = useCustomerSubscriptions(api).data?.items || []
 
   const addCreator = async (organizationName: string) => {
     toggleOrgNotFound(false)

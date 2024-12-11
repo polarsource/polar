@@ -1,10 +1,14 @@
 'use client'
 
-import { DownloadableItem as InnerDownloadableItem } from '@/components/Benefit/Downloadables/SubscriberWidget'
+import { DownloadableItem as InnerDownloadableItem } from '@/components/Benefit/Downloadables/DownloadablesBenefitGrant'
 import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
-import { useUserBenefit, useUserDownloadables } from '@/hooks/queries'
+import {
+  useCustomerBenefitGrants,
+  useCustomerDownloadables,
+} from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { FileDownloadOutlined } from '@mui/icons-material'
 import { DownloadableRead } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -30,7 +34,7 @@ export default function ClientPage() {
     [setPurchaseParameters],
   )
 
-  const { data: downloadables } = useUserDownloadables({
+  const { data: downloadables } = useCustomerDownloadables(api, {
     limit: purchaseParameters.limit,
     page: purchaseParameters.page,
   })
@@ -85,7 +89,12 @@ interface DownloadableItemProps {
 }
 
 const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {
-  const { data: benefit } = useUserBenefit(downloadable.benefit_id)
+  const { data: benefitGrants } = useCustomerBenefitGrants(api, {
+    limit: 1,
+    benefitId: downloadable.benefit_id,
+  })
+  const benefitGrant = benefitGrants?.items[0]
+  const benefit = benefitGrant?.benefit
 
   const organizationLink = useMemo(() => {
     if (benefit?.organization.profile_settings?.enabled) {
@@ -94,7 +103,7 @@ const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {
           className="dark:text-polar-500 dark:hover:text-polar-200 text-sm text-gray-500 hover:text-gray-700"
           href={`/${benefit.organization.slug}`}
         >
-          {benefit?.organization.name}
+          {benefit.organization.name}
         </Link>
       )
     }

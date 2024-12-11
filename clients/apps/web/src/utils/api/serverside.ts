@@ -3,8 +3,8 @@ import { cookies, headers } from 'next/headers'
 import { cache } from 'react'
 import { buildServerSideAPI } from '.'
 
-const _getServerSideAPI = (): PolarAPI => {
-  return buildServerSideAPI(headers(), cookies())
+const _getServerSideAPI = (token?: string): PolarAPI => {
+  return buildServerSideAPI(headers(), cookies(), token)
 }
 
 // Memoize the API instance for the duration of the request

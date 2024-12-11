@@ -1,7 +1,11 @@
 'use client'
 
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { Organization, UserOrder, UserSubscription } from '@polar-sh/sdk'
+import {
+  CustomerOrder,
+  CustomerSubscription,
+  Organization,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -15,8 +19,8 @@ import { twMerge } from 'tailwind-merge'
 
 export interface CustomerPortalProps {
   organization?: Organization
-  subscriptions: UserSubscription[]
-  orders: UserOrder[]
+  subscriptions: CustomerSubscription[]
+  orders: CustomerOrder[]
 }
 
 export const CustomerPortal = ({
@@ -170,7 +174,7 @@ const StatusWrapper = ({
 const SubscriptionItem = ({
   subscription,
 }: {
-  subscription: UserSubscription
+  subscription: CustomerSubscription
 }) => {
   const organization = subscription.product.organization
 

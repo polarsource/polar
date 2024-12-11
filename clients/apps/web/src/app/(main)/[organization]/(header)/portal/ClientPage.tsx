@@ -2,8 +2,8 @@
 
 import { CustomerPortal } from '@/components/CustomerPortal/CustomerPortal'
 import {
-  ListResourceUserOrder,
-  ListResourceUserSubscription,
+  ListResourceCustomerOrder,
+  ListResourceCustomerSubscription,
   Organization,
 } from '@polar-sh/sdk'
 
@@ -13,8 +13,8 @@ const ClientPage = ({
   orders,
 }: {
   organization: Organization
-  subscriptions: ListResourceUserSubscription
-  orders: ListResourceUserOrder
+  subscriptions: ListResourceCustomerSubscription
+  orders: ListResourceCustomerOrder
 }) => {
   return (
     <CustomerPortal

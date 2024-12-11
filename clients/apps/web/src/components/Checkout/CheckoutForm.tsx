@@ -8,6 +8,7 @@ import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import {
   CheckoutConfirmStripe,
   CheckoutPublic,
+  CheckoutPublicConfirmed,
   CheckoutStatus,
   CheckoutUpdatePublic,
 } from '@polar-sh/sdk'
@@ -602,7 +603,9 @@ const BaseCheckoutForm = ({
 interface CheckoutFormProps {
   checkout: CheckoutPublic
   onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
-  onCheckoutConfirm?: (body: CheckoutConfirmStripe) => Promise<CheckoutPublic>
+  onCheckoutConfirm?: (
+    body: CheckoutConfirmStripe,
+  ) => Promise<CheckoutPublicConfirmed>
   theme?: 'light' | 'dark'
   embed?: boolean
 }
@@ -648,7 +651,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)
 
   const onSuccess = useCallback(
-    async (url: string) => {
+    async (url: string, customerSessionToken: string) => {
       const parsedURL = new URL(url)
       const isInternalURL = url.startsWith(CONFIG.FRONTEND_BASE_URL)
 
@@ -660,6 +663,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           }
         }
       }
+
+      parsedURL.searchParams.set('customer_session_token', customerSessionToken)
 
       // For external success URL, make sure the checkout is processed before redirecting
       // It ensures the user will have an up-to-date status when they are redirected,
@@ -769,14 +774,17 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     setLoading(true)
 
     if (!checkout.is_payment_form_required) {
-      let updatedCheckout: CheckoutPublic
+      let updatedCheckout: CheckoutPublicConfirmed
       try {
         updatedCheckout = await onCheckoutConfirm(data)
       } catch (e) {
         setLoading(false)
         return
       }
-      await onSuccess(updatedCheckout.success_url)
+      await onSuccess(
+        updatedCheckout.success_url,
+        updatedCheckout.customer_session_token,
+      )
       return
     }
 
@@ -836,7 +844,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       return
     }
 
-    let updatedCheckout: CheckoutPublic
+    let updatedCheckout: CheckoutPublicConfirmed
     try {
       updatedCheckout = await onCheckoutConfirm({
         ...data,
@@ -861,7 +869,10 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       }
     }
 
-    await onSuccess(updatedCheckout.success_url)
+    await onSuccess(
+      updatedCheckout.success_url,
+      updatedCheckout.customer_session_token,
+    )
   }
 
   const inputBoxShadow =

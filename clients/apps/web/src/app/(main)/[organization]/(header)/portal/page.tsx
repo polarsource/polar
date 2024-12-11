@@ -1,8 +1,8 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
 import {
-  ListResourceUserOrder,
-  ListResourceUserSubscription,
+  ListResourceCustomerOrder,
+  ListResourceCustomerSubscription,
   ResponseError,
 } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
@@ -59,23 +59,25 @@ export async function generateMetadata({
 
 export default async function Page({
   params,
+  searchParams,
 }: {
-  params: { organization: string; productId: string }
+  params: { organization: string }
+  searchParams: { customer_session_token?: string }
 }) {
-  const api = getServerSideAPI()
+  const api = getServerSideAPI(searchParams.customer_session_token)
   const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
   )
 
-  let subscriptions: ListResourceUserSubscription | undefined
-  let oneTimePurchases: ListResourceUserOrder | undefined
+  let subscriptions: ListResourceCustomerSubscription | undefined
+  let oneTimePurchases: ListResourceCustomerOrder | undefined
   try {
-    subscriptions = await api.usersSubscriptions.list(
+    subscriptions = await api.customerPortalSubscriptions.list(
       { organizationId: organization.id, active: true, limit: 100 },
       cacheConfig,
     )
-    oneTimePurchases = await api.usersOrders.list({
+    oneTimePurchases = await api.customerPortalOrders.list({
       organizationId: organization.id,
       limit: 100,
     })

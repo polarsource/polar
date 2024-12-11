@@ -29,9 +29,9 @@ export const useCreateProductWizard = (
     [benefits],
   )
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    Benefit['id'][]
-  >([])
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
+    [],
+  )
 
   const [isLoading, setLoading] = useState(false)
 

@@ -1,6 +1,10 @@
-import { BenefitDownloadablesSubscriber, DownloadableRead } from '@polar-sh/sdk'
+import {
+  CustomerBenefitGrantDownloadables,
+  DownloadableRead,
+  PolarAPI,
+} from '@polar-sh/sdk'
 
-import { useDownloadables } from '@/hooks/queries'
+import { useCustomerDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -10,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FilePreview } from './FileList/FileListItem'
 
@@ -98,25 +102,42 @@ export const DownloadableItem = ({
   )
 }
 
-const DownloadablesSubscriberWidget = ({
-  benefit,
+const DownloadablesBenefitGrant = ({
+  api,
+  benefitGrant,
 }: {
-  benefit: BenefitDownloadablesSubscriber
+  api: PolarAPI
+  benefitGrant: CustomerBenefitGrantDownloadables
 }) => {
-  const downloadablesQuery = useDownloadables(
-    benefit.id,
-    benefit.properties.active_files,
-  )
+  const {
+    benefit: {
+      properties: { active_files },
+    },
+  } = benefitGrant
+  const { data: downloadables, isLoading } = useCustomerDownloadables(api, {
+    benefitId: benefitGrant.benefit.id,
+  })
 
-  let activeLookup: { [key: string]: boolean } = {}
-  benefit.properties.active_files.reduce((acc, fileId: string) => {
-    acc[fileId] = true
-    return acc
-  }, activeLookup)
+  const sortedDownloadables = useMemo(() => {
+    if (!downloadables) return []
+    return downloadables.items.sort((a, b) => {
+      if (
+        active_files.includes(a.file.id) &&
+        !active_files.includes(b.file.id)
+      ) {
+        return -1
+      }
+      if (
+        !active_files.includes(a.file.id) &&
+        active_files.includes(b.file.id)
+      ) {
+        return 1
+      }
+      return active_files.indexOf(a.file.id) - active_files.indexOf(b.file.id)
+    })
+  }, [downloadables, active_files])
 
-  const downloadables = downloadablesQuery.data?.items
-
-  if (downloadablesQuery.isLoading) {
+  if (isLoading) {
     // TODO: Style me
     return <div>Loading...</div>
   }
@@ -124,11 +145,11 @@ const DownloadablesSubscriberWidget = ({
   return (
     <div className="flex w-full flex-col">
       <ul className="flex w-full flex-col gap-y-4">
-        {downloadables?.map((downloadable) => (
+        {sortedDownloadables.map((downloadable) => (
           <li key={downloadable.id} className="flex w-full flex-col">
             <DownloadableItem
               downloadable={downloadable}
-              historic={!activeLookup[downloadable.file.id]}
+              historic={!active_files.includes(downloadable.file.id)}
             />
           </li>
         ))}
@@ -137,4 +158,4 @@ const DownloadablesSubscriberWidget = ({
   )
 }
 
-export default DownloadablesSubscriberWidget
+export default DownloadablesBenefitGrant

@@ -193,6 +193,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .join(Organization, onclause=Benefit.organization_id == Organization.id)
             .where(
                 BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.is_revoked.is_(False),
             )
             .options(
                 contains_eager(BenefitGrant.benefit).options(

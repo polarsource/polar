@@ -1,9 +1,9 @@
 import { useUpdateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
-  BenefitBase,
+  type Benefit,
+  type BenefitUpdate,
   BenefitType,
-  BenefitUpdate,
   Organization,
   ResponseError,
   ValidationError,
@@ -16,7 +16,7 @@ import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 
 interface UpdateBenefitModalContentProps {
   organization: Organization
-  benefit: BenefitBase
+  benefit: Benefit
   hideModal: () => void
 }
 

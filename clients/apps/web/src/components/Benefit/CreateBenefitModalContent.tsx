@@ -2,7 +2,7 @@ import { useCreateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   BenefitCreate,
-  BenefitBase,
+  type Benefit,
   BenefitType,
   Organization,
   ResponseError,
@@ -25,7 +25,7 @@ export type CreateBenefitModalParams = {
 
 interface CreateBenefitModalContentProps {
   organization: Organization
-  onSelectBenefit: (benefit: BenefitBase) => void
+  onSelectBenefit: (benefit: Benefit) => void
   hideModal: () => void
   defaultValues?: CreateBenefitModalParams
 }

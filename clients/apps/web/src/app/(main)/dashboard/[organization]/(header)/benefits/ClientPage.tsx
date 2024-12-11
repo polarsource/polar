@@ -21,7 +21,7 @@ import {
   AllInclusive,
   MoreVertOutlined,
 } from '@mui/icons-material'
-import { BenefitBase, Organization } from '@polar-sh/sdk'
+import { type Benefit, Organization } from '@polar-sh/sdk'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -40,7 +40,7 @@ import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<
-    BenefitBase | undefined
+    Benefit | undefined
   >()
   const { data: benefits } = useBenefits(organization.id, 100)
   const { data: benefitProducts } = useBenefitProducts(
@@ -173,7 +173,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 export default ClientPage
 
 interface BenefitRowProps {
-  benefit: BenefitBase
+  benefit: Benefit
   organization: Organization
 }
 
@@ -253,7 +253,7 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
   )
 }
 
-const AdsBenefitContent = ({ benefit }: { benefit: BenefitBase }) => {
+const AdsBenefitContent = ({ benefit }: { benefit: Benefit }) => {
   const shortID = benefit.id.substring(benefit.id.length - 6)
 
   const height =

@@ -1805,12 +1805,6 @@ export interface BenefitAdsSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitAdsProperties}
-     * @memberof BenefitAdsSubscriber
-     */
-    properties: BenefitAdsProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantAds>}
      * @memberof BenefitAdsSubscriber
      */
@@ -1821,6 +1815,12 @@ export interface BenefitAdsSubscriber {
      * @memberof BenefitAdsSubscriber
      */
     organization: Organization;
+    /**
+     * 
+     * @type {BenefitAdsProperties}
+     * @memberof BenefitAdsSubscriber
+     */
+    properties: BenefitAdsProperties;
 }
 
 
@@ -1921,12 +1921,6 @@ export interface BenefitBase {
      * @memberof BenefitBase
      */
     organization_id: string;
-    /**
-     * Benefit properties.
-     * @type {object}
-     * @memberof BenefitBase
-     */
-    properties: object;
 }
 
 
@@ -2151,12 +2145,6 @@ export interface BenefitCustomSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitCustomSubscriberProperties}
-     * @memberof BenefitCustomSubscriber
-     */
-    properties: BenefitCustomSubscriberProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantSubscriber>}
      * @memberof BenefitCustomSubscriber
      */
@@ -2167,6 +2155,12 @@ export interface BenefitCustomSubscriber {
      * @memberof BenefitCustomSubscriber
      */
     organization: Organization;
+    /**
+     * 
+     * @type {BenefitCustomSubscriberProperties}
+     * @memberof BenefitCustomSubscriber
+     */
+    properties: BenefitCustomSubscriberProperties;
 }
 
 
@@ -2440,12 +2434,6 @@ export interface BenefitDiscordSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitDiscordSubscriberProperties}
-     * @memberof BenefitDiscordSubscriber
-     */
-    properties: BenefitDiscordSubscriberProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantSubscriber>}
      * @memberof BenefitDiscordSubscriber
      */
@@ -2456,6 +2444,12 @@ export interface BenefitDiscordSubscriber {
      * @memberof BenefitDiscordSubscriber
      */
     organization: Organization;
+    /**
+     * 
+     * @type {BenefitDiscordSubscriberProperties}
+     * @memberof BenefitDiscordSubscriber
+     */
+    properties: BenefitDiscordSubscriberProperties;
 }
 
 
@@ -2721,12 +2715,6 @@ export interface BenefitDownloadablesSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitDownloadablesSubscriberProperties}
-     * @memberof BenefitDownloadablesSubscriber
-     */
-    properties: BenefitDownloadablesSubscriberProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantSubscriber>}
      * @memberof BenefitDownloadablesSubscriber
      */
@@ -2737,6 +2725,12 @@ export interface BenefitDownloadablesSubscriber {
      * @memberof BenefitDownloadablesSubscriber
      */
     organization: Organization;
+    /**
+     * 
+     * @type {BenefitDownloadablesSubscriberProperties}
+     * @memberof BenefitDownloadablesSubscriber
+     */
+    properties: BenefitDownloadablesSubscriberProperties;
 }
 
 
@@ -3056,12 +3050,6 @@ export interface BenefitGitHubRepositorySubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitGitHubRepositorySubscriberProperties}
-     * @memberof BenefitGitHubRepositorySubscriber
-     */
-    properties: BenefitGitHubRepositorySubscriberProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantSubscriber>}
      * @memberof BenefitGitHubRepositorySubscriber
      */
@@ -3072,6 +3060,12 @@ export interface BenefitGitHubRepositorySubscriber {
      * @memberof BenefitGitHubRepositorySubscriber
      */
     organization: Organization;
+    /**
+     * 
+     * @type {BenefitGitHubRepositorySubscriberProperties}
+     * @memberof BenefitGitHubRepositorySubscriber
+     */
+    properties: BenefitGitHubRepositorySubscriberProperties;
 }
 
 
@@ -3967,12 +3961,6 @@ export interface BenefitLicenseKeysSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitLicenseKeysSubscriberProperties}
-     * @memberof BenefitLicenseKeysSubscriber
-     */
-    properties: BenefitLicenseKeysSubscriberProperties;
-    /**
-     * 
      * @type {Array<BenefitGrantLicenseKeys>}
      * @memberof BenefitLicenseKeysSubscriber
      */
@@ -3983,6 +3971,12 @@ export interface BenefitLicenseKeysSubscriber {
      * @memberof BenefitLicenseKeysSubscriber
      */
     organization: Organization;
+    /**
+     * 
+     * @type {BenefitLicenseKeysSubscriberProperties}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    properties: BenefitLicenseKeysSubscriberProperties;
 }
 
 

@@ -5,8 +5,7 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
-  Benefit,
-  BenefitBase,
+  type Benefit,
   Organization,
   Product,
   ProductUpdate,
@@ -53,7 +52,7 @@ export const EditProductPage = ({
   )
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    BenefitBase['id'][]
+    Benefit['id'][]
   >(product.benefits.map((benefit) => benefit.id) ?? [])
 
   const form = useForm<ProductUpdate & ProductFullMediasMixin>({
@@ -123,14 +122,14 @@ export const EditProductPage = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: BenefitBase) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: BenefitBase) => {
+    (benefit: Benefit) => {
       setEnabledBenefitIds((benefits) =>
         benefits.filter((b) => b !== benefit.id),
       )

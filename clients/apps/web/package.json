@@ -59,6 +59,7 @@
     "d3": "^7.9.0",
     "d3-scale-chromatic": "^3.1.0",
     "date-fns": "^3.6.0",
+    "event-source-plus": "^0.1.8",
     "eventemitter3": "^5.0.1",
     "framer-motion": "^10.18.0",
     "geist": "^1.3.1",

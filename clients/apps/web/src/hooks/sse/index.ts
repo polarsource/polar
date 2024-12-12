@@ -1,4 +1,5 @@
 import { getServerURL } from '@/utils/api'
+import { EventSourcePlus } from 'event-source-plus'
 import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
 import { onBenefitGranted, onBenefitRevoked } from './benefits'
@@ -16,29 +17,30 @@ const ACTIONS: {
 
 const emitter = new EventEmitter()
 
-const useSSE = (streamURL: string): EventEmitter => {
+const useSSE = (streamURL: string, token?: string): EventEmitter => {
   useEffect(() => {
-    const connection = new EventSource(streamURL, {
-      withCredentials: true,
+    const eventSource = new EventSourcePlus(streamURL, {
+      credentials: 'include',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    })
+
+    const controller = eventSource.listen({
+      onMessage: async (message) => {
+        const data = JSON.parse(message.data)
+        const handler = ACTIONS[data.key]
+        if (handler) {
+          await handler(data.payload)
+        }
+        emitter.emit(data.key, data.payload)
+      },
     })
 
     const cleanup = () => {
-      connection.close()
-    }
-    // TODO: Add types for event. Just want to get the structure
-    // up and running first before getting stuck in protocol land.
-    connection.onmessage = async (event) => {
-      const data = JSON.parse(event.data)
-      const handler = ACTIONS[data.key]
-      if (handler) {
-        await handler(data.payload)
-      }
-      emitter.emit(data.key, data.payload)
+      controller.abort()
     }
 
-    connection.onerror = (_event) => cleanup
     return cleanup
-  }, [streamURL])
+  }, [streamURL, token])
 
   return emitter
 }
@@ -48,3 +50,8 @@ export const useOrganizationSSE = (organizationId: string) =>
   useSSE(getServerURL(`/v1/stream/organizations/${organizationId}`))
 export const useCheckoutClientSSE = (clientSecret: string) =>
   useSSE(getServerURL(`/v1/checkouts/custom/client/${clientSecret}/stream`))
+export const useCustomerSSE = (customerSessionToken?: string) =>
+  useSSE(
+    getServerURL('/v1/customer-portal/customers/stream'),
+    customerSessionToken,
+  )

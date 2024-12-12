@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import AuthSubject, Customer, User
+from polar.auth.models import Anonymous, AuthSubject, Customer, User
 from polar.auth.scope import Scope
 
 _CustomerPortalRead = Authenticator(
@@ -28,8 +28,8 @@ CustomerPortalWrite = Annotated[
 
 _CustomerPortalOAuthAccount = Authenticator(
     required_scopes={Scope.web_default, Scope.customer_portal_write},
-    allowed_subjects={Customer},
+    allowed_subjects={User, Anonymous},
 )
 CustomerPortalOAuthAccount = Annotated[
-    AuthSubject[Customer], Depends(_CustomerPortalOAuthAccount)
+    AuthSubject[User | Anonymous], Depends(_CustomerPortalOAuthAccount)
 ]

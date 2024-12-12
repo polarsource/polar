@@ -11,7 +11,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Organization, User, UserOrganization
+from polar.models import Customer, Organization, User, UserCustomer, UserOrganization
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
@@ -158,6 +158,21 @@ class CustomerService(ResourceServiceReader[Customer]):
         statement = select(Customer).where(
             func.lower(Customer.email) == email.lower(),
             Customer.organization_id == organization.id,
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_by_id_and_user(
+        self, session: AsyncSession, id: uuid.UUID, user: User
+    ) -> Customer | None:
+        statement = (
+            select(Customer)
+            .join(UserCustomer, onclause=UserCustomer.customer_id == Customer.id)
+            .where(
+                Customer.deleted_at.is_(None),
+                Customer.id == id,
+                UserCustomer.user_id == user.id,
+            )
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

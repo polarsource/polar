@@ -31,7 +31,7 @@ log: Logger = structlog.get_logger()
 MAX_RETRIES = 10
 
 
-@task("webhook_event.send")
+@task("webhook_event.send", max_tries=MAX_RETRIES)
 async def webhook_event_send(
     ctx: JobContext,
     webhook_event_id: UUID,

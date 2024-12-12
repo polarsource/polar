@@ -69,7 +69,7 @@ export default function ClientPage() {
           </div>
         </PurchaseSidebar>
       </div>
-      <div className="dark:bg-polar-900 rounded-4xl relative flex w-full flex-col items-center gap-y-8 bg-gray-50 p-12">
+      <div className="flex w-full flex-col gap-y-8">
         <div className="flex w-full flex-col gap-y-6">
           <div className="flex flex-row items-center justify-between">
             <h3 className="text-2xl">Subscriptions</h3>
@@ -167,7 +167,7 @@ const SubscriptionItem = ({
   }
 
   return (
-    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-6 border-none bg-white">
+    <ShadowBox className="flex w-full flex-col gap-y-6">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>

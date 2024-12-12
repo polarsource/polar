@@ -1,18 +1,18 @@
 'use client'
 
+import { usePostHog, type EventName } from '@/hooks/posthog'
+import { UserSignupAttribution } from '@polar-sh/sdk'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
+import { useEffect } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
 import GoogleLoginButton from './GoogleLoginButton'
-import { UserSignupAttribution } from '@polar-sh/sdk'
-import { useSearchParams, usePathname } from 'next/navigation'
-import { useEffect } from 'react'
-import { usePostHog, type EventName } from '@/hooks/posthog'
 
 const Login = ({
   returnTo,
   returnParams,
-  signup
+  signup,
 }: {
   returnTo?: string
   returnParams?: Record<string, string>
@@ -34,7 +34,7 @@ const Login = ({
 
     signup.path = pathname
 
-    const host = (typeof window !== 'undefined') ? window.location.host : ''
+    const host = typeof window !== 'undefined' ? window.location.host : ''
     if (host) {
       signup.host = host
     }
@@ -91,7 +91,7 @@ const Login = ({
         >
           Terms of Service
         </a>{' '}
-        and {' '}
+        and{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
           href="https://polar.sh/legal/privacy"

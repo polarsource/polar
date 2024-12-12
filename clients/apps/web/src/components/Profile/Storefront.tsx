@@ -43,7 +43,7 @@ export const Storefront = ({
             <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
               <HiveOutlined
                 className="dark:text-polar-600 text-5xl text-gray-300"
-                fontSize="small"
+                fontSize="large"
               />
               <div className="flex flex-col items-center gap-y-6">
                 <div className="flex flex-col items-center gap-y-2">

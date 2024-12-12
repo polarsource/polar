@@ -179,7 +179,7 @@ const ProductBenefitsForm = ({
       purchase the product"
       className={className}
     >
-      <div className="flex w-full flex-col gap-y-4">
+      <div className="flex w-full flex-col gap-y-2">
         {Object.entries(benefitsDisplayNames).map(([type, title]) => (
           <BenefitsContainer
             key={type}
@@ -220,9 +220,7 @@ interface BenefitsContainerProps {
   title: string
   benefits: Benefit[]
   enabledBenefits: Benefit[]
-  handleCheckedChange: (
-    benefit: Benefit,
-  ) => (checked: boolean) => void
+  handleCheckedChange: (benefit: Benefit) => (checked: boolean) => void
   type: BenefitType
   onCreateNewBenefit?: () => void
 }

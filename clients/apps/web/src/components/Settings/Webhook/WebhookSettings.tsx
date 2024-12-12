@@ -87,7 +87,7 @@ const Endpoint = ({
   return (
     <div className="flex items-center justify-between overflow-hidden">
       <div className="flex w-2/3 flex-col gap-y-1">
-        <p className="truncate font-mono text-sm">{endpoint.url}</p>
+        <p className="truncate font-mono text-xs">{endpoint.url}</p>
         <p className="dark:text-polar-400 text-sm text-gray-500">
           <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
         </p>

@@ -420,7 +420,7 @@ export const ProductCheckoutModal = ({
       )}
 
       {showForm && (
-        <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 rounded-xl bg-white p-6">
+        <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 rounded-xl p-6">
           <Form {...form}>
             <div className="flex flex-row items-center">
               <h2 className="grow">

@@ -48,7 +48,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
               <span
                 key={i}
-                className="dark:text-polar-500 text-xs text-gray-200"
+                className="dark:text-polar-500 text-xs text-gray-300"
               >
                 {day}
               </span>
@@ -73,7 +73,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
                 <Tooltip key={i} delayDuration={0}>
                   <TooltipTrigger
                     className={twMerge(
-                      'dark:bg-polar-600 h-1 w-1 rounded-full bg-gray-200 xl:h-2 xl:w-2',
+                      'dark:bg-polar-600 h-1 w-1 rounded-full bg-gray-300 xl:h-2 xl:w-2',
                       activeClass,
                     )}
                   />

@@ -241,16 +241,16 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
   const redeliver = useRedeliverWebhookEvent()
 
   return (
-    <div className="flex flex-col space-y-2">
-      <div className="grid w-fit grid-cols-2 gap-2">
+    <div className="flex flex-col gap-y-4">
+      <div className="grid w-fit grid-cols-2 gap-2 text-sm">
         <div>Event ID</div>
-        <code>{delivery.webhook_event.id}</code>
+        <code className="text-xs">{delivery.webhook_event.id}</code>
 
         <div>Delivery ID</div>
-        <code>{delivery.id}</code>
+        <code className="text-xs">{delivery.id}</code>
 
         <div>Sent at</div>
-        <code>{delivery.created_at}</code>
+        <code className="text-xs">{delivery.created_at}</code>
       </div>
       <div>
         <Button
@@ -268,7 +268,7 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
         </Button>
       </div>
       <hr />
-      <pre className="whitespace-pre-wrap">
+      <pre className="whitespace-pre-wrap text-xs">
         {JSON.stringify(payload, undefined, 2)}
       </pre>
     </div>

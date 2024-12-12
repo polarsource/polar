@@ -39,9 +39,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
-  const [selectedBenefit, setSelectedBenefit] = useState<
-    Benefit | undefined
-  >()
+  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>()
   const { data: benefits } = useBenefits(organization.id, 100)
   const { data: benefitProducts } = useBenefitProducts(
     organization.id,
@@ -122,8 +120,8 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                   className={twMerge(
                     'dark:hover:bg-polar-800',
                     selectedBenefit?.id === benefit.id
-                      ? 'dark:bg-polar-800 bg-gray-100'
-                      : 'dark:bg-polar-900 bg-gray-50',
+                      ? 'dark:bg-polar-800 bg-gray-50'
+                      : '',
                   )}
                   selected={selectedBenefit?.id === benefit.id}
                   onSelect={() => setSelectedBenefit(benefit)}
@@ -141,7 +139,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               <div className="flex flex-col items-center gap-y-6">
                 <div className="flex flex-col items-center gap-y-2">
                   <h3 className="text-lg font-medium">No Benefits found</h3>
-                  <p className="dark:text-polar-500  text-center text-gray-500">
+                  <p className="dark:text-polar-500 text-center text-gray-500">
                     Benefits are automated and granted upon purchase of a
                     product
                   </p>

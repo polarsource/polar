@@ -11,7 +11,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 
 export const API = () => {
   return (
-    <div className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-16 bg-gray-50 p-8 md:p-16 dark:md:bg-[radial-gradient(400px_at_top,rgba(20,20,25,1)_0%,rgba(9,9,11,1)_100%)]">
+    <div className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-16 bg-white p-8 md:p-16 dark:md:bg-[radial-gradient(400px_at_top,rgba(20,20,25,1)_0%,rgba(9,9,11,1)_100%)]">
       <div className="flex flex-col items-center gap-y-8">
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Built for Developers
@@ -31,7 +31,7 @@ export const API = () => {
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-100 p-8">
+        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <CommandLineIcon className="h-5 w-5" />
             <h1 className="text-xl">npx polar-init</h1>
@@ -41,7 +41,7 @@ export const API = () => {
             Next.js or Nuxt.js project.
           </p>
         </div>
-        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-100 p-8">
+        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <CubeTransparentIcon className="h-5 w-5" />
             <h1 className="text-xl">Sandbox</h1>
@@ -51,7 +51,7 @@ export const API = () => {
             without risk.
           </p>
         </div>
-        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-100 p-8">
+        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <ArrowsRightLeftIcon className="h-5 w-5" />
             <h1 className="text-xl">Webhooks</h1>

@@ -35,7 +35,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
 
   return (
     <Card className={className}>
-      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between pb-6 text-sm text-gray-400">
+      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent pb-6 text-sm text-gray-400">
         <span>{displayDate}</span>
         <span>{displayTime}</span>
       </CardHeader>
@@ -92,7 +92,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
                 key={order.id}
                 className={twMerge(
                   stackingClassNames[index],
-                  'rounded-4xl dark:bg-polar-900 dark:border-polar-700 shadow-3xl peer absolute w-full border border-transparent bg-gray-50 transition-all duration-300 will-change-transform hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0',
+                  'rounded-4xl dark:bg-polar-900 dark:border-polar-700 peer absolute w-full border border-white transition-all duration-300 will-change-transform hover:z-10 hover:scale-100 peer-hover:opacity-0',
                 )}
               >
                 <OrderCard order={order} />

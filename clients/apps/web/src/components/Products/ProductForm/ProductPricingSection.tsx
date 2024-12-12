@@ -335,15 +335,15 @@ export const ProductPricingSection = ({
               setPricingType(value as ProductPriceType)
             }
           >
-            <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
+            <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-200">
               <TabsTrigger
-                className="flex-grow"
+                className="flex-grow data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 value={ProductPriceType.ONE_TIME}
               >
                 Pay Once
               </TabsTrigger>
               <TabsTrigger
-                className="flex-grow"
+                className="flex-grow data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 value={ProductPriceType.RECURRING}
               >
                 Subscription

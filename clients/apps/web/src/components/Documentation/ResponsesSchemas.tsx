@@ -40,7 +40,6 @@ export const ResponsesSchemas = ({
           <TabsList defaultValue="schema_0">
             {Object.keys(responseSchemas).map((statusCode) => (
               <TabsTrigger
-                className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
                 key={`response-tabs-${statusCode}`}
                 value={statusCode}
               >

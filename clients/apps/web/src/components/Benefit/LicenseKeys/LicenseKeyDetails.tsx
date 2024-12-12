@@ -1,14 +1,24 @@
 import { LicenseKeyRead } from '@polar-sh/sdk'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeyDetails {
+  className?: string
   licenseKey: LicenseKeyRead
 }
 
-export const LicenseKeyDetails = ({ licenseKey }: LicenseKeyDetails) => {
+export const LicenseKeyDetails = ({
+  className,
+  licenseKey,
+}: LicenseKeyDetails) => {
   return (
-    <ShadowBox className="dark:bg-polar-800 bg-white p-6 text-sm lg:rounded-3xl">
+    <ShadowBox
+      className={twMerge(
+        'dark:bg-polar-800 p-6 text-sm lg:rounded-3xl',
+        className,
+      )}
+    >
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-row items-center justify-between">

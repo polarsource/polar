@@ -34,9 +34,9 @@ class CustomerOAuthPlatform(StrEnum):
 
     def get_account_id(self, data: dict[str, Any]) -> str:
         if self == CustomerOAuthPlatform.github:
-            return data["id"]
+            return str(data["id"])
         if self == CustomerOAuthPlatform.discord:
-            return data["id"]
+            return str(data["id"])
         raise NotImplementedError()
 
     def get_account_username(self, data: dict[str, Any]) -> str:
@@ -131,13 +131,22 @@ class Customer(MetadataMixin, RecordModel):
         self, oauth_account: CustomerOAuthAccount, platform: CustomerOAuthPlatform
     ) -> None:
         account_key = platform.get_account_key(oauth_account.account_id)
-        self._oauth_accounts[account_key] = dataclasses.asdict(oauth_account)
+        self._oauth_accounts = {
+            **self._oauth_accounts,
+            account_key: dataclasses.asdict(oauth_account),
+        }
 
     def remove_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform
     ) -> None:
         account_key = platform.get_account_key(account_id)
-        self._oauth_accounts.pop(account_key, None)
+        self._oauth_accounts = {
+            k: v for k, v in self._oauth_accounts.items() if k != account_key
+        }
+
+    @property
+    def oauth_accounts(self) -> dict[str, Any]:
+        return self._oauth_accounts
 
     @property
     def legacy_user_id(self) -> UUID:

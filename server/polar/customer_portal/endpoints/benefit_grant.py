@@ -115,7 +115,7 @@ async def get(
     return benefit_grant
 
 
-@router.get(
+@router.patch(
     "/{id}",
     summary="Update Benefit Grant",
     response_model=CustomerBenefitGrant,

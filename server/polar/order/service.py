@@ -407,6 +407,9 @@ class OrderService(ResourceServiceReader[Order]):
             created_at=datetime.fromtimestamp(invoice.created, tz=UTC),
         )
 
+        organization = await organization_service.get(session, product.organization_id)
+        assert organization is not None
+
         # Get or create customer
         assert invoice.customer is not None
         if customer is None:
@@ -414,7 +417,7 @@ class OrderService(ResourceServiceReader[Order]):
                 get_expandable_id(invoice.customer)
             )
             customer = await customer_service.get_or_create_from_stripe_customer(
-                session, stripe_customer, product.organization
+                session, stripe_customer, organization
             )
 
         order.customer = customer
@@ -456,10 +459,6 @@ class OrderService(ResourceServiceReader[Order]):
                 order_id=order.id,
             )
 
-            organization = await organization_service.get(
-                session, product.organization_id
-            )
-            assert organization is not None
             await self.send_admin_notification(session, organization, order)
             await self.send_confirmation_email(session, organization, order)
 

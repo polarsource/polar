@@ -38,7 +38,6 @@ export const ProductsGrid = ({
               <SubscriptionTierRecurringIntervalSwitch
                 value={recurringInterval}
                 onChange={setRecurringInterval}
-                tabsTriggerClassName="data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
               />
             </div>
             <div className="flex md:hidden">

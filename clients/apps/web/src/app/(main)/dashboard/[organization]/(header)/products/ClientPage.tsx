@@ -145,7 +145,7 @@ export default function ClientPage({
           <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
             <HiveOutlined
               className="dark:text-polar-600 text-5xl text-gray-300"
-              fontSize="small"
+              fontSize="large"
             />
             <div className="flex flex-col items-center gap-y-6">
               <div className="flex flex-col items-center gap-y-2">
@@ -174,7 +174,7 @@ const ProductListCoverImage = ({ product }: { product: Product }) => {
   }
 
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 flex aspect-square h-10 flex-col items-center justify-center rounded-md border border-gray-200 bg-gray-100 text-center">
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex aspect-square h-10 flex-col items-center justify-center rounded-md border border-transparent bg-gray-100 text-center">
       {coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

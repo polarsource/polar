@@ -81,7 +81,7 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                     )}%`,
                   }}
                   className={twMerge(
-                    'dark:bg-polar-600 w-3 flex-shrink rounded-full bg-gray-200',
+                    'dark:bg-polar-600 w-3 flex-shrink rounded-full bg-gray-300',
                     activeClass,
                   )}
                 />

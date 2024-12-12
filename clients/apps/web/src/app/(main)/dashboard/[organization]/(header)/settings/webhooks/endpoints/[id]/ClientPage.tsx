@@ -39,11 +39,13 @@ export default function ClientPage({
   }
 
   return (
-    <DashboardBody>
+    <DashboardBody title="Webhook">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-y-1">
           <h3>Endpoint</h3>
-          <pre className="text-gray-950 dark:text-white">{endpoint.url}</pre>
+          <pre className="text-sm text-gray-950 dark:text-white">
+            {endpoint.url}
+          </pre>
         </div>
 
         <div className="flex flex-col gap-y-4">

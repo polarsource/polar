@@ -175,7 +175,7 @@ export const ProductCustomFieldSection = ({
             </Select>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="lg"
               onClick={onAddField}
             >

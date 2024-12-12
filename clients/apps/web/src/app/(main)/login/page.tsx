@@ -15,7 +15,7 @@ export default async function Page({
 }) {
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
-      <div className="rounded-4xl dark:bg-polar-900 shadow-3xl flex w-full max-w-md flex-col justify-between gap-16 bg-gray-50 p-12">
+      <div className="rounded-4xl dark:bg-polar-900 flex w-full max-w-md flex-col justify-between gap-16 bg-gray-50 p-12">
         <div className="flex flex-col gap-y-8">
           <BrandingMenu logoVariant="icon" size={60} />
           <div className="flex flex-col gap-4">

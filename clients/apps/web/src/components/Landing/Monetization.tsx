@@ -10,7 +10,7 @@ export const Monetization = () => {
   // const circleRadius = 80
 
   return (
-    <div className="rounded-4xl dark:bg-polar-900 flex flex-col gap-y-24 bg-gray-50 p-12 md:gap-y-32">
+    <div className="rounded-4xl dark:bg-polar-900 flex flex-col gap-y-24 bg-white p-12 md:gap-y-32">
       <div className="flex flex-col gap-y-24">
         <div className="grid grid-cols-1 gap-x-16 gap-y-16 md:grid-cols-3 md:gap-y-24">
           <div className="flex flex-col justify-between gap-y-12">

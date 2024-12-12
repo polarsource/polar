@@ -210,7 +210,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
           return (
             <Link key={item.title} href={item.link}>
               <TabsTrigger
-                className="flex flex-row items-center gap-x-2 px-4 data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
+                className="flex flex-row items-center gap-x-2 px-4"
                 value={item.title}
               >
                 {item.icon && <div className="text-[17px]">{item.icon}</div>}

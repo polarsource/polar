@@ -24,7 +24,7 @@ import {
 } from '@/hooks/queries'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 
 export default function EditWebhookModal({
@@ -109,29 +109,27 @@ export default function EditWebhookModal({
           </form>
         </Form>
 
-        <ShadowBoxOnMd className="flex flex-col gap-y-8 md:bg-gray-100">
-          <div className="flex flex-row items-start justify-between">
-            <div className="flex flex-col gap-y-1">
-              <h3 className="font-medium text-gray-950 dark:text-white">
-                Delete
-              </h3>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                This action will delete the endpoint configuration and stop
-                sending webhooks to it
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                showArchiveModal()
-              }}
-            >
+        <ShadowBox className="flex flex-col gap-y-6 bg-gray-100 p-6">
+          <div className="flex flex-col gap-y-1">
+            <h3 className="font-medium text-gray-950 dark:text-white">
               Delete
-            </Button>
+            </h3>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              This action will delete the endpoint configuration and stop
+              sending webhooks to it
+            </p>
           </div>
+          <Button
+            className="self-start"
+            variant="destructive"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              showArchiveModal()
+            }}
+          >
+            Delete
+          </Button>
           <ConfirmModal
             title="Delete Webhook Endpoint"
             description={
@@ -143,7 +141,7 @@ export default function EditWebhookModal({
             hide={hideDeleteModal}
             destructive
           />
-        </ShadowBoxOnMd>
+        </ShadowBox>
       </div>
     </DashboardBody>
   )

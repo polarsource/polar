@@ -81,8 +81,8 @@ export const CheckoutCard = ({
         <SubscriptionTierRecurringIntervalSwitch
           value={recurringInterval}
           onChange={onRecurringIntervalChange}
-          tabsTriggerClassName="w-1/2 py-2 dark:data-[state=active]:bg-polar-950"
-          tabsListClassName="w-full flex-row dark:bg-polar-800 bg-gray-100 rounded-full"
+          tabsTriggerClassName="w-1/2 py-2 dark:data-[state=active]:bg-polar-800 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          tabsListClassName="w-full flex-row dark:bg-polar-700 bg-gray-200 rounded-full"
         />
       )}
       <div className="flex flex-col gap-2">

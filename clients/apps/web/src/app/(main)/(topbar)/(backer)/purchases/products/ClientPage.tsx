@@ -54,7 +54,7 @@ export default function ClientPage() {
         <PurchaseSidebar />
       </div>
 
-      <div className="dark:bg-polar-900 rounded-4xl relative flex w-full flex-col items-center gap-y-8 bg-gray-50 p-12">
+      <div className="flex w-full flex-col gap-y-8">
         <div className="flex w-full flex-row items-center justify-between">
           <h3 className="text-2xl">Products</h3>
           <div className="w-full max-w-64">
@@ -106,7 +106,7 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
   const organization = order.product.organization
 
   return (
-    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-6 border-none bg-white">
+    <ShadowBox className="flex w-full flex-col gap-y-6">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-row items-center gap-x-4">
           {order.product.medias.length > 0 ? (
@@ -119,15 +119,15 @@ const OrderItem = ({ order }: { order: UserOrder }) => {
               src={order.product.medias[0].public_url}
             />
           ) : (
-            <div className="dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white shadow-sm">
+            <div className="dark:bg-polar-800 flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-gray-200">
               <div className="flex flex-col items-center justify-center text-4xl text-blue-500 dark:text-white">
-                <LogoIcon className="dark:text-polar-600 h-12 w-12 text-white/50" />
+                <LogoIcon className="dark:text-polar-600 h-8 w-8 text-gray-300" />
               </div>
             </div>
           )}
           <div className="flex flex-col">
-            <h3 className="truncate text-2xl">{order.product.name}</h3>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
+            <h3 className="truncate text-xl">{order.product.name}</h3>
+            <p className="dark:text-polar-500 text-gray-500">
               {organization.name}
             </p>
           </div>

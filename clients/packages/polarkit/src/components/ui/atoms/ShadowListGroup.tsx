@@ -1,5 +1,5 @@
 const ShadowListGroup: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <div className="dark:bg-polar-900 dark:ring-polar-700 w-full overflow-hidden rounded-2xl bg-gray-50 shadow-sm ring-1 ring-gray-200 dark:ring-1">
+  <div className="dark:ring-polar-700 w-full overflow-hidden rounded-2xl bg-transparent ring-1 ring-gray-200 dark:bg-transparent dark:ring-1">
     {children}
   </div>
 )

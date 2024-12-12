@@ -71,7 +71,7 @@ const Customization = () => {
   })
 
   return (
-    <div className="flex h-full flex-col px-8">
+    <div className="dark:bg-polar-950 flex h-full flex-col bg-gray-100 px-8">
       <div className="relative z-50 flex flex-row items-center justify-between py-8">
         <div className="flex flex-row items-center gap-x-2">
           <Button
@@ -94,11 +94,27 @@ const Customization = () => {
             setCustomizationMode(value as CustomizationContextMode)
           }}
         >
-          <TabsList>
-            <TabsTrigger value="storefront">Storefront</TabsTrigger>
-            <TabsTrigger value="checkout">Checkout</TabsTrigger>
-            <TabsTrigger value="confirmation">Confirmation</TabsTrigger>
+          <TabsList className="rounded-full bg-gray-200 dark:bg-transparent">
             <TabsTrigger
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              value="storefront"
+            >
+              Storefront
+            </TabsTrigger>
+            <TabsTrigger
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              value="checkout"
+            >
+              Checkout
+            </TabsTrigger>
+            <TabsTrigger
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              value="confirmation"
+            >
+              Confirmation
+            </TabsTrigger>
+            <TabsTrigger
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
               value="portal"
               disabled={!organization.profile_settings?.enabled}
             >

@@ -54,7 +54,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       <Popover>
         <PopoverTrigger
           asChild
-          className="dark:bg-polar-800 !rounded-full border-gray-200 bg-white"
+          className="dark:bg-polar-800 !rounded-full border-gray-200 bg-white shadow-sm"
         >
           <Button
             id="date"

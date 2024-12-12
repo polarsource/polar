@@ -65,7 +65,7 @@ export const Hero = () => {
             <span className="md:text-xl">polar.sh/</span>
             <input
               autoFocus={!isPhone}
-              className="dark:placeholder:text-polar-500 w-44 border-none border-transparent bg-transparent p-0 placeholder:text-gray-300 focus:border-transparent focus:ring-0 md:text-xl"
+              className="dark:placeholder:text-polar-500 w-44 border-none border-transparent bg-transparent p-0 placeholder:text-gray-400 focus:border-transparent focus:ring-0 md:text-xl"
               placeholder="my-app"
               value={slug}
               onChange={(e) => setSlug(slugify(e.target.value))}

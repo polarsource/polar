@@ -41,7 +41,7 @@ export default function ClientPage() {
         <PurchaseSidebar />
       </div>
 
-      <div className="dark:bg-polar-900 rounded-4xl relative flex w-full flex-col items-center gap-y-8 bg-gray-50 p-12">
+      <div className="flex w-full flex-col gap-y-8">
         <div className="flex w-full flex-row items-center justify-between">
           <h3 className="text-2xl">File Downloads</h3>
         </div>
@@ -109,17 +109,17 @@ const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {
   if (!benefit) return null
 
   return (
-    <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 border-none bg-white">
+    <ShadowBox className="flex flex-col gap-y-6">
       <div className="flex flex-col gap-y-2">
-        <span className="text-xl">{benefit?.description}</span>
         <div className="flex flex-row items-center gap-x-2">
           <Avatar
-            className="h-6 w-6 text-xs"
+            className="h-8 w-8 text-xs"
             name={benefit.organization.name}
             avatar_url={benefit.organization.avatar_url}
           />
           {organizationLink}
         </div>
+        <span className="text-xl">{benefit?.description}</span>
       </div>
       <InnerDownloadableItem
         className="dark:border-polar-700 border border-gray-200"

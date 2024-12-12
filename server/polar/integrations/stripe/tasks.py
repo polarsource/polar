@@ -205,7 +205,11 @@ async def charge_succeeded(
                 log.warning(e.message, event_id=event["id"])
                 # Retry because we might not have been able to handle other events
                 # triggering the creation of Pledge and Subscription
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @task("stripe.webhook.charge.refunded")
@@ -245,7 +249,11 @@ async def charge_dispute_created(
                 log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle charge.succeeded yet!
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
             charge = await stripe_service.get_charge(dispute.charge)
             if charge.metadata.get("type") == ProductType.pledge:
@@ -304,7 +312,11 @@ async def customer_subscription_updated(
                 log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @task("stripe.webhook.customer.subscription.deleted", max_tries=MAX_RETRIES)
@@ -325,7 +337,11 @@ async def customer_subscription_deleted(
                 log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @task("stripe.webhook.invoice.paid", max_tries=MAX_RETRIES)
@@ -346,7 +362,11 @@ async def invoice_paid(
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created
                 # or charge.succeeded yet!
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(compute_backoff(ctx["job_try"])) from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
             except NotAnOrderInvoice:
                 # Ignore invoices that are not for orders (e.g. for pledges)
                 return

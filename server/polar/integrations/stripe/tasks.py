@@ -187,7 +187,7 @@ async def payment_intent_payment_failed(
                 )
 
 
-@task("stripe.webhook.charge.succeeded")
+@task("stripe.webhook.charge.succeeded", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def charge_succeeded(
     ctx: JobContext,
@@ -204,10 +204,7 @@ async def charge_succeeded(
             except PaymentTransactionPledgeDoesNotExist as e:
                 # Retry because we might not have been able to handle other events
                 # triggering the creation of Pledge and Subscription
-                if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
 
 
 @task("stripe.webhook.charge.refunded")
@@ -230,7 +227,7 @@ async def charge_refunded(
                 )
 
 
-@task("stripe.webhook.charge.dispute.created")
+@task("stripe.webhook.charge.dispute.created", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def charge_dispute_created(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
@@ -244,12 +241,13 @@ async def charge_dispute_created(
                     session, dispute=dispute
                 )
             except DisputeUnknownPaymentTransaction as e:
+                log.warning(
+                    e.message,
+                    job_try=ctx["job_try"],
+                )
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle charge.succeeded yet!
-                if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
 
             charge = await stripe_service.get_charge(dispute.charge)
             if charge.metadata.get("type") == ProductType.pledge:
@@ -290,7 +288,7 @@ async def customer_subscription_created(
             )
 
 
-@task("stripe.webhook.customer.subscription.updated")
+@task("stripe.webhook.customer.subscription.updated", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def customer_subscription_updated(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
@@ -307,13 +305,10 @@ async def customer_subscription_updated(
             except SubscriptionDoesNotExist as e:
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
-                if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
 
 
-@task("stripe.webhook.customer.subscription.deleted")
+@task("stripe.webhook.customer.subscription.deleted", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def customer_subscription_deleted(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
@@ -330,13 +325,10 @@ async def customer_subscription_deleted(
             except SubscriptionDoesNotExist as e:
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
-                if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
 
 
-@task("stripe.webhook.invoice.paid")
+@task("stripe.webhook.invoice.paid", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def invoice_paid(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
@@ -353,10 +345,7 @@ async def invoice_paid(
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created
                 # or charge.succeeded yet!
-                if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
             except NotAnOrderInvoice:
                 # Ignore invoices that are not for orders (e.g. for pledges)
                 return

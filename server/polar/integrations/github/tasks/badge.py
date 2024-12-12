@@ -22,7 +22,7 @@ log = structlog.get_logger()
 BADGE_UPDATE_MAX_RETRIES = 10
 
 
-@task("github.badge.embed_on_issue")
+@task("github.badge.embed_on_issue", max_tries=BADGE_UPDATE_MAX_RETRIES)
 @github_rate_limit_retry
 async def embed_badge(
     ctx: JobContext,
@@ -58,10 +58,7 @@ async def embed_badge(
                     triggered_from_label=False,
                 )
             except httpx.HTTPError as e:
-                if ctx["job_try"] <= BADGE_UPDATE_MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
 
 
 @task("github.badge.update_on_issue")
@@ -105,7 +102,7 @@ async def update_on_issue(
                     raise
 
 
-@task("github.badge.remove_on_issue")
+@task("github.badge.remove_on_issue", max_tries=BADGE_UPDATE_MAX_RETRIES)
 @github_rate_limit_retry
 async def remove_badge(
     ctx: JobContext,
@@ -141,10 +138,7 @@ async def remove_badge(
                     triggered_from_label=False,
                 )
             except httpx.HTTPError as e:
-                if ctx["job_try"] <= BADGE_UPDATE_MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                else:
-                    raise
+                raise Retry(compute_backoff(ctx["job_try"])) from e
 
 
 @task("github.badge.embed_retroactively_on_repository")

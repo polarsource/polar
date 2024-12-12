@@ -11,7 +11,7 @@ from .client import client as loops_client
 MAX_RETRIES = 10
 
 
-@task("loops.update_contact")
+@task("loops.update_contact", max_tries=MAX_RETRIES)
 async def loops_update_contact(
     ctx: JobContext,
     email: str,
@@ -22,13 +22,10 @@ async def loops_update_contact(
     try:
         await loops_client.update_contact(email, id, **properties)
     except httpx.HTTPError as e:
-        if ctx["job_try"] <= MAX_RETRIES:
-            raise Retry(compute_backoff(ctx["job_try"])) from e
-        else:
-            raise
+        raise Retry(compute_backoff(ctx["job_try"])) from e
 
 
-@task("loops.send_event")
+@task("loops.send_event", max_tries=MAX_RETRIES)
 async def loops_send_event(
     ctx: JobContext,
     email: str,
@@ -39,7 +36,4 @@ async def loops_send_event(
     try:
         await loops_client.send_event(email, event_name, **properties)
     except httpx.HTTPError as e:
-        if ctx["job_try"] <= MAX_RETRIES:
-            raise Retry(compute_backoff(ctx["job_try"])) from e
-        else:
-            raise
+        raise Retry(compute_backoff(ctx["job_try"])) from e

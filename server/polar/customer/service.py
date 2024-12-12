@@ -192,6 +192,20 @@ class CustomerService(ResourceServiceReader[Customer]):
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_by_user(
+        self, session: AsyncSession, user: User
+    ) -> Sequence[Customer]:
+        statement = (
+            select(Customer)
+            .join(UserCustomer, onclause=UserCustomer.customer_id == Customer.id)
+            .where(
+                Customer.deleted_at.is_(None),
+                UserCustomer.user_id == user.id,
+            )
+        )
+        result = await session.execute(statement)
+        return result.unique().scalars().all()
+
     async def get_by_stripe_customer_id(
         self, session: AsyncSession, stripe_customer_id: str
     ) -> Customer | None:

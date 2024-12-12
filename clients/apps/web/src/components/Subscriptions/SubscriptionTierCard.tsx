@@ -39,7 +39,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     <Card
       id={subscriptionTier.name}
       className={twMerge(
-        'dark:bg-polar-900 rounded-4xl relative flex flex-col gap-y-6 overflow-hidden border-none border-gray-200 bg-gray-50 transition-opacity hover:bg-gray-50 hover:opacity-50',
+        'dark:bg-polar-900 rounded-4xl relative flex flex-col gap-y-6 overflow-hidden border-none border-gray-200 bg-gray-100 transition-opacity hover:bg-gray-50 hover:opacity-50',
         className,
       )}
     >
@@ -92,7 +92,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       </CardContent>
       {(subscriptionTier.benefits?.length ?? 0) > 0 && (
         <CardFooter className="flex w-full flex-col items-start p-3 pt-0">
-          <div className="dark:bg-polar-800 flex w-full flex-col gap-y-3 rounded-3xl bg-gray-100 p-5">
+          <div className="dark:bg-polar-800 flex w-full flex-col gap-y-3 rounded-3xl bg-white p-5">
             <h3 className="text-sm font-medium">Included</h3>
             <div className="flex flex-col gap-y-2">
               <BenefitList benefits={subscriptionTier.benefits} />

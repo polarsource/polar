@@ -74,7 +74,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 28 }}
               className={twMerge(
-                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-gray-50 shadow md:fixed md:bottom-4 md:right-4 md:top-4 md:h-auto md:w-[540px] dark:text-white',
+                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:fixed md:bottom-4 md:right-4 md:top-4 md:h-auto md:w-[540px] dark:text-white',
                 className,
               )}
               onClick={onInnerClick}

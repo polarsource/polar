@@ -112,7 +112,7 @@ const Customization = () => {
         />
       </div>
       <Form {...form}>
-        <div className="flex min-h-0 flex-grow flex-row gap-x-8 pb-8">
+        <div className="flex min-h-0 flex-grow flex-row gap-x-6 pb-8">
           {customizationContent}
           <StorefrontSidebar />
         </div>

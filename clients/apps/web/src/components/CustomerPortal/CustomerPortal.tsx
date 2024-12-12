@@ -25,7 +25,7 @@ export const CustomerPortal = ({
   orders,
 }: CustomerPortalProps) => {
   return (
-    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
+    <div className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-y-12">
         {organization && !organization.profile_settings?.enabled && (
           <div className="flex flex-row items-center gap-x-4">
@@ -41,7 +41,7 @@ export const CustomerPortal = ({
           <h3 className="text-3xl">Customer Portal</h3>
         </div>
 
-        <div className="flex flex-col gap-y-8">
+        <div className="flex flex-col gap-y-6">
           {subscriptions.map((s) => (
             <Link
               key={s.id}
@@ -139,7 +139,9 @@ export const CustomerPortal = ({
                             : `/purchases/products/${row.original.id}`
                         }
                       >
-                        <Button size="sm">View Order</Button>
+                        <Button size="sm" variant="secondary">
+                          View Order
+                        </Button>
                       </Link>
                     </div>
                   )
@@ -149,7 +151,7 @@ export const CustomerPortal = ({
           />
         </div>
       </div>
-    </ShadowBox>
+    </div>
   )
 }
 
@@ -196,7 +198,7 @@ const SubscriptionItem = ({
   }, [subscription])
 
   return (
-    <ShadowBox className="dark:bg-polar-950 bg-gray-75 flex w-full flex-col gap-y-6">
+    <ShadowBox className="dark:bg-polar-950 flex w-full flex-col gap-y-6 bg-gray-50">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>
@@ -217,8 +219,8 @@ const SubscriptionItem = ({
           <Button size="sm">Manage Subscription</Button>
         </Link>
       </div>
-      <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-100 text-sm">
-        <div className="flex flex-row items-center justify-between py-2">
+      <div className="dark:divide-polar-700 flex flex-col gap-y-2 text-sm">
+        <div className="flex flex-row items-center justify-between">
           <span>Amount</span>
           {subscription.amount && subscription.currency ? (
             <AmountLabel
@@ -230,12 +232,12 @@ const SubscriptionItem = ({
             'Free'
           )}
         </div>
-        <div className="flex flex-row items-center justify-between py-3">
+        <div className="flex flex-row items-center justify-between">
           <span>Status</span>
           {status}
         </div>
         {subscription?.started_at && (
-          <div className="flex flex-row items-center justify-between py-3">
+          <div className="flex flex-row items-center justify-between">
             <span>Start Date</span>
             <span>
               {new Date(subscription.started_at).toLocaleDateString('en-US', {
@@ -247,7 +249,7 @@ const SubscriptionItem = ({
           </div>
         )}
         {!subscription?.ended_at && subscription?.current_period_end && (
-          <div className="flex flex-row items-center justify-between py-3">
+          <div className="flex flex-row items-center justify-between">
             <span>
               {subscription.cancel_at_period_end
                 ? 'Expiry Date'
@@ -266,7 +268,7 @@ const SubscriptionItem = ({
           </div>
         )}
         {subscription?.ended_at && (
-          <div className="flex flex-row items-center justify-between py-3">
+          <div className="flex flex-row items-center justify-between">
             <span>Expired</span>
             <span>
               {new Date(subscription.ended_at).toLocaleDateString('en-US', {
@@ -278,7 +280,7 @@ const SubscriptionItem = ({
           </div>
         )}
         {subscription.product.benefits.length > 0 && (
-          <div className="flex flex-row items-center justify-between py-3">
+          <div className="flex flex-row items-center justify-between">
             <span>Benefits</span>
             <span>
               <Link href={`/purchases/subscriptions/${subscription.id}`}>

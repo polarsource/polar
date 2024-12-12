@@ -42,18 +42,33 @@ export const StorefrontNav = ({
           )}
         >
           <Link href={organizationPageLink(organization)}>
-            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger
+              className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
+              value="products"
+            >
+              Products
+            </TabsTrigger>
           </Link>
 
           {organization.feature_settings?.issue_funding_enabled && (
             <Link href={organizationPageLink(organization, 'issues')}>
-              <TabsTrigger value="issues">Issue Funding</TabsTrigger>
+              <TabsTrigger
+                className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
+                value="issues"
+              >
+                Issue Funding
+              </TabsTrigger>
             </Link>
           )}
 
           {(orders?.items.length ?? 0) > 0 && (
             <Link href={organizationPageLink(organization, 'portal')}>
-              <TabsTrigger value="portal">My Orders</TabsTrigger>
+              <TabsTrigger
+                className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
+                value="portal"
+              >
+                My Orders
+              </TabsTrigger>
             </Link>
           )}
         </TabsList>

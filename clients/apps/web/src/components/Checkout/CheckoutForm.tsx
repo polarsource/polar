@@ -228,6 +228,7 @@ const BaseCheckoutForm = ({
                       <Input
                         type="email"
                         autoComplete="email"
+                        className="bg-white shadow-sm"
                         {...field}
                         value={field.value || ''}
                         disabled={checkout.customer_id !== null}
@@ -253,6 +254,7 @@ const BaseCheckoutForm = ({
                         <FormLabel>Cardholder name</FormLabel>
                         <FormControl>
                           <Input
+                            className="bg-white shadow-sm"
                             type="text"
                             autoComplete="name"
                             {...field}
@@ -322,6 +324,7 @@ const BaseCheckoutForm = ({
                                   type="text"
                                   autoComplete="billing address-line1"
                                   placeholder="Line 1"
+                                  className="bg-white shadow-sm"
                                   {...field}
                                   value={field.value || ''}
                                 />
@@ -340,6 +343,7 @@ const BaseCheckoutForm = ({
                                   type="text"
                                   autoComplete="billing address-line2"
                                   placeholder="Line 2"
+                                  className="bg-white shadow-sm"
                                   {...field}
                                   value={field.value || ''}
                                 />
@@ -362,6 +366,7 @@ const BaseCheckoutForm = ({
                                     type="text"
                                     autoComplete="billing postal-code"
                                     placeholder="Postal code"
+                                    className="bg-white shadow-sm"
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -383,6 +388,7 @@ const BaseCheckoutForm = ({
                                     type="text"
                                     autoComplete="billing address-level2"
                                     placeholder="City"
+                                    className="bg-white shadow-sm"
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -426,13 +432,14 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="off"
+                                className="bg-white shadow-sm"
                                 {...field}
                                 value={field.value || ''}
                               />
                               <div className="absolute inset-y-0 right-1 z-10 flex items-center">
                                 <Button
                                   type="button"
-                                  variant="outline"
+                                  variant="secondary"
                                   onClick={() => clearTaxId()}
                                 >
                                   <CloseOutlined className="h-4 w-4" />
@@ -467,6 +474,7 @@ const BaseCheckoutForm = ({
                             <Input
                               type="text"
                               autoComplete="off"
+                              className="bg-white shadow-sm"
                               {...field}
                               value={field.value || ''}
                             />

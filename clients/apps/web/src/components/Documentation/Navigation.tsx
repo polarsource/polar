@@ -653,7 +653,7 @@ export const DocumentationPageSidebar = ({
   const { isShown, show, hide, toggle } = useModal()
 
   return (
-    <div className="dark:border-polar-700 bottom-0 top-0 flex flex-shrink-0 flex-col gap-y-6 overflow-y-auto border-gray-200 md:sticky md:h-screen md:w-72 md:overflow-y-auto md:border-r md:p-8">
+    <div className="dark:border-polar-700 bottom-0 top-0 flex flex-shrink-0 flex-col gap-y-6 overflow-y-auto border-transparent bg-gray-50 md:sticky md:h-screen md:w-72 md:overflow-y-auto md:border-r md:p-8 dark:bg-transparent">
       <div className="hidden flex-row items-center gap-x-4 md:flex">
         <BrandingMenu
           className={twMerge('hidden md:flex')}

@@ -1,10 +1,10 @@
 'use client'
 
-import { CONFIG } from '@/utils/config'
 import { computeComplementaryColor } from '@/components/Profile/utils'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
 import {
@@ -29,13 +29,13 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { Label } from 'polarkit/components/ui/label'
+import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
-import { Separator } from 'polarkit/components/ui/separator'
-import { Label } from 'polarkit/components/ui/label'
 
 const colorThemes = [
   '#121316',
@@ -59,7 +59,7 @@ const StorefrontSidebarContentWrapper = ({
   organization: Organization
 }>) => {
   return (
-    <ShadowBox className="dark:border-transparent shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto p-8">
+    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -340,7 +340,10 @@ export const StorefrontSidebar = () => {
       organization={organization}
     >
       <div className="flex flex-col gap-y-8">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-8">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-y-8"
+        >
           <StorefrontForm />
           <div className="flex flex-row items-center gap-x-4">
             <Button
@@ -364,15 +367,21 @@ export const StorefrontSidebar = () => {
                 buttonLabel="Copy"
                 className="bg-white"
               />
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-center text-xs text-gray-500">
                 Add an official link from GitHub to Polar.{' '}
-                <a href="/docs/github/funding-yaml" target="_blank" className="underline">Learn more.</a>
+                <a
+                  href="/docs/github/funding-yaml"
+                  target="_blank"
+                  className="underline"
+                >
+                  Learn more.
+                </a>
               </p>
             </div>
           </>
         )}
       </div>
-      <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 bg-white p-6 lg:rounded-3xl">
+      <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 p-6 lg:rounded-3xl">
         <div className="flex flex-col gap-y-2">
           <h3 className="text-sm">
             {storefrontEnabled

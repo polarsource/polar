@@ -13,7 +13,7 @@ export const PortalPreview = () => {
   const { currentUser } = useAuth()
 
   return (
-    <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto bg-gray-50">
+    <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto bg-white">
       <div className="flex w-full max-w-7xl flex-col items-center gap-y-12">
         <div className="relative flex w-full flex-row items-center justify-end gap-x-6">
           <BrandingMenu

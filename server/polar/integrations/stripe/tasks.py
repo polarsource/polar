@@ -68,7 +68,7 @@ def stripe_api_connection_error_retry(
         except stripe_lib.APIConnectionError as e:
             ctx = cast(JobContext, args[0])
             job_try = ctx["job_try"]
-            log.debug(
+            log.warning(
                 "Retry after Stripe API connection error", e=str(e), job_try=job_try
             )
             raise Retry(compute_backoff(job_try)) from e
@@ -202,6 +202,7 @@ async def charge_succeeded(
                     session=session, charge=charge
                 )
             except PaymentTransactionPledgeDoesNotExist as e:
+                log.warning(e.message, event_id=event["id"])
                 # Retry because we might not have been able to handle other events
                 # triggering the creation of Pledge and Subscription
                 raise Retry(compute_backoff(ctx["job_try"])) from e
@@ -241,10 +242,7 @@ async def charge_dispute_created(
                     session, dispute=dispute
                 )
             except DisputeUnknownPaymentTransaction as e:
-                log.warning(
-                    e.message,
-                    job_try=ctx["job_try"],
-                )
+                log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle charge.succeeded yet!
                 raise Retry(compute_backoff(ctx["job_try"])) from e
@@ -303,6 +301,7 @@ async def customer_subscription_updated(
                     session, stripe_subscription=subscription
                 )
             except SubscriptionDoesNotExist as e:
+                log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
                 raise Retry(compute_backoff(ctx["job_try"])) from e
@@ -323,6 +322,7 @@ async def customer_subscription_deleted(
                     session, stripe_subscription=subscription
                 )
             except SubscriptionDoesNotExist as e:
+                log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
                 raise Retry(compute_backoff(ctx["job_try"])) from e
@@ -342,6 +342,7 @@ async def invoice_paid(
                 OrderSubscriptionDoesNotExist,
                 PaymentTransactionForChargeDoesNotExist,
             ) as e:
+                log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created
                 # or charge.succeeded yet!

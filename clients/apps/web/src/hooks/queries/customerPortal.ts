@@ -1,5 +1,6 @@
 import { queryClient } from '@/utils/api'
 import {
+  CustomerBenefitGrantUpdate,
   CustomerPortalBenefitGrantsApiListRequest,
   CustomerPortalDownloadablesApiListRequest,
   CustomerPortalLicenseKeysApiListRequest,
@@ -11,6 +12,13 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+export const useCustomerPortalCustomer = (api: PolarAPI, id: string) =>
+  useQuery({
+    queryKey: ['customer_portal_customer', { id }],
+    queryFn: () => api.customerPortalCustomers.get({ id }),
+    retry: defaultRetry,
+  })
+
 export const useCustomerBenefitGrants = (
   api: PolarAPI,
   parameters?: CustomerPortalBenefitGrantsApiListRequest,
@@ -19,6 +27,17 @@ export const useCustomerBenefitGrants = (
     queryKey: ['customer_benefit_grants', { ...(parameters || {}) }],
     queryFn: () => api.customerPortalBenefitGrants.list(parameters),
     retry: defaultRetry,
+  })
+
+export const useCustomerBenefitGrantUpdate = (api: PolarAPI) =>
+  useMutation({
+    mutationFn: (variables: { id: string; body: CustomerBenefitGrantUpdate }) =>
+      api.customerPortalBenefitGrants.update(variables),
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['customer_benefit_grants'],
+      })
+    },
   })
 
 export const useCustomerLicenseKeys = (

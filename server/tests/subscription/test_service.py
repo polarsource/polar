@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -284,7 +285,9 @@ class TestCreateSubscriptionFromStripe:
         product: Product,
         customer: Customer,
     ) -> None:
-        stripe_customer = construct_stripe_customer()
+        stripe_customer = construct_stripe_customer(
+            id=cast(str, customer.stripe_customer_id)
+        )
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 

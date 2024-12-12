@@ -39,6 +39,7 @@ from polar.models import (
     Repository,
     Subscription,
     User,
+    UserCustomer,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
@@ -77,6 +78,10 @@ from tests.fixtures.database import SaveFixture
 
 def rstr(prefix: str) -> str:
     return prefix + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+
+def lstr(suffix: str) -> str:
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=6)) + suffix
 
 
 async def create_organization(
@@ -1271,7 +1276,12 @@ async def customer(
     save_fixture: SaveFixture,
     organization: Organization,
 ) -> Customer:
-    return await create_customer(save_fixture, organization=organization)
+    return await create_customer(
+        save_fixture,
+        organization=organization,
+        email=lstr("customer@example.com"),
+        stripe_customer_id=lstr("STRIPE_CUSTOMER_ID"),
+    )
 
 
 @pytest_asyncio.fixture
@@ -1282,9 +1292,32 @@ async def customer_second(
     return await create_customer(
         save_fixture,
         organization=organization,
-        email="customer.second@example.com",
-        stripe_customer_id="STRIPE_CUSTOMER_ID_2",
+        email=lstr("customer.second@example.com"),
+        stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_2"),
     )
+
+
+async def create_user_customer(
+    save_fixture: SaveFixture,
+    *,
+    user: User,
+    organization: Organization,
+    email: str = "user.customer@example.com",
+    email_verified: bool = False,
+    name: str = "Customer",
+    stripe_customer_id: str = "STRIPE_USER_CUSTOMER_ID",
+) -> Customer:
+    customer = await create_customer(
+        save_fixture,
+        organization=organization,
+        email=email,
+        email_verified=email_verified,
+        name=name,
+        stripe_customer_id=stripe_customer_id,
+    )
+    user_customer = UserCustomer(user=user, customer=customer)
+    await save_fixture(user_customer)
+    return customer
 
 
 @pytest_asyncio.fixture

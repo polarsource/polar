@@ -1,19 +1,9 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import {
-  ListResourceCustomerOrder,
-  ListResourceCustomerSubscription,
-  ResponseError,
-} from '@polar-sh/sdk'
+import { CustomerSubscription, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
-
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
 
 export async function generateMetadata({
   params,
@@ -61,7 +51,7 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: { organization: string }
+  params: { organization: string; id: string }
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
@@ -70,17 +60,9 @@ export default async function Page({
     params.organization,
   )
 
-  let subscriptions: ListResourceCustomerSubscription | undefined
-  let oneTimePurchases: ListResourceCustomerOrder | undefined
+  let subscription: CustomerSubscription | undefined
   try {
-    subscriptions = await api.customerPortalSubscriptions.list(
-      { organizationId: organization.id, active: true, limit: 100 },
-      cacheConfig,
-    )
-    oneTimePurchases = await api.customerPortalOrders.list({
-      organizationId: organization.id,
-      limit: 100,
-    })
+    subscription = await api.customerPortalSubscriptions.get({ id: params.id })
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -92,8 +74,7 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
-      subscriptions={subscriptions}
-      orders={oneTimePurchases}
+      subscription={subscription}
       customerSessionToken={searchParams.customer_session_token}
     />
   )

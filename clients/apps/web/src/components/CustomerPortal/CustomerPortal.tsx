@@ -18,15 +18,17 @@ import { PropsWithChildren, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface CustomerPortalProps {
-  organization?: Organization
+  organization: Organization
   subscriptions: CustomerSubscription[]
   orders: CustomerOrder[]
+  customerSessionToken?: string
 }
 
 export const CustomerPortal = ({
   organization,
   subscriptions,
   orders,
+  customerSessionToken,
 }: CustomerPortalProps) => {
   return (
     <div className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
@@ -50,9 +52,15 @@ export const CustomerPortal = ({
             <Link
               key={s.id}
               className="flex w-full flex-row items-center justify-between"
-              href={`/purchases/subscriptions/${s.id}`}
+              href={{
+                pathname: `/${organization.slug}/portal/subscriptions/${s.id}`,
+                query: { customer_session_token: customerSessionToken },
+              }}
             >
-              <SubscriptionItem subscription={s} />
+              <SubscriptionItem
+                subscription={s}
+                customerSessionToken={customerSessionToken}
+              />
             </Link>
           ))}
         </div>
@@ -134,14 +142,22 @@ export const CustomerPortal = ({
                   />
                 ),
                 cell: ({ row }) => {
+                  const {
+                    id,
+                    product: { is_recurring },
+                    subscription_id,
+                  } = row.original
                   return (
                     <div className="flex flex-row justify-end">
                       <Link
-                        href={
-                          row.original.product.is_recurring
-                            ? `/purchases/subscriptions/${row.original.id}`
-                            : `/purchases/products/${row.original.id}`
-                        }
+                        href={{
+                          pathname: is_recurring
+                            ? `/${organization.slug}/portal/subscriptions/${subscription_id}`
+                            : `/${organization.slug}/portal/orders/${id}`,
+                          query: {
+                            customer_session_token: customerSessionToken,
+                          },
+                        }}
                       >
                         <Button size="sm" variant="secondary">
                           View Order
@@ -173,8 +189,10 @@ const StatusWrapper = ({
 
 const SubscriptionItem = ({
   subscription,
+  customerSessionToken,
 }: {
   subscription: CustomerSubscription
+  customerSessionToken?: string
 }) => {
   const organization = subscription.product.organization
 
@@ -219,7 +237,12 @@ const SubscriptionItem = ({
             </div>
           )}
         </div>
-        <Link href={`/purchases/subscriptions/${subscription.id}`}>
+        <Link
+          href={{
+            pathname: `/${organization.slug}/portal/subscriptions/${subscription.id}`,
+            query: { customer_session_token: customerSessionToken },
+          }}
+        >
           <Button size="sm">Manage Subscription</Button>
         </Link>
       </div>
@@ -287,7 +310,12 @@ const SubscriptionItem = ({
           <div className="flex flex-row items-center justify-between">
             <span>Benefits</span>
             <span>
-              <Link href={`/purchases/subscriptions/${subscription.id}`}>
+              <Link
+                href={{
+                  pathname: `/${organization.slug}/portal/subscriptions/${subscription.id}`,
+                  query: { customer_session_token: customerSessionToken },
+                }}
+              >
                 <Button size="sm" variant="secondary">
                   View Benefits
                 </Button>

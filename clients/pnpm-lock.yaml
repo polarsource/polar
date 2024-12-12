@@ -155,6 +155,9 @@ importers:
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
+      event-source-plus:
+        specifier: ^0.1.8
+        version: 0.1.8
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
@@ -5292,6 +5295,9 @@ packages:
   des.js@1.1.0:
     resolution: {integrity: sha512-r17GxjhUCjSRy8aiJpr8/UadFIzMzJGexI3Nmz4ADi9LYSFx4gTBp80+NaX/YsXWWLhpZ7v/v/ubEc/bCNfKwg==}
 
+  destr@2.0.3:
+    resolution: {integrity: sha512-2N3BOUU4gYMpTP24s5rF5iP7BDr7uNTCs4ozw3kf/eKfvWSIu93GEBi5m427YoyJoeOzQ5smuu4nNAPGb8idSQ==}
+
   detect-gpu@5.0.58:
     resolution: {integrity: sha512-LvGBf1NeLMEQhUAHkL+tQPVUxFLU4NWiPWEj35GB9GozOeIc+o9kCj5Zg/sSc795J5TpDty5DVc51y13RI5zkg==}
 
@@ -5740,6 +5746,9 @@ packages:
   esutils@2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
+
+  event-source-plus@0.1.8:
+    resolution: {integrity: sha512-Zzj5lk73Qjh4Q4ax7kyHoKyEcZrw5FtK2wBGXSTCRX+BXw/4I/mM8b+fQ+OnEt3F79FqKavOyz5E5xUrnkzhoQ==}
 
   event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
@@ -7462,6 +7471,9 @@ packages:
 
   objectorarray@1.0.5:
     resolution: {integrity: sha512-eJJDYkhJFFbBBAxeh8xW+weHlkI28n2ZdQV/J/DNfWfSKlGEf2xcfAbZTv3riEXHAhL9SVOTs2pRmXiSTf78xg==}
+
+  ofetch@1.4.1:
+    resolution: {integrity: sha512-QZj2DfGplQAr2oj9KzceK9Hwz6Whxazmn85yYeVuS3u9XTMOGMRx0kO95MQ+vLsj/S/NwBDMMLU5hpxvI6Tklw==}
 
   ohash@1.1.4:
     resolution: {integrity: sha512-FlDryZAahJmEF3VR3w1KogSEdWX3WhA5GPakFx4J81kEAiHyLMpdLLElS8n8dfNadMgAne/MywcvmogzscVt4g==}
@@ -15336,6 +15348,8 @@ snapshots:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
 
+  destr@2.0.3: {}
+
   detect-gpu@5.0.58:
     dependencies:
       webgl-constants: 1.1.1
@@ -15981,6 +15995,10 @@ snapshots:
       '@types/estree': 1.0.5
 
   esutils@2.0.3: {}
+
+  event-source-plus@0.1.8:
+    dependencies:
+      ofetch: 1.4.1
 
   event-target-shim@5.0.1: {}
 
@@ -18289,6 +18307,12 @@ snapshots:
       es-object-atoms: 1.0.0
 
   objectorarray@1.0.5: {}
+
+  ofetch@1.4.1:
+    dependencies:
+      destr: 2.0.3
+      node-fetch-native: 1.6.4
+      ufo: 1.5.4
 
   ohash@1.1.4: {}
 

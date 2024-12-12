@@ -181,7 +181,7 @@ async def client_create(
     """Create a checkout session from a client. Suitable to build checkout links."""
     ip_address = request.client.host if request.client else None
     return await checkout_service.client_create(
-        session, checkout_create, ip_geolocation_client, ip_address
+        session, checkout_create, auth_subject, ip_geolocation_client, ip_address
     )
 
 
@@ -223,6 +223,7 @@ async def client_update(
 async def client_confirm(
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
+    auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Checkout:
@@ -236,7 +237,9 @@ async def client_confirm(
     if checkout is None:
         raise ResourceNotFound()
 
-    return await checkout_service.confirm(session, locker, checkout, checkout_confirm)
+    return await checkout_service.confirm(
+        session, locker, auth_subject, checkout, checkout_confirm
+    )
 
 
 @router.get("/client/{client_secret}/stream", include_in_schema=False)

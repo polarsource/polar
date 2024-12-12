@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -329,6 +329,7 @@ class TestCreateOrderFromStripe:
             subscription_id=subscription.stripe_subscription_id,
             lines=[(product.prices[0].stripe_price_id, False, None)],
             created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
         )
 
         payment_transaction = await create_transaction(
@@ -383,6 +384,7 @@ class TestCreateOrderFromStripe:
                 (product.prices[0].stripe_price_id, False, None),
             ],
             created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
         )
 
         payment_transaction = await create_transaction(
@@ -422,6 +424,7 @@ class TestCreateOrderFromStripe:
                 "metadata": {"product_price_id": str(product.prices[0].id)}
             },
             created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
         )
 
         payment_transaction = await create_transaction(
@@ -458,6 +461,7 @@ class TestCreateOrderFromStripe:
             subscription_id=subscription.stripe_subscription_id,
             lines=[(product.prices[0].stripe_price_id, False, None)],
             created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -542,6 +546,7 @@ class TestCreateOrderFromStripe:
                 "metadata": {"product_price_id": str(product.prices[0].id)}
             },
             created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
         )
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)

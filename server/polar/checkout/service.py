@@ -8,7 +8,9 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, select, update
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
+    Anonymous,
     AuthSubject,
+    is_direct_user,
     is_organization,
     is_user,
 )
@@ -406,6 +408,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self,
         session: AsyncSession,
         checkout_create: CheckoutCreatePublic,
+        auth_subject: AuthSubject[User | Anonymous],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
@@ -487,7 +490,27 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             customer=None,
             subscription=None,
         )
-        if checkout_create.customer_email is not None:
+        if is_direct_user(auth_subject):
+            customer = await customer_service.get_by_user_and_organization(
+                session, auth_subject.subject, product.organization
+            )
+            if customer is not None:
+                checkout.customer = customer
+                checkout.customer_email = customer.email
+                if checkout_create.subscription_id is not None:
+                    (
+                        subscription,
+                        subscription_customer,
+                    ) = await self._get_validated_subscription(
+                        session,
+                        checkout_create.subscription_id,
+                        product.organization_id,
+                    )
+                    if subscription_customer == customer:
+                        checkout.subscription = subscription
+            else:
+                checkout.customer_email = auth_subject.subject.email
+        elif checkout_create.customer_email is not None:
             checkout.customer_email = checkout_create.customer_email
 
         if checkout.payment_processor == PaymentProcessor.stripe:
@@ -640,6 +663,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
@@ -653,7 +677,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ) as discount_redemption:
                     discount_redemption.checkout = checkout
                     return await self._confirm_inner(
-                        session, checkout, checkout_confirm
+                        session, auth_subject, checkout, checkout_confirm
                     )
             except DiscountNotRedeemableError as e:
                 raise PolarRequestValidationError(
@@ -667,11 +691,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     ]
                 ) from e
 
-        return await self._confirm_inner(session, checkout, checkout_confirm)
+        return await self._confirm_inner(
+            session, auth_subject, checkout, checkout_confirm
+        )
 
     async def _confirm_inner(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
@@ -739,7 +766,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             raise PolarRequestValidationError(errors)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
-            customer = await self._create_or_update_customer(session, checkout)
+            customer = await self._create_or_update_customer(
+                session, auth_subject, checkout
+            )
             checkout.customer = customer
             stripe_customer_id = customer.stripe_customer_id
             assert stripe_customer_id is not None
@@ -1550,7 +1579,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         return fields
 
     async def _create_or_update_customer(
-        self, session: AsyncSession, checkout: Checkout
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Anonymous],
+        checkout: Checkout,
     ) -> Customer:
         customer = checkout.customer
         if customer is None:
@@ -1568,6 +1600,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     tax_id=checkout.customer_tax_id,
                     organization=checkout.organization,
                 )
+
+        if is_direct_user(auth_subject):
+            await customer_service.link_user(session, customer, auth_subject.subject)
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:

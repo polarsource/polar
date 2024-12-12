@@ -177,6 +177,21 @@ class CustomerService(ResourceServiceReader[Customer]):
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_by_user_and_organization(
+        self, session: AsyncSession, user: User, organization: Organization
+    ) -> Customer | None:
+        statement = (
+            select(Customer)
+            .join(UserCustomer, onclause=UserCustomer.customer_id == Customer.id)
+            .where(
+                Customer.deleted_at.is_(None),
+                UserCustomer.user_id == user.id,
+                Customer.organization_id == organization.id,
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_by_stripe_customer_id(
         self, session: AsyncSession, stripe_customer_id: str
     ) -> Customer | None:
@@ -220,6 +235,13 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         session.add(customer)
         return customer
+
+    async def link_user(
+        self, session: AsyncSession, customer: Customer, user: User
+    ) -> UserCustomer:
+        user_customer = UserCustomer(user=user, customer=customer)
+        session.add(user_customer)
+        return user_customer
 
     def _get_readable_customer_statement(
         self, auth_subject: AuthSubject[User | Organization]

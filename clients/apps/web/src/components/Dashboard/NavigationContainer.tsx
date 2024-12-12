@@ -38,9 +38,9 @@ export const NavigationContainer = ({
               <Link
                 key={route.link}
                 className={twMerge(
-                  'flex flex-row items-center gap-x-4 rounded-lg border border-transparent px-3 py-2 transition-colors dark:border-transparent',
+                  'flex flex-row items-center gap-x-4 rounded-xl border border-transparent px-3 py-2 transition-colors dark:border-transparent',
                   route.isActive
-                    ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-200 bg-gray-50 text-black shadow-sm dark:text-white'
+                    ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-200 bg-white text-black shadow-sm dark:text-white'
                     : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
                 )}
                 href={route.link}

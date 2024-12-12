@@ -75,13 +75,14 @@ export const CheckoutCard = ({
     [onCheckoutUpdate],
   )
   return (
-    <ShadowBox className="dark:bg-polar-950 shadow-3xl dark:border-polar-700 flex flex-col gap-8 rounded-3xl border bg-white md:ring-gray-100 dark:md:border-none">
+    <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl border bg-gray-50 md:ring-gray-200 dark:md:border-none">
+      <h2 className="text-lg font-medium">{product.name}</h2>
       {!disabled && hasBothIntervals && (
         <SubscriptionTierRecurringIntervalSwitch
           value={recurringInterval}
           onChange={onRecurringIntervalChange}
           tabsTriggerClassName="w-1/2 py-2 dark:data-[state=active]:bg-polar-950"
-          tabsListClassName="w-full flex-row dark:bg-polar-800 bg-gray-50 rounded-full"
+          tabsListClassName="w-full flex-row dark:bg-polar-800 bg-gray-100 rounded-full"
         />
       )}
       <div className="flex flex-col gap-2">

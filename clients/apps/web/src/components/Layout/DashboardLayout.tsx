@@ -210,7 +210,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
           return (
             <Link key={item.title} href={item.link}>
               <TabsTrigger
-                className="flex flex-row items-center gap-x-2 px-4"
+                className="flex flex-row items-center gap-x-2 px-4 data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
                 value={item.title}
               >
                 {item.icon && <div className="text-[17px]">{item.icon}</div>}
@@ -248,8 +248,8 @@ export const DashboardBody = ({
   )
 
   return (
-    <div className={twMerge('flex h-full w-full flex-row gap-x-6')}>
-      <div className="dark:md:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-gray-50 md:px-12 md:shadow-sm">
+    <div className={twMerge('flex h-full w-full flex-row gap-x-4')}>
+      <div className="dark:md:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-12 md:shadow-sm">
         <div
           className={twMerge(
             'flex h-full w-full max-w-screen-xl flex-col',
@@ -280,7 +280,7 @@ export const DashboardBody = ({
       {contextView ? (
         <div
           className={twMerge(
-            'dark:bg-polar-900 dark:border-polar-700 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 md:max-w-[320px] xl:max-w-[440px]',
+            'dark:bg-polar-900 dark:border-polar-700 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-sm xl:max-w-[440px]',
             contextViewClassName,
           )}
         >

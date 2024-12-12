@@ -35,11 +35,12 @@ export const ResponsesSchemas = ({
         <h3 className="group text-xl text-black dark:text-white">Responses</h3>
       </AnchoredElement>
 
-      <Tabs>
+      <Tabs defaultValue={Object.keys(responseSchemas)[0]}>
         <div className="overflow-x-auto">
           <TabsList defaultValue="schema_0">
             {Object.keys(responseSchemas).map((statusCode) => (
               <TabsTrigger
+                className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-none"
                 key={`response-tabs-${statusCode}`}
                 value={statusCode}
               >

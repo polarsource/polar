@@ -26,7 +26,7 @@ export const AuthenticationSchema = ({
         </h3>
       </AnchoredElement>
 
-      <List>
+      <List size="small">
         <ListItem>
           <span className="font-medium">Methods</span>{' '}
           <div className="flex flex-row gap-2">

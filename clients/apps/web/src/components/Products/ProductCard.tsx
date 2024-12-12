@@ -23,9 +23,9 @@ export const ProductCard = ({ product, price }: ProductCardProps) => {
           src={product.medias[0].public_url}
         />
       ) : (
-        <div className="dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 flex aspect-video w-full flex-col items-center justify-center rounded-2xl bg-gradient-to-tr from-white via-blue-50 to-white">
+        <div className="dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 flex aspect-video w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
           <div className="flex flex-col items-center justify-center text-4xl text-blue-500 dark:text-white">
-            <LogoIcon className="dark:text-polar-600 h-12 w-12 text-white/50" />
+            <LogoIcon className="dark:text-polar-600 h-12 w-12 text-gray-300" />
           </div>
         </div>
       )}

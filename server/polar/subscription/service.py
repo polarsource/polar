@@ -18,6 +18,7 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
 from polar.customer.service import customer as customer_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -690,6 +691,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         assert featured_organization is not None
 
+        customer = subscription.customer
+        token, _ = await customer_session_service.create_customer_session(
+            session, customer
+        )
+
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} subscription",
             "subscription/confirmation.html",
@@ -697,7 +703,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 "featured_organization": featured_organization,
                 "product": product,
                 "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal/subscriptions/{subscription.id}"
+                    f"/{featured_organization.slug}/portal/subscriptions/{subscription.id}?customer_session_token={token}"
                 ),
                 "current_year": datetime.now().year,
             },

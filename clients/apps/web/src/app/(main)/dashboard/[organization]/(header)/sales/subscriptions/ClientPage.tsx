@@ -219,7 +219,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
         const customer = subscription.customer
         return (
           <div className="flex flex-row items-center gap-2">
-            <Avatar avatar_url={null} name={customer.name || customer.email} />
+            <Avatar
+              avatar_url={customer.avatar_url}
+              name={customer.name || customer.email}
+            />
             <div className="fw-medium">{customer.email}</div>
           </div>
         )
@@ -368,7 +371,7 @@ const SubscriptionModal = ({ subscription }: SubscriptionModalProps) => {
       <h2 className="mb-4 text-2xl">Subscription Details</h2>
       <div className="flex flex-row items-center gap-4">
         <Avatar
-          avatar_url={null}
+          avatar_url={subscription.customer.avatar_url}
           name={subscription.customer.name || subscription.customer.email}
           className="h-16 w-16"
         />

@@ -89,7 +89,7 @@ export const LicenseKeysList = ({
           <div className="flex flex-row items-center gap-x-3">
             <Avatar
               className="h-10 w-10"
-              avatar_url={null}
+              avatar_url={licenseKey.customer.avatar_url}
               name={licenseKey.customer.name || licenseKey.customer.email}
             />
             <div className="flex flex-col">

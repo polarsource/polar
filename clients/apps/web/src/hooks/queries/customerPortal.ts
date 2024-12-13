@@ -12,6 +12,27 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+export const useCustomerPortalSessionRequest = (
+  api: PolarAPI,
+  organizationId: string,
+) =>
+  useMutation({
+    mutationFn: ({ email }: { email: string }) =>
+      api.customerPortalCustomerSession.customerPortalCustomerSessionRequest({
+        body: { email, organization_id: organizationId },
+      }),
+  })
+
+export const useCustomerPortalSessionAuthenticate = (api: PolarAPI) =>
+  useMutation({
+    mutationFn: ({ code }: { code: string }) =>
+      api.customerPortalCustomerSession.customerPortalCustomerSessionAuthenticate(
+        {
+          body: { code },
+        },
+      ),
+  })
+
 export const useCustomerPortalCustomer = (api: PolarAPI, id: string) =>
   useQuery({
     queryKey: ['customer_portal_customer', { id }],

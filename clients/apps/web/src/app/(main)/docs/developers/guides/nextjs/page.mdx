@@ -302,7 +302,7 @@ Depending on which events you've subscribed to, you'll receive different payload
 export async function POST(request: NextRequest) {
   // ...
 
-  switch (webhookPayload.event) {
+  switch (webhookPayload.type) {
     case 'checkout.created':
       // Handle the checkout created event
       // supabase.from('checkouts').insert(webhookPayload.data)
@@ -328,7 +328,7 @@ export async function POST(request: NextRequest) {
       break
     default:
       // Handle unknown event
-      console.log('Unknown event', webhookPayload.event)
+      console.log('Unknown event', webhookPayload.type)
       break
   }
 

@@ -33,20 +33,6 @@ export const CustomerPortal = ({
   return (
     <div className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-y-12">
-        {organization && !organization.profile_settings?.enabled && (
-          <div className="flex flex-row items-center gap-x-4">
-            <Avatar
-              className="h-12 w-12"
-              avatar_url={organization.avatar_url}
-              name={organization.name}
-            />
-            <h3 className="text-xl">{organization.name}</h3>
-          </div>
-        )}
-        <div className="flex flex-row items-center justify-between">
-          <h3 className="text-3xl">Customer Portal</h3>
-        </div>
-
         <div className="flex flex-col gap-y-6">
           {subscriptions.map((s) => (
             <Link

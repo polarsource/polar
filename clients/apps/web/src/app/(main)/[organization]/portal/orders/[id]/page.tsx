@@ -1,19 +1,9 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getStorefrontOrNotFound } from '@/utils/storefront'
-import {
-  ListResourceCustomerOrder,
-  ListResourceCustomerSubscription,
-  ResponseError,
-} from '@polar-sh/sdk'
+import { getOrganizationOrNotFound } from '@/utils/customerPortal'
+import { CustomerOrder, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
-
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
 
 export async function generateMetadata({
   params,
@@ -21,10 +11,7 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const { organization } = await getStorefrontOrNotFound(
-    api,
-    params.organization,
-  )
+  const organization = await getOrganizationOrNotFound(api, params.organization)
 
   return {
     title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
@@ -61,29 +48,18 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: { organization: string }
+  params: { organization: string; id: string }
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const { organization } = await getStorefrontOrNotFound(
-    api,
-    params.organization,
-  )
+  const organization = await getOrganizationOrNotFound(api, params.organization)
 
-  let subscriptions: ListResourceCustomerSubscription | undefined
-  let oneTimePurchases: ListResourceCustomerOrder | undefined
+  let order: CustomerOrder | undefined
   try {
-    subscriptions = await api.customerPortalSubscriptions.list(
-      { organizationId: organization.id, active: true, limit: 100 },
-      cacheConfig,
-    )
-    oneTimePurchases = await api.customerPortalOrders.list({
-      organizationId: organization.id,
-      limit: 100,
-    })
+    order = await api.customerPortalOrders.get({ id: params.id })
   } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
+    if (e instanceof ResponseError && e.response.status === 401) {
+      redirect(`/${organization.slug}/portal/request`)
     } else {
       throw e
     }
@@ -92,8 +68,7 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
-      subscriptions={subscriptions}
-      orders={oneTimePurchases}
+      order={order}
       customerSessionToken={searchParams.customer_session_token}
     />
   )

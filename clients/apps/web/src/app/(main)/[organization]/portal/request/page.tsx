@@ -1,8 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { CustomerSubscription, ResponseError } from '@polar-sh/sdk'
+import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -11,10 +9,7 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const { organization } = await getStorefrontOrNotFound(
-    api,
-    params.organization,
-  )
+  const organization = await getOrganizationOrNotFound(api, params.organization)
 
   return {
     title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
@@ -51,31 +46,11 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: { organization: string; id: string }
+  params: { organization: string }
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const { organization } = await getStorefrontOrNotFound(
-    api,
-    params.organization,
-  )
+  const organization = await getOrganizationOrNotFound(api, params.organization)
 
-  let subscription: CustomerSubscription | undefined
-  try {
-    subscription = await api.customerPortalSubscriptions.get({ id: params.id })
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    } else {
-      throw e
-    }
-  }
-
-  return (
-    <ClientPage
-      organization={organization}
-      subscription={subscription}
-      customerSessionToken={searchParams.customer_session_token}
-    />
-  )
+  return <ClientPage organization={organization} />
 }

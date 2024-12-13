@@ -38,6 +38,7 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
+    query: str | None = Query(None, description="Filter by name or email."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerSchema]:
     """List customers."""
@@ -45,6 +46,7 @@ async def list(
         session,
         auth_subject,
         organization_id=organization_id,
+        query=query,
         pagination=pagination,
         sorting=sorting,
     )

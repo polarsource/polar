@@ -1,7 +1,15 @@
-from pydantic import UUID4, Field
+import hashlib
+
+from pydantic import UUID4, Field, computed_field
 
 from polar.kit.address import Address
-from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
+from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.schemas import (
+    EmailStrDNS,
+    IDSchema,
+    Schema,
+    TimestampedSchema,
+)
 from polar.kit.tax import TaxID
 from polar.organization.schemas import OrganizationID
 
@@ -27,10 +35,19 @@ class CustomerUpdate(Schema):
     tax_id: TaxID | None = None
 
 
-class Customer(IDSchema, TimestampedSchema):
+class CustomerBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     email: str
     email_verified: bool
     name: str | None
     billing_address: Address | None
     tax_id: TaxID | None
     organization_id: UUID4
+
+    @computed_field
+    def avatar_url(self) -> str:
+        email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=blank"
+
+
+class Customer(CustomerBase):
+    """A customer in an organization."""

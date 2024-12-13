@@ -21,13 +21,13 @@ class ProductStorefront(ProductBase):
     )
 
 
-class Customer(Schema):
+class StorefrontCustomer(Schema):
     name: str
 
 
-class Customers(Schema):
+class StorefrontCustomers(Schema):
     total: int
-    customers: list[Customer]
+    customers: list[StorefrontCustomer]
 
 
 class Storefront(Schema):
@@ -36,4 +36,4 @@ class Storefront(Schema):
     organization: Organization
     products: list[ProductStorefront]
     donation_product: ProductStorefront | None
-    customers: Customers
+    customers: StorefrontCustomers

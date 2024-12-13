@@ -5,11 +5,9 @@ from dateutil.relativedelta import relativedelta
 from pydantic import UUID4, AliasPath, Field
 
 from polar.benefit.schemas import BenefitID
+from polar.customer.schemas import CustomerBase
 from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.kit.address import Address
-from polar.kit.metadata import MetadataOutputMixin
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
-from polar.kit.tax import TaxID
+from polar.kit.schemas import Schema
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.benefit import (
     BenefitLicenseKeyActivationProperties,
@@ -61,13 +59,7 @@ class LicenseKeyDeactivate(Schema):
     activation_id: UUID4
 
 
-class LicenseKeyCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
-    email: str
-    email_verified: bool
-    name: str | None
-    billing_address: Address | None
-    tax_id: TaxID | None
-    organization_id: UUID4
+class LicenseKeyCustomer(CustomerBase): ...
 
 
 class LicenseKeyUser(Schema):

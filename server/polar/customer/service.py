@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -26,6 +26,7 @@ class CustomerService(ResourceServiceReader[Customer]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerSortProperty]] = [
             (CustomerSortProperty.created_at, True)
@@ -35,6 +36,14 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    Customer.email.ilike(f"%{query}%"),
+                    Customer.name.ilike(f"%{query}%"),
+                )
+            )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

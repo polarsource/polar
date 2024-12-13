@@ -4,6 +4,7 @@ from typing import Annotated
 import structlog
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
+from pydantic import UUID4
 
 from polar.kit.csv import (
     IterableCSVWriter,
@@ -46,6 +47,9 @@ async def list(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
+    customer_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
     discount_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
@@ -60,6 +64,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
+        customer_id=customer_id,
         discount_id=discount_id,
         active=active,
         pagination=pagination,

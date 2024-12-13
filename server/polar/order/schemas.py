@@ -4,11 +4,11 @@ from babel.numbers import format_currency
 from pydantic import UUID4, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
+from polar.customer.schemas import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
-from polar.kit.tax import TaxID
 from polar.models.order import OrderBillingReason
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
@@ -38,13 +38,7 @@ class OrderBase(
         )}"
 
 
-class OrderCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
-    email: str
-    email_verified: bool
-    name: str | None
-    billing_address: Address | None
-    tax_id: TaxID | None
-    organization_id: UUID4
+class OrderCustomer(CustomerBase): ...
 
 
 class OrderUser(Schema):

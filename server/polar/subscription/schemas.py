@@ -5,9 +5,9 @@ from babel.numbers import format_currency
 from pydantic import UUID4, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
+from polar.customer.schemas import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionRecurringInterval
-from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import (
     EmailStrDNS,
@@ -16,18 +16,11 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
-from polar.kit.tax import TaxID
 from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPriceRecurring
 
 
-class SubscriptionCustomer(IDSchema, TimestampedSchema, MetadataOutputMixin):
-    email: str
-    email_verified: bool
-    name: str | None
-    billing_address: Address | None
-    tax_id: TaxID | None
-    organization_id: UUID4
+class SubscriptionCustomer(CustomerBase): ...
 
 
 class SubscriptionUser(Schema):

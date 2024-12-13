@@ -129,7 +129,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex flex-row items-center gap-2">
             <Avatar
               className="h-8 w-8"
-              avatar_url={null}
+              avatar_url={customer.avatar_url}
               name={customer.name || customer.email}
             />
             <div className="fw-medium">{customer.email}</div>
@@ -248,7 +248,7 @@ const OrderModal = ({ order }: OrderModalProps) => {
       <h2 className="mb-4 text-2xl">Order Details</h2>
       <div className="flex flex-row items-center gap-4">
         <Avatar
-          avatar_url={null}
+          avatar_url={order.customer.avatar_url}
           name={order.customer.name || order.customer.email}
           className="h-16 w-16"
         />

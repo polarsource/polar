@@ -8,6 +8,7 @@ import {
   HiveOutlined,
   HowToVote,
   ModeStandby,
+  PeopleOutlined,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
   Storefront,
@@ -181,6 +182,16 @@ const generalRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/benefits/license-keys`,
       },
     ],
+  },
+  {
+    id: 'customers',
+    title: 'Customers',
+    icon: <PeopleOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/customers`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org.slug}/customers`)
+    },
+    if: true,
   },
   {
     id: 'org-sales',

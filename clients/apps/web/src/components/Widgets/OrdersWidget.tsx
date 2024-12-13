@@ -49,7 +49,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
         <Avatar
           className="h-10 w-10"
           name={order.customer.name || order.customer.email}
-          avatar_url={null}
+          avatar_url={order.customer.avatar_url}
         />
         <div className="flex flex-col text-sm">
           <span>{order.user.public_name}</span>

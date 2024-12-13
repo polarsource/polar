@@ -13,32 +13,31 @@ const Avatar = ({
   height?: number | undefined
   width?: number | undefined
 }) => {
-  if (avatar_url) {
-    return (
-      /* eslint-disable-next-line @next/next/no-img-element */
-      <img
-        alt={name}
-        src={avatar_url}
-        className={twMerge(
-          'dark:bg-polar-900 dark:border-polar-700 h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-gray-50',
-          className,
-        )}
-        height={height}
-        width={width}
-      />
-    )
-  }
-
   const initials = getInitials(name)
 
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
+        'dark:bg-polar-900 dark:border-polar-700 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
         className,
       )}
     >
-      <span>{initials}</span>
+      {/* Always add initials below image because Gravatar returns a transparent image if the user does not have a Gravatar account */}
+      <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+        <span>{initials}</span>
+      </div>
+      {avatar_url && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt={name}
+            src={avatar_url}
+            height={height}
+            width={width}
+            className="z-[1] rounded-full"
+          />
+        </>
+      )}
     </div>
   )
 }

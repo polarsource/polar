@@ -692,9 +692,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             {
                 "featured_organization": featured_organization,
                 "product": product,
-                "url": (
-                    f"{settings.FRONTEND_BASE_URL}"
-                    f"/purchases/subscriptions/{subscription.id}"
+                "url": settings.generate_frontend_url(
+                    f"/{featured_organization.slug}/portal/subscriptions/{subscription.id}"
                 ),
                 "current_year": datetime.now().year,
             },

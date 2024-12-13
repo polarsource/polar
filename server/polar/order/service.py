@@ -510,7 +510,9 @@ class OrderService(ResourceServiceReader[Order]):
             {
                 "featured_organization": organization,
                 "product": product,
-                "url": f"{settings.FRONTEND_BASE_URL}/purchases/products/{order.id}",
+                "url": settings.generate_frontend_url(
+                    f"/{organization.slug}/portal/orders/{order.id}"
+                ),
                 "current_year": datetime.now().year,
             },
         )

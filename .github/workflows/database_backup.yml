@@ -1,0 +1,20 @@
+name: Trigger a database backup
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger the backup
+      run: |
+          curl -X POST "https://api.render.com/v1/postgres/${{ secrets.RENDER_DATABASE_ID }}/backup" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          --fail \
+          --silent \
+          --output /dev/null

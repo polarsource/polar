@@ -44,7 +44,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 - Sell SaaS and digital products in minutes
 - All-in-one funding & monetization platform for developers.
 - Sell access to GitHub repositories, Discord Support channels, File Downloads, License Keys & much more with Digital Products & Subscriptions.
-- Setup crowdfunding on your GitHub issues
+- Set up crowdfunding on your GitHub issues
 - We're the merchant of record handling the...
   - ...boilerplate (billing, receipts, customer accounts etc)
   - ...headaches (sales tax, VAT)
@@ -52,11 +52,11 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 ## Pricing
 
 - 4% + 40¢
-- No fixed, monthly, costs
+- No fixed monthly costs
 - Additional fees may apply. [Read more](https://polar.sh/docs/fees)
 
 ## Roadmap, Issues & Feature Requests
-**🎯 Upcoming milestones.** [Checkout what we're building towards](https://github.com/polarsource/polar/issues/3242)
+**🎯 Upcoming milestones.** [Check out what we're building towards](https://github.com/polarsource/polar/issues/3242)
 
 **💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/Pnhfz3UThd)
 
@@ -68,7 +68,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api/) and [Webhook API](https://docs.polar.sh/developers/webhooks).
 
-We also maintain SDK for the following languages:
+We also maintain SDKs for the following languages:
 
 * JavaScript (Node.js and browsers): [polarsource/polar-js](https://github.com/polarsource/polar-js)
 * Python: [polarsource/polar-python](https://github.com/polarsource/polar-python)

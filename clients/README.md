@@ -43,7 +43,7 @@ You might need to manually add the generated model to `src/client/PolarAPI.ts` i
 
 ### Designing with Storybook
 
-Polar uses [Storybook](https://storybook.js.org) to easier work with web components and their design.
+Polar uses [Storybook](https://storybook.js.org) to make it easier to work with web components and their design.
 
 To run the Storybook locally:
 

@@ -8,7 +8,6 @@ import {
 import {
   AvailableScope,
   PersonalAccessToken,
-  PersonalAccessTokenCreate,
   PersonalAccessTokenCreateResponse,
 } from '@polar-sh/sdk'
 import {
@@ -22,12 +21,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'polarkit/components/ui/alert-dialog'
+import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import {
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import { useModal } from '@/components/Modal/useModal'
+import { InlineModal } from '@/components/Modal/InlineModal'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Select,
@@ -43,14 +45,10 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from 'polarkit/components/ui/popover'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type MouseEvent } from 'react'
 import { useForm } from 'react-hook-form'
 
 const AccessToken = (
@@ -141,46 +139,19 @@ const AccessToken = (
 
 const AccessTokensSettings = () => {
   const tokens = usePersonalAccessTokens()
-  const createToken = useCreatePersonalAccessToken()
   const [createdToken, setCreatedToken] =
     useState<PersonalAccessTokenCreateResponse>()
 
-  const form = useForm<
-    PersonalAccessTokenCreate & { expires_in: string | null | 'no-expiration' }
-  >({
-    defaultValues: { scopes: [] },
-  })
-  const { control, handleSubmit, reset } = form
-  const [allSelected, setSelectAll] = useState(false)
+  const {
+    isShown: isNewPATModalShown,
+    show: showNewPATModal,
+    hide: hideNewPATModal,
+  } = useModal()
 
-  const onCreate = useCallback(
-    async (
-      data: PersonalAccessTokenCreate & {
-        expires_in: string | null | 'no-expiration'
-      },
-    ) => {
-      const created = await createToken.mutateAsync({
-        ...data,
-        expires_in:
-          data.expires_in === 'no-expiration' ? null : data.expires_in,
-      })
-      setCreatedToken(created)
-      reset({ scopes: [] })
-      createToken.reset()
-    },
-    [createToken, reset],
-  )
-
-  const onToggleAll = () => {
-    let values: Array<AvailableScope> = []
-    if (!allSelected) {
-      values = Object.values(AvailableScope)
-    }
-    form.setValue('scopes', values)
-    setSelectAll(!allSelected)
+  const onCreate = (token: PersonalAccessTokenCreateResponse) => {
+    hideNewPATModal()
+    setCreatedToken(token)
   }
-
-  const selectableScopes = Object.values(AvailableScope)
 
   return (
     <div className="flex w-full flex-col">
@@ -209,118 +180,202 @@ const AccessTokensSettings = () => {
           </ShadowListGroup.Item>
         )}
         <ShadowListGroup.Item>
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onCreate)}
-              className="flex flex-row items-center gap-x-4"
-            >
-              <FormField
-                control={control}
-                name="comment"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormControl>
-                    <Input {...field} placeholder="Token name" />
-                  </FormControl>
-                )}
-              />
-              <FormField
-                control={control}
-                name="scopes"
-                render={({ field }) => (
-                  <Popover>
-                    <PopoverTrigger asChild className="w-1/4">
-                      <Button variant="secondary">
-                        {field.value.length === 0
-                          ? 'Select scopes'
-                          : field.value.length === 1
-                            ? `${field.value[0]}`
-                            : `${field.value.length} scopes`}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="flex max-h-96 w-80 flex-col gap-2 overflow-y-auto">
-                      {selectableScopes.map((scope) => (
-                        <FormField
-                          key={scope}
-                          control={control}
-                          name="scopes"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={scope}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(scope)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([
-                                            ...field.value,
-                                            scope,
-                                          ])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== scope,
-                                            ),
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {scope}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                      <Button
-                        className="mt-4"
-                        onClick={onToggleAll}
-                        variant={!allSelected ? 'default' : 'destructive'}
-                        size="sm"
-                      >
-                        {!allSelected ? 'Select All' : 'Unselect All'}
-                      </Button>
-                    </PopoverContent>
-                  </Popover>
-                )}
-              />
-              <FormField
-                control={control}
-                name="expires_in"
-                rules={{ required: 'This field is required' }}
-                render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || ''}
-                  >
-                    <SelectTrigger className="w-1/4">
-                      <SelectValue placeholder="Expiration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 7, 30, 90, 180, 365].map((days) => (
-                        <SelectItem key={days} value={`P${days}D`}>
-                          {days} days
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="no-expiration">
-                        <span className="text-red-500 dark:text-red-400">
-                          No expiration
-                        </span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <Button type="submit">Create</Button>
-            </form>
-          </Form>
+          <div className="flex flex-row items-center gap-x-4">
+            <Button asChild onClick={showNewPATModal}>
+              New Token
+            </Button>
+          </div>
         </ShadowListGroup.Item>
+        <InlineModal
+          isShown={isNewPATModalShown}
+          hide={hideNewPATModal}
+          modalContent={
+            <CreateAccessTokenModal
+              onSuccess={onCreate}
+              onHide={hideNewPATModal}
+            />
+          }
+        />
       </ShadowListGroup>
+    </div>
+  )
+}
+
+interface CreateAccessTokenModalProps {
+  onSuccess: (token: PersonalAccessTokenCreateResponse) => void
+  onHide: () => void
+}
+
+interface CreateTokenForm {
+  comment: string
+  expires_in: string | null | 'no-expiration'
+  scopes: Array<AvailableScope>
+}
+
+const CreateAccessTokenModal = ({
+  onSuccess,
+  onHide,
+}: CreateAccessTokenModalProps) => {
+  const createToken = useCreatePersonalAccessToken()
+  const form = useForm<CreateTokenForm>({
+    defaultValues: {
+      comment: '',
+      expires_in: 'P30D',
+      scopes: []
+    },
+  })
+  const { control, handleSubmit, reset } = form
+  const [allSelected, setSelectAll] = useState(false)
+
+  const onCreate = useCallback(
+    async (data: CreateTokenForm) => {
+      const created = await createToken.mutateAsync({
+        comment: data.comment ? data.comment : '',
+        expires_in: data.expires_in === 'no-expiration' ? null : data.expires_in,
+        scopes: data.scopes,
+      })
+      onSuccess(created)
+      reset({ scopes: [] })
+      createToken.reset()
+    },
+    [createToken, onSuccess, reset],
+  )
+
+  const selectableScopes = Object.values(AvailableScope)
+
+  const onToggleAll = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+
+    let values: Array<AvailableScope> = []
+    if (!allSelected) {
+      values = selectableScopes
+    }
+    form.setValue('scopes', values)
+    setSelectAll(!allSelected)
+  }
+
+  return (
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader hide={onHide}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-xl">Create Personal Access Token</h2>
+        </div>
+      </InlineModalHeader>
+      <div className="flex flex-col gap-y-8 p-8">
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onCreate)}
+            className="max-w-[700px] space-y-8"
+          >
+            <FormField
+              control={control}
+              name="comment"
+              rules={{
+                required: 'A name is required',
+              }}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-4">
+                  <div className="flex flex-row items-center justify-between">
+                    <FormLabel>Name</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Input {...field} placeholder="E.g app-production" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="expires_in"
+              rules={{ required: 'You need to set an expiration setting' }}
+              render={({ field }) => (
+                <FormItem className="flex flex-col gap-4">
+                  <div className="flex flex-row items-center justify-between">
+                    <FormLabel>Expiration</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || ''}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lifetime of token" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 7, 30, 90, 180, 365].map((days) => (
+                          <SelectItem key={days} value={`P${days}D`}>
+                            {days} days
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="no-expiration">
+                          <span className="text-red-500 dark:text-red-400">
+                            No expiration
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-row items-center">
+                <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Scopes
+                </h2>
+
+                <div className="flex-auto text-right">
+                  <Button
+                    onClick={onToggleAll}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    {!allSelected ? 'Select All' : 'Unselect All'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {Object.values(selectableScopes)
+                  .map((scope) => (
+                    <FormField
+                      key={scope}
+                      control={form.control}
+                      name="scopes"
+                      render={({ field }) => {
+                        return (
+                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(scope)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    field.onChange([...(field.value || []), scope])
+                                  } else {
+                                    field.onChange(
+                                      (field.value || []).filter((v) => v !== scope),
+                                    )
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm leading-none">
+                              {scope}
+                            </FormLabel>
+                            <FormMessage />
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+              </div>
+            </div>
+            <Button type="submit">Create</Button>
+          </form>
+        </Form>
+      </div>
     </div>
   )
 }

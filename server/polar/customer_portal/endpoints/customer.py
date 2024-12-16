@@ -39,6 +39,9 @@ async def stream(
     elif is_customer(auth_subject):
         customers = [auth_subject.subject]
 
+    if len(customers) == 0:
+        raise ResourceNotFound()
+
     channels: list[str] = []
     for customer in customers:
         receivers = Receivers(customer_id=customer.id)

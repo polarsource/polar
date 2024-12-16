@@ -29,6 +29,7 @@ import {
 } from 'polarkit/components/ui/atoms/datatable'
 import Input from 'polarkit/components/ui/atoms/input'
 import React, { useCallback, useEffect, useState } from 'react'
+import { CustomerModal } from './CustomerModal'
 
 interface ClientPageProps {
   organization: Organization

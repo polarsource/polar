@@ -1,6 +1,10 @@
+import CopyToClipboardButton from "@/components/CopyToClipboardButton/CopyToClipboardButton"
+import AmountLabel from "@/components/Shared/AmountLabel"
 import { useListSubscriptions } from "@/hooks/queries"
 import { useOrders } from "@/hooks/queries/orders"
 import { Customer } from "@polar-sh/sdk"
+import Avatar from "polarkit/components/ui/atoms/avatar"
+import { List, ListItem } from "polarkit/components/ui/atoms/list"
 
 interface CustomerModalProps {
   customer: Customer

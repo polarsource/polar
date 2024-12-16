@@ -1,5 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 /**
@@ -8,9 +10,11 @@ import { redirect } from 'next/navigation'
  *
  * This page aims at determining where to redirect an authenticated user.
  *
- * - If the user has no organization, redirect them to their purchases page.
- * - If the user has at least one organization, redirect them to the first organization's dashboard.
+ * - If the user has no organizations, redirect them to their purchases page.
+ * - If the user has organizations and a last visited organization, redirect them to that organization's dashboard.
+ * - Otherwise, redirect them to the first organization's dashboard.
  */
+
 export default async function Page() {
   const api = getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api)
@@ -19,5 +23,11 @@ export default async function Page() {
     redirect('/purchases')
   }
 
-  redirect(`/dashboard/${userOrganizations[0].slug}`)
+  const org = userOrganizations.find(
+    (org) => org.slug === getLastVisitedOrg(cookies()),
+  )
+
+  const targetOrg = org?.slug ?? userOrganizations[0].slug
+
+  redirect(`/dashboard/${targetOrg}`)
 }

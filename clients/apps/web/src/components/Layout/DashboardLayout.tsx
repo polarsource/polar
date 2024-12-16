@@ -3,6 +3,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
@@ -95,6 +96,11 @@ const DashboardLayout = (
   }>,
 ) => {
   const { organization } = useContext(MaintainerOrganizationContext)
+
+  useEffect(() => {
+    if (organization) setLastVisitedOrg(organization.slug)
+  }, [organization])
+
   return (
     <DashboardProvider organization={organization}>
       <div className="relative flex h-full w-full flex-col gap-x-8 bg-gray-100 md:flex-row md:p-6 dark:bg-transparent">

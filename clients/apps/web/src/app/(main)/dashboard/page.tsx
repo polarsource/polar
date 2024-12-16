@@ -1,4 +1,3 @@
-import { NavigateToOrganization } from '@/components/Organization/OrganizationNavigation'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getUserOrganizations } from '@/utils/user'
 import { redirect } from 'next/navigation'
@@ -11,5 +10,5 @@ export default async function Page() {
     redirect('/dashboard/create')
   }
 
-  return <NavigateToOrganization userOrganizations={userOrganizations} />
+  redirect(`/dashboard/${userOrganizations[0].slug}`)
 }

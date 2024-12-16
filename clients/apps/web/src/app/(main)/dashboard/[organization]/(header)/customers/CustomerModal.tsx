@@ -116,7 +116,7 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
             ))}
           </List>
         ) : (
-          'No orders found'
+          <span className="text-gray-500 dark:text-polar-500">No orders found</span>
         )}
       </div>
     </div>

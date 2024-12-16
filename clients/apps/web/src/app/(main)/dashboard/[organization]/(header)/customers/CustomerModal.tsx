@@ -1,4 +1,3 @@
-import CopyToClipboardButton from "@/components/CopyToClipboardButton/CopyToClipboardButton"
 import AmountLabel from "@/components/Shared/AmountLabel"
 import { SubscriptionStatusLabel } from "@/components/Subscriptions/utils"
 import { useListSubscriptions } from "@/hooks/queries"

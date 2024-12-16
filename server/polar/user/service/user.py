@@ -1,14 +1,15 @@
 from uuid import UUID
 
 import structlog
-from sqlalchemy import func
+from sqlalchemy import func, literal, select
+from sqlalchemy.dialects.postgresql import insert
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarError
 from polar.kit.services import ResourceService
 from polar.logging import Logger
-from polar.models import OAuthAccount, User
+from polar.models import Customer, OAuthAccount, User, UserCustomer
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, sql
 from polar.user.schemas.user import UserSignupAttribution
@@ -100,7 +101,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         )
 
         session.add(user)
-        await session.commit()
+        await session.flush()
 
         log.info("user.create", user_id=user.id, email=email)
 
@@ -121,6 +122,27 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         session.add(user)
         await session.commit()
         return user
+
+    async def link_customers(self, session: AsyncSession, user: User) -> None:
+        statement = (
+            insert(UserCustomer)
+            .from_select(
+                [
+                    UserCustomer.user_id,
+                    UserCustomer.customer_id,
+                    UserCustomer.id,
+                    UserCustomer.created_at,
+                ],
+                select(
+                    literal(user.id),
+                    Customer.id,
+                    func.uuid_generate_v4(),
+                    func.now(),
+                ).where(Customer.email == user.email),
+            )
+            .on_conflict_do_nothing(index_elements=["user_id", "customer_id"])
+        )
+        await session.execute(statement)
 
 
 user = UserService(User)

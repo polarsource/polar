@@ -77,7 +77,7 @@ class Customer(MetadataMixin, RecordModel):
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None, unique=True
+        String, nullable=True, default=None, unique=False
     )
 
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)

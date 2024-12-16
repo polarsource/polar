@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Customer, Organization, Pledge, Transaction, User
+from polar.models import Customer, Pledge, Transaction
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payment import (  # type: ignore[attr-defined]
@@ -101,12 +101,11 @@ class TestCreatePayment:
         session: AsyncSession,
         save_fixture: SaveFixture,
         pledge: Pledge,
-        user: User,
-        stripe_service_mock: MagicMock,
+        customer: Customer,
     ) -> None:
         stripe_balance_transaction = build_stripe_balance_transaction()
         stripe_charge = build_stripe_charge(
-            customer=user.stripe_customer_id,
+            customer=customer.stripe_customer_id,
             payment_intent=pledge.payment_id,
             balance_transaction=stripe_balance_transaction.id,
         )
@@ -174,48 +173,11 @@ class TestCreatePayment:
         )
 
         assert transaction.type == TransactionType.payment
-        assert transaction.customer_id == customer.stripe_customer_id
-        assert transaction.payment_customer == customer
+        assert transaction.customer_id == stripe_charge.customer
+        assert transaction.payment_customer is None
         assert transaction.payment_organization is None
         assert transaction.risk_level == risk_level
         assert transaction.risk_score == risk_score
-
-    async def test_customer_organization(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        pledge: Pledge,
-        organization: Organization,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        organization.stripe_customer_id = "STRIPE_CUSTOMER_ID"
-        await save_fixture(organization)
-        pledge.by_organization = organization
-        pledge.payment_id = "STRIPE_PAYMENT_ID"
-        await save_fixture(pledge)
-
-        stripe_balance_transaction = build_stripe_balance_transaction()
-        stripe_charge = build_stripe_charge(
-            customer=organization.stripe_customer_id,
-            payment_intent=pledge.payment_id,
-            balance_transaction=stripe_balance_transaction.id,
-        )
-
-        stripe_service_mock.get_balance_transaction.return_value = (
-            stripe_balance_transaction
-        )
-
-        # then
-        session.expunge_all()
-
-        transaction = await payment_transaction_service.create_payment(
-            session, charge=stripe_charge
-        )
-
-        assert transaction.type == TransactionType.payment
-        assert transaction.customer_id == organization.stripe_customer_id
-        assert transaction.payment_customer is None
-        assert transaction.payment_organization == organization
 
     async def test_not_existing_pledge(
         self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
@@ -318,7 +280,8 @@ class TestCreatePayment:
 
         assert transaction.type == TransactionType.payment
         assert transaction.pledge == pledge
-        assert transaction.payment_customer == pledge.user
+        assert transaction.payment_customer is None
+        assert transaction.payment_user == pledge.user
         assert transaction.payment_organization == pledge.by_organization
 
     async def test_tax_metadata(

@@ -215,12 +215,13 @@ class CustomerService(ResourceServiceReader[Customer]):
         result = await session.execute(statement)
         return result.unique().scalars().all()
 
-    async def get_by_stripe_customer_id(
-        self, session: AsyncSession, stripe_customer_id: str
+    async def get_by_stripe_customer_id_and_organization(
+        self, session: AsyncSession, stripe_customer_id: str, organization: Organization
     ) -> Customer | None:
         statement = select(Customer).where(
             Customer.deleted_at.is_(None),
             Customer.stripe_customer_id == stripe_customer_id,
+            Customer.organization_id == organization.id,
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -238,7 +239,9 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         If the customer does not exist, create a new one.
         """
-        customer = await self.get_by_stripe_customer_id(session, stripe_customer.id)
+        customer = await self.get_by_stripe_customer_id_and_organization(
+            session, stripe_customer.id, organization
+        )
         assert stripe_customer.email is not None
         if customer is None:
             customer = await self.get_by_email_and_organization(

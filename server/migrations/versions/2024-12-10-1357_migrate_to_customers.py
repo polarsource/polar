@@ -58,9 +58,6 @@ def upgrade() -> None:
             ondelete="set null",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("customers_pkey")),
-        sa.UniqueConstraint(
-            "stripe_customer_id", name=op.f("customers_stripe_customer_id_key")
-        ),
     )
     op.create_index(
         op.f("ix_customers_created_at"), "customers", ["created_at"], unique=False
@@ -112,7 +109,7 @@ def upgrade() -> None:
             users.created_at,
             users.email,
             users.email_verified,
-            NULL,
+            users.stripe_customer_id,
             NULL,
             NULL,
             NULL,
@@ -149,7 +146,7 @@ def upgrade() -> None:
             users.created_at,
             users.email,
             users.email_verified,
-            NULL,
+            users.stripe_customer_id,
             NULL,
             NULL,
             NULL,
@@ -190,7 +187,7 @@ def upgrade() -> None:
             users.created_at,
             users.email,
             users.email_verified,
-            NULL,
+            users.stripe_customer_id,
             NULL,
             NULL,
             NULL,
@@ -578,6 +575,14 @@ def upgrade() -> None:
         UPDATE transactions
         SET payment_user_id = NULL
         WHERE payment_customer_id IS NOT NULL
+        """
+    )
+    op.execute(
+        """
+        UPDATE transactions
+        SET payment_customer_id = orders.customer_id
+        FROM orders
+        WHERE orders.id = transactions.order_id AND transactions.payment_customer_id IS NULL
         """
     )
     op.create_index(

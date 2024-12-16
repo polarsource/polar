@@ -271,8 +271,8 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.stripe_subscription_id == stripe_subscription.id
         assert subscription.product_id == product.id
 
-        customer = await customer_service.get_by_stripe_customer_id(
-            session, stripe_customer.id
+        customer = await customer_service.get_by_stripe_customer_id_and_organization(
+            session, stripe_customer.id, product.organization
         )
         assert customer is not None
         assert customer.email == stripe_customer.email

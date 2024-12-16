@@ -110,17 +110,23 @@ export const CheckoutConfirmation = ({
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-md flex-col gap-y-8">
-        <Link
-          href={organizationPageLink(organization)}
-          className="flex self-start"
-        >
+        {organization.profile_settings?.enabled ?
+          <Link
+            href={organizationPageLink(organization)}
+            className="flex self-start"
+          >
+            <Avatar
+              className="h-16 w-16"
+              avatar_url={organization.avatar_url}
+              name={organization.name}
+            />
+          </Link> :
           <Avatar
             className="h-16 w-16"
             avatar_url={organization.avatar_url}
             name={organization.name}
           />
-        </Link>
-
+        }
         <h1 className="text-2xl font-medium">
           {status === CheckoutStatus.CONFIRMED &&
             'We are processing your order'}
@@ -161,7 +167,7 @@ export const CheckoutConfirmation = ({
               checkout={checkout}
               customerSessionToken={customerSessionToken}
             />
-            <p className="dark:text-polar-600 text-center text-xs text-gray-400">
+            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               This order was processed by our online reseller & Merchant of
               Record, Polar, who also handles order-related inquiries and
               returns.
@@ -169,7 +175,7 @@ export const CheckoutConfirmation = ({
           </>
         )}
       </div>
-      <div className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400">
+      <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
         <span>Powered by</span>
         <LogoType className="h-5" />
       </div>

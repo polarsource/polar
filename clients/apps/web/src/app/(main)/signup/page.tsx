@@ -1,8 +1,8 @@
 import Login from '@/components/Auth/Login'
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { NavigateToOrganization } from '@/components/Organization/OrganizationNavigation'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getUserOrganizations } from '@/utils/user'
+import { redirect } from 'next/navigation'
 
 export default async function Page({
   searchParams: { return_to, ...rest },
@@ -15,7 +15,7 @@ export default async function Page({
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length > 0) {
-    return <NavigateToOrganization userOrganizations={userOrganizations} />
+    redirect(`/dashboard/${userOrganizations[0].slug}`)
   }
 
   return (
@@ -42,13 +42,9 @@ export default async function Page({
               </label>
               <Input name="org-name" autoFocus />
             </div> */}
-            <Login
-              returnTo={return_to}
-              returnParams={rest}
-              signup={{
-                intent: 'creator',
-              }}
-            />
+            <Login returnTo={return_to} returnParams={rest} signup={{
+              intent: 'creator',
+            }}/>
           </div>
         </div>
         <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">

@@ -1,4 +1,3 @@
-import { NavigateToOrganization } from '@/components/Organization/OrganizationNavigation'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getUserOrganizations } from '@/utils/user'
 import { redirect } from 'next/navigation'
@@ -10,11 +9,8 @@ import { redirect } from 'next/navigation'
  * This page aims at determining where to redirect an authenticated user.
  *
  * - If the user has no organization, redirect them to their purchases page.
- * - If the user has at least one organization and the last visited organization is stored in local storage,
- *   redirect them to the last visited organization's dashboard.
- * - Otherwise, redirect them to the first organization's dashboard.
+ * - If the user has at least one organization, redirect them to the first organization's dashboard.
  */
-
 export default async function Page() {
   const api = getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api)
@@ -23,5 +19,5 @@ export default async function Page() {
     redirect('/purchases')
   }
 
-  return <NavigateToOrganization userOrganizations={userOrganizations} />
+  redirect(`/dashboard/${userOrganizations[0].slug}`)
 }

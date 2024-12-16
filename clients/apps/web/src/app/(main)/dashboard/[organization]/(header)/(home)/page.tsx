@@ -1,4 +1,3 @@
-import { UpdateLastVisitedOrg } from '@/components/Organization/OrganizationNavigation'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
@@ -33,13 +32,10 @@ export default async function Page({
   startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 5)
 
   return (
-    <>
-      <UpdateLastVisitedOrg organization={organization} />
-      <ClientPage
-        organization={organization}
-        startDate={startOfMonthThreeMonthsAgo}
-        endDate={today}
-      />
-    </>
+    <ClientPage
+      organization={organization}
+      startDate={startOfMonthThreeMonthsAgo}
+      endDate={today}
+    />
   )
 }

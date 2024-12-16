@@ -2,23 +2,21 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, Request
+from fastapi import Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.oauth2 import GetAccessTokenError
 
 from polar.auth.dependencies import WebUser
 from polar.config import settings
-from polar.exceptions import ResourceAlreadyExists, Unauthorized
+from polar.exceptions import Unauthorized
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.openapi import APITag
-from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import oauth
 from .schemas import DiscordGuild
 from .service import discord_bot as discord_bot_service
-from .service import discord_user as discord_user_service
 
 log = structlog.get_logger()
 
@@ -128,90 +126,6 @@ async def discord_bot_callback(
     )
 
     return RedirectResponse(redirect_url, 303)
-
-
-# -------------------------------------------------------------------------------
-# USER AUTHORIZATION
-# -------------------------------------------------------------------------------
-
-
-@router.get("/user/authorize", name="integrations.discord.user_authorize")
-async def discord_user_authorize(
-    return_to: ReturnTo, request: Request, auth_subject: WebUser
-) -> RedirectResponse:
-    state = {
-        "auth_type": "user",
-        "user_id": str(auth_subject.subject.id),
-        "return_to": return_to,
-    }
-    encoded_state = jwt.encode(
-        data=state,
-        secret=settings.SECRET,
-        type="discord_oauth",
-    )
-
-    authorization_url = await oauth.user_client.get_authorization_url(
-        redirect_uri=str(request.url_for("integrations.discord.user_callback")),
-        state=encoded_state,
-    )
-    return RedirectResponse(authorization_url, 303)
-
-
-@router.get("/user/callback", name="integrations.discord.user_callback")
-async def discord_user_callback(
-    auth_subject: WebUser,
-    request: Request,
-    state: str,
-    code: str | None = None,
-    code_verifier: str | None = None,
-    error: str | None = None,
-    session: AsyncSession = Depends(get_db_session),
-) -> RedirectResponse:
-    decoded_state = get_decoded_token_state(state)
-    return_to = decoded_state["return_to"]
-    if code is None or error is not None:
-        redirect_url = get_safe_return_url(
-            add_query_parameters(
-                return_to,
-                error=error or "Failed to authorize Discord user.",
-                callback="discord",
-            )
-        )
-        return RedirectResponse(redirect_url, 303)
-
-    try:
-        access_token = await oauth.user_client.get_access_token(
-            code, str(request.url_for("integrations.discord.user_callback"))
-        )
-    except GetAccessTokenError as e:
-        redirect_url = get_safe_return_url(
-            add_query_parameters(
-                return_to,
-                error="Failed to get access token. Please try again later.",
-                callback="discord",
-            )
-        )
-        log.error("Failed to get Discord user access token", error=str(e))
-        return RedirectResponse(redirect_url, 303)
-
-    user_id = UUID(decoded_state["user_id"])
-    if user_id != auth_subject.subject.id or decoded_state["auth_type"] != "user":
-        raise Unauthorized()
-
-    try:
-        await discord_user_service.create_oauth_account(
-            session, auth_subject.subject, access_token
-        )
-    except ResourceAlreadyExists:
-        existing = await discord_user_service.get_oauth_account(
-            session, auth_subject.subject
-        )
-        await discord_user_service.update_user_info(session, existing)
-
-    redirect_to = get_safe_return_url(
-        add_query_parameters(return_to, callback="discord")
-    )
-    return RedirectResponse(redirect_to, 303)
 
 
 ###############################################################################

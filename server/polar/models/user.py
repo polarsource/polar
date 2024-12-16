@@ -34,7 +34,6 @@ class OAuthPlatform(StrEnum):
     # maximum allowed length is 32 chars
     github = "github"
     github_repository_benefit = "github_repository_benefit"
-    discord = "discord"
     google = "google"
 
 

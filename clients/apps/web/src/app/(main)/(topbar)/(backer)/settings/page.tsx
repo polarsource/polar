@@ -2,7 +2,6 @@
 
 import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
-import ConnectedAppSettings from '@/components/Settings/ConnectedAppSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
@@ -23,14 +22,6 @@ export default function Page() {
             <Section>
               <SectionDescription title="Payment methods" />
               <PaymentMethodSettings />
-            </Section>
-
-            <Section>
-              <SectionDescription
-                title="Connected Apps"
-                description="Manage connection to apps"
-              />
-              <ConnectedAppSettings />
             </Section>
 
             <Section>

@@ -328,7 +328,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         redeemable: bool = True,
     ) -> Discount | None:
         statement = select(Discount).where(
-            Discount.code == code,
+            func.upper(Discount.code) == code.upper(),
             Discount.organization_id == organization.id,
             Discount.deleted_at.is_(None),
         )

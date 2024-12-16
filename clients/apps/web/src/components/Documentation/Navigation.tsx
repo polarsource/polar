@@ -487,7 +487,7 @@ export const MainNavigation = () => {
       <div>
         <NavigationHeadline>Merchant of Record</NavigationHeadline>
         <NavigationItem href="/docs/merchant-of-record/tax">
-          Sales tax & EU VAT
+          International taxes
         </NavigationItem>
         <NavigationItem href="/docs/merchant-of-record/compliance">
           Invoices & Tax Forms

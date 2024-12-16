@@ -1,12 +1,11 @@
 import { getServerURL } from '@/utils/api'
 import {
   IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest,
-  IntegrationsDiscordApiIntegrationsDiscordUserAuthorizeRequest,
   IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,
   IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
   IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
   IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
-  MagicLinkApiMagicLinkAuthenticateRequest
+  MagicLinkApiMagicLinkAuthenticateRequest,
 } from '@polar-sh/sdk'
 
 export const getGitHubAuthorizeURL = (
@@ -58,16 +57,6 @@ export const getMagicLinkAuthenticateURL = (
     searchParams.set('return_to', params.returnTo)
   }
   return `${getServerURL()}/v1/magic_link/authenticate?${searchParams}`
-}
-
-export const getUserDiscordAuthorizeURL = (
-  params: IntegrationsDiscordApiIntegrationsDiscordUserAuthorizeRequest,
-): string => {
-  const searchParams = new URLSearchParams()
-  if (params.returnTo !== undefined) {
-    searchParams.set('return_to', params.returnTo)
-  }
-  return `${getServerURL()}/v1/integrations/discord/user/authorize?${searchParams}`
 }
 
 export const getBotDiscordAuthorizeURL = (

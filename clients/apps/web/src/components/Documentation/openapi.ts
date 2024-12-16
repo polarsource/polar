@@ -4,6 +4,11 @@ import { OpenAPIV3_1 } from 'openapi-types'
 
 const swaggerParser = new SwaggerParser()
 
+interface PrefixItemsArraySchemaObject {
+  type: 'array'
+  prefixItems: (OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject)[]
+}
+
 export enum HttpMethod {
   GET = 'get',
   PUT = 'put',
@@ -176,7 +181,15 @@ export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
 
 export const isArraySchema = (
   s: OpenAPIV3_1.SchemaObject,
-): s is OpenAPIV3_1.ArraySchemaObject => s.type === 'array'
+): s is OpenAPIV3_1.ArraySchemaObject =>
+  s.type === 'array' && s.items !== undefined
+
+export const isPrefixItemsArraySchema = (
+  s: OpenAPIV3_1.SchemaObject,
+  // @ts-ignore
+): s is PrefixItemsArraySchemaObject => {
+  return s.type === 'array' && (s as any).prefixItems !== undefined
+}
 
 const SCALAR_TYPES = ['boolean', 'number', 'string', 'integer', 'null']
 
@@ -247,7 +260,7 @@ const generateScalarSchemaExample = (
     return generateSchemaExample(schema, defaults, requiredOnly)
   }
 
-  if (schema.type === 'array') {
+  if (isArraySchema(schema)) {
     return [
       generateSchemaExample(
         schema.items as OpenAPIV3_1.SchemaObject,
@@ -255,6 +268,12 @@ const generateScalarSchemaExample = (
         requiredOnly,
       ),
     ]
+  }
+
+  if (isPrefixItemsArraySchema(schema)) {
+    return schema.prefixItems.map((item) =>
+      generateSchemaExample(item, defaults, requiredOnly),
+    )
   }
 
   if (typeof defaults === 'string') {

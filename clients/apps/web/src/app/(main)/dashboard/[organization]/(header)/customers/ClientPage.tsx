@@ -1,11 +1,9 @@
 'use client'
 
-import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { useCustomers, useListSubscriptions } from '@/hooks/queries'
-import { useOrders } from '@/hooks/queries/orders'
+import { useCustomers} from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import {
   DataTablePaginationState,
@@ -13,9 +11,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 
-import AmountLabel from '@/components/Shared/AmountLabel'
 import { Search } from '@mui/icons-material'
 import { Customer, Organization } from '@polar-sh/sdk'
 import { RowSelectionState } from '@tanstack/react-table'

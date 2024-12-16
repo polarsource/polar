@@ -16,7 +16,7 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { useCallback, useContext, useMemo } from 'react'
+import { useCallback, useContext } from 'react'
 
 export default function ClientPage() {
   const searchParams = useSearchParams()

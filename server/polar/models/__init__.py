@@ -7,6 +7,9 @@ from .benefit_grant import BenefitGrant
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .custom_field import CustomField
+from .customer import Customer
+from .customer_session import CustomerSession
+from .customer_session_code import CustomerSessionCode
 from .discount import Discount
 from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
@@ -43,6 +46,7 @@ from .repository import Repository
 from .subscription import Subscription
 from .transaction import Transaction
 from .user import OAuthAccount, User
+from .user_customer import UserCustomer
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
 from .user_session import UserSession
@@ -59,6 +63,9 @@ __all__ = [
     "BenefitGrant",
     "Checkout",
     "CheckoutLink",
+    "Customer",
+    "CustomerSession",
+    "CustomerSessionCode",
     "CustomField",
     "Discount",
     "DiscountProduct",
@@ -95,6 +102,7 @@ __all__ = [
     "Subscription",
     "Transaction",
     "User",
+    "UserCustomer",
     "UserNotification",
     "UserOrganization",
     "UserSession",

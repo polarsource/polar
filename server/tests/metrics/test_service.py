@@ -9,6 +9,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.metrics.queries import Interval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
+    Customer,
     Order,
     Organization,
     Product,
@@ -121,7 +122,7 @@ ORDERS: dict[str, OrderFixture] = {
 
 async def _create_fixtures(
     save_fixture: SaveFixture,
-    user: User,
+    customer: Customer,
     organization: Organization,
     product_fixtures: dict[str, ProductFixture],
     subscription_fixtures: dict[str, SubscriptionFixture],
@@ -139,7 +140,7 @@ async def _create_fixtures(
         subscription = await create_subscription(
             save_fixture,
             product=products[subscription_fixture["product"]],
-            user=user,
+            customer=customer,
             status=SubscriptionStatus.active,
             started_at=_date_to_datetime(subscription_fixture["started_at"]),
             ended_at=(
@@ -158,7 +159,7 @@ async def _create_fixtures(
         order = await create_order(
             save_fixture,
             product=products[order_fixture["product"]],
-            user=user,
+            customer=customer,
             amount=order_fixture["amount"],
             created_at=_date_to_datetime(order_fixture["created_at"]),
             subscription=order_subscription,
@@ -171,10 +172,10 @@ async def _create_fixtures(
 
 @pytest_asyncio.fixture
 async def fixtures(
-    save_fixture: SaveFixture, user: User, organization: Organization
+    save_fixture: SaveFixture, customer: Customer, organization: Organization
 ) -> tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]]:
     return await _create_fixtures(
-        save_fixture, user, organization, PRODUCTS, SUBSCRIPTIONS, ORDERS
+        save_fixture, customer, organization, PRODUCTS, SUBSCRIPTIONS, ORDERS
     )
 
 
@@ -489,7 +490,7 @@ class TestGetMetrics:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
-        user: User,
+        customer: Customer,
         organization: Organization,
     ) -> None:
         subscriptions: dict[str, SubscriptionFixture] = {
@@ -504,7 +505,7 @@ class TestGetMetrics:
             },
         }
         await _create_fixtures(
-            save_fixture, user, organization, PRODUCTS, subscriptions, {}
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
 
         metrics = await metrics_service.get_metrics(
@@ -577,6 +578,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         user: User,
+        customer: Customer,
         organization: Organization,
     ) -> None:
         """
@@ -597,7 +599,7 @@ class TestGetMetrics:
             }
         }
         await _create_fixtures(
-            save_fixture, user, organization, PRODUCTS, subscriptions, {}
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
 
         metrics = await metrics_service.get_metrics(

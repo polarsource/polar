@@ -1,9 +1,9 @@
 import { useAuth } from '@/hooks'
+import { usePostHog } from '@/hooks/posthog'
 import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/hooks/queries'
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
-import { usePostHog } from '@/hooks/posthog'
 import { RefreshOutlined } from '@mui/icons-material'
 import {
   BenefitGitHubRepositoryCreate,
@@ -30,106 +30,11 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { Banner } from 'polarkit/components/ui/molecules'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 interface GitHubRepositoryBenefitFormProps {
   update?: boolean
-}
-
-const GitHubRepositoryBenefitFormForDeprecatedPolarApp = () => {
-  const {
-    formState: { defaultValues },
-  } = useFormContext<BenefitGitHubRepositoryCreate>()
-
-  return (
-    <>
-      <Banner color={'muted'}>
-        This benefit is using an older type of integration, and can no longer be
-        updated.
-      </Banner>
-
-      <FormItem>
-        <div className="flex flex-row items-center justify-between">
-          <FormLabel>Organization</FormLabel>
-        </div>
-        <div className="flex items-center gap-2">
-          <FormControl>
-            <Select defaultValue="org" disabled>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a GitHub organization" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="org">
-                  {defaultValues?.properties?.repository_owner ?? ''}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FormControl>
-        </div>
-        <FormMessage />
-      </FormItem>
-
-      <FormItem>
-        <div className="flex flex-row items-center justify-between">
-          <FormLabel>Repository</FormLabel>
-        </div>
-        <div className="flex items-center gap-2">
-          <FormControl>
-            <Select defaultValue="repo" disabled>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a GitHub repository" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="repo">
-                  {defaultValues?.properties?.repository_name ?? ''}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FormControl>
-        </div>
-        <FormMessage />
-      </FormItem>
-
-      <FormItem>
-        <div className="flex flex-row items-center justify-between">
-          <FormLabel>Role</FormLabel>
-        </div>
-        <div className="flex items-center gap-2">
-          <FormControl>
-            <Select defaultValue="role" disabled>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="role">
-                  {
-                    {
-                      [BenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
-                        'Read',
-                      [BenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
-                        'Triage',
-                      [BenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
-                        'Write',
-                      [BenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
-                        'Maintain',
-                      [BenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
-                        'Admin',
-                    }[
-                      defaultValues?.properties?.permission ??
-                        BenefitGitHubRepositoryPropertiesPermissionEnum.PULL
-                    ]
-                  }
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FormControl>
-        </div>
-        <FormMessage />
-      </FormItem>
-    </>
-  )
 }
 
 export const GitHubRepositoryBenefitForm = ({
@@ -225,9 +130,12 @@ export const GitHubRepositoryBenefitForm = ({
   const onRepositoryChange = useCallback(
     (key: string) => {
       const repo = repos.find((r) => r.key == key)
+      if (!repo) {
+        return
+      }
       setSelectedRepository(repo)
-      setValue('properties.repository_owner', repo?.repository_owner)
-      setValue('properties.repository_name', repo?.repository_name)
+      setValue('properties.repository_owner', repo.repository_owner)
+      setValue('properties.repository_name', repo.repository_name)
     },
     [repos, setValue],
   )
@@ -290,12 +198,6 @@ export const GitHubRepositoryBenefitForm = ({
     const returnTo = `${pathname}?${searchParams}`
     return getGitHubRepositoryBenefitAuthorizeURL({ returnTo })
   }, [pathname, description, update])
-
-  // Show configuration for deprecated integration setup
-  // Does not allow edits
-  if (defaultValues?.properties?.repository_id) {
-    return <GitHubRepositoryBenefitFormForDeprecatedPolarApp />
-  }
 
   if (!userGitHubBenefitOauth) {
     return (

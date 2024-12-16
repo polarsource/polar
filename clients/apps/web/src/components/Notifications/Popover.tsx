@@ -9,7 +9,6 @@ import {
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import { Announcement, Notifications, VerifiedUser } from '@mui/icons-material'
 import {
-  BenefitPreconditionErrorNotification,
   MaintainerAccountReviewedNotification,
   MaintainerAccountUnderReviewNotification,
   MaintainerCreateAccountNotification,
@@ -677,39 +676,6 @@ const MaintainerNewProductSale = ({
   )
 }
 
-const BenefitPreconditionError = ({
-  n,
-}: {
-  n: BenefitPreconditionErrorNotification
-}) => {
-  const {
-    payload: {
-      scope_name,
-      benefit_description,
-      organization_name,
-      extra_context,
-    },
-  } = n
-  return (
-    <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
-      {{
-        text: (
-          <>
-            The benefit {benefit_description} from {organization_name}&apos;s{' '}
-            {scope_name} could not be granted.{' '}
-            {extra_context && (extra_context as any).url && (
-              <InternalLink href={(extra_context as any).url}>
-                <>Solve it</>
-              </InternalLink>
-            )}
-          </>
-        ),
-        icon: <Announcement />,
-      }}
-    </Item>
-  )
-}
-
 const MaintainerCreateAccount = ({
   n,
 }: {
@@ -789,9 +755,6 @@ export const Notification = ({
 
     case 'MaintainerNewProductSaleNotification':
       return <MaintainerNewProductSale n={n} />
-
-    case 'BenefitPreconditionErrorNotification':
-      return <BenefitPreconditionError n={n} />
 
     case 'MaintainerCreateAccountNotification':
       return <MaintainerCreateAccount n={n} />

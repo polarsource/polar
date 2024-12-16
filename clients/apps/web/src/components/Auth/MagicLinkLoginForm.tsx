@@ -1,20 +1,24 @@
 'use client'
 
 import { useSendMagicLink } from '@/hooks/magicLink'
+import { usePostHog, type EventName } from '@/hooks/posthog'
 import { setValidationErrors } from '@/utils/api/errors'
-import { FormControl } from '@mui/material'
-import { UserSignupAttribution, ResponseError, ValidationError } from '@polar-sh/sdk'
+import {
+  ResponseError,
+  UserSignupAttribution,
+  ValidationError,
+} from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { usePostHog, type EventName } from '@/hooks/posthog'
 
 interface MagicLinkLoginFormProps {
   returnTo?: string
@@ -39,7 +43,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
     }
 
     posthog.capture(eventName, {
-      method: 'ml'
+      method: 'ml',
     })
 
     try {
@@ -78,7 +82,13 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
                       data-1p-ignore
                       {...field}
                     />
-                    <Button type="submit" size="lg" variant="secondary" loading={loading} disabled={loading}>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      variant="secondary"
+                      loading={loading}
+                      disabled={loading}
+                    >
                       Login
                     </Button>
                   </div>

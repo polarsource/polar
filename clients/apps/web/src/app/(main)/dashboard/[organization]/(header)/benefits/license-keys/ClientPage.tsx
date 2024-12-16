@@ -1,11 +1,11 @@
 'use client'
 
-import { LicenseKeyActivations } from '@/components/Benefit/LicenseKeys/LicenseKeyActivations'
 import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDetails'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   useBenefits,
+  useLicenseKey,
   useLicenseKeyUpdate,
   useOrganizationLicenseKeys,
 } from '@/hooks/queries'
@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 export const ClientPage = ({
   organization,
@@ -62,13 +62,9 @@ export const ClientPage = ({
     'license_keys',
   )
 
-  const selectedLicenseKey = useMemo(() => {
-    const selectedLicenseKeyIds = Object.keys(selectedLicenseKeys)
-    const key = licenseKeys?.items.find(
-      (licenseKey) => licenseKey.id === selectedLicenseKeyIds[0],
-    )
-    return key
-  }, [selectedLicenseKeys, licenseKeys])
+  const { data: selectedLicenseKey } = useLicenseKey(
+    Object.keys(selectedLicenseKeys)[0],
+  )
 
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -147,8 +143,8 @@ export const ClientPage = ({
       <div className="flex flex-row items-center gap-x-3">
         <Avatar
           className="h-10 w-10"
-          avatar_url={selectedLicenseKey.user?.avatar_url}
-          name={selectedLicenseKey.user?.public_name}
+          avatar_url={selectedLicenseKey.customer.avatar_url}
+          name={selectedLicenseKey.customer.email}
         />
         <div className="flex flex-col">
           <span>{selectedLicenseKey.user?.public_name}</span>
@@ -161,7 +157,6 @@ export const ClientPage = ({
         <CopyToClipboardInput value={selectedLicenseKey.key} />
         <LicenseKeyDetails licenseKey={selectedLicenseKey} />
       </div>
-      <LicenseKeyActivations licenseKeyId={selectedLicenseKey.id} />
       <div className="flex flex-row gap-x-4">
         {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
           <Button

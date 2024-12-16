@@ -40,9 +40,12 @@ export const Hero = () => {
         <span className="dark:text-polar-500 text-gray-400">in minutes</span>
       </h1>
       <div className="flex flex-row items-center gap-x-4">
-        <div
+        <form
           className="dark:bg-polar-800 dark:border-polar-700 shadow-3xl hidden flex-row items-center gap-x-2 rounded-full border bg-gray-50 py-2 pl-6 pr-2 md:flex"
           role="form"
+          onSubmit={(e) => {
+            e.preventDefault()
+          }}
         >
           <div className="flex flex-row items-center gap-x-0.5">
             <span className="md:text-xl">polar.sh/</span>
@@ -54,8 +57,13 @@ export const Hero = () => {
               onChange={(e) => setSlug(slugify(e.target.value))}
             />
           </div>
-          <GetStartedButton orgSlug={slug} size="lg" text="Get Started" />
-        </div>
+          <GetStartedButton
+            type="submit"
+            orgSlug={slug}
+            size="lg"
+            text="Get Started"
+          />
+        </form>
 
         <div className="flex flex-col gap-y-2 md:hidden">
           <div

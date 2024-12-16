@@ -1,13 +1,13 @@
 'use client'
 
 import {
+  useCustomerBenefitGrants,
+  useCustomerOrders,
+  useCustomerSubscriptions,
   usePersonalDashboard,
-  useUserDownloadables,
-  useUserLicenseKeys,
-  useUserOrders,
-  useUserSubscriptions,
 } from '@/hooks/queries'
-import { ProductPriceType } from '@polar-sh/sdk'
+import { api } from '@/utils/api'
+import { BenefitType, ProductPriceType } from '@polar-sh/sdk'
 import Link, { LinkProps } from 'next/link'
 import { usePathname } from 'next/navigation'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
@@ -37,16 +37,22 @@ const PurchaseLink = ({ ...props }: PropsWithChildren<LinkProps>) => {
 const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
   children,
 }) => {
-  const { data: orders } = useUserOrders({
+  const { data: orders } = useCustomerOrders(api, {
     limit: 1,
     productPriceType: ProductPriceType.ONE_TIME,
   })
-  const { data: subscriptions } = useUserSubscriptions({
+  const { data: subscriptions } = useCustomerSubscriptions(api, {
     limit: 1,
     active: true,
   })
-  const { data: licenseKeys } = useUserLicenseKeys({ limit: 1 })
-  const { data: fileDownloads } = useUserDownloadables({ limit: 1 })
+  const { data: licenseKeysGrants } = useCustomerBenefitGrants(api, {
+    limit: 1,
+    type: BenefitType.LICENSE_KEYS,
+  })
+  const { data: fileDownloadsGrants } = useCustomerBenefitGrants(api, {
+    limit: 1,
+    type: BenefitType.DOWNLOADABLES,
+  })
 
   const { data: dashboard } = usePersonalDashboard({
     ...DefaultFilters,
@@ -77,11 +83,11 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
           </PurchaseLink>
           <PurchaseLink href="/purchases/license-keys">
             <span>License Keys</span>
-            <span>{licenseKeys?.pagination.total_count || 0}</span>
+            <span>{licenseKeysGrants?.pagination.total_count || 0}</span>
           </PurchaseLink>
           <PurchaseLink href="/purchases/file-downloads">
             <span>File Downloads</span>
-            <span>{fileDownloads?.pagination.total_count || 0}</span>
+            <span>{fileDownloadsGrants?.pagination.total_count || 0}</span>
           </PurchaseLink>
           {fundedIssues > 0 && (
             <PurchaseLink href="/funding">

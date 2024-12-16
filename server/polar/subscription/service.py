@@ -17,6 +17,8 @@ from polar.auth.models import (
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
+from polar.customer.service import customer as customer_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -33,6 +35,7 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Checkout,
+    Customer,
     Discount,
     Organization,
     Product,
@@ -54,9 +57,6 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import sql
-from polar.posthog import posthog
-from polar.user.schemas.user import UserSignupAttribution
-from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
@@ -142,7 +142,7 @@ def _from_timestamp(t: int | None) -> datetime | None:
 
 
 class SubscriptionSortProperty(StrEnum):
-    user = "user"
+    customer = "customer"
     status = "status"
     started_at = "started_at"
     current_period_end = "current_period_end"
@@ -169,7 +169,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             query = query.options(*options)
         else:
             query = query.options(
-                joinedload(Subscription.user),
+                joinedload(Subscription.customer),
                 joinedload(Subscription.price),
                 joinedload(Subscription.product).options(
                     selectinload(Product.product_medias),
@@ -188,6 +188,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
@@ -200,7 +201,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         statement = (
-            statement.join(Subscription.user)
+            statement.join(Subscription.customer)
             .join(Subscription.price, isouter=True)
             .join(Subscription.discount, isouter=True)
         )
@@ -210,6 +211,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if product_id is not None:
             statement = statement.where(Product.id.in_(product_id))
+
+        if customer_id is not None:
+            statement = statement.where(Subscription.customer_id.in_(customer_id))
 
         if discount_id is not None:
             statement = statement.where(Subscription.discount_id.in_(discount_id))
@@ -223,8 +227,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SubscriptionSortProperty.user:
-                order_by_clauses.append(clause_function(User.email))
+            if criterion == SubscriptionSortProperty.customer:
+                order_by_clauses.append(clause_function(Customer.email))
             if criterion == SubscriptionSortProperty.status:
                 order_by_clauses.append(
                     clause_function(
@@ -285,7 +289,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ),
             contains_eager(Subscription.price),
             contains_eager(Subscription.discount),
-            contains_eager(Subscription.user),
+            contains_eager(Subscription.customer),
         )
 
         results, count = await paginate(session, statement, pagination=pagination)
@@ -302,7 +306,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         *,
-        user: User,
+        customer: Customer,
         product: Product,
         price: ProductPriceFixed,
     ) -> Subscription: ...
@@ -312,7 +316,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         *,
-        user: User,
+        customer: Customer,
         product: Product,
         price: ProductPriceCustom,
         amount: int,
@@ -323,7 +327,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         *,
-        user: User,
+        customer: Customer,
         product: Product,
         price: ProductPriceFree,
     ) -> Subscription: ...
@@ -332,7 +336,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         *,
-        user: User,
+        customer: Customer,
         product: Product,
         price: ProductPriceFixed | ProductPriceCustom | ProductPriceFree,
         amount: int | None = None,
@@ -357,7 +361,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             current_period_start=start,
             cancel_at_period_end=False,
             started_at=start,
-            user=user,
+            customer=customer,
             product=product,
             price=price,
         )
@@ -415,18 +419,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = (
                 select(Subscription)
                 .where(Subscription.id == uuid.UUID(existing_subscription_id))
-                .options(joinedload(Subscription.user))
+                .options(joinedload(Subscription.customer))
             )
             result = await session.execute(statement)
             subscription = result.unique().scalar_one_or_none()
 
         # New subscription
         if subscription is None:
-            subscription = Subscription(
-                # Generate ID upfront for user attribution
-                id=Subscription.generate_id(),
-                user=None,
-            )
+            subscription = Subscription()
 
         subscription.stripe_subscription_id = stripe_subscription.id
         subscription.status = SubscriptionStatus(stripe_subscription.status)
@@ -462,42 +462,18 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         subscription.set_started_at()
 
-        customer_id = get_expandable_id(stripe_subscription.customer)
-        customer = await stripe_service.get_customer(customer_id)
-        customer_email = cast(str, customer.email)
-
-        # Take user from existing subscription, or get it from metadata
-        user_id = stripe_subscription.metadata.get("user_id")
-        user = cast(User | None, subscription.user)
-        if user is None:
-            if user_id is not None:
-                user = await user_service.get(session, uuid.UUID(user_id))
-            if user is None:
-                user, _ = await user_service.get_by_email_or_create(
-                    session,
-                    customer_email,
-                    signup_attribution=UserSignupAttribution(
-                        intent="subscription",
-                        subscription=subscription.id,
-                    ),
-                )
-
-        subscription.user = user
-
-        # Take the chance to update Stripe customer ID and email marketing
-        user.stripe_customer_id = customer_id
-        session.add(user)
+        # Take customer from existing subscription, or retrieve it from Stripe Customer ID
+        if subscription.customer is None:
+            stripe_customer = await stripe_service.get_customer(
+                get_expandable_id(stripe_subscription.customer)
+            )
+            customer = await customer_service.get_or_create_from_stripe_customer(
+                session, stripe_customer, subscription_tier_org
+            )
+            subscription.customer = customer
 
         session.add(subscription)
         await session.flush()
-
-        posthog.user_event(
-            user,
-            "subscriptions",
-            "subscription",
-            "create",
-            {"subscription_id": subscription.id},
-        )
 
         # Notify checkout channel that a subscription has been created from it
         if checkout is not None:
@@ -585,17 +561,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         session.add(subscription)
 
-        if subscription.cancel_at_period_end or subscription.ended_at:
-            user = await user_service.get(session, subscription.user_id)
-            if user:
-                posthog.user_event(
-                    user,
-                    "subscriptions",
-                    "subscription",
-                    "cancel",
-                    {"subscription_id": subscription.id},
-                )
-
         await self.enqueue_benefits_grants(session, subscription)
 
         await self._after_subscription_updated(
@@ -654,7 +619,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             notif=PartialNotification(
                 type=NotificationType.maintainer_new_paid_subscription,
                 payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                    subscriber_name=subscription.user.email,
+                    subscriber_name=subscription.customer.email,
                     tier_name=product.name,
                     tier_price_amount=subscription.amount,
                     tier_price_recurring_interval=price.recurring_interval,
@@ -679,11 +644,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         event = cast(WebhookTypeObject, (event_type, full_subscription))
 
-        # subscription events for subscribing user
-        if subscribing_user := await user_service.get(session, subscription.user_id):
-            await webhook_service.send(session, target=subscribing_user, we=event)
-
-        # subscribed to org
         if tier := await product_service.get_loaded(session, subscription.product_id):
             if subscribed_to_org := await organization_service.get(
                 session, tier.organization_id
@@ -700,12 +660,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             return
 
         task = "grant" if subscription.active else "revoke"
-        user_id = subscription.user_id
 
         enqueue_job(
             "benefit.enqueue_benefits_grants",
             task=task,
-            user_id=user_id,
+            customer_id=subscription.customer_id,
             product_id=product.id,
             subscription_id=subscription.id,
         )
@@ -731,7 +690,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, product.organization_id
         )
         assert featured_organization is not None
-        user = subscription.user
+
+        customer = subscription.customer
+        token, _ = await customer_session_service.create_customer_session(
+            session, customer
+        )
 
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} subscription",
@@ -739,16 +702,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             {
                 "featured_organization": featured_organization,
                 "product": product,
-                "url": (
-                    f"{settings.FRONTEND_BASE_URL}"
-                    f"/purchases/subscriptions/{subscription.id}"
+                "url": settings.generate_frontend_url(
+                    f"/{featured_organization.slug}/portal/subscriptions/{subscription.id}?customer_session_token={token}"
                 ),
                 "current_year": datetime.now().year,
             },
         )
 
         email_sender.send_to_user(
-            to_email_addr=user.email, subject=subject, html_content=body
+            to_email_addr=subscription.customer.email,
+            subject=subject,
+            html_content=body,
         )
 
     async def send_cancellation_email(
@@ -762,7 +726,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, product.organization_id
         )
         assert featured_organization is not None
-        user = subscription.user
 
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} subscription cancellation",
@@ -780,7 +743,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         email_sender.send_to_user(
-            to_email_addr=user.email, subject=subject, html_content=body
+            to_email_addr=subscription.customer.email,
+            subject=subject,
+            html_content=body,
         )
 
     def _get_readable_subscriptions_statement(

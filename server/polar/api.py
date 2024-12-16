@@ -9,6 +9,8 @@ from polar.checkout.endpoints import router as checkout_router
 from polar.checkout.legacy.endpoints import router as checkout_legacy_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
+from polar.customer.endpoints import router as customer_router
+from polar.customer_portal.endpoints import router as customer_portal_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.discount.endpoints import router as discount_router
 from polar.embed.endpoints import router as embed_router
@@ -126,3 +128,7 @@ router.include_router(custom_field_router)
 router.include_router(embed_router)
 # /discounts
 router.include_router(discount_router)
+# /customers
+router.include_router(customer_router)
+# /customer-portal
+router.include_router(customer_portal_router)

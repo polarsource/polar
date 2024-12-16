@@ -5,6 +5,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import {
   CheckoutConfirmStripe,
   CheckoutPublic,
+  CheckoutPublicConfirmed,
   CheckoutUpdatePublic,
   Organization,
   ResponseError,
@@ -89,7 +90,7 @@ export const Checkout = ({
   )
 
   const onCheckoutConfirm = useCallback(
-    async (body: CheckoutConfirmStripe): Promise<CheckoutPublic> => {
+    async (body: CheckoutConfirmStripe): Promise<CheckoutPublicConfirmed> => {
       try {
         const updatedCheckout = await api.checkouts.clientConfirm({
           clientSecret: checkout.client_secret,

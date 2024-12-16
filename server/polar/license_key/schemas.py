@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Any, Literal, Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.benefit.schemas import BenefitID
+from polar.customer.schemas import CustomerBase
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.schemas import Schema
 from polar.kit.utils import generate_uuid, utc_now
@@ -39,7 +40,7 @@ class LicenseKeyValidate(Schema):
     organization_id: UUID4
     activation_id: UUID4 | None = None
     benefit_id: BenefitID | None = None
-    user_id: UUID4 | None = None
+    customer_id: UUID4 | None = None
     increment_usage: int | None = None
     conditions: dict[str, Any] = {}
 
@@ -58,18 +59,52 @@ class LicenseKeyDeactivate(Schema):
     activation_id: UUID4
 
 
+class LicenseKeyCustomer(CustomerBase): ...
+
+
 class LicenseKeyUser(Schema):
-    id: UUID4
-    public_name: str
+    id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_id",
+            # Validate from stored webhook payload
+            "id",
+        )
+    )
     email: str
-    avatar_url: str | None
+    public_name: str = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_public_name",
+            # Validate from stored webhook payload
+            "public_name",
+        )
+    )
 
 
 class LicenseKeyRead(Schema):
     id: UUID4
     organization_id: UUID4
-    user_id: UUID4
-    user: LicenseKeyUser
+    user_id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
+        deprecated="Use `customer_id`.",
+    )
+    customer_id: UUID4
+    user: LicenseKeyUser = Field(
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user",
+            # Validate from ORM model
+            "customer",
+        ),
+        deprecated="Use `customer`.",
+    )
+    customer: LicenseKeyCustomer
     benefit_id: BenefitID
     key: str
     display_key: str
@@ -113,7 +148,7 @@ class LicenseKeyUpdate(Schema):
 
 class LicenseKeyCreate(LicenseKeyUpdate):
     organization_id: UUID4
-    user_id: UUID4
+    customer_id: UUID4
     benefit_id: BenefitID
     key: str
 
@@ -143,7 +178,7 @@ class LicenseKeyCreate(LicenseKeyUpdate):
     def build(
         cls,
         organization_id: UUID4,
-        user_id: UUID4,
+        customer_id: UUID4,
         benefit_id: UUID4,
         prefix: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
@@ -165,7 +200,7 @@ class LicenseKeyCreate(LicenseKeyUpdate):
         key = cls.generate_key(prefix=prefix)
         return cls(
             organization_id=organization_id,
-            user_id=user_id,
+            customer_id=customer_id,
             benefit_id=benefit_id,
             key=key,
             status=status,

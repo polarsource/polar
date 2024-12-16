@@ -1,4 +1,4 @@
-import { Customer } from '@polar-sh/sdk'
+import { StorefrontCustomer } from '@polar-sh/sdk'
 import React from 'react'
 
 export const Subscribe = ({
@@ -7,7 +7,7 @@ export const Subscribe = ({
   darkmode,
   label,
 }: {
-  customers: Customer[]
+  customers: StorefrontCustomer[]
   totalCustomers: number
   darkmode: boolean
   label: string
@@ -88,48 +88,31 @@ export const Subscribe = ({
                   height: '22px',
                 }}
               >
-                {customers.map((user, idx) => (
+                {customers.map((customer, idx) => (
                   <React.Fragment key={idx}>
-                    {user.avatar_url && (
-                      <img
-                        src={user.avatar_url}
-                        style={{
-                          height: 22,
-                          width: 22,
-                          borderRadius: 22,
-                          border: darkmode
-                            ? '1px solid #1B1D29'
-                            : '1px solid white',
-                          marginLeft: idx > 0 ? '-6px' : '',
-                          flexShrink: '0',
-                        }}
-                      />
-                    )}
-                    {!user.avatar_url && (
-                      <div
-                        style={{
-                          backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
-                          color: darkmode ? '#a6c7ea' : '#0062FF',
-                          height: 22,
-                          width: 22,
-                          borderRadius: 22,
-                          marginLeft: '-6px',
-                          textAlign: 'center',
-                          fontSize: '8px',
-                          lineHeight: '20px',
-                          border: darkmode
-                            ? '1px solid #13151D'
-                            : '1px solid white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-around',
-                          flexShrink: '0',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        <span>{user.public_name}</span>
-                      </div>
-                    )}
+                    <div
+                      style={{
+                        backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
+                        color: darkmode ? '#a6c7ea' : '#0062FF',
+                        height: 22,
+                        width: 22,
+                        borderRadius: 22,
+                        marginLeft: '-6px',
+                        textAlign: 'center',
+                        fontSize: '8px',
+                        lineHeight: '20px',
+                        border: darkmode
+                          ? '1px solid #13151D'
+                          : '1px solid white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-around',
+                        flexShrink: '0',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      <span>{customer.name}</span>
+                    </div>
                   </React.Fragment>
                 ))}
 

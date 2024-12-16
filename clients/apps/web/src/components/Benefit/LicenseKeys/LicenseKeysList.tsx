@@ -78,28 +78,24 @@ export const LicenseKeysList = ({
       },
     },
     {
-      id: 'user',
-      accessorKey: 'user',
-      sortingFn: (a, b) => {
-        return a.original.user.public_name.localeCompare(
-          b.original.user.public_name,
-        )
-      },
+      id: 'customer',
+      accessorKey: 'customer',
+      enableSorting: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="User" />
+        <DataTableColumnHeader column={column} title="Customer" />
       ),
       cell: ({ row: { original: licenseKey } }) => {
         return (
           <div className="flex flex-row items-center gap-x-3">
             <Avatar
               className="h-10 w-10"
-              avatar_url={licenseKey.user.avatar_url}
-              name={licenseKey.user.public_name}
+              avatar_url={licenseKey.customer.avatar_url}
+              name={licenseKey.customer.name || licenseKey.customer.email}
             />
             <div className="flex flex-col">
-              <span className="text-sm">{licenseKey.user.public_name}</span>
+              <span className="text-sm">{licenseKey.customer.email}</span>
               <span className="dark:text-polar-500 text-xs text-gray-500">
-                {licenseKey.user.email}
+                {licenseKey.customer.email}
               </span>
             </div>
           </div>

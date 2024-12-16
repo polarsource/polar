@@ -34,9 +34,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
-  const [selectedBenefit, setSelectedBenefit] = useState<
-    Benefit | undefined
-  >()
+  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>()
   const { data: benefits } = useBenefits(organization.id, 100)
   const { data: benefitProducts } = useBenefitProducts(
     organization.id,

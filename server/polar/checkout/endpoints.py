@@ -25,6 +25,7 @@ from .schemas import (
     CheckoutCreate,
     CheckoutCreatePublic,
     CheckoutPublic,
+    CheckoutPublicConfirmed,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -212,7 +213,7 @@ async def client_update(
 
 @router.post(
     "/client/{client_secret}/confirm",
-    response_model=CheckoutPublic,
+    response_model=CheckoutPublicConfirmed,
     summary="Confirm Checkout Session from Client",
     responses={
         200: {"description": "Checkout session confirmed."},
@@ -222,6 +223,7 @@ async def client_update(
 async def client_confirm(
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
+    auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Checkout:
@@ -235,7 +237,9 @@ async def client_confirm(
     if checkout is None:
         raise ResourceNotFound()
 
-    return await checkout_service.confirm(session, locker, checkout, checkout_confirm)
+    return await checkout_service.confirm(
+        session, locker, auth_subject, checkout, checkout_confirm
+    )
 
 
 @router.get("/client/{client_secret}/stream", include_in_schema=False)

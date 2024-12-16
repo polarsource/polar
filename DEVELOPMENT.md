@@ -1,12 +1,12 @@
 # Development
 
-Polar's stack consist of the following elements:
+Polar's stack consists of the following elements:
 
-* A backend written in Python, exposing a REST API and workers;
-* A frontend written in JavaScript;
-* A PostgreSQL database;
-* A Redis database;
-* A S3-compatible storage.
+* A backend written in Python, exposing a REST API and workers
+* A frontend written in JavaScript
+* A PostgreSQL database
+* A Redis database
+* An S3-compatible storage
 
 ```mermaid
 flowchart TD
@@ -167,7 +167,7 @@ By default, the API server will be available at [http://127.0.0.1:8000](http://1
 
 ### Start frontend
 
-The frontend mainly consist of a web client server, plus other projects useful for testing or examples. You can run them like this:
+The frontend mainly consists of a web client server, plus other projects useful for testing or examples. You can run them like this:
 
 ```sh
 cd clients

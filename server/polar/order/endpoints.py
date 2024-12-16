@@ -50,8 +50,8 @@ async def list(
     discount_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
-    user_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="UserID Filter", description="Filter by customer's user ID."
+    customer_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrderSchema]:
@@ -63,7 +63,7 @@ async def list(
         product_id=product_id,
         product_price_type=product_price_type,
         discount_id=discount_id,
-        user_id=user_id,
+        customer_id=customer_id,
         pagination=pagination,
         sorting=sorting,
     )

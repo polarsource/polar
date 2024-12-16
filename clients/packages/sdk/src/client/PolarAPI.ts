@@ -35,14 +35,18 @@ import {
   TransactionsApi,
   UsersApi,
   WebhooksApi,
-  UsersAdvertisementsApi,
-  UsersBenefitsApi,
-  UsersDownloadablesApi,
-  UsersLicenseKeysApi,
-  UsersOrdersApi,
-  UsersSubscriptionsApi,
   LicenseKeysApi,
   CheckoutLinksApi,
+  CustomerPortalBenefitGrantsApi,
+  CustomerPortalCustomerSessionApi,
+  CustomerPortalCustomersApi,
+  CustomerPortalDownloadablesApi,
+  CustomerPortalLicenseKeysApi,
+  CustomerPortalOauthAccountsApi,
+  CustomerPortalOrdersApi,
+  CustomerPortalOrganizationsApi,
+  CustomerPortalSubscriptionsApi,
+  CustomersApi,
 } from '.'
 
 export class PolarAPI {
@@ -50,6 +54,16 @@ export class PolarAPI {
   public readonly advertisements: AdvertisementsApi
   public readonly auth: AuthApi
   public readonly backoffice: BackofficeApi
+  public readonly customers: CustomersApi
+  public readonly customerPortalBenefitGrants: CustomerPortalBenefitGrantsApi
+  public readonly customerPortalCustomers: CustomerPortalCustomersApi
+  public readonly customerPortalCustomerSession: CustomerPortalCustomerSessionApi
+  public readonly customerPortalDownloadables: CustomerPortalDownloadablesApi
+  public readonly customerPortalLicenseKeys: CustomerPortalLicenseKeysApi
+  public readonly customerPortalOauthAccounts: CustomerPortalOauthAccountsApi
+  public readonly customerPortalOrders: CustomerPortalOrdersApi
+  public readonly customerPortalOrganizations: CustomerPortalOrganizationsApi
+  public readonly customerPortalSubscriptions: CustomerPortalSubscriptionsApi
   public readonly legacyCheckouts: CheckoutsApi
   public readonly checkouts: CheckoutsCustomApi
   public readonly checkoutLinks: CheckoutLinksApi
@@ -80,13 +94,7 @@ export class PolarAPI {
   public readonly storefronts: StorefrontsApi
   public readonly subscriptions: SubscriptionsApi
   public readonly transactions: TransactionsApi
-  public readonly usersAdvertisements: UsersAdvertisementsApi
   public readonly users: UsersApi
-  public readonly usersBenefits: UsersBenefitsApi
-  public readonly usersDownloadables: UsersDownloadablesApi
-  public readonly usersLicenseKeys: UsersLicenseKeysApi
-  public readonly usersOrders: UsersOrdersApi
-  public readonly usersSubscriptions: UsersSubscriptionsApi
   public readonly webhooks: WebhooksApi
   public readonly files: FilesApi
 
@@ -95,6 +103,16 @@ export class PolarAPI {
     this.advertisements = new AdvertisementsApi(config)
     this.auth = new AuthApi(config)
     this.backoffice = new BackofficeApi(config)
+    this.customers = new CustomersApi(config)
+    this.customerPortalBenefitGrants = new CustomerPortalBenefitGrantsApi(config)
+    this.customerPortalCustomers = new CustomerPortalCustomersApi(config)
+    this.customerPortalCustomerSession = new CustomerPortalCustomerSessionApi(config)
+    this.customerPortalDownloadables = new CustomerPortalDownloadablesApi(config)
+    this.customerPortalLicenseKeys = new CustomerPortalLicenseKeysApi(config)
+    this.customerPortalOauthAccounts = new CustomerPortalOauthAccountsApi(config)
+    this.customerPortalOrders = new CustomerPortalOrdersApi(config)
+    this.customerPortalOrganizations = new CustomerPortalOrganizationsApi(config)
+    this.customerPortalSubscriptions = new CustomerPortalSubscriptionsApi(config)
     this.legacyCheckouts = new CheckoutsApi(config)
     this.checkouts = new CheckoutsCustomApi(config)
     this.checkoutLinks = new CheckoutLinksApi(config)
@@ -126,13 +144,7 @@ export class PolarAPI {
     this.storefronts = new StorefrontsApi(config)
     this.subscriptions = new SubscriptionsApi(config)
     this.transactions = new TransactionsApi(config)
-    this.usersAdvertisements = new UsersAdvertisementsApi(config)
     this.users = new UsersApi(config)
-    this.usersBenefits = new UsersBenefitsApi(config)
-    this.usersDownloadables = new UsersDownloadablesApi(config)
-    this.usersLicenseKeys = new UsersLicenseKeysApi(config)
-    this.usersOrders = new UsersOrdersApi(config)
-    this.usersSubscriptions = new UsersSubscriptionsApi(config)
     this.webhooks = new WebhooksApi(config)
     this.files = new FilesApi(config)
   }

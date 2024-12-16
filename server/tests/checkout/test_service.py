@@ -31,17 +31,20 @@ from polar.checkout.service import (
     PaymentRequired,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.checkout.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
+from polar.customer.service import customer as customer_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
+from polar.kit.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (
     Checkout,
+    Customer,
     Discount,
     Organization,
     Product,
@@ -63,10 +66,11 @@ from tests.fixtures.random_objects import (
     create_checkout,
     create_checkout_link,
     create_custom_field,
+    create_customer,
     create_product,
     create_product_price_fixed,
     create_subscription,
-    create_user,
+    create_user_customer,
 )
 
 
@@ -149,10 +153,10 @@ async def checkout_confirmed_recurring_upgrade(
     save_fixture: SaveFixture,
     product: Product,
     product_recurring_free_price: Product,
-    user_second: User,
+    customer: Customer,
 ) -> Checkout:
     subscription = await create_subscription(
-        save_fixture, product=product_recurring_free_price, user=user_second
+        save_fixture, product=product_recurring_free_price, customer=customer
     )
     return await create_checkout(
         save_fixture,
@@ -466,10 +470,10 @@ class TestCreate:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
-        user_second: User,
+        customer: Customer,
     ) -> None:
         subscription = await create_subscription(
-            save_fixture, product=product, user=user_second
+            save_fixture, product=product, customer=customer
         )
 
         price = product.prices[0]
@@ -738,10 +742,10 @@ class TestCreate:
         user_organization: UserOrganization,
         product: Product,
         product_recurring_free_price: Product,
-        user_second: User,
+        customer: Customer,
     ) -> None:
         subscription = await create_subscription(
-            save_fixture, product=product_recurring_free_price, user=user_second
+            save_fixture, product=product_recurring_free_price, customer=customer
         )
 
         price = product.prices[0]
@@ -977,6 +981,62 @@ class TestCreate:
         assert checkout.product == product_one_time
         assert checkout.product_price == product_one_time.prices[0]
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_customer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    product_price_id=price.id,
+                    customer_id=uuid.uuid4(),
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_customer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_price_id=price.id,
+                customer_id=customer.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer == customer
+        assert checkout.customer_email == customer.email
+        assert checkout.customer_name == customer.name
+        assert checkout.customer_billing_address == customer.billing_address
+        assert checkout.customer_tax_id == customer.tax_id
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -1008,9 +1068,7 @@ class TestClientCreate:
         )
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.client_create(
-                session,
-                CheckoutCreatePublic(product_price_id=price.id),
-                auth_subject,
+                session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
             )
 
     async def test_archived_product(
@@ -1040,9 +1098,7 @@ class TestClientCreate:
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(product_price_id=price.id),
-            auth_subject,
+            session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
         )
 
         assert checkout.product_price == price
@@ -1059,9 +1115,7 @@ class TestClientCreate:
         price = product_one_time_free_price.prices[0]
         assert isinstance(price, ProductPriceFree)
         checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(product_price_id=price.id),
-            auth_subject,
+            session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
         )
 
         assert checkout.product_price == price
@@ -1080,54 +1134,13 @@ class TestClientCreate:
         price.preset_amount = 4242
 
         checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(product_price_id=price.id),
-            auth_subject,
+            session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
         )
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time_custom_price
         assert checkout.amount == price.preset_amount
         assert checkout.currency == price.price_currency
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", method=AuthMethod.COOKIE),
-        AuthSubjectFixture(subject="user", method=AuthMethod.OAUTH2_ACCESS_TOKEN),
-    )
-    async def test_valid_direct_user(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        product_one_time: Product,
-    ) -> None:
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-        checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(product_price_id=price.id),
-            auth_subject,
-        )
-        assert checkout.customer == auth_subject.subject
-        assert checkout.customer_email == auth_subject.subject.email
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", method=AuthMethod.PERSONAL_ACCESS_TOKEN),
-    )
-    async def test_valid_indirect_user(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        product_one_time: Product,
-    ) -> None:
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-        checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(product_price_id=price.id),
-            auth_subject,
-        )
-
-        assert checkout.customer is None
 
     async def test_valid_from_legacy_checkout_link(
         self,
@@ -1149,6 +1162,90 @@ class TestClientCreate:
         assert checkout.product == product_one_time
         assert checkout.amount == price.price_amount
         assert checkout.currency == price.price_currency
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_user_without_customer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(
+                product_price_id=price.id, from_legacy_checkout_link=True
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer is None
+        assert checkout.customer_email == auth_subject.subject.email
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="user_second", method=AuthMethod.PERSONAL_ACCESS_TOKEN
+        )
+    )
+    async def test_indirect_user_with_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_one_time: Product,
+        organization: Organization,
+    ) -> None:
+        await create_user_customer(
+            save_fixture, user=auth_subject.subject, organization=organization
+        )
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(
+                product_price_id=price.id, from_legacy_checkout_link=True
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer is None
+        assert checkout.customer_email is None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_user_with_customer(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_one_time: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_user_customer(
+            save_fixture, user=auth_subject.subject, organization=organization
+        )
+
+        stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
+            client_secret="STRIPE_CUSTOMER_SESSION_CLIENT_SECRET"
+        )
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(
+                product_price_id=price.id, from_legacy_checkout_link=True
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer == customer
+        assert (
+            checkout.payment_processor_metadata["customer_session_client_secret"]
+            == "STRIPE_CUSTOMER_SESSION_CLIENT_SECRET"
+        )
 
 
 @pytest.mark.asyncio
@@ -1569,11 +1666,11 @@ class TestUpdate:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        user: User,
+        customer: Customer,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        checkout_one_time_fixed.customer = user
-        checkout_one_time_fixed.customer_email = user.email
+        checkout_one_time_fixed.customer = customer
+        checkout_one_time_fixed.customer_email = customer.email
         await save_fixture(checkout_one_time_fixed)
 
         checkout = await checkout_service.update(
@@ -1582,7 +1679,7 @@ class TestUpdate:
             CheckoutUpdate(customer_email="updatedemail@example.com"),
         )
 
-        assert checkout.customer_email == user.email
+        assert checkout.customer_email == customer.email
 
     async def test_valid_metadata(
         self,
@@ -1723,12 +1820,14 @@ class TestConfirm:
         self,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_one_time_custom: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
                 locker,
+                auth_subject,
                 checkout_one_time_custom,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -1753,12 +1852,14 @@ class TestConfirm:
         payload: dict[str, str],
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
                 locker,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(payload),
             )
@@ -1767,12 +1868,14 @@ class TestConfirm:
         self,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.confirm(
                 session,
                 locker,
+                auth_subject,
                 checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
                     {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
@@ -1784,6 +1887,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
         archived_price = await create_product_price_fixed(
@@ -1796,6 +1900,7 @@ class TestConfirm:
             await checkout_service.confirm(
                 session,
                 locker,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -1812,6 +1917,7 @@ class TestConfirm:
         calculate_tax_mock: AsyncMock,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
         calculate_tax_mock.side_effect = IncompleteTaxLocation(
@@ -1822,6 +1928,7 @@ class TestConfirm:
             await checkout_service.confirm(
                 session,
                 locker,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -1850,6 +1957,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -1861,6 +1969,7 @@ class TestConfirm:
         checkout = await checkout_service.confirm(
             session,
             locker,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -1888,6 +1997,13 @@ class TestConfirm:
             **expected_tax_metadata,
         }
 
+        assert checkout.customer_session_token is not None
+        customer_session = await customer_session_service.get_by_token(
+            session, checkout.customer_session_token
+        )
+        assert customer_session is not None
+        assert customer_session.customer == checkout.customer
+
     @pytest.mark.parametrize(
         "customer_billing_address,expected_tax_metadata",
         [
@@ -1905,6 +2021,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
         discount_percentage_100: Discount,
     ) -> None:
@@ -1917,6 +2034,7 @@ class TestConfirm:
         checkout = await checkout_service.confirm(
             session,
             locker,
+            auth_subject,
             checkout_discount_percentage_100,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -1959,6 +2077,7 @@ class TestConfirm:
         mocker: MockerFixture,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
         checkout_one_time_free: Checkout,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
@@ -1970,6 +2089,7 @@ class TestConfirm:
         checkout = await checkout_service.confirm(
             session,
             locker,
+            auth_subject,
             checkout_one_time_free,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -1997,11 +2117,17 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        user = await create_user(save_fixture, stripe_customer_id="STRIPE_CUSTOMER_ID")
-        checkout_one_time_fixed.customer = user
-        checkout_one_time_fixed.customer_email = user.email
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            stripe_customer_id="CHECKOUT_CUSTOMER_ID",
+        )
+        checkout_one_time_fixed.customer = customer
+        checkout_one_time_fixed.customer_email = customer.email
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
@@ -2011,6 +2137,7 @@ class TestConfirm:
         checkout = await checkout_service.confirm(
             session,
             locker,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -2023,6 +2150,74 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.update_customer.assert_called_once()
+
+    async def test_valid_stripe_existing_customer_email(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+        customer: Customer,
+    ) -> None:
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_email": customer.email,
+                    "customer_name": "Customer Name",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer == customer
+        stripe_service_mock.update_customer.assert_called_once()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_link_customer_to_authenticated_user(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[User],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.customer is not None
+        linked_customer = await customer_service.get_by_id_and_user(
+            session, checkout.customer.id, auth_subject.subject
+        )
+        assert linked_customer is not None
 
 
 def build_stripe_payment_intent(

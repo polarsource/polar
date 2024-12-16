@@ -13,6 +13,8 @@ from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
+from polar.customer.service import customer as customer_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
@@ -29,6 +31,7 @@ from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import (
     Checkout,
+    Customer,
     Discount,
     HeldBalance,
     Order,
@@ -62,8 +65,6 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
-from polar.user.schemas.user import UserSignupAttribution
-from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
@@ -177,7 +178,7 @@ class OrderService(ResourceServiceReader[Order]):
         product_id: Sequence[uuid.UUID] | None = None,
         product_price_type: Sequence[ProductPriceType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
-        user_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
             (OrderSortProperty.created_at, True)
@@ -195,10 +196,10 @@ class OrderService(ResourceServiceReader[Order]):
             OrderProductPrice, onclause=Order.product_price_id == OrderProductPrice.id
         ).options(contains_eager(Order.product_price.of_type(OrderProductPrice)))
 
-        OrderUser = aliased(User)
+        OrderCustomer = aliased(Customer)
         statement = statement.join(
-            OrderUser, onclause=Order.user_id == OrderUser.id
-        ).options(contains_eager(Order.user.of_type(OrderUser)))
+            OrderCustomer, onclause=Order.customer_id == OrderCustomer.id
+        ).options(contains_eager(Order.customer.of_type(OrderCustomer)))
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
@@ -212,8 +213,8 @@ class OrderService(ResourceServiceReader[Order]):
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))
 
-        if user_id is not None:
-            statement = statement.where(Order.user_id.in_(user_id))
+        if customer_id is not None:
+            statement = statement.where(Order.customer_id.in_(customer_id))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -222,8 +223,8 @@ class OrderService(ResourceServiceReader[Order]):
                 order_by_clauses.append(clause_function(Order.created_at))
             elif criterion == OrderSortProperty.amount:
                 order_by_clauses.append(clause_function(Order.amount))
-            elif criterion == OrderSortProperty.user:
-                order_by_clauses.append(clause_function(OrderUser.email))
+            elif criterion == OrderSortProperty.customer:
+                order_by_clauses.append(clause_function(OrderCustomer.email))
             elif criterion == OrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
             elif criterion == OrderSortProperty.discount:
@@ -244,7 +245,7 @@ class OrderService(ResourceServiceReader[Order]):
             self._get_readable_order_statement(auth_subject)
             .where(Order.id == id)
             .options(
-                joinedload(Order.user),
+                joinedload(Order.customer),
                 joinedload(Order.product_price),
                 joinedload(Order.subscription),
                 joinedload(Order.discount),
@@ -354,7 +355,7 @@ class OrderService(ResourceServiceReader[Order]):
             if checkout is None:
                 raise CheckoutDoesNotExist(invoice.id, checkout_id)
 
-        user: User | None = None
+        customer: Customer | None = None
 
         billing_reason: OrderBillingReason = OrderBillingReason.purchase
         tax = invoice.tax or 0
@@ -369,7 +370,7 @@ class OrderService(ResourceServiceReader[Order]):
             )
             if subscription is None:
                 raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
-            user = await user_service.get(session, subscription.user_id)
+            customer = await customer_service.get(session, subscription.customer_id)
             if invoice.billing_reason is not None:
                 try:
                     billing_reason = OrderBillingReason(invoice.billing_reason)
@@ -389,8 +390,6 @@ class OrderService(ResourceServiceReader[Order]):
 
         # Create Order
         order = Order(
-            # Generate ID upfront for user attribution
-            id=Order.generate_id(),
             amount=amount,
             tax_amount=tax,
             currency=invoice.currency,
@@ -409,36 +408,20 @@ class OrderService(ResourceServiceReader[Order]):
             created_at=datetime.fromtimestamp(invoice.created, tz=UTC),
         )
 
-        # Get or create customer user
+        organization = await organization_service.get(session, product.organization_id)
+        assert organization is not None
+
+        # Get or create customer
         assert invoice.customer is not None
-        stripe_customer_id = get_expandable_id(invoice.customer)
-        if user is None:
-            user = await user_service.get_by_stripe_customer_id(
-                session, stripe_customer_id
+        if customer is None:
+            stripe_customer = await stripe_service.get_customer(
+                get_expandable_id(invoice.customer)
             )
-            if user is None:
-                assert invoice.customer_email is not None
-                signup_attribution = UserSignupAttribution(
-                    intent="purchase",
-                    order=order.id,
-                )
-                if order.subscription:
-                    signup_attribution = UserSignupAttribution(
-                        intent="subscription",
-                        subscription=order.subscription.id,
-                    )
+            customer = await customer_service.get_or_create_from_stripe_customer(
+                session, stripe_customer, organization
+            )
 
-                user, _ = await user_service.get_by_email_or_create(
-                    session,
-                    invoice.customer_email,
-                    signup_attribution=signup_attribution,
-                )
-
-        # Take the chance to update Stripe customer ID and email marketing
-        user.stripe_customer_id = stripe_customer_id
-        session.add(user)
-
-        order.user = user
+        order.customer = customer
         session.add(order)
         await session.flush()
 
@@ -472,15 +455,11 @@ class OrderService(ResourceServiceReader[Order]):
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
-                user_id=user.id,
+                customer_id=customer.id,
                 product_id=product.id,
                 order_id=order.id,
             )
 
-            organization = await organization_service.get(
-                session, product.organization_id
-            )
-            assert organization is not None
             await self.send_admin_notification(session, organization, order)
             await self.send_confirmation_email(session, organization, order)
 
@@ -510,7 +489,7 @@ class OrderService(ResourceServiceReader[Order]):
             notif=PartialNotification(
                 type=NotificationType.maintainer_new_product_sale,
                 payload=MaintainerNewProductSaleNotificationPayload(
-                    customer_name=order.user.email,
+                    customer_name=order.customer.email,
                     product_name=product.name,
                     product_price_amount=order.amount,
                     organization_name=organization.slug,
@@ -525,20 +504,26 @@ class OrderService(ResourceServiceReader[Order]):
         email_sender = get_email_sender()
 
         product = order.product
-        user = order.user
+        customer = order.customer
+        token, _ = await customer_session_service.create_customer_session(
+            session, customer
+        )
+
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} order confirmation",
             "order/confirmation.html",
             {
                 "featured_organization": organization,
                 "product": product,
-                "url": f"{settings.FRONTEND_BASE_URL}/purchases/products/{order.id}",
+                "url": settings.generate_frontend_url(
+                    f"/{organization.slug}/portal/orders/{order.id}?customer_session_token={token}"
+                ),
                 "current_year": datetime.now().year,
             },
         )
 
         email_sender.send_to_user(
-            to_email_addr=user.email, subject=subject, html_content=body
+            to_email_addr=customer.email, subject=subject, html_content=body
         )
 
     async def update_product_benefits_grants(
@@ -554,7 +539,7 @@ class OrderService(ResourceServiceReader[Order]):
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
-                user_id=order.user_id,
+                customer_id=order.customer_id,
                 product_id=product.id,
                 order_id=order.id,
             )
@@ -579,6 +564,7 @@ class OrderService(ResourceServiceReader[Order]):
         transfer_amount = payment_transaction.amount
 
         payment_transaction.order = order
+        payment_transaction.payment_customer = order.customer
         session.add(payment_transaction)
 
         # Prepare an held balance
@@ -650,10 +636,6 @@ class OrderService(ResourceServiceReader[Order]):
 
         event: WebhookTypeObject = (WebhookEventType.order_created, order)
 
-        # Webhook for customer
-        await webhook_service.send(session, order.user, event)
-
-        # Webhook for organization
         organization = await organization_service.get(
             session, order.product.organization_id
         )

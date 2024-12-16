@@ -1,6 +1,6 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import { getServerURL } from '@/utils/api'
-import { Customer, Storefront } from '@polar-sh/sdk'
+import { Storefront, StorefrontCustomer } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
@@ -17,7 +17,7 @@ const getStorefront = async (org: string): Promise<Storefront> => {
 }
 
 const renderBadge = async (
-  customers: Customer[],
+  customers: StorefrontCustomer[],
   totalCustomers: number,
   label: string,
   darkmode: boolean,

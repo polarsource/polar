@@ -19,6 +19,7 @@ import type {
   BenefitCreate,
   BenefitTypeFilter,
   BenefitUpdate,
+  CustomerIDFilter1,
   HTTPValidationError,
   ListResourceBenefit,
   ListResourceBenefitGrant,
@@ -42,8 +43,7 @@ export interface BenefitsApiGetRequest {
 export interface BenefitsApiGrantsRequest {
     id: string;
     isGranted?: boolean;
-    userId?: string;
-    githubUserId?: number;
+    customerId?: CustomerIDFilter1;
     page?: number;
     limit?: number;
 }
@@ -214,12 +214,8 @@ export class BenefitsApi extends runtime.BaseAPI {
             queryParameters['is_granted'] = requestParameters['isGranted'];
         }
 
-        if (requestParameters['userId'] != null) {
-            queryParameters['user_id'] = requestParameters['userId'];
-        }
-
-        if (requestParameters['githubUserId'] != null) {
-            queryParameters['github_user_id'] = requestParameters['githubUserId'];
+        if (requestParameters['customerId'] != null) {
+            queryParameters['customer_id'] = requestParameters['customerId'];
         }
 
         if (requestParameters['page'] != null) {

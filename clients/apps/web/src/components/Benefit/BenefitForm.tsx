@@ -374,12 +374,11 @@ const BenefitTypeSelect = ({}) => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(BenefitType)
-                    .map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {benefitsDisplayNames[value]}
-                      </SelectItem>
-                    ))}
+                  {Object.values(BenefitType).map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {benefitsDisplayNames[value]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FormControl>

@@ -20,6 +20,7 @@ import type {
   CheckoutCreate,
   CheckoutCreatePublic,
   CheckoutPublic,
+  CheckoutPublicConfirmed,
   CheckoutSortProperty,
   CheckoutUpdate,
   CheckoutUpdatePublic,
@@ -78,7 +79,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Confirm a checkout session by client secret.  Orders and subscriptions will be processed.
      * Confirm Checkout Session from Client
      */
-    async clientConfirmRaw(requestParameters: CheckoutsCustomApiClientConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CheckoutPublic>> {
+    async clientConfirmRaw(requestParameters: CheckoutsCustomApiClientConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CheckoutPublicConfirmed>> {
         if (requestParameters['clientSecret'] == null) {
             throw new runtime.RequiredError(
                 'clientSecret',
@@ -99,6 +100,14 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
         const response = await this.request({
             path: `/v1/checkouts/custom/client/{client_secret}/confirm`.replace(`{${"client_secret"}}`, encodeURIComponent(String(requestParameters['clientSecret']))),
             method: 'POST',
@@ -114,7 +123,7 @@ export class CheckoutsCustomApi extends runtime.BaseAPI {
      * Confirm a checkout session by client secret.  Orders and subscriptions will be processed.
      * Confirm Checkout Session from Client
      */
-    async clientConfirm(requestParameters: CheckoutsCustomApiClientConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CheckoutPublic> {
+    async clientConfirm(requestParameters: CheckoutsCustomApiClientConfirmRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CheckoutPublicConfirmed> {
         const response = await this.clientConfirmRaw(requestParameters, initOverrides);
         return await response.value();
     }

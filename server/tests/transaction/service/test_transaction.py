@@ -130,7 +130,10 @@ class TestSearch:
         session.expunge_all()
 
         results, count = await transaction_service.search(
-            session, user, payment_user_id=user.id, pagination=PaginationParams(1, 10)
+            session,
+            user,
+            payment_user_id=user.id,
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == len(user_transactions)

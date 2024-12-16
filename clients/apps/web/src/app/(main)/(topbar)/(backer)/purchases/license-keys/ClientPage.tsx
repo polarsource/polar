@@ -5,9 +5,13 @@ import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDe
 import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
-import { useUserBenefit, useUserLicenseKeys } from '@/hooks/queries'
+import {
+  useCustomerBenefitGrants,
+  useCustomerLicenseKey,
+} from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { Key } from '@mui/icons-material'
-import { LicenseKeyRead } from '@polar-sh/sdk'
+import { BenefitType, CustomerBenefitGrantLicenseKeys } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -31,9 +35,10 @@ export default function ClientPage() {
     [setPurchaseParameters],
   )
 
-  const { data: licenseKeys } = useUserLicenseKeys({
+  const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     limit: purchaseParameters.limit,
     page: purchaseParameters.page,
+    type: BenefitType.LICENSE_KEYS,
   })
 
   return (
@@ -47,7 +52,7 @@ export default function ClientPage() {
           <h3 className="text-2xl">License Keys</h3>
         </div>
 
-        {licenseKeys?.pagination.total_count === 0 ? (
+        {benefitGrants?.pagination.total_count === 0 ? (
           <div className="flex h-full w-full flex-col items-center gap-y-4 py-32 text-6xl">
             <Key
               className="dark:text-polar-600 text-gray-400"
@@ -59,12 +64,15 @@ export default function ClientPage() {
           </div>
         ) : (
           <div className="flex w-full flex-col gap-y-6">
-            {licenseKeys?.items.map((licenseKey) => (
-              <LicenseKeyItem key={licenseKey.id} licenseKey={licenseKey} />
+            {benefitGrants?.items.map((benefitGrant) => (
+              <LicenseKeyItem
+                key={benefitGrant.id}
+                benefitGrant={benefitGrant as CustomerBenefitGrantLicenseKeys}
+              />
             ))}
             <Pagination
               currentPage={purchaseParameters.page}
-              totalCount={licenseKeys?.pagination.total_count || 0}
+              totalCount={benefitGrants?.pagination.total_count || 0}
               pageSize={purchaseParameters.limit}
               onPageChange={onPageChange}
               currentURL={searchParams}
@@ -77,27 +85,31 @@ export default function ClientPage() {
 }
 
 interface LicenseKeyItemProps {
-  licenseKey: LicenseKeyRead
+  benefitGrant: CustomerBenefitGrantLicenseKeys
 }
 
-const LicenseKeyItem = ({ licenseKey }: LicenseKeyItemProps) => {
-  const { data: benefit } = useUserBenefit(licenseKey.benefit_id)
+const LicenseKeyItem = ({ benefitGrant }: LicenseKeyItemProps) => {
+  const { benefit } = benefitGrant
+  const { data: licenseKey } = useCustomerLicenseKey(
+    api,
+    benefitGrant.properties.license_key_id as string,
+  )
 
   const organizationLink = useMemo(() => {
-    if (benefit?.organization.profile_settings?.enabled) {
+    if (benefit.organization.profile_settings?.enabled) {
       return (
         <Link
           className="dark:text-polar-500 dark:hover:text-polar-200 text-sm text-gray-500 hover:text-gray-700"
           href={`/${benefit.organization.slug}`}
         >
-          {benefit?.organization.name}
+          {benefit.organization.name}
         </Link>
       )
     }
 
     return (
       <span className="dark:text-polar-500 text-sm text-gray-500">
-        {benefit?.organization.name}
+        {benefit.organization.name}
       </span>
     )
   }, [benefit])
@@ -117,11 +129,15 @@ const LicenseKeyItem = ({ licenseKey }: LicenseKeyItemProps) => {
         </div>
         <span className="text-xl">{benefit?.description}</span>
       </div>
-      <div className="flex flex-col gap-y-6">
-        <CopyToClipboardInput value={licenseKey.key} />
-        <LicenseKeyDetails className="bg-white" licenseKey={licenseKey} />
-      </div>
-      <LicenseKeyActivations licenseKeyId={licenseKey.id} />
+      {licenseKey && (
+        <>
+          <div className="flex flex-col gap-y-6">
+            <CopyToClipboardInput value={licenseKey.key} />
+            <LicenseKeyDetails licenseKey={licenseKey} />
+          </div>
+          <LicenseKeyActivations api={api} licenseKey={licenseKey} />
+        </>
+      )}
     </ShadowBox>
   )
 }

@@ -2,10 +2,10 @@ import {
   CheckoutProduct,
   CheckoutPublic,
   CheckoutStatus,
+  CustomerOrder,
+  CustomerSubscription,
   ProductPrice,
   ProductStorefront,
-  UserOrder,
-  UserSubscription,
 } from '@polar-sh/sdk'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
@@ -210,12 +210,13 @@ export const CHECKOUT_PREVIEW: CheckoutPublic = createCheckoutPreview(
   PRODUCT_PREVIEW.prices[0],
 )
 
-export const ORDER_PREVIEW: UserOrder = {
+export const ORDER_PREVIEW: CustomerOrder = {
   id: '123',
   amount: 10000,
   currency: 'usd',
   tax_amount: 1200,
   user_id: '123',
+  customer_id: '123',
   product_id: PRODUCT_PREVIEW.id,
   product_price_id: PRODUCT_PREVIEW.prices[0].id,
   product_price: PRODUCT_PREVIEW.prices[0],
@@ -229,7 +230,7 @@ export const ORDER_PREVIEW: UserOrder = {
   modified_at: new Date().toDateString(),
 }
 
-export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
+export const SUBSCRIPTION_ORDER_PREVIEW: CustomerSubscription = {
   created_at: new Date().toDateString(),
   modified_at: new Date().toDateString(),
   id: '123',
@@ -245,6 +246,7 @@ export const SUBSCRIPTION_ORDER_PREVIEW: UserSubscription = {
   started_at: new Date().toDateString(),
   ended_at: null,
   user_id: '123',
+  customer_id: '123',
   product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
   price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
   checkout_id: null,

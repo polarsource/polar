@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     USER_SESSION_COOKIE_KEY: str = "polar_session"
     USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 
+    # Customer session
+    CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
+    CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
+    CUSTOMER_SESSION_CODE_LENGTH: int = 6
+
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
 

@@ -48,8 +48,8 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
       <CardFooter className="flex flex-row items-center gap-x-4">
         <Avatar
           className="h-10 w-10"
-          name={order.user.public_name}
-          avatar_url={order.user.avatar_url}
+          name={order.customer.name || order.customer.email}
+          avatar_url={order.customer.avatar_url}
         />
         <div className="flex flex-col text-sm">
           <span>{order.user.public_name}</span>

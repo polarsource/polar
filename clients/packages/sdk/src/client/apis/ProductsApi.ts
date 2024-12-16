@@ -15,7 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
-  BenefitIDFilter1,
+  BenefitIDFilter,
   HTTPValidationError,
   ListResourceProduct,
   NotPermitted,
@@ -41,7 +41,7 @@ export interface ProductsApiListRequest {
     query?: string;
     isArchived?: boolean;
     isRecurring?: boolean;
-    benefitId?: BenefitIDFilter1;
+    benefitId?: BenefitIDFilter;
     page?: number;
     limit?: number;
     sorting?: Array<ProductSortProperty>;

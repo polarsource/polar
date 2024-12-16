@@ -4,9 +4,10 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { useUserSubscriptions } from '@/hooks/queries'
+import { useCustomerSubscriptions } from '@/hooks/queries'
+import { api } from '@/utils/api'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { UserSubscription } from '@polar-sh/sdk'
+import { CustomerSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -33,7 +34,7 @@ export default function ClientPage() {
     [setPurchaseParameters],
   )
 
-  const { data: subscriptions } = useUserSubscriptions({
+  const { data: subscriptions } = useCustomerSubscriptions(api, {
     active: purchaseParameters.inactive ? undefined : true,
     query: purchaseParameters.query,
     limit: purchaseParameters.limit,
@@ -135,7 +136,7 @@ const StatusWrapper = ({
 const SubscriptionItem = ({
   subscription,
 }: {
-  subscription: UserSubscription
+  subscription: CustomerSubscription
 }) => {
   const organization = subscription.product.organization
 

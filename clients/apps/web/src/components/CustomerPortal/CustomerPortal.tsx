@@ -1,7 +1,11 @@
 'use client'
 
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { Organization, UserOrder, UserSubscription } from '@polar-sh/sdk'
+import {
+  CustomerOrder,
+  CustomerSubscription,
+  Organization,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -14,41 +18,35 @@ import { PropsWithChildren, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface CustomerPortalProps {
-  organization?: Organization
-  subscriptions: UserSubscription[]
-  orders: UserOrder[]
+  organization: Organization
+  subscriptions: CustomerSubscription[]
+  orders: CustomerOrder[]
+  customerSessionToken?: string
 }
 
 export const CustomerPortal = ({
   organization,
   subscriptions,
   orders,
+  customerSessionToken,
 }: CustomerPortalProps) => {
   return (
     <div className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-y-12">
-        {organization && !organization.profile_settings?.enabled && (
-          <div className="flex flex-row items-center gap-x-4">
-            <Avatar
-              className="h-12 w-12"
-              avatar_url={organization.avatar_url}
-              name={organization.name}
-            />
-            <h3 className="text-xl">{organization.name}</h3>
-          </div>
-        )}
-        <div className="flex flex-row items-center justify-between">
-          <h3 className="text-3xl">Customer Portal</h3>
-        </div>
-
         <div className="flex flex-col gap-y-6">
           {subscriptions.map((s) => (
             <Link
               key={s.id}
               className="flex w-full flex-row items-center justify-between"
-              href={`/purchases/subscriptions/${s.id}`}
+              href={{
+                pathname: `/${organization.slug}/portal/subscriptions/${s.id}`,
+                query: { customer_session_token: customerSessionToken },
+              }}
             >
-              <SubscriptionItem subscription={s} />
+              <SubscriptionItem
+                subscription={s}
+                customerSessionToken={customerSessionToken}
+              />
             </Link>
           ))}
         </div>
@@ -130,14 +128,22 @@ export const CustomerPortal = ({
                   />
                 ),
                 cell: ({ row }) => {
+                  const {
+                    id,
+                    product: { is_recurring },
+                    subscription_id,
+                  } = row.original
                   return (
                     <div className="flex flex-row justify-end">
                       <Link
-                        href={
-                          row.original.product.is_recurring
-                            ? `/purchases/subscriptions/${row.original.id}`
-                            : `/purchases/products/${row.original.id}`
-                        }
+                        href={{
+                          pathname: is_recurring
+                            ? `/${organization.slug}/portal/subscriptions/${subscription_id}`
+                            : `/${organization.slug}/portal/orders/${id}`,
+                          query: {
+                            customer_session_token: customerSessionToken,
+                          },
+                        }}
                       >
                         <Button size="sm" variant="secondary">
                           View Order
@@ -169,8 +175,10 @@ const StatusWrapper = ({
 
 const SubscriptionItem = ({
   subscription,
+  customerSessionToken,
 }: {
-  subscription: UserSubscription
+  subscription: CustomerSubscription
+  customerSessionToken?: string
 }) => {
   const organization = subscription.product.organization
 
@@ -215,7 +223,12 @@ const SubscriptionItem = ({
             </div>
           )}
         </div>
-        <Link href={`/purchases/subscriptions/${subscription.id}`}>
+        <Link
+          href={{
+            pathname: `/${organization.slug}/portal/subscriptions/${subscription.id}`,
+            query: { customer_session_token: customerSessionToken },
+          }}
+        >
           <Button size="sm">Manage Subscription</Button>
         </Link>
       </div>
@@ -283,7 +296,12 @@ const SubscriptionItem = ({
           <div className="flex flex-row items-center justify-between">
             <span>Benefits</span>
             <span>
-              <Link href={`/purchases/subscriptions/${subscription.id}`}>
+              <Link
+                href={{
+                  pathname: `/${organization.slug}/portal/subscriptions/${subscription.id}`,
+                  query: { customer_session_token: customerSessionToken },
+                }}
+              >
                 <Button size="sm" variant="secondary">
                   View Benefits
                 </Button>

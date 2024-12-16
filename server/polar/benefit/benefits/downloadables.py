@@ -7,11 +7,13 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.benefit import schemas as benefit_schemas
+from polar.customer_portal.service.downloadables import (
+    downloadable as downloadable_service,
+)
 from polar.logging import Logger
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
 from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
-from polar.user.service.downloadables import downloadable as downloadable_service
 
 from .base import (
     BenefitServiceProtocol,
@@ -35,7 +37,7 @@ class BenefitDownloadablesService(
     async def grant(
         self,
         benefit: BenefitDownloadables,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantDownloadablesProperties,
         *,
         update: bool = False,
@@ -49,7 +51,7 @@ class BenefitDownloadablesService(
         for file_id in file_ids:
             downloadable = await downloadable_service.grant_for_benefit_file(
                 self.session,
-                user=user,
+                customer=customer,
                 benefit_id=benefit.id,
                 file_id=file_id,
             )
@@ -63,14 +65,14 @@ class BenefitDownloadablesService(
     async def revoke(
         self,
         benefit: BenefitDownloadables,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantDownloadablesProperties,
         *,
         attempt: int = 1,
     ) -> BenefitGrantDownloadablesProperties:
         await downloadable_service.revoke_for_benefit(
             self.session,
-            user=user,
+            customer=customer,
             benefit_id=benefit.id,
         )
         return {}

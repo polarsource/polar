@@ -49,8 +49,9 @@ export interface TransactionsApiLookupTransactionRequest {
 export interface TransactionsApiSearchTransactionsRequest {
     type?: TransactionType;
     accountId?: string;
-    paymentUserId?: string;
+    paymentCustomerId?: string;
     paymentOrganizationId?: string;
+    paymentUserId?: string;
     excludePlatformFees?: boolean;
     page?: number;
     limit?: number;
@@ -300,12 +301,16 @@ export class TransactionsApi extends runtime.BaseAPI {
             queryParameters['account_id'] = requestParameters['accountId'];
         }
 
-        if (requestParameters['paymentUserId'] != null) {
-            queryParameters['payment_user_id'] = requestParameters['paymentUserId'];
+        if (requestParameters['paymentCustomerId'] != null) {
+            queryParameters['payment_customer_id'] = requestParameters['paymentCustomerId'];
         }
 
         if (requestParameters['paymentOrganizationId'] != null) {
             queryParameters['payment_organization_id'] = requestParameters['paymentOrganizationId'];
+        }
+
+        if (requestParameters['paymentUserId'] != null) {
+            queryParameters['payment_user_id'] = requestParameters['paymentUserId'];
         }
 
         if (requestParameters['excludePlatformFees'] != null) {

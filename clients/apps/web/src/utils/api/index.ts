@@ -28,6 +28,7 @@ export const buildAPI = (opts: { token?: string }) =>
 export const buildServerSideAPI = (
   headers: Headers,
   cookies: any,
+  token?: string,
 ): PolarAPI => {
   let apiHeaders = {}
 
@@ -57,6 +58,7 @@ export const buildServerSideAPI = (
       basePath: getServerURL(),
       credentials: 'include',
       headers: apiHeaders,
+      accessToken: token,
     }),
   )
 }

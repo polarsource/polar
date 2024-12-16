@@ -224,7 +224,7 @@ class TestListBy:
         pledging_user = await create_user(save_fixture)
 
         # create multiple identities for pledging user
-        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.google)
         await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.github)
         await create_oauth_account(
             save_fixture, pledging_user, OAuthPlatform.github_repository_benefit
@@ -384,7 +384,7 @@ class TestListBy:
         pledging_user = await create_user(save_fixture)
 
         # create multiple identities for pledging user
-        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.google)
         await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.github)
         await create_oauth_account(
             save_fixture, pledging_user, OAuthPlatform.github_repository_benefit
@@ -502,7 +502,7 @@ class TestListBy:
         )
 
         pledging_user = await create_user(save_fixture)
-        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
+        await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.google)
 
         issue = await create_issue(save_fixture, external_organization, repository)
 

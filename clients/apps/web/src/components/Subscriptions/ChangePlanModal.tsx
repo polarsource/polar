@@ -1,19 +1,19 @@
 'use client'
 
 import {
+  CustomerSubscription,
   Organization,
+  PolarAPI,
   ProductPrice,
   ProductPriceRecurringFixed,
   ProductPriceRecurringFree,
   ProductStorefront,
   ResponseError,
   SubscriptionRecurringInterval,
-  UserSubscription,
 } from '@polar-sh/sdk'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useStorefront, useUpdateSubscription } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { useCustomerUpdateSubscription, useStorefront } from '@/hooks/queries'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -47,15 +47,17 @@ const ProductPriceListItem = ({
 }
 
 const ChangePlanModal = ({
+  api,
   organization,
   subscription,
   hide,
   onUserSubscriptionUpdate,
 }: {
+  api: PolarAPI
   organization: Organization
-  subscription: UserSubscription
+  subscription: CustomerSubscription
   hide: () => void
-  onUserSubscriptionUpdate: (subscription: UserSubscription) => void
+  onUserSubscriptionUpdate: (subscription: CustomerSubscription) => void
 }) => {
   const router = useRouter()
   const { data: storefront } = useStorefront(organization.slug)
@@ -114,7 +116,7 @@ const ChangePlanModal = ({
     }
   }, [selectedPrice, currentPrice])
 
-  const updateSubscription = useUpdateSubscription()
+  const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
     if (!selectedPrice) return
     try {

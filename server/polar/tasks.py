@@ -2,6 +2,7 @@ from polar.account import tasks as account
 from polar.auth import tasks as auth
 from polar.benefit import tasks as benefit
 from polar.checkout import tasks as checkout
+from polar.customer_session import tasks as customer_session
 from polar.eventstream import tasks as eventstream
 from polar.integrations.github import tasks as github
 from polar.integrations.loops import tasks as loops
@@ -21,6 +22,7 @@ __all__ = [
     "auth",
     "benefit",
     "checkout",
+    "customer_session",
     "eventstream",
     "github",
     "loops",

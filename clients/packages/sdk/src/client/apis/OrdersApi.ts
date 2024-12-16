@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  CustomerIDFilter,
   DiscountIDFilter1,
   HTTPValidationError,
   ListResourceOrder,
@@ -25,7 +26,6 @@ import type {
   ProductIDFilter,
   ProductPriceTypeFilter,
   ResourceNotFound,
-  UserIDFilter,
 } from '../models/index';
 
 export interface OrdersApiGetRequest {
@@ -41,7 +41,7 @@ export interface OrdersApiListRequest {
     productId?: ProductIDFilter;
     productPriceType?: ProductPriceTypeFilter;
     discountId?: DiscountIDFilter1;
-    userId?: UserIDFilter;
+    customerId?: CustomerIDFilter;
     page?: number;
     limit?: number;
     sorting?: Array<OrderSortProperty>;
@@ -161,8 +161,8 @@ export class OrdersApi extends runtime.BaseAPI {
             queryParameters['discount_id'] = requestParameters['discountId'];
         }
 
-        if (requestParameters['userId'] != null) {
-            queryParameters['user_id'] = requestParameters['userId'];
+        if (requestParameters['customerId'] != null) {
+            queryParameters['customer_id'] = requestParameters['customerId'];
         }
 
         if (requestParameters['page'] != null) {

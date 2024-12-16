@@ -209,18 +209,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
-      id: 'user',
-      accessorKey: 'user',
+      id: 'customer',
+      accessorKey: 'customer',
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Customer" />
       ),
       cell: ({ row: { original: subscription } }) => {
-        const user = subscription.user
+        const customer = subscription.customer
         return (
           <div className="flex flex-row items-center gap-2">
-            <Avatar avatar_url={user.avatar_url} name={user.public_name} />
-            <div className="fw-medium">{user.email}</div>
+            <Avatar
+              avatar_url={customer.avatar_url}
+              name={customer.name || customer.email}
+            />
+            <div className="fw-medium">{customer.email}</div>
           </div>
         )
       },
@@ -368,14 +371,14 @@ const SubscriptionModal = ({ subscription }: SubscriptionModalProps) => {
       <h2 className="mb-4 text-2xl">Subscription Details</h2>
       <div className="flex flex-row items-center gap-4">
         <Avatar
-          avatar_url={subscription.user.avatar_url}
-          name={subscription.user.public_name}
+          avatar_url={subscription.customer.avatar_url}
+          name={subscription.customer.name || subscription.customer.email}
           className="h-16 w-16"
         />
         <div className="flex flex-col gap-1">
           <p className="text-xl">{subscription.user.public_name}</p>
           <p className="dark:text-polar-500 text-gray-500">
-            {subscription.user.email}
+            {subscription.customer.email}
           </p>
         </div>
       </div>

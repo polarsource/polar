@@ -2,64 +2,26 @@ from typing import Any, cast
 
 import httpx
 import structlog
+from httpx_oauth.clients.discord import DiscordOAuth2
+from httpx_oauth.oauth2 import RefreshTokenError
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
-from polar.integrations.discord.service import DiscordAccountNotConnected
 from polar.integrations.discord.service import discord_bot as discord_bot_service
-from polar.integrations.discord.service import discord_user as discord_user_service
 from polar.logging import Logger
-from polar.models import Organization, User
+from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.models.benefit_grant import BenefitGrantDiscordProperties
-from polar.notifications.notification import (
-    BenefitPreconditionErrorNotificationContextualPayload,
-)
+from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
 from .base import (
-    BenefitPreconditionError,
+    BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,
     BenefitServiceProtocol,
 )
 
 log: Logger = structlog.get_logger()
-
-precondition_error_subject_template = (
-    "Action required: get access to {organization_name}'s Discord server"
-)
-precondition_error_body_template = """
-<h1>Hi,</h1>
-<p>You just subscribed to <strong>{scope_name}</strong> from {organization_name}. Thank you!</p>
-<p>As you may know, it includes an access to a private Discord server. To grant you access, we need you to link your Discord account on Polar.</p>
-<p>Once done, you'll automatically be added to {organization_name}'s Discord server.</p>
-<!-- Action -->
-<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
-    <tr>
-        <td align="center">
-            <!-- Border based button
-https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-                <tr>
-                    <td align="center">
-                        <a href="{extra_context[url]}" class="f-fallback button">Link Discord account</a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-<!-- Sub copy -->
-<table class="body-sub" role="presentation">
-    <tr>
-        <td>
-            <p class="f-fallback sub">If you're having trouble with the button above, copy and paste the URL below into
-                your web browser.</p>
-            <p class="f-fallback sub"><a href="{extra_context[url]}">{extra_context[url]}</a></p>
-        </td>
-    </tr>
-</table>
-"""
 
 
 class BenefitDiscordService(
@@ -70,7 +32,7 @@ class BenefitDiscordService(
     async def grant(
         self,
         benefit: BenefitDiscord,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantDiscordProperties,
         *,
         update: bool = False,
@@ -78,7 +40,7 @@ class BenefitDiscordService(
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            user_id=str(user.id),
+            customer_id=str(customer.id),
         )
         bound_logger.debug("Grant benefit")
 
@@ -94,22 +56,19 @@ class BenefitDiscordService(
                 bound_logger.debug(
                     "Revoke before granting because guild or role have changed"
                 )
-                await self.revoke(benefit, user, grant_properties, attempt=attempt)
+                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
+
+        if (account_id := grant_properties.get("account_id")) is None:
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their Discord account"
+            )
+
+        oauth_account = await self._get_customer_oauth_account(customer, account_id)
 
         try:
-            account = await discord_user_service.get_oauth_account(self.session, user)
-        except DiscordAccountNotConnected as e:
-            raise BenefitPreconditionError(
-                "Discord account not linked",
-                payload=BenefitPreconditionErrorNotificationContextualPayload(
-                    subject_template=precondition_error_subject_template,
-                    body_template=precondition_error_body_template,
-                    extra_context={"url": settings.generate_frontend_url("/settings")},
-                ),
-            ) from e
-
-        try:
-            await discord_bot_service.add_member(self.session, guild_id, role_id, user)
+            await discord_bot_service.add_member(
+                guild_id, role_id, oauth_account.account_id, oauth_account.access_token
+            )
         except httpx.HTTPError as e:
             error_bound_logger = bound_logger.bind(error=str(e))
             if isinstance(e, httpx.HTTPStatusError):
@@ -121,26 +80,24 @@ class BenefitDiscordService(
 
         bound_logger.debug("Benefit granted")
 
-        # Store guild, role and account IDs as it may change for various reasons:
-        # * The benefit is updated
-        # * The user disconnects or changes their Discord account
+        # Store guild, and role as it may change if the benefit is updated
         return {
+            **grant_properties,
             "guild_id": guild_id,
             "role_id": role_id,
-            "account_id": account.account_id,
         }
 
     async def revoke(
         self,
         benefit: BenefitDiscord,
-        user: User,
+        customer: Customer,
         grant_properties: BenefitGrantDiscordProperties,
         *,
         attempt: int = 1,
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
-            user_id=str(user.id),
+            customer_id=str(customer.id),
         )
 
         guild_id = grant_properties.get("guild_id")
@@ -210,3 +167,52 @@ class BenefitDiscordService(
             )
 
         return cast(BenefitDiscordProperties, properties)
+
+    async def _get_customer_oauth_account(
+        self, customer: Customer, account_id: str
+    ) -> CustomerOAuthAccount:
+        oauth_account = customer.get_oauth_account(
+            account_id, CustomerOAuthPlatform.discord
+        )
+        if oauth_account is None:
+            raise BenefitActionRequiredError(
+                "The customer needs to connect their Discord account"
+            )
+
+        if oauth_account.is_expired():
+            if oauth_account.refresh_token is None:
+                raise BenefitActionRequiredError(
+                    "The customer needs to reconnect their Discord account"
+                )
+
+            log.debug(
+                "Refresh Discord access token",
+                oauth_account_id=oauth_account.account_id,
+                customer_id=str(customer.id),
+            )
+            client = DiscordOAuth2(
+                settings.DISCORD_CLIENT_ID,
+                settings.DISCORD_CLIENT_SECRET,
+                scopes=["identify", "email", "guilds.join"],
+            )
+            try:
+                refreshed_token_data = await client.refresh_token(
+                    oauth_account.refresh_token
+                )
+            except RefreshTokenError as e:
+                log.warning(
+                    "Failed to refresh Discord access token",
+                    oauth_account_id=oauth_account.account_id,
+                    customer_id=str(customer.id),
+                    error=str(e),
+                )
+                raise BenefitActionRequiredError(
+                    "The customer needs to reconnect their Discord account"
+                ) from e
+            oauth_account.access_token = refreshed_token_data["access_token"]
+            oauth_account.expires_at = refreshed_token_data["expires_at"]
+            oauth_account.refresh_token = refreshed_token_data["refresh_token"]
+            customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+            self.session.add(customer)
+
+        return oauth_account

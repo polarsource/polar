@@ -1,12 +1,11 @@
 from typing import Annotated
 
 from babel.numbers import format_currency
-from pydantic import UUID4, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
-from polar.discount.schemas import (
-    DiscountMinimal,
-)
+from polar.customer.schemas import CustomerBase
+from polar.discount.schemas import DiscountMinimal
 from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
@@ -24,7 +23,7 @@ class OrderBase(
     billing_reason: OrderBillingReason
     billing_address: Address | None
 
-    user_id: UUID4
+    customer_id: UUID4
     product_id: UUID4
     product_price_id: UUID4
     discount_id: UUID4 | None
@@ -39,12 +38,27 @@ class OrderBase(
         )}"
 
 
+class OrderCustomer(CustomerBase): ...
+
+
 class OrderUser(Schema):
-    id: UUID4
+    id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_id",
+            # Validate from stored webhook payload
+            "id",
+        )
+    )
     email: str
-    public_name: str
-    github_username: str | None
-    avatar_url: str | None
+    public_name: str = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_public_name",
+            # Validate from stored webhook payload
+            "public_name",
+        )
+    )
 
 
 class OrderProduct(ProductBase): ...
@@ -57,7 +71,25 @@ class OrderSubscription(SubscriptionBase, MetadataOutputMixin): ...
 
 
 class Order(OrderBase):
-    user: OrderUser
+    customer: OrderCustomer
+    user_id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
+        deprecated="Use `customer_id`.",
+    )
+    user: OrderUser = Field(
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user",
+            # Validate from ORM model
+            "customer",
+        ),
+        deprecated="Use `customer`.",
+    )
     product: OrderProduct
     product_price: ProductPrice
     discount: OrderDiscount | None

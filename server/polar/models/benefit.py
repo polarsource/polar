@@ -61,11 +61,6 @@ class BenefitAdsProperties(BenefitProperties):
 
 
 class BenefitGitHubRepositoryProperties(BenefitProperties):
-    # repository_id was set previously (before 2024-13-15), for benefits using the "main"
-    # Polar GitHub App for granting benefits. Benefits created after this date are using
-    # the "Polar Repository Benefit" GitHub App, and only uses the repository_owner
-    # and repository_name fields.
-    repository_id: UUID | None
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
@@ -83,7 +78,7 @@ class BenefitLicenseKeyExpirationProperties(TypedDict):
 
 class BenefitLicenseKeyActivationProperties(TypedDict):
     limit: int
-    enable_user_admin: bool
+    enable_customer_admin: bool
 
 
 class BenefitLicenseKeysProperties(BenefitProperties):

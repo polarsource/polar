@@ -8,7 +8,7 @@ import {
 import { BenefitBase, BenefitType } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 
-export type CreatableBenefit = BenefitType;
+export type CreatableBenefit = BenefitType
 
 export const resolveBenefitCategoryIcon = (
   type?: BenefitType,
@@ -33,7 +33,7 @@ export const resolveBenefitCategoryIcon = (
 }
 
 export const resolveBenefitIcon = (
-  benefit?: BenefitBase,
+  benefit: BenefitBase,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
   className?: string,
 ) => {

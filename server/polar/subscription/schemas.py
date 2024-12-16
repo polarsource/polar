@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from babel.numbers import format_currency
-from pydantic import UUID4, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas import CustomerBase
@@ -24,9 +24,23 @@ class SubscriptionCustomer(CustomerBase): ...
 
 
 class SubscriptionUser(Schema):
-    id: UUID4 = Field(validation_alias="legacy_user_id")
+    id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_id",
+            # Validate from stored webhook payload
+            "id",
+        )
+    )
     email: str
-    public_name: str = Field(validation_alias="legacy_user_public_name")
+    public_name: str = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_public_name",
+            # Validate from stored webhook payload
+            "public_name",
+        )
+    )
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
@@ -64,11 +78,22 @@ SubscriptionDiscount = Annotated[
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
     user_id: UUID4 = Field(
-        validation_alias=AliasPath("customer", "legacy_user_id"),
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
         deprecated="Use `customer_id`.",
     )
     user: SubscriptionUser = Field(
-        validation_alias="customer", deprecated="Use `customer`."
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user",
+            # Validate from ORM model
+            "customer",
+        ),
+        deprecated="Use `customer`.",
     )
     product: Product
     price: ProductPriceRecurring

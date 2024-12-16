@@ -1,6 +1,6 @@
 import { OpenAPIV3_1 } from 'openapi-types'
 import React, { PropsWithChildren } from 'react'
-import { getUnionSchemas, isDereferenced } from './openapi'
+import { getUnionSchemas, isArraySchema, isDereferenced } from './openapi'
 
 const getTypeDisplayName = (property: OpenAPIV3_1.SchemaObject): string => {
   if (property.const) {
@@ -83,7 +83,7 @@ const PropertyType = ({
     )
   }
 
-  if (property.type === 'array' && isDereferenced(property.items)) {
+  if (isArraySchema(property) && isDereferenced(property.items)) {
     const itemsUnionSchema = getUnionSchemas(property.items)
     const isUnionSchema = itemsUnionSchema && itemsUnionSchema.length > 1
     return (

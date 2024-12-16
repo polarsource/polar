@@ -244,7 +244,7 @@ const GenericWidget = ({
     )
   }
 
-  if (schema.type === 'array' && isDereferenced(schema.items)) {
+  if (isArraySchema(schema) && isDereferenced(schema.items)) {
     return (
       <ParameterWidget
         schema={schema.items}

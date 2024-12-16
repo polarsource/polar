@@ -61,6 +61,7 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
 
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
         await conn.run_sync(Model.metadata.create_all)
     await engine.dispose()
 

@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy.dialects.postgresql import insert
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -264,10 +265,14 @@ class CustomerService(ResourceServiceReader[Customer]):
 
     async def link_user(
         self, session: AsyncSession, customer: Customer, user: User
-    ) -> UserCustomer:
-        user_customer = UserCustomer(user=user, customer=customer)
-        session.add(user_customer)
-        return user_customer
+    ) -> None:
+        insert_statement = insert(UserCustomer).values(
+            user_id=user.id, customer_id=customer.id
+        )
+        insert_statement = insert_statement.on_conflict_do_nothing(
+            index_elements=["user_id", "customer_id"]
+        )
+        await session.execute(insert_statement)
 
     def _get_readable_customer_statement(
         self, auth_subject: AuthSubject[User | Organization]

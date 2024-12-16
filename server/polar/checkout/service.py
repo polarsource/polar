@@ -1601,9 +1601,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     organization=checkout.organization,
                 )
 
-        if is_direct_user(auth_subject):
-            await customer_service.link_user(session, customer, auth_subject.subject)
-
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
             create_params: stripe_lib.Customer.CreateParams = {"email": customer.email}
@@ -1634,6 +1631,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         session.add(customer)
         await session.flush()
+
+        if is_direct_user(auth_subject):
+            await customer_service.link_user(session, customer, auth_subject.subject)
 
         return customer
 

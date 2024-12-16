@@ -1,5 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export default async function Page() {
@@ -10,5 +12,11 @@ export default async function Page() {
     redirect('/dashboard/create')
   }
 
-  redirect(`/dashboard/${userOrganizations[0].slug}`)
+  const org = userOrganizations.find(
+    (org) => org.slug === getLastVisitedOrg(cookies()),
+  )
+
+  const targetOrg = org?.slug ?? userOrganizations[0].slug
+
+  redirect(`/dashboard/${targetOrg}`)
 }

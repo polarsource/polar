@@ -1,7 +1,9 @@
 import Login from '@/components/Auth/Login'
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export default async function Page({
@@ -15,7 +17,13 @@ export default async function Page({
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length > 0) {
-    redirect(`/dashboard/${userOrganizations[0].slug}`)
+    const org = userOrganizations.find(
+      (org) => org.slug === getLastVisitedOrg(cookies()),
+    )
+
+    const targetOrg = org?.slug ?? userOrganizations[0].slug
+
+    redirect(`/dashboard/${targetOrg}`)
   }
 
   return (
@@ -43,7 +51,7 @@ export default async function Page({
               <Input name="org-name" autoFocus />
             </div> */}
             <Login returnTo={return_to} returnParams={rest} signup={{
-              intent: 'creator',
+                intent: 'creator',
             }}/>
           </div>
         </div>

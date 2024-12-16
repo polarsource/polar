@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Literal, Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import UUID4, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.benefit.schemas import BenefitID
 from polar.customer.schemas import CustomerBase
@@ -63,21 +63,46 @@ class LicenseKeyCustomer(CustomerBase): ...
 
 
 class LicenseKeyUser(Schema):
-    id: UUID4 = Field(validation_alias="legacy_user_id")
+    id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_id",
+            # Validate from stored webhook payload
+            "id",
+        )
+    )
     email: str
-    public_name: str = Field(validation_alias="legacy_user_public_name")
+    public_name: str = Field(
+        validation_alias=AliasChoices(
+            # Validate from ORM model
+            "legacy_user_public_name",
+            # Validate from stored webhook payload
+            "public_name",
+        )
+    )
 
 
 class LicenseKeyRead(Schema):
     id: UUID4
     organization_id: UUID4
     user_id: UUID4 = Field(
-        validation_alias=AliasPath("customer", "legacy_user_id"),
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
         deprecated="Use `customer_id`.",
     )
     customer_id: UUID4
     user: LicenseKeyUser = Field(
-        validation_alias="customer", deprecated="Use `customer`."
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user",
+            # Validate from ORM model
+            "customer",
+        ),
+        deprecated="Use `customer`.",
     )
     customer: LicenseKeyCustomer
     benefit_id: BenefitID

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import UUID4, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.kit.schemas import Schema
 from polar.models.subscription import SubscriptionStatus
@@ -37,7 +37,12 @@ class CustomerSubscriptionProduct(ProductBase):
 
 class CustomerSubscription(CustomerSubscriptionBase):
     user_id: UUID4 = Field(
-        validation_alias=AliasPath("customer", "legacy_user_id"),
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
         deprecated="Use `customer_id`.",
     )
     product: CustomerSubscriptionProduct

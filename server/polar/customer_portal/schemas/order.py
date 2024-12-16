@@ -1,4 +1,4 @@
-from pydantic import UUID4, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.organization.schemas import Organization
@@ -36,7 +36,12 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 class CustomerOrder(CustomerOrderBase):
     user_id: UUID4 = Field(
-        validation_alias=AliasPath("customer", "legacy_user_id"),
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
         deprecated="Use `customer_id`.",
     )
     product: CustomerOrderProduct

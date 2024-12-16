@@ -1,13 +1,16 @@
+
 import AmountLabel from "@/components/Shared/AmountLabel"
 import { SubscriptionStatusLabel } from "@/components/Subscriptions/utils"
 import { useListSubscriptions } from "@/hooks/queries"
 import { useOrders } from "@/hooks/queries/orders"
+import { MaintainerOrganizationContext } from "@/providers/maintainerOrganization"
 import { Customer } from "@polar-sh/sdk"
+import Link from "next/link"
 import { FormattedDateTime } from "polarkit/components/ui/atoms"
 import Avatar from "polarkit/components/ui/atoms/avatar"
 import Button from "polarkit/components/ui/atoms/button"
 import { List, ListItem } from "polarkit/components/ui/atoms/list"
-import { PropsWithChildren } from "react"
+import { PropsWithChildren, useContext } from "react"
 
 
 const CustomerStatBox = ({ title, children }: PropsWithChildren<{title: string}>) => {
@@ -40,6 +43,8 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
     },
   )
 
+  const { organization } = useContext(MaintainerOrganizationContext)
+
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="text-xl">Customer Details</h2>
@@ -62,9 +67,6 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
         </CustomerStatBox>
         <CustomerStatBox title="First Seen">
           <FormattedDateTime datetime={customer.created_at} />
-        </CustomerStatBox>
-        <CustomerStatBox title='Orders'>
-          <span>{orders?.pagination.total_count.toLocaleString('en-US')}</span>
         </CustomerStatBox>
       </div>
       <a href={`mailto:${customer.email}`} className="text-blue-500 dark:text-blue-400">
@@ -101,18 +103,20 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
         {orders && orders.items.length > 0 ? (
           <List size="small">
             {orders.items.map((order) => (
-              <ListItem key={order.id} className="text-sm" size="small">
-                <div className='flex flex-col gap-y-1'>
-                  <span>{order.product.name}</span>
-                  <span className='text-xs text-gray-500 dark:text-polar-500'><FormattedDateTime datetime={order.created_at} /></span>
-                </div>
-                <span>
-                  <AmountLabel
-                    amount={order.amount}
-                    currency={order.currency}
-                  />
-                </span>
-              </ListItem>
+              <Link href={`/dashboard/${organization?.slug}/sales/${order.id}`} key={order.id}>
+                <ListItem className="text-sm" size="small">
+                  <div className='flex flex-col gap-y-1'>
+                    <span>{order.product.name}</span>
+                    <span className='text-xs text-gray-500 dark:text-polar-500'><FormattedDateTime datetime={order.created_at} /></span>
+                  </div>
+                  <span>
+                    <AmountLabel
+                      amount={order.amount}
+                      currency={order.currency}
+                    />
+                  </span>
+                </ListItem>
+              </Link>
             ))}
           </List>
         ) : (

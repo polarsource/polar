@@ -564,6 +564,7 @@ class OrderService(ResourceServiceReader[Order]):
         transfer_amount = payment_transaction.amount
 
         payment_transaction.order = order
+        payment_transaction.payment_customer = order.customer
         session.add(payment_transaction)
 
         # Prepare an held balance

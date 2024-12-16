@@ -3,13 +3,11 @@ from typing import cast
 import stripe as stripe_lib
 from sqlalchemy import select
 
-from polar.customer.service import customer as customer_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Pledge, Transaction, User
+from polar.models import Organization, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
-from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 
@@ -44,19 +42,6 @@ class PaymentTransactionService(BaseTransactionService):
         if existing_transaction is not None:
             return existing_transaction
 
-        # Retrieve customer
-        customer_id = None
-        payment_customer = None
-        payment_organization = None
-        if charge.customer:
-            customer_id = get_expandable_id(charge.customer)
-            payment_customer = await customer_service.get_by_stripe_customer_id(
-                session, customer_id
-            )
-            payment_organization = await organization_service.get_by(
-                session, stripe_customer_id=customer_id
-            )
-
         # Retrieve tax amount and country
         tax_amount = 0
         tax_country = None
@@ -87,6 +72,7 @@ class PaymentTransactionService(BaseTransactionService):
 
         # Try to link with a Pledge
         payment_user: User | None = None
+        payment_organization: Organization | None = None
         if pledge_invoice or charge.metadata.get("type") == ProductType.pledge:
             assert charge.payment_intent is not None
             payment_intent = get_expandable_id(charge.payment_intent)
@@ -96,7 +82,7 @@ class PaymentTransactionService(BaseTransactionService):
                 raise PledgeDoesNotExist(charge.id, payment_intent)
             # If we were not able to link to a payer by Stripe Customer ID,
             # link from the pledge data. Happens for anonymous pledges.
-            if payment_customer is None and payment_organization is None:
+            if payment_organization is None:
                 await session.refresh(pledge, {"user", "by_organization"})
                 payment_user = pledge.user
                 payment_organization = pledge.by_organization
@@ -112,15 +98,16 @@ class PaymentTransactionService(BaseTransactionService):
             tax_amount=tax_amount,
             tax_country=tax_country,
             tax_state=tax_state,
-            customer_id=customer_id,
-            payment_customer=payment_customer,
+            customer_id=get_expandable_id(charge.customer) if charge.customer else None,
             payment_organization=payment_organization,
             payment_user=payment_user,
             charge_id=charge.id,
             pledge=pledge,
             risk_level=risk.get("risk_level"),
             risk_score=risk.get("risk_score"),
+            # Filled when we handle the invoice
             order=None,
+            payment_customer=None,
         )
 
         # Compute and link fees

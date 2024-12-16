@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.held_balance.service import held_balance as held_balance_service
@@ -356,10 +357,13 @@ class TestCreateOrderFromStripe:
         assert held_balance.order_id == order.id
 
         updated_payment_transaction = await payment_transaction_service.get(
-            session, id=payment_transaction.id
+            session,
+            id=payment_transaction.id,
+            options=(joinedload(Transaction.payment_customer),),
         )
         assert updated_payment_transaction is not None
         assert updated_payment_transaction.order_id == order.id
+        assert updated_payment_transaction.payment_customer == order.customer
 
         enqueue_job_mock.assert_called_once_with(
             "order.discord_notification",
@@ -515,10 +519,13 @@ class TestCreateOrderFromStripe:
         platform_fee_transaction_service_mock.create_fees_reversal_balances.assert_called_once()
 
         updated_payment_transaction = await payment_transaction_service.get(
-            session, id=payment_transaction.id
+            session,
+            id=payment_transaction.id,
+            options=(joinedload(Transaction.payment_customer),),
         )
         assert updated_payment_transaction is not None
         assert updated_payment_transaction.order_id == order.id
+        assert updated_payment_transaction.payment_customer == order.customer
 
         enqueue_job_mock.assert_called_once_with(
             "order.discord_notification",
@@ -668,6 +675,15 @@ class TestCreateOrderFromStripe:
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.billing_address == Address(country="FR")  # pyright: ignore
         assert order.created_at == created_datetime
+
+        updated_payment_transaction = await payment_transaction_service.get(
+            session,
+            id=payment_transaction.id,
+            options=(joinedload(Transaction.payment_customer),),
+        )
+        assert updated_payment_transaction is not None
+        assert updated_payment_transaction.order_id == order.id
+        assert updated_payment_transaction.payment_customer == order.customer
 
         enqueue_job_mock.assert_any_call(
             "order.discord_notification",

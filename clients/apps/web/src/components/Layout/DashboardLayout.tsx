@@ -236,7 +236,7 @@ export const DashboardBody = ({
   children?: React.ReactNode
   wrapperClassName?: string
   className?: string
-  title?: string
+  title?: JSX.Element | string
   contextView?: React.ReactElement
   contextViewClassName?: string
   header?: boolean

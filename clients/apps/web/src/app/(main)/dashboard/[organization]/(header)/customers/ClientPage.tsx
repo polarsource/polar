@@ -1,5 +1,6 @@
 'use client'
 
+import { CustomerModal } from '@/components/Customer/CustomerModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -25,7 +26,6 @@ import {
 } from 'polarkit/components/ui/atoms/datatable'
 import Input from 'polarkit/components/ui/atoms/input'
 import React, { useCallback, useEffect, useState } from 'react'
-import { CustomerModal } from './CustomerModal'
 
 interface ClientPageProps {
   organization: Organization

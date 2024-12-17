@@ -177,6 +177,7 @@ class Settings(BaseSettings):
 
     ACCOUNT_PAYOUT_REVIEW_THRESHOLDS: list[int] = [0, 10000]
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(days=1)
+    ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
 
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40

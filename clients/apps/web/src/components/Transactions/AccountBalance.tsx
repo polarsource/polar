@@ -3,7 +3,10 @@ import { Skeleton } from '@mui/material'
 import { Account, Status } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 import React, { useCallback, useState } from 'react'
 import WithdrawModal from './WithdrawModal'
 
@@ -24,7 +27,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
   const canWithdraw =
     account.status === Status.ACTIVE &&
     summary?.balance?.amount &&
-    summary.balance.amount > 0
+    summary.balance.amount > 1000
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const onWithdraw = useCallback(() => {
@@ -63,10 +66,13 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
               )}
             </div>
           </div>
-          <div>
+          <div className="flex flex-col items-center gap-2">
             <Button onClick={onWithdraw} disabled={!canWithdraw}>
               Withdraw
             </Button>
+            <p className="dark:text-polar-500 text-xs text-gray-500">
+              Minimum {formatCurrencyAndAmount(1000, 'usd', 0)}
+            </p>
           </div>
         </div>
       </ShadowBoxOnMd>

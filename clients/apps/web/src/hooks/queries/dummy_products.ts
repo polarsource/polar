@@ -80,7 +80,6 @@ export let products: Product[] = [
         modified_at: null,
         organization_id: '123',
         properties: { note: null },
-        is_tax_applicable: true,
       },
     ],
     media: [
@@ -152,7 +151,6 @@ export let products: Product[] = [
         modified_at: null,
         organization_id: '123',
         properties: { note: null },
-        is_tax_applicable: true,
       },
     ],
     media: [

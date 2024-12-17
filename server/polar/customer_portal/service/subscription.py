@@ -13,7 +13,6 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Organization,
@@ -27,9 +26,10 @@ from polar.models import (
     UserCustomer,
 )
 from polar.models.product_price import ProductPriceType
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
+from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import CustomerSubscriptionUpdate
@@ -38,13 +38,7 @@ from ..schemas.subscription import CustomerSubscriptionUpdate
 class CustomerSubscriptionError(PolarError): ...
 
 
-class AlreadyCanceledSubscription(CustomerSubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
-        self.subscription = subscription
-        message = (
-            "This subscription is already canceled or will be at the end of the period."
-        )
-        super().__init__(message, 403)
+class AlreadyCanceledCustomerSubscription(AlreadyCanceledSubscription): ...
 
 
 class SubscriptionNotActiveOnStripe(CustomerSubscriptionError):
@@ -280,27 +274,23 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         return subscription
 
     async def cancel(
-        self, session: AsyncSession, *, subscription: Subscription
+        self,
+        session: AsyncSession,
+        *,
+        subscription: Subscription,
+        reason: CustomerCancellationReason | None = None,
+        comment: str | None = None,
     ) -> Subscription:
-        if not subscription.active or subscription.cancel_at_period_end:
-            raise AlreadyCanceledSubscription(subscription)
-
-        if subscription.stripe_subscription_id is not None:
-            await stripe_service.cancel_subscription(
-                subscription.stripe_subscription_id
+        try:
+            return await subscription_service.cancel(
+                session,
+                subscription=subscription,
+                customer_reason=reason,
+                customer_comment=comment,
             )
-        else:
-            subscription.ended_at = utc_now()
-            subscription.cancel_at_period_end = True
-            subscription.status = SubscriptionStatus.canceled
-
-            # free subscriptions end immediately (vs at end of billing period)
-            # queue removal of grants
-            await subscription_service.enqueue_benefits_grants(session, subscription)
-
-        session.add(subscription)
-
-        return subscription
+        except AlreadyCanceledSubscription:
+            # Allowing us to keep a separate schema for the user endpoints
+            raise AlreadyCanceledCustomerSubscription()
 
     def _get_readable_subscription_statement(
         self, auth_subject: AuthSubject[User | Customer]

@@ -1,9 +1,10 @@
+import inspect
 from datetime import datetime
 
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.kit.schemas import Schema
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
@@ -19,8 +20,10 @@ class CustomerSubscriptionBase(SubscriptionBase):
     status: SubscriptionStatus
     current_period_start: datetime
     current_period_end: datetime | None
+    canceled_at: datetime | None
     cancel_at_period_end: bool
     started_at: datetime | None
+    ends_at: datetime | None
     ended_at: datetime | None
 
     customer_id: UUID4
@@ -51,3 +54,26 @@ class CustomerSubscription(CustomerSubscriptionBase):
 
 class CustomerSubscriptionUpdate(Schema):
     product_price_id: UUID4
+
+
+class CustomerSubscriptionCancel(Schema):
+    reason: CustomerCancellationReason | None = Field(
+        None,
+        description=inspect.cleandoc(
+            """
+        Customers reason for cancellation.
+
+        * `too_expensive`: Too expensive for the customer.
+        * `missing_features`: Customer is missing certain features.
+        * `switched_service`: Customer switched to another service.
+        * `unused`: Customer is not using it enough.
+        * `customer_service`: Customer is not satisfied with the customer service.
+        * `low_quality`: Customer is unhappy with the quality.
+        * `too_complex`: Customer considers the service too complicated.
+        * `other`: Other reason(s).
+        """
+        ),
+    )
+    comment: str | None = Field(
+        None, description="Customer feedback and why they decided to cancel."
+    )

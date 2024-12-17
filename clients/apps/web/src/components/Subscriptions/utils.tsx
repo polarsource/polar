@@ -45,7 +45,7 @@ export const SubscriptionStatusLabel = ({
 
   switch (subscription.status) {
     case 'active':
-      return subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'
+      return subscription.ends_at ? 'To be cancelled' : 'Active'
     default:
       return subscription.status.split('_').join(' ')
   }

@@ -263,6 +263,35 @@ export type AdvertisementSortProperty = typeof AdvertisementSortProperty[keyof t
 /**
  * 
  * @export
+ * @interface AlreadyCanceledCustomerSubscription
+ */
+export interface AlreadyCanceledCustomerSubscription {
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyCanceledCustomerSubscription
+     */
+    error: AlreadyCanceledCustomerSubscriptionErrorEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyCanceledCustomerSubscription
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const AlreadyCanceledCustomerSubscriptionErrorEnum = {
+    ALREADY_CANCELED_CUSTOMER_SUBSCRIPTION: 'AlreadyCanceledCustomerSubscription'
+} as const;
+export type AlreadyCanceledCustomerSubscriptionErrorEnum = typeof AlreadyCanceledCustomerSubscriptionErrorEnum[keyof typeof AlreadyCanceledCustomerSubscriptionErrorEnum];
+
+/**
+ * 
+ * @export
  * @interface AlreadyCanceledSubscription
  */
 export interface AlreadyCanceledSubscription {
@@ -7939,6 +7968,23 @@ export type CustomerBenefitGrantSortProperty = typeof CustomerBenefitGrantSortPr
  * @export
  */
 export type CustomerBenefitGrantUpdate = { benefit_type: 'ads' } & CustomerBenefitGrantAdsUpdate | { benefit_type: 'custom' } & CustomerBenefitGrantCustomUpdate | { benefit_type: 'discord' } & CustomerBenefitGrantDiscordUpdate | { benefit_type: 'downloadables' } & CustomerBenefitGrantDownloadablesUpdate | { benefit_type: 'github_repository' } & CustomerBenefitGrantGitHubRepositoryUpdate | { benefit_type: 'license_keys' } & CustomerBenefitGrantLicenseKeysUpdate;
+
+/**
+ * 
+ * @export
+ */
+export const CustomerCancellationReason = {
+    CUSTOMER_SERVICE: 'customer_service',
+    LOW_QUALITY: 'low_quality',
+    MISSING_FEATURES: 'missing_features',
+    SWITCHED_SERVICE: 'switched_service',
+    TOO_COMPLEX: 'too_complex',
+    TOO_EXPENSIVE: 'too_expensive',
+    UNUSED: 'unused',
+    OTHER: 'other'
+} as const;
+export type CustomerCancellationReason = typeof CustomerCancellationReason[keyof typeof CustomerCancellationReason];
+
 /**
  * 
  * @export
@@ -8275,7 +8321,19 @@ export interface CustomerOrderSubscription {
      * @type {string}
      * @memberof CustomerOrderSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -8312,6 +8370,18 @@ export interface CustomerOrderSubscription {
      * @memberof CustomerOrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_cancellation_comment: string | null;
 }
 
 
@@ -8526,7 +8596,19 @@ export interface CustomerSubscription {
      * @type {string}
      * @memberof CustomerSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -8565,6 +8647,18 @@ export interface CustomerSubscription {
     checkout_id: string | null;
     /**
      * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    customer_cancellation_comment: string | null;
+    /**
+     * 
      * @type {string}
      * @memberof CustomerSubscription
      * @deprecated
@@ -8582,6 +8676,27 @@ export interface CustomerSubscription {
      * @memberof CustomerSubscription
      */
     price: ProductPrice;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscriptionCancel
+ */
+export interface CustomerSubscriptionCancel {
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscriptionCancel
+     */
+    reason?: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionCancel
+     */
+    comment?: string | null;
 }
 
 
@@ -14759,7 +14874,19 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -14796,6 +14923,18 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof OrderSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    customer_cancellation_comment: string | null;
     /**
      * 
      * @type {string}
@@ -18725,7 +18864,19 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -18762,6 +18913,18 @@ export interface Subscription {
      * @memberof Subscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof Subscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    customer_cancellation_comment: string | null;
     /**
      * 
      * @type {{ [key: string]: MetadataValue; }}
@@ -18811,6 +18974,33 @@ export interface Subscription {
      * @memberof Subscription
      */
     discount: SubscriptionDiscount | null;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionCancel
+ */
+export interface SubscriptionCancel {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCancel
+     */
+    now?: boolean | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof SubscriptionCancel
+     */
+    customer_reason?: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCancel
+     */
+    customer_comment?: string | null;
 }
 
 

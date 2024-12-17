@@ -10,7 +10,7 @@ from polar.customer_portal.schemas.subscription import (
     CustomerSubscriptionUpdate,
 )
 from polar.customer_portal.service.subscription import (
-    AlreadyCanceledSubscription,
+    AlreadyCanceledCustomerSubscription,
     SubscriptionNotActiveOnStripe,
 )
 from polar.customer_portal.service.subscription import (
@@ -40,7 +40,14 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
+def stripe_subscription_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=StripeService)
+    mocker.patch("polar.subscription.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def stripe_customer_subscription_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.customer_portal.service.subscription.stripe_service", new=mock)
     return mock
@@ -156,7 +163,7 @@ class TestUpdate:
     async def test_valid(
         self,
         session: AsyncSession,
-        stripe_service_mock: MagicMock,
+        stripe_customer_subscription_service_mock: MagicMock,
         subscription: Subscription,
         product: Product,
         product_second: Product,
@@ -176,7 +183,7 @@ class TestUpdate:
         assert updated_subscription.amount == new_price.price_amount
         assert updated_subscription.recurring_interval == new_price.recurring_interval
 
-        stripe_service_mock.update_subscription_price.assert_called_once_with(
+        stripe_customer_subscription_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
             old_price=product.prices[0].stripe_price_id,
             new_price=product_second.prices[0].stripe_price_id,
@@ -202,7 +209,7 @@ class TestCancel:
             status=SubscriptionStatus.canceled,
         )
 
-        with pytest.raises(AlreadyCanceledSubscription):
+        with pytest.raises(AlreadyCanceledCustomerSubscription):
             await customer_subscription_service.cancel(
                 session, subscription=subscription
             )
@@ -222,7 +229,7 @@ class TestCancel:
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
 
-        with pytest.raises(AlreadyCanceledSubscription):
+        with pytest.raises(AlreadyCanceledCustomerSubscription):
             await customer_subscription_service.cancel(
                 session, subscription=subscription
             )
@@ -232,7 +239,7 @@ class TestCancel:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
+        stripe_customer_subscription_service_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -249,17 +256,19 @@ class TestCancel:
 
         assert updated_subscription.id == subscription.id
         assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.cancel_at_period_end is True
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.canceled_at is not None
+        assert updated_subscription.ends_at is not None
         assert updated_subscription.ended_at is not None
 
-        stripe_service_mock.cancel_subscription.assert_not_called()
+        stripe_customer_subscription_service_mock.cancel_subscription.assert_not_called()
 
     @pytest.mark.auth
-    async def test_stripe_subscription(
+    async def test_stripe_subscription_cancellation(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
+        stripe_subscription_service_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -277,6 +286,6 @@ class TestCancel:
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.ended_at is None
 
-        stripe_service_mock.cancel_subscription.assert_called_once_with(
+        stripe_subscription_service_mock.cancel_subscription.assert_called_once_with(
             subscription.stripe_subscription_id
         )

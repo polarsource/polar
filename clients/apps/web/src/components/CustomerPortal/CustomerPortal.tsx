@@ -188,12 +188,12 @@ const SubscriptionItem = ({
         return (
           <StatusWrapper
             color={
-              subscription.cancel_at_period_end
+              subscription.ends_at
                 ? 'bg-yellow-500'
                 : 'bg-green-500'
             }
           >
-            {subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'}
+            {subscription.ends_at ? 'To be cancelled' : 'Active'}
           </StatusWrapper>
         )
       default:
@@ -204,6 +204,18 @@ const SubscriptionItem = ({
         )
     }
   }, [subscription])
+
+  let nextEventTitle = null
+  let nextEventDate = null
+  if (!subscription.ended_at) {
+    if (subscription.ends_at) {
+      nextEventTitle = 'Expiry Date'
+      nextEventDate = new Date(subscription.ends_at)
+    } else if (subscription.current_period_end) {
+      nextEventTitle = 'Renewal Date'
+      nextEventDate = new Date(subscription.current_period_end)
+    }
+  }
 
   return (
     <ShadowBox className="dark:bg-polar-950 flex w-full flex-col gap-y-6 bg-gray-50">
@@ -261,15 +273,13 @@ const SubscriptionItem = ({
             </span>
           </div>
         )}
-        {!subscription?.ended_at && subscription?.current_period_end && (
-          <div className="flex flex-row items-center justify-between">
+        {nextEventTitle && nextEventDate && (
+          <div className="flex flex-row items-center justify-between py-3">
             <span>
-              {subscription.cancel_at_period_end
-                ? 'Expiry Date'
-                : 'Renewal Date'}
+              {nextEventTitle}
             </span>
             <span>
-              {new Date(subscription.current_period_end).toLocaleDateString(
+              {nextEventDate.toLocaleDateString(
                 'en-US',
                 {
                   year: 'numeric',

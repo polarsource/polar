@@ -1,5 +1,6 @@
 from typing import Annotated
 
+import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
@@ -18,21 +19,24 @@ from polar.routing import APIRouter
 from .. import auth
 from ..schemas.subscription import (
     CustomerSubscription,
+    CustomerSubscriptionCancel,
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
-    AlreadyCanceledSubscription,
+    AlreadyCanceledCustomerSubscription,
     CustomerSubscriptionSortProperty,
 )
 from ..service.subscription import customer_subscription as user_subscription_service
+
+log = structlog.get_logger()
 
 router = APIRouter(
     prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
 )
 
-SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
+SubscriptionID = Annotated[UUID4, Path(description="Your subscription ID.")]
 SubscriptionNotFound = {
-    "description": "Subscription not found.",
+    "description": "Your subscription was not found.",
     "model": ResourceNotFound.schema(),
 }
 
@@ -134,13 +138,13 @@ async def update(
     summary="Cancel Subscription",
     response_model=CustomerSubscription,
     responses={
-        200: {"description": "Subscription canceled."},
+        200: {"description": "Your subscription is canceled."},
         403: {
             "description": (
-                "This subscription is already canceled "
+                "Your subscription is already canceled "
                 "or will be at the end of the period."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledCustomerSubscription.schema(),
         },
         404: SubscriptionNotFound,
     },
@@ -148,6 +152,7 @@ async def update(
 async def cancel(
     id: SubscriptionID,
     auth_subject: auth.CustomerPortalWrite,
+    customer_cancellation: CustomerSubscriptionCancel,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Cancel a subscription of the authenticated customer or user."""
@@ -156,4 +161,15 @@ async def cancel(
     if subscription is None:
         raise ResourceNotFound()
 
-    return await user_subscription_service.cancel(session, subscription=subscription)
+    log.info(
+        "subscription.cancel",
+        id=id,
+        reason=customer_cancellation.reason,
+        customer_id=auth_subject.subject.id,
+    )
+    return await user_subscription_service.cancel(
+        session,
+        subscription=subscription,
+        reason=customer_cancellation.reason,
+        comment=customer_cancellation.comment,
+    )

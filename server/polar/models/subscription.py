@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     Uuid,
     type_coerce,
 )
@@ -68,6 +69,17 @@ class SubscriptionStatus(StrEnum):
         return status in cls.revoked_statuses()
 
 
+class CustomerCancellationReason(StrEnum):
+    customer_service = "customer_service"
+    low_quality = "low_quality"
+    missing_features = "missing_features"
+    switched_service = "switched_service"
+    too_complex = "too_complex"
+    too_expensive = "too_expensive"
+    unused = "unused"
+    other = "other"
+
+
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
@@ -88,7 +100,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    canceled_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
     started_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    ends_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
     ended_at: Mapped[datetime | None] = mapped_column(
@@ -143,6 +161,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
     )
 
+    customer_cancellation_reason: Mapped[CustomerCancellationReason | None] = (
+        mapped_column(String, nullable=True)
+    )
+    customer_cancellation_comment: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )
+
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship(
@@ -186,6 +211,38 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             cls.status.in_(SubscriptionStatus.revoked_statuses()),
             Boolean,
         )
+
+    def is_expired(self) -> bool:
+        if self.status == SubscriptionStatus.canceled:
+            return True
+
+        if self.ended_at:
+            return True
+        return False
+
+    def is_canceled(self) -> bool:
+        is_expired = self.is_expired()
+        if is_expired:
+            return True
+
+        if self.ends_at:
+            return True
+
+        return False
+
+    def can_cancel(self, immediately: bool) -> bool:
+        if not self.active or self.is_expired():
+            return False
+
+        # Allow immediate even if canceled at period end unless already expired
+        if immediately:
+            return True
+
+        # Already scheduled for cancellation at period end
+        if self.is_canceled():
+            return False
+
+        return True
 
     def set_started_at(self) -> None:
         """

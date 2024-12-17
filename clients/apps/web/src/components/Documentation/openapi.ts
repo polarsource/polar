@@ -668,6 +668,12 @@ class JavaScriptCommandBuilder extends GeneratedCommandBuilder {
   }
 }
 
+class GoCommandBuilder extends GeneratedCommandBuilder {
+  public constructor() {
+    super('go')
+  }
+}
+
 export const COMMAND_BUILDERS: {
   lang: string
   displayName: string
@@ -687,6 +693,11 @@ export const COMMAND_BUILDERS: {
     lang: 'python',
     displayName: 'Python',
     builder: new PythonCommandBuilder(),
+  },
+  {
+    lang: 'go',
+    displayName: 'Go',
+    builder: new GoCommandBuilder(),
   },
 ]
 

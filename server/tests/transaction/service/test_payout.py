@@ -7,6 +7,7 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
+from polar.config import settings
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
@@ -111,8 +112,11 @@ async def create_balance_transaction(
 
 @pytest.mark.asyncio
 class TestCreatePayout:
+    @pytest.mark.parametrize(
+        "balance", [-1000, 0, settings.ACCOUNT_PAYOUT_MINIMUM_BALANCE - 1]
+    )
     async def test_insufficient_balance(
-        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+        self, balance: int, session: AsyncSession, save_fixture: SaveFixture, user: User
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -127,7 +131,7 @@ class TestCreatePayout:
         )
         await save_fixture(account)
 
-        await create_balance_transaction(save_fixture, account=account, amount=-1000)
+        await create_balance_transaction(save_fixture, account=account, amount=balance)
 
         # then
         session.expunge_all()

@@ -12,7 +12,7 @@ import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import { Separator } from '@radix-ui/react-dropdown-menu'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import React, { PropsWithChildren } from 'react'
@@ -23,25 +23,28 @@ interface OrderProductItemProps {
 }
 
 const OrderProductItem = ({ product }: OrderProductItemProps) => {
-
-
   return (
-    <div className="flex bg-gray-100 dark:bg-polar-800 flex-row items-center gap-6 border border-gray-200 dark:border-polar-700 rounded-3xl p-4">
+    <div className="flex bg-white dark:bg-polar-800 flex-row items-center gap-6 border border-gray-200 dark:border-polar-700 rounded-3xl p-4">
       <ProductThumbnail product={product} size="medium" />
       <div className="flex flex-col gap-2">
-        <h3 className="text-xl">{product.name}</h3>
-          {product.description && (
-            <div
-              className={twMerge(
-                'prose dark:prose-invert dark:text-polar-500 flex-shrink leading-normal text-gray-500',
-                'max-w-96 truncate',
-              )}
-            >
-              <Markdown options={markdownOptionsJustText}>
-                {product.description}
-              </Markdown>
-            </div>
+        <div className='flex flex-row items-center gap-x-4'>
+          <h3 className="text-xl">{product.name}</h3>
+          {product.is_archived && (
+           <Pill color='gray'>Archived</Pill>
           )}
+        </div>
+        {product.description && (
+          <div
+            className={twMerge(
+              'prose dark:prose-invert dark:text-polar-500 flex-shrink leading-normal text-gray-500',
+              'max-w-96 truncate',
+            )}
+          >
+            <Markdown options={markdownOptionsJustText}>
+              {product.description}
+            </Markdown>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -64,7 +67,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     return null
   }
 
-
   return (
     <DashboardBody
       title={
@@ -76,18 +78,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
       className='gap-y-8'
       contextView={<CustomerModal customer={order.customer} />}
     >
-      <ShadowBox className="flex flex-col gap-8">
+      <ShadowBox className="flex flex-col bg-gray-100 gap-8">
         <OrderProductItem product={product} />
         <div className="flex flex-row gap-4">
-          <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
+          {!product.is_archived && <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
             <Button>View Product</Button>
-          </Link>
+          </Link>}
           <Link href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}>
-            <Button variant="secondary">All Product Orders</Button>
+            <Button variant="secondary" className='bg-gray-300 hover:bg-gray-200'>All Product Orders</Button>
           </Link>
         </div>
       </ShadowBox>
-      <ShadowBox className="flex flex-col gap-8">
+      <ShadowBox className="flex flex-col gap-8 bg-gray-100">
         <h2 className="text-xl">Order Details</h2>
         <div className="flex flex-col gap-1">
           <DetailRow title="Order ID">
@@ -137,7 +139,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       </ShadowBox>
 
       {(customFields?.items?.length ?? 0) > 0 && (
-        <ShadowBox className="flex flex-col gap-8">
+        <ShadowBox className="flex flex-col gap-8 bg-gray-100">
           <h3 className="text-lg">Custom Fields</h3>
           <div className="flex flex-col gap-2">
             {customFields?.items?.map((field) => (

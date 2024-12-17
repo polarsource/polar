@@ -187,6 +187,7 @@ class BenefitGitHubRepositoryProperties(Schema):
     repository_owner: RepositoryOwner
     repository_name: RepositoryName
     permission: Permission
+    repository_id: UUID4 | None = Field(None, deprecated=True)
 
 
 class BenefitGitHubRepositorySubscriberProperties(Schema):
@@ -272,8 +273,6 @@ class BenefitLicenseKeysSubscriberProperties(Schema):
 
 # BenefitCreate
 
-IsTaxApplicable = Annotated[bool, Field(description="Whether the benefit is taxable.")]
-
 
 class BenefitCreateBase(Schema):
     type: BenefitType
@@ -301,7 +300,6 @@ class BenefitCustomCreate(BenefitCreateBase):
     """
 
     type: Literal[BenefitType.custom]
-    is_tax_applicable: IsTaxApplicable
     properties: BenefitCustomCreateProperties
 
 
@@ -422,7 +420,6 @@ class BenefitCustom(BenefitBase):
 
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties
-    is_tax_applicable: IsTaxApplicable
 
 
 class BenefitAds(BenefitBase):

@@ -5,6 +5,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { ProductCheckoutModal } from '@/components/Products/ProductCheckoutModal'
+import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { useProducts } from '@/hooks/queries/products'
@@ -22,7 +23,6 @@ import {
   HiveOutlined,
   MoreVertOutlined,
   Search,
-  TextureOutlined,
 } from '@mui/icons-material'
 import {
   Organization,
@@ -167,31 +167,6 @@ export default function ClientPage({
   )
 }
 
-const ProductListCoverImage = ({ product }: { product: Product }) => {
-  let coverUrl = null
-  if (product.medias.length > 0) {
-    coverUrl = product.medias[0].public_url
-  }
-
-  return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 flex aspect-square h-10 flex-col items-center justify-center rounded-md border border-transparent bg-gray-100 text-center">
-      {coverUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={coverUrl}
-          alt={product.name}
-          className="aspect-square h-10 rounded-md object-cover"
-        />
-      ) : (
-        <TextureOutlined
-          fontSize="medium"
-          className="dark:text-polar-600 text-gray-300"
-        />
-      )}
-    </div>
-  )
-}
-
 interface ProductListItemProps {
   product: Product
   organization: Organization
@@ -252,7 +227,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
       )}
     >
       <div className="flex flex-grow flex-row items-center gap-x-4 text-sm">
-        <ProductListCoverImage product={product} />
+        <ProductThumbnail product={product} />
         <div className="flex flex-col">
           <span className="truncate">{product.name}</span>
           {product.description && (

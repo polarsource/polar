@@ -5,11 +5,13 @@ from pydantic import AliasChoices, BaseModel, Field, StringConstraints
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+MetadataColumn = Annotated[
+    dict[str, Any], mapped_column(JSONB, nullable=False, default=dict)
+]
+
 
 class MetadataMixin:
-    user_metadata: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
-    )
+    user_metadata: Mapped[MetadataColumn]
 
 
 _MAXIMUM_KEYS = 50
@@ -28,9 +30,10 @@ _MetadataValueString = Annotated[
     ),
 ]
 _MetadataValue = _MetadataValueString | int | bool
-_description = inspect.cleandoc(
+
+METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
-    Key-value object allowing you to store additional information.
+    {{heading}}
 
     The key must be a string with a maximum length of **{_MAXIMUM_KEY_LENGTH} characters**.
     The value must be either:
@@ -42,23 +45,26 @@ _description = inspect.cleandoc(
     You can store up to **{_MAXIMUM_KEYS} key-value pairs**.
     """
 )
+_description = METADATA_DESCRIPTION.format(
+    heading="Key-value object allowing you to store additional information."
+)
+
+
+MetadataField = Annotated[
+    dict[_MetadataKey, _MetadataValue],
+    Field(max_length=_MAXIMUM_KEYS, description=_description),
+]
 
 
 class MetadataInputMixin(BaseModel):
-    metadata: dict[_MetadataKey, _MetadataValue] = Field(
-        default_factory=dict,
-        max_length=_MAXIMUM_KEYS,
-        description=_description,
-        serialization_alias="user_metadata",
+    metadata: MetadataField = Field(
+        default_factory=dict, serialization_alias="user_metadata"
     )
 
 
 class OptionalMetadataInputMixin(BaseModel):
-    metadata: dict[_MetadataKey, _MetadataValue] | None = Field(
-        default=None,
-        max_length=_MAXIMUM_KEYS,
-        description=_description,
-        serialization_alias="user_metadata",
+    metadata: MetadataField | None = Field(
+        default=None, serialization_alias="user_metadata"
     )
 
 

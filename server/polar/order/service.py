@@ -187,7 +187,7 @@ class OrderService(ResourceServiceReader[Order]):
         statement = self._get_readable_order_statement(auth_subject)
 
         statement = statement.join(Order.discount, isouter=True).options(
-            joinedload(Order.subscription),
+            joinedload(Order.subscription).joinedload(Subscription.customer),
             contains_eager(Order.discount),
         )
 

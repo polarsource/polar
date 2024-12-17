@@ -7,6 +7,8 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.checkout.schemas import CheckoutUpdatePublic
+from polar.checkout.service import checkout as checkout_service
 from polar.discount.schemas import DiscountUpdate
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
@@ -406,3 +408,60 @@ class TestRedeemDiscount:
         assert second_redemption in done
         with pytest.raises(DiscountNotRedeemableError):
             second_redemption.result()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestCodeCaseInsensitivity:
+    async def test_code_case_insensitive(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=1,
+            organization=organization,
+            max_redemptions=3,
+            code="FooBar",
+        )
+
+        discount_exact = await discount_service.get_by_code_and_organization(
+            session,
+            code="FooBar",
+            organization=organization,
+        )
+        assert discount_exact
+        assert discount_exact.code == "FooBar"
+
+        discount_lower = await discount_service.get_by_code_and_organization(
+            session,
+            code="foobar",
+            organization=organization,
+        )
+        assert discount_lower
+        assert discount_lower.code == "FooBar"
+
+        discount_upper = await discount_service.get_by_code_and_organization(
+            session,
+            code="FOOBAR",
+            organization=organization,
+        )
+        assert discount_upper
+        assert discount_upper.code == "FooBar"
+
+        checkout_product = await create_checkout(save_fixture, price=product.prices[0])
+        await checkout_service.update(
+            session,
+            checkout_product,
+            CheckoutUpdatePublic(
+                discount_code="FoObAr",
+            ),
+        )
+        assert checkout_product.discount_id == discount.id

@@ -94,8 +94,7 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
               </FormControl>
               <FormMessage />
               <FormDescription>
-                This will be displayed to the customer when they apply the
-                discount.
+                Displayed to the customer when they apply the discount.
               </FormDescription>
             </FormItem>
           )
@@ -124,7 +123,8 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
               </FormControl>
               <FormMessage />
               <FormDescription>
-                Optional code that the customer can use to apply the discount.
+                Optional code (case insensitive) that the customer can use to apply the discount.
+
                 If left empty, the discount can only be applied through a
                 Checkout Link or the API.
               </FormDescription>

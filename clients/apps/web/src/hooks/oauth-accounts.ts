@@ -21,8 +21,5 @@ export const usePlatformOAuthAccount = (
 export const useGitHubAccount = (): OAuthAccountRead | undefined =>
   usePlatformOAuthAccount(OAuthPlatform.GITHUB)
 
-export const useDiscordAccount = (): OAuthAccountRead | undefined =>
-  usePlatformOAuthAccount(OAuthPlatform.DISCORD)
-
 export const useGoogleAccount = (): OAuthAccountRead | undefined =>
   usePlatformOAuthAccount(OAuthPlatform.GOOGLE)

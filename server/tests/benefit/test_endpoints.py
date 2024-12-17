@@ -118,18 +118,15 @@ class TestCreateBenefit:
         "payload",
         [
             {
-                "is_tax_applicable": True,
                 "properties": {"note": None},
                 "description": (
-                    "This is just a simple product description that should be allowed"
+                    "This is just a simple benefit description that should not be allowed because it's too long"
                 ),
             },
             {
-                "is_tax_applicable": True,
                 "properties": {"note": None},
                 "description": "Th",
             },
-            {"description": "Benefit", "properties": {"note": None}},
         ],
     )
     @pytest.mark.auth
@@ -163,7 +160,6 @@ class TestCreateBenefit:
             json={
                 "type": "custom",
                 "description": "Benefit",
-                "is_tax_applicable": True,
                 "properties": {"note": None},
                 "organization_id": str(organization.id),
             },

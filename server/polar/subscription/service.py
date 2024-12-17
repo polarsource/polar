@@ -299,7 +299,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def get_by_stripe_subscription_id(
         self, session: AsyncSession, stripe_subscription_id: str
     ) -> Subscription | None:
-        return await self.get_by(session, stripe_subscription_id=stripe_subscription_id)
+        statement = (
+            select(Subscription)
+            .where(Subscription.stripe_subscription_id == stripe_subscription_id)
+            .options(joinedload(Subscription.customer))
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
     @typing.overload
     async def create_arbitrary_subscription(

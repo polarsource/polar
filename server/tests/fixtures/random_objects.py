@@ -593,11 +593,12 @@ async def create_product(
         | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
     ] = [(1000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
-    tax_applicable: bool = True,
+    is_tax_applicable: bool = True,
 ) -> Product:
     product = Product(
         name=name,
         description="Description",
+        is_tax_applicable=is_tax_applicable,
         is_archived=is_archived,
         organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
@@ -650,12 +651,6 @@ async def create_product(
             )
         product.prices.append(product_price)
         product.all_prices.append(product_price)
-
-    if tax_applicable:
-        benefit = await create_benefit(
-            save_fixture, organization=organization, is_tax_applicable=True
-        )
-        product.product_benefits.append(ProductBenefit(benefit=benefit, order=0))
 
     return product
 
@@ -846,6 +841,7 @@ async def create_customer(
     email_verified: bool = False,
     name: str = "Customer",
     stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
+    user_metadata: dict[str, Any] = {},
 ) -> Customer:
     customer = Customer(
         email=email,
@@ -853,6 +849,7 @@ async def create_customer(
         name=name,
         stripe_customer_id=stripe_customer_id,
         organization=organization,
+        user_metadata=user_metadata,
     )
     await save_fixture(customer)
     return customer
@@ -898,7 +895,7 @@ async def create_benefit(
     *,
     organization: Organization,
     type: BenefitType = BenefitType.custom,
-    is_tax_applicable: bool | None = None,
+    is_tax_applicable: bool = True,
     description: str = "Benefit",
     selectable: bool = True,
     deletable: bool = True,
@@ -907,7 +904,7 @@ async def create_benefit(
     benefit = Benefit(
         type=type,
         description=description,
-        is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
+        is_tax_applicable=is_tax_applicable,
         organization=organization,
         selectable=selectable,
         deletable=deletable,
@@ -1135,6 +1132,7 @@ async def create_checkout(
     expires_at: datetime | None = None,
     client_secret: str | None = None,
     user_metadata: dict[str, Any] = {},
+    customer_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
     amount: int | None = None,
     tax_amount: int | None = None,
@@ -1161,6 +1159,7 @@ async def create_checkout(
             "CHECKOUT_CLIENT_SECRET",
         ),
         user_metadata=user_metadata,
+        customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
         amount=amount,
         tax_amount=tax_amount,

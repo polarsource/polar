@@ -60,7 +60,6 @@ const CreateBenefitModalContent = ({
       properties: {
         ...(properties as any),
       },
-      is_tax_applicable: false,
     },
   })
 

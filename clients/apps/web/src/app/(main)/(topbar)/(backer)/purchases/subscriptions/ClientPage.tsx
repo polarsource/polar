@@ -4,6 +4,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
+import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
@@ -15,8 +16,7 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { PropsWithChildren, useCallback, useContext, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useCallback, useContext } from 'react'
 
 export default function ClientPage() {
   const searchParams = useSearchParams()
@@ -121,47 +121,12 @@ export default function ClientPage() {
   )
 }
 
-const StatusWrapper = ({
-  children,
-  color,
-}: PropsWithChildren<{ color: string }>) => {
-  return (
-    <div className="flex flex-row items-center gap-x-2">
-      <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
-      <span className="capitalize">{children}</span>
-    </div>
-  )
-}
-
 const SubscriptionItem = ({
   subscription,
 }: {
   subscription: CustomerSubscription
 }) => {
   const organization = subscription.product.organization
-
-  const status = useMemo(() => {
-    switch (subscription.status) {
-      case 'active':
-        return (
-          <StatusWrapper
-            color={
-              subscription.cancel_at_period_end
-                ? 'border-yellow-500'
-                : 'border-emerald-500'
-            }
-          >
-            {subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'}
-          </StatusWrapper>
-        )
-      default:
-        return (
-          <StatusWrapper color="border-red-400">
-            {subscription.status.split('_').join(' ')}
-          </StatusWrapper>
-        )
-    }
-  }, [subscription])
 
   if (!organization) {
     return null
@@ -202,7 +167,7 @@ const SubscriptionItem = ({
         </div>
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-500">Status</span>
-          {status}
+          <SubscriptionStatusLabel subscription={subscription} />
         </div>
         {subscription.started_at && (
           <div className="flex flex-row items-center justify-between">

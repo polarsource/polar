@@ -215,7 +215,7 @@ async def product_tax_not_applicable(
     return await create_product(
         save_fixture,
         organization=organization,
-        tax_applicable=False,
+        is_tax_applicable=False,
     )
 
 
@@ -1037,6 +1037,29 @@ class TestCreate:
         assert checkout.customer_billing_address == customer.billing_address
         assert checkout.customer_tax_id == customer.tax_id
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_customer_metadata(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_id=product_one_time.id,
+                customer_metadata={"key": "value"},
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer_metadata == {"key": "value"}
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
@@ -1696,6 +1719,21 @@ class TestUpdate:
 
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_valid_customer_metadata(
+        self,
+        session: AsyncSession,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_free,
+            CheckoutUpdate(
+                customer_metadata={"key": "value"},
+            ),
+        )
+
+        assert checkout.customer_metadata == {"key": "value"}
+
     @pytest.mark.parametrize(
         "custom_field_data",
         (
@@ -1952,6 +1990,7 @@ class TestConfirm:
     )
     async def test_valid_stripe(
         self,
+        save_fixture: SaveFixture,
         customer_billing_address: dict[str, str],
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
@@ -1960,6 +1999,9 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        checkout_one_time_fixed.customer_metadata = {"key": "value"}
+        await save_fixture(checkout_one_time_fixed)
+
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
         )
@@ -1996,6 +2038,9 @@ class TestConfirm:
             "tax_amount": "0",
             **expected_tax_metadata,
         }
+
+        assert checkout.customer is not None
+        assert checkout.customer.user_metadata == {"key": "value"}
 
         assert checkout.customer_session_token is not None
         customer_session = await customer_session_service.get_by_token(
@@ -2125,9 +2170,11 @@ class TestConfirm:
             save_fixture,
             organization=organization,
             stripe_customer_id="CHECKOUT_CUSTOMER_ID",
+            user_metadata={"key": "value"},
         )
         checkout_one_time_fixed.customer = customer
         checkout_one_time_fixed.customer_email = customer.email
+        checkout_one_time_fixed.customer_metadata = {"key": "updated", "key2": "value2"}
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
@@ -2151,8 +2198,12 @@ class TestConfirm:
         assert checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.update_customer.assert_called_once()
 
+        assert checkout.customer is not None
+        assert checkout.customer.user_metadata == {"key": "updated", "key2": "value2"}
+
     async def test_valid_stripe_existing_customer_email(
         self,
+        save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         locker: Locker,
@@ -2160,6 +2211,11 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
         customer: Customer,
     ) -> None:
+        customer.user_metadata = {"key": "value"}
+        await save_fixture(customer)
+
+        checkout_one_time_fixed.customer_metadata = {"key": "updated", "key2": "value2"}
+
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             client_secret="CLIENT_SECRET", status="succeeded"
         )
@@ -2180,7 +2236,9 @@ class TestConfirm:
         )
 
         assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
         assert checkout.customer == customer
+        assert checkout.customer.user_metadata == {"key": "updated", "key2": "value2"}
         stripe_service_mock.update_customer.assert_called_once()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))

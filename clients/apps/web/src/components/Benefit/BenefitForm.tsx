@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -127,9 +126,7 @@ interface CustomBenefitFormProps {
   update?: boolean
 }
 
-export const CustomBenefitForm = ({
-  update = false,
-}: CustomBenefitFormProps) => {
+export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   const { control } = useFormContext<BenefitCustomCreate>()
 
   return (
@@ -155,27 +152,6 @@ export const CustomBenefitForm = ({
           )
         }}
       />
-      {!update && (
-        <FormField
-          control={control}
-          name="is_tax_applicable"
-          render={({ field }) => {
-            return (
-              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    defaultChecked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <FormLabel className="text-sm leading-none">
-                  Tax Applicable
-                </FormLabel>
-              </FormItem>
-            )
-          }}
-        />
-      )}
     </>
   )
 }

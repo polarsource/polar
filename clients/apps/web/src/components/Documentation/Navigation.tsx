@@ -399,6 +399,7 @@ export const MainNavigation = () => {
         <NavigationHeadline>Introduction</NavigationHeadline>
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
+        <NavigationItem href="/docs/countries">Supported Countries</NavigationItem>
         <NavigationItem href="/docs/fees">Fees</NavigationItem>
       </div>
 
@@ -487,7 +488,7 @@ export const MainNavigation = () => {
       <div>
         <NavigationHeadline>Merchant of Record</NavigationHeadline>
         <NavigationItem href="/docs/merchant-of-record/tax">
-          Sales tax & EU VAT
+          International taxes
         </NavigationItem>
         <NavigationItem href="/docs/merchant-of-record/compliance">
           Invoices & Tax Forms

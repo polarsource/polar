@@ -596,10 +596,16 @@ class StripeService:
         tax_id: stripe_lib.Customer.CreateParamsTaxIdDatum | None = None,
         **params: Unpack[stripe_lib.Customer.ModifyParams],
     ) -> stripe_lib.Customer:
-        if tax_id is not None:
-            await stripe_lib.Customer.create_tax_id_async(id, **tax_id)
-
+        params = {**params, "expand": ["tax_ids"]}
         customer = await stripe_lib.Customer.modify_async(id, **params)
+
+        if tax_id is not None:
+            if not any(
+                existing_tax_id.value == tax_id["value"]
+                and existing_tax_id.type == tax_id["type"]
+                for existing_tax_id in customer.tax_ids or []
+            ):
+                await stripe_lib.Customer.create_tax_id_async(id, **tax_id)
 
         return customer
 

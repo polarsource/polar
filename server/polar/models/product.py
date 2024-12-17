@@ -38,6 +38,9 @@ class Product(MetadataMixin, RecordModel):
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_tax_applicable: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     stripe_product_id: Mapped[str | None] = mapped_column(
@@ -102,17 +105,6 @@ class Product(MetadataMixin, RecordModel):
         cascade="all, delete-orphan",
         back_populates="product",
     )
-
-    @property
-    def is_tax_applicable(self) -> bool:
-        if len(self.prices) == 0:
-            return False
-
-        for benefit in self.benefits:
-            if benefit.is_tax_applicable:
-                return True
-
-        return False
 
     def get_stripe_name(self) -> str:
         return f"{self.organization.slug} - {self.name}"

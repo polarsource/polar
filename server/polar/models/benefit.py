@@ -31,6 +31,7 @@ class BenefitType(StrEnum):
     def is_tax_applicable(self) -> bool:
         try:
             _is_tax_applicable_map: dict[BenefitType, bool] = {
+                BenefitType.custom: True,
                 BenefitType.ads: True,
                 BenefitType.discord: True,
                 BenefitType.github_repository: True,

@@ -215,7 +215,7 @@ async def product_tax_not_applicable(
     return await create_product(
         save_fixture,
         organization=organization,
-        tax_applicable=False,
+        is_tax_applicable=False,
     )
 
 

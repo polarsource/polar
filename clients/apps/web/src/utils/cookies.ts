@@ -4,7 +4,7 @@ const lastVisitedOrg = 'last_visited_org'
 
 export const setLastVisitedOrg = (
   organization: string,
-  maxAge: number = 86400, // Expires in 1 day
+  maxAge: number = 30 * 86400, // Expires in 30 days
 ) => {
   document.cookie = `${lastVisitedOrg}=${organization}; max-age=${maxAge}; path=/`
 }

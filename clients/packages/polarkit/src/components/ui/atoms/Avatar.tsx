@@ -14,6 +14,9 @@ const Avatar = ({
   width?: number | undefined
 }) => {
   const initials = getInitials(name)
+  const isGravatar = avatar_url && avatar_url.includes("gravatar.com")
+  // Always add initials below image in case of Gravatar since they return a transparent image if the user does not have a Gravatar account
+  const showInitials = isGravatar || !avatar_url
 
   return (
     <div
@@ -22,10 +25,11 @@ const Avatar = ({
         className,
       )}
     >
-      {/* Always add initials below image because Gravatar returns a transparent image if the user does not have a Gravatar account */}
-      <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-        <span>{initials}</span>
-      </div>
+      {showInitials && (
+        <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+          <span>{initials}</span>
+        </div>
+      )}
       {avatar_url && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}

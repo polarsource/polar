@@ -96,3 +96,65 @@ s = Polar(
     access_token="<YOUR_BEARER_TOKEN_HERE>",
 )
 ```
+
+## Go
+
+We maintain a SDK for Go.
+
+### Quickstart
+
+```bash
+go get github.com/polarsource/polar-go
+```
+
+```go
+package main
+
+import(
+	"context"
+	"os"
+	polargo "github.com/polarsource/polar-go"
+	"log"
+)
+
+func main() {
+    ctx := context.Background()
+
+    s := polargo.New(
+        polargo.WithSecurity(os.Getenv("POLAR_ACCESS_TOKEN")),
+    )
+
+    res, err := s.Benefits.List(ctx, nil, nil, nil, nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+    if res.ListResourceBenefit != nil {
+        for {
+            // handle items
+
+            res, err = res.Next()
+
+            if err != nil {
+                // handle error
+            }
+
+            if res == nil {
+                break
+            }
+        }
+    }
+}
+```
+
+[<p className="text-xl text-center">Read more</p>](https://github.com/polarsource/polar-go)
+
+### Sandbox environment
+
+You can configure the SDK so it hits the [sandbox environment](/docs/developers/sandbox) instead of the production one. You just need to add the `WithServer` option when initializing the client:
+
+```go
+s := polargo.New(
+		polargo.WithServer("sandbox"),
+		polargo.WithSecurity(os.Getenv("POLAR_ACCESS_TOKEN")),
+	)
+```

@@ -841,6 +841,7 @@ async def create_customer(
     email_verified: bool = False,
     name: str = "Customer",
     stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
+    user_metadata: dict[str, Any] = {},
 ) -> Customer:
     customer = Customer(
         email=email,
@@ -848,6 +849,7 @@ async def create_customer(
         name=name,
         stripe_customer_id=stripe_customer_id,
         organization=organization,
+        user_metadata=user_metadata,
     )
     await save_fixture(customer)
     return customer
@@ -1130,6 +1132,7 @@ async def create_checkout(
     expires_at: datetime | None = None,
     client_secret: str | None = None,
     user_metadata: dict[str, Any] = {},
+    customer_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
     amount: int | None = None,
     tax_amount: int | None = None,
@@ -1156,6 +1159,7 @@ async def create_checkout(
             "CHECKOUT_CLIENT_SECRET",
         ),
         user_metadata=user_metadata,
+        customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
         amount=amount,
         tax_amount=tax_amount,

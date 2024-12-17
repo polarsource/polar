@@ -26,6 +26,8 @@ from polar.discount.schemas import (
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
 from polar.kit.metadata import (
+    METADATA_DESCRIPTION,
+    MetadataField,
     MetadataInputMixin,
     MetadataOutputMixin,
     OptionalMetadataInputMixin,
@@ -101,6 +103,12 @@ _allow_discount_codes_description = (
     "If you apply a discount through `discount_id`, it'll still be applied, "
     "but the customer won't be able to change it."
 )
+_customer_metadata_description = METADATA_DESCRIPTION.format(
+    heading=(
+        "Key-value object allowing you to store additional information "
+        "that'll be copied to the created customer."
+    )
+)
 
 
 class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
@@ -134,6 +142,9 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_metadata: MetadataField = Field(
+        default_factory=dict, description=_customer_metadata_description
+    )
     subscription_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -217,6 +228,9 @@ class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
         default=None, description=_allow_discount_codes_description
     )
     customer_ip_address: CustomerIPAddress | None = None
+    customer_metadata: MetadataField | None = Field(
+        default=None, description=_customer_metadata_description
+    )
     success_url: SuccessURL = None
     embed_origin: EmbedOrigin = None
 
@@ -406,6 +420,7 @@ class Checkout(MetadataOutputMixin, CheckoutBase):
     discount: CheckoutDiscount | None
     subscription_id: UUID4 | None
     attached_custom_fields: list[AttachedCustomField]
+    customer_metadata: dict[str, str | int | bool]
 
 
 class CheckoutPublic(CheckoutBase):

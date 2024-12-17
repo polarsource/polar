@@ -1599,6 +1599,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     billing_address=checkout.customer_billing_address,
                     tax_id=checkout.customer_tax_id,
                     organization=checkout.organization,
+                    user_metadata={},
                 )
 
         stripe_customer_id = customer.stripe_customer_id
@@ -1628,6 +1629,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 **update_params,
             )
         customer.stripe_customer_id = stripe_customer_id
+        customer.user_metadata = {
+            **customer.user_metadata,
+            **checkout.customer_metadata,
+        }
 
         session.add(customer)
         await session.flush()

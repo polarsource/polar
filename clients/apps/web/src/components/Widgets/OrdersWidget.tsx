@@ -78,9 +78,8 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   ]
 
   return (
-    <Link
+    <div
       className={twMerge('hidden h-80 md:block', className)}
-      href={`/dashboard/${org.slug}/sales`}
     >
       {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="relative h-full">
@@ -88,15 +87,16 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
             ?.slice()
             .reverse()
             .map((order, index) => (
-              <div
+              <Link
                 key={order.id}
+                href={`/dashboard/${org.slug}/sales/${order.id}`}
                 className={twMerge(
                   stackingClassNames[index],
                   'rounded-4xl dark:bg-polar-900 dark:border-polar-700 peer absolute w-full border border-white transition-all duration-300 will-change-transform hover:z-10 hover:scale-100 peer-hover:opacity-0',
                 )}
               >
                 <OrderCard order={order} />
-              </div>
+              </Link>
             ))}
         </div>
       ) : (
@@ -108,6 +108,6 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
           <h3>No orders found</h3>
         </Card>
       )}
-    </Link>
+    </div>
   )
 }

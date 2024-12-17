@@ -60,6 +60,7 @@ class OrderUser(Schema):
         )
     )
     avatar_url: str | None = Field(None)
+    github_username: str | None = Field(None)
 
 
 class OrderProduct(ProductBase): ...
@@ -68,7 +69,16 @@ class OrderProduct(ProductBase): ...
 OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDiscount"})]
 
 
-class OrderSubscription(SubscriptionBase, MetadataOutputMixin): ...
+class OrderSubscription(SubscriptionBase, MetadataOutputMixin):
+    user_id: UUID4 = Field(
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "user_id",
+            # Validate from ORM model
+            AliasPath("customer", "legacy_user_id"),
+        ),
+        deprecated="Use `customer_id`.",
+    )
 
 
 class Order(OrderBase):

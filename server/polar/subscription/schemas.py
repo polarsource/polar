@@ -42,6 +42,7 @@ class SubscriptionUser(Schema):
         )
     )
     avatar_url: str | None = Field(None)
+    github_username: str | None = Field(None)
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):

@@ -187,6 +187,7 @@ class BenefitGitHubRepositoryProperties(Schema):
     repository_owner: RepositoryOwner
     repository_name: RepositoryName
     permission: Permission
+    repository_id: UUID4 | None = Field(None, deprecated=True)
 
 
 class BenefitGitHubRepositorySubscriberProperties(Schema):

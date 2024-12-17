@@ -14,7 +14,8 @@ const Avatar = ({
   width?: number | undefined
 }) => {
   const initials = getInitials(name)
-  const isGravatar = avatar_url && avatar_url.includes("gravatar.com")
+  const avatarHost = avatar_url ? new URL(avatar_url).host : null
+  const isGravatar = avatarHost == "www.gravatar.com"
   // Always add initials below image in case of Gravatar since they return a transparent image if the user does not have a Gravatar account
   const showInitials = isGravatar || !avatar_url
 

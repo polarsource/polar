@@ -24,6 +24,7 @@
     "./components/ui/atoms/switch": "./src/components/ui/atoms/Switch.tsx",
     "./components/ui/atoms/tabs": "./src/components/ui/atoms/Tabs.tsx",
     "./components/ui/atoms/textarea": "./src/components/ui/atoms/TextArea.tsx",
+    "./components/ui/atoms/Status": "./src/components/ui/atoms/Status.tsx",
     "./components/ui/calendar": "./src/components/ui/calendar.tsx",
     "./components/ui/command": "./src/components/ui/command.tsx",
     "./components/ui/alert-dialog": "./src/components/ui/alert-dialog.tsx",

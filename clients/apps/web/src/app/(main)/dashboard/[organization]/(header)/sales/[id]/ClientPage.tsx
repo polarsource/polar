@@ -17,6 +17,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Status } from 'polarkit/components/ui/atoms/Status'
 
 interface OrderProductItemProps {
   product: Product
@@ -99,10 +100,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <span><FormattedDateTime dateStyle='long' datetime={order.created_at} /></span>
           </DetailRow>
           <DetailRow title="Billing Reason">
-            <span className='capitalize'>{order.billing_reason.split('_').join(' ')}</span>
+            <Status status={order.billing_reason.split('_').join(' ')} className='capitalize text-emerald-500 dark:bg-emerald-950 bg-emerald-100' />
           </DetailRow>
 
-          <Separator className='h-[1px] my-4 dark:bg-polar-700 bg-gray-200' />
+          <Separator className='h-[1px] my-4 dark:bg-polar-700 bg-gray-300' />
 
           <DetailRow title="Tax">
             <span>{formatCurrencyAndAmount(order.tax_amount)}</span>
@@ -115,7 +116,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </DetailRow>
           {order.billing_address ? (
             <>
-              <Separator className='h-[1px] my-4 dark:bg-polar-700 bg-gray-200' />
+              <Separator className='h-[1px] my-4 dark:bg-polar-700 bg-gray-300' />
               <DetailRow title="Country">
                 <span>{order.billing_address?.country}</span>
               </DetailRow>

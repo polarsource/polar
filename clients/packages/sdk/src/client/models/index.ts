@@ -1995,12 +1995,6 @@ export interface BenefitCustom {
      * @memberof BenefitCustom
      */
     properties: BenefitCustomProperties;
-    /**
-     * Whether the benefit is taxable.
-     * @type {boolean}
-     * @memberof BenefitCustom
-     */
-    is_tax_applicable: boolean;
 }
 
 
@@ -2036,12 +2030,6 @@ export interface BenefitCustomCreate {
      * @memberof BenefitCustomCreate
      */
     organization_id?: string | null;
-    /**
-     * Whether the benefit is taxable.
-     * @type {boolean}
-     * @memberof BenefitCustomCreate
-     */
-    is_tax_applicable: boolean;
     /**
      * 
      * @type {BenefitCustomCreateProperties}
@@ -2952,6 +2940,12 @@ export interface BenefitGitHubRepositoryProperties {
      * @memberof BenefitGitHubRepositoryProperties
      */
     permission: BenefitGitHubRepositoryPropertiesPermissionEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryProperties
+     */
+    repository_id?: string | null;
 }
 
 
@@ -11663,6 +11657,12 @@ export interface LicenseKeyUser {
      * @memberof LicenseKeyUser
      */
     public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyUser
+     */
+    avatar_url?: string | null;
 }
 /**
  * 
@@ -14200,7 +14200,6 @@ export interface OAuthAccountRead {
 export const OAuthPlatform = {
     GITHUB: 'github',
     GITHUB_REPOSITORY_BENEFIT: 'github_repository_benefit',
-    DISCORD: 'discord',
     GOOGLE: 'google'
 } as const;
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
@@ -14655,6 +14654,13 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     * @deprecated
+     */
+    user_id: string;
 }
 
 
@@ -14682,6 +14688,18 @@ export interface OrderUser {
      * @memberof OrderUser
      */
     public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    avatar_url?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    github_username?: string | null;
 }
 /**
  * 
@@ -18805,6 +18823,18 @@ export interface SubscriptionUser {
      * @memberof SubscriptionUser
      */
     public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
+    avatar_url?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
+    github_username?: string | null;
 }
 /**
  * 

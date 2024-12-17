@@ -14,9 +14,15 @@ const Avatar = ({
   width?: number | undefined
 }) => {
   const initials = getInitials(name)
-  const isGravatar = avatar_url && avatar_url.includes("gravatar.com")
-  // Always add initials below image in case of Gravatar since they return a transparent image if the user does not have a Gravatar account
-  const showInitials = isGravatar || !avatar_url
+
+  let showInitials = true
+  if (avatar_url) {
+    // Skip rendering initials in case of `avatar_url`
+    // Unless from Gravatar since they offer a transparent image in case of no avatar
+    // Also have to check for `http` first to avoid running `new URL` on internal NextJS asset paths
+    const avatarHost = avatar_url.startsWith('http') ? new URL(avatar_url).host : null
+    showInitials = avatarHost === 'www.gravatar.com'
+  }
 
   return (
     <div

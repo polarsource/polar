@@ -12,13 +12,11 @@ from polar.checkout.legacy.service import checkout as checkout_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Product, User
+from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import (
-    set_product_benefits,
-)
+from tests.fixtures.random_objects import create_product
 
 SUCCESS_URL = Url("https://example.com/success")
 
@@ -307,13 +305,11 @@ class TestCreate:
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        product: Product,
+        organization: Organization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        product = await set_product_benefits(
-            save_fixture,
-            product=product,
-            benefits=[],
+        product = await create_product(
+            save_fixture, organization=organization, is_tax_applicable=False
         )
 
         create_checkout_session_mock: MagicMock = (

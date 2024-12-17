@@ -224,7 +224,6 @@ class TestUserCreate:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
-            is_tax_applicable=True,
             properties=BenefitCustomCreateProperties(note=None),
             organization_id=None,
         )
@@ -248,7 +247,6 @@ class TestUserCreate:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
-            is_tax_applicable=True,
             properties=BenefitCustomCreateProperties(note=None),
             organization_id=uuid.uuid4(),
         )
@@ -273,7 +271,6 @@ class TestUserCreate:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
-            is_tax_applicable=True,
             properties=BenefitCustomCreateProperties(note=None),
             organization_id=organization.id,
         )
@@ -300,7 +297,6 @@ class TestUserCreate:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
-            is_tax_applicable=True,
             properties=BenefitCustomCreateProperties(note=None),
             organization_id=organization.id,
         )
@@ -324,7 +320,6 @@ class TestUserCreate:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
-            is_tax_applicable=True,
             properties=BenefitCustomCreateProperties(note=None),
             organization_id=uuid.uuid4(),
         )
@@ -365,7 +360,6 @@ class TestUserCreate:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
             description="Benefit",
-            is_tax_applicable=True,
             properties=BenefitCustomCreateProperties(note=None),
             organization_id=organization.id,
         )
@@ -500,7 +494,6 @@ class TestUserDelete:
         benefit = await create_benefit(
             save_fixture,
             type=BenefitType.custom,
-            is_tax_applicable=True,
             organization=organization,
             deletable=False,
         )

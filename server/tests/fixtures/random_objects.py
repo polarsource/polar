@@ -593,11 +593,12 @@ async def create_product(
         | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
     ] = [(1000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
-    tax_applicable: bool = True,
+    is_tax_applicable: bool = True,
 ) -> Product:
     product = Product(
         name=name,
         description="Description",
+        is_tax_applicable=is_tax_applicable,
         is_archived=is_archived,
         organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
@@ -650,12 +651,6 @@ async def create_product(
             )
         product.prices.append(product_price)
         product.all_prices.append(product_price)
-
-    if tax_applicable:
-        benefit = await create_benefit(
-            save_fixture, organization=organization, is_tax_applicable=True
-        )
-        product.product_benefits.append(ProductBenefit(benefit=benefit, order=0))
 
     return product
 
@@ -898,7 +893,7 @@ async def create_benefit(
     *,
     organization: Organization,
     type: BenefitType = BenefitType.custom,
-    is_tax_applicable: bool | None = None,
+    is_tax_applicable: bool = True,
     description: str = "Benefit",
     selectable: bool = True,
     deletable: bool = True,
@@ -907,7 +902,7 @@ async def create_benefit(
     benefit = Benefit(
         type=type,
         description=description,
-        is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
+        is_tax_applicable=is_tax_applicable,
         organization=organization,
         selectable=selectable,
         deletable=deletable,

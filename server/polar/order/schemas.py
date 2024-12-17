@@ -59,6 +59,7 @@ class OrderUser(Schema):
             "public_name",
         )
     )
+    avatar_url: str | None = Field(None)
 
 
 class OrderProduct(ProductBase): ...

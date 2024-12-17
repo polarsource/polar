@@ -25,7 +25,7 @@ from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
-from polar.kit.metadata import MetadataMixin
+from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.utils import utc_now
 
@@ -135,6 +135,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     customer_tax_id: Mapped[TaxID | None] = mapped_column(
         TaxIDType, nullable=True, default=None
     )
+    customer_metadata: Mapped[MetadataColumn]
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True

@@ -3,9 +3,10 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from httpx import AsyncClient
 
-from polar.app import app
+from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.models import AuthSubject, Subject
 from polar.checkout.ip_geolocation import _get_client_dependency
@@ -14,18 +15,26 @@ from polar.redis import Redis, get_redis
 
 
 @pytest_asyncio.fixture
-async def client(
-    request: pytest.FixtureRequest,
+async def app(
     auth_subject: AuthSubject[Subject],
     session: AsyncSession,
     redis: Redis,
-) -> AsyncGenerator[AsyncClient, None]:
-    app.dependency_overrides[get_db_session] = lambda: session
-    app.dependency_overrides[get_redis] = lambda: redis
-    app.dependency_overrides[_get_client_dependency] = lambda: None
+) -> AsyncGenerator[FastAPI]:
+    polar_app.dependency_overrides[get_db_session] = lambda: session
+    polar_app.dependency_overrides[get_redis] = lambda: redis
+    polar_app.dependency_overrides[_get_client_dependency] = lambda: None
     for auth_subject_getter in _auth_subject_factory_cache.values():
-        app.dependency_overrides[auth_subject_getter] = lambda: auth_subject
+        polar_app.dependency_overrides[auth_subject_getter] = lambda: auth_subject
 
+    yield polar_app
+
+    polar_app.dependency_overrides.pop(get_db_session)
+
+
+@pytest_asyncio.fixture
+async def client(
+    app: FastAPI, request: pytest.FixtureRequest, session: AsyncSession
+) -> AsyncGenerator[AsyncClient, None]:
     request_hooks = []
 
     async def expunge_hook(request: Any) -> None:
@@ -51,5 +60,3 @@ async def client(
         client.event_hooks
 
         yield client
-
-    app.dependency_overrides.pop(get_db_session)

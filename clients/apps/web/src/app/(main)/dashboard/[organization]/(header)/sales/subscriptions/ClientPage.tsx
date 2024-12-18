@@ -673,10 +673,10 @@ interface CancelSubscriptionViewProps {
   ) => void
 }
 
-type CancellationDateSelections = 'now' | 'period-end'
+type CancellationAction = 'revoke' | 'cancel_at_period_end'
 
 interface SubscriptionCancelForm extends SubscriptionCancel {
-  cancellation_date: CancellationDateSelections
+  cancellation_action: CancellationAction
 }
 
 const CancelSubscriptionView = ({
@@ -686,22 +686,27 @@ const CancelSubscriptionView = ({
   const cancelSubscription = useCancelSubscription()
   const form = useForm<SubscriptionCancelForm>({
     defaultValues: {
-      cancellation_date: 'period-end',
-      now: false,
-      customer_reason: undefined,
+      cancellation_action: 'cancel_at_period_end',
+      customer_cancellation_reason: undefined,
     },
   })
   const { control, handleSubmit, setError, setValue } = form
 
   const onSubmit = useCallback(
-    async (cancellation: SubscriptionCancel) => {
+    async (cancellation: SubscriptionCancelForm) => {
       try {
+        let body: SubscriptionCancel = {
+          customer_cancellation_reason: cancellation.customer_cancellation_reason
+        }
+        if (cancellation.cancellation_action === 'revoke') {
+          body.revoke = true
+        } else {
+          body.cancel_at_period_end = true
+        }
+
         await cancelSubscription.mutateAsync({
           id: subscription.id,
-          body: {
-            now: cancellation.now,
-            customer_reason: cancellation.customer_reason,
-          },
+          body: body
         })
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -749,24 +754,23 @@ const CancelSubscriptionView = ({
             <div className="flex flex-col gap-y-6">
               <FormField
                 control={control}
-                name="cancellation_date"
+                name="cancellation_action"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cancellation Date</FormLabel>
                     <FormControl>
                       <Select
                         value={field.value}
-                        onValueChange={(value: CancellationDateSelections) => {
-                          setValue('now', value === 'now')
-                          setValue('cancellation_date', value)
+                        onValueChange={(value: CancellationAction) => {
+                          setValue('cancellation_action', value)
                         }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select Cancellation Time" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="now">Immediately</SelectItem>
-                          <SelectItem value="period-end">
+                          <SelectItem value="revoke">Immediately</SelectItem>
+                          <SelectItem value="cancel_at_period_end">
                             End of current period
                             {periodEndOutput && (
                               <>

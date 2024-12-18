@@ -263,35 +263,6 @@ export type AdvertisementSortProperty = typeof AdvertisementSortProperty[keyof t
 /**
  * 
  * @export
- * @interface AlreadyCanceledCustomerSubscription
- */
-export interface AlreadyCanceledCustomerSubscription {
-    /**
-     * 
-     * @type {string}
-     * @memberof AlreadyCanceledCustomerSubscription
-     */
-    error: AlreadyCanceledCustomerSubscriptionErrorEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof AlreadyCanceledCustomerSubscription
-     */
-    detail: string;
-}
-
-
-/**
- * @export
- */
-export const AlreadyCanceledCustomerSubscriptionErrorEnum = {
-    ALREADY_CANCELED_CUSTOMER_SUBSCRIPTION: 'AlreadyCanceledCustomerSubscription'
-} as const;
-export type AlreadyCanceledCustomerSubscriptionErrorEnum = typeof AlreadyCanceledCustomerSubscriptionErrorEnum[keyof typeof AlreadyCanceledCustomerSubscriptionErrorEnum];
-
-/**
- * 
- * @export
  * @interface AlreadyCanceledSubscription
  */
 export interface AlreadyCanceledSubscription {
@@ -2024,6 +1995,13 @@ export interface BenefitCustom {
      * @memberof BenefitCustom
      */
     properties: BenefitCustomProperties;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustom
+     * @deprecated
+     */
+    is_tax_applicable: boolean;
 }
 
 
@@ -8687,16 +8665,22 @@ export interface CustomerSubscription {
 export interface CustomerSubscriptionCancel {
     /**
      * 
+     * @type {boolean}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancel_at_period_end?: boolean | null;
+    /**
+     * 
      * @type {CustomerCancellationReason}
      * @memberof CustomerSubscriptionCancel
      */
-    reason?: CustomerCancellationReason | null;
+    cancellation_reason?: CustomerCancellationReason | null;
     /**
      * 
      * @type {string}
      * @memberof CustomerSubscriptionCancel
      */
-    comment?: string | null;
+    cancellation_comment?: string | null;
 }
 
 
@@ -8799,15 +8783,21 @@ export const CustomerSubscriptionSortProperty = {
 export type CustomerSubscriptionSortProperty = typeof CustomerSubscriptionSortProperty[keyof typeof CustomerSubscriptionSortProperty];
 
 /**
+ * @type CustomerSubscriptionUpdate
+ * @export
+ */
+export type CustomerSubscriptionUpdate = CustomerSubscriptionCancel | CustomerSubscriptionUpdatePrice;
+
+/**
  * 
  * @export
- * @interface CustomerSubscriptionUpdate
+ * @interface CustomerSubscriptionUpdatePrice
  */
-export interface CustomerSubscriptionUpdate {
+export interface CustomerSubscriptionUpdatePrice {
     /**
-     * 
+     * Update subscription to another price.
      * @type {string}
-     * @memberof CustomerSubscriptionUpdate
+     * @memberof CustomerSubscriptionUpdatePrice
      */
     product_price_id: string;
 }
@@ -18988,19 +18978,25 @@ export interface SubscriptionCancel {
      * @type {boolean}
      * @memberof SubscriptionCancel
      */
-    now?: boolean | null;
+    cancel_at_period_end?: boolean | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCancel
+     */
+    revoke?: boolean | null;
     /**
      * 
      * @type {CustomerCancellationReason}
      * @memberof SubscriptionCancel
      */
-    customer_reason?: CustomerCancellationReason | null;
+    customer_cancellation_reason?: CustomerCancellationReason | null;
     /**
      * 
      * @type {string}
      * @memberof SubscriptionCancel
      */
-    customer_comment?: string | null;
+    customer_cancellation_comment?: string | null;
 }
 
 
@@ -19140,6 +19136,25 @@ export const SubscriptionStatus = {
 } as const;
 export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
 
+/**
+ * @type SubscriptionUpdate
+ * @export
+ */
+export type SubscriptionUpdate = SubscriptionCancel | SubscriptionUpdatePrice;
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionUpdatePrice
+ */
+export interface SubscriptionUpdatePrice {
+    /**
+     * Update subscription to another price.
+     * @type {string}
+     * @memberof SubscriptionUpdatePrice
+     */
+    product_price_id: string;
+}
 /**
  * 
  * @export

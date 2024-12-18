@@ -15,9 +15,8 @@
 
 import * as runtime from '../runtime';
 import type {
-  AlreadyCanceledCustomerSubscription,
+  AlreadyCanceledSubscription,
   CustomerSubscription,
-  CustomerSubscriptionCancel,
   CustomerSubscriptionSortProperty,
   CustomerSubscriptionUpdate,
   HTTPValidationError,
@@ -29,7 +28,6 @@ import type {
 
 export interface CustomerPortalSubscriptionsApiCancelRequest {
     id: string;
-    body: CustomerSubscriptionCancel;
 }
 
 export interface CustomerPortalSubscriptionsApiGetRequest {
@@ -68,18 +66,9 @@ export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling cancel().'
-            );
-        }
-
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -102,7 +91,6 @@ export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

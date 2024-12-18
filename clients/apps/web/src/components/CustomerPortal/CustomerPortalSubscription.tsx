@@ -17,10 +17,9 @@ import { ReceiptOutlined } from '@mui/icons-material'
 import {
   CustomerOrder,
   CustomerSubscription,
-  CustomerSubscriptionCancel,
   PolarAPI,
   CustomerCancellationReason,
-  CustomerPortalSubscriptionsApiCancelRequest,
+  CustomerSubscriptionCancel,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
@@ -274,12 +273,12 @@ const CustomerPortalSubscription = ({
 interface CustomerCancellationModalProps
   extends Omit<ModalProps, 'modalContent'> {
   subscription: CustomerSubscription
-  cancelSubscription: UseMutationResult<CustomerSubscription, Error, CustomerPortalSubscriptionsApiCancelRequest, unknown>
+  cancelSubscription: UseMutationResult<CustomerSubscription, Error, { id: string, body: CustomerSubscriptionCancel }, unknown>
   onAbort?: () => void
 }
 
 interface CustomerSubscriptionCancelForm extends CustomerSubscriptionCancel {
-  comment: string | undefined
+  cancellation_comment: string | undefined
 }
 
 const CustomerCancellationModal = ({
@@ -297,8 +296,9 @@ const CustomerCancellationModal = ({
 
   const form = useForm<CustomerSubscriptionCancelForm>({
     defaultValues: {
-      reason: undefined,
-      comment: undefined,
+      cancel_at_period_end: true,
+      cancellation_reason: undefined,
+      cancellation_comment: undefined,
     },
   })
   const { control, handleSubmit, setError, setValue } = form
@@ -330,7 +330,7 @@ const CustomerCancellationModal = ({
   )
 
   const onReasonSelect = (value: CustomerCancellationReason) => {
-    setValue('reason', value ?? '')
+    setValue('cancellation_reason', value ?? '')
   }
 
   return (
@@ -350,7 +350,7 @@ const CustomerCancellationModal = ({
             <form onSubmit={handleSubmit(handleCancellation)}>
               <FormField
                 control={control}
-                name="reason"
+                name="cancellation_reason"
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
@@ -398,7 +398,7 @@ const CustomerCancellationModal = ({
               />
               <FormField
                 control={control}
-                name="comment"
+                name="cancellation_comment"
                 render={({ field }) => (
                   <FormItem className="mt-8">
                     <FormControl>

@@ -22,7 +22,7 @@ export const useListSubscriptions = (
 export const useCancelSubscription = () =>
   useMutation({
     mutationFn: (variables: { id: string, body: SubscriptionCancel }) => {
-      return api.subscriptions.cancel(variables)
+      return api.subscriptions.update(variables)
     },
     onSuccess: (result, _variables, _ctx) => {
       queryClient.setQueriesData<ListResourceSubscription>(

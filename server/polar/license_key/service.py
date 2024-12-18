@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, and_, func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_customer, is_organization, is_user
@@ -71,19 +71,9 @@ class LicenseKeyService(
     ) -> LicenseKey | None:
         query = (
             self._get_select_base()
-            .join(
-                LicenseKeyActivation,
-                onclause=(
-                    and_(
-                        LicenseKeyActivation.license_key_id == LicenseKey.id,
-                        LicenseKeyActivation.deleted_at.is_(None),
-                    )
-                ),
-                isouter=True,
-            )
             .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
             .options(
-                contains_eager(LicenseKey.activations),
+                joinedload(LicenseKey.activations),
                 contains_eager(LicenseKey.benefit),
             )
             .where(LicenseKey.id == id)

@@ -15,6 +15,15 @@ interface EmbedCheckoutMessageClose {
 }
 
 /**
+ * Message sent to the parent window when the checkout is confirmed.
+ *
+ * At that point, the parent window shouldn't allow to close the checkout.
+ */
+interface EmbedCheckoutMessageConfirmed {
+  event: 'confirmed'
+}
+
+/**
  * Message sent to the parent window when the checkout is successfully completed.
  *
  * If `redirect` is set to `true`, the parent window should redirect to the `successURL`.
@@ -31,6 +40,7 @@ interface EmbedCheckoutMessageSuccess {
 type EmbedCheckoutMessage =
   | EmbedCheckoutMessageLoaded
   | EmbedCheckoutMessageClose
+  | EmbedCheckoutMessageConfirmed
   | EmbedCheckoutMessageSuccess
 
 const isEmbedCheckoutMessage = (
@@ -46,16 +56,19 @@ class EmbedCheckout {
   private iframe: HTMLIFrameElement
   private loader: HTMLDivElement
   private loaded: boolean
+  private closable: boolean
   private eventTarget: EventTarget
 
   public constructor(iframe: HTMLIFrameElement, loader: HTMLDivElement) {
     this.iframe = iframe
     this.loader = loader
     this.loaded = false
+    this.closable = true
     this.eventTarget = new EventTarget()
     this.initWindowListener()
     this.addEventListener('loaded', this.loadedListener.bind(this))
     this.addEventListener('close', this.closeListener.bind(this))
+    this.addEventListener('confirmed', this.confirmedListener.bind(this))
     this.addEventListener('success', this.successListener.bind(this))
   }
 
@@ -207,6 +220,11 @@ class EmbedCheckout {
     options?: AddEventListenerOptions | boolean,
   ): void
   public addEventListener(
+    type: 'confirmed',
+    listener: (event: CustomEvent<EmbedCheckoutMessageConfirmed>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
     type: 'success',
     listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
     options?: AddEventListenerOptions | boolean,
@@ -232,6 +250,10 @@ class EmbedCheckout {
   public removeEventListener(
     type: 'close',
     listener: (event: CustomEvent<EmbedCheckoutMessageClose>) => void,
+  ): void
+  public removeEventListener(
+    type: 'confirmed',
+    listener: (event: CustomEvent<EmbedCheckoutMessageConfirmed>) => void,
   ): void
   public removeEventListener(
     type: 'success',
@@ -276,7 +298,23 @@ class EmbedCheckout {
     if (event.defaultPrevented) {
       return
     }
-    this.close()
+    if (this.closable) {
+      this.close()
+    }
+  }
+
+  /**
+   * Default listener for the `confirmed` event.
+   *
+   * This listener will set a flag to prevent the parent window from closing the embedded checkout.
+   */
+  private confirmedListener(
+    event: CustomEvent<EmbedCheckoutMessageConfirmed>,
+  ): void {
+    if (event.defaultPrevented) {
+      return
+    }
+    this.closable = false
   }
 
   /**
@@ -290,6 +328,7 @@ class EmbedCheckout {
     if (event.defaultPrevented) {
       return
     }
+    this.closable = true
     if (event.detail.redirect) {
       window.location.href = event.detail.successURL
     }

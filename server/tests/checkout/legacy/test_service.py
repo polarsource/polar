@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic_core import Url
+from pydantic import AnyHttpUrl
 from pytest_mock import MockerFixture
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
@@ -18,7 +18,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product
 
-SUCCESS_URL = Url("https://example.com/success")
+SUCCESS_URL = AnyHttpUrl("https://example.com/success")
 
 
 @pytest.fixture(autouse=True)

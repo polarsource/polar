@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
-from pydantic_core import Url
+from pydantic import HttpUrl
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -635,7 +635,7 @@ class TestCreate:
             CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
-                success_url=Url(
+                success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_ID}"
                 ),
             ),
@@ -662,7 +662,7 @@ class TestCreate:
             CheckoutPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
-                success_url=Url(
+                success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}"
                 ),
             ),

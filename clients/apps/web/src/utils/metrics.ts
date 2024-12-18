@@ -11,7 +11,7 @@ export const getValueFormatter = (
   metric: Metric,
 ): ((value: number) => string) => {
   const numberFormat = new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   })
   switch (metric.type) {
     case MetricType.CURRENCY:

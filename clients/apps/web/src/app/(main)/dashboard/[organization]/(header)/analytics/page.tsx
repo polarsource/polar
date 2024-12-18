@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Interval, MetricPeriod } from '@polar-sh/sdk'
+import { Interval } from '@polar-sh/sdk'
 import {
   addDays,
   endOfMonth,
@@ -23,7 +23,6 @@ export default async function Page({
     end_date?: string
     interval?: Interval
     product_id?: string | string[]
-    focus?: keyof Omit<MetricPeriod, 'timestamp'>
   }
 }) {
   const api = getServerSideAPI()
@@ -82,8 +81,6 @@ export default async function Page({
     )
   }
 
-  const focus = searchParams.focus || 'revenue'
-
   return (
     <ClientPage
       organization={organization}
@@ -92,7 +89,6 @@ export default async function Page({
       endDate={endDate}
       interval={interval}
       productId={productId}
-      focus={focus}
     />
   )
 }

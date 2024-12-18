@@ -145,7 +145,7 @@ const BadgeSetup = ({
     )
     const isSyncCompleted = countSyncedIssues === countOpenIssues
 
-    // Goto next step and setup in case syncing is complete
+    // Go to next step and setup in case syncing is complete
     setSyncIssuesCount(countSyncedIssues)
 
     if (countSyncedIssues / countOpenIssues > 0.4) {

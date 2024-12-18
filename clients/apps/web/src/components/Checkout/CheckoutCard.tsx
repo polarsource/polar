@@ -4,7 +4,6 @@ import { BenefitList } from '@/components/Products/BenefitList'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasIntervals } from '@/utils/product'
-import { AttachMoneyOutlined } from '@mui/icons-material'
 import {
   CheckoutPublic,
   CheckoutUpdatePublic,
@@ -130,12 +129,6 @@ export const CheckoutCard = ({
                               value={field.value || undefined}
                               onChange={field.onChange}
                               placeholder={0}
-                              preSlot={
-                                <AttachMoneyOutlined
-                                  className="text-lg"
-                                  fontSize="inherit"
-                                />
-                              }
                               disabled={field.disabled}
                             />
                             <FormMessage />

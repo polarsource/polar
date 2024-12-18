@@ -212,22 +212,18 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             Boolean,
         )
 
-    @property
-    def ended(self) -> bool:
-        return bool(self.ended_at)
-
-    def can_cancel(self, immediately: bool) -> bool:
-        if not self.active or self.ended:
+    def can_cancel(self, immediately: bool = False) -> bool:
+        if not SubscriptionStatus.is_active(self.status):
             return False
 
-        # Allow immediate even if canceled at period end unless already expired
+        if self.ended_at:
+            return False
+
         if immediately:
             return True
 
-        # Already scheduled for cancellation at period end
-        if self.ends_at:
+        if self.cancel_at_period_end or self.ends_at:
             return False
-
         return True
 
     def set_started_at(self) -> None:

@@ -469,15 +469,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.current_period_end = _from_timestamp(
             stripe_subscription.current_period_end
         )
-        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
-        subscription.ends_at = _determine_ends_at(subscription, stripe_subscription)
-        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
-
-        # Use our own if set already (more accurate).
-        # Otherwise, use Stripe since the subscription was canceled by us there.
-        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
-        if canceled_at and not subscription.canceled_at:
-            subscription.canceled_at = canceled_at
+        self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
         subscription.discount = discount
         subscription.price = price
@@ -557,16 +549,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.current_period_end = _from_timestamp(
             stripe_subscription.current_period_end
         )
-        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
-        subscription.ends_at = _determine_ends_at(subscription, stripe_subscription)
-        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         subscription.set_started_at()
-
-        # Use our own if set already (more accurate).
-        # Otherwise, use Stripe since the subscription was canceled by us there.
-        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
-        if canceled_at and not subscription.canceled_at:
-            subscription.canceled_at = canceled_at
+        self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
         price_id = stripe_subscription["items"].data[0].price.id
         price = await product_price_service.get_by_stripe_price_id(session, price_id)
@@ -640,9 +624,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # Update status and cancellation details early for our API responses.
             # However, leave webhooks, benefit revokation etc to webhook handler.
             subscription.status = SubscriptionStatus(stripe_subscription.status)
-            subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
-            subscription.ends_at = _determine_ends_at(subscription, stripe_subscription)
-            subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+            self.update_cancellation_from_stripe(subscription, stripe_subscription)
         else:
             subscription.ends_at = utc_now()
             subscription.ended_at = utc_now()
@@ -669,6 +651,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         session.add(subscription)
         return subscription
+
+    def update_cancellation_from_stripe(
+        self, subscription: Subscription, stripe_subscription: stripe_lib.Subscription
+    ) -> None:
+        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
+        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        # Use our own if set already (more accurate).
+        if canceled_at and not subscription.canceled_at:
+            subscription.canceled_at = canceled_at
+
+        if subscription.cancel_at_period_end:
+            subscription.ends_at = subscription.current_period_end
+
+        if subscription.ended_at:
+            subscription.ends_at = subscription.ended_at
 
     async def _after_subscription_updated(
         self,

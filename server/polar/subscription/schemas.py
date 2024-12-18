@@ -58,7 +58,6 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     started_at: datetime | None
     ends_at: datetime | None
     ended_at: datetime | None
-    ended: bool
 
     customer_id: UUID4
     product_id: UUID4

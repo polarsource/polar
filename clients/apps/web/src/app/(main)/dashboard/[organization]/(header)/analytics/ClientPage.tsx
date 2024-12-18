@@ -5,16 +5,12 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { useMetrics } from '@/hooks/queries'
+import { ParsedMetricPeriod, useMetrics } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import {
-  Interval,
-  MetricPeriod,
-  MetricsLimits,
-  Organization,
-} from '@polar-sh/sdk'
+import { Interval, Metrics, MetricsLimits, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
   organization,
@@ -23,7 +19,6 @@ export default function ClientPage({
   endDate,
   interval,
   productId,
-  focus,
 }: {
   organization: Organization
   limits: MetricsLimits
@@ -31,7 +26,6 @@ export default function ClientPage({
   endDate: Date
   interval: Interval
   productId?: string[]
-  focus: keyof Omit<MetricPeriod, 'timestamp'>
 }) {
   const router = useRouter()
 
@@ -57,14 +51,12 @@ export default function ClientPage({
   const getSearchParams = (
     dateRange: { from: Date; to: Date },
     interval: Interval,
-    focus: keyof Omit<MetricPeriod, 'timestamp'>,
     productId?: string[],
   ) => {
     const params = new URLSearchParams()
     params.append('start_date', toISODate(dateRange.from))
     params.append('end_date', toISODate(dateRange.to))
     params.append('interval', interval)
-    params.append('focus', focus)
 
     if (productId) {
       productId.forEach((id) => params.append('product_id', id))
@@ -78,20 +70,19 @@ export default function ClientPage({
       const params = getSearchParams(
         { from: startDate, to: endDate },
         interval,
-        focus,
         productId,
       )
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
-    [router, organization, startDate, endDate, focus, productId],
+    [router, organization, startDate, endDate, productId],
   )
 
   const onDateChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const params = getSearchParams(dateRange, interval, focus, productId)
+      const params = getSearchParams(dateRange, interval, productId)
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
-    [router, organization, interval, focus, productId],
+    [router, organization, interval, productId],
   )
 
   const onProductSelect = useCallback(
@@ -99,35 +90,41 @@ export default function ClientPage({
       const params = getSearchParams(
         { from: startDate, to: endDate },
         interval,
-        focus,
         value,
       )
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
-    [router, organization, interval, startDate, endDate, focus],
+    [router, organization, interval, startDate, endDate],
   )
 
-  const onFocusChange = useCallback(
-    (focus: keyof Omit<MetricPeriod, 'timestamp'>) => {
-      const params = getSearchParams(
-        { from: startDate, to: endDate },
-        interval,
-        focus,
-        productId,
-      )
-      router.push(`/dashboard/${organization.slug}/analytics?${params}`)
-    },
-    [router, organization, startDate, endDate, interval, productId],
-  )
+  const generalEvents: (keyof Metrics)[] = [
+    'revenue',
+    'monthly_recurring_revenue',
+    'orders',
+    'average_order_value',
+  ]
+  const subscriptionEvents: (keyof Metrics)[] = [
+    'active_subscriptions',
+    'new_subscriptions',
+    'renewed_subscriptions',
+    'new_subscriptions_revenue',
+    'renewed_subscriptions_revenue',
+  ]
+  const oneTimeEvents: (keyof Metrics)[] = [
+    'one_time_products',
+    'one_time_products_revenue',
+  ]
 
   return (
-    <DashboardBody>
-      <div className="flex flex-col gap-8">
+    <DashboardBody
+      wide
+      transparent
+      header={
         <div className="flex flex-col items-center gap-2 lg:flex-row">
-          <div className="w-full lg:w-1/6">
+          <div className="w-full lg:w-auto">
             <IntervalPicker interval={interval} onChange={onIntervalChange} />
           </div>
-          <div className="w-full lg:w-1/4">
+          <div className="w-full lg:w-auto">
             <DateRangePicker
               date={dateRange}
               onDateChange={onDateChange}
@@ -136,48 +133,85 @@ export default function ClientPage({
               className="w-full"
             />
           </div>
-          <div className="w-full lg:w-1/6">
+          <div className="w-full lg:w-auto">
             <ProductSelect
               organization={organization}
               value={productId || []}
               onChange={onProductSelect}
-              className="w-[300px]"
+              className="w-auto"
             />
           </div>
         </div>
+      }
+    >
+      <div className="flex flex-col gap-8">
         {data && (
           <>
-            <div>
-              <MetricChartBox
-                data={data.periods}
-                interval={interval}
-                metric={data.metrics[focus]}
-                height={300}
-                maxTicks={10}
-                focused={true}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-              {Object.values(data.metrics)
-                .filter((metric) => metric.slug !== focus)
-                .map((metric) => (
-                  <div key={metric.slug}>
-                    <MetricChartBox
-                      key={metric.slug}
-                      data={data.periods}
-                      interval={interval}
-                      metric={metric}
-                      height={150}
-                      maxTicks={5}
-                      focused={false}
-                      onFocus={() => onFocusChange(metric.slug)}
-                    />
-                  </div>
-                ))}
-            </div>
+            <MetricGroup
+              title="Orders"
+              metricKeys={generalEvents}
+              metrics={data.metrics}
+              periods={data.periods}
+              interval={interval}
+            />
+            <MetricGroup
+              title="Subscriptions"
+              metricKeys={subscriptionEvents}
+              metrics={data.metrics}
+              periods={data.periods}
+              interval={interval}
+            />
+            <MetricGroup
+              title="One-time Purchases"
+              metricKeys={oneTimeEvents}
+              metrics={data.metrics}
+              periods={data.periods}
+              interval={interval}
+            />
           </>
         )}
       </div>
     </DashboardBody>
+  )
+}
+
+interface MetricGroupProps {
+  title: string
+  metricKeys: (keyof Metrics)[]
+  metrics: Metrics
+  periods: ParsedMetricPeriod[]
+  interval: Interval
+}
+
+const MetricGroup = ({
+  title,
+  metricKeys,
+  metrics,
+  periods,
+  interval,
+}: MetricGroupProps) => {
+  return (
+    <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-2xl border border-gray-200 bg-white p-8">
+      <h3 className="text-xl">{title}</h3>
+      <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
+        <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
+          {metricKeys.map((metricKey, index) => (
+            <MetricChartBox
+              key={metricKey}
+              data={periods}
+              interval={interval}
+              metric={metrics[metricKey as keyof Metrics]}
+              height={200}
+              maxTicks={5}
+              className={twMerge(
+                'dark:hover:bg-polar-800 hover:bg-gray-50 md:p-8',
+                index === 0 && 'lg:col-span-2',
+                'dark:border-polar-700 border-b border-r border-gray-200',
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }

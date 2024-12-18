@@ -230,6 +230,8 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
+import React from 'react'
+
 export const DashboardBody = ({
   children,
   className,
@@ -238,6 +240,8 @@ export const DashboardBody = ({
   contextView,
   contextViewClassName,
   header = true,
+  wide = false,
+  transparent = false,
 }: {
   children?: React.ReactNode
   wrapperClassName?: string
@@ -245,9 +249,20 @@ export const DashboardBody = ({
   title?: JSX.Element | string
   contextView?: React.ReactElement
   contextViewClassName?: string
-  header?: boolean
+  header?: JSX.Element | boolean
+  wide?: boolean
+  transparent?: boolean
 }) => {
   const currentRoute = useRoute()
+  const [scrolled, setScrolled] = useState(false)
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const hasScrolled = e.currentTarget.scrollTop > 1
+
+    if (hasScrolled !== scrolled) {
+      setScrolled(hasScrolled)
+    }
+  }
 
   const hasCurrent = (currentRoute?.subs as SubRouteWithActive[])?.some(
     (i) => i.isActive,
@@ -255,27 +270,47 @@ export const DashboardBody = ({
 
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-4')}>
-      <div className="dark:md:bg-polar-900 dark:border-polar-700 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-12 md:shadow-sm">
+      <div
+        onScroll={handleScroll}
+        className={twMerge(
+          'relative flex w-full flex-col items-center px-4 md:overflow-y-auto',
+          transparent
+            ? 'bg-transparent dark:bg-transparent'
+            : 'dark:md:bg-polar-900 dark:border-polar-700 rounded-2xl border-gray-200 md:border md:bg-white md:px-12 md:shadow-sm',
+          transparent && scrolled
+            ? 'dark:border-polar-700 border-t border-gray-200'
+            : '',
+        )}
+      >
         <div
           className={twMerge(
-            'flex h-full w-full max-w-screen-xl flex-col',
+            'flex h-full w-full flex-col',
             wrapperClassName,
+            wide ? '' : 'max-w-screen-xl',
           )}
         >
           {header && (
-            <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-12">
+            <div
+              className={twMerge(
+                'flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between',
+                transparent ? '' : 'md:py-12',
+              )}
+            >
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
                 {title ?? currentRoute?.title}
               </h4>
 
-              {currentRoute &&
+              {typeof header === 'boolean' &&
+              currentRoute &&
               'subs' in currentRoute &&
               hasCurrent &&
               (currentRoute.subs?.length ?? 0) > 0 ? (
                 <div className="flex flex-row items-center gap-4 gap-y-24">
                   <SubNav items={currentRoute.subs ?? []} />
                 </div>
-              ) : null}
+              ) : (
+                header
+              )}
             </div>
           )}
           <div className={twMerge('flex w-full flex-col pb-8', className)}>

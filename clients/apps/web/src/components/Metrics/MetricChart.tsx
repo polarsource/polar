@@ -3,10 +3,11 @@ import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
 import { Interval, Metric } from '@polar-sh/sdk'
 import * as d3 from 'd3'
-import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const primaryColor = 'rgb(0 98 255)'
+const primaryColorFaded = 'rgba(0, 98, 255, 0.3)'
 const gradientId = 'chart-gradient'
 const createAreaGradient = (id: string) => {
   // Create a <defs> element
@@ -23,13 +24,13 @@ const createAreaGradient = (id: string) => {
   // Create the first <stop> element
   const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
   stop1.setAttribute('offset', '0%')
-  stop1.setAttribute('stop-color', primaryColor)
+  stop1.setAttribute('stop-color', primaryColorFaded)
   stop1.setAttribute('stop-opacity', '0.5')
 
   // Create the second <stop> element
   const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
   stop2.setAttribute('offset', '100%')
-  stop2.setAttribute('stop-color', primaryColor)
+  stop2.setAttribute('stop-color', primaryColorFaded)
   stop2.setAttribute('stop-opacity', '0')
 
   // Append the <stop> elements to the <linearGradient> element
@@ -94,7 +95,7 @@ const getTickFormat = (
     case Interval.WEEK:
       return '%b %d'
     case Interval.MONTH:
-      return '%b %Y'
+      return '%b %y'
     case Interval.YEAR:
       return '%Y'
   }
@@ -175,32 +176,36 @@ const MetricChart: React.FC<MetricChartProps> = ({
           ticks,
           label: null,
           stroke: 'none',
-          fontFamily: GeistSans.style.fontFamily,
+          fontFamily: GeistMono.style.fontFamily,
         }),
         Plot.axisY({
           tickFormat: valueFormatter,
           label: null,
           stroke: 'none',
-          fontFamily: GeistSans.style.fontFamily,
+          fontFamily: GeistMono.style.fontFamily,
         }),
         Plot.areaY(data, {
           x: 'timestamp',
           y: metric.slug,
-          curve: 'bump-x',
           fill: `url(#${gradientId})`,
         }),
         Plot.lineY(data, {
           x: 'timestamp',
           y: metric.slug,
-          curve: 'bump-x',
           stroke: primaryColor,
           strokeWidth: 2,
+        }),
+        Plot.ruleX(data, {
+          x: 'timestamp',
+          stroke: 'currentColor',
+          strokeWidth: 1,
+          strokeOpacity: 0.2,
         }),
         Plot.ruleX(
           data,
           Plot.pointerX({
             x: 'timestamp',
-            stroke: primaryColor,
+            stroke: 'currentColor',
             strokeOpacity: 0.5,
             strokeWidth: 2,
           }),
@@ -211,7 +216,6 @@ const MetricChart: React.FC<MetricChartProps> = ({
             x: 'timestamp',
             y: metric.slug,
             fill: primaryColor,
-            fillOpacity: 0.5,
             r: 5,
           }),
         ),
@@ -248,7 +252,11 @@ const MetricChart: React.FC<MetricChartProps> = ({
   ])
 
   return (
-    <div className="w-full" ref={setContainerRef} onMouseLeave={onMouseLeave} />
+    <div
+      className="dark:text-polar-500 w-full text-gray-500"
+      ref={setContainerRef}
+      onMouseLeave={onMouseLeave}
+    />
   )
 }
 

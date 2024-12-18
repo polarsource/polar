@@ -77,6 +77,7 @@ interface BaseCheckoutFormProps {
   checkout: CheckoutPublic
   disabled?: boolean
   loading?: boolean
+  loadingLabel?: string
 }
 
 const BaseCheckoutForm = ({
@@ -85,6 +86,7 @@ const BaseCheckoutForm = ({
   checkout,
   disabled,
   loading,
+  loadingLabel,
   children,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval =
@@ -101,7 +103,6 @@ const BaseCheckoutForm = ({
     setValue,
     formState: { errors },
   } = form
-
   const country = watch('customer_billing_address.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
     async (value, { name, type }) => {
@@ -567,24 +568,32 @@ const BaseCheckoutForm = ({
                 )}
               </div>
             )}
-            <Button
-              type="submit"
-              size="lg"
-              wrapperClassNames="text-base"
-              disabled={disabled}
-              loading={loading}
-            >
-              {!checkout.is_payment_form_required
-                ? 'Submit'
-                : interval
-                  ? 'Subscribe'
-                  : 'Pay'}
-            </Button>
-            {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
-            )}
+            <div className="flex w-full flex-col items-center justify-center gap-y-2">
+              <Button
+                type="submit"
+                size="lg"
+                wrapperClassNames="text-base"
+                className="w-full"
+                disabled={disabled}
+                loading={loading}
+              >
+                {!checkout.is_payment_form_required
+                  ? 'Submit'
+                  : interval
+                    ? 'Subscribe'
+                    : 'Pay'}
+              </Button>
+              {loading && loadingLabel && (
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  {loadingLabel}
+                </p>
+              )}
+              {errors.root && (
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              )}
+            </div>
           </form>
         </Form>
         <p className="dark:text-polar-500 text-center text-xs text-gray-500">
@@ -617,6 +626,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const { setError } = useFormContext<CheckoutUpdatePublic>()
   const { checkout, onCheckoutUpdate, onCheckoutConfirm, theme, embed } = props
   const [loading, setLoading] = useState(false)
+  const [loadingLabel, setLoadingLabel] = useState<string | undefined>(
+    undefined,
+  )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -677,6 +689,11 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           let webhookEventDelivered = false
 
           const checkResolution = () => {
+            if (checkoutSuccessful && orderCreated && subscriptionCreated) {
+              setLoadingLabel(
+                `Waiting confirmation from ${checkout.organization.name} `,
+              )
+            }
             if (
               checkoutSuccessful &&
               orderCreated &&
@@ -692,6 +709,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           }) => {
             if (data.status === CheckoutStatus.SUCCEEDED) {
               checkoutSuccessful = true
+              setLoadingLabel('Payment successful! Processing order...')
               checkoutEvents.off('checkout.updated', checkoutUpdatedListener)
               checkResolution()
             }
@@ -775,6 +793,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
 
     if (!checkout.is_payment_form_required) {
       let updatedCheckout: CheckoutPublicConfirmed
+      setLoadingLabel('Processing order')
       try {
         updatedCheckout = await onCheckoutConfirm(data)
       } catch (e) {
@@ -792,6 +811,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       setLoading(false)
       return
     }
+
+    setLoadingLabel('Processing payment')
 
     const { error: submitError } = await elements.submit()
     if (submitError) {
@@ -854,6 +875,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       setLoading(false)
       return
     }
+
+    setLoadingLabel('Payment successful! Getting your products ready')
 
     const { intent_status, intent_client_secret } =
       updatedCheckout.payment_processor_metadata as Record<string, string>
@@ -972,6 +995,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             onSubmit={(data) => onSubmit(data, stripe, elements)}
             onCheckoutUpdate={onCheckoutUpdate}
             loading={loading}
+            loadingLabel={loadingLabel}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement

@@ -14,6 +14,11 @@ from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
 from polar.exceptions import PolarError
+from polar.integrations.discord.webhook import (
+    DiscordEmbedField,
+    DiscordPayload,
+    get_branded_discord_embed,
+)
 from polar.kit.schemas import IDSchema, Schema
 from polar.models import (
     Benefit,
@@ -34,7 +39,6 @@ from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
 
-from .discord import DiscordEmbedField, DiscordPayload, get_branded_discord_embed
 from .slack import SlackPayload, SlackText, get_branded_slack_payload
 
 WebhookTypeObject = (

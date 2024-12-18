@@ -3,20 +3,17 @@ from __future__ import annotations
 import datetime
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta
-from json import JSONDecodeError
 from typing import Any
 from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import (
     joinedload,
 )
 
 from polar.account.service import account as account_service
-from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import (
     BadRequest,
@@ -30,6 +27,10 @@ from polar.external_organization.service import (
 from polar.funding.funding_schema import Funding
 from polar.funding.schemas import PledgesSummary as FundingPledgesSummary
 from polar.funding.schemas import PledgesTypeSummaries
+from polar.integrations.discord.internal_webhook import (
+    get_branded_discord_embed,
+    send_internal_webhook,
+)
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.integrations.stripe.service_pledge import pledge_stripe_service
@@ -382,29 +383,25 @@ class PledgeService(ResourceServiceReader[Pledge]):
             await self.send_maintainer_pending_notification(session, issue_id)
 
     async def issue_confirmed_discord_alert(self, issue: Issue) -> None:
-        if not settings.DISCORD_WEBHOOK_URL:
-            return
-
-        webhook = AsyncDiscordWebhook(
-            url=settings.DISCORD_WEBHOOK_URL, content="Confirmed issue"
+        await send_internal_webhook(
+            {
+                "content": "Confirmed issue",
+                "embeds": [
+                    get_branded_discord_embed(
+                        {
+                            "title": "Confirmed issue",
+                            "description": f'Issue "{issue.title}" has been confirmed solved',
+                            "fields": [
+                                {
+                                    "name": "Backoffice",
+                                    "value": f"[Open](https://polar.sh/backoffice/issue/{str(issue.id)})",
+                                },
+                            ],
+                        }
+                    ),
+                ],
+            }
         )
-
-        embed = DiscordEmbed(
-            title="Confirmed issue",
-            description=f'"{issue.title}" has been confirmed solved',  # noqa: E501
-            color="65280",
-        )
-
-        embed.add_embed_field(
-            name="Backoffice",
-            value=f"[Open](https://polar.sh/backoffice/issue/{str(issue.id)})",
-        )
-
-        webhook.add_embed(embed)
-        try:
-            await webhook.execute()
-        except JSONDecodeError as e:
-            log.error("discord.webhook.error", error=e)
 
     async def send_maintainer_pending_notification(
         self, session: AsyncSession, issue_id: UUID

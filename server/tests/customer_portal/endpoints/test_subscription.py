@@ -23,15 +23,14 @@ from tests.fixtures.stripe import (
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.customer_portal.service.subscription.stripe_service", new=mock)
     mocker.patch("polar.subscription.service.stripe_service", new=mock)
     return mock
 
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
-class TestCustomerSubscriptionCancelEndpoints:
-    async def test_cancellation_update_without_auth(
+class TestCustomerSubscriptionUpdateCancel:
+    async def test_anonymous(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -52,7 +51,7 @@ class TestCustomerSubscriptionCancelEndpoints:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
-    async def test_cancellation_update_tampered(
+    async def test_tampered(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -73,7 +72,7 @@ class TestCustomerSubscriptionCancelEndpoints:
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
-    async def test_cancellation_update_success(
+    async def test_valid(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -118,7 +117,11 @@ class TestCustomerSubscriptionCancelEndpoints:
         assert updated_subscription["customer_cancellation_reason"] == reason
         assert updated_subscription["customer_cancellation_comment"] == comment
 
-    async def test_delete_without_auth(
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestCustomerSubscriptionCancel:
+    async def test_anonymous(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -137,7 +140,7 @@ class TestCustomerSubscriptionCancelEndpoints:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
-    async def test_delete_tampered(
+    async def test_tampered(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -156,7 +159,7 @@ class TestCustomerSubscriptionCancelEndpoints:
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
-    async def test_delete_success(
+    async def test_valid(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,

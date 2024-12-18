@@ -180,32 +180,29 @@ async def update(
 
 @router.delete(
     "/{id}",
-    summary="Cancel Subscription",
+    summary="Revoke Subscription",
     response_model=SubscriptionSchema,
     responses={
-        200: {"description": "Subscription immediately canceled."},
+        200: {"description": "Subscription revoked."},
         403: {
-            "description": (
-                "This subscription is already canceled "
-                "or will be at the end of the period."
-            ),
+            "description": "This subscription is already revoked.",
             "model": AlreadyCanceledSubscription.schema(),
         },
         404: SubscriptionNotFound,
     },
 )
-async def cancel(
+async def revoke(
     id: SubscriptionID,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Cancel a subscription immediately."""
+    """Revoke a subscription, i.e cancel immediately."""
     subscription = await subscription_service.user_get(session, auth_subject, id)
     if subscription is None:
         raise ResourceNotFound()
 
     log.info(
-        "subscription.cancel", id=id, admin_id=auth_subject.subject.id, immediate=True
+        "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
     return await subscription_service.cancel(
         session,

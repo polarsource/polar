@@ -5,17 +5,26 @@ from polar.models import Subscription
 
 
 class CanceledSubscriptionMock:
-    def __init__(self, subscription: Subscription) -> None:
-        ends_at = int(datetime.timestamp(subscription.current_period_end))
-        self.status = "active"
-        self.cancel_at_period_end = True
-        self.current_period_end = ends_at
-        self.canceled_at = int(time.time())
-        self.ends_at = ends_at
-        self.ended_at = None
+    def __init__(self, subscription: Subscription, revoke: bool = False) -> None:
+        now = int(time.time())
+        current_period_ends = int(datetime.timestamp(subscription.current_period_end))
+        if revoke:
+            self.status = "canceled"
+            self.cancel_at_period_end = False
+            self.current_period_end = current_period_ends
+            self.canceled_at = now
+            self.ends_at = now
+            self.ended_at = now
+        else:
+            self.status = "active"
+            self.cancel_at_period_end = True
+            self.current_period_end = current_period_ends
+            self.canceled_at = now
+            self.ends_at = current_period_ends
+            self.ended_at = None
 
 
 def create_canceled_stripe_subscription(
-    subscription: Subscription,
+    subscription: Subscription, revoke: bool = False
 ) -> CanceledSubscriptionMock:
-    return CanceledSubscriptionMock(subscription)
+    return CanceledSubscriptionMock(subscription, revoke=revoke)

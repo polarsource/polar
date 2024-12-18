@@ -791,6 +791,15 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
 
     setLoading(true)
 
+    if (checkout.embed_origin) {
+      PolarEmbedCheckout.postMessage(
+        {
+          event: 'confirmed',
+        },
+        checkout.embed_origin,
+      )
+    }
+
     if (!checkout.is_payment_form_required) {
       let updatedCheckout: CheckoutPublicConfirmed
       setLoadingLabel('Processing order')

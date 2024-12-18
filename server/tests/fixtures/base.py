@@ -1,10 +1,10 @@
 from collections.abc import AsyncGenerator
 from typing import Any
 
+import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from httpx import AsyncClient
 
 from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
@@ -16,9 +16,7 @@ from polar.redis import Redis, get_redis
 
 @pytest_asyncio.fixture
 async def app(
-    auth_subject: AuthSubject[Subject],
-    session: AsyncSession,
-    redis: Redis,
+    auth_subject: AuthSubject[Subject], session: AsyncSession, redis: Redis
 ) -> AsyncGenerator[FastAPI]:
     polar_app.dependency_overrides[get_db_session] = lambda: session
     polar_app.dependency_overrides[get_redis] = lambda: redis
@@ -34,7 +32,7 @@ async def app(
 @pytest_asyncio.fixture
 async def client(
     app: FastAPI, request: pytest.FixtureRequest, session: AsyncSession
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[httpx.AsyncClient, None]:
     request_hooks = []
 
     async def expunge_hook(request: Any) -> None:
@@ -52,8 +50,8 @@ async def client(
         if auto_expunge_marker.args != (False,):
             request_hooks.append(expunge_hook)
 
-    async with AsyncClient(
-        app=app,
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
         base_url="http://test",
         event_hooks={"request": request_hooks},
     ) as client:

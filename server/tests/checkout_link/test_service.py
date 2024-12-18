@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 import pytest_asyncio
-from pydantic_core import Url
+from pydantic import HttpUrl
 
 from polar.auth.models import AuthSubject
 from polar.checkout_link.schemas import CheckoutLinkPriceCreate, CheckoutLinkUpdate
@@ -135,7 +135,7 @@ class TestCreate:
             CheckoutLinkPriceCreate(
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
-                success_url=Url(
+                success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_ID}"
                 ),
                 metadata={"key": "value"},
@@ -168,7 +168,7 @@ class TestCreate:
                 payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 discount_id=discount_fixed_once.id,
-                success_url=Url(
+                success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_ID}"
                 ),
                 metadata={"key": "value"},

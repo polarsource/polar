@@ -1,10 +1,12 @@
 import uuid
 
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
-
-from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
+from polar.integrations.discord.internal_webhook import (
+    DiscordEmbedField,
+    get_branded_discord_embed,
+    send_internal_webhook,
+)
 from polar.kit.money import get_cents_in_dollar_string
 from polar.worker import (
     AsyncSessionMaker,
@@ -40,9 +42,6 @@ async def sync_stripe_fees(ctx: JobContext) -> None:
 async def payout_created(
     ctx: JobContext, payout_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
-    if not settings.DISCORD_WEBHOOK_URL:
-        return
-
     async with AsyncSessionMaker(ctx) as session:
         payout = await payout_transaction_service.get(session, payout_id)
         if payout is None:
@@ -52,29 +51,34 @@ async def payout_created(
         account = payout.account
         assert account is not None
 
-        webhook = AsyncDiscordWebhook(
-            url=settings.DISCORD_WEBHOOK_URL,
-            content="Payout triggered. Please review it.",
-        )
-
-        embed = DiscordEmbed(
-            title="Payout amount",
-            description=f"${get_cents_in_dollar_string(abs(payout.amount))}",
-            color="65280",
-        )
-        embed.add_embed_field(
-            name="Account Type",
-            value=f"{account.account_type}",
-        )
-
+        fields: list[DiscordEmbedField] = [
+            {
+                "name": "Account Type",
+                "value": f"{account.account_type}",
+            }
+        ]
         if account.account_type == AccountType.stripe:
-            embed.add_embed_field(
-                name="Stripe ID",
-                value=f"[{account.stripe_id}](https://dashboard.stripe.com/connect/accounts/{account.stripe_id})",
+            fields.append(
+                {
+                    "name": "Stripe ID",
+                    "value": f"[{account.stripe_id}](https://dashboard.stripe.com/connect/accounts/{account.stripe_id})",
+                }
             )
 
-        webhook.add_embed(embed)
-        await webhook.execute()
+        await send_internal_webhook(
+            {
+                "content": "Payout triggered. Please review it.",
+                "embeds": [
+                    get_branded_discord_embed(
+                        {
+                            "title": "Payout amount",
+                            "description": f"${get_cents_in_dollar_string(abs(payout.amount))}",
+                            "fields": fields,
+                        }
+                    )
+                ],
+            }
+        )
 
 
 @task("payout.trigger_stripe_payouts", cron_trigger=CronTrigger(minute=15))

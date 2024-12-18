@@ -1,11 +1,12 @@
 import uuid
 
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
-
-from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
+from polar.integrations.discord.internal_webhook import (
+    get_branded_discord_embed,
+    send_internal_webhook,
+)
 from polar.models import Account
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
@@ -30,26 +31,22 @@ class AccountDoesNotExist(AccountTaskError):
 
 
 async def send_account_under_review_discord_notification(account: Account) -> None:
-    if not settings.DISCORD_WEBHOOK_URL:
-        return
-
-    webhook = AsyncDiscordWebhook(
-        url=settings.DISCORD_WEBHOOK_URL, content="Payout account should be reviewed"
+    await send_internal_webhook(
+        {
+            "content": "Payout account should be reviewed",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Payout account should be reviewed",
+                        "description": (
+                            f"The {AccountType.get_display_name(account.account_type)} "
+                            f"payout account used by {', '.join(account.get_associations_names())} should be reviewed."
+                        ),
+                    }
+                )
+            ],
+        }
     )
-
-    associations_names = ", ".join(account.get_associations_names())
-
-    embed = DiscordEmbed(
-        title="Payout account should be reviewed",
-        description=(
-            f"The {AccountType.get_display_name(account.account_type)} "
-            f"payout account used by {associations_names} should be reviewed."
-        ),
-        color="65280",
-    )
-
-    webhook.add_embed(embed)
-    await webhook.execute()
 
 
 @task("account.under_review")

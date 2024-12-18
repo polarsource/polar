@@ -1,10 +1,12 @@
 import uuid
 
 import structlog
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
-from polar.config import settings
 from polar.exceptions import PolarTaskError
+from polar.integrations.discord.internal_webhook import (
+    get_branded_discord_embed,
+    send_internal_webhook,
+)
 from polar.kit.money import get_cents_in_dollar_string
 from polar.logging import Logger
 from polar.organization.service import organization as organization_service
@@ -64,9 +66,6 @@ async def update_product_benefits_grants(
 async def order_discord_notification(
     ctx: JobContext, order_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
-    if not settings.DISCORD_WEBHOOK_URL:
-        return
-
     async with AsyncSessionMaker(ctx) as session:
         order = await order_service.get(session, order_id)
         if order is None:
@@ -80,10 +79,6 @@ async def order_discord_notification(
         if not product_org:
             raise OrganizationDoesNotExist(product.organization_id)
 
-        webhook = AsyncDiscordWebhook(
-            url=settings.DISCORD_WEBHOOK_URL, content="New order"
-        )
-
         price = await product_price_service.get_by_id(session, order.product_price_id)
 
         if not price:
@@ -94,16 +89,22 @@ async def order_discord_notification(
         else:
             description = f"${get_cents_in_dollar_string(order.amount)}"
 
-        embed = DiscordEmbed(
-            title=product.name,
-            description=description,
-            color="65280",
+        await send_internal_webhook(
+            {
+                "content": "New order",
+                "embeds": [
+                    get_branded_discord_embed(
+                        {
+                            "title": product.name,
+                            "description": description,
+                            "fields": [
+                                {
+                                    "name": "Org",
+                                    "value": f"[{product_org.slug}](https://polar.sh/{product_org.slug})",
+                                }
+                            ],
+                        }
+                    )
+                ],
+            }
         )
-
-        embed.add_embed_field(
-            name="Org",
-            value=f"[{product_org.slug}](https://polar.sh/{product_org.slug})",
-        )
-
-        webhook.add_embed(embed)
-        await webhook.execute()

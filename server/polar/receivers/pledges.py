@@ -1,10 +1,12 @@
 import structlog
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.account.service import account as account_service
-from polar.config import settings
 from polar.external_organization.service import (
     external_organization as external_organization_service,
+)
+from polar.integrations.discord.internal_webhook import (
+    get_branded_discord_embed,
+    send_internal_webhook,
 )
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.service import issue as issue_service
@@ -70,36 +72,30 @@ issue_upserted.add(mark_pledges_confirmation_pending_on_issue_close)
 async def pledge_created_backoffice_discord_alert(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
-
-    if not settings.DISCORD_WEBHOOK_URL:
-        return
-
-    webhook = AsyncDiscordWebhook(
-        url=settings.DISCORD_WEBHOOK_URL, content="New pledge"
-    )
-
     issue = await issue_service.get(session, pledge.issue_id)
     if not issue:
         return
 
-    embed = DiscordEmbed(
-        title="New pledge",
-        description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".',  # noqa: E501
-        color="65280",
+    await send_internal_webhook(
+        {
+            "content": "New pledge",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "New pledge",
+                        "description": f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".',
+                        "fields": [
+                            {
+                                "name": "Backoffice",
+                                "value": "[Open](https://polar.sh/backoffice/pledges)",
+                            },
+                            {"name": "Type", "value": pledge.type},
+                        ],
+                    }
+                )
+            ],
+        }
     )
-
-    embed.add_embed_field(
-        name="Backoffice",
-        value="[Open](https://polar.sh/backoffice/pledges)",
-    )
-
-    embed.add_embed_field(
-        name="Type",
-        value=pledge.type,
-    )
-
-    webhook.add_embed(embed)
-    await webhook.execute()
 
 
 pledge_created_hook.add(pledge_created_backoffice_discord_alert)

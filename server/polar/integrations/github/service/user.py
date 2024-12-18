@@ -139,7 +139,7 @@ class GithubUserService(UserService):
         )
 
         session.add(new_user)
-        await session.commit()
+        await session.flush()
 
         log.info("github.user.create", user_id=new_user.id, username=github_user.login)
 

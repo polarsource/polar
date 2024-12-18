@@ -120,7 +120,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
 
         user.account = account
         session.add(user)
-        await session.commit()
         return user
 
     async def link_customers(self, session: AsyncSession, user: User) -> None:

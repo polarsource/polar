@@ -247,7 +247,7 @@ class StripeService:
             .values(stripe_customer_id=customer.id)
         )
         await session.execute(stmt)
-        await session.commit()
+        await session.flush()
 
         return customer
 
@@ -278,7 +278,7 @@ class StripeService:
             .values(stripe_customer_id=customer.id)
         )
         await session.execute(stmt)
-        await session.commit()
+        await session.flush()
 
         return customer
 

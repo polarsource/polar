@@ -133,7 +133,6 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         ):
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
-            await session.commit()
 
             enqueue_job("account.under_review", account_id=account.id)
 
@@ -156,7 +155,6 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 account.next_review_threshold = None
 
         session.add(account)
-        await session.commit()
 
         enqueue_job("account.reviewed", account_id=account.id)
 
@@ -286,7 +284,6 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             account.status = Account.Status.ONBOARDING_STARTED
 
         session.add(account)
-        await session.commit()
 
         return account
 

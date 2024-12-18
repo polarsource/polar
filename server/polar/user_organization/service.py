@@ -85,7 +85,6 @@ class UserOrganizationService:
             .values(deleted_at=utc_now())
         )
         await session.execute(stmt)
-        await session.commit()
 
     def _get_list_by_user_id_query(
         self, user_id: UUID, ordered: bool = True

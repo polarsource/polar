@@ -1,3 +1,4 @@
+import time
 import uuid
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -27,7 +28,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.product_price import ProductPriceType
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -39,17 +40,22 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.fixture(autouse=True)
-def stripe_subscription_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.subscription.service.stripe_service", new=mock)
-    return mock
+class StripeCanceledSubscriptionMock:
+    def __init__(self, subscription: Subscription) -> None:
+        ends_at = int(datetime.timestamp(subscription.current_period_end))
+        self.status = "active"
+        self.cancel_at_period_end = True
+        self.current_period_end = ends_at
+        self.canceled_at = int(time.time())
+        self.ends_at = ends_at
+        self.ended_at = None
 
 
 @pytest.fixture(autouse=True)
-def stripe_customer_subscription_service_mock(mocker: MockerFixture) -> MagicMock:
+def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.customer_portal.service.subscription.stripe_service", new=mock)
+    mocker.patch("polar.subscription.service.stripe_service", new=mock)
     return mock
 
 
@@ -163,7 +169,7 @@ class TestUpdate:
     async def test_valid(
         self,
         session: AsyncSession,
-        stripe_customer_subscription_service_mock: MagicMock,
+        stripe_service_mock: MagicMock,
         subscription: Subscription,
         product: Product,
         product_second: Product,
@@ -183,7 +189,7 @@ class TestUpdate:
         assert updated_subscription.amount == new_price.price_amount
         assert updated_subscription.recurring_interval == new_price.recurring_interval
 
-        stripe_customer_subscription_service_mock.update_subscription_price.assert_called_once_with(
+        stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
             old_price=product.prices[0].stripe_price_id,
             new_price=product_second.prices[0].stripe_price_id,
@@ -220,6 +226,7 @@ class TestCancel:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
+        stripe_service_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -228,6 +235,9 @@ class TestCancel:
         )
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
+
+        canceled = StripeCanceledSubscriptionMock(subscription)
+        stripe_service_mock.cancel_subscription.return_value = canceled
 
         with pytest.raises(AlreadyCanceledCustomerSubscription):
             await customer_subscription_service.cancel(
@@ -239,7 +249,7 @@ class TestCancel:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        stripe_customer_subscription_service_mock: MagicMock,
+        stripe_service_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -261,14 +271,14 @@ class TestCancel:
         assert updated_subscription.ends_at is not None
         assert updated_subscription.ended_at is not None
 
-        stripe_customer_subscription_service_mock.cancel_subscription.assert_not_called()
+        stripe_service_mock.cancel_subscription.assert_not_called()
 
     @pytest.mark.auth
     async def test_stripe_subscription_cancellation(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        stripe_subscription_service_mock: MagicMock,
+        stripe_service_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -278,14 +288,24 @@ class TestCancel:
             customer=customer,
         )
 
+        canceled = StripeCanceledSubscriptionMock(subscription)
+        stripe_service_mock.cancel_subscription.return_value = canceled
         updated_subscription = await customer_subscription_service.cancel(
-            session, subscription=subscription
+            session,
+            subscription=subscription,
+            reason=CustomerCancellationReason.too_complex,
+            comment="So many settings",
         )
 
         assert updated_subscription.id == subscription.id
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.ended_at is None
+        assert updated_subscription.cancel_at_period_end
+        assert updated_subscription.ends_at == updated_subscription.current_period_end
 
-        stripe_subscription_service_mock.cancel_subscription.assert_called_once_with(
-            subscription.stripe_subscription_id
+        stripe_service_mock.cancel_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            customer_reason="too_complex",
+            customer_comment="So many settings",
+            immediately=False,
         )

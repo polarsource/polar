@@ -247,7 +247,7 @@ class OrderService(ResourceServiceReader[Order]):
             .options(
                 joinedload(Order.customer),
                 joinedload(Order.product_price),
-                joinedload(Order.subscription),
+                joinedload(Order.subscription).joinedload(Subscription.customer),
                 joinedload(Order.discount),
             )
         )

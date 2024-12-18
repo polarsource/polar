@@ -74,9 +74,24 @@ class LicenseKey(RecordModel):
     limit_activations: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     @declared_attr
-    def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
+    def all_activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
         return relationship(
             "LicenseKeyActivation", lazy="raise", back_populates="license_key"
+        )
+
+    @declared_attr
+    def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
+        # Prices are almost always needed, so eager loading makes sense
+        return relationship(
+            "LicenseKeyActivation",
+            lazy="raise",
+            primaryjoin=(
+                "and_("
+                "LicenseKeyActivation.license_key_id == LicenseKey.id, "
+                "LicenseKeyActivation.deleted_at.is_(None)"
+                ")"
+            ),
+            viewonly=True,
         )
 
     usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

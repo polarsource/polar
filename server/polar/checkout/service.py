@@ -1061,6 +1061,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 else None,
                 automatic_tax=False,
                 metadata=metadata,
+                invoice_metadata={
+                    "checkout_id": str(checkout.id),
+                },
                 idempotency_key=idempotency_key,
             )
             await stripe_service.set_automatically_charged_subscription(

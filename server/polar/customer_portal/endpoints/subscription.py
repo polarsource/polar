@@ -19,7 +19,6 @@ from polar.routing import APIRouter
 from .. import auth
 from ..schemas.subscription import (
     CustomerSubscription,
-    CustomerSubscriptionCancel,
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
@@ -138,10 +137,10 @@ async def update(
     summary="Cancel Subscription",
     response_model=CustomerSubscription,
     responses={
-        200: {"description": "Your subscription is canceled."},
+        200: {"description": "Customer subscription is canceled."},
         403: {
             "description": (
-                "Your subscription is already canceled "
+                "Customer subscription is already canceled "
                 "or will be at the end of the period."
             ),
             "model": AlreadyCanceledCustomerSubscription.schema(),
@@ -152,7 +151,6 @@ async def update(
 async def cancel(
     id: SubscriptionID,
     auth_subject: auth.CustomerPortalWrite,
-    customer_cancellation: CustomerSubscriptionCancel,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Cancel a subscription of the authenticated customer or user."""
@@ -162,14 +160,8 @@ async def cancel(
         raise ResourceNotFound()
 
     log.info(
-        "subscription.cancel",
+        "customer_portal.subscription.cancel",
         id=id,
-        reason=customer_cancellation.reason,
         customer_id=auth_subject.subject.id,
     )
-    return await user_subscription_service.cancel(
-        session,
-        subscription=subscription,
-        reason=customer_cancellation.reason,
-        comment=customer_cancellation.comment,
-    )
+    return await user_subscription_service.cancel(session, subscription=subscription)

@@ -475,8 +475,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Use our own if set already (more accurate).
         # Otherwise, use Stripe since the subscription was canceled by us there.
-        if subscription.canceled_at:
-            subscription.canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        if canceled_at and not subscription.canceled_at:
+            subscription.canceled_at = canceled_at
 
         subscription.discount = discount
         subscription.price = price
@@ -563,8 +564,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Use our own if set already (more accurate).
         # Otherwise, use Stripe since the subscription was canceled by us there.
-        if subscription.canceled_at:
-            subscription.canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        if canceled_at and not subscription.canceled_at:
+            subscription.canceled_at = canceled_at
 
         price_id = stripe_subscription["items"].data[0].price.id
         price = await product_price_service.get_by_stripe_price_id(session, price_id)

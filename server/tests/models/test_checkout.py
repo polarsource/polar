@@ -10,7 +10,6 @@ from tests.fixtures.random_objects import create_checkout
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize(
     "initial_status,expected_status",
     [

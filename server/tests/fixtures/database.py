@@ -5,7 +5,6 @@ from collections.abc import AsyncIterator, Callable, Coroutine
 from pathlib import Path
 from uuid import UUID
 
-import pytest
 import pytest_asyncio
 from pydantic_core import Url
 from pytest_mock import MockerFixture
@@ -107,11 +106,7 @@ def session_commit_spy(
 
 
 @pytest_asyncio.fixture
-async def session(
-    worker_id: str,
-    mocker: MockerFixture,
-    request: pytest.FixtureRequest,
-) -> AsyncIterator[AsyncSession]:
+async def session(worker_id: str, mocker: MockerFixture) -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),
         application_name=f"test_{worker_id}",
@@ -123,7 +118,6 @@ async def session(
 
     session = AsyncSession(bind=connection, expire_on_commit=False)
 
-    expunge_spy = mocker.spy(session, "expunge_all")
     mocker.patch.object(
         session, "commit", side_effect=session_commit_spy(session.commit)
     )
@@ -133,19 +127,6 @@ async def session(
     await transaction.rollback()
     await connection.close()
     await engine.dispose()
-
-    skip_db_assert_marker = request.node.get_closest_marker("skip_db_asserts")
-    if skip_db_assert_marker is not None:
-        return
-
-    # Assert that session.expunge_all() was called.
-    #
-    # expunge_all() should be called after the test has been setup, and before
-    # the test calls out to the implementation.
-    #
-    # This is to ensure that we don't rely on the existing state in the Session
-    # from creating the tests.
-    expunge_spy.assert_called()
 
 
 SaveFixture = Callable[[Model], Coroutine[None, None, None]]

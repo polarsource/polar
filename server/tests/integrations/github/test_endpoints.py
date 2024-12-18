@@ -7,7 +7,6 @@ from polar.integrations.github.service.secret_scanning import InvalidSignature
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestSecretScanning:
     @pytest.mark.parametrize(
         "headers",

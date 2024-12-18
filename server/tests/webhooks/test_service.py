@@ -43,7 +43,6 @@ webhook_url = cast(HttpsUrl, "https://example.com/hook")
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreateEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.web_default}))
     async def test_user_no_organization_id_valid(
@@ -141,7 +140,6 @@ class TestCreateEndpoint:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
@@ -252,7 +250,6 @@ class TestUpdateEndpoint:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestDeleteEndpoint:
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
@@ -332,7 +329,6 @@ class TestDeleteEndpoint:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRedeliverEvent:
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
@@ -415,7 +411,6 @@ class TestRedeliverEvent:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestOnEventSuccess:
     async def test_not_existing_event(self, session: AsyncSession) -> None:
         with pytest.raises(EventDoesNotExist):

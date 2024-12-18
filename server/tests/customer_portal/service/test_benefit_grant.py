@@ -15,7 +15,6 @@ from tests.fixtures.random_objects import create_benefit_grant
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_other_customer(
@@ -121,7 +120,6 @@ class TestList:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestGetById:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_other_customer(

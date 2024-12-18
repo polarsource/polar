@@ -55,7 +55,6 @@ async def custom_field_data_schema(
     )
 
 
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize(
     "input",
     (
@@ -72,7 +71,6 @@ def test_invalid_input(
         custom_field_data_schema.model_validate(input)
 
 
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize(
     "input",
     (
@@ -89,7 +87,6 @@ def test_valid_input(
     assert data.model_dump(exclude_unset=True) == input
 
 
-@pytest.mark.skip_db_asserts
 @pytest.mark.asyncio
 async def test_checkbox_input(
     save_fixture: SaveFixture, organization: Organization

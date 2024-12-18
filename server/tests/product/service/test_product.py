@@ -323,7 +323,6 @@ class TestGetById:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreate:
     @pytest.mark.auth
     async def test_user_not_existing_organization(
@@ -745,7 +744,6 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     @pytest.mark.auth
     async def test_not_writable_product(
@@ -1218,7 +1216,6 @@ class TestUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateBenefits:
     @pytest.mark.auth
     async def test_not_writable_product(

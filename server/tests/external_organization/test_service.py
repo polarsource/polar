@@ -11,7 +11,6 @@ from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestList:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="anonymous"),

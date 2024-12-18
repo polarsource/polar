@@ -17,7 +17,6 @@ from .conftest import IssuesPledgesFixture, create_issues_pledges
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestSearch:
     async def test_unknown_organization(self, client: AsyncClient) -> None:
         response = await client.get(

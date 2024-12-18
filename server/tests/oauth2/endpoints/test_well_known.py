@@ -3,7 +3,6 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_jwks(client: AsyncClient) -> None:
     response = await client.get("/.well-known/jwks.json")
 
@@ -17,7 +16,6 @@ async def test_jwks(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_openid_configuration(client: AsyncClient) -> None:
     response = await client.get("/.well-known/openid-configuration")
 

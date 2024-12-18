@@ -22,7 +22,6 @@ async def checkout_link(save_fixture: SaveFixture, product: Product) -> Checkout
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreateCheckoutLink:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
@@ -120,7 +119,6 @@ class TestCreateCheckoutLink:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateCheckoutLink:
     async def test_anonymous(
         self, client: AsyncClient, checkout_link: CheckoutLink
@@ -189,7 +187,6 @@ class TestUpdateCheckoutLink:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestDeleteCheckoutLink:
     async def test_anonymous(
         self, client: AsyncClient, checkout_link: CheckoutLink
@@ -235,7 +232,6 @@ class TestDeleteCheckoutLink:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRedirect:
     def client_secret_from_redirect_url(self, url: str) -> str:
         client_secret = url.split("/")[-1]

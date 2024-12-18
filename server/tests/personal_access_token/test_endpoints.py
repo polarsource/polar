@@ -3,7 +3,6 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreatePersonalAccessToken:
     @pytest.mark.parametrize("expires_in", [None, 3600])
     @pytest.mark.auth

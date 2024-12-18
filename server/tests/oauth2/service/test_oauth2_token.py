@@ -13,7 +13,6 @@ from ..conftest import create_oauth2_token
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
         "token, token_type",

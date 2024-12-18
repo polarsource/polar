@@ -40,7 +40,6 @@ async def order_text_field_data(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     async def test_slug_update(
         self,

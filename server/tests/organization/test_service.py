@@ -15,7 +15,6 @@ from polar.user_organization.service import (
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreate:
     @pytest.mark.auth
     @pytest.mark.parametrize(

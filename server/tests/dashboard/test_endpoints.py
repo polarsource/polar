@@ -20,7 +20,6 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get(
     user: User,
@@ -39,7 +38,6 @@ async def test_get(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_personal(client: AsyncClient) -> None:
     response = await client.get("/v1/dashboard/personal")
@@ -48,7 +46,6 @@ async def test_get_personal(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_no_member(
     user: User,
@@ -63,7 +60,6 @@ async def test_get_no_member(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_with_pledge_from_org(
     user: User,
@@ -93,7 +89,6 @@ async def test_get_with_pledge_from_org(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_with_pledge_from_user(
     save_fixture: SaveFixture,
@@ -134,7 +129,6 @@ async def test_get_with_pledge_from_user(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_with_pledge_from_user_github_oauth(
     user: User,
@@ -178,7 +172,6 @@ async def test_get_with_pledge_from_user_github_oauth(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_with_pledge_initiated(
     user: User,
@@ -207,7 +200,6 @@ async def test_get_with_pledge_initiated(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_only_pledged_with_pledge(
     user: User,
@@ -237,7 +229,6 @@ async def test_get_only_pledged_with_pledge(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_only_pledged_no_pledge(
     user: User,
@@ -260,7 +251,6 @@ async def test_get_only_pledged_no_pledge(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_only_badged_no_badge(
     user: User,
@@ -283,7 +273,6 @@ async def test_get_only_badged_no_badge(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_only_badged_is_badged(
     user: User,

@@ -27,7 +27,6 @@ def generate_signature(payload: str, key: ec.EllipticCurvePrivateKey) -> str:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestVerifySignature:
     async def test_invalid_signature(self, mocker: MockerFixture) -> None:
         mocker.patch.object(
@@ -65,7 +64,6 @@ class TestVerifySignature:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestValidatePayload:
     @pytest.mark.parametrize(
         "payload",

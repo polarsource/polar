@@ -18,7 +18,6 @@ def authz(session: AsyncSession) -> Authz:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreate:
     @pytest.mark.auth
     async def test_not_accessible_organization(
@@ -92,7 +91,6 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     async def test_existing_email(
         self, session: AsyncSession, customer: Customer, customer_second: Customer

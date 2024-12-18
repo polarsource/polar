@@ -20,7 +20,6 @@ from tests.fixtures.license_key import TestLicenseKey
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestCustomerLicenseKeyEndpoints:
     async def test_validate(
         self,

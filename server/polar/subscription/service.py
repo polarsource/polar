@@ -807,11 +807,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if canceled_at and not subscription.canceled_at:
             subscription.canceled_at = canceled_at
 
-        if subscription.cancel_at_period_end:
-            subscription.ends_at = subscription.current_period_end
-
         if subscription.ended_at:
             subscription.ends_at = subscription.ended_at
+        elif subscription.cancel_at_period_end:
+            subscription.ends_at = subscription.current_period_end
 
     async def _after_subscription_updated(
         self,

@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.7
+
+### Patch Changes
+
+- 2811f8a: Prevent embed to be closed while checkout is processing payment
+
 ## 0.1.6
 
 ### Patch Changes

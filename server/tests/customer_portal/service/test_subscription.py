@@ -1,4 +1,3 @@
-import time
 import uuid
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -38,17 +37,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_subscription,
 )
-
-
-class StripeCanceledSubscriptionMock:
-    def __init__(self, subscription: Subscription) -> None:
-        ends_at = int(datetime.timestamp(subscription.current_period_end))
-        self.status = "active"
-        self.cancel_at_period_end = True
-        self.current_period_end = ends_at
-        self.canceled_at = int(time.time())
-        self.ends_at = ends_at
-        self.ended_at = None
+from tests.fixtures.stripe import create_canceled_stripe_subscription
 
 
 @pytest.fixture(autouse=True)
@@ -236,7 +225,7 @@ class TestCancel:
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
 
-        canceled = StripeCanceledSubscriptionMock(subscription)
+        canceled = create_canceled_stripe_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
 
         with pytest.raises(AlreadyCanceledCustomerSubscription):
@@ -288,7 +277,7 @@ class TestCancel:
             customer=customer,
         )
 
-        canceled = StripeCanceledSubscriptionMock(subscription)
+        canceled = create_canceled_stripe_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
         updated_subscription = await customer_subscription_service.cancel(
             session,

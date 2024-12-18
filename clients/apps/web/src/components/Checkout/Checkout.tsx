@@ -116,7 +116,7 @@ export const Checkout = ({
 
   if (embed) {
     return (
-      <ShadowBox className="flex flex-col gap-y-12">
+      <ShadowBox className="dark:bg-polar-900 flex flex-col gap-y-12 bg-white">
         <FormProvider {...form}>
           <CheckoutCard
             checkout={checkout}

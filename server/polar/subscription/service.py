@@ -638,6 +638,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # Update status and cancellation details early for our API responses.
             # However, leave webhooks, benefit revokation etc to webhook handler.
             subscription.status = SubscriptionStatus(stripe_subscription.status)
+            subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
             subscription.ends_at = _determine_ends_at(subscription, stripe_subscription)
             subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         else:

@@ -7,8 +7,7 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, or_, sel
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, is_customer, is_user
-from polar.exceptions import PolarError, PolarRequestValidationError
-from polar.integrations.stripe.service import stripe as stripe_service
+from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -18,18 +17,11 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
-    ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceFree,
     Subscription,
     User,
     UserCustomer,
 )
-from polar.models.product_price import ProductPriceType
 from polar.models.subscription import CustomerCancellationReason
-from polar.product.service.product import product as product_service
-from polar.product.service.product_price import product_price as product_price_service
-from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
@@ -40,16 +32,6 @@ from ..schemas.subscription import (
 
 
 class CustomerSubscriptionError(PolarError): ...
-
-
-class AlreadyCanceledCustomerSubscription(AlreadyCanceledSubscription): ...
-
-
-class SubscriptionNotActiveOnStripe(CustomerSubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
-        self.subscription = subscription
-        message = "This subscription is not active on Stripe."
-        super().__init__(message, 400)
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -187,114 +169,11 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         *,
         product_price_id: uuid.UUID,
     ) -> Subscription:
-        price = await product_price_service.get_by_id(session, product_price_id)
-
-        if price is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not exist.",
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        if price.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        if price.type != ProductPriceType.recurring:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is not recurring.",
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        if isinstance(price, ProductPriceCustom):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": (
-                            "Pay what you want price are not supported "
-                            "for subscriptions."
-                        ),
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        product = await product_service.get_loaded(session, price.product_id)
-        assert product is not None
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Product is archived.",
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        # Make sure the new product belongs to the same organization
-        old_product = subscription.product
-        if old_product.organization_id != product.organization_id:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": (
-                            "Price does not belong to the same organization "
-                            "of the current subscription."
-                        ),
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        if subscription.stripe_subscription_id is None:
-            raise SubscriptionNotActiveOnStripe(subscription)
-
-        assert subscription.price is not None
-        await stripe_service.update_subscription_price(
-            subscription.stripe_subscription_id,
-            old_price=subscription.price.stripe_price_id,
-            new_price=price.stripe_price_id,
-            error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
+        return await subscription_service.update_product_price(
+            session,
+            subscription,
+            product_price_id=product_price_id,
         )
-
-        subscription.product = product
-        subscription.price = price
-        if isinstance(price, ProductPriceFixed):
-            subscription.amount = price.price_amount
-            subscription.currency = price.price_currency
-            subscription.recurring_interval = price.recurring_interval
-        if isinstance(price, ProductPriceFree):
-            subscription.amount = None
-            subscription.currency = None
-            subscription.recurring_interval = price.recurring_interval
-
-        session.add(subscription)
-        return subscription
 
     async def cancel(
         self,
@@ -304,16 +183,12 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         reason: CustomerCancellationReason | None = None,
         comment: str | None = None,
     ) -> Subscription:
-        try:
-            return await subscription_service.cancel(
-                session,
-                subscription,
-                customer_reason=reason,
-                customer_comment=comment,
-            )
-        except AlreadyCanceledSubscription:
-            # Allowing us to keep a separate schema for the user endpoints
-            raise AlreadyCanceledCustomerSubscription()
+        return await subscription_service.cancel(
+            session,
+            subscription,
+            customer_reason=reason,
+            customer_comment=comment,
+        )
 
     def _get_readable_subscription_statement(
         self, auth_subject: AuthSubject[User | Customer]

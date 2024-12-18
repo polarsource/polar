@@ -10,10 +10,6 @@ from polar.customer_portal.schemas.subscription import (
     CustomerSubscriptionUpdatePrice,
 )
 from polar.customer_portal.service.subscription import (
-    AlreadyCanceledCustomerSubscription,
-    SubscriptionNotActiveOnStripe,
-)
-from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
 )
 from polar.exceptions import PolarRequestValidationError
@@ -29,6 +25,10 @@ from polar.models import (
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    SubscriptionNotActiveOnStripe,
+)
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -200,7 +200,7 @@ class TestCancel:
             status=SubscriptionStatus.canceled,
         )
 
-        with pytest.raises(AlreadyCanceledCustomerSubscription):
+        with pytest.raises(AlreadyCanceledSubscription):
             await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth
@@ -222,7 +222,7 @@ class TestCancel:
         canceled = create_canceled_stripe_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
 
-        with pytest.raises(AlreadyCanceledCustomerSubscription):
+        with pytest.raises(AlreadyCanceledSubscription):
             await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth

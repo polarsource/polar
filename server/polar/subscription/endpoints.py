@@ -22,7 +22,7 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionCancel
+from .schemas import SubscriptionUpdate
 from .service import AlreadyCanceledSubscription, SubscriptionSortProperty
 from .service import subscription as subscription_service
 
@@ -140,12 +140,50 @@ async def export(
     )
 
 
+@router.patch(
+    "/{id}",
+    summary="Update Subscription",
+    response_model=SubscriptionSchema,
+    responses={
+        200: {"description": "Subscription updated."},
+        403: {
+            "description": (
+                "Subscription is already canceled "
+                "or will be at the end of the period."
+            ),
+            "model": AlreadyCanceledSubscription.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def update(
+    id: SubscriptionID,
+    subscription_update: SubscriptionUpdate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Update a subscription of the authenticated customer or user."""
+    subscription = await subscription_service.user_get(session, auth_subject, id)
+    if subscription is None:
+        raise ResourceNotFound()
+
+    log.info(
+        "subscription.update",
+        id=id,
+        customer_id=auth_subject.subject.id,
+        updates=subscription_update,
+    )
+    return await subscription_service.update(
+        session, subscription, updates=subscription_update
+    )
+
+
 @router.delete(
     "/{id}",
     summary="Cancel Subscription",
     response_model=SubscriptionSchema,
     responses={
-        200: {"description": "Subscription canceled."},
+        200: {"description": "Subscription immediately canceled."},
         403: {
             "description": (
                 "This subscription is already canceled "
@@ -158,25 +196,19 @@ async def export(
 )
 async def cancel(
     id: SubscriptionID,
-    cancellation: SubscriptionCancel,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Cancel a subscription."""
+    """Cancel a subscription immediately."""
     subscription = await subscription_service.user_get(session, auth_subject, id)
-    if not subscription:
+    if subscription is None:
         raise ResourceNotFound()
 
     log.info(
-        "subscription.cancel",
-        id=id,
-        reason=cancellation.customer_reason,
-        creator_id=auth_subject.subject.id,
+        "subscription.cancel", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
     return await subscription_service.cancel(
         session,
         subscription=subscription,
-        immediately=bool(cancellation.now),
-        customer_reason=cancellation.customer_reason,
-        customer_comment=cancellation.customer_comment,
+        immediately=True,
     )

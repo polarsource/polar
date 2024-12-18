@@ -15,6 +15,7 @@ from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.service import AlreadyCanceledSubscription
 
 from .. import auth
 from ..schemas.subscription import (
@@ -22,7 +23,6 @@ from ..schemas.subscription import (
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
-    AlreadyCanceledCustomerSubscription,
     CustomerSubscriptionSortProperty,
 )
 from ..service.subscription import customer_subscription as user_subscription_service
@@ -117,7 +117,7 @@ async def get(
                 "Customer subscription is already canceled "
                 "or will be at the end of the period."
             ),
-            "model": AlreadyCanceledCustomerSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema(),
         },
         404: SubscriptionNotFound,
     },
@@ -156,7 +156,7 @@ async def update(
                 "Customer subscription is already canceled "
                 "or will be at the end of the period."
             ),
-            "model": AlreadyCanceledCustomerSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema(),
         },
         404: SubscriptionNotFound,
     },

@@ -15,6 +15,7 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
@@ -117,12 +118,20 @@ class SubscriptionCreateEmail(Schema):
     )
 
 
+class SubscriptionUpdatePrice(Schema):
+    product_price_id: UUID4 = Field(description="Update subscription to another price.")
+
+
 class SubscriptionCancel(Schema):
-    now: bool | None = Field(
+    cancel_at_period_end: bool | None = Field(
         None,
-        description="Cancel subscription immediately (`True`). Otherwise, subscription is canceled at period end by default.",
+        description="Cancel an active subscription once the current period ends.",
     )
-    customer_reason: CustomerCancellationReason | None = Field(
+    revoke: bool | None = Field(
+        None,
+        description="Cancel and revoke an active subscription immediately",
+    )
+    customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
         description=inspect.cleandoc(
             """
@@ -145,7 +154,7 @@ class SubscriptionCancel(Schema):
         """
         ),
     )
-    customer_comment: str | None = Field(
+    customer_cancellation_comment: str | None = Field(
         None,
         description=inspect.cleandoc(
             """
@@ -162,3 +171,9 @@ class SubscriptionCancel(Schema):
             """
         ),
     )
+
+
+SubscriptionUpdate = Annotated[
+    SubscriptionUpdatePrice | SubscriptionCancel,
+    SetSchemaReference("SubscriptionUpdate"),
+]

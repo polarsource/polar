@@ -24,7 +24,7 @@ from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
@@ -49,6 +49,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.product_price import ProductPriceType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -65,6 +66,7 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
+from .schemas import SubscriptionCancel, SubscriptionUpdate, SubscriptionUpdatePrice
 
 log: Logger = structlog.get_logger()
 
@@ -139,6 +141,12 @@ class AlreadyCanceledSubscription(SubscriptionError):
         super().__init__(message, 403)
 
 
+class SubscriptionNotActiveOnStripe(SubscriptionError):
+    def __init__(self) -> None:
+        message = "This subscription is not active on Stripe."
+        super().__init__(message, 400)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -151,21 +159,6 @@ def _from_timestamp(t: int | None) -> datetime | None:
     if t is None:
         return None
     return datetime.fromtimestamp(t, UTC)
-
-
-def _determine_ends_at(
-    s: Subscription, updated: stripe_lib.Subscription
-) -> datetime | None:
-    if s.ends_at:
-        return s.ends_at
-
-    if updated.ended_at:
-        return _from_timestamp(updated.ended_at)
-
-    if updated.cancel_at_period_end:
-        return _from_timestamp(updated.current_period_end)
-
-    return None
 
 
 class SubscriptionSortProperty(StrEnum):
@@ -597,6 +590,158 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         await self._after_subscription_updated(
             session, subscription, previous_status, previous_ends_at
         )
+        return subscription
+
+    async def update(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        updates: SubscriptionUpdate,
+    ) -> Subscription:
+        if isinstance(updates, SubscriptionUpdatePrice):
+            return await self.update_product_price(
+                session,
+                subscription,
+                product_price_id=updates.product_price_id,
+            )
+        elif isinstance(updates, SubscriptionCancel):
+            if updates.revoke and updates.cancel_at_period_end:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "revoke"),
+                            "msg": (
+                                "Use either `revoke` for immediate cancellation "
+                                "and revokation or `cancel_at_period_end`."
+                            ),
+                            "input": updates.revoke,
+                        }
+                    ]
+                )
+
+            return await self.cancel(
+                session,
+                subscription,
+                customer_reason=updates.customer_cancellation_reason,
+                customer_comment=updates.customer_cancellation_comment,
+                immediately=bool(updates.revoke),
+            )
+
+    async def update_product_price(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product_price_id: uuid.UUID,
+    ) -> Subscription:
+        price = await product_price_service.get_by_id(session, product_price_id)
+        if price is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not exist.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if price.type != ProductPriceType.recurring:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is not recurring.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if isinstance(price, ProductPriceCustom):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": (
+                            "Pay what you want price are not supported "
+                            "for subscriptions."
+                        ),
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        product = await product_service.get_loaded(session, price.product_id)
+        assert product is not None
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is archived.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        # Make sure the new product belongs to the same organization
+        old_product = subscription.product
+        if old_product.organization_id != product.organization_id:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": (
+                            "Price does not belong to the same organization "
+                            "of the current subscription."
+                        ),
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if subscription.stripe_subscription_id is None:
+            raise SubscriptionNotActiveOnStripe()
+
+        assert subscription.price is not None
+        await stripe_service.update_subscription_price(
+            subscription.stripe_subscription_id,
+            old_price=subscription.price.stripe_price_id,
+            new_price=price.stripe_price_id,
+            error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
+        )
+
+        subscription.product = product
+        subscription.price = price
+        if isinstance(price, ProductPriceFixed):
+            subscription.amount = price.price_amount
+            subscription.currency = price.price_currency
+            subscription.recurring_interval = price.recurring_interval
+        if isinstance(price, ProductPriceFree):
+            subscription.amount = None
+            subscription.currency = None
+            subscription.recurring_interval = price.recurring_interval
+
+        session.add(subscription)
         return subscription
 
     async def cancel(

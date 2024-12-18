@@ -17,6 +17,13 @@ const AUTHENTICATED_ROUTES = [
 ]
 
 const requiresAuthentication = (request: NextRequest): boolean => {
+  if (
+    request.nextUrl.hostname === 'docs.polar.sh' ||
+    request.nextUrl.pathname.startsWith('/docs/')
+  ) {
+    return false
+  }
+
   return AUTHENTICATED_ROUTES.some((route) =>
     route.test(request.nextUrl.pathname),
   )

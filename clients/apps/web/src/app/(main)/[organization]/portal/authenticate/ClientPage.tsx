@@ -79,7 +79,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                             <InputOTPSlot
                               key={index}
                               index={index}
-                              className="h-16 w-16 text-2xl"
+                              className="h-16 w-16 text-2xl border-gray-300 dark:border-gray-600"
                             />
                           ))}
                         </InputOTPGroup>

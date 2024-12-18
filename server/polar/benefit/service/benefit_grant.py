@@ -160,7 +160,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             grant.set_granted()
 
         session.add(grant)
-        await session.commit()
+        await session.flush()
 
         await eventstream_publish(
             "benefit.granted",
@@ -230,7 +230,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         grant.set_revoked()
 
         session.add(grant)
-        await session.commit()
+        await session.flush()
 
         await eventstream_publish(
             "benefit.revoked",

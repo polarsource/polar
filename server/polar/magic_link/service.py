@@ -56,7 +56,6 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
 
         magic_link = MagicLink(**magic_link_create.model_dump(exclude_unset=True))
         session.add(magic_link)
-        await session.commit()
 
         return magic_link, token
 
@@ -127,7 +126,6 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
     async def delete_expired(self, session: AsyncSession) -> None:
         statement = delete(MagicLink).where(MagicLink.expires_at < utc_now())
         await session.execute(statement)
-        await session.commit()
 
     async def _get_valid_magic_link_by_token_hash(
         self, session: AsyncSession, token_hash: str

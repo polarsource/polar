@@ -55,7 +55,7 @@ class ResourceServiceReader(
             )
         )
         await session.execute(stmt)
-        await session.commit()
+        await session.flush()
 
 
 class ResourceService(

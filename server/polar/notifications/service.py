@@ -62,7 +62,7 @@ class NotificationsService:
         )
 
         session.add(notification)
-        await session.commit()
+        await session.flush()
         enqueue_job("notifications.send", notification_id=notification.id)
         return True
 
@@ -95,7 +95,7 @@ class NotificationsService:
         )
 
         session.add(notification)
-        await session.commit()
+        await session.flush()
         enqueue_job("notifications.send", notification_id=notification.id)
 
     async def send_to_pledger(
@@ -155,7 +155,6 @@ class NotificationsService:
             )
         )
         await session.execute(stmt)
-        await session.commit()
 
 
 notifications = NotificationsService()

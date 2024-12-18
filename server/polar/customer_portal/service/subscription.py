@@ -162,22 +162,22 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def update(
         self,
         session: AsyncSession,
-        *,
         subscription: Subscription,
-        subscription_update: CustomerSubscriptionUpdate,
+        *,
+        updates: CustomerSubscriptionUpdate,
     ) -> Subscription:
-        if isinstance(subscription_update, CustomerSubscriptionUpdatePrice):
+        if isinstance(updates, CustomerSubscriptionUpdatePrice):
             return await self.update_product_price(
                 session,
                 subscription,
-                product_price_id=subscription_update.product_price_id,
+                product_price_id=updates.product_price_id,
             )
-        elif isinstance(subscription_update, CustomerSubscriptionCancel):
+        elif isinstance(updates, CustomerSubscriptionCancel):
             return await self.cancel(
                 session,
                 subscription,
-                reason=subscription_update.cancellation_reason,
-                comment=subscription_update.cancellation_comment,
+                reason=updates.cancellation_reason,
+                comment=updates.cancellation_comment,
             )
 
     async def update_product_price(

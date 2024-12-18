@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
-    CustomerSubscriptionUpdate,
+    CustomerSubscriptionUpdatePrice,
 )
 from polar.customer_portal.service.subscription import (
     AlreadyCanceledCustomerSubscription,
@@ -101,10 +101,8 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
-                    product_price_id=uuid.uuid4()
-                ),
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(product_price_id=uuid.uuid4()),
             )
 
     async def test_not_recurring_price(
@@ -121,10 +119,8 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
-                    product_price_id=price.id
-                ),
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(product_price_id=price.id),
             )
 
     async def test_extraneous_tier(
@@ -136,8 +132,8 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(
                     product_price_id=product_organization_second.all_prices[0].id
                 ),
             )
@@ -149,8 +145,8 @@ class TestUpdate:
         with pytest.raises(SubscriptionNotActiveOnStripe):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(
                     product_price_id=product_second.prices[0].id
                 ),
             )
@@ -166,8 +162,8 @@ class TestUpdate:
         new_price = product_second.prices[0]
         updated_subscription = await customer_subscription_service.update(
             session,
-            subscription=subscription,
-            subscription_update=CustomerSubscriptionUpdate(
+            subscription,
+            updates=CustomerSubscriptionUpdatePrice(
                 product_price_id=product_second.prices[0].id,
             ),
         )

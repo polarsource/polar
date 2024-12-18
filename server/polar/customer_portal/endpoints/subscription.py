@@ -134,8 +134,14 @@ async def update(
     if subscription is None:
         raise ResourceNotFound()
 
+    log.info(
+        "customer_portal.subscription.cancel",
+        id=id,
+        customer_id=auth_subject.subject.id,
+        updates=subscription_update,
+    )
     return await user_subscription_service.update(
-        session, subscription=subscription, subscription_update=subscription_update
+        session, subscription, updates=subscription_update
     )
 
 

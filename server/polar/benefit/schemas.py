@@ -420,6 +420,7 @@ class BenefitCustom(BenefitBase):
 
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties
+    is_tax_applicable: bool = Field(deprecated=True)
 
 
 class BenefitAds(BenefitBase):

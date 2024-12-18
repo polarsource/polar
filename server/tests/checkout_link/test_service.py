@@ -33,7 +33,6 @@ async def checkout_link(save_fixture: SaveFixture, product: Product) -> Checkout
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreate:
     @pytest.mark.auth
     async def test_not_existing_price(
@@ -180,7 +179,6 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     async def test_update_metadata(
         self,
@@ -296,7 +294,6 @@ class TestUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestDelete:
     async def test_valid(
         self, session: AsyncSession, checkout_link: CheckoutLink

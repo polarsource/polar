@@ -18,7 +18,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestCreateCheckout:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -101,7 +100,6 @@ class TestCreateCheckout:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestGetCheckout:
     async def test_valid_product_organization(
         self,

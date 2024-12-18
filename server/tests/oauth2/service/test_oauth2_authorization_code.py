@@ -12,7 +12,6 @@ from ..conftest import create_oauth2_authorization_code
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRevokeLeaked:
     async def test_false_positive(self, session: AsyncSession) -> None:
         result = await oauth2_authorization_code_service.revoke_leaked(

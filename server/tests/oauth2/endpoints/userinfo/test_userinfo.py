@@ -31,7 +31,6 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize("method", ["GET", "POST"])
 class TestOAuth2UserInfo:
     async def test_no_scope(

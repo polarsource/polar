@@ -99,9 +99,6 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = [
   "auth",
-  "http_auto_expunge",
-  "skip_db_asserts",
-  "override_current_user",
   "email_order_confirmation",
   "email_subscription_confirmation",
 ]

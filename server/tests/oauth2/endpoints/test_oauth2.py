@@ -83,7 +83,6 @@ async def create_oauth2_grant(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2Register:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
         response = await client.post("/v1/oauth2/register", json={})
@@ -130,7 +129,6 @@ class TestOAuth2Register:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2ConfigureGet:
     async def test_unauthenticated(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -191,7 +189,6 @@ class TestOAuth2ConfigureGet:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2ConfigurePut:
     async def test_token_valid(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -235,7 +232,6 @@ class TestOAuth2ConfigurePut:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2ConfigureDelete:
     async def test_token_valid(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -259,7 +255,6 @@ class TestOAuth2ConfigureDelete:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2Authorize:
     async def test_unauthenticated(
         self, client: AsyncClient, oauth2_client: OAuth2Client
@@ -509,7 +504,6 @@ class TestOAuth2Authorize:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2Consent:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
         response = await client.post("/v1/oauth2/consent")
@@ -675,7 +669,6 @@ class TestOAuth2Consent:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestOAuth2Token:
     async def test_authorization_code_sub_user(
         self,

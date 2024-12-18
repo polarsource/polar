@@ -12,7 +12,6 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestListOrganizations:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/organizations/")
@@ -48,7 +47,6 @@ class TestListOrganizations:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestGetOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -93,7 +91,6 @@ class TestGetOrganization:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateOrganization:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
@@ -128,7 +125,6 @@ class TestUpdateOrganization:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_list_members(
     session: AsyncSession,
@@ -146,7 +142,6 @@ async def test_list_members(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_list_members_not_member(
     session: AsyncSession,

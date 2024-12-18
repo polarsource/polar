@@ -115,7 +115,6 @@ async def test_webhook_send_not_subscribed_to_event(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_webhook_delivery(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -147,7 +146,6 @@ async def test_webhook_delivery(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_webhook_delivery_500(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -191,7 +189,6 @@ async def test_webhook_delivery_500(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_webhook_delivery_http_error(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -237,7 +234,6 @@ async def test_webhook_delivery_http_error(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_webhook_standard_webhooks_compatible(
     session: AsyncSession,
     save_fixture: SaveFixture,

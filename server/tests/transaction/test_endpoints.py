@@ -23,7 +23,6 @@ from tests.transaction.conftest import create_account, create_transaction
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestSearchTransactions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/transactions/search")
@@ -48,7 +47,6 @@ class TestSearchTransactions:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestLookupTransaction:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -95,7 +93,6 @@ class TestLookupTransaction:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestGetSummary:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -132,7 +129,6 @@ class TestGetSummary:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestCreatePayout:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

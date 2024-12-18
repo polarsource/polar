@@ -13,7 +13,6 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 async def test_link_customers(
     save_fixture: SaveFixture,
     session: AsyncSession,

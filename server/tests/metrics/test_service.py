@@ -180,7 +180,6 @@ async def fixtures(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestGetMetrics:
     @pytest.mark.auth
     @pytest.mark.parametrize(

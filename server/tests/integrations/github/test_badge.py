@@ -34,7 +34,6 @@ BADGED_BODY = """Hello my issue
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 async def test_add_badge(
     organization: Organization,
     external_organization_linked: ExternalOrganization,
@@ -119,7 +118,6 @@ Default message from organization.""")
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 async def test_remove_badge(
     organization: Organization,
     external_organization_linked: ExternalOrganization,
@@ -137,7 +135,6 @@ async def test_remove_badge(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 async def test_remove_badge_custom_content(
     organization: Organization,
     external_organization_linked: ExternalOrganization,
@@ -170,7 +167,6 @@ Anything can go here!
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 async def test_remove_badge_pre_2023_05_08(
     organization: Organization,
     external_organization_linked: ExternalOrganization,
@@ -198,7 +194,6 @@ async def test_remove_badge_pre_2023_05_08(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", False)
 async def test_should_add_badge_app_config_disabled(
     session: AsyncSession,
@@ -216,7 +211,6 @@ async def test_should_add_badge_app_config_disabled(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_org_not_installed(
     session: AsyncSession,
@@ -242,7 +236,6 @@ async def test_should_add_badge_org_not_installed(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
 async def test_should_add_badge_no_badge_with_auto(
     save_fixture: SaveFixture,

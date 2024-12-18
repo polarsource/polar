@@ -11,7 +11,6 @@ from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
         "token, token_type",

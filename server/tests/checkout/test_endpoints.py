@@ -43,7 +43,6 @@ async def checkout_open(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestGet:
     async def test_anonymous(
         self, client: AsyncClient, checkout_open: Checkout
@@ -77,7 +76,6 @@ class TestGet:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreateCheckout:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
@@ -127,7 +125,6 @@ class TestCreateCheckout:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateCheckout:
     async def test_anonymous(
         self, client: AsyncClient, checkout_open: Checkout
@@ -193,7 +190,6 @@ class TestUpdateCheckout:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestClientGet:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(f"{API_PREFIX}/client/123")
@@ -213,7 +209,6 @@ class TestClientGet:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestClientCreateCheckout:
     @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=set()))
     async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
@@ -251,7 +246,6 @@ class TestClientCreateCheckout:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestClientUpdate:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.patch(
@@ -283,7 +277,6 @@ class TestClientUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestClientConfirm:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(

@@ -897,7 +897,6 @@ class TestList:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @pytest.mark.email_subscription_confirmation
 async def test_send_confirmation_email(
     mocker: MockerFixture,

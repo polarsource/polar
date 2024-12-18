@@ -7,7 +7,6 @@ from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
     response = await client.get("/v1/users/me")
@@ -20,7 +19,6 @@ async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_get_users_me_no_auth(client: AsyncClient) -> None:
     response = await client.get(
         "/v1/users/me",
@@ -30,7 +28,6 @@ async def test_get_users_me_no_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
 async def test_get_users_me_blocked(user_blocked: User, client: AsyncClient) -> None:
     response = await client.get("/v1/users/me")
@@ -39,7 +36,6 @@ async def test_get_users_me_blocked(user_blocked: User, client: AsyncClient) -> 
 
 @pytest.mark.asyncio
 @pytest.mark.auth
-@pytest.mark.http_auto_expunge
 async def test_set_account(
     client: AsyncClient, open_collective_account: Account
 ) -> None:
@@ -58,7 +54,6 @@ async def test_set_account(
 
 @pytest.mark.asyncio
 @pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
-@pytest.mark.http_auto_expunge
 async def test_blocked_user_set_account(
     client: AsyncClient, open_collective_account: Account
 ) -> None:

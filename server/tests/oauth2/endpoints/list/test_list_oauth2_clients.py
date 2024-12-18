@@ -31,7 +31,6 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestListOAuth2Clients:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
         response = await client.get("/v1/oauth2/")

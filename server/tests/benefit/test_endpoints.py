@@ -13,7 +13,6 @@ from tests.fixtures.random_objects import create_benefit
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestListBenefits:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/benefits/")
@@ -67,7 +66,6 @@ class TestListBenefits:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestGetBenefit:
     async def test_anonymous(
         self, client: AsyncClient, benefit_organization: Benefit
@@ -99,7 +97,6 @@ class TestGetBenefit:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestCreateBenefit:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -172,7 +169,6 @@ class TestCreateBenefit:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestUpdateBenefit:
     async def test_anonymous(
         self,
@@ -277,7 +273,6 @@ class TestUpdateBenefit:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestDeleteBenefit:
     async def test_anonymous(
         self,

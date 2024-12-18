@@ -474,7 +474,6 @@ class TestCreateDisputeReversal:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreateReversalBalancesForPayment:
     async def test_not_reversed(
         self, save_fixture: SaveFixture, session: AsyncSession, account: Account

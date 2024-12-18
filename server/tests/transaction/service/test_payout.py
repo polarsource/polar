@@ -798,7 +798,6 @@ class TestCreatePayoutFromStripe:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestTriggerStripePayouts:
     async def test_valid(
         self,

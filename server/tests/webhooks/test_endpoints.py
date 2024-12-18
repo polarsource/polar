@@ -11,7 +11,6 @@ from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestListWebhookEndpoints:
     async def test_unauthenticated(
         self,
@@ -56,7 +55,6 @@ class TestListWebhookEndpoints:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestCreateWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(self, client: AsyncClient) -> None:
@@ -115,7 +113,6 @@ class TestCreateWebhookEndpoint:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestUpdateWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
@@ -170,7 +167,6 @@ class TestUpdateWebhookEndpoint:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestDeleteWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user_missing_scope(
@@ -225,7 +221,6 @@ class TestDeleteWebhookEndpoint:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestListWebhookDeliveries:
     @pytest.mark.auth
     async def test_user_not_member(

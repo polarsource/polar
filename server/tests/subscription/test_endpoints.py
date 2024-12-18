@@ -9,7 +9,6 @@ from tests.fixtures.random_objects import create_active_subscription
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestListSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

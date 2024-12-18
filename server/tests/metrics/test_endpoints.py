@@ -8,7 +8,6 @@ from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestGetMetrics:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/")
@@ -74,7 +73,6 @@ class TestGetMetrics:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestGetMetricsLimits:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/limits")

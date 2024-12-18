@@ -322,7 +322,6 @@ class TestRevokeBenefit:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestEnqueueBenefitsGrants:
     @pytest.mark.parametrize("task", ["grant", "revoke"])
     async def test_subscription_scope(

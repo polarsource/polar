@@ -19,7 +19,6 @@ async def orders(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestListOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/")
@@ -67,7 +66,6 @@ class TestListOrders:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestGetOrder:
     async def test_anonymous(self, client: AsyncClient, orders: list[Order]) -> None:
         response = await client.get(f"/v1/orders/{orders[0].id}")
@@ -118,7 +116,6 @@ class TestGetOrder:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TesGetOrdersStatistics:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/statistics")

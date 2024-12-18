@@ -12,7 +12,6 @@ from tests.fixtures.file import TestFile
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestEndpoints:
     async def test_anonymous_create_401(
         self, client: AsyncClient, organization: Organization

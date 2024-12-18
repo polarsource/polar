@@ -15,7 +15,6 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_issue(
     external_organization: ExternalOrganization,
@@ -38,7 +37,6 @@ async def test_get_issue(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_issue_reactions(
     repository: Repository,
@@ -70,7 +68,6 @@ async def test_get_issue_reactions(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_not_found_private_repo(
     organization: Organization,
@@ -88,7 +85,6 @@ async def test_get_not_found_private_repo(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_private_repo_member(
     repository_linked: Repository,
@@ -107,7 +103,6 @@ async def test_get_private_repo_member(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_issue_list_public_repo(
     organization: Organization,
@@ -139,7 +134,6 @@ async def test_issue_list_public_repo(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_issue_list_public_repo_without_repo_selector(
     organization: Organization,
@@ -165,7 +159,6 @@ async def test_issue_list_public_repo_without_repo_selector(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_issue_list_private_repo(
     organization: Organization,
@@ -190,7 +183,6 @@ async def test_issue_list_private_repo(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_issue_list_private_repo_without_repo_selector(
     organization: Organization,

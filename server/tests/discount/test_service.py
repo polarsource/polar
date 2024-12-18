@@ -39,7 +39,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     async def test_duration_change(
         self,
@@ -255,7 +254,6 @@ class TestUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestIsRedeemableDiscount:
     async def test_not_started(
         self,
@@ -355,7 +353,6 @@ class TestIsRedeemableDiscount:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRedeemDiscount:
     async def test_concurrency(
         self,
@@ -411,7 +408,6 @@ class TestRedeemDiscount:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCodeCaseInsensitivity:
     async def test_code_case_insensitive(
         self,

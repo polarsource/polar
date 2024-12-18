@@ -133,7 +133,6 @@ def event_creation_time() -> tuple[datetime, int]:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestList:
     @pytest.mark.auth
     async def test_user_not_organization_member(
@@ -270,7 +269,6 @@ class TestList:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreateOrderFromStripe:
     @pytest.mark.parametrize(
         "metadata",
@@ -1134,7 +1132,6 @@ class TestCreateOrderFromStripe:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @pytest.mark.email_order_confirmation
 async def test_send_confirmation_email(
     mocker: MockerFixture,

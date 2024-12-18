@@ -21,7 +21,6 @@ from tests.fixtures.license_key import TestLicenseKey
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestLicenseKeyEndpoints:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

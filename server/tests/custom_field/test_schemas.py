@@ -11,7 +11,6 @@ CustomFieldCreateAdapter: TypeAdapter[CustomFieldCreate] = TypeAdapter(
 )
 
 
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize(
     "input",
     (
@@ -53,7 +52,6 @@ def test_invalid_create(input: dict[str, Any]) -> None:
         )
 
 
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize(
     "input,expected_type",
     (

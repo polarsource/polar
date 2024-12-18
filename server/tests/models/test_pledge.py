@@ -7,7 +7,6 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @pytest.mark.parametrize(
     "test_amount",
     [1010, 12345678999],

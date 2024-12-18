@@ -47,7 +47,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_valid(
@@ -93,7 +92,6 @@ class TestList:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     async def test_not_existing_product(
         self, session: AsyncSession, subscription: Subscription
@@ -187,7 +185,6 @@ class TestUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCancel:
     @pytest.mark.auth
     async def test_already_canceled(

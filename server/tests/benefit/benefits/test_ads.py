@@ -13,7 +13,6 @@ from tests.fixtures.random_objects import create_benefit
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 async def test_grant(
     session: AsyncSession,
     redis: Redis,

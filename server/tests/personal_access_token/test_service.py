@@ -17,7 +17,6 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestRevokeLeaked:
     async def test_false_positive(
         self,

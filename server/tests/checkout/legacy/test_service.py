@@ -29,7 +29,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreate:
     async def test_not_existing_price(
         self, auth_subject: AuthSubject[Anonymous], session: AsyncSession
@@ -355,7 +354,6 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestGetById:
     @pytest.mark.parametrize("metadata", [None, {}, {"product_id": str(uuid.uuid4())}])
     async def test_invalid(

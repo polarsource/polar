@@ -229,7 +229,6 @@ async def checkout_tax_not_applicable(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreate:
     @pytest.mark.auth
     async def test_not_existing_price(
@@ -1062,7 +1061,6 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestClientCreate:
     async def test_not_existing_price(
         self, session: AsyncSession, auth_subject: AuthSubject[Anonymous]
@@ -1272,7 +1270,6 @@ class TestClientCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCheckoutLinkCreate:
     async def test_archived_price(
         self,
@@ -1349,7 +1346,6 @@ class TestCheckoutLinkCreate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdate:
     async def test_not_existing_price(
         self,
@@ -1852,7 +1848,6 @@ class TestUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestConfirm:
     async def test_missing_amount_on_custom_price(
         self,
@@ -2298,7 +2293,6 @@ def build_stripe_payment_intent(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestHandleStripeSuccess:
     async def test_not_existing_checkout(self, session: AsyncSession) -> None:
         with pytest.raises(CheckoutDoesNotExist):
@@ -2458,7 +2452,6 @@ class TestHandleStripeSuccess:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestHandleStripeFailure:
     async def test_not_existing_checkout(self, session: AsyncSession) -> None:
         with pytest.raises(CheckoutDoesNotExist):
@@ -2492,7 +2485,6 @@ class TestHandleStripeFailure:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestHandleFreeSuccess:
     async def test_not_existing_checkout(self, session: AsyncSession) -> None:
         with pytest.raises(CheckoutDoesNotExist):
@@ -2613,7 +2605,6 @@ class TestHandleFreeSuccess:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestExpireOpenCheckouts:
     async def test_valid(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product

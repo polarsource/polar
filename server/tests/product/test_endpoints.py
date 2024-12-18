@@ -21,7 +21,6 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestListProducts:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -72,7 +71,6 @@ class TestListProducts:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestGetProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.get(f"/v1/products/{product.id}")
@@ -130,7 +128,6 @@ class TestGetProduct:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCreateProduct:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -324,7 +321,6 @@ class TestCreateProduct:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.patch(
@@ -402,7 +398,6 @@ class TestUpdateProduct:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestUpdateProductBenefits:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(

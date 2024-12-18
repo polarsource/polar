@@ -12,7 +12,6 @@ from polar.models import MagicLink, User
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
     magic_link_service_request_mock = mocker.patch.object(
         magic_link_service,
@@ -44,7 +43,6 @@ async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.auth
-@pytest.mark.http_auto_expunge
 async def test_authenticate_already_authenticated(
     client: AsyncClient, user: User, mocker: MockerFixture
 ) -> None:
@@ -61,7 +59,6 @@ async def test_authenticate_already_authenticated(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_authenticate_invalid_token(
     client: AsyncClient, mocker: MockerFixture
 ) -> None:
@@ -81,7 +78,6 @@ async def test_authenticate_invalid_token(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 async def test_authenticate_valid_token(
     client: AsyncClient, user: User, mocker: MockerFixture
 ) -> None:

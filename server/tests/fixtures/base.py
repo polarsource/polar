@@ -1,8 +1,6 @@
 from collections.abc import AsyncGenerator
-from typing import Any
 
 import httpx
-import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 
@@ -30,31 +28,8 @@ async def app(
 
 
 @pytest_asyncio.fixture
-async def client(
-    app: FastAPI, request: pytest.FixtureRequest, session: AsyncSession
-) -> AsyncGenerator[httpx.AsyncClient, None]:
-    request_hooks = []
-
-    async def expunge_hook(request: Any) -> None:
-        session.expunge_all()
-        return None
-
-    # add @pytest.mark.http_auto_expunge() to a test to add auto-expunging on the first
-    # httpx request.
-    #
-    # This should only be used if the test doesn't use "session" directly, and only makes
-    # a single HTTP request.
-    auto_expunge_marker = request.node.get_closest_marker("http_auto_expunge")
-    if auto_expunge_marker is not None:
-        # can be disabled with @pytest.mark.http_auto_expunge(False)
-        if auto_expunge_marker.args != (False,):
-            request_hooks.append(expunge_hook)
-
+async def client(app: FastAPI) -> AsyncGenerator[httpx.AsyncClient, None]:
     async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
-        base_url="http://test",
-        event_hooks={"request": request_hooks},
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        client.event_hooks
-
         yield client

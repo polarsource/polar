@@ -32,7 +32,11 @@ from polar.product.service.product_price import product_price as product_price_s
 from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
-from ..schemas.subscription import CustomerSubscriptionUpdate
+from ..schemas.subscription import (
+    CustomerSubscriptionCancel,
+    CustomerSubscriptionUpdate,
+    CustomerSubscriptionUpdatePrice,
+)
 
 
 class CustomerSubscriptionError(PolarError): ...
@@ -162,9 +166,28 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         subscription: Subscription,
         subscription_update: CustomerSubscriptionUpdate,
     ) -> Subscription:
-        price = await product_price_service.get_by_id(
-            session, subscription_update.product_price_id
-        )
+        if isinstance(subscription_update, CustomerSubscriptionUpdatePrice):
+            return await self.update_product_price(
+                session,
+                subscription,
+                product_price_id=subscription_update.product_price_id,
+            )
+        elif isinstance(subscription_update, CustomerSubscriptionCancel):
+            return await self.cancel(
+                session,
+                subscription,
+                reason=subscription_update.cancellation_reason,
+                comment=subscription_update.cancellation_comment,
+            )
+
+    async def update_product_price(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product_price_id: uuid.UUID,
+    ) -> Subscription:
+        price = await product_price_service.get_by_id(session, product_price_id)
 
         if price is None:
             raise PolarRequestValidationError(
@@ -173,7 +196,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Price does not exist.",
-                        "input": subscription_update.product_price_id,
+                        "input": product_price_id,
                     }
                 ]
             )
@@ -185,7 +208,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Price is archived.",
-                        "input": subscription_update.product_price_id,
+                        "input": product_price_id,
                     }
                 ]
             )
@@ -197,7 +220,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Price is not recurring.",
-                        "input": subscription_update.product_price_id,
+                        "input": product_price_id,
                     }
                 ]
             )
@@ -212,7 +235,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                             "Pay what you want price are not supported "
                             "for subscriptions."
                         ),
-                        "input": subscription_update.product_price_id,
+                        "input": product_price_id,
                     }
                 ]
             )
@@ -226,7 +249,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Product is archived.",
-                        "input": subscription_update.product_price_id,
+                        "input": product_price_id,
                     }
                 ]
             )
@@ -243,7 +266,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                             "Price does not belong to the same organization "
                             "of the current subscription."
                         ),
-                        "input": subscription_update.product_price_id,
+                        "input": product_price_id,
                     }
                 ]
             )
@@ -269,22 +292,22 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             subscription.amount = None
             subscription.currency = None
             subscription.recurring_interval = price.recurring_interval
-        session.add(subscription)
 
+        session.add(subscription)
         return subscription
 
     async def cancel(
         self,
         session: AsyncSession,
-        *,
         subscription: Subscription,
+        *,
         reason: CustomerCancellationReason | None = None,
         comment: str | None = None,
     ) -> Subscription:
         try:
             return await subscription_service.cancel(
                 session,
-                subscription=subscription,
+                subscription,
                 customer_reason=reason,
                 customer_comment=comment,
             )

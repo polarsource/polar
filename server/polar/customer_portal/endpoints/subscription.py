@@ -111,7 +111,14 @@ async def get(
     summary="Update Subscription",
     response_model=CustomerSubscription,
     responses={
-        200: {"description": "Subscription updated."},
+        200: {"description": "Customer subscription updated."},
+        403: {
+            "description": (
+                "Customer subscription is already canceled "
+                "or will be at the end of the period."
+            ),
+            "model": AlreadyCanceledCustomerSubscription.schema(),
+        },
         404: SubscriptionNotFound,
     },
 )
@@ -164,4 +171,4 @@ async def cancel(
         id=id,
         customer_id=auth_subject.subject.id,
     )
-    return await user_subscription_service.cancel(session, subscription=subscription)
+    return await user_subscription_service.cancel(session, subscription)

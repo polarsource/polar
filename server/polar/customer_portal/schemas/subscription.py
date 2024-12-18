@@ -1,9 +1,13 @@
 import inspect
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import (
+    Schema,
+    SetSchemaReference,
+)
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -52,12 +56,17 @@ class CustomerSubscription(CustomerSubscriptionBase):
     price: ProductPrice
 
 
-class CustomerSubscriptionUpdate(Schema):
-    product_price_id: UUID4
+class CustomerSubscriptionUpdatePrice(Schema):
+    product_price_id: UUID4 = Field(description="Update subscription to another price.")
 
 
 class CustomerSubscriptionCancel(Schema):
-    reason: CustomerCancellationReason | None = Field(
+    cancel_at_period_end: bool | None = Field(
+        None,
+        description="Cancel and end active subscription once the current period ends.",
+    )
+
+    cancellation_reason: CustomerCancellationReason | None = Field(
         None,
         description=inspect.cleandoc(
             """
@@ -74,6 +83,12 @@ class CustomerSubscriptionCancel(Schema):
         """
         ),
     )
-    comment: str | None = Field(
+    cancellation_comment: str | None = Field(
         None, description="Customer feedback and why they decided to cancel."
     )
+
+
+CustomerSubscriptionUpdate = Annotated[
+    CustomerSubscriptionUpdatePrice | CustomerSubscriptionCancel,
+    SetSchemaReference("CustomerSubscriptionUpdate"),
+]

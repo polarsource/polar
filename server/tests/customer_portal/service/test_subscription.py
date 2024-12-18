@@ -205,9 +205,7 @@ class TestCancel:
         )
 
         with pytest.raises(AlreadyCanceledCustomerSubscription):
-            await customer_subscription_service.cancel(
-                session, subscription=subscription
-            )
+            await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth
     async def test_cancel_at_period_end(
@@ -229,9 +227,7 @@ class TestCancel:
         stripe_service_mock.cancel_subscription.return_value = canceled
 
         with pytest.raises(AlreadyCanceledCustomerSubscription):
-            await customer_subscription_service.cancel(
-                session, subscription=subscription
-            )
+            await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth
     async def test_free_subscription(
@@ -250,7 +246,7 @@ class TestCancel:
         )
 
         updated_subscription = await customer_subscription_service.cancel(
-            session, subscription=subscription
+            session, subscription
         )
 
         assert updated_subscription.id == subscription.id
@@ -281,7 +277,7 @@ class TestCancel:
         stripe_service_mock.cancel_subscription.return_value = canceled
         updated_subscription = await customer_subscription_service.cancel(
             session,
-            subscription=subscription,
+            subscription,
             reason=CustomerCancellationReason.too_complex,
             comment="So many settings",
         )

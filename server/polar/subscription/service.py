@@ -602,8 +602,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def cancel(
         self,
         session: AsyncSession,
-        *,
         subscription: Subscription,
+        *,
         customer_reason: CustomerCancellationReason | None = None,
         customer_comment: str | None = None,
         immediately: bool = False,

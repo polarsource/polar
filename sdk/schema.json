@@ -227,6 +227,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.ExternalOrganizations.List(ctx, operations.ExternalOrganizationsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceExternalOrganization != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.externalOrganizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -490,6 +495,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Repositories.List(ctx, operations.RepositoriesListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceRepository != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -581,6 +591,11 @@
         "x-speakeasy-group": "repositories",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Repositories.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Repository != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -689,6 +704,11 @@
         "x-speakeasy-group": "repositories",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Repositories.Update(ctx, \"<value>\", components.RepositoryUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Repository != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "update",
@@ -842,6 +862,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceOrganization != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -910,6 +935,11 @@
         "x-speakeasy-group": "organizations",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.Create(ctx, components.OrganizationCreate{\n        Name: \"<value>\",\n        Slug: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -1001,6 +1031,11 @@
         "x-speakeasy-group": "organizations",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -1109,6 +1144,11 @@
         "x-speakeasy-group": "organizations",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.Update(ctx, \"<value>\", components.OrganizationUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "update",
@@ -1401,6 +1441,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.List(ctx, operations.SubscriptionsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceSubscription != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -1500,6 +1545,11 @@
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "export",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "export",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Export(ctx, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "export",
@@ -1635,6 +1685,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Advertisements.List(ctx, \"<value>\", nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.AdvertisementCampaignListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -1705,6 +1760,11 @@
         "x-speakeasy-group": "advertisements",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Advertisements.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.AdvertisementCampaign != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -1812,6 +1872,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.List(ctx, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceOAuth2Client != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -1878,6 +1943,11 @@
         "x-speakeasy-group": "oauth2.clients",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create_client",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Create(ctx, components.OAuth2ClientConfiguration{\n        RedirectUris: []string{\n            \"https://inferior-chainstay.com\",\n        },\n        ClientName: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create_client",
@@ -1947,6 +2017,11 @@
         "x-speakeasy-group": "oauth2.clients",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get_client",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Get(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get_client",
@@ -2025,6 +2100,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update_client",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Update(ctx, \"<id>\", components.OAuth2ClientConfigurationUpdate{\n        RedirectUris: []string{\n            \"https://grown-worth.name\",\n            \"https://worthwhile-avalanche.org/\",\n            \"https://general-digit.com/\",\n        },\n        ClientName: \"<value>\",\n        ClientID: \"<id>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update_client",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<id>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -2092,6 +2172,11 @@
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "delete_client",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Delete(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "delete_client",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.delete({\n    clientId: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -2154,6 +2239,11 @@
         "x-speakeasy-group": "oauth2",
         "x-speakeasy-name-override": "authorize",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "authorize",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Authorize(ctx)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseOauth2Authorize != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "authorize",
@@ -2291,6 +2381,11 @@
         "x-speakeasy-name-override": "token",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "request_token",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Token(ctx, operations.CreateOauth2RequestTokenRequestBodyOnev11oauth21tokenPostXComponentsAuthorizationCodeTokenRequest(\n        components.Onev11oauth21tokenPostXComponentsAuthorizationCodeTokenRequest{\n            ClientID: \"<id>\",\n            ClientSecret: \"<value>\",\n            Code: \"<value>\",\n            RedirectURI: \"https://talkative-barracks.com\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.TokenResponse != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "request_token",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -2373,6 +2468,11 @@
         "x-speakeasy-group": "oauth2",
         "x-speakeasy-name-override": "revoke",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "revoke_token",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Revoke(ctx, operations.Oauth2RevokeTokenRevokeTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.RevokeTokenResponse != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "revoke_token",
@@ -2457,6 +2557,11 @@
         "x-speakeasy-name-override": "introspect",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "introspect_token",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Introspect(ctx, operations.Oauth2IntrospectTokenIntrospectTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.IntrospectTokenResponse != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "introspect_token",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -2507,6 +2612,11 @@
         "x-speakeasy-name-override": "userinfo",
         "x-speakeasy-group": "oauth2",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "userinfo",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Userinfo(ctx)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseOauth2Userinfo != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "userinfo",
@@ -2679,6 +2789,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceBenefit != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -2748,6 +2863,11 @@
         "x-speakeasy-group": "benefits",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Create(ctx, components.CreateBenefitCreateBenefitDownloadablesCreate(\n        components.BenefitDownloadablesCreate{\n            Description: \"yuck forager beneath please shadowy foodstuffs welcome\",\n            Properties: components.BenefitDownloadablesCreateProperties{\n                Files: []string{\n                    \"<value>\",\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -2839,6 +2959,11 @@
         "x-speakeasy-group": "benefits",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -2968,6 +3093,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitGitHubRepositoryUpdate(\n        components.BenefitGitHubRepositoryUpdate{\n            Properties: &components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.BenefitGitHubRepositoryCreatePropertiesPermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -3057,6 +3187,11 @@
         "x-speakeasy-group": "benefits",
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "delete",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "delete",
@@ -3236,6 +3371,11 @@
         "x-speakeasy-group": "benefits",
         "x-speakeasy-name-override": "grants",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "grants",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Grants(ctx, operations.BenefitsGrantsRequest{\n        ID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceBenefitGrant != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "grants",
@@ -3501,6 +3641,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.List(ctx, operations.ProductsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceProduct != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -3571,6 +3716,11 @@
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Create(ctx, components.CreateProductCreateProductRecurringCreate(\n        components.ProductRecurringCreate{\n            Name: \"<value>\",\n            Prices: components.CreateProductRecurringCreatePricesArrayOfProductPriceRecurringFixedCreate(\n                []components.ProductPriceRecurringFixedCreate{\n                    components.ProductPriceRecurringFixedCreate{\n                        PriceAmount: 796474,\n                        RecurringInterval: components.SubscriptionRecurringIntervalYear,\n                    },\n                },\n            ),\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -3662,6 +3812,11 @@
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -3770,6 +3925,11 @@
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Update(ctx, \"<value>\", components.ProductUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "update",
@@ -3880,6 +4040,11 @@
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "update_benefits",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "update_benefits",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.UpdateBenefits(ctx, \"<value>\", components.ProductBenefitsUpdate{\n        Benefits: []string{\n            \"<value>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "update_benefits",
@@ -4165,6 +4330,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.List(ctx, operations.OrdersListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceOrder != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -4250,6 +4420,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Order != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "get",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -4334,6 +4509,11 @@
         "x-speakeasy-group": "orders",
         "x-speakeasy-name-override": "invoice",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "invoice",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.Invoice(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.OrderInvoice != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "invoice",
@@ -4546,6 +4726,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.List(ctx, operations.CheckoutsCustomListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCheckout != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -4616,6 +4801,11 @@
         "x-speakeasy-group": "checkouts.custom",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Create(ctx, components.CreateCheckoutCreateCheckoutPriceCreate(\n        components.CheckoutPriceCreate{\n            ProductPriceID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -4704,6 +4894,11 @@
         "x-speakeasy-group": "checkouts.custom",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -4800,6 +4995,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Update(ctx, \"<value>\", components.CheckoutUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.update({\n    id: \"<value>\",\n    checkoutUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -4871,6 +5071,11 @@
         "x-speakeasy-group": "checkouts.custom",
         "x-speakeasy-name-override": "client_get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "client_get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.ClientGet(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "client_get",
@@ -4951,6 +5156,11 @@
         "x-speakeasy-group": "checkouts.custom",
         "x-speakeasy-name-override": "client_update",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "client_update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "client_update",
@@ -5045,6 +5255,11 @@
         "x-speakeasy-group": "checkouts.custom",
         "x-speakeasy-name-override": "client_confirm",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "client_confirm",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.ClientConfirm(ctx, \"<value>\", components.CheckoutConfirmStripe{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublicConfirmed != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "client_confirm",
@@ -5307,6 +5522,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceFileRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -5375,6 +5595,11 @@
         "x-speakeasy-group": "files",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Create(ctx, components.CreateFileCreateProductMediaFileCreate(\n        components.ProductMediaFileCreate{\n            Name: \"<value>\",\n            MimeType: \"<value>\",\n            Size: 951062,\n            Upload: components.S3FileCreateMultipart{\n                Parts: []components.S3FileCreatePart{\n                    components.S3FileCreatePart{\n                        Number: 86,\n                        ChunkStart: 169727,\n                        ChunkEnd: 89964,\n                    },\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.FileUpload != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -5500,6 +5725,11 @@
         "x-speakeasy-name-override": "uploaded",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "uploaded",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Uploaded(ctx, \"<value>\", components.FileUploadCompleted{\n        ID: \"<id>\",\n        Path: \"/sys\",\n        Parts: []components.S3FileUploadCompletedPart{\n            components.S3FileUploadCompletedPart{\n                Number: 173116,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 894030,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 673715,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseFilesUploaded != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "uploaded",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 173116,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 894030,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 673715,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -5624,6 +5854,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Update(ctx, \"<value>\", components.FilePatch{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseFilesUpdate != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.update({\n    id: \"<value>\",\n    filePatch: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -5707,6 +5942,11 @@
         "x-speakeasy-group": "files",
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "delete",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "delete",
@@ -5905,6 +6145,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Get(ctx, operations.MetricsGetRequest{\n        StartDate: types.MustDateFromString(\"2024-02-07\"),\n        EndDate: types.MustDateFromString(\"2023-09-05\"),\n        Interval: components.IntervalWeek,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsResponse != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "get",
             "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2023-09-05\"),\n    interval: \"week\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -5955,6 +6200,11 @@
         "x-speakeasy-group": "metrics",
         "x-speakeasy-name-override": "limits",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "limits",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Limits(ctx)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsLimits != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "limits",
@@ -6162,6 +6412,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceLicenseKeyRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -6256,6 +6511,11 @@
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyWithActivations != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -6358,6 +6618,11 @@
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Update(ctx, \"<value>\", components.LicenseKeyUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyRead != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "update",
@@ -6463,6 +6728,11 @@
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "get_activation",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get_activation",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.GetActivation(ctx, \"<value>\", \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get_activation",
@@ -6673,6 +6943,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.List(ctx, operations.CheckoutLinksListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCheckoutLink != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -6741,6 +7016,11 @@
         "x-speakeasy-group": "checkout-links",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Create(ctx, components.CreateCheckoutLinkCreateCheckoutLinkPriceCreate(\n        components.CheckoutLinkPriceCreate{\n            ProductPriceID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -6827,6 +7107,11 @@
         "x-speakeasy-group": "checkout-links",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -6921,6 +7206,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Update(ctx, \"<value>\", components.CheckoutLinkUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.update({\n    id: \"<value>\",\n    checkoutLinkUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -6996,6 +7286,11 @@
         "x-speakeasy-group": "checkout-links",
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "delete",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "delete",
@@ -7210,6 +7505,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.List(ctx, operations.CustomFieldsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomField != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -7279,6 +7579,11 @@
         "x-speakeasy-group": "custom-fields",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Create(ctx, components.CreateCustomFieldCreateCustomFieldCreateSelect(\n        components.CustomFieldCreateSelect{\n            Slug: \"<value>\",\n            Name: \"<value>\",\n            Properties: components.CustomFieldSelectProperties{\n                Options: []components.CustomFieldSelectOption{\n                    components.CustomFieldSelectOption{\n                        Value: \"<value>\",\n                        Label: \"<value>\",\n                    },\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -7366,6 +7671,11 @@
         "x-speakeasy-group": "custom-fields",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -7461,6 +7771,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Update(ctx, \"<value>\", components.CreateCustomFieldUpdateCustomFieldUpdateNumber(\n        components.CustomFieldUpdateNumber{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.update({\n    id: \"<value>\",\n    customFieldUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -7536,6 +7851,11 @@
         "x-speakeasy-group": "custom-fields",
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "delete",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "delete",
@@ -7727,6 +8047,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.List(ctx, operations.DiscountsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDiscount != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -7797,6 +8122,11 @@
         "x-speakeasy-group": "discounts",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Create(ctx, components.CreateDiscountCreateDiscountFixedRepeatDurationCreate(\n        components.DiscountFixedRepeatDurationCreate{\n            Duration: components.DiscountDurationForever,\n            DurationInMonths: 417458,\n            Type: components.DiscountTypeFixed,\n            Amount: 69025,\n            Name: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -7885,6 +8215,11 @@
         "x-speakeasy-group": "discounts",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -7981,6 +8316,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Update(ctx, \"<value>\", components.DiscountUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.update({\n    id: \"<value>\",\n    discountUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -8057,6 +8397,11 @@
         "x-speakeasy-group": "discounts",
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "delete",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "delete",
@@ -8248,6 +8593,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.List(ctx, operations.CustomersListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomer != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -8317,6 +8667,11 @@
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "create",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Create(ctx, components.CustomerCreate{\n        Email: \"Loyal79@yahoo.com\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "create",
@@ -8404,6 +8759,11 @@
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -8499,6 +8859,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -8575,6 +8940,11 @@
         "x-speakeasy-group": "customers",
         "x-speakeasy-name-override": "delete",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "delete",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "delete",
@@ -8879,6 +9249,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.BenefitGrants.List(ctx, operations.CustomerPortalBenefitGrantsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerBenefitGrant != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -8969,6 +9344,11 @@
         "x-speakeasy-group": "customer_portal.benefit-grants",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.BenefitGrants.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerBenefitGrant != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -9079,6 +9459,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.BenefitGrants.Update(ctx, \"<value>\", components.CreateCustomerBenefitGrantUpdateCustomerBenefitGrantDownloadablesUpdate(\n        components.CustomerBenefitGrantDownloadablesUpdate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerBenefitGrant != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.update({\n    id: \"<value>\",\n    customerBenefitGrantUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -9168,6 +9553,11 @@
         "x-speakeasy-group": "customer_portal.customers",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Customers.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPortalCustomer != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -9357,6 +9747,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Downloadables.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDownloadableRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -9424,6 +9819,11 @@
         "x-speakeasy-group": "customer_portal.downloadables",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Downloadables.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -9621,6 +10021,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceLicenseKeyRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -9710,6 +10115,11 @@
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyWithActivations != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "get",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -9778,6 +10188,11 @@
         "x-speakeasy-group": "customer_portal.license_keys",
         "x-speakeasy-name-override": "validate",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "validate",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Validate(ctx, components.LicenseKeyValidate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ValidatedLicenseKey != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "validate",
@@ -9858,6 +10273,11 @@
         "x-speakeasy-name-override": "activate",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "activate",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Activate(ctx, components.LicenseKeyActivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        Label: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "activate",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -9919,6 +10339,11 @@
         "x-speakeasy-group": "customer_portal.license_keys",
         "x-speakeasy-name-override": "deactivate",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "deactivate",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Deactivate(ctx, components.LicenseKeyDeactivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        ActivationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "deactivate",
@@ -10201,6 +10626,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Orders.List(ctx, operations.CustomerPortalOrdersListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerOrder != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -10290,6 +10720,11 @@
         "x-speakeasy-group": "customer_portal.orders",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Orders.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrder != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -10381,6 +10816,11 @@
         "x-speakeasy-name-override": "invoice",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "invoice",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Orders.Invoice(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrderInvoice != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "invoice",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -10451,6 +10891,11 @@
         "x-speakeasy-group": "customer_portal.organizations",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Organizations.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -10702,6 +11147,11 @@
         "x-speakeasy-name-override": "list",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "list",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.List(ctx, operations.CustomerPortalSubscriptionsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerSubscription != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "list",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
@@ -10792,6 +11242,11 @@
         "x-speakeasy-group": "customer_portal.subscriptions",
         "x-speakeasy-name-override": "get",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "get",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "get",
@@ -10891,6 +11346,11 @@
         "x-speakeasy-name-override": "update",
         "x-codeSamples": [
           {
+            "lang": "go",
+            "label": "update",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Update(ctx, \"<value>\", components.CustomerSubscriptionUpdate{\n        ProductPriceID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
+          },
+          {
             "lang": "typescript",
             "label": "update",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.update({\n    id: \"<value>\",\n    customerSubscriptionUpdate: {\n      productPriceId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
@@ -10988,6 +11448,11 @@
         "x-speakeasy-group": "customer_portal.subscriptions",
         "x-speakeasy-name-override": "cancel",
         "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "cancel",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Cancel(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
+          },
           {
             "lang": "typescript",
             "label": "cancel",
@@ -12605,7 +13070,7 @@
           "is_tax_applicable": {
             "type": "boolean",
             "title": "Is Tax Applicable",
-            "description": "Whether the benefit is taxable."
+            "deprecated": true
           }
         },
         "type": "object",
@@ -12660,11 +13125,6 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
           },
-          "is_tax_applicable": {
-            "type": "boolean",
-            "title": "Is Tax Applicable",
-            "description": "Whether the benefit is taxable."
-          },
           "properties": {
             "$ref": "#/components/schemas/BenefitCustomCreateProperties"
           }
@@ -12673,7 +13133,6 @@
         "required": [
           "type",
           "description",
-          "is_tax_applicable",
           "properties"
         ],
         "title": "BenefitCustomCreate",
@@ -13687,6 +14146,19 @@
             ],
             "title": "Permission",
             "description": "The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."
+          },
+          "repository_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repository Id",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -15044,6 +15516,23 @@
             },
             "type": "array",
             "title": "Attached Custom Fields"
+          },
+          "customer_metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Customer Metadata"
           }
         },
         "type": "object",
@@ -15084,7 +15573,8 @@
           "product_price",
           "discount",
           "subscription_id",
-          "attached_custom_fields"
+          "attached_custom_fields",
+          "customer_metadata"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."
@@ -16031,14 +16521,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "label": {
             "anyOf": [
@@ -16248,6 +16738,27 @@
               }
             ],
             "title": "Customer Tax Id"
+          },
+          "customer_metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Customer Metadata",
+            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "subscription_id": {
             "anyOf": [
@@ -16546,6 +17057,27 @@
               }
             ],
             "title": "Customer Tax Id"
+          },
+          "customer_metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Customer Metadata",
+            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "subscription_id": {
             "anyOf": [
@@ -17431,14 +17963,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "discount_id": {
             "anyOf": [
@@ -17477,6 +18009,35 @@
               }
             ],
             "title": "Customer Ip Address"
+          },
+          "customer_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 1
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object",
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Metadata",
+            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "success_url": {
             "anyOf": [
@@ -18776,14 +19337,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -18859,14 +19420,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -18942,14 +19503,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -19025,14 +19586,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -19108,14 +19669,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -23172,14 +23733,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -24934,6 +25495,17 @@
           "public_name": {
             "type": "string",
             "title": "Public Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
           }
         },
         "type": "object",
@@ -26954,6 +27526,12 @@
               }
             ],
             "title": "Checkout Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "User Id",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -26975,7 +27553,8 @@
           "product_id",
           "price_id",
           "discount_id",
-          "checkout_id"
+          "checkout_id",
+          "user_id"
         ],
         "title": "OrderSubscription"
       },
@@ -26993,6 +27572,28 @@
           "public_name": {
             "type": "string",
             "title": "Public Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "github_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Username"
           }
         },
         "type": "object",
@@ -29456,14 +30057,14 @@
                   ]
                 },
                 "type": "object",
-                "maxProperties": 50
+                "maxProperties": 50,
+                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "title": "Metadata"
           },
           "name": {
             "anyOf": [
@@ -30662,6 +31263,28 @@
           "public_name": {
             "type": "string",
             "title": "Public Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "github_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Username"
           }
         },
         "type": "object",

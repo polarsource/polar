@@ -98,6 +98,7 @@ export const CustomerPortal = ({
                   item={s}
                   onClick={() => setSelectedItemId(s.id)}
                   selected={selectedItem?.id === s.id}
+                  customerSessionToken={customerSessionToken}
                 />
               ))}
             </div>
@@ -114,6 +115,7 @@ export const CustomerPortal = ({
                     item={order}
                     onClick={() => setSelectedItemId(order.id)}
                     selected={selectedItem?.id === order.id}
+                    customerSessionToken={customerSessionToken}
                   />
                 ))}
               </div>
@@ -132,10 +134,12 @@ const OrderItem = ({
   item,
   onClick,
   selected,
+  customerSessionToken,
 }: {
   item: CustomerSubscription | CustomerOrder
   onClick: () => void
   selected: boolean
+  customerSessionToken?: string
 }) => {
   const content = (
     <div className="flex flex-row justify-between">
@@ -180,7 +184,7 @@ const OrderItem = ({
         className={twMerge(className, 'flex md:hidden')}
         href={`/${item.product.organization.slug}/portal/${
           'recurring_interval' in item ? 'subscriptions' : 'orders'
-        }/${item.id}`}
+        }/${item.id}?customer_session_token=${customerSessionToken}`}
       >
         {content}
       </Link>

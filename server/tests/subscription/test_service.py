@@ -62,12 +62,16 @@ def construct_stripe_subscription(
             else {}
         ),
     }
+    canceled_at = None
+    if cancel_at_period_end:
+        canceled_at = now_timestamp
+
     return stripe_lib.Subscription.construct_from(
         {
             "id": "SUBSCRIPTION_ID",
-            "customer": customer.stripe_customer_id
-            if customer is not None
-            else "CUSTOMER_ID",
+            "customer": (
+                customer.stripe_customer_id if customer is not None else "CUSTOMER_ID"
+            ),
             "status": status,
             "items": {
                 "data": [
@@ -77,17 +81,20 @@ def construct_stripe_subscription(
             "current_period_start": now_timestamp,
             "current_period_end": now_timestamp + timedelta(days=30).seconds,
             "cancel_at_period_end": cancel_at_period_end,
+            "canceled_at": canceled_at,
             "ended_at": None,
             "latest_invoice": latest_invoice,
             "metadata": {**base_metadata, **metadata},
-            "discount": {
-                "coupon": {
-                    "id": discount.stripe_coupon_id,
-                    "metadata": {"discount_id": str(discount.id)},
+            "discount": (
+                {
+                    "coupon": {
+                        "id": discount.stripe_coupon_id,
+                        "metadata": {"discount_id": str(discount.id)},
+                    }
                 }
-            }
-            if discount is not None
-            else None,
+                if discount is not None
+                else None
+            ),
         },
         None,
     )

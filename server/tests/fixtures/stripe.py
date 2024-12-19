@@ -8,6 +8,7 @@ class CanceledSubscriptionMock:
     def __init__(self, subscription: Subscription, revoke: bool = False) -> None:
         now = int(time.time())
         current_period_ends = int(datetime.timestamp(subscription.current_period_end))
+        self.ended_at: int | None = None
         if revoke:
             self.status = "canceled"
             self.cancel_at_period_end = False

@@ -43,7 +43,6 @@ from tests.fixtures.stripe import create_canceled_stripe_subscription
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.customer_portal.service.subscription.stripe_service", new=mock)
     mocker.patch("polar.subscription.service.stripe_service", new=mock)
     return mock
 
@@ -288,5 +287,4 @@ class TestCancel:
             subscription.stripe_subscription_id,
             customer_reason="too_complex",
             customer_comment="So many settings",
-            immediately=False,
         )

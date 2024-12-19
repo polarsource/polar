@@ -804,13 +804,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             if immediately:
                 stripe_subscription = await stripe_service.revoke_subscription(
                     subscription.stripe_subscription_id,
-                    customer_reason=reason,
+                    customer_reason=reason,  # type: ignore
                     customer_comment=customer_comment,
                 )
             else:
                 stripe_subscription = await stripe_service.cancel_subscription(
                     subscription.stripe_subscription_id,
-                    customer_reason=reason,
+                    customer_reason=reason,  # type: ignore
                     customer_comment=customer_comment,
                 )
             # Update status and cancellation details early for our API responses.

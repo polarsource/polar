@@ -24,7 +24,12 @@ from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import (
+    BadRequest,
+    PolarError,
+    PolarRequestValidationError,
+    ResourceUnavailable,
+)
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
@@ -606,10 +611,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 product_price_id=updates.product_price_id,
             )
 
-        if not (updates.revoke or updates.cancel_at_period_end):
+        cancel = updates.cancel_at_period_end is True
+        uncancel = updates.cancel_at_period_end is False
+        if not (updates.revoke or cancel or uncancel):
             return subscription
 
-        if updates.revoke and updates.cancel_at_period_end:
+        if updates.revoke and (cancel or uncancel):
             raise PolarRequestValidationError(
                 [
                     {
@@ -623,6 +630,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     }
                 ]
             )
+
+        if uncancel:
+            return await self.uncancel(session, subscription)
 
         if updates.revoke:
             return await self.revoke(
@@ -753,6 +763,32 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session.add(subscription)
         return subscription
 
+    async def uncancel(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Subscription:
+        if subscription.ended_at:
+            raise ResourceUnavailable()
+
+        if not (subscription.active and subscription.cancel_at_period_end):
+            raise BadRequest()
+
+        # Internal and already revoked
+        if not subscription.stripe_subscription_id:
+            raise ResourceUnavailable()
+
+        stripe_subscription = await stripe_service.uncancel_subscription(
+            subscription.stripe_subscription_id,
+        )
+        self.update_cancellation_from_stripe(subscription, stripe_subscription)
+        subscription.canceled_at = None
+        subscription.ends_at = None
+        subscription.customer_cancellation_reason = None
+        subscription.customer_cancellation_comment = None
+        session.add(subscription)
+        return subscription
+
     async def revoke(
         self,
         session: AsyncSession,
@@ -847,17 +883,27 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     def update_cancellation_from_stripe(
         self, subscription: Subscription, stripe_subscription: stripe_lib.Subscription
     ) -> None:
+        previous_ends_at = subscription.ends_at
+
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
-        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
-        # Use our own if set already (more accurate).
-        if canceled_at and not subscription.canceled_at:
-            subscription.canceled_at = canceled_at
+
+        is_canceled = subscription.cancel_at_period_end or subscription.ended_at
+        is_uncanceled = previous_ends_at and not is_canceled
+        if not is_canceled or is_uncanceled:
+            subscription.ends_at = None
+            subscription.canceled_at = None
+            return
 
         if subscription.ended_at:
             subscription.ends_at = subscription.ended_at
         elif subscription.cancel_at_period_end:
             subscription.ends_at = subscription.current_period_end
+
+        # Use our own if set already (more accurate).
+        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        if canceled_at and not subscription.canceled_at:
+            subscription.canceled_at = canceled_at
 
     async def _after_subscription_updated(
         self,
@@ -875,11 +921,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if became_activated:
             await self._on_subscription_activated(session, subscription)
 
-        cancellation_changed = (
-            subscription.ends_at and subscription.ends_at != previous_ends_at
-        )
+        is_canceled = subscription.ends_at and subscription.canceled_at
+        cancellation_changed = is_canceled and subscription.ends_at != previous_ends_at
         if cancellation_changed:
             await self._on_subscription_canceled(session, subscription)
+
+        became_uncanceled = previous_ends_at and not is_canceled
+        if became_uncanceled:
+            await self._on_subscription_uncanceled(session, subscription)
 
         became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
             previous_status
@@ -917,6 +966,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             await self.send_confirmation_email(session, subscription)
 
         await self._send_new_subscription_notification(session, subscription)
+
+    async def _on_subscription_uncanceled(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_uncanceled
+        )
+        await self.send_uncanceled_email(session, subscription)
 
     async def _on_subscription_canceled(
         self,
@@ -967,6 +1026,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             | Literal[WebhookEventType.subscription_updated]
             | Literal[WebhookEventType.subscription_active]
             | Literal[WebhookEventType.subscription_canceled]
+            | Literal[WebhookEventType.subscription_uncanceled]
             | Literal[WebhookEventType.subscription_revoked]
         ),
     ) -> None:
@@ -1019,6 +1079,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription,
             subject_template="Your {{ product.name }} subscription",
             template_path="subscription/confirmation.html",
+        )
+
+    async def send_uncanceled_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {{ product.name }} subscription is uncanceled",
+            template_path="subscription/uncanceled.html",
         )
 
     async def send_cancellation_email(

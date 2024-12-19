@@ -21,11 +21,13 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_canceled_subscription,
     create_product,
     create_product_price_fixed,
 )
 from tests.fixtures.stripe import (
     cloned_stripe_canceled_subscription,
+    cloned_stripe_subscription,
 )
 
 
@@ -330,6 +332,116 @@ class TestSubscriptionUpdateCancel:
         assert updated_subscription["ended_at"] is None
         assert updated_subscription["customer_cancellation_reason"] == reason
         assert updated_subscription["customer_cancellation_comment"] == comment
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestSubscriptionUpdateUncancel:
+    async def test_anonymous(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(
+                cancel_at_period_end=False,
+            ),
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_tampered(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product_organization_second,
+            customer=customer,
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(
+                cancel_at_period_end=True,
+            ),
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_uncancel_revoked(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture, product=product, customer=customer, revoke=True
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(
+                cancel_at_period_end=False,
+            ),
+        )
+        assert response.status_code == 410
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        uncanceled = cloned_stripe_subscription(subscription)
+        uncanceled.cancel_at_period_end = False
+        uncanceled.canceled_at = None
+        uncanceled.ended_at = None
+
+        stripe_service_mock.uncancel_subscription.return_value = uncanceled
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(
+                cancel_at_period_end=False,
+            ),
+        )
+        assert response.status_code == 200
+        stripe_service_mock.uncancel_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id,
+        )
+        updated_subscription = response.json()
+        current_period_end = updated_subscription["current_period_end"]
+        assert updated_subscription["status"] == SubscriptionStatus.active
+        assert updated_subscription["cancel_at_period_end"] is False
+        assert updated_subscription["ends_at"] is None
+        assert updated_subscription["ended_at"] is None
+        assert updated_subscription["customer_cancellation_reason"] is None
+        assert updated_subscription["customer_cancellation_comment"] is None
 
 
 @pytest.mark.asyncio

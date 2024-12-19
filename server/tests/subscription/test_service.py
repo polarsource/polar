@@ -10,6 +10,7 @@ from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer.service import customer as customer_service
+from polar.exceptions import BadRequest, ResourceUnavailable
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Benefit,
@@ -37,12 +38,14 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailSender, watch_email
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_canceled_subscription,
     create_checkout,
     create_subscription,
     set_product_benefits,
 )
 from tests.fixtures.stripe import (
     cloned_stripe_canceled_subscription,
+    cloned_stripe_subscription,
     construct_stripe_customer,
     construct_stripe_subscription,
 )
@@ -57,6 +60,7 @@ HookNames = {
     "updated",
     "activated",
     "canceled",
+    "uncanceled",
     "revoked",
 }
 Hooks = namedtuple("Hooks", " ".join(HookNames))
@@ -67,11 +71,15 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
     updated = mocker.patch.object(subscription_service, "_on_subscription_updated")
     activated = mocker.patch.object(subscription_service, "_on_subscription_activated")
     canceled = mocker.patch.object(subscription_service, "_on_subscription_canceled")
+    uncanceled = mocker.patch.object(
+        subscription_service, "_on_subscription_uncanceled"
+    )
     revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
     return Hooks(
         updated=updated,
         activated=activated,
         canceled=canceled,
+        uncanceled=uncanceled,
         revoked=revoked,
     )
 
@@ -527,6 +535,91 @@ class TestUpdateSubscriptionFromStripe:
 
         enqueue_benefits_grants_mock.assert_called_once()
         assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
+
+    async def test_uncancel_active(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is False
+
+        with pytest.raises(BadRequest):
+            await subscription_service.uncancel(session, subscription)
+
+    async def test_uncancel_already_revoked(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+            cancel_at_period_end=False,
+            revoke=True,
+        )
+        assert subscription.cancel_at_period_end is False
+        assert subscription.ended_at
+        assert subscription.canceled_at
+
+        with pytest.raises(ResourceUnavailable):
+            await subscription_service.uncancel(session, subscription)
+
+    async def test_valid_uncancel(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at
+        assert subscription.canceled_at
+
+        stripe_subscription = cloned_stripe_subscription(
+            subscription, cancel_at_period_end=False
+        )
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.ends_at is None
+        assert updated_subscription.canceled_at is None
+        assert_hooks_called_once(subscription_hooks, {"updated", "uncanceled"})
 
     async def test_valid_revokation(
         self,

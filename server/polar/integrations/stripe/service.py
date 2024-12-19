@@ -482,6 +482,15 @@ class StripeService:
                 raise MissingPaymentMethod(id)
             raise
 
+    async def uncancel_subscription(
+        self,
+        id: str,
+    ) -> stripe_lib.Subscription:
+        return await stripe_lib.Subscription.modify_async(
+            id,
+            cancel_at_period_end=False,
+        )
+
     async def cancel_subscription(
         self,
         id: str,

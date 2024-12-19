@@ -325,6 +325,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         Literal[WebhookEventType.subscription_updated]
         | Literal[WebhookEventType.subscription_active]
         | Literal[WebhookEventType.subscription_canceled]
+        | Literal[WebhookEventType.subscription_uncanceled]
         | Literal[WebhookEventType.subscription_revoked]
     )
     data: SubscriptionSchema
@@ -408,6 +409,41 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
                             "text": "Subscription has been canceled.",
                         },
                         "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_uncanceled_discord_payload(self, target: User | Organization) -> str:
+        payload: DiscordPayload = {
+            "content": "Subscription has been uncanceled.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Uncanceled Subscription",
+                        "description": "Subscription has been restored.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_uncanceled_slack_payload(self, target: User | Organization) -> str:
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has been uncanceled.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has been restored.",
+                        },
+                        "fields": self._get_slack_fields(target),
                     }
                 ],
             }
@@ -542,8 +578,8 @@ class WebhookSubscriptionActivePayload(WebhookSubscriptionUpdatedPayloadBase):
 
 class WebhookSubscriptionCanceledPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
-    Sent when a subscription is canceled by the user.
-    They might still have access until the end of the current period.
+    Sent when a subscription is canceled.
+    Customers might still have access until the end of the current period.
 
     **Discord & Slack support:** Full
     """
@@ -562,6 +598,29 @@ class WebhookSubscriptionCanceledPayload(WebhookSubscriptionUpdatedPayloadBase):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
         return self._get_canceled_slack_payload(target)
+
+
+class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription is uncanceled.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_uncanceled]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_uncanceled_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_uncanceled_slack_payload(target)
 
 
 class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
@@ -759,6 +818,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionUpdatedPayload
     | WebhookSubscriptionActivePayload
     | WebhookSubscriptionCanceledPayload
+    | WebhookSubscriptionUncanceledPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload

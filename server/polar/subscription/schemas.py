@@ -1,6 +1,6 @@
 import inspect
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from babel.numbers import format_currency
 from pydantic import UUID4, AliasChoices, AliasPath, Field
@@ -125,9 +125,15 @@ class SubscriptionUpdatePrice(Schema):
 class SubscriptionCancel(Schema):
     cancel_at_period_end: bool | None = Field(
         None,
-        description="Cancel an active subscription once the current period ends.",
+        description=inspect.cleandoc(
+            """
+        Cancel an active subscription once the current period ends.
+
+        Or uncancel a subscription currently set to be revoked at period end.
+        """
+        ),
     )
-    revoke: bool | None = Field(
+    revoke: Literal[True] | None = Field(
         None,
         description="Cancel and revoke an active subscription immediately",
     )

@@ -79,7 +79,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker.conf
+    dockerCommand: uv run python -m run_worker --scheduler default
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -131,7 +131,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker_github.conf
+    dockerCommand: uv run python -m run_worker github
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -256,7 +256,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker.conf
+    dockerCommand: uv run python -m run_worker --scheduler default
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -305,7 +305,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker_github.conf
+    dockerCommand: uv run python -m run_worker github
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions

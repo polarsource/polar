@@ -38,11 +38,11 @@ export const DownloadableItem = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-2xl bg-white px-4 py-2',
+        'dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-2xl bg-gray-50 px-4 py-2',
         className,
       )}
     >
-      <div className="flex flex-row flex-shrink w-full min-w-0 items-center gap-x-4">
+      <div className="flex w-full min-w-0 flex-shrink flex-row items-center gap-x-4">
         {fileIcon && <FilePreview mimeType={downloadable.file.mime_type} />}
         <div className="flex w-full min-w-0 flex-col gap-y-1">
           <span className="min-w-0 truncate text-sm">

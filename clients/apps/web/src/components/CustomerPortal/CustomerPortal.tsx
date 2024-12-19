@@ -30,7 +30,7 @@ export const CustomerPortal = ({
   customerSessionToken,
 }: CustomerPortalProps) => {
   return (
-    <div className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
+    <div className="flex w-full max-w-7xl flex-col items-center gap-12">
       <div className="flex w-full max-w-2xl flex-col gap-y-12">
         <div className="flex flex-col gap-y-6">
           {subscriptions.map((s) => (
@@ -170,7 +170,7 @@ const SubscriptionItem = ({
   const organization = subscription.product.organization
 
   return (
-    <ShadowBox className="dark:bg-polar-950 flex w-full flex-col gap-y-6 bg-gray-50">
+    <ShadowBox className="dark:bg-polar-950 flex w-full flex-col gap-y-6 bg-gray-100">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>

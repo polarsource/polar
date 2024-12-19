@@ -20,7 +20,9 @@ const Avatar = ({
     // Skip rendering initials in case of `avatar_url`
     // Unless from Gravatar since they offer a transparent image in case of no avatar
     // Also have to check for `http` first to avoid running `new URL` on internal NextJS asset paths
-    const avatarHost = avatar_url.startsWith('http') ? new URL(avatar_url).host : null
+    const avatarHost = avatar_url.startsWith('http')
+      ? new URL(avatar_url).host
+      : null
     showInitials = avatarHost === 'www.gravatar.com'
   }
 
@@ -44,7 +46,7 @@ const Avatar = ({
             src={avatar_url}
             height={height}
             width={width}
-            className="z-[1] rounded-full"
+            className="z-[1] aspect-square rounded-full object-cover"
           />
         </>
       )}

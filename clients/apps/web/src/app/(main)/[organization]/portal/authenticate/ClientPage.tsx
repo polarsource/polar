@@ -52,14 +52,14 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-      <div className="flex w-2/3 flex-col gap-y-6">
+      <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl text-black dark:text-white">
             Verification code
           </h2>
-          <h2 className="dark:text-polar-400 text-lg text-gray-500">
+          <p className="dark:text-polar-500 text-gray-500">
             Enter the verification code sent to your email address.
-          </h2>
+          </p>
         </div>
         <Form {...form}>
           <form
@@ -79,7 +79,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                             <InputOTPSlot
                               key={index}
                               index={index}
-                              className="h-16 w-16 text-2xl border-gray-300 dark:border-gray-600"
+                              className="dark:border-polar-600 h-16 w-16 border-gray-300 text-2xl"
                             />
                           ))}
                         </InputOTPGroup>

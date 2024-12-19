@@ -69,7 +69,7 @@ const CustomerPortalSubscription = ({
   return (
     <>
       <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
-        <div className="flex w-full flex-col gap-8 md:w-2/3">
+        <div className="flex w-full flex-col gap-8">
           <ShadowBox className="flex flex-col gap-6">
             <Link
               className="flex flex-row items-center gap-x-4"
@@ -100,7 +100,10 @@ const CustomerPortalSubscription = ({
               <h3 className="text-lg font-medium">Benefits</h3>
               <List>
                 {benefitGrants?.items.map((benefitGrant) => (
-                  <ListItem key={benefitGrant.id}>
+                  <ListItem
+                    key={benefitGrant.id}
+                    className="hover:bg-transparent dark:hover:bg-transparent"
+                  >
                     <BenefitGrant api={api} benefitGrant={benefitGrant} />
                   </ListItem>
                 ))}
@@ -175,7 +178,6 @@ const CustomerPortalSubscription = ({
                 <Button
                   size="lg"
                   variant="ghost"
-                  className="dark:text-polar-500 text-gray-500"
                   fullWidth
                   onClick={() => setShowCancelModal(true)}
                 >

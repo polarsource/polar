@@ -18,7 +18,6 @@ import { Form } from 'polarkit/components/ui/form'
 import { useContext, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { CheckoutCustomization } from './Checkout/CheckoutCustomization'
-import { ConfirmationCustomization } from './Confirmation/ConfirmationCustomization'
 import { PortalCustomization } from './Portal/PortalCustomization'
 import { StorefrontCustomization } from './Storefront/StorefrontCustomization'
 import { StorefrontSidebar } from './Storefront/StorefrontSidebar'
@@ -52,10 +51,6 @@ const Customization = () => {
     switch (customizationMode) {
       case 'checkout':
         return isLoading ? null : <CheckoutCustomization product={product} />
-      case 'confirmation':
-        return isLoading ? null : (
-          <ConfirmationCustomization product={product} />
-        )
       case 'portal':
         return <PortalCustomization />
       case 'storefront':
@@ -109,14 +104,7 @@ const Customization = () => {
             </TabsTrigger>
             <TabsTrigger
               className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              value="confirmation"
-            >
-              Confirmation
-            </TabsTrigger>
-            <TabsTrigger
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
               value="portal"
-              disabled={!organization.profile_settings?.enabled}
             >
               Portal
             </TabsTrigger>
@@ -130,7 +118,7 @@ const Customization = () => {
       <Form {...form}>
         <div className="flex min-h-0 flex-grow flex-row gap-x-6 pb-8">
           {customizationContent}
-          <StorefrontSidebar />
+          {customizationMode === 'storefront' && <StorefrontSidebar />}
         </div>
       </Form>
     </div>

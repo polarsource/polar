@@ -1,3 +1,4 @@
+from collections import namedtuple
 from datetime import datetime
 from typing import cast
 from unittest.mock import MagicMock, call
@@ -50,6 +51,38 @@ from tests.fixtures.stripe import (
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+HookNames = {
+    "updated",
+    "activated",
+    "canceled",
+    "revoked",
+}
+Hooks = namedtuple("Hooks", " ".join(HookNames))
+
+
+@pytest.fixture
+def subscription_hooks(mocker: MockerFixture) -> Hooks:
+    updated = mocker.patch.object(subscription_service, "_on_subscription_updated")
+    activated = mocker.patch.object(subscription_service, "_on_subscription_activated")
+    canceled = mocker.patch.object(subscription_service, "_on_subscription_canceled")
+    revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
+    return Hooks(
+        updated=updated,
+        activated=activated,
+        canceled=canceled,
+        revoked=revoked,
+    )
+
+
+def assert_hooks_called_once(subscription_hooks: Hooks, called: set) -> None:
+    for hook in called:
+        getattr(subscription_hooks, hook).assert_called_once()
+
+    not_called = HookNames - called
+    for hook in not_called:
+        getattr(subscription_hooks, hook).assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -455,13 +488,13 @@ class TestUpdateSubscriptionFromStripe:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
         product: Product,
         customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
         )
-
         price = product.prices[0]
         subscription = await create_subscription(
             save_fixture,
@@ -486,12 +519,14 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.cancel_at_period_end is True
 
         enqueue_benefits_grants_mock.assert_called_once()
+        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
 
     async def test_valid_new_price(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
         product_recurring_free_price: Product,
         product: Product,
         customer: Customer,
@@ -509,6 +544,7 @@ class TestUpdateSubscriptionFromStripe:
         subscription = await create_subscription(
             save_fixture,
             product=product_recurring_free_price,
+            status=SubscriptionStatus.active,
             price=free_price,
             customer=customer,
             stripe_subscription_id=stripe_subscription.id,
@@ -530,6 +566,7 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.product == product
 
         enqueue_benefits_grants_mock.assert_called_once()
+        assert_hooks_called_once(subscription_hooks, {"updated"})
 
     async def test_valid_discount(
         self,

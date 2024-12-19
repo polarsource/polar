@@ -867,29 +867,36 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         previous_ends_at: datetime | None,
     ) -> None:
         # Webhooks
-        await self._send_webhook(
-            session, subscription, WebhookEventType.subscription_updated
-        )
+        await self._on_subscription_updated(session, subscription)
 
         became_activated = subscription.active and not SubscriptionStatus.is_active(
             previous_status
         )
         if became_activated:
-            await self._after_subscription_activated(session, subscription)
+            await self._on_subscription_activated(session, subscription)
 
         cancellation_changed = (
             subscription.ends_at and subscription.ends_at != previous_ends_at
         )
         if cancellation_changed:
-            await self._after_subscription_canceled(session, subscription)
+            await self._on_subscription_canceled(session, subscription)
 
         became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
             previous_status
         )
         if became_revoked:
-            await self._after_subscription_revoked(session, subscription)
+            await self._on_subscription_revoked(session, subscription)
 
-    async def _after_subscription_activated(
+    async def _on_subscription_updated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_updated
+        )
+
+    async def _on_subscription_activated(
         self,
         session: AsyncSession,
         subscription: Subscription,
@@ -911,7 +918,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         await self._send_new_subscription_notification(session, subscription)
 
-    async def _after_subscription_canceled(
+    async def _on_subscription_canceled(
         self,
         session: AsyncSession,
         subscription: Subscription,
@@ -921,7 +928,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         await self.send_cancellation_email(session, subscription)
 
-    async def _after_subscription_revoked(
+    async def _on_subscription_revoked(
         self,
         session: AsyncSession,
         subscription: Subscription,

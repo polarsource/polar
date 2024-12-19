@@ -44,13 +44,11 @@ async def generate_magic_link_token(
 
 @pytest.mark.asyncio
 async def test_request(session: AsyncSession) -> None:
-    # then
-    session.expunge_all()
-
     magic_link, token = await magic_link_service.request(session, "user@example.com")
 
     assert magic_link.user_email == "user@example.com"
     assert magic_link.token_hash == get_token_hash(token, secret=settings.SECRET)
+    assert magic_link.expires_at is not None
 
 
 @pytest.mark.asyncio

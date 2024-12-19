@@ -56,6 +56,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
 
         magic_link = MagicLink(**magic_link_create.model_dump(exclude_unset=True))
         session.add(magic_link)
+        await session.flush()
 
         return magic_link, token
 

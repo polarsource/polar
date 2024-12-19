@@ -65,8 +65,10 @@ export const CustomerPortal = ({
   const api = buildAPI({ token: customerSessionToken })
 
   useEffect(() => {
-    if (selectedItemId === '') {
-      setSelectedItemId(subscriptions[0].id ?? orders[0].id)
+    const firstItemId = subscriptions[0]?.id ?? orders[0]?.id
+
+    if (selectedItemId === '' && firstItemId) {
+      setSelectedItemId(firstItemId)
     }
   }, [selectedItemId, subscriptions, orders])
 

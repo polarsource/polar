@@ -516,7 +516,7 @@ class OrderService(ResourceServiceReader[Order]):
                 "featured_organization": organization,
                 "product": product,
                 "url": settings.generate_frontend_url(
-                    f"/{organization.slug}/portal/orders/{order.id}?customer_session_token={token}"
+                    f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
                 ),
                 "current_year": datetime.now().year,
             },

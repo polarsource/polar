@@ -38,7 +38,7 @@ export const DownloadableItem = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-2xl bg-gray-50 px-4 py-2',
+        'dark:bg-polar-800 flex w-full flex-row items-center justify-between gap-x-6 rounded-2xl bg-gray-50 px-4 py-3',
         className,
       )}
     >
@@ -93,7 +93,7 @@ export const DownloadableItem = ({
           href={downloadable.file.download.url}
           download
         >
-          <Button className="hidden md:flex" variant="secondary">
+          <Button className="hidden md:flex" size="icon">
             <ArrowDownward fontSize="inherit" />
           </Button>
         </a>

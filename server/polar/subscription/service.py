@@ -709,7 +709,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 "featured_organization": featured_organization,
                 "product": product,
                 "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal/subscriptions/{subscription.id}?customer_session_token={token}"
+                    f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
                 ),
                 "current_year": datetime.now().year,
             },

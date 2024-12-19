@@ -10,7 +10,6 @@ import { organizationPageLink } from '@/utils/nav'
 import { CustomerOrder, PolarAPI } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
@@ -39,46 +38,19 @@ const CustomerPortalOrder = ({
 
   return (
     <>
-      <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
-        <div className="flex w-full flex-col gap-8 md:w-2/3">
-          <ShadowBox className="flex flex-col gap-6">
-            <Link
-              className="flex flex-row items-center gap-x-4"
-              href={`/${organization.slug}`}
-            >
-              <Avatar
-                className="h-12 w-12"
-                avatar_url={organization.avatar_url}
-                name={organization.name}
-              />
-              <h3 className="text-lg">{organization.name}</h3>
-            </Link>
-            <h1 className="text-3xl font-medium">{order.product.name}</h1>
-            {order.product.description ? (
-              <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
-                <Markdown options={markdownOptions}>
-                  {order.product.description}
-                </Markdown>
-              </div>
-            ) : (
-              <></>
-            )}
-          </ShadowBox>
-          {(benefitGrants?.items.length ?? 0) > 0 && (
-            <div className="flex flex-col gap-4">
-              <h3 className="text-lg font-medium">Benefits</h3>
-              <List>
-                {benefitGrants?.items.map((benefitGrant) => (
-                  <ListItem key={benefitGrant.id}>
-                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
-                  </ListItem>
-                ))}
-              </List>
+      <div className="flex h-full flex-col gap-12">
+        <div className="flex w-full flex-col gap-8">
+          <h1 className="text-3xl font-medium">{order.product.name}</h1>
+          {order.product.description ? (
+            <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
+              <Markdown options={markdownOptions}>
+                {order.product.description}
+              </Markdown>
             </div>
+          ) : (
+            <></>
           )}
-        </div>
 
-        <div className="flex w-full flex-col gap-8 md:max-w-[340px]">
           <ShadowBox className="flex flex-col gap-8">
             <h3 className="text-lg font-medium">{order.product.name}</h3>
             <div className="flex flex-col gap-4">
@@ -120,7 +92,22 @@ const CustomerPortalOrder = ({
                 )}
             </div>
           </ShadowBox>
+
+          {(benefitGrants?.items.length ?? 0) > 0 && (
+            <div className="flex flex-col gap-4">
+              <h3 className="text-lg font-medium">Benefits</h3>
+              <List>
+                {benefitGrants?.items.map((benefitGrant) => (
+                  <ListItem key={benefitGrant.id}>
+                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
+                  </ListItem>
+                ))}
+              </List>
+            </div>
+          )}
         </div>
+
+        <div className="flex w-full flex-col gap-8"></div>
       </div>
     </>
   )

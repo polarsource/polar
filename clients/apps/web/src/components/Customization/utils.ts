@@ -233,7 +233,7 @@ export const ORDER_PREVIEW: CustomerOrder = {
 export const SUBSCRIPTION_ORDER_PREVIEW: CustomerSubscription = {
   created_at: new Date().toDateString(),
   modified_at: new Date().toDateString(),
-  id: '123',
+  id: '989898989',
   amount: 10000,
   currency: 'usd',
   recurring_interval: 'month',

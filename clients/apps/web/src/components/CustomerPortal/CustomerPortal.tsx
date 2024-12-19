@@ -1,20 +1,41 @@
 'use client'
 
-import AmountLabel from '@/components/Shared/AmountLabel'
+import { buildAPI } from '@/utils/api'
 import {
   CustomerOrder,
   CustomerSubscription,
   Organization,
+  PolarAPI,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { parseAsString, useQueryState } from 'nuqs'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
-import {
-  DataTable,
-  DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { useEffect, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
+import CustomerPortalOrder from './CustomerPortalOrder'
+import CustomerPortalSubscription from './CustomerPortalSubscription'
+
+const PortalSectionLayout = ({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) => {
+  return (
+    <div
+      className={twMerge(
+        'flex h-screen w-full flex-col overflow-y-auto px-4 py-12 md:w-1/2 md:p-12 lg:p-24',
+        className,
+      )}
+    >
+      <div className="flex w-full flex-col gap-y-16 md:max-w-md">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export interface CustomerPortalProps {
   organization: Organization
@@ -29,251 +50,156 @@ export const CustomerPortal = ({
   orders,
   customerSessionToken,
 }: CustomerPortalProps) => {
+  const [selectedItemId, setSelectedItemId] = useQueryState(
+    'id',
+    parseAsString.withDefault(''),
+  )
+
+  const selectedItem = useMemo(() => {
+    return (
+      subscriptions.find((s) => s.id === selectedItemId) ||
+      orders.find((o) => o.id === selectedItemId)
+    )
+  }, [selectedItemId, subscriptions, orders])
+
+  const api = buildAPI({ token: customerSessionToken })
+
+  useEffect(() => {
+    if (selectedItemId === '') {
+      setSelectedItemId(subscriptions[0].id ?? orders[0].id)
+    }
+  }, [selectedItemId, subscriptions, orders])
+
   return (
-    <div className="flex w-full max-w-7xl flex-col items-center gap-12">
-      <div className="flex w-full max-w-2xl flex-col gap-y-12">
-        <div className="flex flex-col gap-y-6">
-          {subscriptions.map((s) => (
-            <Link
-              key={s.id}
-              className="flex w-full flex-row items-center justify-between"
-              href={{
-                pathname: `/${organization.slug}/portal/subscriptions/${s.id}`,
-                query: { customer_session_token: customerSessionToken },
-              }}
-            >
-              <SubscriptionItem
-                subscription={s}
-                customerSessionToken={customerSessionToken}
-              />
-            </Link>
-          ))}
+    <div className="flex h-screen w-screen flex-row">
+      <PortalSectionLayout className="dark:bg-polar-900 w-full bg-gray-100 md:items-end">
+        <div className="flex flex-row items-center gap-x-4">
+          <Avatar
+            className="h-12 w-12"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
+          <h3 className="text-lg">{organization.name}</h3>
+        </div>
+        <div>
+          <h2 className="text-4xl">Customer Portal</h2>
         </div>
         <div className="flex flex-col gap-y-8">
-          <div className="flex flex-row items-center justify-between">
-            <h3 className="text-xl">Order History</h3>
-          </div>
-          <DataTable
-            data={orders}
-            isLoading={false}
-            columns={[
-              {
-                accessorKey: 'purchaseDate',
-                enableSorting: false,
-                header: ({ column }) => (
-                  <DataTableColumnHeader
-                    column={column}
-                    title="Purchase Date"
+          {subscriptions.length > 0 && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <h3 className="text-lg">Active Subscriptions</h3>
+              </div>
+              {subscriptions.map((s) => (
+                <OrderItem
+                  key={s.id}
+                  item={s}
+                  onClick={() => setSelectedItemId(s.id)}
+                  selected={selectedItem?.id === s.id}
+                />
+              ))}
+            </div>
+          )}
+          {orders.length > 0 && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <h3 className="text-lg">Orders</h3>
+              </div>
+              <div className="flex flex-col gap-y-4">
+                {orders.map((order) => (
+                  <OrderItem
+                    key={order.id}
+                    item={order}
+                    onClick={() => setSelectedItemId(order.id)}
+                    selected={selectedItem?.id === order.id}
                   />
-                ),
-                cell: ({ row }) => {
-                  return (
-                    <div>
-                      {new Date(row.original.created_at).toLocaleDateString(
-                        'en-US',
-                        {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        },
-                      )}
-                    </div>
-                  )
-                },
-              },
-              {
-                accessorKey: 'productName',
-                enableSorting: false,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Product" />
-                ),
-                cell: ({ row }) => {
-                  return (
-                    <div className="flex flex-row">
-                      {row.original.product.name}
-                    </div>
-                  )
-                },
-              },
-              {
-                accessorKey: 'productName',
-                enableSorting: false,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Amount" />
-                ),
-                cell: ({ row }) => {
-                  return (
-                    <div>
-                      {row.original.amount && row.original.currency ? (
-                        <AmountLabel
-                          amount={row.original.amount}
-                          currency={row.original.currency}
-                        />
-                      ) : (
-                        'Unknown'
-                      )}
-                    </div>
-                  )
-                },
-              },
-              {
-                accessorKey: 'context',
-                enableSorting: false,
-                header: ({ column }) => (
-                  <DataTableColumnHeader
-                    className="flex flex-row justify-end"
-                    column={column}
-                    title="Actions"
-                  />
-                ),
-                cell: ({ row }) => {
-                  const {
-                    id,
-                    product: { is_recurring },
-                    subscription_id,
-                  } = row.original
-                  return (
-                    <div className="flex flex-row justify-end">
-                      <Link
-                        href={{
-                          pathname: is_recurring
-                            ? `/${organization.slug}/portal/subscriptions/${subscription_id}`
-                            : `/${organization.slug}/portal/orders/${id}`,
-                          query: {
-                            customer_session_token: customerSessionToken,
-                          },
-                        }}
-                      >
-                        <Button size="sm" variant="secondary">
-                          View Order
-                        </Button>
-                      </Link>
-                    </div>
-                  )
-                },
-              },
-            ]}
-          />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </PortalSectionLayout>
+      <PortalSectionLayout className="hidden md:flex">
+        {selectedItem && <SelectedItemDetails item={selectedItem} api={api} />}
+      </PortalSectionLayout>
     </div>
   )
 }
 
-const SubscriptionItem = ({
-  subscription,
-  customerSessionToken,
+const OrderItem = ({
+  item,
+  onClick,
+  selected,
 }: {
-  subscription: CustomerSubscription
-  customerSessionToken?: string
+  item: CustomerSubscription | CustomerOrder
+  onClick: () => void
+  selected: boolean
 }) => {
-  const organization = subscription.product.organization
+  const content = (
+    <div className="flex flex-row justify-between">
+      <div
+        className={twMerge(
+          'flex flex-col gap-y-1',
+          selected ? '' : 'dark:text-polar-500 text-gray-500',
+        )}
+      >
+        <h4 className="text-lg">{item.product.name}</h4>
+        {'recurring_interval' in item ? (
+          <SubscriptionStatusLabel className="text-sm" subscription={item} />
+        ) : (
+          <p className="text-sm text-gray-500">
+            {new Date(item.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+
+  const className =
+    'dark:bg-polar-800 dark:hover:bg-polar-700 w-full cursor-pointer rounded-2xl bg-gray-200 px-6 py-4 hover:bg-white transition-colors duration-75'
 
   return (
-    <ShadowBox className="dark:bg-polar-950 flex w-full flex-col gap-y-6 bg-gray-100">
-      <div className="flex flex-row items-start justify-between">
-        <div className="flex flex-col gap-y-4">
-          <h3 className="truncate text-2xl">{subscription.product.name}</h3>
-          {organization && (
-            <div className="flex flex-row items-center gap-x-3">
-              <Avatar
-                className="h-8 w-8"
-                avatar_url={organization.avatar_url}
-                name={organization.name}
-              />
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                {organization.name}
-              </p>
-            </div>
-          )}
-        </div>
-        <Link
-          href={{
-            pathname: `/${organization.slug}/portal/subscriptions/${subscription.id}`,
-            query: { customer_session_token: customerSessionToken },
-          }}
-        >
-          <Button size="sm">Manage Subscription</Button>
-        </Link>
+    <>
+      <div
+        className={twMerge(
+          className,
+          selected && 'dark:bg-polar-700 bg-white',
+          'hidden md:flex',
+        )}
+        onClick={onClick}
+      >
+        {content}
       </div>
-      <div className="dark:divide-polar-700 flex flex-col gap-y-2 text-sm">
-        <div className="flex flex-row items-center justify-between">
-          <span>Amount</span>
-          {subscription.amount && subscription.currency ? (
-            <AmountLabel
-              amount={subscription.amount}
-              currency={subscription.currency}
-              interval={subscription?.recurring_interval}
-            />
-          ) : (
-            'Free'
-          )}
-        </div>
-        <div className="flex flex-row items-center justify-between">
-          <span>Status</span>
-          <SubscriptionStatusLabel subscription={subscription} />
-        </div>
-        {subscription?.started_at && (
-          <div className="flex flex-row items-center justify-between">
-            <span>Start Date</span>
-            <span>
-              {new Date(subscription.started_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
-          </div>
-        )}
-        {!subscription?.ended_at && subscription?.current_period_end && (
-          <div className="flex flex-row items-center justify-between">
-            <span>
-              {subscription.cancel_at_period_end
-                ? 'Expiry Date'
-                : 'Renewal Date'}
-            </span>
-            <span>
-              {new Date(subscription.current_period_end).toLocaleDateString(
-                'en-US',
-                {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                },
-              )}
-            </span>
-          </div>
-        )}
-        {subscription?.ended_at && (
-          <div className="flex flex-row items-center justify-between">
-            <span>Expired</span>
-            <span>
-              {new Date(subscription.ended_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
-          </div>
-        )}
-        {subscription.product.benefits.length > 0 && (
-          <div className="flex flex-row items-center justify-between">
-            <span>Benefits</span>
-            <span>
-              <Link
-                href={{
-                  pathname: `/${organization.slug}/portal/subscriptions/${subscription.id}`,
-                  query: { customer_session_token: customerSessionToken },
-                }}
-              >
-                <Button size="sm" variant="secondary">
-                  View Benefits
-                </Button>
-              </Link>
-            </span>
-          </div>
-        )}
-      </div>
-    </ShadowBox>
+      <Link
+        className={twMerge(className, 'flex md:hidden')}
+        href={`/${item.product.organization.slug}/portal/${
+          'recurring_interval' in item ? 'subscriptions' : 'orders'
+        }/${item.id}`}
+      >
+        {content}
+      </Link>
+    </>
+  )
+}
+
+const SelectedItemDetails = ({
+  item,
+  api,
+}: {
+  item: CustomerSubscription | CustomerOrder
+  api: PolarAPI
+}) => {
+  // Render order details
+  return 'recurring_interval' in item ? (
+    <CustomerPortalSubscription
+      api={api}
+      subscription={item as CustomerSubscription}
+    />
+  ) : (
+    <CustomerPortalOrder api={api} order={item as CustomerOrder} />
   )
 }

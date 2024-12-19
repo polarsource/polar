@@ -219,13 +219,16 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             session, benefit, customer
         )
         if benefit_service.should_revoke_individually or len(other_grants) < 2:
-            properties = await benefit_service.revoke(
-                benefit,
-                customer,
-                grant.properties,
-                attempt=attempt,
-            )
-            grant.properties = properties
+            try:
+                properties = await benefit_service.revoke(
+                    benefit,
+                    customer,
+                    grant.properties,
+                    attempt=attempt,
+                )
+                grant.properties = properties
+            except BenefitActionRequiredError:
+                pass
 
         grant.set_revoked()
 

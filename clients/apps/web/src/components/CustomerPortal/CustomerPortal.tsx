@@ -14,8 +14,7 @@ import {
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { PropsWithChildren, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 
 export interface CustomerPortalProps {
   organization: Organization
@@ -161,18 +160,6 @@ export const CustomerPortal = ({
   )
 }
 
-const StatusWrapper = ({
-  children,
-  color,
-}: PropsWithChildren<{ color: string }>) => {
-  return (
-    <div className="flex flex-row items-center gap-x-2">
-      <span className={twMerge('h-1.5 w-1.5 rounded-full', color)} />
-      <span className="capitalize">{children}</span>
-    </div>
-  )
-}
-
 const SubscriptionItem = ({
   subscription,
   customerSessionToken,
@@ -181,29 +168,6 @@ const SubscriptionItem = ({
   customerSessionToken?: string
 }) => {
   const organization = subscription.product.organization
-
-  const status = useMemo(() => {
-    switch (subscription?.status) {
-      case 'active':
-        return (
-          <StatusWrapper
-            color={
-              subscription.cancel_at_period_end
-                ? 'bg-yellow-500'
-                : 'bg-green-500'
-            }
-          >
-            {subscription.cancel_at_period_end ? 'To be cancelled' : 'Active'}
-          </StatusWrapper>
-        )
-      default:
-        return (
-          <StatusWrapper color="bg-red-400">
-            {subscription?.status.split('_').join(' ')}
-          </StatusWrapper>
-        )
-    }
-  }, [subscription])
 
   return (
     <ShadowBox className="dark:bg-polar-950 flex w-full flex-col gap-y-6 bg-gray-50">
@@ -247,7 +211,7 @@ const SubscriptionItem = ({
         </div>
         <div className="flex flex-row items-center justify-between">
           <span>Status</span>
-          {status}
+          <SubscriptionStatusLabel subscription={subscription} />
         </div>
         {subscription?.started_at && (
           <div className="flex flex-row items-center justify-between">

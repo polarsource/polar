@@ -10,7 +10,7 @@ on:
       languages:
           description: 'Comma-separated list of languages to generate code samples for'
           required: true
-          default: 'python,js'
+          default: 'python,js,go'
 
 concurrency:
   group: update-sdk-code-samples

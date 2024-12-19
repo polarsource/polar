@@ -368,8 +368,8 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
     def _get_canceled_discord_payload(self, target: User | Organization) -> str:
         fields = self._get_discord_fields(target)
-        if self.data.cancel_at_period_end:
-            ends_at = format_date(self.data.current_period_end, locale="en_US")
+        if self.data.ends_at:
+            ends_at = format_date(self.data.ends_at, locale="en_US")
         else:
             ends_at = format_date(self.data.ended_at, locale="en_US")
         fields.append({"name": "Ends At", "value": ends_at})
@@ -391,8 +391,8 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
     def _get_canceled_slack_payload(self, target: User | Organization) -> str:
         fields = self._get_slack_fields(target)
-        if self.data.cancel_at_period_end:
-            ends_at = format_date(self.data.current_period_end, locale="en_US")
+        if self.data.ends_at:
+            ends_at = format_date(self.data.ends_at, locale="en_US")
         else:
             ends_at = format_date(self.data.ended_at, locale="en_US")
         fields.append({"type": "mrkdwn", "text": f"*Ends At*\n{ends_at}"})
@@ -496,7 +496,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
         # Avoid to send notifications for subscription renewals (not interesting)
         # TODO: Notify about upgrades and downgrades
-        if not self.data.cancel_at_period_end and not self.data.ended_at:
+        if not self.data.ends_at and not self.data.ended_at:
             raise SkipEvent(self.type, WebhookFormat.discord)
 
         return self._get_canceled_discord_payload(target)
@@ -510,7 +510,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
         # Avoid to send notifications for subscription renewals (not interesting)
         # TODO: Notify about upgrades and downgrades
-        if not self.data.cancel_at_period_end and not self.data.ended_at:
+        if not self.data.ends_at and not self.data.ended_at:
             raise SkipEvent(self.type, WebhookFormat.slack)
 
         return self._get_canceled_slack_payload(target)

@@ -243,7 +243,9 @@ export const SUBSCRIPTION_ORDER_PREVIEW: CustomerSubscription = {
     new Date().setMonth(new Date().getMonth() + 1),
   ).toDateString(),
   cancel_at_period_end: false,
+  canceled_at: null,
   started_at: new Date().toDateString(),
+  ends_at: null,
   ended_at: null,
   user_id: '123',
   customer_id: '123',
@@ -267,4 +269,6 @@ export const SUBSCRIPTION_ORDER_PREVIEW: CustomerSubscription = {
     product_id: '123',
   },
   discount_id: null,
+  customer_cancellation_comment: null,
+  customer_cancellation_reason: null,
 }

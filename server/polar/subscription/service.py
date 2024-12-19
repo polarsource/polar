@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Any, Literal, cast, overload
 
 import stripe as stripe_lib
+import structlog
 from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -23,7 +24,7 @@ from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import get_email_sender
 from polar.enums import SubscriptionRecurringInterval
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
@@ -31,6 +32,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -47,7 +49,8 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.subscription import SubscriptionStatus
+from polar.models.product_price import ProductPriceType
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -63,6 +66,9 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
+from .schemas import SubscriptionUpdate, SubscriptionUpdatePrice
+
+log: Logger = structlog.get_logger()
 
 
 class SubscriptionError(PolarError): ...
@@ -127,6 +133,20 @@ class EndDateInTheFuture(SubscriptionError):
         super().__init__(message)
 
 
+class AlreadyCanceledSubscription(SubscriptionError):
+    def __init__(self) -> None:
+        message = (
+            "This subscription is already canceled or will be at the end of the period."
+        )
+        super().__init__(message, 403)
+
+
+class SubscriptionNotActiveOnStripe(SubscriptionError):
+    def __init__(self) -> None:
+        message = "This subscription is not active on Stripe."
+        super().__init__(message, 400)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -161,25 +181,23 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Subscription | None:
         query = select(Subscription).where(Subscription.id == id)
-
         if not allow_deleted:
             query = query.where(Subscription.deleted_at.is_(None))
 
-        if options is not None:
-            query = query.options(*options)
-        else:
-            query = query.options(
-                joinedload(Subscription.customer),
-                joinedload(Subscription.price),
-                joinedload(Subscription.product).options(
-                    selectinload(Product.product_medias),
-                    selectinload(Product.attached_custom_fields),
-                ),
-                joinedload(Subscription.discount),
-            )
+        return await self._get_loaded(session, query, id, options=options)
 
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
+    async def user_get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> Subscription | None:
+        query = self._get_readable_subscriptions_statement(auth_subject).where(
+            Subscription.started_at.is_not(None)
+        )
+        return await self._get_loaded(session, query, id, options=options)
 
     async def list(
         self,
@@ -361,9 +379,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             status=SubscriptionStatus.active,
             amount=subscription_amount,
             currency=subscription_currency,
-            recurring_interval=price.recurring_interval
-            if price is not None
-            else SubscriptionRecurringInterval.month,
+            recurring_interval=(
+                price.recurring_interval
+                if price is not None
+                else SubscriptionRecurringInterval.month
+            ),
             current_period_start=start,
             cancel_at_period_end=False,
             started_at=start,
@@ -442,8 +462,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.current_period_end = _from_timestamp(
             stripe_subscription.current_period_end
         )
-        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
-        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+        self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
         subscription.discount = discount
         subscription.price = price
@@ -514,7 +533,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise SubscriptionDoesNotExist(stripe_subscription.id)
 
         previous_status = subscription.status
-        previous_cancel_at_period_end = subscription.cancel_at_period_end
+        previous_ends_at = subscription.ends_at
 
         subscription.status = SubscriptionStatus(stripe_subscription.status)
         subscription.current_period_start = _from_timestamp(
@@ -523,9 +542,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.current_period_end = _from_timestamp(
             stripe_subscription.current_period_end
         )
-        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
-        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         subscription.set_started_at()
+        self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
         price_id = stripe_subscription["items"].data[0].price.id
         price = await product_price_service.get_by_stripe_price_id(session, price_id)
@@ -570,49 +588,348 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         await self.enqueue_benefits_grants(session, subscription)
 
         await self._after_subscription_updated(
-            session, subscription, previous_status, previous_cancel_at_period_end
+            session, subscription, previous_status, previous_ends_at
+        )
+        return subscription
+
+    async def update(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        updates: SubscriptionUpdate,
+    ) -> Subscription:
+        if isinstance(updates, SubscriptionUpdatePrice):
+            return await self.update_product_price(
+                session,
+                subscription,
+                product_price_id=updates.product_price_id,
+            )
+
+        if not (updates.revoke or updates.cancel_at_period_end):
+            return subscription
+
+        if updates.revoke and updates.cancel_at_period_end:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "revoke"),
+                        "msg": (
+                            "Use either `revoke` for immediate cancellation "
+                            "and revokation or `cancel_at_period_end`."
+                        ),
+                        "input": updates.revoke,
+                    }
+                ]
+            )
+
+        if updates.revoke:
+            return await self.revoke(
+                session,
+                subscription,
+                customer_reason=updates.customer_cancellation_reason,
+                customer_comment=updates.customer_cancellation_comment,
+            )
+
+        return await self.cancel(
+            session,
+            subscription,
+            customer_reason=updates.customer_cancellation_reason,
+            customer_comment=updates.customer_cancellation_comment,
         )
 
-        if (
-            subscription.active
-            and subscription.started_at is not None
-            and subscription.started_at.date()
-            == subscription.current_period_start.date()
-            and not subscription.cancel_at_period_end
-        ):
-            await self.send_confirmation_email(session, subscription)
-        elif subscription.cancel_at_period_end:
-            await self.send_cancellation_email(session, subscription)
+    async def update_product_price(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product_price_id: uuid.UUID,
+    ) -> Subscription:
+        price = await product_price_service.get_by_id(session, product_price_id)
+        if price is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price does not exist.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
 
+        if price.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is archived.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if price.type != ProductPriceType.recurring:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is not recurring.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if isinstance(price, ProductPriceCustom):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": (
+                            "Pay what you want price are not supported "
+                            "for subscriptions."
+                        ),
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        product = await product_service.get_loaded(session, price.product_id)
+        assert product is not None
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is archived.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        # Make sure the new product belongs to the same organization
+        old_product = subscription.product
+        if old_product.organization_id != product.organization_id:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": (
+                            "Price does not belong to the same organization "
+                            "of the current subscription."
+                        ),
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
+        if subscription.stripe_subscription_id is None:
+            raise SubscriptionNotActiveOnStripe()
+
+        assert subscription.price is not None
+        await stripe_service.update_subscription_price(
+            subscription.stripe_subscription_id,
+            old_price=subscription.price.stripe_price_id,
+            new_price=price.stripe_price_id,
+            error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
+        )
+        subscription.product = product
+        subscription.price = price
+        if isinstance(price, ProductPriceFixed):
+            subscription.amount = price.price_amount
+            subscription.currency = price.price_currency
+            subscription.recurring_interval = price.recurring_interval
+        if isinstance(price, ProductPriceFree):
+            subscription.amount = None
+            subscription.currency = None
+            subscription.recurring_interval = price.recurring_interval
+
+        session.add(subscription)
         return subscription
+
+    async def revoke(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        customer_reason: CustomerCancellationReason | None = None,
+        customer_comment: str | None = None,
+    ) -> Subscription:
+        return await self._perform_cancellation(
+            session,
+            subscription,
+            customer_reason=customer_reason,
+            customer_comment=customer_comment,
+            immediately=True,
+        )
+
+    async def cancel(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        customer_reason: CustomerCancellationReason | None = None,
+        customer_comment: str | None = None,
+    ) -> Subscription:
+        return await self._perform_cancellation(
+            session,
+            subscription,
+            customer_reason=customer_reason,
+            customer_comment=customer_comment,
+        )
+
+    async def _perform_cancellation(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        customer_reason: CustomerCancellationReason | None = None,
+        customer_comment: str | None = None,
+        immediately: bool = False,
+    ) -> Subscription:
+        if not subscription.can_cancel(immediately):
+            raise AlreadyCanceledSubscription()
+
+        # Store our own vs. Stripe for better accuracy.
+        subscription.canceled_at = utc_now()
+
+        if subscription.stripe_subscription_id is not None:
+            reason = customer_reason.value if customer_reason else None
+            if immediately:
+                stripe_subscription = await stripe_service.revoke_subscription(
+                    subscription.stripe_subscription_id,
+                    customer_reason=reason,
+                    customer_comment=customer_comment,
+                )
+            else:
+                stripe_subscription = await stripe_service.cancel_subscription(
+                    subscription.stripe_subscription_id,
+                    customer_reason=reason,
+                    customer_comment=customer_comment,
+                )
+            # Update status and cancellation details early for our API responses.
+            # However, leave webhooks, benefit revokation etc to webhook handler.
+            subscription.status = SubscriptionStatus(stripe_subscription.status)
+            self.update_cancellation_from_stripe(subscription, stripe_subscription)
+        else:
+            subscription.ends_at = utc_now()
+            subscription.ended_at = utc_now()
+            subscription.status = SubscriptionStatus.canceled
+
+            # free subscriptions end immediately (vs at end of billing period)
+            # queue removal of grants
+            await self.enqueue_benefits_grants(session, subscription)
+
+        if customer_reason:
+            subscription.customer_cancellation_reason = customer_reason
+
+        if customer_comment:
+            subscription.customer_cancellation_comment = customer_comment
+
+        log.info(
+            "subscription.canceled",
+            id=subscription.id,
+            status=subscription.status,
+            immediately=immediately,
+            ends_at=subscription.ends_at,
+            ended_at=subscription.ended_at,
+            reason=customer_reason,
+        )
+        session.add(subscription)
+        return subscription
+
+    def update_cancellation_from_stripe(
+        self, subscription: Subscription, stripe_subscription: stripe_lib.Subscription
+    ) -> None:
+        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
+        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+        canceled_at = _from_timestamp(stripe_subscription.canceled_at)
+        # Use our own if set already (more accurate).
+        if canceled_at and not subscription.canceled_at:
+            subscription.canceled_at = canceled_at
+
+        if subscription.ended_at:
+            subscription.ends_at = subscription.ended_at
+        elif subscription.cancel_at_period_end:
+            subscription.ends_at = subscription.current_period_end
 
     async def _after_subscription_updated(
         self,
         session: AsyncSession,
         subscription: Subscription,
         previous_status: SubscriptionStatus,
-        previous_cancel_at_period_end: bool,
+        previous_ends_at: datetime | None,
     ) -> None:
         # Webhooks
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_updated
         )
-        if subscription.active and not SubscriptionStatus.is_active(previous_status):
-            await self._send_webhook(
-                session, subscription, WebhookEventType.subscription_active
-            )
-        if subscription.revoked and not SubscriptionStatus.is_revoked(previous_status):
-            await self._send_webhook(
-                session, subscription, WebhookEventType.subscription_revoked
-            )
-        if subscription.cancel_at_period_end and not previous_cancel_at_period_end:
-            await self._send_webhook(
-                session, subscription, WebhookEventType.subscription_canceled
-            )
 
-        # Notifications
-        if subscription.active and SubscriptionStatus.is_incomplete(previous_status):
-            await self._send_new_subscription_notification(session, subscription)
+        became_activated = subscription.active and not SubscriptionStatus.is_active(
+            previous_status
+        )
+        if became_activated:
+            await self._after_subscription_activated(session, subscription)
+
+        cancellation_changed = (
+            subscription.ends_at and subscription.ends_at != previous_ends_at
+        )
+        if cancellation_changed:
+            await self._after_subscription_canceled(session, subscription)
+
+        became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
+            previous_status
+        )
+        if became_revoked:
+            await self._after_subscription_revoked(session, subscription)
+
+    async def _after_subscription_activated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_active
+        )
+
+        # TODO: Copied this logic over. Why the extra check for customer
+        # confirmation vs. webhook/creator notification? Look into it, but avoid
+        # changing for now.
+        if (
+            subscription.started_at is not None
+            and subscription.started_at.date()
+            == subscription.current_period_start.date()
+            and not subscription.ends_at
+        ):
+            await self.send_confirmation_email(session, subscription)
+
+        await self._send_new_subscription_notification(session, subscription)
+
+    async def _after_subscription_canceled(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_canceled
+        )
+        await self.send_cancellation_email(session, subscription)
+
+    async def _after_subscription_revoked(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_revoked
+        )
+        await self.send_revoked_email(session, subscription)
 
     async def _send_new_subscription_notification(
         self, session: AsyncSession, subscription: Subscription
@@ -638,11 +955,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         subscription: Subscription,
-        event_type: Literal[WebhookEventType.subscription_created]
-        | Literal[WebhookEventType.subscription_updated]
-        | Literal[WebhookEventType.subscription_active]
-        | Literal[WebhookEventType.subscription_canceled]
-        | Literal[WebhookEventType.subscription_revoked],
+        event_type: (
+            Literal[WebhookEventType.subscription_created]
+            | Literal[WebhookEventType.subscription_updated]
+            | Literal[WebhookEventType.subscription_active]
+            | Literal[WebhookEventType.subscription_canceled]
+            | Literal[WebhookEventType.subscription_revoked]
+        ),
     ) -> None:
         # load full subscription with relations
         full_subscription = await self.get(session, subscription.id)
@@ -688,6 +1007,41 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def send_confirmation_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {{ product.name }} subscription",
+            template_path="subscription/confirmation.html",
+        )
+
+    async def send_cancellation_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {{ product.name }} subscription cancellation",
+            template_path="subscription/cancellation.html",
+        )
+
+    async def send_revoked_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {{ product.name }} subscription has ended",
+            template_path="subscription/revoked.html",
+        )
+
+    async def _send_customer_email(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        subject_template: str,
+        template_path: str,
+    ) -> None:
         email_renderer = get_email_renderer({"subscription": "polar.subscription"})
         email_sender = get_email_sender()
 
@@ -703,11 +1057,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         subject, body = email_renderer.render_from_template(
-            "Your {{ product.name }} subscription",
-            "subscription/confirmation.html",
+            subject_template,
+            template_path,
             {
                 "featured_organization": featured_organization,
                 "product": product,
+                "subscription": subscription,
                 "url": settings.generate_frontend_url(
                     f"/{featured_organization.slug}/portal/subscriptions/{subscription.id}?customer_session_token={token}"
                 ),
@@ -721,38 +1076,31 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             html_content=body,
         )
 
-    async def send_cancellation_email(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        email_renderer = get_email_renderer({"subscription": "polar.subscription"})
-        email_sender = get_email_sender()
+    async def _get_loaded(
+        self,
+        session: AsyncSession,
+        query: Select[Any],
+        id: uuid.UUID,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
+    ) -> Subscription | None:
+        query = query.where(Subscription.id == id)
 
-        product = subscription.product
-        featured_organization = await organization_service.get(
-            session, product.organization_id
-        )
-        assert featured_organization is not None
-
-        subject, body = email_renderer.render_from_template(
-            "Your {{ product.name }} subscription cancellation",
-            "subscription/cancellation.html",
-            {
-                "featured_organization": featured_organization,
-                "product": product,
-                "subscription": subscription,
-                "url": (
-                    f"{settings.FRONTEND_BASE_URL}"
-                    f"/purchases/subscriptions/{subscription.id}"
+        if options is not None:
+            query = query.options(*options)
+        else:
+            query = query.options(
+                joinedload(Subscription.customer),
+                joinedload(Subscription.price),
+                joinedload(Subscription.product).options(
+                    selectinload(Product.product_medias),
+                    selectinload(Product.attached_custom_fields),
                 ),
-                "current_year": datetime.now().year,
-            },
-        )
+                joinedload(Subscription.discount),
+            )
 
-        email_sender.send_to_user(
-            to_email_addr=subscription.customer.email,
-            subject=subject,
-            html_content=body,
-        )
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
 
     def _get_readable_subscriptions_statement(
         self, auth_subject: AuthSubject[User | Organization]

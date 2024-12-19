@@ -2,16 +2,18 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 import structlog
-from fastapi import Depends, Query, Response
+from fastapi import Depends, Path, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.csv import (
     IterableCSVWriter,
 )
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.models import Subscription
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -20,12 +22,19 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
-from .service import SubscriptionSortProperty
+from .schemas import SubscriptionUpdate
+from .service import AlreadyCanceledSubscription, SubscriptionSortProperty
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.documented])
+
+SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
+SubscriptionNotFound = {
+    "description": "Subscription not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
 SearchSorting = Annotated[
@@ -128,4 +137,74 @@ async def export(
         create_csv(),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.patch(
+    "/{id}",
+    summary="Update Subscription",
+    response_model=SubscriptionSchema,
+    responses={
+        200: {"description": "Subscription updated."},
+        403: {
+            "description": (
+                "Subscription is already canceled "
+                "or will be at the end of the period."
+            ),
+            "model": AlreadyCanceledSubscription.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def update(
+    id: SubscriptionID,
+    subscription_update: SubscriptionUpdate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Update a subscription of the authenticated customer or user."""
+    subscription = await subscription_service.user_get(session, auth_subject, id)
+    if subscription is None:
+        raise ResourceNotFound()
+
+    log.info(
+        "subscription.update",
+        id=id,
+        customer_id=auth_subject.subject.id,
+        updates=subscription_update,
+    )
+    return await subscription_service.update(
+        session, subscription, updates=subscription_update
+    )
+
+
+@router.delete(
+    "/{id}",
+    summary="Revoke Subscription",
+    response_model=SubscriptionSchema,
+    responses={
+        200: {"description": "Subscription revoked."},
+        403: {
+            "description": "This subscription is already revoked.",
+            "model": AlreadyCanceledSubscription.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def revoke(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Revoke a subscription, i.e cancel immediately."""
+    subscription = await subscription_service.user_get(session, auth_subject, id)
+    if subscription is None:
+        raise ResourceNotFound()
+
+    log.info(
+        "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
+    )
+    return await subscription_service.revoke(
+        session,
+        subscription=subscription,
     )

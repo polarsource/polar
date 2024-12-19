@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  AlreadyCanceledSubscription,
   CustomerIDFilter,
   DiscountIDFilter,
   HTTPValidationError,
@@ -22,8 +23,15 @@ import type {
   OrganizationIDFilter,
   OrganizationId,
   ProductIDFilter,
+  ResourceNotFound,
+  Subscription,
   SubscriptionSortProperty,
+  SubscriptionUpdate,
 } from '../models/index';
+
+export interface SubscriptionsApiCancelRequest {
+    id: string;
+}
 
 export interface SubscriptionsApiExportRequest {
     organizationId?: OrganizationId;
@@ -40,10 +48,58 @@ export interface SubscriptionsApiListRequest {
     sorting?: Array<SubscriptionSortProperty>;
 }
 
+export interface SubscriptionsApiUpdateRequest {
+    id: string;
+    body: SubscriptionUpdate;
+}
+
 /**
  * 
  */
 export class SubscriptionsApi extends runtime.BaseAPI {
+
+    /**
+     * Cancel a subscription immediately.
+     * Cancel Subscription
+     */
+    async cancelRaw(requestParameters: SubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling cancel().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Cancel a subscription immediately.
+     * Cancel Subscription
+     */
+    async cancel(requestParameters: SubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.cancelRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Export subscriptions as a CSV file.
@@ -154,6 +210,59 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async list(requestParameters: SubscriptionsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
         const response = await this.listRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update a subscription of the authenticated customer or user.
+     * Update Subscription
+     */
+    async updateRaw(requestParameters: SubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
+            );
+        }
+
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['body'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update a subscription of the authenticated customer or user.
+     * Update Subscription
+     */
+    async update(requestParameters: SubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -1995,6 +1995,13 @@ export interface BenefitCustom {
      * @memberof BenefitCustom
      */
     properties: BenefitCustomProperties;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustom
+     * @deprecated
+     */
+    is_tax_applicable: boolean;
 }
 
 
@@ -7939,6 +7946,23 @@ export type CustomerBenefitGrantSortProperty = typeof CustomerBenefitGrantSortPr
  * @export
  */
 export type CustomerBenefitGrantUpdate = { benefit_type: 'ads' } & CustomerBenefitGrantAdsUpdate | { benefit_type: 'custom' } & CustomerBenefitGrantCustomUpdate | { benefit_type: 'discord' } & CustomerBenefitGrantDiscordUpdate | { benefit_type: 'downloadables' } & CustomerBenefitGrantDownloadablesUpdate | { benefit_type: 'github_repository' } & CustomerBenefitGrantGitHubRepositoryUpdate | { benefit_type: 'license_keys' } & CustomerBenefitGrantLicenseKeysUpdate;
+
+/**
+ * 
+ * @export
+ */
+export const CustomerCancellationReason = {
+    CUSTOMER_SERVICE: 'customer_service',
+    LOW_QUALITY: 'low_quality',
+    MISSING_FEATURES: 'missing_features',
+    SWITCHED_SERVICE: 'switched_service',
+    TOO_COMPLEX: 'too_complex',
+    TOO_EXPENSIVE: 'too_expensive',
+    UNUSED: 'unused',
+    OTHER: 'other'
+} as const;
+export type CustomerCancellationReason = typeof CustomerCancellationReason[keyof typeof CustomerCancellationReason];
+
 /**
  * 
  * @export
@@ -8275,7 +8299,19 @@ export interface CustomerOrderSubscription {
      * @type {string}
      * @memberof CustomerOrderSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -8312,6 +8348,18 @@ export interface CustomerOrderSubscription {
      * @memberof CustomerOrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_cancellation_comment: string | null;
 }
 
 
@@ -8526,7 +8574,19 @@ export interface CustomerSubscription {
      * @type {string}
      * @memberof CustomerSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -8565,6 +8625,18 @@ export interface CustomerSubscription {
     checkout_id: string | null;
     /**
      * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    customer_cancellation_comment: string | null;
+    /**
+     * 
      * @type {string}
      * @memberof CustomerSubscription
      * @deprecated
@@ -8582,6 +8654,33 @@ export interface CustomerSubscription {
      * @memberof CustomerSubscription
      */
     price: ProductPrice;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscriptionCancel
+ */
+export interface CustomerSubscriptionCancel {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancel_at_period_end?: boolean | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancellation_reason?: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancellation_comment?: string | null;
 }
 
 
@@ -8684,15 +8783,21 @@ export const CustomerSubscriptionSortProperty = {
 export type CustomerSubscriptionSortProperty = typeof CustomerSubscriptionSortProperty[keyof typeof CustomerSubscriptionSortProperty];
 
 /**
+ * @type CustomerSubscriptionUpdate
+ * @export
+ */
+export type CustomerSubscriptionUpdate = CustomerSubscriptionCancel | CustomerSubscriptionUpdatePrice;
+
+/**
  * 
  * @export
- * @interface CustomerSubscriptionUpdate
+ * @interface CustomerSubscriptionUpdatePrice
  */
-export interface CustomerSubscriptionUpdate {
+export interface CustomerSubscriptionUpdatePrice {
     /**
-     * 
+     * Update subscription to another price.
      * @type {string}
-     * @memberof CustomerSubscriptionUpdate
+     * @memberof CustomerSubscriptionUpdatePrice
      */
     product_price_id: string;
 }
@@ -14759,7 +14864,19 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -14796,6 +14913,18 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof OrderSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    customer_cancellation_comment: string | null;
     /**
      * 
      * @type {string}
@@ -18725,7 +18854,19 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -18762,6 +18903,18 @@ export interface Subscription {
      * @memberof Subscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof Subscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    customer_cancellation_comment: string | null;
     /**
      * 
      * @type {{ [key: string]: MetadataValue; }}
@@ -18811,6 +18964,39 @@ export interface Subscription {
      * @memberof Subscription
      */
     discount: SubscriptionDiscount | null;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionCancel
+ */
+export interface SubscriptionCancel {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCancel
+     */
+    cancel_at_period_end?: boolean | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCancel
+     */
+    revoke?: boolean | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof SubscriptionCancel
+     */
+    customer_cancellation_reason?: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCancel
+     */
+    customer_cancellation_comment?: string | null;
 }
 
 
@@ -18950,6 +19136,25 @@ export const SubscriptionStatus = {
 } as const;
 export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
 
+/**
+ * @type SubscriptionUpdate
+ * @export
+ */
+export type SubscriptionUpdate = SubscriptionCancel | SubscriptionUpdatePrice;
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionUpdatePrice
+ */
+export interface SubscriptionUpdatePrice {
+    /**
+     * Update subscription to another price.
+     * @type {string}
+     * @memberof SubscriptionUpdatePrice
+     */
+    product_price_id: string;
+}
 /**
  * 
  * @export

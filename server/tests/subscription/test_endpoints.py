@@ -25,7 +25,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
 )
 from tests.fixtures.stripe import (
-    create_canceled_stripe_subscription,
+    cloned_stripe_canceled_subscription,
 )
 
 
@@ -304,7 +304,7 @@ class TestSubscriptionUpdateCancel:
         reason = "too_expensive"
         comment = "Inflation be crazy"
 
-        canceled = create_canceled_stripe_subscription(subscription)
+        canceled = cloned_stripe_canceled_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
@@ -405,7 +405,7 @@ class TestSubscriptionUpdateRevoke:
         reason = "too_expensive"
         comment = "Inflation be crazy"
 
-        canceled = create_canceled_stripe_subscription(subscription, revoke=True)
+        canceled = cloned_stripe_canceled_subscription(subscription, revoke=True)
         stripe_service_mock.revoke_subscription.return_value = canceled
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
@@ -489,7 +489,7 @@ class TestSubscriptionRevoke:
             started_at=datetime(2023, 1, 1),
         )
 
-        canceled = create_canceled_stripe_subscription(subscription, revoke=True)
+        canceled = cloned_stripe_canceled_subscription(subscription, revoke=True)
         stripe_service_mock.revoke_subscription.return_value = canceled
         response = await client.delete(f"/v1/subscriptions/{subscription.id}")
         assert response.status_code == 200

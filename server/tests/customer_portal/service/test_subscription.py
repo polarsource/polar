@@ -37,7 +37,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_subscription,
 )
-from tests.fixtures.stripe import create_canceled_stripe_subscription
+from tests.fixtures.stripe import cloned_stripe_canceled_subscription
 
 
 @pytest.fixture(autouse=True)
@@ -218,7 +218,7 @@ class TestCancel:
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
 
-        canceled = create_canceled_stripe_subscription(subscription)
+        canceled = cloned_stripe_canceled_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
 
         with pytest.raises(AlreadyCanceledSubscription):
@@ -268,7 +268,7 @@ class TestCancel:
             customer=customer,
         )
 
-        canceled = create_canceled_stripe_subscription(subscription)
+        canceled = cloned_stripe_canceled_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
         updated_subscription = await customer_subscription_service.cancel(
             session,

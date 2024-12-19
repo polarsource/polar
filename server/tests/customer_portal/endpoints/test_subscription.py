@@ -18,7 +18,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
 )
 from tests.fixtures.stripe import (
-    create_canceled_stripe_subscription,
+    cloned_stripe_canceled_subscription,
 )
 
 
@@ -205,7 +205,7 @@ class TestCustomerSubscriptionUpdateCancel:
         reason = "too_complex"
         comment = "Too many settings"
 
-        canceled = create_canceled_stripe_subscription(subscription)
+        canceled = cloned_stripe_canceled_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
@@ -289,7 +289,7 @@ class TestCustomerSubscriptionCancel:
             customer=customer,
         )
 
-        canceled = create_canceled_stripe_subscription(subscription)
+        canceled = cloned_stripe_canceled_subscription(subscription)
         stripe_service_mock.cancel_subscription.return_value = canceled
         response = await client.delete(
             f"/v1/customer-portal/subscriptions/{subscription.id}",

@@ -1,9 +1,8 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from typing import cast
 from unittest.mock import MagicMock, call
 
 import pytest
-import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -41,105 +40,11 @@ from tests.fixtures.random_objects import (
     create_subscription,
     set_product_benefits,
 )
-
-
-def construct_stripe_subscription(
-    *,
-    customer: Customer | None = None,
-    organization: Organization | None = None,
-    price_id: str = "PRICE_ID",
-    status: SubscriptionStatus = SubscriptionStatus.incomplete,
-    latest_invoice: stripe_lib.Invoice | None = None,
-    cancel_at_period_end: bool = False,
-    metadata: dict[str, str] = {},
-    discount: Discount | None = None,
-) -> stripe_lib.Subscription:
-    now_timestamp = datetime.now(UTC).timestamp()
-    base_metadata: dict[str, str] = {
-        **(
-            {"organization_subscriber_id": str(organization.id)}
-            if organization is not None
-            else {}
-        ),
-    }
-    canceled_at = None
-    if cancel_at_period_end:
-        canceled_at = now_timestamp
-
-    return stripe_lib.Subscription.construct_from(
-        {
-            "id": "SUBSCRIPTION_ID",
-            "customer": (
-                customer.stripe_customer_id if customer is not None else "CUSTOMER_ID"
-            ),
-            "status": status,
-            "items": {
-                "data": [
-                    {"price": {"id": price_id, "currency": "USD", "unit_amount": 1000}}
-                ]
-            },
-            "current_period_start": now_timestamp,
-            "current_period_end": now_timestamp + timedelta(days=30).seconds,
-            "cancel_at_period_end": cancel_at_period_end,
-            "canceled_at": canceled_at,
-            "ended_at": None,
-            "latest_invoice": latest_invoice,
-            "metadata": {**base_metadata, **metadata},
-            "discount": (
-                {
-                    "coupon": {
-                        "id": discount.stripe_coupon_id,
-                        "metadata": {"discount_id": str(discount.id)},
-                    }
-                }
-                if discount is not None
-                else None
-            ),
-        },
-        None,
-    )
-
-
-def construct_stripe_customer(
-    *,
-    id: str = "CUSTOMER_ID",
-    email: str = "customer@example.com",
-    name: str | None = "Customer Name",
-) -> stripe_lib.Customer:
-    return stripe_lib.Customer.construct_from(
-        {
-            "id": id,
-            "email": email,
-            "name": name,
-            "address": {
-                "country": "FR",
-            },
-        },
-        None,
-    )
-
-
-def construct_stripe_invoice(
-    *,
-    id: str = "INVOICE_ID",
-    total: int = 12000,
-    tax: int = 2000,
-    charge_id: str = "CHARGE_ID",
-    subscription_id: str = "SUBSCRIPTION_ID",
-    metadata: dict[str, str] = {},
-) -> stripe_lib.Invoice:
-    return stripe_lib.Invoice.construct_from(
-        {
-            "id": id,
-            "total": total,
-            "tax": tax,
-            "currency": "usd",
-            "charge": charge_id,
-            "subscription": subscription_id,
-            "metadata": metadata,
-        },
-        None,
-    )
+from tests.fixtures.stripe import (
+    cloned_stripe_canceled_subscription,
+    construct_stripe_customer,
+    construct_stripe_subscription,
+)
 
 
 @pytest.fixture
@@ -558,18 +463,14 @@ class TestUpdateSubscriptionFromStripe:
         )
 
         price = product.prices[0]
-        stripe_subscription = construct_stripe_subscription(
-            status=SubscriptionStatus.active,
-            price_id=price.stripe_price_id,
-            cancel_at_period_end=True,
-        )
         subscription = await create_subscription(
             save_fixture,
+            status=SubscriptionStatus.active,
             product=product,
             price=price,
             customer=customer,
-            stripe_subscription_id=stripe_subscription.id,
         )
+        stripe_subscription = cloned_stripe_canceled_subscription(subscription)
         assert subscription.started_at is None
 
         # then

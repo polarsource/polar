@@ -28,13 +28,9 @@ def cloned_stripe_subscription(
     subscription: Subscription,
     *,
     customer: Customer | None = None,
-    organization: Organization | None = None,
     price_id: str | None = None,
     status: SubscriptionStatus | None = None,
-    latest_invoice: stripe_lib.Invoice | None = None,
     cancel_at_period_end: bool | None = None,
-    metadata: dict[str, str] | None = None,
-    discount: Discount | None = None,
     revoke: bool = False,
 ) -> stripe_lib.Subscription:
     if price_id is None:
@@ -45,13 +41,9 @@ def cloned_stripe_subscription(
 
     return construct_stripe_subscription(
         customer=customer if customer else subscription.customer,
-        organization=organization if organization else subscription.organization,
         price_id=price_id,
         status=status if status else subscription.status,
-        latest_invoice=latest_invoice,
         cancel_at_period_end=cancel_at_period_end,
-        metadata=metadata if metadata else subscription.user_metadata,
-        discount=discount if discount else subscription.discount,
         revoke=revoke,
     )
 
@@ -83,6 +75,7 @@ def construct_stripe_subscription(
         ended_at = now_timestamp
         canceled_at = now_timestamp
         status = SubscriptionStatus.canceled
+        cancel_at_period_end = False
     elif cancel_at_period_end:
         canceled_at = now_timestamp
 

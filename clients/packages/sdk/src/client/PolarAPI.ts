@@ -16,6 +16,7 @@ import {
   MetricsApi,
   IntegrationsDiscordApi,
   IntegrationsGithubApi,
+  CustomerSessionsApi,
   IntegrationsGithubRepositoryBenefitApi,
   IssuesApi,
   MagicLinkApi,
@@ -65,6 +66,7 @@ export class PolarAPI {
   public readonly customerPortalOrders: CustomerPortalOrdersApi
   public readonly customerPortalOrganizations: CustomerPortalOrganizationsApi
   public readonly customerPortalSubscriptions: CustomerPortalSubscriptionsApi
+  public readonly customerSessions: CustomerSessionsApi
   public readonly legacyCheckouts: CheckoutsApi
   public readonly checkouts: CheckoutsCustomApi
   public readonly checkoutLinks: CheckoutLinksApi
@@ -115,6 +117,7 @@ export class PolarAPI {
     this.customerPortalOrders = new CustomerPortalOrdersApi(config)
     this.customerPortalOrganizations = new CustomerPortalOrganizationsApi(config)
     this.customerPortalSubscriptions = new CustomerPortalSubscriptionsApi(config)
+    this.customerSessions = new CustomerSessionsApi(config)
     this.legacyCheckouts = new CheckoutsApi(config)
     this.checkouts = new CheckoutsCustomApi(config)
     this.checkoutLinks = new CheckoutLinksApi(config)

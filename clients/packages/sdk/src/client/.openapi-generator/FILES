@@ -16,6 +16,7 @@ apis/CustomerPortalOauthAccountsApi.ts
 apis/CustomerPortalOrdersApi.ts
 apis/CustomerPortalOrganizationsApi.ts
 apis/CustomerPortalSubscriptionsApi.ts
+apis/CustomerSessionsApi.ts
 apis/CustomersApi.ts
 apis/DashboardApi.ts
 apis/DiscountsApi.ts

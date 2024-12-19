@@ -18,6 +18,7 @@ export * from './CustomerPortalOauthAccountsApi';
 export * from './CustomerPortalOrdersApi';
 export * from './CustomerPortalOrganizationsApi';
 export * from './CustomerPortalSubscriptionsApi';
+export * from './CustomerSessionsApi';
 export * from './CustomersApi';
 export * from './DashboardApi';
 export * from './DiscountsApi';

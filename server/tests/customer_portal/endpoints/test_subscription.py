@@ -6,12 +6,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import (
-    Customer,
-    Organization,
-    Product,
-    Subscription,
-)
+from polar.models import Customer, Organization, Product, ProductPriceFree, Subscription
 from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -115,19 +110,37 @@ class TestCustomerSubscriptionPriceUpdate:
         client: AsyncClient,
         subscription: Subscription,
         save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        customer: Customer,
         product: Product,
         product_second: Product,
     ) -> None:
-        price_id = product_second.prices[0].id
-        assert subscription.product.id == product.id
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        previous_price = subscription.price
+        new_price = product_second.prices[0]
+        new_price_id = new_price.id
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price_id)),
+            json=dict(product_price_id=str(new_price_id)),
         )
         assert response.status_code == 200
+        assert stripe_service_mock.cancel_subscription.called is False
+        assert stripe_service_mock.revoke_subscription.called is False
+        previous_free = isinstance(previous_price, ProductPriceFree)
+        stripe_service_mock.update_subscription_price.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            old_price=previous_price.stripe_price_id,
+            new_price=new_price.stripe_price_id,
+            error_if_incomplete=previous_free,
+        )
+
         updated_subscription = response.json()
         assert updated_subscription["product"]["id"] == str(product_second.id)
-        assert updated_subscription["price"]["id"] == str(price_id)
+        assert updated_subscription["price"]["id"] == str(new_price_id)
 
 
 @pytest.mark.asyncio
@@ -203,6 +216,7 @@ class TestCustomerSubscriptionUpdateCancel:
             ),
         )
         assert response.status_code == 200
+        assert stripe_service_mock.update_subscription_price.called is False
         stripe_service_mock.cancel_subscription.assert_called_once_with(
             subscription.stripe_subscription_id,
             customer_reason=reason,
@@ -281,6 +295,7 @@ class TestCustomerSubscriptionCancel:
             f"/v1/customer-portal/subscriptions/{subscription.id}",
         )
         assert response.status_code == 200
+        assert stripe_service_mock.update_subscription_price.called is False
         stripe_service_mock.cancel_subscription.assert_called_once_with(
             subscription.stripe_subscription_id,
             customer_reason=None,

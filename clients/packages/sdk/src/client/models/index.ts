@@ -1315,6 +1315,7 @@ export const AvailableScope = {
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
     CUSTOMERSREAD: 'customers:read',
     CUSTOMERSWRITE: 'customers:write',
+    CUSTOMER_SESSIONSWRITE: 'customer_sessions:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
@@ -1995,6 +1996,13 @@ export interface BenefitCustom {
      * @memberof BenefitCustom
      */
     properties: BenefitCustomProperties;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitCustom
+     * @deprecated
+     */
+    is_tax_applicable: boolean;
 }
 
 
@@ -8396,6 +8404,55 @@ export interface CustomerPortalOAuthAccount {
     account_username: string | null;
 }
 /**
+ * A customer session that can be used to authenticate as a customer.
+ * @export
+ * @interface CustomerSession
+ */
+export interface CustomerSession {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    token: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    expires_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {Customer}
+     * @memberof CustomerSession
+     */
+    customer: Customer;
+}
+/**
  * 
  * @export
  * @interface CustomerSessionCodeAuthenticateRequest
@@ -8439,6 +8496,19 @@ export interface CustomerSessionCodeRequest {
      * @memberof CustomerSessionCodeRequest
      */
     organization_id: string;
+}
+/**
+ * Schema for creating a customer session.
+ * @export
+ * @interface CustomerSessionCreate
+ */
+export interface CustomerSessionCreate {
+    /**
+     * ID of the customer to create a session for.
+     * @type {string}
+     * @memberof CustomerSessionCreate
+     */
+    customer_id: string;
 }
 
 /**
@@ -18540,6 +18610,7 @@ export const Scope = {
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
     CUSTOMERSREAD: 'customers:read',
     CUSTOMERSWRITE: 'customers:write',
+    CUSTOMER_SESSIONSWRITE: 'customer_sessions:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',

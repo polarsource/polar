@@ -66,7 +66,7 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
-from .schemas import SubscriptionCancel, SubscriptionUpdate, SubscriptionUpdatePrice
+from .schemas import SubscriptionUpdate, SubscriptionUpdatePrice
 
 log: Logger = structlog.get_logger()
 
@@ -605,29 +605,39 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription,
                 product_price_id=updates.product_price_id,
             )
-        elif isinstance(updates, SubscriptionCancel):
-            if updates.revoke and updates.cancel_at_period_end:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "revoke"),
-                            "msg": (
-                                "Use either `revoke` for immediate cancellation "
-                                "and revokation or `cancel_at_period_end`."
-                            ),
-                            "input": updates.revoke,
-                        }
-                    ]
-                )
 
-            return await self.cancel(
+        if not (updates.revoke or updates.cancel_at_period_end):
+            return subscription
+
+        if updates.revoke and updates.cancel_at_period_end:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "revoke"),
+                        "msg": (
+                            "Use either `revoke` for immediate cancellation "
+                            "and revokation or `cancel_at_period_end`."
+                        ),
+                        "input": updates.revoke,
+                    }
+                ]
+            )
+
+        if updates.revoke:
+            return await self.revoke(
                 session,
                 subscription,
                 customer_reason=updates.customer_cancellation_reason,
                 customer_comment=updates.customer_cancellation_comment,
-                immediately=bool(updates.revoke),
             )
+
+        return await self.cancel(
+            session,
+            subscription,
+            customer_reason=updates.customer_cancellation_reason,
+            customer_comment=updates.customer_cancellation_comment,
+        )
 
     async def update_product_price(
         self,
@@ -729,7 +739,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             new_price=price.stripe_price_id,
             error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
         )
-
         subscription.product = product
         subscription.price = price
         if isinstance(price, ProductPriceFixed):
@@ -744,7 +753,38 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session.add(subscription)
         return subscription
 
+    async def revoke(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        customer_reason: CustomerCancellationReason | None = None,
+        customer_comment: str | None = None,
+    ) -> Subscription:
+        return await self._perform_cancellation(
+            session,
+            subscription,
+            customer_reason=customer_reason,
+            customer_comment=customer_comment,
+            immediately=True,
+        )
+
     async def cancel(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        customer_reason: CustomerCancellationReason | None = None,
+        customer_comment: str | None = None,
+    ) -> Subscription:
+        return await self._perform_cancellation(
+            session,
+            subscription,
+            customer_reason=customer_reason,
+            customer_comment=customer_comment,
+        )
+
+    async def _perform_cancellation(
         self,
         session: AsyncSession,
         subscription: Subscription,
@@ -760,12 +800,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.canceled_at = utc_now()
 
         if subscription.stripe_subscription_id is not None:
-            stripe_subscription = await stripe_service.cancel_subscription(
-                subscription.stripe_subscription_id,
-                customer_reason=customer_reason.value if customer_reason else None,
-                customer_comment=customer_comment,
-                immediately=immediately,
-            )
+            reason = customer_reason.value if customer_reason else None
+            if immediately:
+                stripe_subscription = await stripe_service.revoke_subscription(
+                    subscription.stripe_subscription_id,
+                    customer_reason=reason,
+                    customer_comment=customer_comment,
+                )
+            else:
+                stripe_subscription = await stripe_service.cancel_subscription(
+                    subscription.stripe_subscription_id,
+                    customer_reason=reason,
+                    customer_comment=customer_comment,
+                )
             # Update status and cancellation details early for our API responses.
             # However, leave webhooks, benefit revokation etc to webhook handler.
             subscription.status = SubscriptionStatus(stripe_subscription.status)

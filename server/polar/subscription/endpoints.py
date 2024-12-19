@@ -204,8 +204,7 @@ async def revoke(
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
-    return await subscription_service.cancel(
+    return await subscription_service.revoke(
         session,
         subscription=subscription,
-        immediately=True,
     )

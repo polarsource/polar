@@ -144,8 +144,13 @@ class TestSubscriptionUpdateCancel:
             ),
         )
         assert response.status_code == 200
-        updated_subscription = response.json()
+        stripe_service_mock.cancel_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            customer_reason=reason,
+            customer_comment=comment,
+        )
 
+        updated_subscription = response.json()
         current_period_end = updated_subscription["current_period_end"]
         assert updated_subscription["status"] == SubscriptionStatus.active
         assert updated_subscription["cancel_at_period_end"]
@@ -229,7 +234,7 @@ class TestSubscriptionUpdateRevoke:
         comment = "Inflation be crazy"
 
         canceled = create_canceled_stripe_subscription(subscription, revoke=True)
-        stripe_service_mock.cancel_subscription.return_value = canceled
+        stripe_service_mock.revoke_subscription.return_value = canceled
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
             json=dict(
@@ -239,8 +244,13 @@ class TestSubscriptionUpdateRevoke:
             ),
         )
         assert response.status_code == 200
-        updated_subscription = response.json()
+        stripe_service_mock.revoke_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            customer_reason=reason,
+            customer_comment=comment,
+        )
 
+        updated_subscription = response.json()
         ended_at = updated_subscription["ended_at"]
         assert ended_at
         assert updated_subscription["status"] == SubscriptionStatus.canceled
@@ -307,9 +317,14 @@ class TestSubscriptionRevoke:
         )
 
         canceled = create_canceled_stripe_subscription(subscription, revoke=True)
-        stripe_service_mock.cancel_subscription.return_value = canceled
+        stripe_service_mock.revoke_subscription.return_value = canceled
         response = await client.delete(f"/v1/subscriptions/{subscription.id}")
         assert response.status_code == 200
-        updated_subscription = response.json()
+        stripe_service_mock.revoke_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            customer_reason=None,
+            customer_comment=None,
+        )
 
+        updated_subscription = response.json()
         assert updated_subscription["status"] == SubscriptionStatus.canceled

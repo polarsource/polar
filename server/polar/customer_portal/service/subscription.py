@@ -25,7 +25,6 @@ from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
-    CustomerSubscriptionCancel,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdatePrice,
 )
@@ -154,13 +153,16 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 subscription,
                 product_price_id=updates.product_price_id,
             )
-        elif isinstance(updates, CustomerSubscriptionCancel):
-            return await self.cancel(
-                session,
-                subscription,
-                reason=updates.cancellation_reason,
-                comment=updates.cancellation_comment,
-            )
+
+        if not updates.cancel_at_period_end:
+            return subscription
+
+        return await self.cancel(
+            session,
+            subscription,
+            reason=updates.cancellation_reason,
+            comment=updates.cancellation_comment,
+        )
 
     async def update_product_price(
         self,

@@ -487,8 +487,35 @@ class StripeService:
         id: str,
         customer_reason: StripeCancellationReasons | None = None,
         customer_comment: str | None = None,
-        immediately: bool = False,
     ) -> stripe_lib.Subscription:
+        return await stripe_lib.Subscription.modify_async(
+            id,
+            cancel_at_period_end=True,
+            cancellation_details=self._generate_subscription_cancellation_details(
+                customer_reason=customer_reason,
+                customer_comment=customer_comment,
+            ),
+        )
+
+    async def revoke_subscription(
+        self,
+        id: str,
+        customer_reason: StripeCancellationReasons | None = None,
+        customer_comment: str | None = None,
+    ) -> stripe_lib.Subscription:
+        return await stripe_lib.Subscription.cancel_async(
+            id,
+            cancellation_details=self._generate_subscription_cancellation_details(
+                customer_reason=customer_reason,
+                customer_comment=customer_comment,
+            ),
+        )
+
+    def _generate_subscription_cancellation_details(
+        self,
+        customer_reason: StripeCancellationReasons | None = None,
+        customer_comment: str | None = None,
+    ) -> stripe_lib.Subscription.ModifyParamsCancellationDetails:
         details: stripe_lib.Subscription.ModifyParamsCancellationDetails = {}
         if customer_reason:
             details["feedback"] = customer_reason
@@ -496,16 +523,7 @@ class StripeService:
         if customer_comment:
             details["comment"] = customer_comment
 
-        if immediately:
-            return await stripe_lib.Subscription.cancel_async(
-                id, cancellation_details=details
-            )
-
-        return await stripe_lib.Subscription.modify_async(
-            id,
-            cancel_at_period_end=True,
-            cancellation_details=details,
-        )
+        return details
 
     async def update_invoice(
         self, id: str, *, metadata: dict[str, str] | None = None

@@ -94,7 +94,7 @@ class TestCustomerSubscriptionUpdateCancel:
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
             json=dict(
-                cancel_at_period_id=True,
+                cancel_at_period_end=True,
                 cancellation_reason=reason,
                 cancellation_comment=comment,
             ),
@@ -104,7 +104,6 @@ class TestCustomerSubscriptionUpdateCancel:
             subscription.stripe_subscription_id,
             customer_reason=reason,
             customer_comment=comment,
-            immediately=False,
         )
 
         updated_subscription = response.json()
@@ -183,7 +182,6 @@ class TestCustomerSubscriptionCancel:
             subscription.stripe_subscription_id,
             customer_reason=None,
             customer_comment=None,
-            immediately=False,
         )
 
         updated_subscription = response.json()

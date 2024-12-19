@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.8
+
+### Patch Changes
+
+- d623321: Add permissions policy to the iframe for better compatibility with wallet payment methods
+
 ## 0.1.7
 
 ### Patch Changes

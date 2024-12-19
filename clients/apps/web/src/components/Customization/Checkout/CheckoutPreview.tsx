@@ -23,7 +23,7 @@ export const CheckoutPreview = ({ product }: CheckoutPreviewProps) => {
 
   return (
     <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto bg-white">
-      <div className="flex w-full max-w-7xl flex-col items-center gap-y-12">
+      <div className="pointer-events-none flex w-full max-w-7xl flex-col items-center gap-y-12">
         {org.profile_settings?.enabled && (
           <>
             <div className="relative flex w-full flex-row items-center justify-end gap-x-6">

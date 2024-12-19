@@ -48,10 +48,10 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl text-black dark:text-white">Sign in</h2>
-          <h2 className="dark:text-polar-400 text-gray-500">
+          <p className="dark:text-polar-400 text-gray-500">
             Enter your email address to access your purchases. A verification
             code will be sent to you.
-          </h2>
+          </p>
         </div>
         <Form {...form}>
           <form

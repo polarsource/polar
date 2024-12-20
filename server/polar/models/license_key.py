@@ -81,7 +81,6 @@ class LicenseKey(RecordModel):
 
     @declared_attr
     def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
-        # Prices are almost always needed, so eager loading makes sense
         return relationship(
             "LicenseKeyActivation",
             lazy="raise",

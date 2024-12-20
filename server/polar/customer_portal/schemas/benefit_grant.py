@@ -30,6 +30,8 @@ from polar.models.benefit_grant import (
 )
 from polar.models.customer import CustomerOAuthPlatform
 
+from .customer import CustomerPortalCustomer
+
 
 class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
     granted_at: datetime | None
@@ -43,31 +45,37 @@ class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
 
 
 class CustomerBenefitGrantDiscord(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
     benefit: BenefitDiscordSubscriber
     properties: BenefitGrantDiscordProperties
 
 
 class CustomerBenefitGrantGitHubRepository(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
     benefit: BenefitGitHubRepositorySubscriber
     properties: BenefitGrantGitHubRepositoryProperties
 
 
 class CustomerBenefitGrantDownloadables(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
     benefit: BenefitDownloadablesSubscriber
     properties: BenefitGrantDownloadablesProperties
 
 
 class CustomerBenefitGrantLicenseKeys(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
     benefit: BenefitLicenseKeysSubscriber
     properties: BenefitGrantLicenseKeysProperties
 
 
 class CustomerBenefitGrantAds(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
     benefit: BenefitAdsSubscriber
     properties: BenefitGrantAdsProperties
 
 
 class CustomerBenefitGrantCustom(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
     benefit: BenefitCustomSubscriber
     properties: BenefitGrantCustomProperties
 

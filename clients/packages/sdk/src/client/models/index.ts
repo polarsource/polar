@@ -3181,6 +3181,12 @@ export interface BenefitGrant {
     benefit_id: string;
     /**
      * 
+     * @type {Customer}
+     * @memberof BenefitGrant
+     */
+    customer: Customer;
+    /**
+     * 
      * @type {Properties}
      * @memberof BenefitGrant
      */
@@ -3380,6 +3386,12 @@ export interface BenefitGrantWebhook {
      * @memberof BenefitGrantWebhook
      */
     benefit_id: string;
+    /**
+     * 
+     * @type {Customer}
+     * @memberof BenefitGrantWebhook
+     */
+    customer: Customer;
     /**
      * 
      * @type {Properties}
@@ -7314,6 +7326,12 @@ export interface CustomerBenefitGrantAds {
     is_revoked: boolean;
     /**
      * 
+     * @type {CustomerPortalCustomer}
+     * @memberof CustomerBenefitGrantAds
+     */
+    customer: CustomerPortalCustomer;
+    /**
+     * 
      * @type {BenefitAdsSubscriber}
      * @memberof CustomerBenefitGrantAds
      */
@@ -7422,6 +7440,12 @@ export interface CustomerBenefitGrantCustom {
     is_revoked: boolean;
     /**
      * 
+     * @type {CustomerPortalCustomer}
+     * @memberof CustomerBenefitGrantCustom
+     */
+    customer: CustomerPortalCustomer;
+    /**
+     * 
      * @type {BenefitCustomSubscriber}
      * @memberof CustomerBenefitGrantCustom
      */
@@ -7528,6 +7552,12 @@ export interface CustomerBenefitGrantDiscord {
      * @memberof CustomerBenefitGrantDiscord
      */
     is_revoked: boolean;
+    /**
+     * 
+     * @type {CustomerPortalCustomer}
+     * @memberof CustomerBenefitGrantDiscord
+     */
+    customer: CustomerPortalCustomer;
     /**
      * 
      * @type {BenefitDiscordSubscriber}
@@ -7657,6 +7687,12 @@ export interface CustomerBenefitGrantDownloadables {
     is_revoked: boolean;
     /**
      * 
+     * @type {CustomerPortalCustomer}
+     * @memberof CustomerBenefitGrantDownloadables
+     */
+    customer: CustomerPortalCustomer;
+    /**
+     * 
      * @type {BenefitDownloadablesSubscriber}
      * @memberof CustomerBenefitGrantDownloadables
      */
@@ -7763,6 +7799,12 @@ export interface CustomerBenefitGrantGitHubRepository {
      * @memberof CustomerBenefitGrantGitHubRepository
      */
     is_revoked: boolean;
+    /**
+     * 
+     * @type {CustomerPortalCustomer}
+     * @memberof CustomerBenefitGrantGitHubRepository
+     */
+    customer: CustomerPortalCustomer;
     /**
      * 
      * @type {BenefitGitHubRepositorySubscriber}
@@ -7890,6 +7932,12 @@ export interface CustomerBenefitGrantLicenseKeys {
      * @memberof CustomerBenefitGrantLicenseKeys
      */
     is_revoked: boolean;
+    /**
+     * 
+     * @type {CustomerPortalCustomer}
+     * @memberof CustomerBenefitGrantLicenseKeys
+     */
+    customer: CustomerPortalCustomer;
     /**
      * 
      * @type {BenefitLicenseKeysSubscriber}

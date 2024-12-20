@@ -5,11 +5,11 @@ set -euo pipefail
 IMG="ghcr.io/polarsource/polar@${1}"
 declare -A servers=(
   ["srv-ci4r87h8g3ne0dmvvl60"]="${RENDER_DEPLOY_KEY_API}"
-  ["srv-csth45d6l47c73ekphf0"]="${RENDER_DEPLOY_KEY_WORKER}"
-  ["srv-ct0460ggph6c738go8i0"]="${RENDER_DEPLOY_KEY_WORKER_GITHUB}"
+  ["srv-ctilidt2ng1s73bctvp0"]="${RENDER_DEPLOY_KEY_WORKER}"
+  ["srv-ctilidt2ng1s73bctvg0"]="${RENDER_DEPLOY_KEY_WORKER_GITHUB}"
   ["srv-crkocgbtq21c73ddsdbg"]="${RENDER_DEPLOY_KEY_API_SANDBOX}"
-  ["srv-csth45d6l47c73ekphdg"]="${RENDER_DEPLOY_KEY_WORKER_SANDBOX}"
-  ["srv-ct0460ggph6c738go8d0"]="${RENDER_DEPLOY_KEY_WORKER_GITHUB_SANDBOX}"
+  ["srv-ctilidt2ng1s73bctv8g"]="${RENDER_DEPLOY_KEY_WORKER_SANDBOX}"
+  ["srv-ctilidt2ng1s73bctvbg"]="${RENDER_DEPLOY_KEY_WORKER_GITHUB_SANDBOX}"
 )
 
 for server_id in "${!servers[@]}"; do

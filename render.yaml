@@ -70,7 +70,7 @@ services:
       - fromGroup: logfire-server
 
   # Workers
-  - type: worker
+  - type: pserv
     name: worker
     runtime: image
     image:
@@ -80,6 +80,7 @@ services:
           name: Registry Credentials (by fvoron)
     plan: standard
     dockerCommand: uv run supervisord -c supervisord.worker.conf
+    healthCheckPath: /main/healthz
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -122,7 +123,7 @@ services:
       - fromGroup: stripe-production
       - fromGroup: logfire-worker
 
-  - type: worker
+  - type: pserv
     name: worker-github
     runtime: image
     image:
@@ -132,6 +133,7 @@ services:
           name: Registry Credentials (by fvoron)
     plan: standard
     dockerCommand: uv run supervisord -c supervisord.worker_github.conf
+    healthCheckPath: /github/healthz
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -247,7 +249,7 @@ services:
       - fromGroup: stripe-sandbox
 
   # Workers
-  - type: worker
+  - type: pserv
     name: worker-sandbox
     runtime: image
     image:
@@ -257,6 +259,7 @@ services:
           name: Registry Credentials (by fvoron)
     plan: standard
     dockerCommand: uv run supervisord -c supervisord.worker.conf
+    healthCheckPath: /main/healthz
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -296,7 +299,7 @@ services:
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
 
-  - type: worker
+  - type: pserv
     name: worker-github-sandbox
     runtime: image
     image:
@@ -306,6 +309,7 @@ services:
           name: Registry Credentials (by fvoron)
     plan: standard
     dockerCommand: uv run supervisord -c supervisord.worker_github.conf
+    healthCheckPath: /github/healthz
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions

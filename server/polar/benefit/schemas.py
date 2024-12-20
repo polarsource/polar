@@ -13,6 +13,7 @@ from pydantic import (
 )
 
 from polar.config import settings
+from polar.customer.schemas import Customer
 from polar.kit import jwt
 from polar.kit.schemas import (
     ClassName,
@@ -528,6 +529,7 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
 
 
 class BenefitGrant(BenefitGrantBase):
+    customer: Customer
     properties: BenefitGrantProperties
 
 

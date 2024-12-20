@@ -85,7 +85,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if loaded:
             query = query.options(
-                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization)
+                joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
             )
 
         if options is not None:
@@ -110,6 +111,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 BenefitGrant.deleted_at.is_(None),
             )
             .order_by(BenefitGrant.created_at.desc())
+            .options(
+                joinedload(BenefitGrant.customer),
+            )
         )
 
         if is_granted is not None:

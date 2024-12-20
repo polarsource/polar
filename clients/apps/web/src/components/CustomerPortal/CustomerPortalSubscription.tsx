@@ -68,12 +68,11 @@ const CustomerPortalSubscription = ({
 
           {(benefitGrants?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className="text-lg font-medium">Benefits</h3>
               <List>
                 {benefitGrants?.items.map((benefitGrant) => (
                   <ListItem
                     key={benefitGrant.id}
-                    className="hover:bg-transparent dark:hover:bg-transparent"
+                    className="py-6 hover:bg-transparent dark:hover:bg-transparent"
                   >
                     <BenefitGrant api={api} benefitGrant={benefitGrant} />
                   </ListItem>

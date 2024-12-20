@@ -52,9 +52,6 @@ const convert = (schema) => {
     }
   }
 
-  // Hack! Pretend the schema is OpenAPI 3.0
-  schema.openapi = '3.0.3'
-
   delete schema['webhooks']
 }
 

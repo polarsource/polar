@@ -47,15 +47,15 @@ export interface TransactionsApiLookupTransactionRequest {
 }
 
 export interface TransactionsApiSearchTransactionsRequest {
-    type?: TransactionType;
-    accountId?: string;
-    paymentCustomerId?: string;
-    paymentOrganizationId?: string;
-    paymentUserId?: string;
+    type?: TransactionType | null;
+    accountId?: string | null;
+    paymentCustomerId?: string | null;
+    paymentOrganizationId?: string | null;
+    paymentUserId?: string | null;
     excludePlatformFees?: boolean;
     page?: number;
     limit?: number;
-    sorting?: Array<TransactionSortProperty>;
+    sorting?: Array<TransactionSortProperty> | null;
 }
 
 /**

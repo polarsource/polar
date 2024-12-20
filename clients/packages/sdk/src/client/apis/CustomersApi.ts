@@ -21,7 +21,7 @@ import type {
   CustomerUpdate,
   HTTPValidationError,
   ListResourceCustomer,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
 } from '../models/index';
 
@@ -38,11 +38,11 @@ export interface CustomersApiGetRequest {
 }
 
 export interface CustomersApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    query?: string;
+    organizationId?: OrganizationIDFilter1 | null;
+    query?: string | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CustomerSortProperty>;
+    sorting?: Array<CustomerSortProperty> | null;
 }
 
 export interface CustomersApiUpdateRequest {

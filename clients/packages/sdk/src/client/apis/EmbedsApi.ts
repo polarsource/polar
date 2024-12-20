@@ -21,7 +21,7 @@ import type {
 
 export interface EmbedsApiGetProductRequest {
     id: string;
-    priceId?: string;
+    priceId?: string | null;
 }
 
 /**

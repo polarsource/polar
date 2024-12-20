@@ -24,7 +24,7 @@ import type {
   ListResourceBenefit,
   ListResourceBenefitGrant,
   NotPermitted,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
 } from '../models/index';
 
@@ -42,15 +42,15 @@ export interface BenefitsApiGetRequest {
 
 export interface BenefitsApiGrantsRequest {
     id: string;
-    isGranted?: boolean;
-    customerId?: CustomerIDFilter1;
+    isGranted?: boolean | null;
+    customerId?: CustomerIDFilter1 | null;
     page?: number;
     limit?: number;
 }
 
 export interface BenefitsApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    type?: BenefitTypeFilter;
+    organizationId?: OrganizationIDFilter1 | null;
+    type?: BenefitTypeFilter | null;
     page?: number;
     limit?: number;
 }

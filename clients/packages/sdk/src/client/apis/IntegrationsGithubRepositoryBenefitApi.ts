@@ -20,14 +20,14 @@ import type {
 } from '../models/index';
 
 export interface IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest {
-    returnTo?: string;
+    returnTo?: string | null;
 }
 
 export interface IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserCallbackRequest {
-    code?: string;
-    codeVerifier?: string;
-    state?: string;
-    error?: string;
+    code?: string | null;
+    codeVerifier?: string | null;
+    state?: string | null;
+    error?: string | null;
 }
 
 /**

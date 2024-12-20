@@ -15,14 +15,14 @@
 
 import * as runtime from '../runtime';
 import type {
-  CustomerIDFilter,
+  CustomerIDFilter2,
   DiscountIDFilter1,
   HTTPValidationError,
   ListResourceOrder,
   Order,
   OrderInvoice,
   OrderSortProperty,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductIDFilter,
   ProductPriceTypeFilter,
   ResourceNotFound,
@@ -37,14 +37,14 @@ export interface OrdersApiInvoiceRequest {
 }
 
 export interface OrdersApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
-    productPriceType?: ProductPriceTypeFilter;
-    discountId?: DiscountIDFilter1;
-    customerId?: CustomerIDFilter;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
+    productPriceType?: ProductPriceTypeFilter | null;
+    discountId?: DiscountIDFilter1 | null;
+    customerId?: CustomerIDFilter2 | null;
     page?: number;
     limit?: number;
-    sorting?: Array<OrderSortProperty>;
+    sorting?: Array<OrderSortProperty> | null;
 }
 
 /**

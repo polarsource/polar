@@ -22,7 +22,7 @@ import type {
   CustomFieldUpdate,
   HTTPValidationError,
   ListResourceCustomField,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
 } from '../models/index';
 
@@ -39,12 +39,12 @@ export interface CustomFieldsApiGetRequest {
 }
 
 export interface CustomFieldsApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    query?: string;
-    type?: CustomFieldTypeFilter;
+    organizationId?: OrganizationIDFilter1 | null;
+    query?: string | null;
+    type?: CustomFieldTypeFilter | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CustomFieldSortProperty>;
+    sorting?: Array<CustomFieldSortProperty> | null;
 }
 
 export interface CustomFieldsApiUpdateRequest {

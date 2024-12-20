@@ -27,10 +27,10 @@ export interface FundingApiLookupRequest {
 
 export interface FundingApiSearchRequest {
     organizationId: string;
-    repositoryName?: string;
-    query?: string;
-    badged?: boolean;
-    closed?: boolean;
+    repositoryName?: string | null;
+    query?: string | null;
+    badged?: boolean | null;
+    closed?: boolean | null;
     sorting?: Array<ListFundingSortBy>;
     page?: number;
     limit?: number;

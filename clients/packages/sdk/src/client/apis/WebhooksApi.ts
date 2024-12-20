@@ -38,14 +38,14 @@ export interface WebhooksApiGetWebhookEndpointRequest {
 }
 
 export interface WebhooksApiListWebhookDeliveriesRequest {
-    endpointId?: string;
+    endpointId?: string | null;
     page?: number;
     limit?: number;
 }
 
 export interface WebhooksApiListWebhookEndpointsRequest {
-    organizationId?: string;
-    userId?: string;
+    organizationId?: string | null;
+    userId?: string | null;
     page?: number;
     limit?: number;
 }

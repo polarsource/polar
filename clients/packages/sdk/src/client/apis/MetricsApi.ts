@@ -19,7 +19,7 @@ import type {
   Interval,
   MetricsLimits,
   MetricsResponse,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductIDFilter,
   ProductPriceTypeFilter1,
 } from '../models/index';
@@ -28,9 +28,9 @@ export interface MetricsApiGetRequest {
     startDate: string;
     endDate: string;
     interval: Interval;
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
-    productPriceType?: ProductPriceTypeFilter1;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
+    productPriceType?: ProductPriceTypeFilter1 | null;
 }
 
 /**

@@ -23,7 +23,7 @@ import type {
   LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
   NotPermitted,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
   Unauthorized,
   ValidatedLicenseKey,
@@ -42,8 +42,8 @@ export interface CustomerPortalLicenseKeysApiGetRequest {
 }
 
 export interface CustomerPortalLicenseKeysApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    benefitId?: string;
+    organizationId?: OrganizationIDFilter1 | null;
+    benefitId?: string | null;
     page?: number;
     limit?: number;
 }

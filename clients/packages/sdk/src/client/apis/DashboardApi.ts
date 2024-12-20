@@ -23,9 +23,9 @@ import type {
 
 export interface DashboardApiGetDashboardRequest {
     id: string;
-    repositoryName?: string;
-    q?: string;
-    sort?: IssueSortBy;
+    repositoryName?: string | null;
+    q?: string | null;
+    sort?: IssueSortBy | null;
     onlyPledged?: boolean;
     onlyBadged?: boolean;
     showClosed?: boolean;
@@ -33,8 +33,8 @@ export interface DashboardApiGetDashboardRequest {
 }
 
 export interface DashboardApiGetPersonalDashboardRequest {
-    q?: string;
-    sort?: IssueSortBy;
+    q?: string | null;
+    sort?: IssueSortBy | null;
     onlyPledged?: boolean;
     onlyBadged?: boolean;
     showClosed?: boolean;

@@ -24,12 +24,12 @@ import type {
 } from '../models/index';
 
 export interface ExternalOrganizationsApiListRequest {
-    platform?: PlatformFilter;
-    name?: RepositoryNameFilter;
-    organizationId?: OrganizationIDFilter;
+    platform?: PlatformFilter | null;
+    name?: RepositoryNameFilter | null;
+    organizationId?: OrganizationIDFilter | null;
     page?: number;
     limit?: number;
-    sorting?: Array<ExternalOrganizationSortProperty>;
+    sorting?: Array<ExternalOrganizationSortProperty> | null;
 }
 
 /**

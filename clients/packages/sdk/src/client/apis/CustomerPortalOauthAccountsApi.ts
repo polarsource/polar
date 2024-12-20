@@ -23,13 +23,13 @@ import type {
 export interface CustomerPortalOauthAccountsApiCustomerPortalOauthAccountsAuthorizeRequest {
     platform: CustomerOAuthPlatform;
     customerId: string;
-    returnTo?: string;
+    returnTo?: string | null;
 }
 
 export interface CustomerPortalOauthAccountsApiCustomerPortalOauthAccountsCallbackRequest {
     state: string;
-    code?: string;
-    error?: string;
+    code?: string | null;
+    error?: string | null;
 }
 
 /**

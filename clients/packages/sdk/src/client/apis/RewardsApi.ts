@@ -21,9 +21,9 @@ import type {
 } from '../models/index';
 
 export interface RewardsApiSearchRequest {
-    pledgesToOrganization?: string;
-    rewardsToUser?: string;
-    rewardsToOrg?: string;
+    pledgesToOrganization?: string | null;
+    rewardsToUser?: string | null;
+    rewardsToOrg?: string | null;
 }
 
 export interface RewardsApiSummaryRequest {

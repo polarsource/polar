@@ -21,7 +21,7 @@ import type {
   CustomerSubscriptionUpdate,
   HTTPValidationError,
   ListResourceCustomerSubscription,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductIDFilter,
   ResourceNotFound,
 } from '../models/index';
@@ -35,13 +35,13 @@ export interface CustomerPortalSubscriptionsApiGetRequest {
 }
 
 export interface CustomerPortalSubscriptionsApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
-    active?: boolean;
-    query?: string;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
+    active?: boolean | null;
+    query?: string | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CustomerSubscriptionSortProperty>;
+    sorting?: Array<CustomerSubscriptionSortProperty> | null;
 }
 
 export interface CustomerPortalSubscriptionsApiUpdateRequest {

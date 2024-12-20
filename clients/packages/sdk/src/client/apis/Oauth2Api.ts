@@ -33,6 +33,15 @@ export interface Oauth2ApiIntrospectTokenRequest {
     tokenTypeHint?: IntrospectTokenTokenTypeHintEnum;
 }
 
+export interface Oauth2ApiRequestTokenRequest {
+    grantType?: RequestTokenGrantTypeEnum;
+    clientId?: string;
+    clientSecret?: string;
+    code?: string;
+    redirectUri?: string;
+    refreshToken?: string;
+}
+
 export interface Oauth2ApiRevokeTokenRequest {
     token: string;
     clientId: string;
@@ -227,16 +236,55 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Request an access token using a valid grant.
      * Request Token
      */
-    async requestTokenRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TokenResponse>> {
+    async requestTokenRaw(requestParameters: Oauth2ApiRequestTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TokenResponse>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        const consumes: runtime.Consume[] = [
+            { contentType: 'application/x-www-form-urlencoded' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['grantType'] != null) {
+            formParams.append('grant_type', requestParameters['grantType'] as any);
+        }
+
+        if (requestParameters['clientId'] != null) {
+            formParams.append('client_id', requestParameters['clientId'] as any);
+        }
+
+        if (requestParameters['clientSecret'] != null) {
+            formParams.append('client_secret', requestParameters['clientSecret'] as any);
+        }
+
+        if (requestParameters['code'] != null) {
+            formParams.append('code', requestParameters['code'] as any);
+        }
+
+        if (requestParameters['redirectUri'] != null) {
+            formParams.append('redirect_uri', requestParameters['redirectUri'] as any);
+        }
+
+        if (requestParameters['refreshToken'] != null) {
+            formParams.append('refresh_token', requestParameters['refreshToken'] as any);
+        }
 
         const response = await this.request({
             path: `/v1/oauth2/token`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
+            body: formParams,
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -246,8 +294,8 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Request an access token using a valid grant.
      * Request Token
      */
-    async requestToken(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TokenResponse> {
-        const response = await this.requestTokenRaw(initOverrides);
+    async requestToken(requestParameters: Oauth2ApiRequestTokenRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TokenResponse> {
+        const response = await this.requestTokenRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -377,6 +425,13 @@ export const IntrospectTokenTokenTypeHintEnum = {
     REFRESH_TOKEN: 'refresh_token'
 } as const;
 export type IntrospectTokenTokenTypeHintEnum = typeof IntrospectTokenTokenTypeHintEnum[keyof typeof IntrospectTokenTokenTypeHintEnum];
+/**
+ * @export
+ */
+export const RequestTokenGrantTypeEnum = {
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type RequestTokenGrantTypeEnum = typeof RequestTokenGrantTypeEnum[keyof typeof RequestTokenGrantTypeEnum];
 /**
  * @export
  */

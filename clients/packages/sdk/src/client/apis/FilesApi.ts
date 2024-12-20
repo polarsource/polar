@@ -36,8 +36,8 @@ export interface FilesApiDeleteRequest {
 }
 
 export interface FilesApiListRequest {
-    organizationId?: string;
-    ids?: Array<string>;
+    organizationId?: string | null;
+    ids?: Array<string> | null;
     page?: number;
     limit?: number;
 }

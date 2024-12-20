@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
+from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AliasChoices,
@@ -51,6 +52,10 @@ from polar.product.schemas import (
     ProductPriceList,
 )
 
+# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
+MAXIMUM_PRICE_AMOUNT = 99999999
+MINIMUM_PRICE_AMOUNT = 50
+
 Amount = Annotated[
     int,
     Field(
@@ -59,6 +64,8 @@ Amount = Annotated[
             "Only useful for custom prices, it'll be ignored for fixed and free prices."
         )
     ),
+    Ge(MINIMUM_PRICE_AMOUNT),
+    Le(MAXIMUM_PRICE_AMOUNT),
 ]
 CustomerName = Annotated[
     str,

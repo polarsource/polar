@@ -134,3 +134,4 @@ playground.py
 
 .jwks.json
 *.mmdb
+supervisord.pid

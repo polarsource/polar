@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
-from pydantic import HttpUrl
+from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -1395,6 +1395,19 @@ class TestUpdate:
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     product_price_id=product_one_time_custom_price.prices[0].id,
+                ),
+            )
+
+    @pytest.mark.parametrize("amount", [10, 20_000_000_000])
+    async def test_amount_update_max_limits(
+        self, amount: int, session: AsyncSession, checkout_one_time_custom: Checkout
+    ) -> None:
+        with pytest.raises(ValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_custom,
+                CheckoutUpdate(
+                    amount=amount,
                 ),
             )
 

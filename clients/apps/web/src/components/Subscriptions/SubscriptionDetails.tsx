@@ -35,7 +35,7 @@ export const SubscriptionDetails = ({
   }
 
   return (
-    <ShadowBox className="flex w-full flex-col gap-y-6">
+    <ShadowBox className="flex w-full flex-col gap-y-6 dark:border-transparent">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>

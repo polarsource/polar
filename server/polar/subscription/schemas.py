@@ -1,5 +1,6 @@
+import inspect
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from babel.numbers import format_currency
 from pydantic import UUID4, AliasChoices, AliasPath, Field
@@ -14,9 +15,10 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.product.schemas import Product, ProductPriceRecurring
 
 
@@ -53,7 +55,9 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     current_period_start: datetime
     current_period_end: datetime | None
     cancel_at_period_end: bool
+    canceled_at: datetime | None
     started_at: datetime | None
+    ends_at: datetime | None
     ended_at: datetime | None
 
     customer_id: UUID4
@@ -61,6 +65,9 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     price_id: UUID4
     discount_id: UUID4 | None
     checkout_id: UUID4 | None
+
+    customer_cancellation_reason: CustomerCancellationReason | None
+    customer_cancellation_comment: str | None
 
     def get_amount_display(self) -> str:
         if self.amount is None or self.currency is None:
@@ -109,3 +116,70 @@ class SubscriptionCreateEmail(Schema):
     product_id: UUID4 = Field(
         description="The ID of the product. **Must be the free subscription tier**."
     )
+
+
+class SubscriptionUpdatePrice(Schema):
+    product_price_id: UUID4 = Field(description="Update subscription to another price.")
+
+
+class SubscriptionCancel(Schema):
+    cancel_at_period_end: bool | None = Field(
+        None,
+        description=inspect.cleandoc(
+            """
+        Cancel an active subscription once the current period ends.
+
+        Or uncancel a subscription currently set to be revoked at period end.
+        """
+        ),
+    )
+    revoke: Literal[True] | None = Field(
+        None,
+        description="Cancel and revoke an active subscription immediately",
+    )
+    customer_cancellation_reason: CustomerCancellationReason | None = Field(
+        None,
+        description=inspect.cleandoc(
+            """
+        Customer reason for cancellation.
+
+        Helpful to monitor reasons behind churn for future improvements.
+
+        Only set this in case your own service is requesting the reason from the
+        customer. Or you know based on direct conversations, i.e support, with
+        the customer.
+
+        * `too_expensive`: Too expensive for the customer.
+        * `missing_features`: Customer is missing certain features.
+        * `switched_service`: Customer switched to another service.
+        * `unused`: Customer is not using it enough.
+        * `customer_service`: Customer is not satisfied with the customer service.
+        * `low_quality`: Customer is unhappy with the quality.
+        * `too_complex`: Customer considers the service too complicated.
+        * `other`: Other reason(s).
+        """
+        ),
+    )
+    customer_cancellation_comment: str | None = Field(
+        None,
+        description=inspect.cleandoc(
+            """
+            Customer feedback and why they decided to cancel.
+
+            **IMPORTANT:**
+            Do not use this to store internal notes! It's intended to be input
+            from the customer and is therefore also available in their Polar
+            purchases library.
+
+            Only set this in case your own service is requesting the reason from the
+            customer. Or you copy a message directly from a customer
+            conversation, i.e support.
+            """
+        ),
+    )
+
+
+SubscriptionUpdate = Annotated[
+    SubscriptionUpdatePrice | SubscriptionCancel,
+    SetSchemaReference("SubscriptionUpdate"),
+]

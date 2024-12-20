@@ -146,7 +146,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             },
         )
 
-        email_sender.send_to_user(
+        await email_sender.send_to_user(
             to_email_addr=personal_access_token.user.email,
             subject=subject,
             html_content=body,

@@ -22,7 +22,6 @@ dependencies = [
   "sentry-sdk[fastapi,sqlalchemy]>=2.16.0",
   "posthog>=3.6.0",
   "python-slugify>=8.0.1",
-  "resend>=2.4.0",
   "python-multipart>=0.0.12",
   "safe-redirect-url>=0.1.1",
   "httpx-oauth>=0.16.0",

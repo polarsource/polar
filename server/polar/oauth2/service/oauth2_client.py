@@ -107,7 +107,7 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
             },
         )
 
-        email_sender.send_to_user(
+        await email_sender.send_to_user(
             to_email_addr=client.user.email, subject=subject, html_content=body
         )
 

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -23,7 +23,7 @@ class TestRevokeLeaked:
         session: AsyncSession,
         mocker: MockerFixture,
     ) -> None:
-        email_sender_mock = MagicMock()
+        email_sender_mock = AsyncMock()
         mocker.patch(
             "polar.personal_access_token.service.get_email_sender",
             return_value=email_sender_mock,
@@ -48,7 +48,7 @@ class TestRevokeLeaked:
         user: User,
         mocker: MockerFixture,
     ) -> None:
-        email_sender_mock = MagicMock()
+        email_sender_mock = AsyncMock()
         mocker.patch(
             "polar.personal_access_token.service.get_email_sender",
             return_value=email_sender_mock,

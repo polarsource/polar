@@ -113,7 +113,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             )
 
             for recipient in recipients:
-                email_sender.send_to_user(
+                await email_sender.send_to_user(
                     to_email_addr=recipient, subject=subject, html_content=body
                 )
 

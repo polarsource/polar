@@ -39,7 +39,7 @@ class WatcherEmailSender(EmailSender):
     ) -> None:
         self.temporary_file.close()
 
-    def send_to_user(
+    async def send_to_user(
         self,
         *,
         to_email_addr: str,

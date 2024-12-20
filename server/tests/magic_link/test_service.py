@@ -1,7 +1,7 @@
 import os
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime, timedelta
-from unittest.mock import ANY, MagicMock
+from unittest.mock import ANY, AsyncMock, MagicMock
 from uuid import UUID
 
 import pytest
@@ -88,7 +88,7 @@ async def test_send(
     mocker: MockerFixture,
     session: AsyncSession,
 ) -> None:
-    email_sender_mock = MagicMock()
+    email_sender_mock = AsyncMock()
     mocker.patch(
         "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
     )
@@ -130,7 +130,7 @@ async def test_send_return_to(
     mocker: MockerFixture,
     session: AsyncSession,
 ) -> None:
-    email_sender_mock = MagicMock()
+    email_sender_mock = AsyncMock()
     mocker.patch(
         "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
     )

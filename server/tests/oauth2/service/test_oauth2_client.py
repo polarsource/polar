@@ -1,5 +1,5 @@
 from typing import cast
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -26,7 +26,7 @@ class TestRevokeLeaked:
         session: AsyncSession,
         mocker: MockerFixture,
     ) -> None:
-        email_sender_mock = MagicMock()
+        email_sender_mock = AsyncMock()
         mocker.patch(
             "polar.oauth2.service.oauth2_client.get_email_sender",
             return_value=email_sender_mock,
@@ -54,7 +54,7 @@ class TestRevokeLeaked:
         oauth2_client: OAuth2Client,
         mocker: MockerFixture,
     ) -> None:
-        email_sender_mock = MagicMock()
+        email_sender_mock = AsyncMock()
         mocker.patch(
             "polar.oauth2.service.oauth2_client.get_email_sender",
             return_value=email_sender_mock,

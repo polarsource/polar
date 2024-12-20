@@ -7,12 +7,12 @@ import {
   CheckoutLinksApiListRequest,
   CheckoutLinksApiUpdateRequest,
   ListResourceCheckoutLink,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
 } from '@polar-sh/sdk'
 import { defaultRetry } from './retry'
 
 export const useCheckoutLinks = (
-  organizationId: OrganizationIDFilter,
+  organizationId: OrganizationIDFilter1,
   parameters?: Omit<CheckoutLinksApiListRequest, 'organizationId'>,
 ) =>
   useQuery({
@@ -33,10 +33,7 @@ export const useCreateCheckoutLink = () =>
     onSuccess: (result, _variables, _ctx) => {
       queryClient.setQueriesData<ListResourceCheckoutLink>(
         {
-          queryKey: [
-            'checkout_links',
-            { productId: result.product.id },
-          ],
+          queryKey: ['checkout_links', { productId: result.product.id }],
         },
         (old) => {
           if (!old) {
@@ -69,10 +66,7 @@ export const useUpdateCheckoutLink = () =>
     onSuccess: (result, _variables, _ctx) => {
       queryClient.setQueriesData<ListResourceCheckoutLink>(
         {
-          queryKey: [
-            'checkout_links',
-            { productId: result.product.id },
-          ],
+          queryKey: ['checkout_links', { productId: result.product.id }],
         },
         (old) => {
           if (!old) {
@@ -105,9 +99,12 @@ export const useDeleteCheckoutLink = () =>
     },
     onSuccess: (_result, variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['checkout_links', {
-          productId: variables.product.id
-        }],
+        queryKey: [
+          'checkout_links',
+          {
+            productId: variables.product.id,
+          },
+        ],
       })
     },
   })

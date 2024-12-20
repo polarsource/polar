@@ -12,13 +12,13 @@ export const getGitHubAuthorizeURL = (
   params: IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.paymentIntentId !== undefined) {
+  if (params.paymentIntentId) {
     searchParams.set('payment_intent_id', params.paymentIntentId)
   }
-  if (params.returnTo !== undefined) {
+  if (params.returnTo) {
     searchParams.set('return_to', params.returnTo)
   }
-  if (params.attribution !== undefined) {
+  if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
   return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
@@ -28,10 +28,10 @@ export const getGoogleAuthorizeURL = (
   params: IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo !== undefined) {
+  if (params.returnTo) {
     searchParams.set('return_to', params.returnTo)
   }
-  if (params.attribution !== undefined) {
+  if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
   return `${getServerURL()}/v1/integrations/google/authorize?${searchParams}`
@@ -41,7 +41,7 @@ export const getGitHubOrganizationInstallationURL = (
   params: IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo !== undefined) {
+  if (params.returnTo) {
     searchParams.set('return_to', params.returnTo)
   }
   return `${getServerURL()}/v1/integrations/github/organizations/${
@@ -53,7 +53,7 @@ export const getMagicLinkAuthenticateURL = (
   params: MagicLinkApiMagicLinkAuthenticateRequest,
 ): string => {
   const searchParams = new URLSearchParams({ token: params.token })
-  if (params.returnTo !== undefined) {
+  if (params.returnTo) {
     searchParams.set('return_to', params.returnTo)
   }
   return `${getServerURL()}/v1/magic_link/authenticate?${searchParams}`
@@ -63,7 +63,7 @@ export const getBotDiscordAuthorizeURL = (
   params: IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo !== undefined) {
+  if (params.returnTo) {
     searchParams.set('return_to', params.returnTo)
   }
   return `${getServerURL()}/v1/integrations/discord/bot/authorize?${searchParams}`
@@ -73,7 +73,7 @@ export const getGitHubRepositoryBenefitAuthorizeURL = (
   params: IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo !== undefined) {
+  if (params.returnTo) {
     searchParams.set('return_to', params.returnTo)
   }
   return `${getServerURL()}/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`

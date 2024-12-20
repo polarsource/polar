@@ -48,7 +48,7 @@ async def notifications_send(
                 )
                 return
 
-            sender.send_to_user(
+            await sender.send_to_user(
                 to_email_addr=user.email,
                 subject=f"[Polar] {subject}",
                 html_content=body,

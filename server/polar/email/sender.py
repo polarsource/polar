@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
-import resend
+import httpx
 import structlog
 
 from polar.config import EmailSender as EmailSenderType
@@ -17,7 +18,7 @@ DEFAULT_REPLY_TO_EMAIL_ADDRESS = "support@polar.sh"
 
 class EmailSender(ABC):
     @abstractmethod
-    def send_to_user(
+    async def send_to_user(
         self,
         *,
         to_email_addr: str,
@@ -33,7 +34,7 @@ class EmailSender(ABC):
 
 
 class LoggingEmailSender(EmailSender):
-    def send_to_user(
+    async def send_to_user(
         self,
         *,
         to_email_addr: str,
@@ -59,9 +60,9 @@ class LoggingEmailSender(EmailSender):
 class ResendEmailSender(EmailSender):
     def __init__(self) -> None:
         super().__init__()
-        resend.api_key = settings.RESEND_API_KEY
+        self._api_key = settings.RESEND_API_KEY
 
-    def send_to_user(
+    async def send_to_user(
         self,
         *,
         to_email_addr: str,
@@ -73,18 +74,26 @@ class ResendEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     ) -> None:
-        params: resend.Emails.SendParams = {
+        payload: dict[str, Any] = {
             "from": f"{from_name} <{from_email_addr}>",
             "to": [to_email_addr],
             "subject": subject,
             "html": html_content,
             "headers": email_headers,
         }
-
         if reply_to_name and reply_to_email_addr:
-            params["reply_to"] = f"{reply_to_name} <{reply_to_email_addr}>"
+            payload["reply_to"] = f"{reply_to_name} <{reply_to_email_addr}>"
 
-        email = resend.Emails.send(params)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            email = response.json()
 
         log.info(
             "resend.send",

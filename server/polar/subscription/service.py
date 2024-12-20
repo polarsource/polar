@@ -715,7 +715,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             },
         )
 
-        email_sender.send_to_user(
+        await email_sender.send_to_user(
             to_email_addr=subscription.customer.email,
             subject=subject,
             html_content=body,
@@ -748,7 +748,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             },
         )
 
-        email_sender.send_to_user(
+        await email_sender.send_to_user(
             to_email_addr=subscription.customer.email,
             subject=subject,
             html_content=body,

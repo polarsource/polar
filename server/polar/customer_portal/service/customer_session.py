@@ -99,7 +99,7 @@ class CustomerSessionService:
             },
         )
 
-        email_sender.send_to_user(
+        await email_sender.send_to_user(
             to_email_addr=customer.email, subject=subject, html_content=body
         )
 

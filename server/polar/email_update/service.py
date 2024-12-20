@@ -91,7 +91,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             },
         )
 
-        email_sender.send_to_user(
+        await email_sender.send_to_user(
             to_email_addr=email_update_record.email, subject=subject, html_content=body
         )
 

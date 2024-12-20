@@ -1,7 +1,4 @@
-import {
-  useCustomerBenefitGrantUpdate,
-  useCustomerPortalCustomer,
-} from '@/hooks/queries'
+import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import {
   CustomerBenefitGrant,
   CustomerBenefitGrantCustom,
@@ -73,11 +70,10 @@ const BenefitGrantOAuth = ({
 }) => {
   const pathname = usePathname()
   const {
-    customer_id,
+    customer,
     properties: { account_id },
     benefit: { type: benefitType },
   } = benefitGrant
-  const { data: customer } = useCustomerPortalCustomer(api, customer_id)
   const accounts = useMemo(
     () =>
       customer
@@ -94,11 +90,11 @@ const BenefitGrantOAuth = ({
         {
           platform,
           returnTo: pathname,
-          customerId: customer_id,
+          customerId: customer.id,
         },
       )
     window.location.href = url
-  }, [customer_id, api, pathname, platform])
+  }, [customer, api, pathname, platform])
 
   const updateBenefitGrant = useCustomerBenefitGrantUpdate(api)
   const [selectedAccountKey, setSelectedAccountKey] = useState<

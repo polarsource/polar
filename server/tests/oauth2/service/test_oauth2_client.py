@@ -1,5 +1,5 @@
 from typing import cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -8,6 +8,13 @@ from polar.enums import TokenType
 from polar.models import OAuth2Client
 from polar.oauth2.service.oauth2_client import oauth2_client as oauth2_client_service
 from polar.postgres import AsyncSession
+
+
+@pytest.fixture(autouse=True)
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.oauth2.service.oauth2_client.enqueue_email", autospec=True
+    )
 
 
 @pytest.mark.asyncio
@@ -24,21 +31,14 @@ class TestRevokeLeaked:
         token: str,
         token_type: TokenType,
         session: AsyncSession,
-        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.oauth2.service.oauth2_client.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         result = await oauth2_client_service.revoke_leaked(
             session, token, token_type, notifier="github", url="https://github.com"
         )
         assert result is False
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_not_called()
+        enqueue_email_mock.assert_not_called()
 
     @pytest.mark.parametrize(
         "token_type",
@@ -52,14 +52,8 @@ class TestRevokeLeaked:
         token_type: TokenType,
         session: AsyncSession,
         oauth2_client: OAuth2Client,
-        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.oauth2.service.oauth2_client.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         token = cast(
             str,
             (
@@ -82,5 +76,4 @@ class TestRevokeLeaked:
         else:
             assert updated_oauth2_client.registration_access_token != token
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_called_once()
+        enqueue_email_mock.assert_called_once()

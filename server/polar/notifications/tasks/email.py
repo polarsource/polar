@@ -2,14 +2,12 @@ from uuid import UUID
 
 import structlog
 
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email
 from polar.notifications.service import notifications
 from polar.user.service.user import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 log = structlog.get_logger()
-
-sender = get_email_sender()
 
 
 @task("notifications.send")
@@ -48,7 +46,7 @@ async def notifications_send(
                 )
                 return
 
-            await sender.send_to_user(
+            enqueue_email(
                 to_email_addr=user.email,
                 subject=f"[Polar] {subject}",
                 html_content=body,

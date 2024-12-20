@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.extensions.sqlalchemy import sql
@@ -75,7 +75,6 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         extra_url_params: dict[str, str] = {},
     ) -> None:
         email_renderer = get_email_renderer({"email_update": "polar.email_update"})
-        email_sender = get_email_sender()
 
         delta = email_update_record.expires_at - utc_now()
         token_lifetime_minutes = int(ceil(delta.seconds / 60))
@@ -91,7 +90,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             },
         )
 
-        await email_sender.send_to_user(
+        enqueue_email(
             to_email_addr=email_update_record.email, subject=subject, html_content=body
         )
 

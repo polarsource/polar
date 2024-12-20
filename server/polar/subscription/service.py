@@ -21,7 +21,7 @@ from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email, get_email_sender
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -715,7 +715,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             },
         )
 
-        await email_sender.send_to_user(
+        enqueue_email(
             to_email_addr=subscription.customer.email,
             subject=subject,
             html_content=body,
@@ -748,7 +748,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             },
         )
 
-        await email_sender.send_to_user(
+        enqueue_email(
             to_email_addr=subscription.customer.email,
             subject=subject,
             html_content=body,

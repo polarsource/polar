@@ -10,7 +10,7 @@ from polar.config import settings
 from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
@@ -74,7 +74,6 @@ class CustomerSessionService:
         email_renderer = get_email_renderer(
             {"customer_portal": "polar.customer_portal"}
         )
-        email_sender = get_email_sender()
 
         customer = customer_session_code.customer
         organization = await organization_service.get(
@@ -99,9 +98,7 @@ class CustomerSessionService:
             },
         )
 
-        await email_sender.send_to_user(
-            to_email_addr=customer.email, subject=subject, html_content=body
-        )
+        enqueue_email(to_email_addr=customer.email, subject=subject, html_content=body)
 
     async def authenticate(
         self, session: AsyncSession, code: str

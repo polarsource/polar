@@ -17,7 +17,7 @@ from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -501,7 +501,6 @@ class OrderService(ResourceServiceReader[Order]):
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
         email_renderer = get_email_renderer({"order": "polar.order"})
-        email_sender = get_email_sender()
 
         product = order.product
         customer = order.customer
@@ -522,9 +521,7 @@ class OrderService(ResourceServiceReader[Order]):
             },
         )
 
-        await email_sender.send_to_user(
-            to_email_addr=customer.email, subject=subject, html_content=body
-        )
+        enqueue_email(to_email_addr=customer.email, subject=subject, html_content=body)
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product

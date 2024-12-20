@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -133,7 +133,6 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         email_renderer = get_email_renderer(
             {"personal_access_token": "polar.personal_access_token"}
         )
-        email_sender = get_email_sender()
 
         subject, body = email_renderer.render_from_template(
             "Security Notice - Your Polar Personal Access Token has been leaked",
@@ -146,7 +145,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             },
         )
 
-        await email_sender.send_to_user(
+        enqueue_email(
             to_email_addr=personal_access_token.user.email,
             subject=subject,
             html_content=body,

@@ -1,7 +1,7 @@
 import os
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime, timedelta
-from unittest.mock import ANY, AsyncMock, MagicMock
+from unittest.mock import ANY, MagicMock
 from uuid import UUID
 
 import pytest
@@ -19,6 +19,11 @@ from tests.fixtures.database import SaveFixture
 GenerateMagicLinkToken = Callable[
     [str, UUID | None, datetime | None], Coroutine[None, None, tuple[MagicLink, str]]
 ]
+
+
+@pytest.fixture(autouse=True)
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.magic_link.service.enqueue_email", autospec=True)
 
 
 @pytest_asyncio.fixture
@@ -84,31 +89,18 @@ async def test_authenticate_expired_token(
 
 @pytest.mark.asyncio
 async def test_send(
-    generate_magic_link_token: GenerateMagicLinkToken,
-    mocker: MockerFixture,
-    session: AsyncSession,
+    generate_magic_link_token: GenerateMagicLinkToken, enqueue_email_mock: MagicMock
 ) -> None:
-    email_sender_mock = AsyncMock()
-    mocker.patch(
-        "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
-    )
-
-    # then
-    session.expunge_all()
-
     magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
 
     await magic_link_service.send(magic_link, "TOKEN", "BASE_URL")
 
-    send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-    assert send_to_user_mock.called
-
-    send_to_user_mock.assert_called_once_with(
+    enqueue_email_mock.assert_called_once_with(
         to_email_addr="user@example.com", html_content=ANY, subject="Sign in to Polar"
     )
 
-    sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]
-    sent_body = send_to_user_mock.call_args_list[0].kwargs["html_content"]
+    sent_subject = enqueue_email_mock.call_args_list[0].kwargs["subject"]
+    sent_body = enqueue_email_mock.call_args_list[0].kwargs["html_content"]
     sent_content = f"{sent_subject}\n<hr>\n{sent_body}"
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
@@ -126,18 +118,8 @@ async def test_send(
 
 @pytest.mark.asyncio
 async def test_send_return_to(
-    generate_magic_link_token: GenerateMagicLinkToken,
-    mocker: MockerFixture,
-    session: AsyncSession,
+    generate_magic_link_token: GenerateMagicLinkToken, enqueue_email_mock: MagicMock
 ) -> None:
-    email_sender_mock = AsyncMock()
-    mocker.patch(
-        "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
-    )
-
-    # then
-    session.expunge_all()
-
     magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
 
     await magic_link_service.send(
@@ -147,15 +129,12 @@ async def test_send_return_to(
         extra_url_params={"return_to": "https://polar.sh/foobar"},
     )
 
-    send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-    assert send_to_user_mock.called
-
-    send_to_user_mock.assert_called_once_with(
+    enqueue_email_mock.assert_called_once_with(
         to_email_addr="user@example.com", html_content=ANY, subject="Sign in to Polar"
     )
 
-    sent_subject = send_to_user_mock.call_args_list[0].kwargs["subject"]
-    sent_body = send_to_user_mock.call_args_list[0].kwargs["html_content"]
+    sent_subject = enqueue_email_mock.call_args_list[0].kwargs["subject"]
+    sent_body = enqueue_email_mock.call_args_list[0].kwargs["html_content"]
     sent_content = f"{sent_subject}\n<hr>\n{sent_body}"
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)

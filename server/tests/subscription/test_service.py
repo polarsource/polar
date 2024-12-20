@@ -34,7 +34,7 @@ from polar.subscription.service import (
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.email import WatcherEmailSender, watch_email
+from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_checkout,
@@ -905,10 +905,8 @@ async def test_send_confirmation_email(
     product: Product,
     customer: Customer,
 ) -> None:
-    with WatcherEmailSender() as email_sender:
-        mocker.patch(
-            "polar.subscription.service.get_email_sender", return_value=email_sender
-        )
+    with WatcherEmailRenderer() as email_sender:
+        mocker.patch("polar.subscription.service.enqueue_email", email_sender)
 
         subscription = await create_subscription(
             save_fixture, product=product, customer=customer

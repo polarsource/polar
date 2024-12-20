@@ -2308,9 +2308,6 @@
             "properties": {
               "grant_type": {
                 "const": "authorization_code",
-                "enum": [
-                  "authorization_code"
-                ],
                 "title": "Grant Type",
                 "type": "string"
               },
@@ -2348,9 +2345,6 @@
             "properties": {
               "grant_type": {
                 "const": "refresh_token",
-                "enum": [
-                  "refresh_token"
-                ],
                 "title": "Grant Type",
                 "type": "string"
               },
@@ -11465,6 +11459,83 @@
           }
         ]
       }
+    },
+    "/v1/customer-sessions/": {
+      "post": {
+        "tags": [
+          "customer-sessions",
+          "documented",
+          "featured"
+        ],
+        "summary": "Create Customer Session",
+        "description": "Create a customer session.",
+        "operationId": "customer-sessions:create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerSessionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Customer session created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerSession"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oidc": [
+              "customer_sessions:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "customer-sessions",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "create",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, components.CustomerSessionCreate{\n        CustomerID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "typescript",
+            "label": "create",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    customerId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "create",
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_sessions.create(request={\n        \"customer_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+          }
+        ]
+      }
     }
   },
   "webhooks": {
@@ -12334,9 +12405,6 @@
         "properties": {
           "error": {
             "type": "string",
-            "enum": [
-              "AlreadyCanceledSubscription"
-            ],
             "const": "AlreadyCanceledSubscription",
             "title": "Error"
           },
@@ -12513,9 +12581,6 @@
           },
           "sub_type": {
             "type": "string",
-            "enum": [
-              "organization"
-            ],
             "const": "organization",
             "title": "Sub Type"
           },
@@ -12561,9 +12626,6 @@
           },
           "sub_type": {
             "type": "string",
-            "enum": [
-              "user"
-            ],
             "const": "user",
             "title": "Sub Type"
           },
@@ -12677,9 +12739,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "ads"
-            ],
             "const": "ads",
             "title": "Type"
           },
@@ -12727,9 +12786,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "ads"
-            ],
             "const": "ads",
             "title": "Type"
           },
@@ -12819,9 +12875,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "ads"
-            ],
             "const": "ads",
             "title": "Type"
           },
@@ -12886,9 +12939,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "ads"
-            ],
             "const": "ads",
             "title": "Type"
           },
@@ -13037,9 +13087,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Type"
           },
@@ -13093,9 +13140,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Type"
           },
@@ -13222,9 +13266,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Type"
           },
@@ -13318,9 +13359,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Type"
           },
@@ -13370,9 +13408,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "discord"
-            ],
             "const": "discord",
             "title": "Type"
           },
@@ -13420,9 +13455,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "discord"
-            ],
             "const": "discord",
             "title": "Type"
           },
@@ -13540,9 +13572,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "discord"
-            ],
             "const": "discord",
             "title": "Type"
           },
@@ -13622,9 +13651,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "discord"
-            ],
             "const": "discord",
             "title": "Type"
           },
@@ -13674,9 +13700,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "downloadables"
-            ],
             "const": "downloadables",
             "title": "Type"
           },
@@ -13723,9 +13746,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "downloadables"
-            ],
             "const": "downloadables",
             "title": "Type"
           },
@@ -13773,6 +13793,9 @@
             "additionalProperties": {
               "type": "boolean"
             },
+            "propertyNames": {
+              "format": "uuid4"
+            },
             "type": "object",
             "title": "Archived",
             "default": {}
@@ -13798,6 +13821,9 @@
           "archived": {
             "additionalProperties": {
               "type": "boolean"
+            },
+            "propertyNames": {
+              "format": "uuid4"
             },
             "type": "object",
             "title": "Archived"
@@ -13847,9 +13873,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "downloadables"
-            ],
             "const": "downloadables",
             "title": "Type"
           },
@@ -13931,9 +13954,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "downloadables"
-            ],
             "const": "downloadables",
             "title": "Type"
           },
@@ -13983,9 +14003,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "github_repository"
-            ],
             "const": "github_repository",
             "title": "Type"
           },
@@ -14033,9 +14050,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "github_repository"
-            ],
             "const": "github_repository",
             "title": "Type"
           },
@@ -14199,9 +14213,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "github_repository"
-            ],
             "const": "github_repository",
             "title": "Type"
           },
@@ -14293,9 +14304,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "github_repository"
-            ],
             "const": "github_repository",
             "title": "Type"
           },
@@ -14806,9 +14814,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "license_keys"
-            ],
             "const": "license_keys",
             "title": "Type"
           },
@@ -14855,9 +14860,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "license_keys"
-            ],
             "const": "license_keys",
             "title": "Type"
           },
@@ -15031,9 +15033,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "license_keys"
-            ],
             "const": "license_keys",
             "title": "Type"
           },
@@ -15152,9 +15151,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "license_keys"
-            ],
             "const": "license_keys",
             "title": "Type"
           },
@@ -15264,6 +15260,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -15416,8 +15414,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "ipvanyaddress",
-                "description": "IP address of the customer. Used to detect tax location."
+                "format": "ipvanyaddress"
               },
               {
                 "type": "null"
@@ -15610,6 +15607,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -16224,6 +16223,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -16231,9 +16234,6 @@
           },
           "payment_processor": {
             "type": "string",
-            "enum": [
-              "stripe"
-            ],
             "const": "stripe",
             "title": "Payment Processor",
             "description": "Payment processor to use. Currently only Stripe is supported."
@@ -16418,6 +16418,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -16425,9 +16429,6 @@
           },
           "payment_processor": {
             "type": "string",
-            "enum": [
-              "stripe"
-            ],
             "const": "stripe",
             "title": "Payment Processor",
             "description": "Payment processor to use. Currently only Stripe is supported."
@@ -16519,6 +16520,10 @@
                       "type": "boolean"
                     }
                   ]
+                },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
                 },
                 "type": "object",
                 "maxProperties": 50,
@@ -16616,6 +16621,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -16628,9 +16637,6 @@
           },
           "payment_processor": {
             "type": "string",
-            "enum": [
-              "stripe"
-            ],
             "const": "stripe",
             "title": "Payment Processor",
             "description": "Payment processor to use. Currently only Stripe is supported."
@@ -16658,6 +16664,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -16708,8 +16716,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "ipvanyaddress",
-                "description": "IP address of the customer. Used to detect tax location."
+                "format": "ipvanyaddress"
               },
               {
                 "type": "null"
@@ -16754,6 +16761,10 @@
                   "type": "boolean"
                 }
               ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
             },
             "type": "object",
             "maxProperties": 50,
@@ -16935,6 +16946,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -16947,9 +16962,6 @@
           },
           "payment_processor": {
             "type": "string",
-            "enum": [
-              "stripe"
-            ],
             "const": "stripe",
             "title": "Payment Processor",
             "description": "Payment processor to use. Currently only Stripe is supported."
@@ -16977,6 +16989,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -17027,8 +17041,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "ipvanyaddress",
-                "description": "IP address of the customer. Used to detect tax location."
+                "format": "ipvanyaddress"
               },
               {
                 "type": "null"
@@ -17073,6 +17086,10 @@
                   "type": "boolean"
                 }
               ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
             },
             "type": "object",
             "maxProperties": 50,
@@ -17211,6 +17228,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -17363,8 +17382,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "ipvanyaddress",
-                "description": "IP address of the customer. Used to detect tax location."
+                "format": "ipvanyaddress"
               },
               {
                 "type": "null"
@@ -17519,9 +17537,6 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "confirmed"
-            ],
             "const": "confirmed",
             "title": "Status"
           },
@@ -17562,6 +17577,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -17714,8 +17731,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "ipvanyaddress",
-                "description": "IP address of the customer. Used to detect tax location."
+                "format": "ipvanyaddress"
               },
               {
                 "type": "null"
@@ -17889,6 +17905,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -17962,6 +17980,10 @@
                     }
                   ]
                 },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
+                },
                 "type": "object",
                 "maxProperties": 50,
                 "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
@@ -18001,8 +18023,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "format": "ipvanyaddress",
-                "description": "IP address of the customer. Used to detect tax location."
+                "format": "ipvanyaddress"
               },
               {
                 "type": "null"
@@ -18027,6 +18048,10 @@
                       "type": "boolean"
                     }
                   ]
+                },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
                 },
                 "type": "object",
                 "maxProperties": 50,
@@ -18102,6 +18127,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 99999999,
+                "minimum": 50,
                 "description": "Amount to pay in cents. Only useful for custom prices, it'll be ignored for fixed and free prices."
               },
               {
@@ -18269,9 +18296,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "checkbox"
-            ],
             "const": "checkbox",
             "title": "Type"
           },
@@ -18383,6 +18407,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -18390,9 +18418,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "checkbox"
-            ],
             "const": "checkbox",
             "title": "Type"
           },
@@ -18460,6 +18485,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -18467,9 +18496,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "date"
-            ],
             "const": "date",
             "title": "Type"
           },
@@ -18537,6 +18563,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -18544,9 +18574,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "number"
-            ],
             "const": "number",
             "title": "Type"
           },
@@ -18614,6 +18641,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -18621,9 +18652,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "select"
-            ],
             "const": "select",
             "title": "Type"
           },
@@ -18691,6 +18719,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -18698,9 +18730,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "text"
-            ],
             "const": "text",
             "title": "Type"
           },
@@ -18796,9 +18825,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "date"
-            ],
             "const": "date",
             "title": "Type"
           },
@@ -18917,9 +18943,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "number"
-            ],
             "const": "number",
             "title": "Type"
           },
@@ -19038,9 +19061,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "select"
-            ],
             "const": "select",
             "title": "Type"
           },
@@ -19195,9 +19215,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "text"
-            ],
             "const": "text",
             "title": "Type"
           },
@@ -19336,6 +19353,10 @@
                     }
                   ]
                 },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
+                },
                 "type": "object",
                 "maxProperties": 50,
                 "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
@@ -19375,9 +19396,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "checkbox"
-            ],
             "const": "checkbox",
             "title": "Type"
           },
@@ -19419,6 +19437,10 @@
                     }
                   ]
                 },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
+                },
                 "type": "object",
                 "maxProperties": 50,
                 "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
@@ -19458,9 +19480,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "date"
-            ],
             "const": "date",
             "title": "Type"
           },
@@ -19502,6 +19521,10 @@
                     }
                   ]
                 },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
+                },
                 "type": "object",
                 "maxProperties": 50,
                 "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
@@ -19541,9 +19564,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "number"
-            ],
             "const": "number",
             "title": "Type"
           },
@@ -19585,6 +19605,10 @@
                     }
                   ]
                 },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
+                },
                 "type": "object",
                 "maxProperties": 50,
                 "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
@@ -19624,9 +19648,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "select"
-            ],
             "const": "select",
             "title": "Type"
           },
@@ -19668,6 +19689,10 @@
                     }
                   ]
                 },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
+                },
                 "type": "object",
                 "maxProperties": 50,
                 "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A boolean\n\nYou can store up to **50 key-value pairs**."
@@ -19707,9 +19732,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "text"
-            ],
             "const": "text",
             "title": "Type"
           },
@@ -19997,9 +20019,6 @@
         "properties": {
           "benefit_type": {
             "type": "string",
-            "enum": [
-              "ads"
-            ],
             "const": "ads",
             "title": "Benefit Type"
           }
@@ -20132,9 +20151,6 @@
         "properties": {
           "benefit_type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Benefit Type"
           }
@@ -20280,9 +20296,6 @@
         "properties": {
           "benefit_type": {
             "type": "string",
-            "enum": [
-              "discord"
-            ],
             "const": "discord",
             "title": "Benefit Type"
           },
@@ -20419,9 +20432,6 @@
         "properties": {
           "benefit_type": {
             "type": "string",
-            "enum": [
-              "downloadables"
-            ],
             "const": "downloadables",
             "title": "Benefit Type"
           }
@@ -20567,9 +20577,6 @@
         "properties": {
           "benefit_type": {
             "type": "string",
-            "enum": [
-              "github_repository"
-            ],
             "const": "github_repository",
             "title": "Benefit Type"
           },
@@ -20706,9 +20713,6 @@
         "properties": {
           "benefit_type": {
             "type": "string",
-            "enum": [
-              "license_keys"
-            ],
             "const": "license_keys",
             "title": "Benefit Type"
           }
@@ -21367,6 +21371,80 @@
           "account_username"
         ],
         "title": "CustomerPortalOAuthAccount"
+      },
+      "CustomerSession": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "token",
+          "expires_at",
+          "customer_id",
+          "customer"
+        ],
+        "title": "CustomerSession",
+        "description": "A customer session that can be used to authenticate as a customer."
+      },
+      "CustomerSessionCreate": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id",
+            "description": "ID of the customer to create a session for."
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id"
+        ],
+        "title": "CustomerSessionCreate",
+        "description": "Schema for creating a customer session."
       },
       "CustomerSortProperty": {
         "type": "string",
@@ -22140,6 +22218,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -22611,6 +22693,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -23050,6 +23136,10 @@
                   "type": "boolean"
                 }
               ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
             },
             "type": "object",
             "maxProperties": 50,
@@ -23506,6 +23596,10 @@
                 }
               ]
             },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
             "maxProperties": 50,
             "title": "Metadata",
@@ -23731,6 +23825,10 @@
                       "type": "boolean"
                     }
                   ]
+                },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
                 },
                 "type": "object",
                 "maxProperties": 50,
@@ -23977,9 +24075,6 @@
           },
           "service": {
             "type": "string",
-            "enum": [
-              "downloadable"
-            ],
             "const": "downloadable",
             "title": "Service"
           },
@@ -24104,9 +24199,6 @@
           },
           "service": {
             "type": "string",
-            "enum": [
-              "downloadable"
-            ],
             "const": "downloadable",
             "title": "Service"
           },
@@ -26405,9 +26497,6 @@
         "properties": {
           "error": {
             "type": "string",
-            "enum": [
-              "NotPermitted"
-            ],
             "const": "NotPermitted",
             "title": "Error"
           },
@@ -26463,9 +26552,6 @@
           "response_types": {
             "items": {
               "type": "string",
-              "enum": [
-                "code"
-              ],
               "const": "code"
             },
             "type": "array",
@@ -26477,7 +26563,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write orders:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write"
           },
           "client_name": {
             "type": "string",
@@ -26625,9 +26711,6 @@
           "response_types": {
             "items": {
               "type": "string",
-              "enum": [
-                "code"
-              ],
               "const": "code"
             },
             "type": "array",
@@ -26639,7 +26722,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write orders:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write"
           },
           "client_name": {
             "type": "string",
@@ -26746,9 +26829,6 @@
           "response_types": {
             "items": {
               "type": "string",
-              "enum": [
-                "code"
-              ],
               "const": "code"
             },
             "type": "array",
@@ -26760,7 +26840,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write orders:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write"
           },
           "client_name": {
             "type": "string",
@@ -27837,9 +27917,6 @@
           },
           "service": {
             "type": "string",
-            "enum": [
-              "organization_avatar"
-            ],
             "const": "organization_avatar",
             "title": "Service"
           },
@@ -27964,9 +28041,6 @@
           },
           "service": {
             "type": "string",
-            "enum": [
-              "organization_avatar"
-            ],
             "const": "organization_avatar",
             "title": "Service"
           },
@@ -28354,7 +28428,6 @@
         "enum": [
           "stripe"
         ],
-        "const": "stripe",
         "title": "PaymentProcessor"
       },
       "Platforms": {
@@ -28362,7 +28435,6 @@
         "enum": [
           "github"
         ],
-        "const": "github",
         "title": "Platforms"
       },
       "Pledge": {
@@ -28775,9 +28847,6 @@
           },
           "service": {
             "type": "string",
-            "enum": [
-              "product_media"
-            ],
             "const": "product_media",
             "title": "Service"
           },
@@ -28902,9 +28971,6 @@
           },
           "service": {
             "type": "string",
-            "enum": [
-              "product_media"
-            ],
             "const": "product_media",
             "title": "Service"
           },
@@ -28968,6 +29034,10 @@
                   "type": "boolean"
                 }
               ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
             },
             "type": "object",
             "maxProperties": 50,
@@ -29131,9 +29201,6 @@
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Amount Type"
           },
@@ -29191,9 +29258,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "one_time"
-            ],
             "const": "one_time",
             "title": "Type",
             "description": "The type of the price."
@@ -29220,17 +29284,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "one_time"
-            ],
             "const": "one_time",
             "title": "Type"
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Amount Type"
           },
@@ -29324,9 +29382,6 @@
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "fixed"
-            ],
             "const": "fixed",
             "title": "Amount Type"
           },
@@ -29353,9 +29408,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "one_time"
-            ],
             "const": "one_time",
             "title": "Type",
             "description": "The type of the price."
@@ -29380,17 +29432,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "one_time"
-            ],
             "const": "one_time",
             "title": "Type"
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "fixed"
-            ],
             "const": "fixed",
             "title": "Amount Type"
           },
@@ -29447,9 +29493,6 @@
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "free"
-            ],
             "const": "free",
             "title": "Amount Type"
           },
@@ -29466,9 +29509,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "one_time"
-            ],
             "const": "one_time",
             "title": "Type",
             "description": "The type of the price."
@@ -29491,17 +29531,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "one_time"
-            ],
             "const": "one_time",
             "title": "Type"
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "free"
-            ],
             "const": "free",
             "title": "Amount Type"
           }
@@ -29564,9 +29598,6 @@
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "custom"
-            ],
             "const": "custom",
             "title": "Amount Type"
           },
@@ -29624,9 +29655,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "recurring"
-            ],
             "const": "recurring",
             "title": "Type",
             "description": "The type of the price."
@@ -29683,9 +29711,6 @@
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "fixed"
-            ],
             "const": "fixed",
             "title": "Amount Type"
           },
@@ -29712,9 +29737,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "recurring"
-            ],
             "const": "recurring",
             "title": "Type",
             "description": "The type of the price."
@@ -29744,17 +29766,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "recurring"
-            ],
             "const": "recurring",
             "title": "Type"
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "fixed"
-            ],
             "const": "fixed",
             "title": "Amount Type"
           },
@@ -29816,9 +29832,6 @@
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "free"
-            ],
             "const": "free",
             "title": "Amount Type"
           },
@@ -29835,9 +29848,6 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "recurring"
-            ],
             "const": "recurring",
             "title": "Type",
             "description": "The type of the price."
@@ -29865,17 +29875,11 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "recurring"
-            ],
             "const": "recurring",
             "title": "Type"
           },
           "amount_type": {
             "type": "string",
-            "enum": [
-              "free"
-            ],
             "const": "free",
             "title": "Amount Type"
           },
@@ -29918,6 +29922,10 @@
                   "type": "boolean"
                 }
               ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
             },
             "type": "object",
             "maxProperties": 50,
@@ -30055,6 +30063,10 @@
                       "type": "boolean"
                     }
                   ]
+                },
+                "propertyNames": {
+                  "maxLength": 40,
+                  "minLength": 1
                 },
                 "type": "object",
                 "maxProperties": 50,
@@ -30547,9 +30559,6 @@
         "properties": {
           "error": {
             "type": "string",
-            "enum": [
-              "ResourceNotFound"
-            ],
             "const": "ResourceNotFound",
             "title": "Error"
           },
@@ -30785,6 +30794,7 @@
           "subscriptions:write",
           "customers:read",
           "customers:write",
+          "customer_sessions:write",
           "orders:read",
           "metrics:read",
           "webhooks:read",
@@ -31384,9 +31394,6 @@
           },
           "token_type": {
             "type": "string",
-            "enum": [
-              "Bearer"
-            ],
             "const": "Bearer",
             "title": "Token Type"
           },
@@ -31429,9 +31436,6 @@
         "properties": {
           "error": {
             "type": "string",
-            "enum": [
-              "Unauthorized"
-            ],
             "const": "Unauthorized",
             "title": "Error"
           },
@@ -31692,9 +31696,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "benefit.created"
-            ],
             "const": "benefit.created",
             "title": "Type"
           },
@@ -31715,9 +31716,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "benefit_grant.created"
-            ],
             "const": "benefit_grant.created",
             "title": "Type"
           },
@@ -31737,9 +31735,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "benefit_grant.revoked"
-            ],
             "const": "benefit_grant.revoked",
             "title": "Type"
           },
@@ -31759,9 +31754,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "benefit_grant.updated"
-            ],
             "const": "benefit_grant.updated",
             "title": "Type"
           },
@@ -31781,9 +31773,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "benefit.updated"
-            ],
             "const": "benefit.updated",
             "title": "Type"
           },
@@ -31804,9 +31793,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "checkout.created"
-            ],
             "const": "checkout.created",
             "title": "Type"
           },
@@ -31826,9 +31812,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "checkout.updated"
-            ],
             "const": "checkout.updated",
             "title": "Type"
           },
@@ -31848,9 +31831,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "order.created"
-            ],
             "const": "order.created",
             "title": "Type"
           },
@@ -31870,9 +31850,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "organization.updated"
-            ],
             "const": "organization.updated",
             "title": "Type"
           },
@@ -31892,9 +31869,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "pledge.created"
-            ],
             "const": "pledge.created",
             "title": "Type"
           },
@@ -31914,9 +31888,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "pledge.updated"
-            ],
             "const": "pledge.updated",
             "title": "Type"
           },
@@ -31936,9 +31907,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "product.created"
-            ],
             "const": "product.created",
             "title": "Type"
           },
@@ -31958,9 +31926,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "product.updated"
-            ],
             "const": "product.updated",
             "title": "Type"
           },
@@ -31980,9 +31945,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "subscription.active"
-            ],
             "const": "subscription.active",
             "title": "Type"
           },
@@ -32002,9 +31964,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "subscription.canceled"
-            ],
             "const": "subscription.canceled",
             "title": "Type"
           },
@@ -32024,9 +31983,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "subscription.created"
-            ],
             "const": "subscription.created",
             "title": "Type"
           },
@@ -32046,9 +32002,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "subscription.revoked"
-            ],
             "const": "subscription.revoked",
             "title": "Type"
           },
@@ -32068,9 +32021,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": [
-              "subscription.updated"
-            ],
             "const": "subscription.updated",
             "title": "Type"
           },

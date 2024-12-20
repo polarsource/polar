@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -10,6 +10,13 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 from ..conftest import create_oauth2_token
+
+
+@pytest.fixture(autouse=True)
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.oauth2.service.oauth2_token.enqueue_email", autospec=True
+    )
 
 
 @pytest.mark.asyncio
@@ -28,21 +35,14 @@ class TestRevokeLeaked:
         token: str,
         token_type: TokenType,
         session: AsyncSession,
-        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.oauth2.service.oauth2_token.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         result = await oauth2_token_service.revoke_leaked(
             session, token, token_type, notifier="github", url="https://github.com"
         )
         assert result is False
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_not_called()
+        enqueue_email_mock.assert_not_called()
 
     @pytest.mark.parametrize(
         "token, token_type",
@@ -59,14 +59,8 @@ class TestRevokeLeaked:
         session: AsyncSession,
         oauth2_client: OAuth2Client,
         user: User,
-        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.oauth2.service.oauth2_token.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         oauth2_token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
@@ -84,8 +78,7 @@ class TestRevokeLeaked:
         assert oauth2_token.access_token_revoked_at is not None
         assert oauth2_token.refresh_token_revoked_at is not None
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_called_once()
+        enqueue_email_mock.assert_called_once()
 
     @pytest.mark.parametrize(
         "token, token_type",
@@ -103,14 +96,8 @@ class TestRevokeLeaked:
         oauth2_client: OAuth2Client,
         organization: Organization,
         user_organization: UserOrganization,
-        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.oauth2.service.oauth2_token.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         oauth2_token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
@@ -128,8 +115,7 @@ class TestRevokeLeaked:
         assert oauth2_token.access_token_revoked_at is not None
         assert oauth2_token.refresh_token_revoked_at is not None
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_called_once()
+        enqueue_email_mock.assert_called_once()
 
     async def test_already_revoked(
         self,
@@ -137,13 +123,8 @@ class TestRevokeLeaked:
         session: AsyncSession,
         oauth2_client: OAuth2Client,
         user: User,
-        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = MagicMock()
-        mocker.patch(
-            "polar.oauth2.service.oauth2_token.get_email_sender",
-            return_value=email_sender_mock,
-        )
         await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
@@ -160,5 +141,4 @@ class TestRevokeLeaked:
         )
         assert result is True
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_not_called()
+        enqueue_email_mock.assert_not_called()

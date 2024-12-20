@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import get_email_sender
+from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
@@ -85,7 +85,6 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
         # Notify
         email_renderer = get_email_renderer({"oauth2": "polar.oauth2"})
-        email_sender = get_email_sender()
 
         recipients: list[str]
         sub = oauth2_token.sub
@@ -113,7 +112,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             )
 
             for recipient in recipients:
-                await email_sender.send_to_user(
+                enqueue_email(
                     to_email_addr=recipient, subject=subject, html_content=body
                 )
 

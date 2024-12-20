@@ -15,19 +15,18 @@ from polar.email.sender import (
     DEFAULT_FROM_NAME,
     DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     DEFAULT_REPLY_TO_NAME,
-    EmailSender,
 )
 
 if TYPE_CHECKING:
     from tempfile import _TemporaryFileWrapper as TemporaryFileWrapper
 
 
-class WatcherEmailSender(EmailSender):
+class WatcherEmailRenderer:
     def __init__(self) -> None:
         self._temporary_file: TemporaryFileWrapper[str] | None = None
         super().__init__()
 
-    def __enter__(self) -> "WatcherEmailSender":
+    def __enter__(self) -> "WatcherEmailRenderer":
         self._temporary_file = tempfile.NamedTemporaryFile(suffix=".html", mode="w")
         return self
 
@@ -39,7 +38,7 @@ class WatcherEmailSender(EmailSender):
     ) -> None:
         self.temporary_file.close()
 
-    async def send_to_user(
+    def __call__(
         self,
         *,
         to_email_addr: str,

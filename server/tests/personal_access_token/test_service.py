@@ -1,5 +1,5 @@
 from datetime import timedelta
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -16,19 +16,18 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
+@pytest.fixture(autouse=True)
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.personal_access_token.service.enqueue_email", autospec=True
+    )
+
+
 @pytest.mark.asyncio
 class TestRevokeLeaked:
     async def test_false_positive(
-        self,
-        session: AsyncSession,
-        mocker: MockerFixture,
+        self, session: AsyncSession, enqueue_email_mock: MagicMock
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.personal_access_token.service.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         result = await personal_access_token_service.revoke_leaked(
             session,
             "polar_pat_123",
@@ -38,8 +37,7 @@ class TestRevokeLeaked:
         )
         assert result is False
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_not_called()
+        enqueue_email_mock.assert_not_called()
 
     async def test_true_positive(
         self,
@@ -47,13 +45,8 @@ class TestRevokeLeaked:
         session: AsyncSession,
         user: User,
         mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
     ) -> None:
-        email_sender_mock = AsyncMock()
-        mocker.patch(
-            "polar.personal_access_token.service.get_email_sender",
-            return_value=email_sender_mock,
-        )
-
         token_hash = get_token_hash("polar_pat_123", secret=settings.SECRET)
         personal_access_token = PersonalAccessToken(
             comment="Test",
@@ -79,5 +72,4 @@ class TestRevokeLeaked:
         assert updated_personal_access_token is not None
         assert updated_personal_access_token.deleted_at is not None
 
-        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
-        send_to_user_mock.assert_called_once()
+        enqueue_email_mock.assert_called_once()

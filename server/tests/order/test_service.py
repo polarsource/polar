@@ -44,7 +44,7 @@ from polar.transaction.service.payment import (
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.email import WatcherEmailSender, watch_email
+from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import create_checkout, create_order
 from tests.transaction.conftest import create_transaction
 
@@ -1141,8 +1141,8 @@ async def test_send_confirmation_email(
     customer: Customer,
     organization: Organization,
 ) -> None:
-    with WatcherEmailSender() as email_sender:
-        mocker.patch("polar.order.service.get_email_sender", return_value=email_sender)
+    with WatcherEmailRenderer() as email_sender:
+        mocker.patch("polar.order.service.enqueue_email", email_sender)
 
         order = await create_order(save_fixture, product=product, customer=customer)
 

@@ -285,6 +285,20 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert "error=login_required" in location
 
+    async def test_unauthenticated_no_scope(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        assert "error=invalid_scope" in location
+
     @pytest.mark.auth
     async def test_authenticated_invalid_sub_type(
         self, client: AsyncClient, oauth2_client: OAuth2Client

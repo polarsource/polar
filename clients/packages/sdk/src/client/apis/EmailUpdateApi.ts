@@ -25,7 +25,7 @@ export interface EmailUpdateApiRequestEmailUpdateRequest {
 
 export interface EmailUpdateApiVerifyEmailUpdateRequest {
     token: string;
-    returnTo?: string;
+    returnTo?: string | null;
 }
 
 /**

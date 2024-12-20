@@ -22,7 +22,7 @@ import type {
   LicenseKeyUpdate,
   LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
   Unauthorized,
 } from '../models/index';
@@ -37,8 +37,8 @@ export interface LicenseKeysApiGetActivationRequest {
 }
 
 export interface LicenseKeysApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    benefitId?: BenefitIDFilter1;
+    organizationId?: OrganizationIDFilter1 | null;
+    benefitId?: BenefitIDFilter1 | null;
     page?: number;
     limit?: number;
 }

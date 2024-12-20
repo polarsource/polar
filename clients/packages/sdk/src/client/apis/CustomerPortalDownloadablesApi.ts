@@ -15,10 +15,10 @@
 
 import * as runtime from '../runtime';
 import type {
-  BenefitIDFilter1,
+  BenefitIDFilter3,
   HTTPValidationError,
   ListResourceDownloadableRead,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
 } from '../models/index';
 
 export interface CustomerPortalDownloadablesApiCustomerPortalDownloadablesGetRequest {
@@ -26,8 +26,8 @@ export interface CustomerPortalDownloadablesApiCustomerPortalDownloadablesGetReq
 }
 
 export interface CustomerPortalDownloadablesApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    benefitId?: BenefitIDFilter1;
+    organizationId?: OrganizationIDFilter1 | null;
+    benefitId?: BenefitIDFilter3 | null;
     page?: number;
     limit?: number;
 }

@@ -39,16 +39,16 @@ export interface IntegrationsGithubApiInstallRequest {
 }
 
 export interface IntegrationsGithubApiIntegrationsGithubAuthorizeRequest {
-    paymentIntentId?: string;
-    returnTo?: string;
-    attribution?: string;
+    paymentIntentId?: string | null;
+    returnTo?: string | null;
+    attribution?: string | null;
 }
 
 export interface IntegrationsGithubApiIntegrationsGithubCallbackRequest {
-    code?: string;
-    codeVerifier?: string;
-    state?: string;
-    error?: string;
+    code?: string | null;
+    codeVerifier?: string | null;
+    state?: string | null;
+    error?: string | null;
 }
 
 export interface IntegrationsGithubApiLookupUserOperationRequest {
@@ -57,7 +57,7 @@ export interface IntegrationsGithubApiLookupUserOperationRequest {
 
 export interface IntegrationsGithubApiRedirectToOrganizationInstallationRequest {
     id: string;
-    returnTo?: string;
+    returnTo?: string | null;
 }
 
 /**

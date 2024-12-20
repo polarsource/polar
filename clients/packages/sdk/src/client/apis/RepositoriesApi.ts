@@ -19,10 +19,10 @@ import type {
   HTTPValidationError,
   ListResourceRepository,
   NotPermitted,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   PlatformFilter,
   Repository,
-  RepositoryNameFilter,
+  RepositoryNameFilter1,
   RepositorySortProperty,
   RepositoryUpdate,
   ResourceNotFound,
@@ -33,14 +33,14 @@ export interface RepositoriesApiGetRequest {
 }
 
 export interface RepositoriesApiListRequest {
-    platform?: PlatformFilter;
-    name?: RepositoryNameFilter;
-    externalOrganizationName?: ExternalOrganizationNameFilter;
-    isPrivate?: boolean;
-    organizationId?: OrganizationIDFilter;
+    platform?: PlatformFilter | null;
+    name?: RepositoryNameFilter1 | null;
+    externalOrganizationName?: ExternalOrganizationNameFilter | null;
+    isPrivate?: boolean | null;
+    organizationId?: OrganizationIDFilter1 | null;
     page?: number;
     limit?: number;
-    sorting?: Array<RepositorySortProperty>;
+    sorting?: Array<RepositorySortProperty> | null;
 }
 
 export interface RepositoriesApiUpdateRequest {

@@ -21,7 +21,7 @@ import type {
   CheckoutLinkUpdate,
   HTTPValidationError,
   ListResourceCheckoutLink,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductIDFilter,
   ResourceNotFound,
 } from '../models/index';
@@ -39,11 +39,11 @@ export interface CheckoutLinksApiGetRequest {
 }
 
 export interface CheckoutLinksApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CheckoutLinkSortProperty>;
+    sorting?: Array<CheckoutLinkSortProperty> | null;
 }
 
 export interface CheckoutLinksApiUpdateRequest {

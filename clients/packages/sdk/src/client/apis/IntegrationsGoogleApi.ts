@@ -19,15 +19,15 @@ import type {
 } from '../models/index';
 
 export interface IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest {
-    returnTo?: string;
-    attribution?: string;
+    returnTo?: string | null;
+    attribution?: string | null;
 }
 
 export interface IntegrationsGoogleApiIntegrationsGoogleCallbackRequest {
-    code?: string;
-    codeVerifier?: string;
-    state?: string;
-    error?: string;
+    code?: string | null;
+    codeVerifier?: string | null;
+    state?: string | null;
+    error?: string | null;
 }
 
 /**

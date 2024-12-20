@@ -52,10 +52,10 @@ export interface OrganizationsApiGetBadgeSettingsRequest {
 }
 
 export interface OrganizationsApiListRequest {
-    slug?: string;
+    slug?: string | null;
     page?: number;
     limit?: number;
-    sorting?: Array<OrganizationSortProperty>;
+    sorting?: Array<OrganizationSortProperty> | null;
 }
 
 export interface OrganizationsApiMembersRequest {

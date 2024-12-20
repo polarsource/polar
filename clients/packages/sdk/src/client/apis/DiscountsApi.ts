@@ -21,7 +21,7 @@ import type {
   DiscountUpdate,
   HTTPValidationError,
   ListResourceDiscount,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
 } from '../models/index';
 
@@ -38,11 +38,11 @@ export interface DiscountsApiGetRequest {
 }
 
 export interface DiscountsApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    query?: string;
+    organizationId?: OrganizationIDFilter1 | null;
+    query?: string | null;
     page?: number;
     limit?: number;
-    sorting?: Array<DiscountSortProperty>;
+    sorting?: Array<DiscountSortProperty> | null;
 }
 
 export interface DiscountsApiUpdateRequest {

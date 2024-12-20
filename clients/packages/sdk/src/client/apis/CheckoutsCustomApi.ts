@@ -26,7 +26,7 @@ import type {
   CheckoutUpdatePublic,
   HTTPValidationError,
   ListResourceCheckout,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductIDFilter,
   ResourceNotFound,
 } from '../models/index';
@@ -58,11 +58,11 @@ export interface CheckoutsCustomApiGetRequest {
 }
 
 export interface CheckoutsCustomApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CheckoutSortProperty>;
+    sorting?: Array<CheckoutSortProperty> | null;
 }
 
 export interface CheckoutsCustomApiUpdateRequest {

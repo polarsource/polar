@@ -21,7 +21,7 @@ import type {
 
 export interface MagicLinkApiMagicLinkAuthenticateRequest {
     token: string;
-    returnTo?: string;
+    returnTo?: string | null;
 }
 
 export interface MagicLinkApiMagicLinkRequestRequest {

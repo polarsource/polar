@@ -19,25 +19,25 @@ import type {
   DiscountIDFilter,
   HTTPValidationError,
   ListResourceSubscription,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   OrganizationId,
   ProductIDFilter,
   SubscriptionSortProperty,
 } from '../models/index';
 
 export interface SubscriptionsApiExportRequest {
-    organizationId?: OrganizationId;
+    organizationId?: OrganizationId | null;
 }
 
 export interface SubscriptionsApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
-    customerId?: CustomerIDFilter;
-    discountId?: DiscountIDFilter;
-    active?: boolean;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
+    customerId?: CustomerIDFilter | null;
+    discountId?: DiscountIDFilter | null;
+    active?: boolean | null;
     page?: number;
     limit?: number;
-    sorting?: Array<SubscriptionSortProperty>;
+    sorting?: Array<SubscriptionSortProperty> | null;
 }
 
 /**

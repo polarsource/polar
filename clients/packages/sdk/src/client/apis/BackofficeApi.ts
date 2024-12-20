@@ -46,7 +46,7 @@ export interface BackofficeApiPledgeRewardTransferRequest {
 }
 
 export interface BackofficeApiRewardsRequest {
-    issueId?: string;
+    issueId?: string | null;
 }
 
 export interface BackofficeApiUpdateBadgeContentsRequest {

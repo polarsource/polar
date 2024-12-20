@@ -16,17 +16,17 @@
 import * as runtime from '../runtime';
 import type {
   ConfirmIssue,
-  ExternalOrganizationNameFilter,
+  ExternalOrganizationNameFilter1,
   HTTPValidationError,
   Issue,
   IssueNumberFilter,
   IssueSortProperty,
   IssueUpdateBadgeMessage,
   ListResourceIssue,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   PlatformFilter,
   PostIssueComment,
-  RepositoryNameFilter1,
+  RepositoryNameFilter2,
   UpdateIssue,
 } from '../models/index';
 
@@ -58,19 +58,19 @@ export interface IssuesApiGetBodyRequest {
 }
 
 export interface IssuesApiListRequest {
-    platform?: PlatformFilter;
-    externalOrganizationName?: ExternalOrganizationNameFilter;
-    repositoryName?: RepositoryNameFilter1;
-    number?: IssueNumberFilter;
-    organizationId?: OrganizationIDFilter;
-    isBadged?: boolean;
+    platform?: PlatformFilter | null;
+    externalOrganizationName?: ExternalOrganizationNameFilter1 | null;
+    repositoryName?: RepositoryNameFilter2 | null;
+    number?: IssueNumberFilter | null;
+    organizationId?: OrganizationIDFilter1 | null;
+    isBadged?: boolean | null;
     page?: number;
     limit?: number;
-    sorting?: Array<IssueSortProperty>;
+    sorting?: Array<IssueSortProperty> | null;
 }
 
 export interface IssuesApiLookupRequest {
-    externalUrl?: string;
+    externalUrl?: string | null;
 }
 
 export interface IssuesApiRemovePolarBadgeRequest {

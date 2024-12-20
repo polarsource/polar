@@ -25,7 +25,7 @@ import type {
   ListResourceCustomerBenefitGrant,
   NotPermitted,
   OrderIDFilter,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ResourceNotFound,
   SubscriptionIDFilter,
 } from '../models/index';
@@ -35,15 +35,15 @@ export interface CustomerPortalBenefitGrantsApiGetRequest {
 }
 
 export interface CustomerPortalBenefitGrantsApiListRequest {
-    type?: BenefitTypeFilter;
-    benefitId?: BenefitIDFilter2;
-    organizationId?: OrganizationIDFilter;
-    checkoutId?: CheckoutIDFilter;
-    orderId?: OrderIDFilter;
-    subscriptionId?: SubscriptionIDFilter;
+    type?: BenefitTypeFilter | null;
+    benefitId?: BenefitIDFilter2 | null;
+    organizationId?: OrganizationIDFilter1 | null;
+    checkoutId?: CheckoutIDFilter | null;
+    orderId?: OrderIDFilter | null;
+    subscriptionId?: SubscriptionIDFilter | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CustomerBenefitGrantSortProperty>;
+    sorting?: Array<CustomerBenefitGrantSortProperty> | null;
 }
 
 export interface CustomerPortalBenefitGrantsApiUpdateRequest {

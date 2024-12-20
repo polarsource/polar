@@ -24,14 +24,14 @@ export interface IntegrationsDiscordApiDiscordGuildLookupRequest {
 }
 
 export interface IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest {
-    returnTo?: string;
+    returnTo?: string | null;
 }
 
 export interface IntegrationsDiscordApiIntegrationsDiscordBotCallbackRequest {
     state: string;
-    code?: string;
-    codeVerifier?: string;
-    error?: string;
+    code?: string | null;
+    codeVerifier?: string | null;
+    error?: string | null;
 }
 
 /**

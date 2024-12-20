@@ -30,7 +30,7 @@ export interface AdvertisementsApiListRequest {
     benefitId: string;
     page?: number;
     limit?: number;
-    sorting?: Array<AdvertisementSortProperty>;
+    sorting?: Array<AdvertisementSortProperty> | null;
 }
 
 export interface AdvertisementsApiTrackViewRequest {

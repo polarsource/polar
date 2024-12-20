@@ -20,11 +20,11 @@ import type {
   CustomerOrderSortProperty,
   HTTPValidationError,
   ListResourceCustomerOrder,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductIDFilter,
   ProductPriceTypeFilter,
   ResourceNotFound,
-  SubscriptionIDFilter,
+  SubscriptionIDFilter1,
 } from '../models/index';
 
 export interface CustomerPortalOrdersApiGetRequest {
@@ -36,14 +36,14 @@ export interface CustomerPortalOrdersApiInvoiceRequest {
 }
 
 export interface CustomerPortalOrdersApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    productId?: ProductIDFilter;
-    productPriceType?: ProductPriceTypeFilter;
-    subscriptionId?: SubscriptionIDFilter;
-    query?: string;
+    organizationId?: OrganizationIDFilter1 | null;
+    productId?: ProductIDFilter | null;
+    productPriceType?: ProductPriceTypeFilter | null;
+    subscriptionId?: SubscriptionIDFilter1 | null;
+    query?: string | null;
     page?: number;
     limit?: number;
-    sorting?: Array<CustomerOrderSortProperty>;
+    sorting?: Array<CustomerOrderSortProperty> | null;
 }
 
 /**

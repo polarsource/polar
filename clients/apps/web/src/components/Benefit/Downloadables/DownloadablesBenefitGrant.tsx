@@ -93,7 +93,7 @@ export const DownloadableItem = ({
           href={downloadable.file.download.url}
           download
         >
-          <Button className="hidden md:flex" size="icon">
+          <Button size="icon">
             <ArrowDownward fontSize="inherit" />
           </Button>
         </a>

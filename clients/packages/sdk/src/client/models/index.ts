@@ -271,7 +271,7 @@ export interface AlreadyCanceledSubscription {
      * @type {string}
      * @memberof AlreadyCanceledSubscription
      */
-    error: AlreadyCanceledSubscriptionErrorEnum;
+    error: string;
     /**
      * 
      * @type {string}
@@ -279,16 +279,6 @@ export interface AlreadyCanceledSubscription {
      */
     detail: string;
 }
-
-
-/**
- * @export
- */
-export const AlreadyCanceledSubscriptionErrorEnum = {
-    ALREADY_CANCELED_SUBSCRIPTION: 'AlreadyCanceledSubscription'
-} as const;
-export type AlreadyCanceledSubscriptionErrorEnum = typeof AlreadyCanceledSubscriptionErrorEnum[keyof typeof AlreadyCanceledSubscriptionErrorEnum];
-
 /**
  * App Permissions
  * 
@@ -438,7 +428,7 @@ export interface AppPermissionsType {
      * @type {string}
      * @memberof AppPermissionsType
      */
-    workflows?: AppPermissionsTypeWorkflowsEnum;
+    workflows?: string;
     /**
      * 
      * @type {string}
@@ -474,7 +464,7 @@ export interface AppPermissionsType {
      * @type {string}
      * @memberof AppPermissionsType
      */
-    organization_copilot_seat_management?: AppPermissionsTypeOrganizationCopilotSeatManagementEnum;
+    organization_copilot_seat_management?: string;
     /**
      * 
      * @type {string}
@@ -486,7 +476,7 @@ export interface AppPermissionsType {
      * @type {string}
      * @memberof AppPermissionsType
      */
-    organization_events?: AppPermissionsTypeOrganizationEventsEnum;
+    organization_events?: string;
     /**
      * 
      * @type {string}
@@ -510,7 +500,7 @@ export interface AppPermissionsType {
      * @type {string}
      * @memberof AppPermissionsType
      */
-    organization_plan?: AppPermissionsTypeOrganizationPlanEnum;
+    organization_plan?: string;
     /**
      * 
      * @type {string}
@@ -582,7 +572,7 @@ export interface AppPermissionsType {
      * @type {string}
      * @memberof AppPermissionsType
      */
-    profile?: AppPermissionsTypeProfileEnum;
+    profile?: string;
     /**
      * 
      * @type {string}
@@ -794,14 +784,6 @@ export type AppPermissionsTypeVulnerabilityAlertsEnum = typeof AppPermissionsTyp
 /**
  * @export
  */
-export const AppPermissionsTypeWorkflowsEnum = {
-    WRITE: 'write'
-} as const;
-export type AppPermissionsTypeWorkflowsEnum = typeof AppPermissionsTypeWorkflowsEnum[keyof typeof AppPermissionsTypeWorkflowsEnum];
-
-/**
- * @export
- */
 export const AppPermissionsTypeMembersEnum = {
     READ: 'read',
     WRITE: 'write'
@@ -848,27 +830,11 @@ export type AppPermissionsTypeOrganizationCustomPropertiesEnum = typeof AppPermi
 /**
  * @export
  */
-export const AppPermissionsTypeOrganizationCopilotSeatManagementEnum = {
-    WRITE: 'write'
-} as const;
-export type AppPermissionsTypeOrganizationCopilotSeatManagementEnum = typeof AppPermissionsTypeOrganizationCopilotSeatManagementEnum[keyof typeof AppPermissionsTypeOrganizationCopilotSeatManagementEnum];
-
-/**
- * @export
- */
 export const AppPermissionsTypeOrganizationAnnouncementBannersEnum = {
     READ: 'read',
     WRITE: 'write'
 } as const;
 export type AppPermissionsTypeOrganizationAnnouncementBannersEnum = typeof AppPermissionsTypeOrganizationAnnouncementBannersEnum[keyof typeof AppPermissionsTypeOrganizationAnnouncementBannersEnum];
-
-/**
- * @export
- */
-export const AppPermissionsTypeOrganizationEventsEnum = {
-    READ: 'read'
-} as const;
-export type AppPermissionsTypeOrganizationEventsEnum = typeof AppPermissionsTypeOrganizationEventsEnum[keyof typeof AppPermissionsTypeOrganizationEventsEnum];
 
 /**
  * @export
@@ -896,14 +862,6 @@ export const AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum = {
     WRITE: 'write'
 } as const;
 export type AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum = typeof AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum[keyof typeof AppPermissionsTypeOrganizationPersonalAccessTokenRequestsEnum];
-
-/**
- * @export
- */
-export const AppPermissionsTypeOrganizationPlanEnum = {
-    READ: 'read'
-} as const;
-export type AppPermissionsTypeOrganizationPlanEnum = typeof AppPermissionsTypeOrganizationPlanEnum[keyof typeof AppPermissionsTypeOrganizationPlanEnum];
 
 /**
  * @export
@@ -1004,14 +962,6 @@ export const AppPermissionsTypeInteractionLimitsEnum = {
     WRITE: 'write'
 } as const;
 export type AppPermissionsTypeInteractionLimitsEnum = typeof AppPermissionsTypeInteractionLimitsEnum[keyof typeof AppPermissionsTypeInteractionLimitsEnum];
-
-/**
- * @export
- */
-export const AppPermissionsTypeProfileEnum = {
-    WRITE: 'write'
-} as const;
-export type AppPermissionsTypeProfileEnum = typeof AppPermissionsTypeProfileEnum[keyof typeof AppPermissionsTypeProfileEnum];
 
 /**
  * @export
@@ -1189,7 +1139,7 @@ export interface AuthorizeResponseOrganization {
      * @type {string}
      * @memberof AuthorizeResponseOrganization
      */
-    sub_type: AuthorizeResponseOrganizationSubTypeEnum;
+    sub_type: string;
     /**
      * 
      * @type {AuthorizeOrganization}
@@ -1209,16 +1159,6 @@ export interface AuthorizeResponseOrganization {
      */
     organizations: Array<AuthorizeOrganization>;
 }
-
-
-/**
- * @export
- */
-export const AuthorizeResponseOrganizationSubTypeEnum = {
-    ORGANIZATION: 'organization'
-} as const;
-export type AuthorizeResponseOrganizationSubTypeEnum = typeof AuthorizeResponseOrganizationSubTypeEnum[keyof typeof AuthorizeResponseOrganizationSubTypeEnum];
-
 /**
  * 
  * @export
@@ -1236,7 +1176,7 @@ export interface AuthorizeResponseUser {
      * @type {string}
      * @memberof AuthorizeResponseUser
      */
-    sub_type: AuthorizeResponseUserSubTypeEnum;
+    sub_type: string;
     /**
      * 
      * @type {AuthorizeUser}
@@ -1250,16 +1190,6 @@ export interface AuthorizeResponseUser {
      */
     scopes: Array<Scope>;
 }
-
-
-/**
- * @export
- */
-export const AuthorizeResponseUserSubTypeEnum = {
-    USER: 'user'
-} as const;
-export type AuthorizeResponseUserSubTypeEnum = typeof AuthorizeResponseUserSubTypeEnum[keyof typeof AuthorizeResponseUserSubTypeEnum];
-
 /**
  * 
  * @export
@@ -1657,7 +1587,7 @@ export interface BenefitAds {
      * @type {string}
      * @memberof BenefitAds
      */
-    type: BenefitAdsTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -1689,16 +1619,6 @@ export interface BenefitAds {
      */
     properties: BenefitAdsProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitAdsTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type BenefitAdsTypeEnum = typeof BenefitAdsTypeEnum[keyof typeof BenefitAdsTypeEnum];
-
 /**
  * 
  * @export
@@ -1710,7 +1630,7 @@ export interface BenefitAdsCreate {
      * @type {string}
      * @memberof BenefitAdsCreate
      */
-    type: BenefitAdsCreateTypeEnum;
+    type: string;
     /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
@@ -1730,16 +1650,6 @@ export interface BenefitAdsCreate {
      */
     properties: BenefitAdsProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitAdsCreateTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type BenefitAdsCreateTypeEnum = typeof BenefitAdsCreateTypeEnum[keyof typeof BenefitAdsCreateTypeEnum];
-
 /**
  * Properties for a benefit of type `ads`.
  * @export
@@ -1788,7 +1698,7 @@ export interface BenefitAdsSubscriber {
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
-    type: BenefitAdsSubscriberTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -1826,16 +1736,6 @@ export interface BenefitAdsSubscriber {
      */
     properties: BenefitAdsProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitAdsSubscriberTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type BenefitAdsSubscriberTypeEnum = typeof BenefitAdsSubscriberTypeEnum[keyof typeof BenefitAdsSubscriberTypeEnum];
-
 /**
  * 
  * @export
@@ -1853,7 +1753,7 @@ export interface BenefitAdsUpdate {
      * @type {string}
      * @memberof BenefitAdsUpdate
      */
-    type: BenefitAdsUpdateTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitAdsProperties}
@@ -1861,16 +1761,6 @@ export interface BenefitAdsUpdate {
      */
     properties?: BenefitAdsProperties | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitAdsUpdateTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type BenefitAdsUpdateTypeEnum = typeof BenefitAdsUpdateTypeEnum[keyof typeof BenefitAdsUpdateTypeEnum];
-
 /**
  * 
  * @export
@@ -1965,7 +1855,7 @@ export interface BenefitCustom {
      * @type {string}
      * @memberof BenefitCustom
      */
-    type: BenefitCustomTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2004,16 +1894,6 @@ export interface BenefitCustom {
      */
     is_tax_applicable: boolean;
 }
-
-
-/**
- * @export
- */
-export const BenefitCustomTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type BenefitCustomTypeEnum = typeof BenefitCustomTypeEnum[keyof typeof BenefitCustomTypeEnum];
-
 /**
  * Schema to create a benefit of type `custom`.
  * @export
@@ -2025,7 +1905,7 @@ export interface BenefitCustomCreate {
      * @type {string}
      * @memberof BenefitCustomCreate
      */
-    type: BenefitCustomCreateTypeEnum;
+    type: string;
     /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
@@ -2045,16 +1925,6 @@ export interface BenefitCustomCreate {
      */
     properties: BenefitCustomCreateProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitCustomCreateTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[keyof typeof BenefitCustomCreateTypeEnum];
-
 /**
  * Properties for creating a benefit of type `custom`.
  * @export
@@ -2110,7 +1980,7 @@ export interface BenefitCustomSubscriber {
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
-    type: BenefitCustomSubscriberTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2148,16 +2018,6 @@ export interface BenefitCustomSubscriber {
      */
     properties: BenefitCustomSubscriberProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitCustomSubscriberTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type BenefitCustomSubscriberTypeEnum = typeof BenefitCustomSubscriberTypeEnum[keyof typeof BenefitCustomSubscriberTypeEnum];
-
 /**
  * Properties available to subscribers for a benefit of type `custom`.
  * @export
@@ -2188,7 +2048,7 @@ export interface BenefitCustomUpdate {
      * @type {string}
      * @memberof BenefitCustomUpdate
      */
-    type: BenefitCustomUpdateTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitCustomProperties}
@@ -2196,16 +2056,6 @@ export interface BenefitCustomUpdate {
      */
     properties?: BenefitCustomProperties | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitCustomUpdateTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type BenefitCustomUpdateTypeEnum = typeof BenefitCustomUpdateTypeEnum[keyof typeof BenefitCustomUpdateTypeEnum];
-
 /**
  * A benefit of type `discord`.
  * 
@@ -2237,7 +2087,7 @@ export interface BenefitDiscord {
      * @type {string}
      * @memberof BenefitDiscord
      */
-    type: BenefitDiscordTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2269,16 +2119,6 @@ export interface BenefitDiscord {
      */
     properties: BenefitDiscordProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitDiscordTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type BenefitDiscordTypeEnum = typeof BenefitDiscordTypeEnum[keyof typeof BenefitDiscordTypeEnum];
-
 /**
  * 
  * @export
@@ -2290,7 +2130,7 @@ export interface BenefitDiscordCreate {
      * @type {string}
      * @memberof BenefitDiscordCreate
      */
-    type: BenefitDiscordCreateTypeEnum;
+    type: string;
     /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
@@ -2310,16 +2150,6 @@ export interface BenefitDiscordCreate {
      */
     properties: BenefitDiscordCreateProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitDiscordCreateTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type BenefitDiscordCreateTypeEnum = typeof BenefitDiscordCreateTypeEnum[keyof typeof BenefitDiscordCreateTypeEnum];
-
 /**
  * Properties to create a benefit of type `discord`.
  * @export
@@ -2393,7 +2223,7 @@ export interface BenefitDiscordSubscriber {
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
-    type: BenefitDiscordSubscriberTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2431,16 +2261,6 @@ export interface BenefitDiscordSubscriber {
      */
     properties: BenefitDiscordSubscriberProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitDiscordSubscriberTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type BenefitDiscordSubscriberTypeEnum = typeof BenefitDiscordSubscriberTypeEnum[keyof typeof BenefitDiscordSubscriberTypeEnum];
-
 /**
  * Properties available to subscribers for a benefit of type `discord`.
  * @export
@@ -2471,7 +2291,7 @@ export interface BenefitDiscordUpdate {
      * @type {string}
      * @memberof BenefitDiscordUpdate
      */
-    type: BenefitDiscordUpdateTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitDiscordCreateProperties}
@@ -2479,16 +2299,6 @@ export interface BenefitDiscordUpdate {
      */
     properties?: BenefitDiscordCreateProperties | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitDiscordUpdateTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type BenefitDiscordUpdateTypeEnum = typeof BenefitDiscordUpdateTypeEnum[keyof typeof BenefitDiscordUpdateTypeEnum];
-
 /**
  * 
  * @export
@@ -2518,7 +2328,7 @@ export interface BenefitDownloadables {
      * @type {string}
      * @memberof BenefitDownloadables
      */
-    type: BenefitDownloadablesTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2550,16 +2360,6 @@ export interface BenefitDownloadables {
      */
     properties: BenefitDownloadablesProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitDownloadablesTypeEnum = {
-    DOWNLOADABLES: 'downloadables'
-} as const;
-export type BenefitDownloadablesTypeEnum = typeof BenefitDownloadablesTypeEnum[keyof typeof BenefitDownloadablesTypeEnum];
-
 /**
  * 
  * @export
@@ -2571,7 +2371,7 @@ export interface BenefitDownloadablesCreate {
      * @type {string}
      * @memberof BenefitDownloadablesCreate
      */
-    type: BenefitDownloadablesCreateTypeEnum;
+    type: string;
     /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
@@ -2591,16 +2391,6 @@ export interface BenefitDownloadablesCreate {
      */
     properties: BenefitDownloadablesCreateProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitDownloadablesCreateTypeEnum = {
-    DOWNLOADABLES: 'downloadables'
-} as const;
-export type BenefitDownloadablesCreateTypeEnum = typeof BenefitDownloadablesCreateTypeEnum[keyof typeof BenefitDownloadablesCreateTypeEnum];
-
 /**
  * 
  * @export
@@ -2668,7 +2458,7 @@ export interface BenefitDownloadablesSubscriber {
      * @type {string}
      * @memberof BenefitDownloadablesSubscriber
      */
-    type: BenefitDownloadablesSubscriberTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2706,16 +2496,6 @@ export interface BenefitDownloadablesSubscriber {
      */
     properties: BenefitDownloadablesSubscriberProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitDownloadablesSubscriberTypeEnum = {
-    DOWNLOADABLES: 'downloadables'
-} as const;
-export type BenefitDownloadablesSubscriberTypeEnum = typeof BenefitDownloadablesSubscriberTypeEnum[keyof typeof BenefitDownloadablesSubscriberTypeEnum];
-
 /**
  * 
  * @export
@@ -2746,7 +2526,7 @@ export interface BenefitDownloadablesUpdate {
      * @type {string}
      * @memberof BenefitDownloadablesUpdate
      */
-    type: BenefitDownloadablesUpdateTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitDownloadablesCreateProperties}
@@ -2754,16 +2534,6 @@ export interface BenefitDownloadablesUpdate {
      */
     properties?: BenefitDownloadablesCreateProperties | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitDownloadablesUpdateTypeEnum = {
-    DOWNLOADABLES: 'downloadables'
-} as const;
-export type BenefitDownloadablesUpdateTypeEnum = typeof BenefitDownloadablesUpdateTypeEnum[keyof typeof BenefitDownloadablesUpdateTypeEnum];
-
 /**
  * A benefit of type `github_repository`.
  * 
@@ -2795,7 +2565,7 @@ export interface BenefitGitHubRepository {
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
-    type: BenefitGitHubRepositoryTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -2827,16 +2597,6 @@ export interface BenefitGitHubRepository {
      */
     properties: BenefitGitHubRepositoryProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitGitHubRepositoryTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type BenefitGitHubRepositoryTypeEnum = typeof BenefitGitHubRepositoryTypeEnum[keyof typeof BenefitGitHubRepositoryTypeEnum];
-
 /**
  * 
  * @export
@@ -2848,7 +2608,7 @@ export interface BenefitGitHubRepositoryCreate {
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
      */
-    type: BenefitGitHubRepositoryCreateTypeEnum;
+    type: string;
     /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
@@ -2868,16 +2628,6 @@ export interface BenefitGitHubRepositoryCreate {
      */
     properties: BenefitGitHubRepositoryCreateProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitGitHubRepositoryCreateTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type BenefitGitHubRepositoryCreateTypeEnum = typeof BenefitGitHubRepositoryCreateTypeEnum[keyof typeof BenefitGitHubRepositoryCreateTypeEnum];
-
 /**
  * Properties to create a benefit of type `github_repository`.
  * @export
@@ -2991,7 +2741,7 @@ export interface BenefitGitHubRepositorySubscriber {
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
-    type: BenefitGitHubRepositorySubscriberTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -3029,16 +2779,6 @@ export interface BenefitGitHubRepositorySubscriber {
      */
     properties: BenefitGitHubRepositorySubscriberProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitGitHubRepositorySubscriberTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type BenefitGitHubRepositorySubscriberTypeEnum = typeof BenefitGitHubRepositorySubscriberTypeEnum[keyof typeof BenefitGitHubRepositorySubscriberTypeEnum];
-
 /**
  * Properties available to subscribers for a benefit of type `github_repository`.
  * @export
@@ -3075,7 +2815,7 @@ export interface BenefitGitHubRepositoryUpdate {
      * @type {string}
      * @memberof BenefitGitHubRepositoryUpdate
      */
-    type: BenefitGitHubRepositoryUpdateTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitGitHubRepositoryCreateProperties}
@@ -3083,16 +2823,6 @@ export interface BenefitGitHubRepositoryUpdate {
      */
     properties?: BenefitGitHubRepositoryCreateProperties | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitGitHubRepositoryUpdateTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type BenefitGitHubRepositoryUpdateTypeEnum = typeof BenefitGitHubRepositoryUpdateTypeEnum[keyof typeof BenefitGitHubRepositoryUpdateTypeEnum];
-
 /**
  * 
  * @export
@@ -3511,7 +3241,7 @@ export interface BenefitLicenseKeys {
      * @type {string}
      * @memberof BenefitLicenseKeys
      */
-    type: BenefitLicenseKeysTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -3543,16 +3273,6 @@ export interface BenefitLicenseKeys {
      */
     properties: BenefitLicenseKeysProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitLicenseKeysTypeEnum = {
-    LICENSE_KEYS: 'license_keys'
-} as const;
-export type BenefitLicenseKeysTypeEnum = typeof BenefitLicenseKeysTypeEnum[keyof typeof BenefitLicenseKeysTypeEnum];
-
 /**
  * 
  * @export
@@ -3564,7 +3284,7 @@ export interface BenefitLicenseKeysCreate {
      * @type {string}
      * @memberof BenefitLicenseKeysCreate
      */
-    type: BenefitLicenseKeysCreateTypeEnum;
+    type: string;
     /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
@@ -3584,16 +3304,6 @@ export interface BenefitLicenseKeysCreate {
      */
     properties: BenefitLicenseKeysCreateProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitLicenseKeysCreateTypeEnum = {
-    LICENSE_KEYS: 'license_keys'
-} as const;
-export type BenefitLicenseKeysCreateTypeEnum = typeof BenefitLicenseKeysCreateTypeEnum[keyof typeof BenefitLicenseKeysCreateTypeEnum];
-
 /**
  * 
  * @export
@@ -3685,7 +3395,7 @@ export interface BenefitLicenseKeysSubscriber {
      * @type {string}
      * @memberof BenefitLicenseKeysSubscriber
      */
-    type: BenefitLicenseKeysSubscriberTypeEnum;
+    type: string;
     /**
      * The description of the benefit.
      * @type {string}
@@ -3723,16 +3433,6 @@ export interface BenefitLicenseKeysSubscriber {
      */
     properties: BenefitLicenseKeysSubscriberProperties;
 }
-
-
-/**
- * @export
- */
-export const BenefitLicenseKeysSubscriberTypeEnum = {
-    LICENSE_KEYS: 'license_keys'
-} as const;
-export type BenefitLicenseKeysSubscriberTypeEnum = typeof BenefitLicenseKeysSubscriberTypeEnum[keyof typeof BenefitLicenseKeysSubscriberTypeEnum];
-
 /**
  * 
  * @export
@@ -3781,7 +3481,7 @@ export interface BenefitLicenseKeysUpdate {
      * @type {string}
      * @memberof BenefitLicenseKeysUpdate
      */
-    type: BenefitLicenseKeysUpdateTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitLicenseKeysCreateProperties}
@@ -3789,16 +3489,6 @@ export interface BenefitLicenseKeysUpdate {
      */
     properties?: BenefitLicenseKeysCreateProperties | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitLicenseKeysUpdateTypeEnum = {
-    LICENSE_KEYS: 'license_keys'
-} as const;
-export type BenefitLicenseKeysUpdateTypeEnum = typeof BenefitLicenseKeysUpdateTypeEnum[keyof typeof BenefitLicenseKeysUpdateTypeEnum];
-
 
 /**
  * 
@@ -4604,7 +4294,7 @@ export interface CheckoutLinkPriceCreate {
      * @type {string}
      * @memberof CheckoutLinkPriceCreate
      */
-    payment_processor: CheckoutLinkPriceCreatePaymentProcessorEnum;
+    payment_processor: string;
     /**
      * 
      * @type {string}
@@ -4636,16 +4326,6 @@ export interface CheckoutLinkPriceCreate {
      */
     product_price_id: string;
 }
-
-
-/**
- * @export
- */
-export const CheckoutLinkPriceCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutLinkPriceCreatePaymentProcessorEnum = typeof CheckoutLinkPriceCreatePaymentProcessorEnum[keyof typeof CheckoutLinkPriceCreatePaymentProcessorEnum];
-
 /**
  * Product data for a checkout link.
  * @export
@@ -4745,7 +4425,7 @@ export interface CheckoutLinkProductCreate {
      * @type {string}
      * @memberof CheckoutLinkProductCreate
      */
-    payment_processor: CheckoutLinkProductCreatePaymentProcessorEnum;
+    payment_processor: string;
     /**
      * 
      * @type {string}
@@ -4777,16 +4457,6 @@ export interface CheckoutLinkProductCreate {
      */
     product_id: string;
 }
-
-
-/**
- * @export
- */
-export const CheckoutLinkProductCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutLinkProductCreatePaymentProcessorEnum = typeof CheckoutLinkProductCreatePaymentProcessorEnum[keyof typeof CheckoutLinkProductCreatePaymentProcessorEnum];
-
 
 /**
  * 
@@ -4885,7 +4555,7 @@ export interface CheckoutPriceCreate {
      * @type {string}
      * @memberof CheckoutPriceCreate
      */
-    payment_processor: CheckoutPriceCreatePaymentProcessorEnum;
+    payment_processor: string;
     /**
      * 
      * @type {string}
@@ -4980,16 +4650,6 @@ export interface CheckoutPriceCreate {
      */
     product_price_id: string;
 }
-
-
-/**
- * @export
- */
-export const CheckoutPriceCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutPriceCreatePaymentProcessorEnum = typeof CheckoutPriceCreatePaymentProcessorEnum[keyof typeof CheckoutPriceCreatePaymentProcessorEnum];
-
 /**
  * Product data for a checkout session.
  * @export
@@ -5098,7 +4758,7 @@ export interface CheckoutProductCreate {
      * @type {string}
      * @memberof CheckoutProductCreate
      */
-    payment_processor: CheckoutProductCreatePaymentProcessorEnum;
+    payment_processor: string;
     /**
      * 
      * @type {string}
@@ -5193,16 +4853,6 @@ export interface CheckoutProductCreate {
      */
     product_id: string;
 }
-
-
-/**
- * @export
- */
-export const CheckoutProductCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutProductCreatePaymentProcessorEnum = typeof CheckoutProductCreatePaymentProcessorEnum[keyof typeof CheckoutProductCreatePaymentProcessorEnum];
-
 /**
  * Checkout session data retrieved using the client secret.
  * @export
@@ -5478,7 +5128,7 @@ export interface CheckoutPublicConfirmed {
      * @type {string}
      * @memberof CheckoutPublicConfirmed
      */
-    status: CheckoutPublicConfirmedStatusEnum;
+    status: string;
     /**
      * Client secret used to update and complete the checkout session from the client.
      * @type {string}
@@ -5673,14 +5323,6 @@ export interface CheckoutPublicConfirmed {
     customer_session_token: string;
 }
 
-
-/**
- * @export
- */
-export const CheckoutPublicConfirmedStatusEnum = {
-    CONFIRMED: 'confirmed'
-} as const;
-export type CheckoutPublicConfirmedStatusEnum = typeof CheckoutPublicConfirmedStatusEnum[keyof typeof CheckoutPublicConfirmedStatusEnum];
 
 
 /**
@@ -6021,7 +5663,7 @@ export interface CustomFieldCheckbox {
      * @type {string}
      * @memberof CustomFieldCheckbox
      */
-    type: CustomFieldCheckboxTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
@@ -6047,16 +5689,6 @@ export interface CustomFieldCheckbox {
      */
     properties: CustomFieldCheckboxProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldCheckboxTypeEnum = {
-    CHECKBOX: 'checkbox'
-} as const;
-export type CustomFieldCheckboxTypeEnum = typeof CustomFieldCheckboxTypeEnum[keyof typeof CustomFieldCheckboxTypeEnum];
-
 /**
  * 
  * @export
@@ -6114,7 +5746,7 @@ export interface CustomFieldCreateCheckbox {
      * @type {string}
      * @memberof CustomFieldCreateCheckbox
      */
-    type: CustomFieldCreateCheckboxTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
@@ -6140,16 +5772,6 @@ export interface CustomFieldCreateCheckbox {
      */
     properties: CustomFieldCheckboxProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldCreateCheckboxTypeEnum = {
-    CHECKBOX: 'checkbox'
-} as const;
-export type CustomFieldCreateCheckboxTypeEnum = typeof CustomFieldCreateCheckboxTypeEnum[keyof typeof CustomFieldCreateCheckboxTypeEnum];
-
 /**
  * Schema to create a custom field of type date.
  * @export
@@ -6176,7 +5798,7 @@ export interface CustomFieldCreateDate {
      * @type {string}
      * @memberof CustomFieldCreateDate
      */
-    type: CustomFieldCreateDateTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
@@ -6202,16 +5824,6 @@ export interface CustomFieldCreateDate {
      */
     properties: CustomFieldDateProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldCreateDateTypeEnum = {
-    DATE: 'date'
-} as const;
-export type CustomFieldCreateDateTypeEnum = typeof CustomFieldCreateDateTypeEnum[keyof typeof CustomFieldCreateDateTypeEnum];
-
 /**
  * Schema to create a custom field of type number.
  * @export
@@ -6238,7 +5850,7 @@ export interface CustomFieldCreateNumber {
      * @type {string}
      * @memberof CustomFieldCreateNumber
      */
-    type: CustomFieldCreateNumberTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
@@ -6264,16 +5876,6 @@ export interface CustomFieldCreateNumber {
      */
     properties: CustomFieldNumberProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldCreateNumberTypeEnum = {
-    NUMBER: 'number'
-} as const;
-export type CustomFieldCreateNumberTypeEnum = typeof CustomFieldCreateNumberTypeEnum[keyof typeof CustomFieldCreateNumberTypeEnum];
-
 /**
  * Schema to create a custom field of type select.
  * @export
@@ -6300,7 +5902,7 @@ export interface CustomFieldCreateSelect {
      * @type {string}
      * @memberof CustomFieldCreateSelect
      */
-    type: CustomFieldCreateSelectTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
@@ -6326,16 +5928,6 @@ export interface CustomFieldCreateSelect {
      */
     properties: CustomFieldSelectProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldCreateSelectTypeEnum = {
-    SELECT: 'select'
-} as const;
-export type CustomFieldCreateSelectTypeEnum = typeof CustomFieldCreateSelectTypeEnum[keyof typeof CustomFieldCreateSelectTypeEnum];
-
 /**
  * Schema to create a custom field of type text.
  * @export
@@ -6362,7 +5954,7 @@ export interface CustomFieldCreateText {
      * @type {string}
      * @memberof CustomFieldCreateText
      */
-    type: CustomFieldCreateTextTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
      * @type {string}
@@ -6388,16 +5980,6 @@ export interface CustomFieldCreateText {
      */
     properties: CustomFieldTextProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldCreateTextTypeEnum = {
-    TEXT: 'text'
-} as const;
-export type CustomFieldCreateTextTypeEnum = typeof CustomFieldCreateTextTypeEnum[keyof typeof CustomFieldCreateTextTypeEnum];
-
 /**
  * Schema for a custom field of type date.
  * @export
@@ -6433,7 +6015,7 @@ export interface CustomFieldDate {
      * @type {string}
      * @memberof CustomFieldDate
      */
-    type: CustomFieldDateTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
@@ -6459,16 +6041,6 @@ export interface CustomFieldDate {
      */
     properties: CustomFieldDateProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldDateTypeEnum = {
-    DATE: 'date'
-} as const;
-export type CustomFieldDateTypeEnum = typeof CustomFieldDateTypeEnum[keyof typeof CustomFieldDateTypeEnum];
-
 /**
  * 
  * @export
@@ -6541,7 +6113,7 @@ export interface CustomFieldNumber {
      * @type {string}
      * @memberof CustomFieldNumber
      */
-    type: CustomFieldNumberTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
@@ -6567,16 +6139,6 @@ export interface CustomFieldNumber {
      */
     properties: CustomFieldNumberProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldNumberTypeEnum = {
-    NUMBER: 'number'
-} as const;
-export type CustomFieldNumberTypeEnum = typeof CustomFieldNumberTypeEnum[keyof typeof CustomFieldNumberTypeEnum];
-
 /**
  * 
  * @export
@@ -6649,7 +6211,7 @@ export interface CustomFieldSelect {
      * @type {string}
      * @memberof CustomFieldSelect
      */
-    type: CustomFieldSelectTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
@@ -6675,16 +6237,6 @@ export interface CustomFieldSelect {
      */
     properties: CustomFieldSelectProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldSelectTypeEnum = {
-    SELECT: 'select'
-} as const;
-export type CustomFieldSelectTypeEnum = typeof CustomFieldSelectTypeEnum[keyof typeof CustomFieldSelectTypeEnum];
-
 /**
  * 
  * @export
@@ -6787,7 +6339,7 @@ export interface CustomFieldText {
      * @type {string}
      * @memberof CustomFieldText
      */
-    type: CustomFieldTextTypeEnum;
+    type: string;
     /**
      * Identifier of the custom field. It'll be used as key when storing the value.
      * @type {string}
@@ -6813,16 +6365,6 @@ export interface CustomFieldText {
      */
     properties: CustomFieldTextProperties;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldTextTypeEnum = {
-    TEXT: 'text'
-} as const;
-export type CustomFieldTextTypeEnum = typeof CustomFieldTextTypeEnum[keyof typeof CustomFieldTextTypeEnum];
-
 /**
  * 
  * @export
@@ -6931,7 +6473,7 @@ export interface CustomFieldUpdateCheckbox {
      * @type {string}
      * @memberof CustomFieldUpdateCheckbox
      */
-    type: CustomFieldUpdateCheckboxTypeEnum;
+    type: string;
     /**
      * 
      * @type {CustomFieldCheckboxProperties}
@@ -6939,16 +6481,6 @@ export interface CustomFieldUpdateCheckbox {
      */
     properties?: CustomFieldCheckboxProperties | null;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldUpdateCheckboxTypeEnum = {
-    CHECKBOX: 'checkbox'
-} as const;
-export type CustomFieldUpdateCheckboxTypeEnum = typeof CustomFieldUpdateCheckboxTypeEnum[keyof typeof CustomFieldUpdateCheckboxTypeEnum];
-
 /**
  * Schema to update a custom field of type date.
  * @export
@@ -6987,7 +6519,7 @@ export interface CustomFieldUpdateDate {
      * @type {string}
      * @memberof CustomFieldUpdateDate
      */
-    type: CustomFieldUpdateDateTypeEnum;
+    type: string;
     /**
      * 
      * @type {CustomFieldDateProperties}
@@ -6995,16 +6527,6 @@ export interface CustomFieldUpdateDate {
      */
     properties?: CustomFieldDateProperties | null;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldUpdateDateTypeEnum = {
-    DATE: 'date'
-} as const;
-export type CustomFieldUpdateDateTypeEnum = typeof CustomFieldUpdateDateTypeEnum[keyof typeof CustomFieldUpdateDateTypeEnum];
-
 /**
  * Schema to update a custom field of type number.
  * @export
@@ -7043,7 +6565,7 @@ export interface CustomFieldUpdateNumber {
      * @type {string}
      * @memberof CustomFieldUpdateNumber
      */
-    type: CustomFieldUpdateNumberTypeEnum;
+    type: string;
     /**
      * 
      * @type {CustomFieldNumberProperties}
@@ -7051,16 +6573,6 @@ export interface CustomFieldUpdateNumber {
      */
     properties?: CustomFieldNumberProperties | null;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldUpdateNumberTypeEnum = {
-    NUMBER: 'number'
-} as const;
-export type CustomFieldUpdateNumberTypeEnum = typeof CustomFieldUpdateNumberTypeEnum[keyof typeof CustomFieldUpdateNumberTypeEnum];
-
 /**
  * Schema to update a custom field of type select.
  * @export
@@ -7099,7 +6611,7 @@ export interface CustomFieldUpdateSelect {
      * @type {string}
      * @memberof CustomFieldUpdateSelect
      */
-    type: CustomFieldUpdateSelectTypeEnum;
+    type: string;
     /**
      * 
      * @type {CustomFieldSelectProperties}
@@ -7107,16 +6619,6 @@ export interface CustomFieldUpdateSelect {
      */
     properties?: CustomFieldSelectProperties | null;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldUpdateSelectTypeEnum = {
-    SELECT: 'select'
-} as const;
-export type CustomFieldUpdateSelectTypeEnum = typeof CustomFieldUpdateSelectTypeEnum[keyof typeof CustomFieldUpdateSelectTypeEnum];
-
 /**
  * Schema to update a custom field of type text.
  * @export
@@ -7155,7 +6657,7 @@ export interface CustomFieldUpdateText {
      * @type {string}
      * @memberof CustomFieldUpdateText
      */
-    type: CustomFieldUpdateTextTypeEnum;
+    type: string;
     /**
      * 
      * @type {CustomFieldTextProperties}
@@ -7163,16 +6665,6 @@ export interface CustomFieldUpdateText {
      */
     properties?: CustomFieldTextProperties | null;
 }
-
-
-/**
- * @export
- */
-export const CustomFieldUpdateTextTypeEnum = {
-    TEXT: 'text'
-} as const;
-export type CustomFieldUpdateTextTypeEnum = typeof CustomFieldUpdateTextTypeEnum[keyof typeof CustomFieldUpdateTextTypeEnum];
-
 /**
  * A customer in an organization.
  * @export
@@ -7354,18 +6846,8 @@ export interface CustomerBenefitGrantAdsUpdate {
      * @type {string}
      * @memberof CustomerBenefitGrantAdsUpdate
      */
-    benefit_type: CustomerBenefitGrantAdsUpdateBenefitTypeEnum;
+    benefit_type: string;
 }
-
-
-/**
- * @export
- */
-export const CustomerBenefitGrantAdsUpdateBenefitTypeEnum = {
-    ADS: 'ads'
-} as const;
-export type CustomerBenefitGrantAdsUpdateBenefitTypeEnum = typeof CustomerBenefitGrantAdsUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantAdsUpdateBenefitTypeEnum];
-
 /**
  * 
  * @export
@@ -7468,18 +6950,8 @@ export interface CustomerBenefitGrantCustomUpdate {
      * @type {string}
      * @memberof CustomerBenefitGrantCustomUpdate
      */
-    benefit_type: CustomerBenefitGrantCustomUpdateBenefitTypeEnum;
+    benefit_type: string;
 }
-
-
-/**
- * @export
- */
-export const CustomerBenefitGrantCustomUpdateBenefitTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type CustomerBenefitGrantCustomUpdateBenefitTypeEnum = typeof CustomerBenefitGrantCustomUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantCustomUpdateBenefitTypeEnum];
-
 /**
  * 
  * @export
@@ -7595,7 +7067,7 @@ export interface CustomerBenefitGrantDiscordUpdate {
      * @type {string}
      * @memberof CustomerBenefitGrantDiscordUpdate
      */
-    benefit_type: CustomerBenefitGrantDiscordUpdateBenefitTypeEnum;
+    benefit_type: string;
     /**
      * 
      * @type {CustomerBenefitGrantDiscordPropertiesUpdate}
@@ -7603,16 +7075,6 @@ export interface CustomerBenefitGrantDiscordUpdate {
      */
     properties: CustomerBenefitGrantDiscordPropertiesUpdate;
 }
-
-
-/**
- * @export
- */
-export const CustomerBenefitGrantDiscordUpdateBenefitTypeEnum = {
-    DISCORD: 'discord'
-} as const;
-export type CustomerBenefitGrantDiscordUpdateBenefitTypeEnum = typeof CustomerBenefitGrantDiscordUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantDiscordUpdateBenefitTypeEnum];
-
 /**
  * 
  * @export
@@ -7715,18 +7177,8 @@ export interface CustomerBenefitGrantDownloadablesUpdate {
      * @type {string}
      * @memberof CustomerBenefitGrantDownloadablesUpdate
      */
-    benefit_type: CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum;
+    benefit_type: string;
 }
-
-
-/**
- * @export
- */
-export const CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum = {
-    DOWNLOADABLES: 'downloadables'
-} as const;
-export type CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum = typeof CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantDownloadablesUpdateBenefitTypeEnum];
-
 /**
  * 
  * @export
@@ -7842,7 +7294,7 @@ export interface CustomerBenefitGrantGitHubRepositoryUpdate {
      * @type {string}
      * @memberof CustomerBenefitGrantGitHubRepositoryUpdate
      */
-    benefit_type: CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum;
+    benefit_type: string;
     /**
      * 
      * @type {CustomerBenefitGrantGitHubRepositoryPropertiesUpdate}
@@ -7850,16 +7302,6 @@ export interface CustomerBenefitGrantGitHubRepositoryUpdate {
      */
     properties: CustomerBenefitGrantGitHubRepositoryPropertiesUpdate;
 }
-
-
-/**
- * @export
- */
-export const CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum = {
-    GITHUB_REPOSITORY: 'github_repository'
-} as const;
-export type CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum = typeof CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantGitHubRepositoryUpdateBenefitTypeEnum];
-
 /**
  * 
  * @export
@@ -7962,18 +7404,8 @@ export interface CustomerBenefitGrantLicenseKeysUpdate {
      * @type {string}
      * @memberof CustomerBenefitGrantLicenseKeysUpdate
      */
-    benefit_type: CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum;
+    benefit_type: string;
 }
-
-
-/**
- * @export
- */
-export const CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum = {
-    LICENSE_KEYS: 'license_keys'
-} as const;
-export type CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum = typeof CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum[keyof typeof CustomerBenefitGrantLicenseKeysUpdateBenefitTypeEnum];
-
 
 /**
  * 
@@ -7995,6 +7427,23 @@ export type CustomerBenefitGrantSortProperty = typeof CustomerBenefitGrantSortPr
  * @export
  */
 export type CustomerBenefitGrantUpdate = { benefit_type: 'ads' } & CustomerBenefitGrantAdsUpdate | { benefit_type: 'custom' } & CustomerBenefitGrantCustomUpdate | { benefit_type: 'discord' } & CustomerBenefitGrantDiscordUpdate | { benefit_type: 'downloadables' } & CustomerBenefitGrantDownloadablesUpdate | { benefit_type: 'github_repository' } & CustomerBenefitGrantGitHubRepositoryUpdate | { benefit_type: 'license_keys' } & CustomerBenefitGrantLicenseKeysUpdate;
+
+/**
+ * 
+ * @export
+ */
+export const CustomerCancellationReason = {
+    CUSTOMER_SERVICE: 'customer_service',
+    LOW_QUALITY: 'low_quality',
+    MISSING_FEATURES: 'missing_features',
+    SWITCHED_SERVICE: 'switched_service',
+    TOO_COMPLEX: 'too_complex',
+    TOO_EXPENSIVE: 'too_expensive',
+    UNUSED: 'unused',
+    OTHER: 'other'
+} as const;
+export type CustomerCancellationReason = typeof CustomerCancellationReason[keyof typeof CustomerCancellationReason];
+
 /**
  * 
  * @export
@@ -8338,7 +7787,19 @@ export interface CustomerOrderSubscription {
      * @type {string}
      * @memberof CustomerOrderSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -8375,6 +7836,18 @@ export interface CustomerOrderSubscription {
      * @memberof CustomerOrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerOrderSubscription
+     */
+    customer_cancellation_comment: string | null;
 }
 
 
@@ -8651,7 +8124,19 @@ export interface CustomerSubscription {
      * @type {string}
      * @memberof CustomerSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -8690,6 +8175,18 @@ export interface CustomerSubscription {
     checkout_id: string | null;
     /**
      * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscription
+     */
+    customer_cancellation_comment: string | null;
+    /**
+     * 
      * @type {string}
      * @memberof CustomerSubscription
      * @deprecated
@@ -8707,6 +8204,33 @@ export interface CustomerSubscription {
      * @memberof CustomerSubscription
      */
     price: ProductPrice;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface CustomerSubscriptionCancel
+ */
+export interface CustomerSubscriptionCancel {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancel_at_period_end?: boolean | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancellation_reason?: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSubscriptionCancel
+     */
+    cancellation_comment?: string | null;
 }
 
 
@@ -8809,15 +8333,21 @@ export const CustomerSubscriptionSortProperty = {
 export type CustomerSubscriptionSortProperty = typeof CustomerSubscriptionSortProperty[keyof typeof CustomerSubscriptionSortProperty];
 
 /**
+ * @type CustomerSubscriptionUpdate
+ * @export
+ */
+export type CustomerSubscriptionUpdate = CustomerSubscriptionCancel | CustomerSubscriptionUpdatePrice;
+
+/**
  * 
  * @export
- * @interface CustomerSubscriptionUpdate
+ * @interface CustomerSubscriptionUpdatePrice
  */
-export interface CustomerSubscriptionUpdate {
+export interface CustomerSubscriptionUpdatePrice {
     /**
-     * 
+     * Update subscription to another price.
      * @type {string}
-     * @memberof CustomerSubscriptionUpdate
+     * @memberof CustomerSubscriptionUpdatePrice
      */
     product_price_id: string;
 }
@@ -10370,7 +9900,7 @@ export interface DownloadableFileCreate {
      * @type {string}
      * @memberof DownloadableFileCreate
      */
-    service: DownloadableFileCreateServiceEnum;
+    service: string;
     /**
      * 
      * @type {string}
@@ -10378,16 +9908,6 @@ export interface DownloadableFileCreate {
      */
     version?: string | null;
 }
-
-
-/**
- * @export
- */
-export const DownloadableFileCreateServiceEnum = {
-    DOWNLOADABLE: 'downloadable'
-} as const;
-export type DownloadableFileCreateServiceEnum = typeof DownloadableFileCreateServiceEnum[keyof typeof DownloadableFileCreateServiceEnum];
-
 /**
  * File to be associated with the downloadables benefit.
  * @export
@@ -10471,7 +9991,7 @@ export interface DownloadableFileRead {
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    service: DownloadableFileReadServiceEnum;
+    service: string;
     /**
      * 
      * @type {boolean}
@@ -10491,16 +10011,6 @@ export interface DownloadableFileRead {
      */
     readonly size_readable: string;
 }
-
-
-/**
- * @export
- */
-export const DownloadableFileReadServiceEnum = {
-    DOWNLOADABLE: 'downloadable'
-} as const;
-export type DownloadableFileReadServiceEnum = typeof DownloadableFileReadServiceEnum[keyof typeof DownloadableFileReadServiceEnum];
-
 /**
  * 
  * @export
@@ -12756,7 +12266,7 @@ export interface MaintainerAccountReviewedNotification {
      * @type {string}
      * @memberof MaintainerAccountReviewedNotification
      */
-    type: MaintainerAccountReviewedNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerAccountReviewedNotificationPayload}
@@ -12764,16 +12274,6 @@ export interface MaintainerAccountReviewedNotification {
      */
     payload: MaintainerAccountReviewedNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerAccountReviewedNotificationTypeEnum = {
-    MAINTAINER_ACCOUNT_REVIEWED_NOTIFICATION: 'MaintainerAccountReviewedNotification'
-} as const;
-export type MaintainerAccountReviewedNotificationTypeEnum = typeof MaintainerAccountReviewedNotificationTypeEnum[keyof typeof MaintainerAccountReviewedNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -12810,7 +12310,7 @@ export interface MaintainerAccountUnderReviewNotification {
      * @type {string}
      * @memberof MaintainerAccountUnderReviewNotification
      */
-    type: MaintainerAccountUnderReviewNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerAccountUnderReviewNotificationPayload}
@@ -12818,16 +12318,6 @@ export interface MaintainerAccountUnderReviewNotification {
      */
     payload: MaintainerAccountUnderReviewNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerAccountUnderReviewNotificationTypeEnum = {
-    MAINTAINER_ACCOUNT_UNDER_REVIEW_NOTIFICATION: 'MaintainerAccountUnderReviewNotification'
-} as const;
-export type MaintainerAccountUnderReviewNotificationTypeEnum = typeof MaintainerAccountUnderReviewNotificationTypeEnum[keyof typeof MaintainerAccountUnderReviewNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -12864,7 +12354,7 @@ export interface MaintainerCreateAccountNotification {
      * @type {string}
      * @memberof MaintainerCreateAccountNotification
      */
-    type: MaintainerCreateAccountNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerCreateAccountNotificationPayload}
@@ -12872,16 +12362,6 @@ export interface MaintainerCreateAccountNotification {
      */
     payload: MaintainerCreateAccountNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerCreateAccountNotificationTypeEnum = {
-    MAINTAINER_CREATE_ACCOUNT_NOTIFICATION: 'MaintainerCreateAccountNotification'
-} as const;
-export type MaintainerCreateAccountNotificationTypeEnum = typeof MaintainerCreateAccountNotificationTypeEnum[keyof typeof MaintainerCreateAccountNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -12924,7 +12404,7 @@ export interface MaintainerNewPaidSubscriptionNotification {
      * @type {string}
      * @memberof MaintainerNewPaidSubscriptionNotification
      */
-    type: MaintainerNewPaidSubscriptionNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerNewPaidSubscriptionNotificationPayload}
@@ -12932,16 +12412,6 @@ export interface MaintainerNewPaidSubscriptionNotification {
      */
     payload: MaintainerNewPaidSubscriptionNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerNewPaidSubscriptionNotificationTypeEnum = {
-    MAINTAINER_NEW_PAID_SUBSCRIPTION_NOTIFICATION: 'MaintainerNewPaidSubscriptionNotification'
-} as const;
-export type MaintainerNewPaidSubscriptionNotificationTypeEnum = typeof MaintainerNewPaidSubscriptionNotificationTypeEnum[keyof typeof MaintainerNewPaidSubscriptionNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13002,7 +12472,7 @@ export interface MaintainerNewProductSaleNotification {
      * @type {string}
      * @memberof MaintainerNewProductSaleNotification
      */
-    type: MaintainerNewProductSaleNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerNewProductSaleNotificationPayload}
@@ -13010,16 +12480,6 @@ export interface MaintainerNewProductSaleNotification {
      */
     payload: MaintainerNewProductSaleNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerNewProductSaleNotificationTypeEnum = {
-    MAINTAINER_NEW_PRODUCT_SALE_NOTIFICATION: 'MaintainerNewProductSaleNotification'
-} as const;
-export type MaintainerNewProductSaleNotificationTypeEnum = typeof MaintainerNewProductSaleNotificationTypeEnum[keyof typeof MaintainerNewProductSaleNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13074,7 +12534,7 @@ export interface MaintainerPledgeConfirmationPendingNotification {
      * @type {string}
      * @memberof MaintainerPledgeConfirmationPendingNotification
      */
-    type: MaintainerPledgeConfirmationPendingNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerPledgeConfirmationPendingNotificationPayload}
@@ -13082,16 +12542,6 @@ export interface MaintainerPledgeConfirmationPendingNotification {
      */
     payload: MaintainerPledgeConfirmationPendingNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerPledgeConfirmationPendingNotificationTypeEnum = {
-    MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgeConfirmationPendingNotification'
-} as const;
-export type MaintainerPledgeConfirmationPendingNotificationTypeEnum = typeof MaintainerPledgeConfirmationPendingNotificationTypeEnum[keyof typeof MaintainerPledgeConfirmationPendingNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13176,7 +12626,7 @@ export interface MaintainerPledgeCreatedNotification {
      * @type {string}
      * @memberof MaintainerPledgeCreatedNotification
      */
-    type: MaintainerPledgeCreatedNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerPledgeCreatedNotificationPayload}
@@ -13184,16 +12634,6 @@ export interface MaintainerPledgeCreatedNotification {
      */
     payload: MaintainerPledgeCreatedNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerPledgeCreatedNotificationTypeEnum = {
-    MAINTAINER_PLEDGE_CREATED_NOTIFICATION: 'MaintainerPledgeCreatedNotification'
-} as const;
-export type MaintainerPledgeCreatedNotificationTypeEnum = typeof MaintainerPledgeCreatedNotificationTypeEnum[keyof typeof MaintainerPledgeCreatedNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13286,7 +12726,7 @@ export interface MaintainerPledgePaidNotification {
      * @type {string}
      * @memberof MaintainerPledgePaidNotification
      */
-    type: MaintainerPledgePaidNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerPledgePaidNotificationPayload}
@@ -13294,16 +12734,6 @@ export interface MaintainerPledgePaidNotification {
      */
     payload: MaintainerPledgePaidNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerPledgePaidNotificationTypeEnum = {
-    MAINTAINER_PLEDGE_PAID_NOTIFICATION: 'MaintainerPledgePaidNotification'
-} as const;
-export type MaintainerPledgePaidNotificationTypeEnum = typeof MaintainerPledgePaidNotificationTypeEnum[keyof typeof MaintainerPledgePaidNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13376,7 +12806,7 @@ export interface MaintainerPledgePendingNotification {
      * @type {string}
      * @memberof MaintainerPledgePendingNotification
      */
-    type: MaintainerPledgePendingNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerPledgePendingNotificationPayload}
@@ -13384,16 +12814,6 @@ export interface MaintainerPledgePendingNotification {
      */
     payload: MaintainerPledgePendingNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerPledgePendingNotificationTypeEnum = {
-    MAINTAINER_PLEDGE_PENDING_NOTIFICATION: 'MaintainerPledgePendingNotification'
-} as const;
-export type MaintainerPledgePendingNotificationTypeEnum = typeof MaintainerPledgePendingNotificationTypeEnum[keyof typeof MaintainerPledgePendingNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13478,7 +12898,7 @@ export interface MaintainerPledgedIssueConfirmationPendingNotification {
      * @type {string}
      * @memberof MaintainerPledgedIssueConfirmationPendingNotification
      */
-    type: MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerPledgedIssueConfirmationPendingNotificationPayload}
@@ -13486,16 +12906,6 @@ export interface MaintainerPledgedIssueConfirmationPendingNotification {
      */
     payload: MaintainerPledgedIssueConfirmationPendingNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum = {
-    MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgedIssueConfirmationPendingNotification'
-} as const;
-export type MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum = typeof MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum[keyof typeof MaintainerPledgedIssueConfirmationPendingNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13574,7 +12984,7 @@ export interface MaintainerPledgedIssuePendingNotification {
      * @type {string}
      * @memberof MaintainerPledgedIssuePendingNotification
      */
-    type: MaintainerPledgedIssuePendingNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {MaintainerPledgedIssuePendingNotificationPayload}
@@ -13582,16 +12992,6 @@ export interface MaintainerPledgedIssuePendingNotification {
      */
     payload: MaintainerPledgedIssuePendingNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const MaintainerPledgedIssuePendingNotificationTypeEnum = {
-    MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification'
-} as const;
-export type MaintainerPledgedIssuePendingNotificationTypeEnum = typeof MaintainerPledgedIssuePendingNotificationTypeEnum[keyof typeof MaintainerPledgedIssuePendingNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -13948,7 +13348,7 @@ export interface NotPermitted {
      * @type {string}
      * @memberof NotPermitted
      */
-    error: NotPermittedErrorEnum;
+    error: string;
     /**
      * 
      * @type {string}
@@ -13956,16 +13356,6 @@ export interface NotPermitted {
      */
     detail: string;
 }
-
-
-/**
- * @export
- */
-export const NotPermittedErrorEnum = {
-    NOT_PERMITTED: 'NotPermitted'
-} as const;
-export type NotPermittedErrorEnum = typeof NotPermittedErrorEnum[keyof typeof NotPermittedErrorEnum];
-
 /**
  * 
  * @export
@@ -14033,7 +13423,7 @@ export interface OAuth2Client {
      * @type {Array<string>}
      * @memberof OAuth2Client
      */
-    response_types?: Array<OAuth2ClientResponseTypesEnum>;
+    response_types?: Array<string>;
     /**
      * 
      * @type {string}
@@ -14129,14 +13519,6 @@ export const OAuth2ClientGrantTypesEnum = {
 export type OAuth2ClientGrantTypesEnum = typeof OAuth2ClientGrantTypesEnum[keyof typeof OAuth2ClientGrantTypesEnum];
 
 /**
- * @export
- */
-export const OAuth2ClientResponseTypesEnum = {
-    CODE: 'code'
-} as const;
-export type OAuth2ClientResponseTypesEnum = typeof OAuth2ClientResponseTypesEnum[keyof typeof OAuth2ClientResponseTypesEnum];
-
-/**
  * 
  * @export
  * @interface OAuth2ClientConfiguration
@@ -14165,7 +13547,7 @@ export interface OAuth2ClientConfiguration {
      * @type {Array<string>}
      * @memberof OAuth2ClientConfiguration
      */
-    response_types?: Array<OAuth2ClientConfigurationResponseTypesEnum>;
+    response_types?: Array<string>;
     /**
      * 
      * @type {string}
@@ -14225,14 +13607,6 @@ export const OAuth2ClientConfigurationGrantTypesEnum = {
 export type OAuth2ClientConfigurationGrantTypesEnum = typeof OAuth2ClientConfigurationGrantTypesEnum[keyof typeof OAuth2ClientConfigurationGrantTypesEnum];
 
 /**
- * @export
- */
-export const OAuth2ClientConfigurationResponseTypesEnum = {
-    CODE: 'code'
-} as const;
-export type OAuth2ClientConfigurationResponseTypesEnum = typeof OAuth2ClientConfigurationResponseTypesEnum[keyof typeof OAuth2ClientConfigurationResponseTypesEnum];
-
-/**
  * 
  * @export
  * @interface OAuth2ClientConfigurationUpdate
@@ -14261,7 +13635,7 @@ export interface OAuth2ClientConfigurationUpdate {
      * @type {Array<string>}
      * @memberof OAuth2ClientConfigurationUpdate
      */
-    response_types?: Array<OAuth2ClientConfigurationUpdateResponseTypesEnum>;
+    response_types?: Array<string>;
     /**
      * 
      * @type {string}
@@ -14325,14 +13699,6 @@ export const OAuth2ClientConfigurationUpdateGrantTypesEnum = {
     REFRESH_TOKEN: 'refresh_token'
 } as const;
 export type OAuth2ClientConfigurationUpdateGrantTypesEnum = typeof OAuth2ClientConfigurationUpdateGrantTypesEnum[keyof typeof OAuth2ClientConfigurationUpdateGrantTypesEnum];
-
-/**
- * @export
- */
-export const OAuth2ClientConfigurationUpdateResponseTypesEnum = {
-    CODE: 'code'
-} as const;
-export type OAuth2ClientConfigurationUpdateResponseTypesEnum = typeof OAuth2ClientConfigurationUpdateResponseTypesEnum[keyof typeof OAuth2ClientConfigurationUpdateResponseTypesEnum];
 
 /**
  * 
@@ -14860,7 +14226,19 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -14897,6 +14275,18 @@ export interface OrderSubscription {
      * @memberof OrderSubscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof OrderSubscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    customer_cancellation_comment: string | null;
     /**
      * 
      * @type {string}
@@ -15100,7 +14490,7 @@ export interface OrganizationAvatarFileCreate {
      * @type {string}
      * @memberof OrganizationAvatarFileCreate
      */
-    service: OrganizationAvatarFileCreateServiceEnum;
+    service: string;
     /**
      * 
      * @type {string}
@@ -15108,16 +14498,6 @@ export interface OrganizationAvatarFileCreate {
      */
     version?: string | null;
 }
-
-
-/**
- * @export
- */
-export const OrganizationAvatarFileCreateServiceEnum = {
-    ORGANIZATION_AVATAR: 'organization_avatar'
-} as const;
-export type OrganizationAvatarFileCreateServiceEnum = typeof OrganizationAvatarFileCreateServiceEnum[keyof typeof OrganizationAvatarFileCreateServiceEnum];
-
 /**
  * File to be used as an organization avatar.
  * @export
@@ -15201,7 +14581,7 @@ export interface OrganizationAvatarFileRead {
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    service: OrganizationAvatarFileReadServiceEnum;
+    service: string;
     /**
      * 
      * @type {boolean}
@@ -15227,16 +14607,6 @@ export interface OrganizationAvatarFileRead {
      */
     readonly public_url: string;
 }
-
-
-/**
- * @export
- */
-export const OrganizationAvatarFileReadServiceEnum = {
-    ORGANIZATION_AVATAR: 'organization_avatar'
-} as const;
-export type OrganizationAvatarFileReadServiceEnum = typeof OrganizationAvatarFileReadServiceEnum[keyof typeof OrganizationAvatarFileReadServiceEnum];
-
 /**
  * 
  * @export
@@ -16082,7 +15452,7 @@ export interface PledgeStripePaymentIntentCreate {
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
-    setup_future_usage?: PledgeStripePaymentIntentCreateSetupFutureUsageEnum | null;
+    setup_future_usage?: string | null;
     /**
      * 
      * @type {string}
@@ -16090,16 +15460,6 @@ export interface PledgeStripePaymentIntentCreate {
      */
     on_behalf_of_organization_id?: string | null;
 }
-
-
-/**
- * @export
- */
-export const PledgeStripePaymentIntentCreateSetupFutureUsageEnum = {
-    ON_SESSION: 'on_session'
-} as const;
-export type PledgeStripePaymentIntentCreateSetupFutureUsageEnum = typeof PledgeStripePaymentIntentCreateSetupFutureUsageEnum[keyof typeof PledgeStripePaymentIntentCreateSetupFutureUsageEnum];
-
 /**
  * 
  * @export
@@ -16172,7 +15532,7 @@ export interface PledgeStripePaymentIntentUpdate {
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */
-    setup_future_usage?: PledgeStripePaymentIntentUpdateSetupFutureUsageEnum | null;
+    setup_future_usage?: string | null;
     /**
      * 
      * @type {string}
@@ -16180,16 +15540,6 @@ export interface PledgeStripePaymentIntentUpdate {
      */
     on_behalf_of_organization_id?: string | null;
 }
-
-
-/**
- * @export
- */
-export const PledgeStripePaymentIntentUpdateSetupFutureUsageEnum = {
-    ON_SESSION: 'on_session'
-} as const;
-export type PledgeStripePaymentIntentUpdateSetupFutureUsageEnum = typeof PledgeStripePaymentIntentUpdateSetupFutureUsageEnum[keyof typeof PledgeStripePaymentIntentUpdateSetupFutureUsageEnum];
-
 
 /**
  * 
@@ -16250,7 +15600,7 @@ export interface PledgerPledgePendingNotification {
      * @type {string}
      * @memberof PledgerPledgePendingNotification
      */
-    type: PledgerPledgePendingNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {PledgerPledgePendingNotificationPayload}
@@ -16258,16 +15608,6 @@ export interface PledgerPledgePendingNotification {
      */
     payload: PledgerPledgePendingNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const PledgerPledgePendingNotificationTypeEnum = {
-    PLEDGER_PLEDGE_PENDING_NOTIFICATION: 'PledgerPledgePendingNotification'
-} as const;
-export type PledgerPledgePendingNotificationTypeEnum = typeof PledgerPledgePendingNotificationTypeEnum[keyof typeof PledgerPledgePendingNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -16647,7 +15987,7 @@ export interface ProductMediaFileCreate {
      * @type {string}
      * @memberof ProductMediaFileCreate
      */
-    service: ProductMediaFileCreateServiceEnum;
+    service: string;
     /**
      * 
      * @type {string}
@@ -16655,16 +15995,6 @@ export interface ProductMediaFileCreate {
      */
     version?: string | null;
 }
-
-
-/**
- * @export
- */
-export const ProductMediaFileCreateServiceEnum = {
-    PRODUCT_MEDIA: 'product_media'
-} as const;
-export type ProductMediaFileCreateServiceEnum = typeof ProductMediaFileCreateServiceEnum[keyof typeof ProductMediaFileCreateServiceEnum];
-
 /**
  * File to be used as a product media file.
  * @export
@@ -16748,7 +16078,7 @@ export interface ProductMediaFileRead {
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    service: ProductMediaFileReadServiceEnum;
+    service: string;
     /**
      * 
      * @type {boolean}
@@ -16774,16 +16104,6 @@ export interface ProductMediaFileRead {
      */
     readonly public_url: string;
 }
-
-
-/**
- * @export
- */
-export const ProductMediaFileReadServiceEnum = {
-    PRODUCT_MEDIA: 'product_media'
-} as const;
-export type ProductMediaFileReadServiceEnum = typeof ProductMediaFileReadServiceEnum[keyof typeof ProductMediaFileReadServiceEnum];
-
 /**
  * Schema to create a one-time product.
  * @export
@@ -16889,7 +16209,7 @@ export interface ProductPriceOneTimeCustom {
      * @type {string}
      * @memberof ProductPriceOneTimeCustom
      */
-    amount_type: ProductPriceOneTimeCustomAmountTypeEnum;
+    amount_type: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
@@ -16931,26 +16251,8 @@ export interface ProductPriceOneTimeCustom {
      * @type {string}
      * @memberof ProductPriceOneTimeCustom
      */
-    type: ProductPriceOneTimeCustomTypeEnum;
+    type: string;
 }
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeCustomAmountTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type ProductPriceOneTimeCustomAmountTypeEnum = typeof ProductPriceOneTimeCustomAmountTypeEnum[keyof typeof ProductPriceOneTimeCustomAmountTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceOneTimeCustomTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeCustomTypeEnum = typeof ProductPriceOneTimeCustomTypeEnum[keyof typeof ProductPriceOneTimeCustomTypeEnum];
-
 /**
  * Schema to create a pay-what-you-want price for a one-time product.
  * @export
@@ -16962,13 +16264,13 @@ export interface ProductPriceOneTimeCustomCreate {
      * @type {string}
      * @memberof ProductPriceOneTimeCustomCreate
      */
-    type: ProductPriceOneTimeCustomCreateTypeEnum;
+    type: string;
     /**
      * 
      * @type {string}
      * @memberof ProductPriceOneTimeCustomCreate
      */
-    amount_type: ProductPriceOneTimeCustomCreateAmountTypeEnum;
+    amount_type: string;
     /**
      * The currency. Currently, only `usd` is supported.
      * @type {string}
@@ -16994,24 +16296,6 @@ export interface ProductPriceOneTimeCustomCreate {
      */
     preset_amount?: number | null;
 }
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeCustomCreateTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeCustomCreateTypeEnum = typeof ProductPriceOneTimeCustomCreateTypeEnum[keyof typeof ProductPriceOneTimeCustomCreateTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceOneTimeCustomCreateAmountTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type ProductPriceOneTimeCustomCreateAmountTypeEnum = typeof ProductPriceOneTimeCustomCreateAmountTypeEnum[keyof typeof ProductPriceOneTimeCustomCreateAmountTypeEnum];
-
 /**
  * A one-time price for a product.
  * @export
@@ -17041,7 +16325,7 @@ export interface ProductPriceOneTimeFixed {
      * @type {string}
      * @memberof ProductPriceOneTimeFixed
      */
-    amount_type: ProductPriceOneTimeFixedAmountTypeEnum;
+    amount_type: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
@@ -17071,26 +16355,8 @@ export interface ProductPriceOneTimeFixed {
      * @type {string}
      * @memberof ProductPriceOneTimeFixed
      */
-    type: ProductPriceOneTimeFixedTypeEnum;
+    type: string;
 }
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFixedAmountTypeEnum = {
-    FIXED: 'fixed'
-} as const;
-export type ProductPriceOneTimeFixedAmountTypeEnum = typeof ProductPriceOneTimeFixedAmountTypeEnum[keyof typeof ProductPriceOneTimeFixedAmountTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFixedTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeFixedTypeEnum = typeof ProductPriceOneTimeFixedTypeEnum[keyof typeof ProductPriceOneTimeFixedTypeEnum];
-
 /**
  * Schema to create a one-time product price.
  * @export
@@ -17102,13 +16368,13 @@ export interface ProductPriceOneTimeFixedCreate {
      * @type {string}
      * @memberof ProductPriceOneTimeFixedCreate
      */
-    type: ProductPriceOneTimeFixedCreateTypeEnum;
+    type: string;
     /**
      * 
      * @type {string}
      * @memberof ProductPriceOneTimeFixedCreate
      */
-    amount_type: ProductPriceOneTimeFixedCreateAmountTypeEnum;
+    amount_type: string;
     /**
      * The price in cents.
      * @type {number}
@@ -17122,24 +16388,6 @@ export interface ProductPriceOneTimeFixedCreate {
      */
     price_currency?: string;
 }
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFixedCreateTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeFixedCreateTypeEnum = typeof ProductPriceOneTimeFixedCreateTypeEnum[keyof typeof ProductPriceOneTimeFixedCreateTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFixedCreateAmountTypeEnum = {
-    FIXED: 'fixed'
-} as const;
-export type ProductPriceOneTimeFixedCreateAmountTypeEnum = typeof ProductPriceOneTimeFixedCreateAmountTypeEnum[keyof typeof ProductPriceOneTimeFixedCreateAmountTypeEnum];
-
 /**
  * A free one-time price for a product.
  * @export
@@ -17169,7 +16417,7 @@ export interface ProductPriceOneTimeFree {
      * @type {string}
      * @memberof ProductPriceOneTimeFree
      */
-    amount_type: ProductPriceOneTimeFreeAmountTypeEnum;
+    amount_type: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
@@ -17187,26 +16435,8 @@ export interface ProductPriceOneTimeFree {
      * @type {string}
      * @memberof ProductPriceOneTimeFree
      */
-    type: ProductPriceOneTimeFreeTypeEnum;
+    type: string;
 }
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFreeAmountTypeEnum = {
-    FREE: 'free'
-} as const;
-export type ProductPriceOneTimeFreeAmountTypeEnum = typeof ProductPriceOneTimeFreeAmountTypeEnum[keyof typeof ProductPriceOneTimeFreeAmountTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFreeTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeFreeTypeEnum = typeof ProductPriceOneTimeFreeTypeEnum[keyof typeof ProductPriceOneTimeFreeTypeEnum];
-
 /**
  * Schema to create a free one-time product price.
  * @export
@@ -17218,32 +16448,14 @@ export interface ProductPriceOneTimeFreeCreate {
      * @type {string}
      * @memberof ProductPriceOneTimeFreeCreate
      */
-    type: ProductPriceOneTimeFreeCreateTypeEnum;
+    type: string;
     /**
      * 
      * @type {string}
      * @memberof ProductPriceOneTimeFreeCreate
      */
-    amount_type: ProductPriceOneTimeFreeCreateAmountTypeEnum;
+    amount_type: string;
 }
-
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFreeCreateTypeEnum = {
-    ONE_TIME: 'one_time'
-} as const;
-export type ProductPriceOneTimeFreeCreateTypeEnum = typeof ProductPriceOneTimeFreeCreateTypeEnum[keyof typeof ProductPriceOneTimeFreeCreateTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceOneTimeFreeCreateAmountTypeEnum = {
-    FREE: 'free'
-} as const;
-export type ProductPriceOneTimeFreeCreateAmountTypeEnum = typeof ProductPriceOneTimeFreeCreateAmountTypeEnum[keyof typeof ProductPriceOneTimeFreeCreateAmountTypeEnum];
-
 /**
  * @type ProductPriceRecurring
  * 
@@ -17279,7 +16491,7 @@ export interface ProductPriceRecurringCustom {
      * @type {string}
      * @memberof ProductPriceRecurringCustom
      */
-    amount_type: ProductPriceRecurringCustomAmountTypeEnum;
+    amount_type: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
@@ -17321,7 +16533,7 @@ export interface ProductPriceRecurringCustom {
      * @type {string}
      * @memberof ProductPriceRecurringCustom
      */
-    type: ProductPriceRecurringCustomTypeEnum;
+    type: string;
     /**
      * The recurring interval of the price.
      * @type {SubscriptionRecurringInterval}
@@ -17330,22 +16542,6 @@ export interface ProductPriceRecurringCustom {
     recurring_interval: SubscriptionRecurringInterval;
 }
 
-
-/**
- * @export
- */
-export const ProductPriceRecurringCustomAmountTypeEnum = {
-    CUSTOM: 'custom'
-} as const;
-export type ProductPriceRecurringCustomAmountTypeEnum = typeof ProductPriceRecurringCustomAmountTypeEnum[keyof typeof ProductPriceRecurringCustomAmountTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceRecurringCustomTypeEnum = {
-    RECURRING: 'recurring'
-} as const;
-export type ProductPriceRecurringCustomTypeEnum = typeof ProductPriceRecurringCustomTypeEnum[keyof typeof ProductPriceRecurringCustomTypeEnum];
 
 /**
  * A recurring price for a product, i.e. a subscription.
@@ -17376,7 +16572,7 @@ export interface ProductPriceRecurringFixed {
      * @type {string}
      * @memberof ProductPriceRecurringFixed
      */
-    amount_type: ProductPriceRecurringFixedAmountTypeEnum;
+    amount_type: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
@@ -17406,7 +16602,7 @@ export interface ProductPriceRecurringFixed {
      * @type {string}
      * @memberof ProductPriceRecurringFixed
      */
-    type: ProductPriceRecurringFixedTypeEnum;
+    type: string;
     /**
      * The recurring interval of the price.
      * @type {SubscriptionRecurringInterval}
@@ -17415,22 +16611,6 @@ export interface ProductPriceRecurringFixed {
     recurring_interval: SubscriptionRecurringInterval;
 }
 
-
-/**
- * @export
- */
-export const ProductPriceRecurringFixedAmountTypeEnum = {
-    FIXED: 'fixed'
-} as const;
-export type ProductPriceRecurringFixedAmountTypeEnum = typeof ProductPriceRecurringFixedAmountTypeEnum[keyof typeof ProductPriceRecurringFixedAmountTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceRecurringFixedTypeEnum = {
-    RECURRING: 'recurring'
-} as const;
-export type ProductPriceRecurringFixedTypeEnum = typeof ProductPriceRecurringFixedTypeEnum[keyof typeof ProductPriceRecurringFixedTypeEnum];
 
 /**
  * Schema to create a recurring product price, i.e. a subscription.
@@ -17443,13 +16623,13 @@ export interface ProductPriceRecurringFixedCreate {
      * @type {string}
      * @memberof ProductPriceRecurringFixedCreate
      */
-    type: ProductPriceRecurringFixedCreateTypeEnum;
+    type: string;
     /**
      * 
      * @type {string}
      * @memberof ProductPriceRecurringFixedCreate
      */
-    amount_type: ProductPriceRecurringFixedCreateAmountTypeEnum;
+    amount_type: string;
     /**
      * The price in cents.
      * @type {number}
@@ -17470,22 +16650,6 @@ export interface ProductPriceRecurringFixedCreate {
     recurring_interval: SubscriptionRecurringInterval;
 }
 
-
-/**
- * @export
- */
-export const ProductPriceRecurringFixedCreateTypeEnum = {
-    RECURRING: 'recurring'
-} as const;
-export type ProductPriceRecurringFixedCreateTypeEnum = typeof ProductPriceRecurringFixedCreateTypeEnum[keyof typeof ProductPriceRecurringFixedCreateTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceRecurringFixedCreateAmountTypeEnum = {
-    FIXED: 'fixed'
-} as const;
-export type ProductPriceRecurringFixedCreateAmountTypeEnum = typeof ProductPriceRecurringFixedCreateAmountTypeEnum[keyof typeof ProductPriceRecurringFixedCreateAmountTypeEnum];
 
 /**
  * A free recurring price for a product, i.e. a subscription.
@@ -17516,7 +16680,7 @@ export interface ProductPriceRecurringFree {
      * @type {string}
      * @memberof ProductPriceRecurringFree
      */
-    amount_type: ProductPriceRecurringFreeAmountTypeEnum;
+    amount_type: string;
     /**
      * Whether the price is archived and no longer available.
      * @type {boolean}
@@ -17534,7 +16698,7 @@ export interface ProductPriceRecurringFree {
      * @type {string}
      * @memberof ProductPriceRecurringFree
      */
-    type: ProductPriceRecurringFreeTypeEnum;
+    type: string;
     /**
      * The recurring interval of the price.
      * @type {SubscriptionRecurringInterval}
@@ -17543,22 +16707,6 @@ export interface ProductPriceRecurringFree {
     recurring_interval: SubscriptionRecurringInterval;
 }
 
-
-/**
- * @export
- */
-export const ProductPriceRecurringFreeAmountTypeEnum = {
-    FREE: 'free'
-} as const;
-export type ProductPriceRecurringFreeAmountTypeEnum = typeof ProductPriceRecurringFreeAmountTypeEnum[keyof typeof ProductPriceRecurringFreeAmountTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceRecurringFreeTypeEnum = {
-    RECURRING: 'recurring'
-} as const;
-export type ProductPriceRecurringFreeTypeEnum = typeof ProductPriceRecurringFreeTypeEnum[keyof typeof ProductPriceRecurringFreeTypeEnum];
 
 /**
  * Schema to create a free recurring product price, i.e. a subscription.
@@ -17571,13 +16719,13 @@ export interface ProductPriceRecurringFreeCreate {
      * @type {string}
      * @memberof ProductPriceRecurringFreeCreate
      */
-    type: ProductPriceRecurringFreeCreateTypeEnum;
+    type: string;
     /**
      * 
      * @type {string}
      * @memberof ProductPriceRecurringFreeCreate
      */
-    amount_type: ProductPriceRecurringFreeCreateAmountTypeEnum;
+    amount_type: string;
     /**
      * The recurring interval of the price.
      * @type {SubscriptionRecurringInterval}
@@ -17586,22 +16734,6 @@ export interface ProductPriceRecurringFreeCreate {
     recurring_interval: SubscriptionRecurringInterval;
 }
 
-
-/**
- * @export
- */
-export const ProductPriceRecurringFreeCreateTypeEnum = {
-    RECURRING: 'recurring'
-} as const;
-export type ProductPriceRecurringFreeCreateTypeEnum = typeof ProductPriceRecurringFreeCreateTypeEnum[keyof typeof ProductPriceRecurringFreeCreateTypeEnum];
-
-/**
- * @export
- */
-export const ProductPriceRecurringFreeCreateAmountTypeEnum = {
-    FREE: 'free'
-} as const;
-export type ProductPriceRecurringFreeCreateAmountTypeEnum = typeof ProductPriceRecurringFreeCreateAmountTypeEnum[keyof typeof ProductPriceRecurringFreeCreateAmountTypeEnum];
 
 
 /**
@@ -18228,7 +17360,7 @@ export interface ResourceNotFound {
      * @type {string}
      * @memberof ResourceNotFound
      */
-    error: ResourceNotFoundErrorEnum;
+    error: string;
     /**
      * 
      * @type {string}
@@ -18236,16 +17368,6 @@ export interface ResourceNotFound {
      */
     detail: string;
 }
-
-
-/**
- * @export
- */
-export const ResourceNotFoundErrorEnum = {
-    RESOURCE_NOT_FOUND: 'ResourceNotFound'
-} as const;
-export type ResourceNotFoundErrorEnum = typeof ResourceNotFoundErrorEnum[keyof typeof ResourceNotFoundErrorEnum];
-
 /**
  * @type ResponseFilesUpdate
  * 
@@ -18338,7 +17460,7 @@ export interface RewardPaidNotification {
      * @type {string}
      * @memberof RewardPaidNotification
      */
-    type: RewardPaidNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {RewardPaidNotificationPayload}
@@ -18346,16 +17468,6 @@ export interface RewardPaidNotification {
      */
     payload: RewardPaidNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const RewardPaidNotificationTypeEnum = {
-    REWARD_PAID_NOTIFICATION: 'RewardPaidNotification'
-} as const;
-export type RewardPaidNotificationTypeEnum = typeof RewardPaidNotificationTypeEnum[keyof typeof RewardPaidNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -18840,7 +17952,19 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
+    canceled_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
     started_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    ends_at: string | null;
     /**
      * 
      * @type {string}
@@ -18877,6 +18001,18 @@ export interface Subscription {
      * @memberof Subscription
      */
     checkout_id: string | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof Subscription
+     */
+    customer_cancellation_reason: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    customer_cancellation_comment: string | null;
     /**
      * 
      * @type {{ [key: string]: MetadataValue; }}
@@ -18927,6 +18063,39 @@ export interface Subscription {
      * @memberof Subscription
      */
     discount: SubscriptionDiscount | null;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionCancel
+ */
+export interface SubscriptionCancel {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCancel
+     */
+    cancel_at_period_end?: boolean | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionCancel
+     */
+    revoke?: boolean | null;
+    /**
+     * 
+     * @type {CustomerCancellationReason}
+     * @memberof SubscriptionCancel
+     */
+    customer_cancellation_reason?: CustomerCancellationReason | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionCancel
+     */
+    customer_cancellation_comment?: string | null;
 }
 
 
@@ -19073,6 +18242,25 @@ export const SubscriptionStatus = {
 } as const;
 export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
 
+/**
+ * @type SubscriptionUpdate
+ * @export
+ */
+export type SubscriptionUpdate = SubscriptionCancel | SubscriptionUpdatePrice;
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionUpdatePrice
+ */
+export interface SubscriptionUpdatePrice {
+    /**
+     * Update subscription to another price.
+     * @type {string}
+     * @memberof SubscriptionUpdatePrice
+     */
+    product_price_id: string;
+}
 /**
  * 
  * @export
@@ -19239,7 +18427,7 @@ export interface TeamAdminMemberPledgedNotification {
      * @type {string}
      * @memberof TeamAdminMemberPledgedNotification
      */
-    type: TeamAdminMemberPledgedNotificationTypeEnum;
+    type: string;
     /**
      * 
      * @type {TeamAdminMemberPledgedNotificationPayload}
@@ -19247,16 +18435,6 @@ export interface TeamAdminMemberPledgedNotification {
      */
     payload: TeamAdminMemberPledgedNotificationPayload;
 }
-
-
-/**
- * @export
- */
-export const TeamAdminMemberPledgedNotificationTypeEnum = {
-    TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification'
-} as const;
-export type TeamAdminMemberPledgedNotificationTypeEnum = typeof TeamAdminMemberPledgedNotificationTypeEnum[keyof typeof TeamAdminMemberPledgedNotificationTypeEnum];
-
 /**
  * 
  * @export
@@ -19335,7 +18513,7 @@ export interface TokenResponse {
      * @type {string}
      * @memberof TokenResponse
      */
-    token_type: TokenResponseTokenTypeEnum;
+    token_type: string;
     /**
      * 
      * @type {number}
@@ -19361,16 +18539,6 @@ export interface TokenResponse {
      */
     id_token: string;
 }
-
-
-/**
- * @export
- */
-export const TokenResponseTokenTypeEnum = {
-    BEARER: 'Bearer'
-} as const;
-export type TokenResponseTokenTypeEnum = typeof TokenResponseTokenTypeEnum[keyof typeof TokenResponseTokenTypeEnum];
-
 /**
  * 
  * @export
@@ -20218,7 +19386,7 @@ export interface Unauthorized {
      * @type {string}
      * @memberof Unauthorized
      */
-    error: UnauthorizedErrorEnum;
+    error: string;
     /**
      * 
      * @type {string}
@@ -20226,16 +19394,6 @@ export interface Unauthorized {
      */
     detail: string;
 }
-
-
-/**
- * @export
- */
-export const UnauthorizedErrorEnum = {
-    UNAUTHORIZED: 'Unauthorized'
-} as const;
-export type UnauthorizedErrorEnum = typeof UnauthorizedErrorEnum[keyof typeof UnauthorizedErrorEnum];
-
 /**
  * 
  * @export
@@ -20687,7 +19845,7 @@ export interface WebhookBenefitCreatedPayload {
      * @type {string}
      * @memberof WebhookBenefitCreatedPayload
      */
-    type: WebhookBenefitCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Benefit}
@@ -20695,16 +19853,6 @@ export interface WebhookBenefitCreatedPayload {
      */
     data: Benefit;
 }
-
-
-/**
- * @export
- */
-export const WebhookBenefitCreatedPayloadTypeEnum = {
-    BENEFIT_CREATED: 'benefit.created'
-} as const;
-export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedPayloadTypeEnum[keyof typeof WebhookBenefitCreatedPayloadTypeEnum];
-
 /**
  * Sent when a new benefit grant is created.
  * 
@@ -20718,7 +19866,7 @@ export interface WebhookBenefitGrantCreatedPayload {
      * @type {string}
      * @memberof WebhookBenefitGrantCreatedPayload
      */
-    type: WebhookBenefitGrantCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitGrantWebhook}
@@ -20726,16 +19874,6 @@ export interface WebhookBenefitGrantCreatedPayload {
      */
     data: BenefitGrantWebhook;
 }
-
-
-/**
- * @export
- */
-export const WebhookBenefitGrantCreatedPayloadTypeEnum = {
-    BENEFIT_GRANT_CREATED: 'benefit_grant.created'
-} as const;
-export type WebhookBenefitGrantCreatedPayloadTypeEnum = typeof WebhookBenefitGrantCreatedPayloadTypeEnum[keyof typeof WebhookBenefitGrantCreatedPayloadTypeEnum];
-
 /**
  * Sent when a new benefit grant is revoked.
  * 
@@ -20749,7 +19887,7 @@ export interface WebhookBenefitGrantRevokedPayload {
      * @type {string}
      * @memberof WebhookBenefitGrantRevokedPayload
      */
-    type: WebhookBenefitGrantRevokedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitGrantWebhook}
@@ -20757,16 +19895,6 @@ export interface WebhookBenefitGrantRevokedPayload {
      */
     data: BenefitGrantWebhook;
 }
-
-
-/**
- * @export
- */
-export const WebhookBenefitGrantRevokedPayloadTypeEnum = {
-    BENEFIT_GRANT_REVOKED: 'benefit_grant.revoked'
-} as const;
-export type WebhookBenefitGrantRevokedPayloadTypeEnum = typeof WebhookBenefitGrantRevokedPayloadTypeEnum[keyof typeof WebhookBenefitGrantRevokedPayloadTypeEnum];
-
 /**
  * Sent when a new benefit grant is updated.
  * 
@@ -20780,7 +19908,7 @@ export interface WebhookBenefitGrantUpdatedPayload {
      * @type {string}
      * @memberof WebhookBenefitGrantUpdatedPayload
      */
-    type: WebhookBenefitGrantUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {BenefitGrantWebhook}
@@ -20788,16 +19916,6 @@ export interface WebhookBenefitGrantUpdatedPayload {
      */
     data: BenefitGrantWebhook;
 }
-
-
-/**
- * @export
- */
-export const WebhookBenefitGrantUpdatedPayloadTypeEnum = {
-    BENEFIT_GRANT_UPDATED: 'benefit_grant.updated'
-} as const;
-export type WebhookBenefitGrantUpdatedPayloadTypeEnum = typeof WebhookBenefitGrantUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitGrantUpdatedPayloadTypeEnum];
-
 /**
  * Sent when a benefit is updated.
  * 
@@ -20811,7 +19929,7 @@ export interface WebhookBenefitUpdatedPayload {
      * @type {string}
      * @memberof WebhookBenefitUpdatedPayload
      */
-    type: WebhookBenefitUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Benefit}
@@ -20819,16 +19937,6 @@ export interface WebhookBenefitUpdatedPayload {
      */
     data: Benefit;
 }
-
-
-/**
- * @export
- */
-export const WebhookBenefitUpdatedPayloadTypeEnum = {
-    BENEFIT_UPDATED: 'benefit.updated'
-} as const;
-export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitUpdatedPayloadTypeEnum];
-
 /**
  * Sent when a new checkout is created.
  * 
@@ -20842,7 +19950,7 @@ export interface WebhookCheckoutCreatedPayload {
      * @type {string}
      * @memberof WebhookCheckoutCreatedPayload
      */
-    type: WebhookCheckoutCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Checkout}
@@ -20850,16 +19958,6 @@ export interface WebhookCheckoutCreatedPayload {
      */
     data: Checkout;
 }
-
-
-/**
- * @export
- */
-export const WebhookCheckoutCreatedPayloadTypeEnum = {
-    CHECKOUT_CREATED: 'checkout.created'
-} as const;
-export type WebhookCheckoutCreatedPayloadTypeEnum = typeof WebhookCheckoutCreatedPayloadTypeEnum[keyof typeof WebhookCheckoutCreatedPayloadTypeEnum];
-
 /**
  * Sent when a checkout is updated.
  * 
@@ -20873,7 +19971,7 @@ export interface WebhookCheckoutUpdatedPayload {
      * @type {string}
      * @memberof WebhookCheckoutUpdatedPayload
      */
-    type: WebhookCheckoutUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Checkout}
@@ -20881,16 +19979,6 @@ export interface WebhookCheckoutUpdatedPayload {
      */
     data: Checkout;
 }
-
-
-/**
- * @export
- */
-export const WebhookCheckoutUpdatedPayloadTypeEnum = {
-    CHECKOUT_UPDATED: 'checkout.updated'
-} as const;
-export type WebhookCheckoutUpdatedPayloadTypeEnum = typeof WebhookCheckoutUpdatedPayloadTypeEnum[keyof typeof WebhookCheckoutUpdatedPayloadTypeEnum];
-
 /**
  * A webhook delivery for a webhook event.
  * @export
@@ -21125,6 +20213,7 @@ export const WebhookEventType = {
     SUBSCRIPTION_UPDATED: 'subscription.updated',
     SUBSCRIPTION_ACTIVE: 'subscription.active',
     SUBSCRIPTION_CANCELED: 'subscription.canceled',
+    SUBSCRIPTION_UNCANCELED: 'subscription.uncanceled',
     SUBSCRIPTION_REVOKED: 'subscription.revoked',
     PRODUCT_CREATED: 'product.created',
     PRODUCT_UPDATED: 'product.updated',
@@ -21164,7 +20253,7 @@ export interface WebhookOrderCreatedPayload {
      * @type {string}
      * @memberof WebhookOrderCreatedPayload
      */
-    type: WebhookOrderCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Order}
@@ -21172,16 +20261,6 @@ export interface WebhookOrderCreatedPayload {
      */
     data: Order;
 }
-
-
-/**
- * @export
- */
-export const WebhookOrderCreatedPayloadTypeEnum = {
-    ORDER_CREATED: 'order.created'
-} as const;
-export type WebhookOrderCreatedPayloadTypeEnum = typeof WebhookOrderCreatedPayloadTypeEnum[keyof typeof WebhookOrderCreatedPayloadTypeEnum];
-
 /**
  * Sent when a organization is updated.
  * 
@@ -21195,7 +20274,7 @@ export interface WebhookOrganizationUpdatedPayload {
      * @type {string}
      * @memberof WebhookOrganizationUpdatedPayload
      */
-    type: WebhookOrganizationUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Organization}
@@ -21203,16 +20282,6 @@ export interface WebhookOrganizationUpdatedPayload {
      */
     data: Organization;
 }
-
-
-/**
- * @export
- */
-export const WebhookOrganizationUpdatedPayloadTypeEnum = {
-    ORGANIZATION_UPDATED: 'organization.updated'
-} as const;
-export type WebhookOrganizationUpdatedPayloadTypeEnum = typeof WebhookOrganizationUpdatedPayloadTypeEnum[keyof typeof WebhookOrganizationUpdatedPayloadTypeEnum];
-
 /**
  * Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.
  * 
@@ -21226,7 +20295,7 @@ export interface WebhookPledgeCreatedPayload {
      * @type {string}
      * @memberof WebhookPledgeCreatedPayload
      */
-    type: WebhookPledgeCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Pledge}
@@ -21234,16 +20303,6 @@ export interface WebhookPledgeCreatedPayload {
      */
     data: Pledge;
 }
-
-
-/**
- * @export
- */
-export const WebhookPledgeCreatedPayloadTypeEnum = {
-    PLEDGE_CREATED: 'pledge.created'
-} as const;
-export type WebhookPledgeCreatedPayloadTypeEnum = typeof WebhookPledgeCreatedPayloadTypeEnum[keyof typeof WebhookPledgeCreatedPayloadTypeEnum];
-
 /**
  * Sent when a pledge is updated.
  * 
@@ -21257,7 +20316,7 @@ export interface WebhookPledgeUpdatedPayload {
      * @type {string}
      * @memberof WebhookPledgeUpdatedPayload
      */
-    type: WebhookPledgeUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Pledge}
@@ -21265,16 +20324,6 @@ export interface WebhookPledgeUpdatedPayload {
      */
     data: Pledge;
 }
-
-
-/**
- * @export
- */
-export const WebhookPledgeUpdatedPayloadTypeEnum = {
-    PLEDGE_UPDATED: 'pledge.updated'
-} as const;
-export type WebhookPledgeUpdatedPayloadTypeEnum = typeof WebhookPledgeUpdatedPayloadTypeEnum[keyof typeof WebhookPledgeUpdatedPayloadTypeEnum];
-
 /**
  * Sent when a new product is created.
  * 
@@ -21288,7 +20337,7 @@ export interface WebhookProductCreatedPayload {
      * @type {string}
      * @memberof WebhookProductCreatedPayload
      */
-    type: WebhookProductCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Product}
@@ -21296,16 +20345,6 @@ export interface WebhookProductCreatedPayload {
      */
     data: Product;
 }
-
-
-/**
- * @export
- */
-export const WebhookProductCreatedPayloadTypeEnum = {
-    PRODUCT_CREATED: 'product.created'
-} as const;
-export type WebhookProductCreatedPayloadTypeEnum = typeof WebhookProductCreatedPayloadTypeEnum[keyof typeof WebhookProductCreatedPayloadTypeEnum];
-
 /**
  * Sent when a product is updated.
  * 
@@ -21319,7 +20358,7 @@ export interface WebhookProductUpdatedPayload {
      * @type {string}
      * @memberof WebhookProductUpdatedPayload
      */
-    type: WebhookProductUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Product}
@@ -21327,16 +20366,6 @@ export interface WebhookProductUpdatedPayload {
      */
     data: Product;
 }
-
-
-/**
- * @export
- */
-export const WebhookProductUpdatedPayloadTypeEnum = {
-    PRODUCT_UPDATED: 'product.updated'
-} as const;
-export type WebhookProductUpdatedPayloadTypeEnum = typeof WebhookProductUpdatedPayloadTypeEnum[keyof typeof WebhookProductUpdatedPayloadTypeEnum];
-
 /**
  * 
  * @export
@@ -21376,7 +20405,7 @@ export interface WebhookSubscriptionActivePayload {
      * @type {string}
      * @memberof WebhookSubscriptionActivePayload
      */
-    type: WebhookSubscriptionActivePayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Subscription}
@@ -21384,19 +20413,9 @@ export interface WebhookSubscriptionActivePayload {
      */
     data: Subscription;
 }
-
-
 /**
- * @export
- */
-export const WebhookSubscriptionActivePayloadTypeEnum = {
-    SUBSCRIPTION_ACTIVE: 'subscription.active'
-} as const;
-export type WebhookSubscriptionActivePayloadTypeEnum = typeof WebhookSubscriptionActivePayloadTypeEnum[keyof typeof WebhookSubscriptionActivePayloadTypeEnum];
-
-/**
- * Sent when a subscription is canceled by the user.
- * They might still have access until the end of the current period.
+ * Sent when a subscription is canceled.
+ * Customers might still have access until the end of the current period.
  * 
  * **Discord & Slack support:** Full
  * @export
@@ -21408,7 +20427,7 @@ export interface WebhookSubscriptionCanceledPayload {
      * @type {string}
      * @memberof WebhookSubscriptionCanceledPayload
      */
-    type: WebhookSubscriptionCanceledPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Subscription}
@@ -21416,16 +20435,6 @@ export interface WebhookSubscriptionCanceledPayload {
      */
     data: Subscription;
 }
-
-
-/**
- * @export
- */
-export const WebhookSubscriptionCanceledPayloadTypeEnum = {
-    SUBSCRIPTION_CANCELED: 'subscription.canceled'
-} as const;
-export type WebhookSubscriptionCanceledPayloadTypeEnum = typeof WebhookSubscriptionCanceledPayloadTypeEnum[keyof typeof WebhookSubscriptionCanceledPayloadTypeEnum];
-
 /**
  * Sent when a new subscription is created.
  * 
@@ -21439,7 +20448,7 @@ export interface WebhookSubscriptionCreatedPayload {
      * @type {string}
      * @memberof WebhookSubscriptionCreatedPayload
      */
-    type: WebhookSubscriptionCreatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Subscription}
@@ -21447,16 +20456,6 @@ export interface WebhookSubscriptionCreatedPayload {
      */
     data: Subscription;
 }
-
-
-/**
- * @export
- */
-export const WebhookSubscriptionCreatedPayloadTypeEnum = {
-    SUBSCRIPTION_CREATED: 'subscription.created'
-} as const;
-export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscriptionCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionCreatedPayloadTypeEnum];
-
 /**
  * Sent when a subscription is revoked, the user looses access immediately.
  * Happens when the subscription is canceled, or payment is past due.
@@ -21471,7 +20470,7 @@ export interface WebhookSubscriptionRevokedPayload {
      * @type {string}
      * @memberof WebhookSubscriptionRevokedPayload
      */
-    type: WebhookSubscriptionRevokedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Subscription}
@@ -21479,16 +20478,27 @@ export interface WebhookSubscriptionRevokedPayload {
      */
     data: Subscription;
 }
-
-
 /**
+ * Sent when a subscription is uncanceled.
+ * 
+ * **Discord & Slack support:** Full
  * @export
+ * @interface WebhookSubscriptionUncanceledPayload
  */
-export const WebhookSubscriptionRevokedPayloadTypeEnum = {
-    SUBSCRIPTION_REVOKED: 'subscription.revoked'
-} as const;
-export type WebhookSubscriptionRevokedPayloadTypeEnum = typeof WebhookSubscriptionRevokedPayloadTypeEnum[keyof typeof WebhookSubscriptionRevokedPayloadTypeEnum];
-
+export interface WebhookSubscriptionUncanceledPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionUncanceledPayload
+     */
+    type: string;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionUncanceledPayload
+     */
+    data: Subscription;
+}
 /**
  * Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
  * 
@@ -21506,7 +20516,7 @@ export interface WebhookSubscriptionUpdatedPayload {
      * @type {string}
      * @memberof WebhookSubscriptionUpdatedPayload
      */
-    type: WebhookSubscriptionUpdatedPayloadTypeEnum;
+    type: string;
     /**
      * 
      * @type {Subscription}
@@ -21514,13 +20524,3 @@ export interface WebhookSubscriptionUpdatedPayload {
      */
     data: Subscription;
 }
-
-
-/**
- * @export
- */
-export const WebhookSubscriptionUpdatedPayloadTypeEnum = {
-    SUBSCRIPTION_UPDATED: 'subscription.updated'
-} as const;
-export type WebhookSubscriptionUpdatedPayloadTypeEnum = typeof WebhookSubscriptionUpdatedPayloadTypeEnum[keyof typeof WebhookSubscriptionUpdatedPayloadTypeEnum];
-

@@ -31,7 +31,11 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
         <SelectValue placeholder="Select a status" />
       </SelectTrigger>
       <SelectContent>
-        {statuses.map((status, index) => (
+        <SelectItem value="any">
+          <span className="whitespace-nowrap">Any status</span>
+        </SelectItem>
+        <SelectSeparator />
+        {statuses.map((status) => (
           <React.Fragment key={status}>
             <SelectGroup>
               <SelectItem value={status} className="font-medium">
@@ -40,7 +44,6 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
                 </div>
               </SelectItem>
             </SelectGroup>
-            {index < statuses.length - 1 && <SelectSeparator />}
           </React.Fragment>
         ))}
       </SelectContent>

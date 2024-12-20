@@ -17,7 +17,7 @@ dependencies = [
   "arq>=0.25.0",
   "stripe>=10.12.0",
   "pyjwt>=2.6.0",
-  "pydantic>=2.7.0b1",
+  "pydantic<2.10", # Pydantic 2.10 removes the `enum` field from JSON schema, which breaks our internal SDK generator. See: https://github.com/pydantic/pydantic/pull/10692
   "jinja2>=3.1.2",
   "sentry-sdk[fastapi,sqlalchemy]>=2.16.0",
   "posthog>=3.6.0",

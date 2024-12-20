@@ -19,7 +19,6 @@ async def polar(app: FastAPI) -> AsyncGenerator[Polar]:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 @pytest.mark.auth
 class TestSDK:
     """

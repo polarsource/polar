@@ -20,7 +20,7 @@ import {
   MaintainerPledgePendingNotification,
   MaintainerPledgedIssueConfirmationPendingNotification,
   MaintainerPledgedIssuePendingNotification,
-  NotificationsInner,
+  NotificationsListNotificationsInner,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
   TeamAdminMemberPledgedNotification,
@@ -37,7 +37,7 @@ import Icon from '../Icons/Icon'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
-type NotificationSchema = NotificationsInner
+type NotificationSchema = NotificationsListNotificationsInner
 
 const Popover = () => {
   const [show, setShow] = useState(false)

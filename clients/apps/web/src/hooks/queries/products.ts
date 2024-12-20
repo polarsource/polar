@@ -2,7 +2,7 @@ import revalidate from '@/app/actions'
 import { api, queryClient } from '@/utils/api'
 import {
   Organization,
-  OrganizationIDFilter,
+  OrganizationIDFilter1,
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
@@ -12,7 +12,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useProducts = (
-  organizationId?: OrganizationIDFilter,
+  organizationId?: OrganizationIDFilter1,
   parameters?: Omit<ProductsApiListRequest, 'organizationId'>,
 ) =>
   useQuery({

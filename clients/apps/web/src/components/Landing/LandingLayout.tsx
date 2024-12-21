@@ -4,9 +4,7 @@ import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import { ChevronRightOutlined } from '@mui/icons-material'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren } from 'react'
 import { AuthModal } from '../Auth/AuthModal'
@@ -15,35 +13,11 @@ import { useModal } from '../Modal/useModal'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <>
-      <Link
-        href="/docs/developers/sdk/polar-for-framer"
-        className="dark:bg-polar-900 hidden flex-row items-center justify-center gap-x-4 bg-white p-4 text-center text-sm text-black transition-opacity duration-300 hover:opacity-50 md:flex dark:text-white"
-      >
-        <svg
-          fill="currentColor"
-          width="14px"
-          height="14px"
-          viewBox="0 0 24 24"
-          role="img"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M4 0h16v8h-8zM4 8h8l8 8H4zM4 16h8v8z" />
-        </svg>
-        <div className="flex flex-row items-center gap-x-1">
-          <span>
-            Introducing Polar for Framer - the simplest way to sell digital
-            products on your site
-          </span>
-          <ChevronRightOutlined fontSize="small" />
-        </div>
-      </Link>
-      <div className="dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%] relative flex w-full flex-col items-center bg-gray-100 dark:bg-black">
-        <LandingPageTopbar />
-        {children}
-        <LandingPageFooter />
-      </div>
-    </>
+    <div className="dark:bg-[radial-gradient(800px_at_top,rgba(20,20,25,1)_0%,rgba(0,0,0,1)_100%] relative flex w-full flex-col items-center bg-gray-100 dark:bg-black">
+      <LandingPageTopbar />
+      {children}
+      <LandingPageFooter />
+    </div>
   )
 }
 
@@ -57,7 +31,7 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="dark:bg-polar-800 shadow-3xl fixed inset-x-4 top-6 z-30 flex flex-row items-center justify-between rounded-full bg-white px-8 py-4 md:sticky md:inset-x-0 md:top-16 md:w-full md:max-w-2xl">
+    <div className="dark:bg-polar-800 shadow-3xl fixed inset-x-4 top-6 z-30 flex flex-row items-center justify-between rounded-full bg-white px-8 py-4 md:sticky md:inset-x-0 md:top-12 md:w-full md:max-w-2xl">
       <TopbarNavigation />
       <BrandingMenu
         className="mt-1 hidden md:block"

@@ -4,10 +4,15 @@ from httpx import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
+from polar.kit.utils import utc_now
 from polar.models import CheckoutLink, Product, ProductPrice, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout_link
+from tests.fixtures.random_objects import (
+    create_checkout_link,
+    create_organization,
+    create_product,
+)
 
 
 @pytest_asyncio.fixture
@@ -255,6 +260,34 @@ class TestRedirect:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get("/v1/checkout-links/not-existing/redirect")
 
+        assert response.status_code == 404
+
+    async def test_blocked_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+    ) -> None:
+        org = await create_organization(
+            save_fixture,
+            name_prefix="blockedorg",
+            blocked_at=utc_now(),
+        )
+        product = await create_product(
+            save_fixture,
+            organization=org,
+            name="Prohibited product",
+            is_archived=False,
+        )
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            product=product,
+            price=product.prices[0],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect"
+        )
         assert response.status_code == 404
 
     async def test_valid(

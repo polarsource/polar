@@ -18,11 +18,11 @@ export const MerchantOfRecord = () => {
           alt="Polar transactions view"
         />
       </picture>
-      <div className="rounded-4xl dark:bg-polar-900 relative col-span-1 flex w-full flex-col justify-between gap-y-8 bg-white p-10">
+      <div className="rounded-4xl dark:border-polar-700 relative col-span-1 flex w-full flex-col justify-between gap-y-8 border border-gray-300 p-10">
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex w-full max-w-sm flex-col gap-y-6">
-            <h3 className="text-3xl font-medium leading-tight">
-              Leave upsales, billing and international taxes to us
+            <h3 className="text-3xl leading-tight">
+              Leave upsales, billing & taxes to us
             </h3>
           </div>
           <ul className="dark:text-polar-200 flex flex-col gap-y-2">

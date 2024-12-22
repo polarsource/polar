@@ -177,8 +177,8 @@ const Testamonial = ({
 export const Testimonials = () => {
   return (
     <div className="flex flex-col items-center gap-y-24">
-      <h3 className="text-center text-2xl leading-snug md:text-4xl">
-        Serving world-class developers, world-wide
+      <h3 className="text-center text-2xl leading-snug md:text-4xl md:text-5xl">
+        Trusted by thousands of developers
       </h3>
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="flex flex-1 flex-col gap-y-4">

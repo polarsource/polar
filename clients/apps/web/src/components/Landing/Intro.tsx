@@ -14,31 +14,6 @@ export const Intro = () => {
 
       <div className="dark:border-polar-700 hover:dark:border-polar-600 dark:divide-polar-700 rounded-4xl grid divide-y divide-gray-200 border border-gray-200 bg-white md:grid-cols-2 md:divide-x md:divide-y-0 dark:bg-transparent">
         <Link
-          href="/docs"
-          className="group flex cursor-pointer flex-col gap-y-8 p-12 transition-all"
-        >
-          <CommandLineIcon className="h-8 w-8" />
-          <div className="flex flex-col gap-y-4">
-            <h2 className="text-3xl">
-              Integrate Polar{' '}
-              <span className="dark:text-polar-500 text-gray-400">
-                using our API
-              </span>
-            </h2>
-            <p className="dark:text-polar-500 text-xl text-gray-500">
-              Developer experience is our top priority. That&apos;s why Polar is
-              built API-first.
-            </p>
-          </div>
-          <span className="dark:text-polar-500 inline-flex items-center gap-x-1 transition-opacity group-hover:text-blue-500 dark:group-hover:text-white">
-            Build with Polar
-            <span className="transform transition-transform group-hover:translate-x-1">
-              →
-            </span>
-          </span>
-        </Link>
-
-        <Link
           href="/docs/checkout"
           className="group flex cursor-pointer flex-col gap-y-8 p-12 transition-all"
         >
@@ -58,6 +33,31 @@ export const Intro = () => {
           <span className="dark:text-polar-500 inline-flex items-center gap-x-1 transition-colors group-hover:text-blue-500 dark:group-hover:text-white">
             Add Checkouts
             <span className="ml-2 transform transition-transform group-hover:translate-x-1">
+              →
+            </span>
+          </span>
+        </Link>
+
+        <Link
+          href="/docs"
+          className="group flex cursor-pointer flex-col gap-y-8 p-12 transition-all"
+        >
+          <CommandLineIcon className="h-8 w-8" />
+          <div className="flex flex-col gap-y-4">
+            <h2 className="text-3xl">
+              Integrate Polar{' '}
+              <span className="dark:text-polar-500 text-gray-400">
+                using our API
+              </span>
+            </h2>
+            <p className="dark:text-polar-500 text-xl text-gray-500">
+              Developer experience is our top priority. That&apos;s why Polar is
+              built API-first.
+            </p>
+          </div>
+          <span className="dark:text-polar-500 inline-flex items-center gap-x-1 transition-opacity group-hover:text-blue-500 dark:group-hover:text-white">
+            Build with Polar
+            <span className="transform transition-transform group-hover:translate-x-1">
               →
             </span>
           </span>

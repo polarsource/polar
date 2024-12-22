@@ -29,7 +29,12 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
-from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.exceptions import (
+    NotPermitted,
+    PolarError,
+    PolarRequestValidationError,
+    ValidationError,
+)
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -219,7 +224,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
         )
         result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        checkout = result.unique().scalar_one_or_none()
+        if checkout is None:
+            return None
+
+        if checkout.product.organization.is_blocked():
+            raise NotPermitted()
+        return checkout
 
     async def create(
         self,
@@ -236,6 +247,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             product, price = await self._get_validated_product(
                 session, auth_subject, checkout_create.product_id
             )
+
+        if product.organization.is_blocked():
+            raise NotPermitted()
 
         if checkout_create.amount is not None and isinstance(price, ProductPriceCustom):
             if (
@@ -585,6 +599,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         product = await self._eager_load_product(session, product)
+        if product.organization.is_blocked():
+            raise NotPermitted()
 
         amount = None
         currency = None
@@ -1710,6 +1726,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .join(Checkout.product)
             .options(
                 contains_eager(Checkout.product).options(
+                    joinedload(Product.organization),
                     joinedload(Product.product_medias),
                     joinedload(Product.attached_custom_fields),
                 )

@@ -170,3 +170,8 @@ class Organization(RecordModel):
             ),
             viewonly=True,
         )
+
+    def is_blocked(self) -> bool:
+        if self.blocked_at is not None:
+            return True
+        return False

@@ -7,15 +7,23 @@ import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
+from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
-from polar.models import Checkout, Product, UserOrganization
+from polar.kit.utils import utc_now
+from polar.models import Checkout, Product, User, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_organization,
+    create_product,
+)
 
 API_PREFIX = "/v1/checkouts/custom"
 
@@ -42,6 +50,29 @@ async def checkout_open(
     return await create_checkout(save_fixture, price=product_one_time.prices[0])
 
 
+async def create_blocked_product(
+    save_fixture: SaveFixture,
+    auth_subject: AuthSubject[User],
+) -> Product:
+    org = await create_organization(
+        save_fixture,
+        name_prefix="blockedorg",
+        blocked_at=utc_now(),
+    )
+    product = await create_product(
+        save_fixture,
+        organization=org,
+        name="Prohibited product",
+        is_archived=False,
+    )
+    user_organization = UserOrganization(
+        user_id=auth_subject.subject.id,
+        organization_id=org.id,
+    )
+    await save_fixture(user_organization)
+    return product
+
+
 @pytest.mark.asyncio
 class TestGet:
     async def test_anonymous(
@@ -56,6 +87,37 @@ class TestGet:
         response = await client.get(f"{API_PREFIX}/{uuid.uuid4()}")
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_blocked_organization(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        product = await create_blocked_product(save_fixture, auth_subject)
+        product.organization.blocked_at = None
+        await save_fixture(product)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                payment_processor=PaymentProcessor.stripe,
+                product_id=product.id,
+            ),
+            auth_subject,
+        )
+
+        response = await client.get(f"{API_PREFIX}/{checkout.id}")
+        assert response.status_code == 200
+
+        session.expunge_all()
+        product.organization.blocked_at = utc_now()
+        await save_fixture(product)
+
+        response = await client.get(f"{API_PREFIX}/{checkout.id}")
+        assert response.status_code == 403
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
     async def test_valid(
@@ -99,6 +161,45 @@ class TestCreateCheckout:
         )
 
         assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_blocked_organization(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        product = await create_blocked_product(save_fixture, auth_subject)
+
+        response = await client.post(
+            f"{API_PREFIX}/",
+            json={
+                "payment_processor": "stripe",
+                "product_id": str(product.id),
+            },
+        )
+        assert response.status_code == 403
+
+        response = await client.post(
+            f"{API_PREFIX}/",
+            json={
+                "payment_processor": "stripe",
+                "product_price_id": str(product.prices[0].id),
+            },
+        )
+        assert response.status_code == 403
+
+        product.organization.blocked_at = None
+        await save_fixture(product)
+
+        response = await client.post(
+            f"{API_PREFIX}/",
+            json={
+                "payment_processor": "stripe",
+                "product_id": str(product.id),
+            },
+        )
+        assert response.status_code == 201
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_valid(

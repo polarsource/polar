@@ -45,7 +45,7 @@ export default function FrameworkSelector() {
           </span>
         </h1>
         <p className="dark:text-polar-500 text-center text-lg text-gray-500 md:text-2xl">
-          Polar is open source & available SDK in a wide range of languages
+          Polar is open source & available as SDK in a wide range of languages
         </p>
         <Link href="https://github.com/polarsource" target="_blank">
           <Button size="lg" variant="secondary">

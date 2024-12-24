@@ -3,19 +3,69 @@ title: API Reference
 description: The Polar API for polar.sh
 keywords: api, reference, polar, polar.sh
 ---
+import { CubeTransparentIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
+import { ApiOutlined } from '@mui/icons-material'
+import Link from 'next/link'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'polarkit/components/ui/tooltip'
 
 # API Reference
 
 Welcome to the Polar API for polar.sh. This specification contains both the definitions of the Polar HTTP API and the Webhook API.
 
-### Feedback
+## Connecting
 
-If you have any feedback or comments, reach out in the Polar API-issue, or reach out on the Polar Discord server.
+<div className="flex items-center gap-2">
+  <ApiOutlined className="h-6 w-6" />
+  <h3 className="my-0">Polar API</h3>
+</div>
+
+The production API is the primary endpoint for live operations. It provides full access to all features. Follow more examples here: [https://docs.polar.sh/developers](https://docs.polar.sh/developers)
+
+<div className="flex items-center gap-2 rounded-lg border bg-card p-4 my-4">
+  <a className="no-underline cursor-default pointer-events-none">https://api.polar.sh</a>
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger>
+        <a href="https://api.polar.sh/">
+          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+        </a>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Open Polar API endpoint</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</div>
+
+<br />
+
+<div className="flex items-center gap-2">
+  <CubeTransparentIcon className="h-6 w-6" />
+  <h3 className="my-0">Sandbox API</h3>
+</div>
+
+To test Polar or work on your integration without worrying about actual money processing or breaking your live organization, you can use our sandbox environment. It's a dedicated server, completely isolated from the production instance where you can do all the experiments you want!
+
+Explore more about Sandbox API here: [https://docs.polar.sh/developers/sandbox](https://docs.polar.sh/developers/sandbox)
+
+<div className="flex items-center gap-2 rounded-lg border bg-card p-4 my-4">
+  <a className="no-underline cursor-default pointer-events-none">https://sandbox-api.polar.sh</a>
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger>
+        <a href="https://sandbox-api.polar.sh/">
+          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+        </a>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Open Sandbox API endpoint</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</div>
+
+## Feedback
+
+If you have any feedback or comments, reach out in the [Polar API-issue](https://github.com/polarsource/polar/issues/), or reach out on the [Polar Discord server](https://discord.gg/Pnhfz3UThd).
 
 We'd love to see what you've built with the API and to get your thoughts on how we can make the API better!
-
-### Connecting
-
-The Polar API is online at https://api.polar.sh.
-
-The [sandbox API](/docs/developers/sandbox) is at https://sandbox-api.polar.sh.

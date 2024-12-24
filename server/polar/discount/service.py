@@ -395,8 +395,11 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def redeem_discount(
         self, session: AsyncSession, locker: Locker, discount: Discount
     ) -> AsyncIterator[DiscountRedemption]:
+        # The timeout is purposely set to 10 seconds, a high value.
+        # We've seen in the past Stripe payment requests taking more than 5 seconds,
+        # causing the lock to expire while waiting for the payment to complete.
         async with locker.lock(
-            f"discount:{discount.id}", timeout=5, blocking_timeout=5
+            f"discount:{discount.id}", timeout=10, blocking_timeout=10
         ):
             if not await self.is_redeemable_discount(session, discount):
                 raise DiscountNotRedeemableError(discount)

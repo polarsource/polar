@@ -361,6 +361,9 @@ class OrderService(ResourceServiceReader[Order]):
         tax = invoice.tax or 0
         amount = invoice.total - tax
 
+        user_metadata = {}
+        custom_field_data = {}
+
         # Get subscription if applicable
         subscription: Subscription | None = None
         if invoice.subscription is not None:
@@ -382,11 +385,19 @@ class OrderService(ResourceServiceReader[Order]):
                     )
                     billing_reason = OrderBillingReason.subscription_cycle
 
+            # Ensure renewals inherit original metadata and custom fields
+            user_metadata = subscription.user_metadata
+            custom_field_data = subscription.custom_field_data
+
             # Set the subscription amount to the latest order amount
             # Helps to reflect discount that may have ended
             if subscription.amount != amount:
                 subscription.amount = amount
                 session.add(subscription)
+
+        if checkout is not None:
+            user_metadata = checkout.user_metadata
+            custom_field_data = checkout.custom_field_data
 
         # Create Order
         order = Order(
@@ -401,10 +412,8 @@ class OrderService(ResourceServiceReader[Order]):
             discount=discount,
             subscription=subscription,
             checkout=checkout,
-            user_metadata=checkout.user_metadata if checkout is not None else {},
-            custom_field_data=checkout.custom_field_data
-            if checkout is not None
-            else {},
+            user_metadata=user_metadata,
+            custom_field_data=custom_field_data,
             created_at=datetime.fromtimestamp(invoice.created, tz=UTC),
         )
 

@@ -155,6 +155,13 @@ const BaseCheckoutForm = ({
           }
           clearErrors('customer_billing_address')
         }
+      } else if (name === 'discount_code') {
+        const { discount_code } = value
+        clearErrors('discount_code')
+        // Ensure we don't submit an empty discount code
+        if (discount_code === '') {
+          setValue('discount_code', undefined)
+        }
       }
 
       if (Object.keys(payload).length === 0) {
@@ -165,7 +172,7 @@ const BaseCheckoutForm = ({
         await onCheckoutUpdate(payload)
       } catch {}
     },
-    [clearErrors, resetField, onCheckoutUpdate],
+    [clearErrors, resetField, onCheckoutUpdate, setValue],
   )
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedWatcher = useCallback(debounce(watcher, 500), [watcher])

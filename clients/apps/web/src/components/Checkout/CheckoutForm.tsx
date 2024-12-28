@@ -486,6 +486,12 @@ const BaseCheckoutForm = ({
                               className="bg-white shadow-sm"
                               {...field}
                               value={field.value || ''}
+                              onKeyDown={(e) => {
+                                if (e.key !== 'Enter') return
+
+                                e.preventDefault()
+                                addDiscountCode()
+                              }}
                             />
                             <div className="absolute inset-y-0 right-1 z-10 flex items-center">
                               {!checkout.discount && (

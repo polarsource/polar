@@ -123,20 +123,24 @@ class CustomerService(ResourceServiceReader[Customer]):
         if (
             customer_update.email is not None
             and customer.email.lower() != customer_update.email.lower()
-            and await self.get_by_email_and_organization(
+        ):
+            already_exists = await self.get_by_email_and_organization(
                 session, customer_update.email, customer.organization
             )
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "email"),
-                        "msg": "A customer with this email address already exists.",
-                        "input": customer_update.email,
-                    }
-                ]
-            )
+            if already_exists:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "email"),
+                            "msg": "A customer with this email address already exists.",
+                            "input": customer_update.email,
+                        }
+                    ]
+                )
+
+            # Reset verification status
+            customer.email_verified = False
 
         for attr, value in customer_update.model_dump(exclude_unset=True).items():
             setattr(customer, attr, value)

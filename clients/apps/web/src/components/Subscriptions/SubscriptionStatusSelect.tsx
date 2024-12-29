@@ -35,7 +35,7 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
           <React.Fragment key={status}>
             <SelectGroup>
               <SelectItem value={status} className="font-medium">
-                <div className="flex items-center gap-2 whitespace-normal ">
+                <div className="flex items-center gap-2 whitespace-normal">
                   {subscriptionStatusDisplayNames[status]}
                 </div>
               </SelectItem>

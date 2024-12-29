@@ -17,10 +17,7 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
 
   return (
     <Tabs className="md:-mx-4" value={current?.title}>
-      <TabsList
-        className="
-          flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"
-      >
+      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>

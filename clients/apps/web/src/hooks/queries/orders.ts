@@ -3,12 +3,16 @@ import { OrdersApiGetRequest, OrdersApiListRequest } from '@polar-sh/sdk'
 import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useOrder = (orderId?: string, parameters?: Omit<OrdersApiGetRequest, 'id'>) => useQuery({
-  queryKey: ['order', orderId, parameters],
-  queryFn: () => api.orders.get({ id: orderId ?? '', ...parameters }),
-  retry: defaultRetry,
-  enabled: !!orderId,
-})
+export const useOrder = (
+  orderId?: string,
+  parameters?: Omit<OrdersApiGetRequest, 'id'>,
+) =>
+  useQuery({
+    queryKey: ['order', orderId, parameters],
+    queryFn: () => api.orders.get({ id: orderId ?? '', ...parameters }),
+    retry: defaultRetry,
+    enabled: !!orderId,
+  })
 
 export const useOrders = (
   organizationId?: string,

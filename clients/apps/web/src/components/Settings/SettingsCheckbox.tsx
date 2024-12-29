@@ -40,7 +40,7 @@ const SettingsCheckbox = ({
           )}
         />
       </div>
-      <div className="ml-2.5 inline-flex items-center space-x-4 text-sm leading-6 ">
+      <div className="ml-2.5 inline-flex items-center space-x-4 text-sm leading-6">
         <label htmlFor={id}>{title}</label>{' '}
         {description && (
           <span

@@ -184,8 +184,8 @@ const PledgeCheckoutFundByTeam = ({
 export default PledgeCheckoutFundByTeam
 
 const NextSteps = () => (
-  <div className="dark:text-polar-400 flex flex-col gap-3 text-sm  text-gray-600 ">
-    <div className="flex items-center gap-4 font-medium ">
+  <div className="dark:text-polar-400 flex flex-col gap-3 text-sm text-gray-600">
+    <div className="flex items-center gap-4 font-medium">
       <ClockIcon className="dark:text-polar-400 h-6 w-6 text-gray-600" />
       <div>
         <div className="dark:text-polar-300 text-gray-600">

@@ -85,7 +85,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
             )}
             {payoutEstimate && (
               <>
-                <div className="flex flex-col items-center gap-8 ">
+                <div className="flex flex-col items-center gap-8">
                   <div>
                     You&apos;re about to withdraw your balance to your bank
                     account.
@@ -108,11 +108,11 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                         <div className="text-4xl">
                           {formatCurrencyAndAmount(payoutEstimate.gross_amount)}
                         </div>
-                        <div className="border-muted-foreground h-0 w-12 border-t-2  border-dashed"></div>
+                        <div className="border-muted-foreground h-0 w-12 border-t-2 border-dashed"></div>
                         <div className="text-2xl text-red-500 dark:text-red-400">
                           {formatCurrencyAndAmount(payoutEstimate.fees_amount)}
                         </div>
-                        <div className="border-muted-foreground h-0 w-12 border-t-2  border-dashed"></div>
+                        <div className="border-muted-foreground h-0 w-12 border-t-2 border-dashed"></div>
                         <div className="text-4xl text-green-500 dark:text-green-400">
                           {formatCurrencyAndAmount(payoutEstimate.net_amount)}
                         </div>

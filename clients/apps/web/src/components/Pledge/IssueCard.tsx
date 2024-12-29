@@ -58,7 +58,7 @@ const IssueCard = ({
         {/* Issue details */}
         <div className="dark:text-polar-500 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
           {/* Left part */}
-          <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
+          <div className="col-span-1 flex flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start">
             <div>
               <a href={url}>#{issue.number}</a>
             </div>

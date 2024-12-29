@@ -1,6 +1,6 @@
+import { UserSignupAttribution } from '@polar-sh/sdk'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import LogoIcon from '../Brand/LogoIcon'
-import { UserSignupAttribution } from '@polar-sh/sdk'
 import Login from './Login'
 
 interface AuthModalProps {
@@ -17,12 +17,12 @@ export const AuthModal = ({
   const isSignup = signup !== undefined
   const title = isSignup ? 'Sign Up' : 'Log In'
 
-  const copy =
-    isSignup ? (
-      <p className="dark:text-polar-500 text-xl text-gray-500">
-        Join thousands of developers &amp; startups monetizing their products with Polar.
-      </p>
-    ) : null
+  const copy = isSignup ? (
+    <p className="dark:text-polar-500 text-xl text-gray-500">
+      Join thousands of developers &amp; startups monetizing their products with
+      Polar.
+    </p>
+  ) : null
 
   return (
     <ShadowBox className="overflow-y-auto p-12">
@@ -35,7 +35,11 @@ export const AuthModal = ({
         </div>
 
         <div className="flex flex-col gap-y-12">
-          <Login returnTo={returnTo} returnParams={returnParams} signup={signup} />
+          <Login
+            returnTo={returnTo}
+            returnParams={returnParams}
+            signup={signup}
+          />
         </div>
       </div>
     </ShadowBox>

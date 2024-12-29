@@ -1,19 +1,14 @@
 import { ProductCardEmbed } from '@/components/Embed/ProductCardEmbed'
 import { getServerURL } from '@/utils/api'
-import {
-  ProductEmbed,
-} from '@polar-sh/sdk'
+import { ProductEmbed } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
 const generate304Response = () => {
-  return new Response(
-    null,
-    {
-      status: 304,
-    },
-  )
+  return new Response(null, {
+    status: 304,
+  })
 }
 
 const generate404Response = () => {
@@ -47,7 +42,7 @@ const getEmbed = async (
 
   const response = await fetch(url, {
     method: 'GET',
-    headers: headers
+    headers: headers,
   })
 
   const useCache = response.status === 304
@@ -78,11 +73,7 @@ const render = async (
   ).then((res) => res.arrayBuffer())
 
   return await satori(
-    <ProductCardEmbed
-      embed={embed}
-      cta={cta}
-      darkmode={darkmode}
-    />,
+    <ProductCardEmbed embed={embed} cta={cta} darkmode={darkmode} />,
     {
       fonts: [
         {
@@ -125,18 +116,14 @@ export async function GET(request: Request) {
       return generate404Response()
     }
 
-    const svg = await render(
-      embed,
-      cta,
-      darkmode,
-    )
+    const svg = await render(embed, cta, darkmode)
 
-    const cacheTTL = 60 * 60 * 24 * 100  // 100 days
+    const cacheTTL = 60 * 60 * 24 * 100 // 100 days
     return new Response(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
         'Cache-Control': `public, max-age=${cacheTTL}`,
-        'ETag': embed.etag,
+        ETag: embed.etag,
       },
       status: 200,
     })

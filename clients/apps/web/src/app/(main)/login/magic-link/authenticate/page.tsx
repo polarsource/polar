@@ -17,7 +17,7 @@ export default function Page({
   })
   return (
     <form
-      className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center  bg-gray-50"
+      className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50"
       method="post"
       action={`${CONFIG.BASE_URL}/v1/magic_link/authenticate?${urlSearchParams.toString()}`}
     >

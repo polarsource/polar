@@ -1,14 +1,18 @@
 'use client'
 
 import { api } from '@/utils/api'
-import { UserSignupAttribution, MagicLinkRequest } from '@polar-sh/sdk'
+import { MagicLinkRequest, UserSignupAttribution } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 export const useSendMagicLink = () => {
   const router = useRouter()
   const func = useCallback(
-    async (email: string, return_to?: string, signup?: UserSignupAttribution) => {
+    async (
+      email: string,
+      return_to?: string,
+      signup?: UserSignupAttribution,
+    ) => {
       const body: MagicLinkRequest = {
         email,
         return_to,

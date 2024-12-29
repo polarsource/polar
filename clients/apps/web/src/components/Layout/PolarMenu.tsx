@@ -2,10 +2,10 @@
 
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useLoginLink } from '@/hooks/login'
+import { usePostHog } from '@/hooks/posthog'
 import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePostHog } from '@/hooks/posthog'
 import Button from 'polarkit/components/ui/atoms/button'
 import GetStartedButton from '../Auth/GetStartedButton'
 
@@ -57,7 +57,11 @@ const PolarMenu = ({
         </div>
       ) : (
         <>
-          <GetStartedButton size="sm" text="Sell with Polar" storefrontOrg={organization} />
+          <GetStartedButton
+            size="sm"
+            text="Sell with Polar"
+            storefrontOrg={organization}
+          />
           <Link
             href={loginLink}
             onClick={onLoginClick}

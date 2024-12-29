@@ -2,11 +2,11 @@
 
 import { useAuth } from '@/hooks'
 import { useLoginLink } from '@/hooks/login'
+import { usePostHog } from '@/hooks/posthog'
 import Link from 'next/link'
 import { ShadowListGroup } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import OAuthSettingsBase from '../Settings/OAuth/OAuthSettings'
-import { usePostHog } from '@/hooks/posthog'
 
 const OAuthSettings = () => {
   const posthog = usePostHog()

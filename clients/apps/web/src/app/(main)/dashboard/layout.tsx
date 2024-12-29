@@ -1,10 +1,5 @@
-
 import { PropsWithChildren } from 'react'
 
 export default async function Layout({ children }: PropsWithChildren) {
-  return (
-      <div className="md:h-screen h-full flex flex-col">
-        {children}
-      </div>
-  )
+  return <div className="flex h-full flex-col md:h-screen">{children}</div>
 }

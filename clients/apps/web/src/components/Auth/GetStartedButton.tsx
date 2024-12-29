@@ -1,15 +1,14 @@
 'use client'
 
+import { usePostHog } from '@/hooks/posthog'
 import { KeyboardArrowRight } from '@mui/icons-material'
-import Button from 'polarkit/components/ui/atoms/button'
-import { ComponentProps } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { Organization } from '@polar-sh/sdk'
+import Button from 'polarkit/components/ui/atoms/button'
+import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { AuthModal } from './AuthModal'
-import { useCallback, useMemo, FormEvent } from 'react'
-import { usePostHog } from '@/hooks/posthog'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
@@ -44,11 +43,14 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   }, [signup, posthog, showModal])
 
   // Supporting embedding the button in a form
-  const onSubmit = useCallback((e: FormEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    onClick()
-  }, [onClick])
+  const onSubmit = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      onClick()
+    },
+    [onClick],
+  )
 
   return (
     <>
@@ -77,7 +79,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
             returnParams={slug ? { slug, auto: 'true' } : {}}
             signup={{
               intent: 'creator',
-              ...signup
+              ...signup,
             }}
           />
         }

@@ -273,9 +273,11 @@ export const EditProductPage = ({
           >
             Save Product
           </Button>
-          {!product.is_archived && <Button variant="secondary" size="lg" onClick={showArchiveModal}>
-            Archive
-          </Button>}
+          {!product.is_archived && (
+            <Button variant="secondary" size="lg" onClick={showArchiveModal}>
+              Archive
+            </Button>
+          )}
         </div>
       </div>
     </DashboardBody>

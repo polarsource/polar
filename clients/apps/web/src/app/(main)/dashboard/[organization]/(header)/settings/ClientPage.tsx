@@ -1,9 +1,9 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAppearanceSettings from '@/components/Settings/OrganizationAppearanceSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import FeatureSettings from '@/components/Settings/FeatureSettings'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useContext } from 'react'
 

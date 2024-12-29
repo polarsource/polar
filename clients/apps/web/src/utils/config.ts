@@ -15,7 +15,7 @@ const stringToNumber = (
  * document.querySelectorAll('.PressableContext').forEach((d) => { if (d.checked && d.name !== '') { whitelist.push(d.name) } })
  * whitelist.join(',')
  *
- * All countries supported by Stripe except Gibraltar (transfers not supported)
+ * All countries supported by Stripe Connect Express except Gibraltar (transfers not supported)
  *
  */
 const STRIPE_COUNTRIES =

@@ -1,8 +1,19 @@
-import { twMerge } from "tailwind-merge"
+import { twMerge } from 'tailwind-merge'
 
-export const Status = ({ className, status }: { className: string, status: string }) => {
+export const Status = ({
+  className,
+  status,
+}: {
+  className: string
+  status: string
+}) => {
   return (
-    <div className={twMerge("px-2 py-1 text-sm flex flex-row items-center justify-center rounded-md", className)}>
+    <div
+      className={twMerge(
+        'flex flex-row items-center justify-center rounded-md px-2 py-1 text-sm',
+        className,
+      )}
+    >
       {status}
     </div>
   )

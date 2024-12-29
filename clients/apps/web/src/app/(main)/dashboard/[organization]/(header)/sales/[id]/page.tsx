@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Page({
   params,
 }: {
-  params: { organization: string, id: string }
+  params: { organization: string; id: string }
 }) {
   const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
@@ -20,10 +20,5 @@ export default async function Page({
     params.organization,
   )
 
-  return (
-    <ClientPage
-      organization={organization}
-      orderId={params.id}
-    />
-  )
+  return <ClientPage organization={organization} orderId={params.id} />
 }

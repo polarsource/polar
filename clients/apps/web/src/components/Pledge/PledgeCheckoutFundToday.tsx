@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/auth'
+import { usePostHog } from '@/hooks/posthog'
 import { useListPaymentMethods } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
@@ -31,7 +32,6 @@ import { twMerge } from 'tailwind-merge'
 import OrganizationSelect from './OrganizationSelect'
 import PaymentForm from './PaymentForm'
 import { generateRedirectURL, prettyCardName, validateEmail } from './payment'
-import { usePostHog } from '@/hooks/posthog'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 

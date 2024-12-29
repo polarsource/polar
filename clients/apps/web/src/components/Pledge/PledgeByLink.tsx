@@ -60,7 +60,7 @@ const PledgeByLink = ({
                   className="text mb-2 mt-4 text-sm font-medium"
                 >
                   GitHub issue link{' '}
-                  <span className="dark:text-polar-400 font-normal	 text-gray-500 ">
+                  <span className="dark:text-polar-400 font-normal text-gray-500">
                     (e.g. https://github.com/
                     <wbr />
                     polarsource/

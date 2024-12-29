@@ -1,9 +1,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { ProductEmbed, ProductPrice } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
-import {
-  getRecurringBillingLabel,
-} from '../Subscriptions/utils'
+import { getRecurringBillingLabel } from '../Subscriptions/utils'
 
 export const ProductCardEmbed = ({
   embed,
@@ -16,7 +14,7 @@ export const ProductCardEmbed = ({
 }) => {
   const price: ProductPrice = embed.price
 
-  const isSubscription = ('recurring_interval' in price)
+  const isSubscription = 'recurring_interval' in price
   const isPWYW = price.amount_type === 'custom'
   const recurringBillingLabel = isSubscription
     ? getRecurringBillingLabel(price.recurring_interval)
@@ -37,17 +35,17 @@ export const ProductCardEmbed = ({
   switch (price.amount_type) {
     case 'free':
       priceLabel = 'Free'
-      break;
+      break
     case 'custom':
       priceLabel = 'Pay what you want'
-      break;
+      break
     case 'fixed':
       priceLabel = formatCurrencyAndAmount(
         price.price_amount,
         price.price_currency,
         0,
       )
-      break;
+      break
   }
 
   return (
@@ -104,7 +102,11 @@ export const ProductCardEmbed = ({
         </div>
       </div>
       {coverUrl && (
-        <img src={coverUrl} style={{ width: '200px', height: '100px' }} alt="" />
+        <img
+          src={coverUrl}
+          style={{ width: '200px', height: '100px' }}
+          alt=""
+        />
       )}
       {embed.description && (
         <div

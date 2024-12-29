@@ -5,10 +5,7 @@ import { defaultRetry } from './retry'
 
 export const useUpdateProject = () =>
   useMutation({
-    mutationFn: (variables: {
-      id: string
-      body: RepositoryUpdate
-    }) => {
+    mutationFn: (variables: { id: string; body: RepositoryUpdate }) => {
       return api.repositories.update(variables)
     },
     retry: defaultRetry,

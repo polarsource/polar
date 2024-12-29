@@ -4,13 +4,13 @@ import {
   CustomFieldType,
   CustomFieldUpdate,
 } from '@polar-sh/sdk'
+import { Switch } from 'polarkit/components/ui/atoms'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from 'polarkit/components/ui/atoms/Accordion'
-import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {

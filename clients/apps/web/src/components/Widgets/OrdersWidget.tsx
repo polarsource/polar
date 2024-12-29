@@ -78,9 +78,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   ]
 
   return (
-    <div
-      className={twMerge('hidden h-80 md:block', className)}
-    >
+    <div className={twMerge('hidden h-80 md:block', className)}>
       {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="relative h-full">
           {orders.data?.items

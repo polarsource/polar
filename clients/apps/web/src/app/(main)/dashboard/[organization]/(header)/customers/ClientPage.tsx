@@ -4,7 +4,7 @@ import { CustomerModal } from '@/components/Customer/CustomerModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { useCustomers} from '@/hooks/queries'
+import { useCustomers } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import {
   DataTablePaginationState,

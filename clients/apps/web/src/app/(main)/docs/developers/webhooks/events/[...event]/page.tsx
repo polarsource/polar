@@ -1,4 +1,5 @@
 import ProseWrapper from '@/components/Documentation/ProseWrapper'
+import { TableOfContents } from '@/components/Documentation/TableOfContents'
 import {
   fetchSchema,
   generateSchemaExample,
@@ -9,13 +10,10 @@ import SyntaxHighlighterServer, {
   Highlighter,
   getHighlighter,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
-import { notFound } from 'next/navigation'
 import Markdown from 'markdown-to-jsx'
+import { notFound } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { TableOfContents } from '@/components/Documentation/TableOfContents'
 import type { TocItem } from 'remark-flexible-toc'
-
-
 
 export const dynamic = 'force-static'
 
@@ -46,7 +44,7 @@ const Webhook = ({
 }
 
 export default async function Page({
-  params: { event }
+  params: { event },
 }: {
   params: { event: string[] }
 }) {
@@ -66,7 +64,7 @@ export default async function Page({
       depth: 1,
       numbering: [1],
       parent: 'root',
-    }
+    },
   ]
 
   return (

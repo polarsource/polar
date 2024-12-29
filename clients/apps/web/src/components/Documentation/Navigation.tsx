@@ -399,7 +399,9 @@ export const MainNavigation = () => {
         <NavigationHeadline>Introduction</NavigationHeadline>
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
-        <NavigationItem href="/docs/countries">Supported Countries</NavigationItem>
+        <NavigationItem href="/docs/countries">
+          Supported Countries
+        </NavigationItem>
         <NavigationItem href="/docs/fees">Fees</NavigationItem>
       </div>
 

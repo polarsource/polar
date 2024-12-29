@@ -1,5 +1,6 @@
 'use client'
 
+import { usePostHog } from '@/hooks/posthog'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import {
@@ -19,7 +20,6 @@ import {
 } from './commands/useCommands'
 import { APIContainer } from './containers/APIContainer'
 import { GlobalContainer } from './containers/GlobalContainer'
-import { usePostHog } from '@/hooks/posthog'
 
 export interface CommandPaletteProps {
   organization?: Organization

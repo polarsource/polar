@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks/auth'
+import { usePostHog } from '@/hooks/posthog'
 import {
   Issue,
   Organization,
@@ -17,7 +18,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useEffect, useState } from 'react'
 import Subtotal from './Subtotal'
-import { usePostHog } from '@/hooks/posthog'
 
 const PaymentForm = ({
   paymentIntent,

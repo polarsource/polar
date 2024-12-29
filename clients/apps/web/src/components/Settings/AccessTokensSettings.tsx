@@ -1,5 +1,7 @@
 'use client'
 
+import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
 import {
   useCreatePersonalAccessToken,
   useDeletePersonalAccessToken,
@@ -21,15 +23,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'polarkit/components/ui/alert-dialog'
-import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import {
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
-import { useModal } from '@/components/Modal/useModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Select,
@@ -221,7 +220,7 @@ const CreateAccessTokenModal = ({
     defaultValues: {
       comment: '',
       expires_in: 'P30D',
-      scopes: []
+      scopes: [],
     },
   })
   const { control, handleSubmit, reset } = form
@@ -231,7 +230,8 @@ const CreateAccessTokenModal = ({
     async (data: CreateTokenForm) => {
       const created = await createToken.mutateAsync({
         comment: data.comment ? data.comment : '',
-        expires_in: data.expires_in === 'no-expiration' ? null : data.expires_in,
+        expires_in:
+          data.expires_in === 'no-expiration' ? null : data.expires_in,
         scopes: data.scopes,
       })
       onSuccess(created)
@@ -327,49 +327,49 @@ const CreateAccessTokenModal = ({
                 </h2>
 
                 <div className="flex-auto text-right">
-                  <Button
-                    onClick={onToggleAll}
-                    variant="secondary"
-                    size="sm"
-                  >
+                  <Button onClick={onToggleAll} variant="secondary" size="sm">
                     {!allSelected ? 'Select All' : 'Unselect All'}
                   </Button>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                {Object.values(selectableScopes)
-                  .map((scope) => (
-                    <FormField
-                      key={scope}
-                      control={form.control}
-                      name="scopes"
-                      render={({ field }) => {
-                        return (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(scope)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...(field.value || []), scope])
-                                  } else {
-                                    field.onChange(
-                                      (field.value || []).filter((v) => v !== scope),
-                                    )
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm leading-none">
-                              {scope}
-                            </FormLabel>
-                            <FormMessage />
-                          </FormItem>
-                        )
-                      }}
-                    />
-                  ))}
+                {Object.values(selectableScopes).map((scope) => (
+                  <FormField
+                    key={scope}
+                    control={form.control}
+                    name="scopes"
+                    render={({ field }) => {
+                      return (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(scope)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.onChange([
+                                    ...(field.value || []),
+                                    scope,
+                                  ])
+                                } else {
+                                  field.onChange(
+                                    (field.value || []).filter(
+                                      (v) => v !== scope,
+                                    ),
+                                  )
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm leading-none">
+                            {scope}
+                          </FormLabel>
+                          <FormMessage />
+                        </FormItem>
+                      )
+                    }}
+                  />
+                ))}
               </div>
             </div>
             <Button type="submit">Create</Button>

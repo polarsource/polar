@@ -21,7 +21,7 @@ const Pill = ({
           ? 'dark:bg-polar-700 dark:text-polar-300 bg-gray-100 text-gray-600'
           : '',
         color === 'purple'
-          ? 'bg-purple-100 text-purple-600 dark:bg-purple-700 dark:text-purple-300  '
+          ? 'bg-purple-100 text-purple-600 dark:bg-purple-700 dark:text-purple-300'
           : '',
         className,
       )}

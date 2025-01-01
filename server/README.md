@@ -88,3 +88,51 @@ Pragmatic solution. Ideally, they would be and `polar.models` could be a global 
 **Absolute vs. relative imports?**
 
 By default we use absolute imports. However, within an isolated module, e.g `polar.organization`, we use relative imports to their corresponding schemas, endpoints, services and the like for better readability and separation. Let's not be fanatical about it and optimize for readability though, e.g do absolute imports vs. deep relative imports.
+
+## Structure and Purpose
+
+The `server` directory is structured as follows:
+
+- `polar/`: Contains the source code for the server, including various modules and services.
+- `migrations/`: Contains database migration files.
+- `tests/`: Contains test files for the server.
+- `scripts/`: Contains utility scripts for various tasks.
+- `docker-compose.yml`: Configuration file for Docker Compose to set up the development environment.
+- `Dockerfile`: Dockerfile for building the server image.
+
+The purpose of the `server` directory is to provide the backend API and services for the Polar project. It handles all server-side logic, including authentication, data processing, and communication with external services.
+
+## Configuration and Deployment
+
+To configure and deploy the server in production, follow these steps:
+
+1. **Environment Setup**: Ensure that your production environment is properly configured with the necessary environment variables. Create a `.env.production` file in the root of the `server` directory and set the following variables:
+
+   ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/polar
+   REDIS_URL=redis://localhost:6379/0
+   GITHUB_APP_ID=<your-github-app-id>
+   GITHUB_APP_PRIVATE_KEY=<your-github-app-private-key>
+   ```
+
+2. **Build the Server**: Run the following command to build the server for production:
+
+   ```bash
+   docker build -t polar-server .
+   ```
+
+3. **Run Database Migrations**: Run the following command to apply database migrations:
+
+   ```bash
+   docker run --env-file .env.production polar-server uv run task db_migrate
+   ```
+
+4. **Start the Server**: Run the following command to start the server in production mode:
+
+   ```bash
+   docker run --env-file .env.production -p 8000:8000 polar-server uv run task api
+   ```
+
+5. **Deploy to Production**: Use your preferred deployment method to deploy the server to your production environment. This can include deploying to a cloud provider such as AWS, Google Cloud, or Azure, or using a containerization platform such as Kubernetes.
+
+For detailed deployment instructions, refer to the [Deployment Guide](../../docs/DEPLOYMENT.md).

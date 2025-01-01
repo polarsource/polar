@@ -100,3 +100,7 @@ Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to kn
 
 ## License
 Licensed under [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
+## Deployment
+
+For detailed deployment instructions, please refer to the [Deployment Guide](./docs/DEPLOYMENT.md).

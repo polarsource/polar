@@ -132,3 +132,23 @@ The first step is to [create a Checkout session](/docs/api/v1/checkouts/custom/p
 The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
 
 You can read more about this approach in our dedicated [framework guides](/docs/developers/guides).
+
+## Configuring and Deploying the Checkout Process in Production
+
+To configure and deploy the checkout process in production, follow these steps:
+
+1. **Environment Setup**: Ensure that your production environment is properly configured with the necessary environment variables, such as `POLAR_ACCESS_TOKEN` and `POLAR_ORGANIZATION_ID`.
+
+2. **API Integration**: Integrate the Polar API into your production application as described in the API section above. Ensure that the API endpoints are correctly configured and accessible in your production environment.
+
+3. **Checkout Links**: Generate and use Checkout Links for your products. Ensure that the success URLs and metadata are correctly set for your production environment.
+
+4. **Embedded Checkout**: If you are using Embedded Checkout, ensure that the code snippet or JavaScript library is correctly integrated into your production website. Verify that the checkout process works seamlessly in your production environment.
+
+5. **Wallet Payment Methods**: If you want to enable wallet payment methods such as Apple Pay and Google Pay, ensure that your production domain is validated by contacting Polar support.
+
+6. **Testing**: Thoroughly test the checkout process in your production environment to ensure that it works as expected. Verify that orders and subscriptions are correctly processed and that customers receive the appropriate notifications.
+
+7. **Monitoring**: Set up monitoring and logging for the checkout process in your production environment. This will help you identify and resolve any issues that may arise during the checkout process.
+
+By following these steps, you can successfully configure and deploy the checkout process in production, ensuring a smooth and seamless experience for your customers.

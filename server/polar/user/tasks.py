@@ -28,4 +28,5 @@ async def user_on_after_signup(
         if user is None:
             raise UserDoesNotExist(user_id)
 
-        await user_service.link_customers(session, user)
+        if user.email_verified:
+            await user_service.link_customers(session, user)

@@ -279,7 +279,7 @@ class CustomerService(ResourceServiceReader[Customer]):
             user_id=user.id, customer_id=customer.id
         )
         insert_statement = insert_statement.on_conflict_do_nothing(
-            index_elements=["user_id", "customer_id"]
+            index_elements=["customer_id"]
         )
         await session.execute(insert_statement)
 

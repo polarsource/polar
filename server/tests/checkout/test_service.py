@@ -2219,7 +2219,7 @@ class TestConfirm:
         stripe_service_mock.update_customer.assert_called_once()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
-    async def test_link_customer_to_authenticated_user(
+    async def test_link_customer_to_authenticated_user_different_email(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -2243,6 +2243,42 @@ class TestConfirm:
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
                     "customer_name": "Customer Name",
                     "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.customer is not None
+        linked_customer = await customer_service.get_by_id_and_user(
+            session, checkout.customer.id, auth_subject.subject
+        )
+        assert linked_customer is None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_link_customer_to_authenticated_same_email(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[User],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": auth_subject.subject.email,
                     "customer_billing_address": {"country": "FR"},
                 }
             ),

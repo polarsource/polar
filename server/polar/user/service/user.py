@@ -137,9 +137,9 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
                     Customer.id,
                     func.uuid_generate_v4(),
                     func.now(),
-                ).where(Customer.email == user.email),
+                ).where(func.lower(Customer.email) == user.email.lower()),
             )
-            .on_conflict_do_nothing(index_elements=["user_id", "customer_id"])
+            .on_conflict_do_nothing(index_elements=["customer_id"])
         )
         await session.execute(statement)
 

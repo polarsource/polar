@@ -12,6 +12,7 @@ from polar.oauth2.sub_type import SubTypeModelMixin
 class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
     __tablename__ = "oauth2_tokens"
 
+    client_id: Mapped[str] = mapped_column(String(52), nullable=False)
     nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
 
     @property

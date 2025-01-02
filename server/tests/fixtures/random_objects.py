@@ -289,19 +289,15 @@ async def user_github_oauth(
     return await create_user_github_oauth(save_fixture, user)
 
 
-@pytest_asyncio.fixture
-async def user(
-    save_fixture: SaveFixture,
-) -> User:
-    return await create_user(save_fixture)
-
-
 async def create_user(
-    save_fixture: SaveFixture, stripe_customer_id: str | None = None
+    save_fixture: SaveFixture,
+    stripe_customer_id: str | None = None,
+    email_verified: bool = True,
 ) -> User:
     user = User(
         id=uuid.uuid4(),
         email=rstr("test") + "@example.com",
+        email_verified=email_verified,
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],
         stripe_customer_id=stripe_customer_id,
@@ -311,14 +307,13 @@ async def create_user(
 
 
 @pytest_asyncio.fixture
+async def user(save_fixture: SaveFixture) -> User:
+    return await create_user(save_fixture)
+
+
+@pytest_asyncio.fixture
 async def user_second(save_fixture: SaveFixture) -> User:
-    user = User(
-        id=uuid.uuid4(),
-        email=rstr("test") + "@example.com",
-        avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-    )
-    await save_fixture(user)
-    return user
+    return await create_user(save_fixture)
 
 
 @pytest_asyncio.fixture

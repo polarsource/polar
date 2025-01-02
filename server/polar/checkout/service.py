@@ -1665,7 +1665,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         await session.flush()
 
         if is_direct_user(auth_subject):
-            await customer_service.link_user(session, customer, auth_subject.subject)
+            user = auth_subject.subject
+            if user.email_verified and user.email.lower() == customer.email.lower():
+                await customer_service.link_user(
+                    session, customer, auth_subject.subject
+                )
 
         return customer
 

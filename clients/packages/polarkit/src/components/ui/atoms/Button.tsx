@@ -16,9 +16,11 @@ const buttonVariants = cva(
           'text-blue-500 dark:text-polar-200 hover:bg-blue-50 dark:bg-transparent dark:hover:bg-polar-700 border-transparent hover:border-blue-100 border dark:border-polar-700 bg-transparent border-blue-100',
         secondary:
           'text-black dark:text-polar-200 hover:bg-gray-300 dark:bg-polar-700 dark:hover:bg-polar-600 bg-gray-200 border-transparent',
-        ghost:
+        underline:
           'text-black dark:text-white bg-transparent border-b hover:border-black dark:hover:border-white border-transparent transition-colors duration-300 !p-0 hover:bg-transparent !rounded-none',
         link: 'text-blue-400 underline-offset-4 hover:underline bg-transparent hover:bg-transparent',
+        ghost:
+          'bg-transparent hover:bg-gray-200 dark:hover:bg-polar-700 dark:bg-transparent text-black dark:text-white',
       },
       size: {
         default: 'h-8 px-4 py-1.5 rounded-full text-sm',

@@ -15,6 +15,8 @@ class OAuth2Client(RecordModel, OAuth2ClientMixin):
     __tablename__ = "oauth2_clients"
     __table_args__ = (UniqueConstraint("client_id"),)
 
+    client_id: Mapped[str] = mapped_column(String(52), index=True, nullable=False)
+    client_secret: Mapped[str] = mapped_column(String(52), nullable=False)
     registration_access_token: Mapped[str] = mapped_column(
         String, index=True, nullable=False
     )

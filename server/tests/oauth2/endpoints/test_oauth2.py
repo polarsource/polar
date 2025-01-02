@@ -1,5 +1,3 @@
-from typing import cast
-
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -567,7 +565,7 @@ class TestOAuth2Consent:
             sync_session,
             sub_type=SubType.user,
             sub_id=user.id,
-            client_id=cast(str, oauth2_client.client_id),
+            client_id=oauth2_client.client_id,
         )
         assert grant is not None
         assert grant.scopes == ["openid", "profile", "email"]
@@ -676,7 +674,7 @@ class TestOAuth2Consent:
             sync_session,
             sub_type=SubType.organization,
             sub_id=organization.id,
-            client_id=cast(str, oauth2_client.client_id),
+            client_id=oauth2_client.client_id,
         )
         assert grant is not None
         assert grant.scopes == ["openid", "profile", "email"]

@@ -252,6 +252,45 @@ class TestUpdate:
         assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
         stripe_service_mock.update_coupon.assert_not_called()
 
+    async def test_update_discount_past_dates(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            starts_at=utc_now() - timedelta(days=7),
+            ends_at=utc_now() - timedelta(days=1),
+        )
+        old_stripe_coupon_id = discount.stripe_coupon_id
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(
+                name="Updated Name",
+                starts_at=discount.starts_at,
+                ends_at=discount.ends_at,
+            ),
+        )
+
+        assert updated_discount.name == "Updated Name"
+        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
+        assert updated_discount.starts_at == discount.starts_at
+        assert updated_discount.ends_at == discount.ends_at
+
+        stripe_service_mock.update_coupon.assert_called_once_with(
+            old_stripe_coupon_id, name="Updated Name"
+        )
+        stripe_service_mock.delete_coupon.assert_not_called()
+        stripe_service_mock.create_coupon.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestIsRedeemableDiscount:

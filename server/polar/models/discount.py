@@ -54,9 +54,6 @@ class DiscountDuration(StrEnum):
     forever = "forever"
     repeating = "repeating"
 
-    def as_literal(self) -> Literal["once", "forever", "repeating"]:
-        return cast(Literal["once", "forever", "repeating"], self.value)
-
 
 class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
@@ -122,7 +119,7 @@ class Discount(MetadataMixin, RecordModel):
     def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
         params: stripe_lib.Coupon.CreateParams = {
             "name": self.name,
-            "duration": self.duration.as_literal(),
+            "duration": cast(Literal["once", "forever", "repeating"], self.duration),
             "metadata": {
                 "discount_id": str(self.id),
                 "organization_id": str(self.organization.id),

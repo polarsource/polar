@@ -9,7 +9,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 
 export const Checkout = () => {
   return (
-    <div className="dark:bg-polar-950 rounded-4xl dark:md:bg-[radial-gradient(400px_at_top,rgba(20,20,25,1)_0%,rgba(9,9,11,1)_100%] hidden w-full flex-col overflow-hidden bg-white md:flex">
+    <div className="dark:bg-polar-900 rounded-4xl hidden w-full flex-col overflow-hidden bg-white md:flex">
       <div className="flex flex-col items-center gap-y-8 px-8 pt-8 md:px-16 md:pt-16">
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Built for simplicity
@@ -20,11 +20,11 @@ export const Checkout = () => {
         <Link href="/docs/checkout">
           <Button
             fullWidth
-            wrapperClassNames="flex flex-row items-center gap-x-1"
-            variant="secondary"
+            wrapperClassNames="flex flex-row items-center gap-x-2 text-lg"
+            variant="ghost"
           >
             <span>Integrate Checkouts</span>
-            <KeyboardArrowRight className="text-lg" fontSize="inherit" />
+            <KeyboardArrowRight fontSize="inherit" />
           </Button>
         </Link>
       </div>

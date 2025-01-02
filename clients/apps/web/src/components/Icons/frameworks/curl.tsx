@@ -6,7 +6,7 @@ const CurlIcon = () => (
     strokeMiterlimit="2"
     viewBox="0 0 560 400"
     xmlns="http://www.w3.org/2000/svg"
-    width="142px"
+    width="100px"
   >
     <g fillRule="nonzero">
       <path

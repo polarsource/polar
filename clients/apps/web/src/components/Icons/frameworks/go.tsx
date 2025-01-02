@@ -7,7 +7,7 @@ const GoIcon = () => (
     y="0px"
     viewBox="0 0 254.5 225"
     xmlSpace="preserve"
-    width="120px"
+    width="60px"
   >
     <g>
       <g>

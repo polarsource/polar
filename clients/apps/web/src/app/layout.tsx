@@ -81,7 +81,7 @@ export default async function RootLayout({
       <GoogleTagManager gtmId="AW-16748688797" />
       <body
         className={twMerge(
-          `[font-feature-settings:'ss03','zero']`,
+          `antialiased [font-feature-settings:'ss03','zero']`,
           GeistSans.className,
         )}
       >

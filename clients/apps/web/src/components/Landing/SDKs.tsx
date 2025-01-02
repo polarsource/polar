@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
 import CurlIcon from '../Icons/frameworks/curl'
 import GoIcon from '../Icons/frameworks/go'
 import NodeJsIcon from '../Icons/frameworks/nodejs'
@@ -36,36 +35,18 @@ const frameworks: Framework[] = [
 
 export default function FrameworkSelector() {
   return (
-    <div className="flex flex-col gap-y-16">
-      <div className="flex flex-col items-center gap-y-6">
-        <h1 className="text-pretty text-center text-4xl leading-tight md:text-5xl">
-          Integrate Polar{' '}
-          <span className="dark:text-polar-500 text-gray-400">
-            in your favorite language
-          </span>
-        </h1>
-        <p className="dark:text-polar-500 text-center text-lg text-gray-500 md:text-2xl">
-          Polar is open source & available as SDK in a wide range of languages
-        </p>
-        <Link href="https://github.com/polarsource" target="_blank">
-          <Button size="lg" variant="secondary">
-            Polar on GitHub
-          </Button>
+    <div className="flex w-full flex-row items-center justify-center gap-x-4 md:w-3/4 md:gap-x-24 md:self-center">
+      {frameworks.map((framework) => (
+        <Link
+          key={framework.name}
+          href={framework.href}
+          className="dark:hover:bg-polar-950 group flex flex-1 flex-col items-center justify-center hover:bg-gray-100"
+        >
+          <div className="flex flex-col opacity-50 transition-all duration-200 group-hover:opacity-100">
+            {framework.icon}
+          </div>
         </Link>
-      </div>
-      <div className="dark:border-polar-700 rounded-4xl dark:divide-polar-700 hidden w-full flex-row items-center divide-x divide-gray-300 overflow-hidden border border-gray-300 md:flex">
-        {frameworks.map((framework) => (
-          <Link
-            key={framework.name}
-            href={framework.href}
-            className="dark:hover:bg-polar-950 group flex h-64 flex-1 flex-col items-center justify-center gap-6 p-12 hover:bg-gray-100 hover:bg-white"
-          >
-            <div className="flex flex-col opacity-50 transition-all duration-200 group-hover:opacity-100">
-              {framework.icon}
-            </div>
-          </Link>
-        ))}
-      </div>
+      ))}
     </div>
   )
 }

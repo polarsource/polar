@@ -11,7 +11,6 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
-from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
@@ -103,7 +102,6 @@ class TestGet:
         checkout = await checkout_service.create(
             session,
             CheckoutProductCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_id=product.id,
             ),
             auth_subject,

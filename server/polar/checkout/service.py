@@ -1536,7 +1536,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def _update_checkout_tax(
         self, session: AsyncSession, checkout: Checkout
     ) -> Checkout:
-        if not checkout.product.is_tax_applicable:
+        if not (checkout.is_payment_required and checkout.product.is_tax_applicable):
             checkout.tax_amount = 0
             return checkout
 

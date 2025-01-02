@@ -15,7 +15,7 @@ class OAuth2Grant(RecordModel):
         UniqueConstraint("client_id", "organization_id"),
     )
 
-    client_id: Mapped[str] = mapped_column(String(48), nullable=False, index=True)
+    client_id: Mapped[str] = mapped_column(String(52), nullable=False, index=True)
     scope: Mapped[str] = mapped_column(Text, default="", nullable=False)
     user_id: Mapped[UUID | None] = mapped_column(
         Uuid,

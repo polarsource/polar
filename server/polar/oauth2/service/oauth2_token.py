@@ -95,7 +95,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             recipients = [member.user.email for member in members]
 
         oauth2_client = await oauth2_client_service.get_by_client_id(
-            session, cast(str, oauth2_token.client_id)
+            session, oauth2_token.client_id
         )
         # The `if` statement handles the case where we might detect a leaked token
         # of a deleted client

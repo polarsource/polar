@@ -9,6 +9,8 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from fastapi.exceptions import RequestValidationError
 from pydantic import BeforeValidator, TypeAdapter, ValidationError
 
+from polar.auth.service import auth as auth_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.enums import TokenType
 from polar.exceptions import PolarError
 from polar.kit.schemas import Schema
@@ -76,6 +78,8 @@ TOKEN_TYPE_SERVICE_MAP: dict[TokenType, RevokedLeakedProtocol] = {
     TokenType.access_token: oauth2_token_service,
     TokenType.refresh_token: oauth2_token_service,
     TokenType.personal_access_token: personal_access_token_service,
+    TokenType.customer_session_token: customer_session_service,
+    TokenType.user_session_token: auth_service,
 }
 
 

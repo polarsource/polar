@@ -1,16 +1,21 @@
 from datetime import datetime
 from typing import TypeVar
 
+import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, select
 
 from polar.config import settings
+from polar.enums import TokenType
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.http import get_safe_return_url
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import User, UserSession
 from polar.postgres import AsyncSession
+
+log: Logger = structlog.get_logger()
 
 USER_SESSION_TOKEN_PREFIX = "polar_us_"
 
@@ -55,12 +60,7 @@ class AuthService:
         if token is None:
             return None
 
-        token_hash = get_token_hash(token, secret=settings.SECRET)
-        statement = select(UserSession).where(
-            UserSession.token == token_hash, UserSession.expires_at > utc_now()
-        )
-        result = await session.execute(statement)
-        user_session = result.unique().scalar_one_or_none()
+        user_session = await self._get_user_session_by_token(session, token)
 
         if user_session is None:
             return None
@@ -70,6 +70,42 @@ class AuthService:
     async def delete_expired(self, session: AsyncSession) -> None:
         statement = delete(UserSession).where(UserSession.expires_at < utc_now())
         await session.execute(statement)
+
+    async def revoke_leaked(
+        self,
+        session: AsyncSession,
+        token: str,
+        token_type: TokenType,
+        *,
+        notifier: str,
+        url: str | None,
+    ) -> bool:
+        user_session = await self._get_user_session_by_token(session, token)
+
+        if user_session is None:
+            return False
+
+        await session.delete(user_session)
+
+        log.info(
+            "Revoke leaked user session token",
+            id=user_session.id,
+            notifier=notifier,
+            url=url,
+        )
+
+        return True
+
+    async def _get_user_session_by_token(
+        self, session: AsyncSession, token: str, *, expired: bool = False
+    ) -> UserSession | None:
+        token_hash = get_token_hash(token, secret=settings.SECRET)
+        statement = select(UserSession).where(UserSession.token == token_hash)
+        result = await session.execute(statement)
+        if not expired:
+            statement = statement.where(UserSession.expires_at > utc_now())
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
     async def _create_user_session(
         self, session: AsyncSession, user: User, *, user_agent: str

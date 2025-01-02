@@ -1,17 +1,22 @@
+import structlog
 from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
 from polar.customer.service import customer as customer_service
+from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import Customer, CustomerSession
 from polar.postgres import AsyncSession
 
 from .schemas import CustomerSessionCreate
+
+log: Logger = structlog.get_logger()
 
 CUSTOMER_SESSION_TOKEN_PREFIX = "polar_cst_"
 
@@ -76,6 +81,31 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             CustomerSession.expires_at < utc_now()
         )
         await session.execute(statement)
+
+    async def revoke_leaked(
+        self,
+        session: AsyncSession,
+        token: str,
+        token_type: TokenType,
+        *,
+        notifier: str,
+        url: str | None,
+    ) -> bool:
+        customer_session = await self.get_by_token(session, token)
+
+        if customer_session is None:
+            return False
+
+        await session.delete(customer_session)
+
+        log.info(
+            "Revoke leaked customer session token",
+            id=customer_session.id,
+            notifier=notifier,
+            url=url,
+        )
+
+        return True
 
 
 customer_session = CustomerSessionService(CustomerSession)

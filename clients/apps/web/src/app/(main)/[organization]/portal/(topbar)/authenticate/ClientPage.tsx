@@ -73,13 +73,18 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                 return (
                   <FormItem>
                     <FormControl>
-                      <InputOTP maxLength={6} pattern="^[A-Z0-9]+$" {...field}>
+                      <InputOTP
+                        maxLength={6}
+                        pattern="^[A-Z0-9]+$"
+                        inputMode="text"
+                        {...field}
+                      >
                         <InputOTPGroup>
                           {Array.from({ length: 6 }).map((_, index) => (
                             <InputOTPSlot
                               key={index}
                               index={index}
-                              className="dark:border-polar-600 h-16 w-16 border-gray-300 text-2xl"
+                              className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl md:h-16 md:w-16 md:text-2xl"
                             />
                           ))}
                         </InputOTPGroup>

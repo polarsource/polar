@@ -4,6 +4,8 @@ import uuid
 
 import pytest
 
+from polar.kit import template
+from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from polar.models.pledge import PledgeType
 from polar.models.user import User
@@ -37,9 +39,11 @@ async def check_diff(email: tuple[str, str]) -> None:
             f.write(expected)
             return
 
-    with open(f"./tests/notifications/testdata/{name}.html") as f:
-        content = f.read()
-        assert content == expected
+    content = template.render(
+        template.path(__file__, f"testdata/{name}.html"),
+        year=str(utc_now().year),
+    )
+    assert content == expected
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@ export const Pricing = () => {
   return (
     <div
       id="pricing"
-      className="dark:bg-polar-950 rounded-4xl flex w-full flex-col gap-y-12 bg-white p-8 md:p-16 dark:md:bg-[radial-gradient(400px_at_top,rgba(20,20,25,1)_0%,rgba(9,9,11,1)_100%)]"
+      className="dark:bg-polar-900 rounded-4xl flex w-full flex-col gap-y-12 bg-white p-8 md:p-16"
     >
       <div className="flex flex-col items-center gap-y-6">
         <span className="dark:text-polar-500 text-lg text-gray-400">
@@ -15,7 +15,7 @@ export const Pricing = () => {
         </h1>
       </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
+        <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <h1 className="text-xl">4% + 40¢ per transaction</h1>
           </div>
@@ -26,7 +26,7 @@ export const Pricing = () => {
             </Link>
           </p>
         </div>
-        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
+        <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <h1 className="text-xl">Zero Fixed Costs</h1>
           </div>
@@ -34,7 +34,7 @@ export const Pricing = () => {
             No surprises. No hidden or monthly costs.
           </p>
         </div>
-        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
+        <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <h1 className="text-xl">Volume Pricing</h1>
           </div>

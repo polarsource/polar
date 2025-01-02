@@ -149,7 +149,7 @@ const Testamonial = ({
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-700 dark:hover:bg-polar-800 flex flex-row gap-x-4 rounded-2xl border border-transparent bg-white p-6 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row gap-x-4 rounded-2xl bg-white p-6 transition-colors hover:bg-white"
     >
       <div className="flex flex-shrink-0">
         <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />

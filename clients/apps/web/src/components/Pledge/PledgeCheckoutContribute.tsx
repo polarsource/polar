@@ -8,7 +8,7 @@ const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
       <div className="flex items-center gap-4">
         <WrenchScrewdriverIcon className="h-6 w-6" />
         <div>
-          <div className="dark:text-polar-200 font-medium text-gray-600 ">
+          <div className="dark:text-polar-200 font-medium text-gray-600">
             Contribution instructions
           </div>
           <div className="dark:text-polar-400 text-sm font-light text-gray-500">
@@ -67,7 +67,7 @@ const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
 
           <a
             className="text-xs text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-            href="/docs/support/faq"
+            href="/docs/countries"
           >
             Make sure you’re eligible to receive Stripe payouts.
           </a>

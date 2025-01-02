@@ -399,7 +399,9 @@ export const MainNavigation = () => {
         <NavigationHeadline>Introduction</NavigationHeadline>
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
-        <NavigationItem href="/docs/countries">Supported Countries</NavigationItem>
+        <NavigationItem href="/docs/countries">
+          Supported Countries
+        </NavigationItem>
         <NavigationItem href="/docs/fees">Fees</NavigationItem>
       </div>
 
@@ -573,30 +575,6 @@ export const GuidesNavigation = () => {
         icon={<NorthEastOutlined fontSize="inherit" />}
       >
         Setting up Webhooks
-      </NavigationItem>
-    </div>
-  )
-}
-
-export const SupportNavigation = () => {
-  return (
-    <div>
-      <NavigationHeadline>FAQ</NavigationHeadline>
-      <NavigationItem href="/docs/support/faq#pricing">
-        Payments & Fees
-      </NavigationItem>
-      <NavigationItem href="/docs/support/faq#issue-funding">
-        Issue funding
-      </NavigationItem>
-      <NavigationItem href="/docs/support/faq#reward-contributors">
-        Reward contributors
-      </NavigationItem>
-      <NavigationItem href="/docs/support/faq#payouts">Payouts</NavigationItem>
-      <NavigationItem href="/docs/support/faq#supported-platforms-countries--currencies">
-        Supported Countries & Currencies
-      </NavigationItem>
-      <NavigationItem href="/docs/support/faq#security">
-        Security
       </NavigationItem>
     </div>
   )

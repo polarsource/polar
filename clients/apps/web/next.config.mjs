@@ -234,6 +234,7 @@ const nextConfig = {
       // Redirect /docs/overview/:path to /docs/:path
       ...redirectDocs('/overview/:path*', '/:path*', true),
       ...redirectDocs('/subscriptions', '/products', true),
+      ...redirectDocs('/support/faq', '/', true),
 
       // Redirect old FAQ to docs.polar.sh
       ...(ENVIRONMENT === 'production'

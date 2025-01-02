@@ -179,8 +179,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount: Discount,
         discount_update: DiscountUpdate,
     ) -> Discount:
-        previous_name = discount.name
-
         if (
             discount_update.duration is not None
             and discount_update.duration != discount.duration
@@ -253,10 +251,13 @@ class DiscountService(ResourceServiceReader[Discount]):
                     )
                 discount.discount_products.append(DiscountProduct(product=product))
 
+        updated_fields = set()
         for attr, value in discount_update.model_dump(
             exclude_unset=True, exclude={"products"}
         ).items():
-            setattr(discount, attr, value)
+            if value != getattr(discount, attr):
+                setattr(discount, attr, value)
+                updated_fields.add(attr)
 
         sensitive_fields = {
             "starts_at",
@@ -267,13 +268,24 @@ class DiscountService(ResourceServiceReader[Discount]):
             "basis_points",
             "duration_in_months",
         }
-        if len(discount_update.model_fields_set.intersection(sensitive_fields)) > 0:
-            await stripe_service.delete_coupon(discount.stripe_coupon_id)
-            stripe_coupon = await stripe_service.create_coupon(
+        if sensitive_fields.intersection(updated_fields):
+            if discount.ends_at is not None and discount.ends_at < utc_now():
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "ends_at"),
+                            "msg": "Ends at must be in the future.",
+                            "input": discount.ends_at,
+                        }
+                    ]
+                )
+            new_stripe_coupon = await stripe_service.create_coupon(
                 **discount.get_stripe_coupon_params()
             )
-            discount.stripe_coupon_id = stripe_coupon.id
-        elif previous_name != discount.name:
+            await stripe_service.delete_coupon(discount.stripe_coupon_id)
+            discount.stripe_coupon_id = new_stripe_coupon.id
+        elif "name" in updated_fields:
             await stripe_service.update_coupon(
                 discount.stripe_coupon_id, name=discount.name
             )

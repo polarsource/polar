@@ -44,3 +44,4 @@ class TestCreate:
 
         assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer.id)
+        assert json["customer_portal_url"].endswith(json["token"])

@@ -1,4 +1,5 @@
 from sqlalchemy import delete, select
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
@@ -23,7 +24,10 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         customer_create: CustomerSessionCreate,
     ) -> CustomerSession:
         customer = await customer_service.get_by_id(
-            session, auth_subject, customer_create.customer_id
+            session,
+            auth_subject,
+            customer_create.customer_id,
+            options=(joinedload(Customer.organization),),
         )
         if customer is None:
             raise PolarRequestValidationError(

@@ -7,7 +7,8 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.kit.db.models.base import RecordModel
 from polar.kit.utils import utc_now
-from polar.models.customer import Customer
+
+from .customer import Customer
 
 
 def get_expires_at() -> datetime:
@@ -37,3 +38,9 @@ class CustomerSession(RecordModel):
     @raw_token.setter
     def raw_token(self, value: str) -> None:
         self._raw_token = value
+
+    @property
+    def customer_portal_url(self) -> str:
+        return settings.generate_frontend_url(
+            f"/{self.customer.organization.slug}/portal?customer_session_token={self.raw_token}"
+        )

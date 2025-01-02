@@ -23,5 +23,6 @@ class CustomerSession(IDSchema, TimestampedSchema):
 
     token: str = Field(validation_alias="raw_token")
     expires_at: datetime
+    customer_portal_url: str
     customer_id: UUID4
     customer: Customer

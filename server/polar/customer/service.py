@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.sql.base import ExecutableOption
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -64,10 +65,14 @@ class CustomerService(ResourceServiceReader[Customer]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        options: Sequence[ExecutableOption] | None = None,
     ) -> Customer | None:
         statement = self._get_readable_customer_statement(auth_subject).where(
             Customer.id == id
         )
+        if options is not None:
+            statement = statement.options(*options)
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
 

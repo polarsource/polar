@@ -6,6 +6,7 @@ import {
   CustomerPortalLicenseKeysApiListRequest,
   CustomerPortalOrdersApiListRequest,
   CustomerPortalSubscriptionsApiListRequest,
+  CustomerSubscriptionCancel,
   CustomerSubscriptionUpdate,
   PolarAPI,
 } from '@polar-sh/sdk'
@@ -155,8 +156,11 @@ export const useCustomerUpdateSubscription = (api: PolarAPI) =>
 
 export const useCustomerCancelSubscription = (api: PolarAPI) =>
   useMutation({
-    mutationFn: (variables: { id: string }) => {
-      return api.customerPortalSubscriptions.cancel(variables)
+    mutationFn: (variables: {
+      id: string,
+      body: CustomerSubscriptionCancel
+    }) => {
+      return api.customerPortalSubscriptions.update(variables)
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({

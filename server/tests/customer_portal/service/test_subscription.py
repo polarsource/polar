@@ -7,11 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
-    CustomerSubscriptionUpdate,
-)
-from polar.customer_portal.service.subscription import (
-    AlreadyCanceledSubscription,
-    SubscriptionNotActiveOnStripe,
+    CustomerSubscriptionUpdatePrice,
 )
 from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -27,8 +23,12 @@ from polar.models import (
     Subscription,
 )
 from polar.models.product_price import ProductPriceType
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    SubscriptionNotActiveOnStripe,
+)
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -37,12 +37,13 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_subscription,
 )
+from tests.fixtures.stripe import cloned_stripe_canceled_subscription
 
 
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.customer_portal.service.subscription.stripe_service", new=mock)
+    mocker.patch("polar.subscription.service.stripe_service", new=mock)
     return mock
 
 
@@ -99,10 +100,8 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
-                    product_price_id=uuid.uuid4()
-                ),
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(product_price_id=uuid.uuid4()),
             )
 
     async def test_not_recurring_price(
@@ -119,10 +118,8 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
-                    product_price_id=price.id
-                ),
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(product_price_id=price.id),
             )
 
     async def test_extraneous_tier(
@@ -134,8 +131,8 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(
                     product_price_id=product_organization_second.all_prices[0].id
                 ),
             )
@@ -147,8 +144,8 @@ class TestUpdate:
         with pytest.raises(SubscriptionNotActiveOnStripe):
             await customer_subscription_service.update(
                 session,
-                subscription=subscription,
-                subscription_update=CustomerSubscriptionUpdate(
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(
                     product_price_id=product_second.prices[0].id
                 ),
             )
@@ -164,8 +161,8 @@ class TestUpdate:
         new_price = product_second.prices[0]
         updated_subscription = await customer_subscription_service.update(
             session,
-            subscription=subscription,
-            subscription_update=CustomerSubscriptionUpdate(
+            subscription,
+            updates=CustomerSubscriptionUpdatePrice(
                 product_price_id=product_second.prices[0].id,
             ),
         )
@@ -203,9 +200,7 @@ class TestCancel:
         )
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await customer_subscription_service.cancel(
-                session, subscription=subscription
-            )
+            await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth
     async def test_cancel_at_period_end(
@@ -213,6 +208,7 @@ class TestCancel:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
+        stripe_service_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -222,10 +218,11 @@ class TestCancel:
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
 
+        canceled = cloned_stripe_canceled_subscription(subscription)
+        stripe_service_mock.cancel_subscription.return_value = canceled
+
         with pytest.raises(AlreadyCanceledSubscription):
-            await customer_subscription_service.cancel(
-                session, subscription=subscription
-            )
+            await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth
     async def test_free_subscription(
@@ -244,18 +241,20 @@ class TestCancel:
         )
 
         updated_subscription = await customer_subscription_service.cancel(
-            session, subscription=subscription
+            session, subscription
         )
 
         assert updated_subscription.id == subscription.id
         assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.cancel_at_period_end is True
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.canceled_at is not None
+        assert updated_subscription.ends_at is not None
         assert updated_subscription.ended_at is not None
 
         stripe_service_mock.cancel_subscription.assert_not_called()
 
     @pytest.mark.auth
-    async def test_stripe_subscription(
+    async def test_stripe_subscription_cancellation(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -269,14 +268,23 @@ class TestCancel:
             customer=customer,
         )
 
+        canceled = cloned_stripe_canceled_subscription(subscription)
+        stripe_service_mock.cancel_subscription.return_value = canceled
         updated_subscription = await customer_subscription_service.cancel(
-            session, subscription=subscription
+            session,
+            subscription,
+            reason=CustomerCancellationReason.too_complex,
+            comment="So many settings",
         )
 
         assert updated_subscription.id == subscription.id
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.ended_at is None
+        assert updated_subscription.cancel_at_period_end
+        assert updated_subscription.ends_at == updated_subscription.current_period_end
 
         stripe_service_mock.cancel_subscription.assert_called_once_with(
-            subscription.stripe_subscription_id
+            subscription.stripe_subscription_id,
+            customer_reason="too_complex",
+            customer_comment="So many settings",
         )

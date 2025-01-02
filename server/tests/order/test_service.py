@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Any, cast
@@ -46,63 +45,8 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import create_checkout, create_order
+from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
-
-
-def construct_stripe_invoice(
-    *,
-    id: str | None = "INVOICE_ID",
-    total: int = 12000,
-    tax: int = 2000,
-    amount_paid: int | None = None,
-    charge_id: str | None = "CHARGE_ID",
-    subscription_id: str | None = "SUBSCRIPTION_ID",
-    subscription_details: dict[str, Any] | None = None,
-    customer_id: str = "STRIPE_CUSTOMER_ID",
-    lines: list[tuple[str, bool, dict[str, str] | None]] = [("PRICE_ID", False, None)],
-    metadata: dict[str, str] = {},
-    billing_reason: str = "subscription_create",
-    customer_address: dict[str, Any] | None = {"country": "FR"},
-    paid_out_of_band: bool = False,
-    discount: Discount | None = None,
-    created: int | None = None,
-) -> stripe_lib.Invoice:
-    return stripe_lib.Invoice.construct_from(
-        {
-            "id": id,
-            "total": total,
-            "tax": tax,
-            "amount_paid": total if amount_paid is None else amount_paid,
-            "currency": "usd",
-            "charge": charge_id,
-            "subscription": subscription_id,
-            "subscription_details": subscription_details,
-            "customer": customer_id,
-            "customer_address": customer_address,
-            "lines": {
-                "data": [
-                    {
-                        "price": {"id": price_id, "metadata": metadata or {}},
-                        "proration": proration,
-                    }
-                    for price_id, proration, metadata in lines
-                ]
-            },
-            "metadata": metadata,
-            "billing_reason": billing_reason,
-            "paid_out_of_band": paid_out_of_band,
-            "discount": {
-                "coupon": {
-                    "id": discount.stripe_coupon_id,
-                    "metadata": {"discount_id": str(discount.id)},
-                }
-            }
-            if discount is not None
-            else None,
-            "created": created or int(time.time()),
-        },
-        None,
-    )
 
 
 @pytest.fixture(autouse=True)

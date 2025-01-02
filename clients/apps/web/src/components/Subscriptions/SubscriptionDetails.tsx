@@ -3,14 +3,17 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
-import { CustomerSubscription, PolarAPI } from '@polar-sh/sdk'
+import {
+  PolarAPI,
+  CustomerSubscription,
+} from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useState } from 'react'
-import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import ChangePlanModal from './ChangePlanModal'
+import CustomerCancellationModal from './CustomerCancellationModal'
 
 export const SubscriptionDetails = ({
   subscription,
@@ -135,18 +138,11 @@ export const SubscriptionDetails = ({
             Unsubscribe
           </Button>
         )}
-        <ConfirmModal
+        <CustomerCancellationModal
           isShown={showCancelModal}
           hide={() => setShowCancelModal(false)}
-          title={`Unsubscribe from ${subscription.product.name}?`}
-          description={
-            "At the end of your billing period, you won't have access to your benefits anymore."
-          }
-          destructiveText="Unsubscribe"
-          onConfirm={() =>
-            cancelSubscription.mutateAsync({ id: subscription.id })
-          }
-          destructive
+          subscription={subscription}
+          cancelSubscription={cancelSubscription}
         />
       </div>
 

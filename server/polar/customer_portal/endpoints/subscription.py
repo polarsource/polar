@@ -1,5 +1,6 @@
 from typing import Annotated
 
+import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
@@ -14,6 +15,7 @@ from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.service import AlreadyCanceledSubscription
 
 from .. import auth
 from ..schemas.subscription import (
@@ -21,18 +23,19 @@ from ..schemas.subscription import (
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
-    AlreadyCanceledSubscription,
     CustomerSubscriptionSortProperty,
 )
 from ..service.subscription import customer_subscription as user_subscription_service
+
+log = structlog.get_logger()
 
 router = APIRouter(
     prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
 )
 
-SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
+SubscriptionID = Annotated[UUID4, Path(description="Your subscription ID.")]
 SubscriptionNotFound = {
-    "description": "Subscription not found.",
+    "description": "Your subscription was not found.",
     "model": ResourceNotFound.schema(),
 }
 
@@ -108,7 +111,14 @@ async def get(
     summary="Update Subscription",
     response_model=CustomerSubscription,
     responses={
-        200: {"description": "Subscription updated."},
+        200: {"description": "Customer subscription updated."},
+        403: {
+            "description": (
+                "Customer subscription is already canceled "
+                "or will be at the end of the period."
+            ),
+            "model": AlreadyCanceledSubscription.schema(),
+        },
         404: SubscriptionNotFound,
     },
 )
@@ -124,8 +134,14 @@ async def update(
     if subscription is None:
         raise ResourceNotFound()
 
+    log.info(
+        "customer_portal.subscription.cancel",
+        id=id,
+        customer_id=auth_subject.subject.id,
+        updates=subscription_update,
+    )
     return await user_subscription_service.update(
-        session, subscription=subscription, subscription_update=subscription_update
+        session, subscription, updates=subscription_update
     )
 
 
@@ -134,10 +150,10 @@ async def update(
     summary="Cancel Subscription",
     response_model=CustomerSubscription,
     responses={
-        200: {"description": "Subscription canceled."},
+        200: {"description": "Customer subscription is canceled."},
         403: {
             "description": (
-                "This subscription is already canceled "
+                "Customer subscription is already canceled "
                 "or will be at the end of the period."
             ),
             "model": AlreadyCanceledSubscription.schema(),
@@ -156,4 +172,9 @@ async def cancel(
     if subscription is None:
         raise ResourceNotFound()
 
-    return await user_subscription_service.cancel(session, subscription=subscription)
+    log.info(
+        "customer_portal.subscription.cancel",
+        id=id,
+        customer_id=auth_subject.subject.id,
+    )
+    return await user_subscription_service.cancel(session, subscription)

@@ -15,7 +15,8 @@
 
 import * as runtime from '../runtime';
 import type {
-  AlreadyCanceledSubscription,
+  AlreadyCanceledUserSubscription,
+  CustomerSubscriptionCancel,
   HTTPValidationError,
   ListResourceUserSubscription,
   OrganizationIDFilter,
@@ -28,6 +29,7 @@ import type {
 
 export interface UsersSubscriptionsApiCancelRequest {
     id: string;
+    body: CustomerSubscriptionCancel;
 }
 
 export interface UsersSubscriptionsApiGetRequest {
@@ -55,7 +57,7 @@ export interface UsersSubscriptionsApiUpdateRequest {
 export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
-     * Cancel a subscription.
+     * Cancel a users subscription.
      * Cancel Subscription
      */
     async cancelRaw(requestParameters: UsersSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
@@ -66,9 +68,18 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
             );
         }
 
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling cancel().'
+            );
+        }
+
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -83,13 +94,14 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
 
     /**
-     * Cancel a subscription.
+     * Cancel a users subscription.
      * Cancel Subscription
      */
     async cancel(requestParameters: UsersSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {

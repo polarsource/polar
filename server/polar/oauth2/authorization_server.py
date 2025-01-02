@@ -70,7 +70,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         }
 
     def generate_client_id(self) -> str:
-        return generate_token(prefix=CLIENT_ID_PREFIX, nbytes=16)
+        return generate_token(prefix=CLIENT_ID_PREFIX)
 
     def generate_client_secret(self) -> str:
         return generate_token(prefix=CLIENT_SECRET_PREFIX)

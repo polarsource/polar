@@ -78,9 +78,6 @@ const Footer = ({ wide }: { wide?: boolean }) => {
             <h3 className="text-base dark:text-white">Support</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://docs.polar.sh">Docs</FooterLink>
-              <FooterLink href="https://docs.polar.sh/support/faq">
-                FAQ
-              </FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>

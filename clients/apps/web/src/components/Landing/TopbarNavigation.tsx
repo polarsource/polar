@@ -151,11 +151,6 @@ const DocumentationPopover = () => {
                 description="Get help from the Polar team"
                 link="/docs/support"
               />
-              <PopoverLinkItem
-                title="FAQ"
-                description="Common support questions"
-                link="/docs/support/faq"
-              />
             </div>
           </div>
           <div className="flex w-1/2 flex-col gap-y-4 pl-8">

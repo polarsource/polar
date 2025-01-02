@@ -1,15 +1,16 @@
-from datetime import UTC, datetime, timedelta
+from collections import namedtuple
+from datetime import datetime
 from typing import cast
 from unittest.mock import MagicMock, call
 
 import pytest
-import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer.service import customer as customer_service
+from polar.exceptions import BadRequest, ResourceUnavailable
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Benefit,
@@ -28,6 +29,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
+    AlreadyCanceledSubscription,
     AssociatedSubscriptionTierPriceDoesNotExist,
     SubscriptionDoesNotExist,
 )
@@ -37,107 +39,58 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_canceled_subscription,
     create_checkout,
     create_subscription,
     set_product_benefits,
 )
-
-
-def construct_stripe_subscription(
-    *,
-    customer: Customer | None = None,
-    organization: Organization | None = None,
-    price_id: str = "PRICE_ID",
-    status: SubscriptionStatus = SubscriptionStatus.incomplete,
-    latest_invoice: stripe_lib.Invoice | None = None,
-    cancel_at_period_end: bool = False,
-    metadata: dict[str, str] = {},
-    discount: Discount | None = None,
-) -> stripe_lib.Subscription:
-    now_timestamp = datetime.now(UTC).timestamp()
-    base_metadata: dict[str, str] = {
-        **(
-            {"organization_subscriber_id": str(organization.id)}
-            if organization is not None
-            else {}
-        ),
-    }
-    return stripe_lib.Subscription.construct_from(
-        {
-            "id": "SUBSCRIPTION_ID",
-            "customer": customer.stripe_customer_id
-            if customer is not None
-            else "CUSTOMER_ID",
-            "status": status,
-            "items": {
-                "data": [
-                    {"price": {"id": price_id, "currency": "USD", "unit_amount": 1000}}
-                ]
-            },
-            "current_period_start": now_timestamp,
-            "current_period_end": now_timestamp + timedelta(days=30).seconds,
-            "cancel_at_period_end": cancel_at_period_end,
-            "ended_at": None,
-            "latest_invoice": latest_invoice,
-            "metadata": {**base_metadata, **metadata},
-            "discount": {
-                "coupon": {
-                    "id": discount.stripe_coupon_id,
-                    "metadata": {"discount_id": str(discount.id)},
-                }
-            }
-            if discount is not None
-            else None,
-        },
-        None,
-    )
-
-
-def construct_stripe_customer(
-    *,
-    id: str = "CUSTOMER_ID",
-    email: str = "customer@example.com",
-    name: str | None = "Customer Name",
-) -> stripe_lib.Customer:
-    return stripe_lib.Customer.construct_from(
-        {
-            "id": id,
-            "email": email,
-            "name": name,
-            "address": {
-                "country": "FR",
-            },
-        },
-        None,
-    )
-
-
-def construct_stripe_invoice(
-    *,
-    id: str = "INVOICE_ID",
-    total: int = 12000,
-    tax: int = 2000,
-    charge_id: str = "CHARGE_ID",
-    subscription_id: str = "SUBSCRIPTION_ID",
-    metadata: dict[str, str] = {},
-) -> stripe_lib.Invoice:
-    return stripe_lib.Invoice.construct_from(
-        {
-            "id": id,
-            "total": total,
-            "tax": tax,
-            "currency": "usd",
-            "charge": charge_id,
-            "subscription": subscription_id,
-            "metadata": metadata,
-        },
-        None,
-    )
+from tests.fixtures.stripe import (
+    cloned_stripe_canceled_subscription,
+    cloned_stripe_subscription,
+    construct_stripe_customer,
+    construct_stripe_subscription,
+)
 
 
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+Hooks = namedtuple("Hooks", "updated activated canceled uncanceled revoked")
+HookNames = frozenset(Hooks._fields)
+
+
+@pytest.fixture
+def subscription_hooks(mocker: MockerFixture) -> Hooks:
+    updated = mocker.patch.object(subscription_service, "_on_subscription_updated")
+    activated = mocker.patch.object(subscription_service, "_on_subscription_activated")
+    canceled = mocker.patch.object(subscription_service, "_on_subscription_canceled")
+    uncanceled = mocker.patch.object(
+        subscription_service, "_on_subscription_uncanceled"
+    )
+    revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
+    return Hooks(
+        updated=updated,
+        activated=activated,
+        canceled=canceled,
+        uncanceled=uncanceled,
+        revoked=revoked,
+    )
+
+
+def assert_hooks_called_once(subscription_hooks: Hooks, called: set[str]) -> None:
+    for hook in called:
+        getattr(subscription_hooks, hook).assert_called_once()
+
+    not_called = HookNames - called
+    for hook in not_called:
+        getattr(subscription_hooks, hook).assert_not_called()
+
+
+def reset_hooks(subscription_hooks: Hooks) -> None:
+    for hook in HookNames:
+        getattr(subscription_hooks, hook).reset_mock()
 
 
 @pytest.mark.asyncio
@@ -207,6 +160,7 @@ class TestCreateArbitrarySubscription:
         mocker: MockerFixture,
         session: AsyncSession,
         product_recurring_free_price: Product,
+        subscription_hooks: Hooks,
         customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
@@ -251,6 +205,7 @@ class TestCreateSubscriptionFromStripe:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
+        subscription_hooks: Hooks,
         product: Product,
     ) -> None:
         stripe_customer = construct_stripe_customer()
@@ -258,7 +213,7 @@ class TestCreateSubscriptionFromStripe:
         get_customer_mock.return_value = stripe_customer
 
         stripe_subscription = construct_stripe_subscription(
-            price_id=product.prices[0].stripe_price_id
+            price_id=product.prices[0].stripe_price_id,
         )
 
         # then
@@ -367,6 +322,7 @@ class TestCreateSubscriptionFromStripe:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         product_recurring_free_price: Product,
+        subscription_hooks: Hooks,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -389,7 +345,7 @@ class TestCreateSubscriptionFromStripe:
         # then
         session.expunge_all()
 
-        subscription = await subscription_service.create_subscription_from_stripe(
+        subscription = await subscription_service.update_subscription_from_stripe(
             session, stripe_subscription=stripe_subscription
         )
 
@@ -398,6 +354,7 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.started_at == existing_subscription.started_at
         assert subscription.price == price
         assert subscription.product == product
+        assert_hooks_called_once(subscription_hooks, {"updated"})
 
     async def test_discount(
         self,
@@ -543,27 +500,21 @@ class TestUpdateSubscriptionFromStripe:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
         product: Product,
         customer: Customer,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service, "enqueue_benefits_grants"
         )
-
         price = product.prices[0]
-        stripe_subscription = construct_stripe_subscription(
-            status=SubscriptionStatus.active,
-            price_id=price.stripe_price_id,
-            cancel_at_period_end=True,
-        )
-        subscription = await create_subscription(
+        subscription = await create_active_subscription(
             save_fixture,
             product=product,
             price=price,
             customer=customer,
-            stripe_subscription_id=stripe_subscription.id,
         )
-        assert subscription.started_at is None
+        stripe_subscription = cloned_stripe_canceled_subscription(subscription)
 
         # then
         session.expunge_all()
@@ -578,12 +529,282 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.cancel_at_period_end is True
 
         enqueue_benefits_grants_mock.assert_called_once()
+        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
+
+    async def test_uncancel_active(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is False
+
+        with pytest.raises(BadRequest):
+            await subscription_service.uncancel(session, subscription)
+
+    async def test_repeat_cancel_raises(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is True
+
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.cancel(session, subscription)
+
+    async def test_send_cancel_hooks_once(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is False
+        stripe_subscription = cloned_stripe_subscription(
+            subscription, cancel_at_period_end=True
+        )
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.cancel_at_period_end is True
+        assert updated_subscription.ends_at
+        assert updated_subscription.canceled_at
+        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
+        reset_hooks(subscription_hooks)
+
+        repeat_cancellation = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+        assert repeat_cancellation.status == SubscriptionStatus.active
+        assert repeat_cancellation.cancel_at_period_end is True
+        assert repeat_cancellation.ends_at
+        assert repeat_cancellation.canceled_at
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+    async def test_uncancel_already_revoked(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+            cancel_at_period_end=False,
+            revoke=True,
+        )
+        assert subscription.cancel_at_period_end is False
+        assert subscription.ended_at
+        assert subscription.canceled_at
+
+        with pytest.raises(ResourceUnavailable):
+            await subscription_service.uncancel(session, subscription)
+
+    async def test_valid_uncancel(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        price = product.prices[0]
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        assert subscription.cancel_at_period_end is True
+        assert subscription.ends_at
+        assert subscription.canceled_at
+
+        stripe_subscription = cloned_stripe_subscription(
+            subscription, cancel_at_period_end=False
+        )
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.ends_at is None
+        assert updated_subscription.canceled_at is None
+        assert_hooks_called_once(subscription_hooks, {"updated", "uncanceled"})
+
+    async def test_valid_revokation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        price = product.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        stripe_subscription = cloned_stripe_canceled_subscription(
+            subscription, revoke=True
+        )
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.ended_at
+
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "benefit.enqueue_benefits_grants",
+                    task="revoke",
+                    customer_id=subscription.customer_id,
+                    product_id=product.id,
+                    subscription_id=subscription.id,
+                )
+            ]
+        )
+        assert_hooks_called_once(subscription_hooks, {"updated", "canceled", "revoked"})
+
+    async def test_valid_cancel_and_revoke(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        price = product.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            price=price,
+            customer=customer,
+        )
+        stripe_subscription = cloned_stripe_canceled_subscription(
+            subscription,
+        )
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.cancel_at_period_end is True
+        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
+        reset_hooks(subscription_hooks)
+
+        # Now revoke
+        stripe_subscription = cloned_stripe_canceled_subscription(
+            updated_subscription, revoke=True
+        )
+
+        # then
+        session.expunge_all()
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.ended_at
+
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "benefit.enqueue_benefits_grants",
+                    task="revoke",
+                    customer_id=subscription.customer_id,
+                    product_id=product.id,
+                    subscription_id=subscription.id,
+                )
+            ]
+        )
+        assert_hooks_called_once(subscription_hooks, {"updated", "canceled", "revoked"})
 
     async def test_valid_new_price(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
         product_recurring_free_price: Product,
         product: Product,
         customer: Customer,
@@ -598,14 +819,13 @@ class TestUpdateSubscriptionFromStripe:
         stripe_subscription = construct_stripe_subscription(
             status=SubscriptionStatus.active, price_id=paid_price.stripe_price_id
         )
-        subscription = await create_subscription(
+        subscription = await create_active_subscription(
             save_fixture,
             product=product_recurring_free_price,
             price=free_price,
             customer=customer,
             stripe_subscription_id=stripe_subscription.id,
         )
-        assert subscription.started_at is None
 
         # then
         session.expunge_all()
@@ -622,6 +842,7 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.product == product
 
         enqueue_benefits_grants_mock.assert_called_once()
+        assert_hooks_called_once(subscription_hooks, {"updated"})
 
     async def test_valid_discount(
         self,

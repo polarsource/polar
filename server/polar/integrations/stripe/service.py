@@ -22,6 +22,18 @@ instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
 
 
+StripeCancellationReasons = Literal[
+    "customer_service",
+    "low_quality",
+    "missing_features",
+    "other",
+    "switched_service",
+    "too_complex",
+    "too_expensive",
+    "unused",
+]
+
+
 class StripeError(PolarError): ...
 
 
@@ -360,9 +372,11 @@ class StripeService:
             await stripe_lib.Product.modify_async(
                 product,
                 default_price=price.id,
-                idempotency_key=f"{idempotency_key}_set_default"
-                if idempotency_key is not None
-                else None,
+                idempotency_key=(
+                    f"{idempotency_key}_set_default"
+                    if idempotency_key is not None
+                    else None
+                ),
             )
         return price
 
@@ -453,9 +467,9 @@ class StripeService:
             return await stripe_lib.Subscription.modify_async(
                 id,
                 items=new_items,
-                payment_behavior="error_if_incomplete"
-                if error_if_incomplete
-                else "allow_incomplete",
+                payment_behavior=(
+                    "error_if_incomplete" if error_if_incomplete else "allow_incomplete"
+                ),
             )
         except stripe_lib.InvalidRequestError as e:
             error = e.error
@@ -468,11 +482,54 @@ class StripeService:
                 raise MissingPaymentMethod(id)
             raise
 
-    async def cancel_subscription(self, id: str) -> stripe_lib.Subscription:
+    async def uncancel_subscription(self, id: str) -> stripe_lib.Subscription:
+        return await stripe_lib.Subscription.modify_async(
+            id,
+            cancel_at_period_end=False,
+        )
+
+    async def cancel_subscription(
+        self,
+        id: str,
+        customer_reason: StripeCancellationReasons | None = None,
+        customer_comment: str | None = None,
+    ) -> stripe_lib.Subscription:
         return await stripe_lib.Subscription.modify_async(
             id,
             cancel_at_period_end=True,
+            cancellation_details=self._generate_subscription_cancellation_details(
+                customer_reason=customer_reason,
+                customer_comment=customer_comment,
+            ),
         )
+
+    async def revoke_subscription(
+        self,
+        id: str,
+        customer_reason: StripeCancellationReasons | None = None,
+        customer_comment: str | None = None,
+    ) -> stripe_lib.Subscription:
+        return await stripe_lib.Subscription.cancel_async(
+            id,
+            cancellation_details=self._generate_subscription_cancellation_details(
+                customer_reason=customer_reason,
+                customer_comment=customer_comment,
+            ),
+        )
+
+    def _generate_subscription_cancellation_details(
+        self,
+        customer_reason: StripeCancellationReasons | None = None,
+        customer_comment: str | None = None,
+    ) -> stripe_lib.Subscription.ModifyParamsCancellationDetails:
+        details: stripe_lib.Subscription.ModifyParamsCancellationDetails = {}
+        if customer_reason:
+            details["feedback"] = customer_reason
+
+        if customer_comment:
+            details["comment"] = customer_comment
+
+        return details
 
     async def update_invoice(
         self, id: str, *, metadata: dict[str, str] | None = None
@@ -740,24 +797,30 @@ class StripeService:
         invoice = await stripe_lib.Invoice.modify_async(
             invoice_id,
             metadata=metadata or {},
-            idempotency_key=f"{idempotency_key}_update_invoice"
-            if idempotency_key is not None
-            else None,
+            idempotency_key=(
+                f"{idempotency_key}_update_invoice"
+                if idempotency_key is not None
+                else None
+            ),
         )
         invoice = await stripe_lib.Invoice.finalize_invoice_async(
             invoice_id,
-            idempotency_key=f"{idempotency_key}_finalize_invoice"
-            if idempotency_key is not None
-            else None,
+            idempotency_key=(
+                f"{idempotency_key}_finalize_invoice"
+                if idempotency_key is not None
+                else None
+            ),
         )
 
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(
                 invoice_id,
                 paid_out_of_band=True,
-                idempotency_key=f"{idempotency_key}_pay_invoice"
-                if idempotency_key is not None
-                else None,
+                idempotency_key=(
+                    f"{idempotency_key}_pay_invoice"
+                    if idempotency_key is not None
+                    else None
+                ),
             )
 
         return invoice
@@ -781,9 +844,9 @@ class StripeService:
             "metadata": metadata or {},
             "automatic_tax": {"enabled": automatic_tax},
             "currency": currency,
-            "idempotency_key": f"{idempotency_key}_invoice"
-            if idempotency_key
-            else None,
+            "idempotency_key": (
+                f"{idempotency_key}_invoice" if idempotency_key else None
+            ),
         }
         if coupon is not None:
             params["discounts"] = [{"coupon": coupon}]
@@ -797,25 +860,25 @@ class StripeService:
             price=price,
             invoice=invoice_id,
             quantity=1,
-            idempotency_key=f"{idempotency_key}_invoice_item"
-            if idempotency_key
-            else None,
+            idempotency_key=(
+                f"{idempotency_key}_invoice_item" if idempotency_key else None
+            ),
         )
 
         invoice = await stripe_lib.Invoice.finalize_invoice_async(
             invoice_id,
-            idempotency_key=f"{idempotency_key}_finalize_invoice"
-            if idempotency_key
-            else None,
+            idempotency_key=(
+                f"{idempotency_key}_finalize_invoice" if idempotency_key else None
+            ),
         )
 
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(
                 invoice_id,
                 paid_out_of_band=True,
-                idempotency_key=f"{idempotency_key}_pay_invoice"
-                if idempotency_key
-                else None,
+                idempotency_key=(
+                    f"{idempotency_key}_pay_invoice" if idempotency_key else None
+                ),
             )
 
         return invoice

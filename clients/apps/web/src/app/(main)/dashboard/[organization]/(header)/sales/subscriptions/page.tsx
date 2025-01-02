@@ -18,7 +18,7 @@ export default async function Page({
   params: { organization: string }
   searchParams: DataTableSearchParams & {
     product_id?: string
-    status?: Extract<SubscriptionStatus, 'active' | 'canceled'>
+    status?: Extract<SubscriptionStatus, 'active' | 'canceled'> | 'any'
   }
 }) {
   const api = getServerSideAPI()
@@ -39,7 +39,7 @@ export default async function Page({
       pagination={pagination}
       sorting={sorting}
       productId={searchParams.product_id}
-      subscriptionStatus={searchParams.status}
+      subscriptionStatus={searchParams.status ?? 'active'}
     />
   )
 }

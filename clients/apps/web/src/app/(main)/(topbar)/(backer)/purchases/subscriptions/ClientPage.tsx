@@ -132,6 +132,18 @@ const SubscriptionItem = ({
     return null
   }
 
+  let nextEventTitle = null
+  let nextEventDate = null
+  if (!subscription.ended_at) {
+    if (subscription.ends_at) {
+      nextEventTitle = 'Expiry Date'
+      nextEventDate = new Date(subscription.ends_at)
+    } else if (subscription.current_period_end) {
+      nextEventTitle = 'Renewal Date'
+      nextEventDate = new Date(subscription.current_period_end)
+    }
+  }
+
   return (
     <ShadowBox className="flex w-full flex-col gap-y-6">
       <div className="flex flex-row items-start justify-between">
@@ -183,15 +195,13 @@ const SubscriptionItem = ({
             </span>
           </div>
         )}
-        {!subscription.ended_at && subscription.current_period_end && (
+        {nextEventTitle && nextEventDate && (
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">
-              {subscription.cancel_at_period_end
-                ? 'Expiry Date'
-                : 'Renewal Date'}
+              {nextEventTitle}
             </span>
             <span>
-              {new Date(subscription.current_period_end).toLocaleDateString(
+              {nextEventDate.toLocaleDateString(
                 'en-US',
                 {
                   year: 'numeric',

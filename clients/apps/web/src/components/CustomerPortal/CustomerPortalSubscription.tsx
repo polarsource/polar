@@ -52,7 +52,7 @@ const CustomerPortalSubscription = ({
     cancelSubscription.isPending ||
     cancelSubscription.isSuccess ||
     !!subscription.ended_at ||
-    !!subscription.cancel_at_period_end
+    !!subscription.ends_at
 
   return (
     <>

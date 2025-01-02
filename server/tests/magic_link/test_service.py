@@ -9,8 +9,10 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.kit import template
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.magic_link.service import InvalidMagicLink
 from polar.magic_link.service import magic_link as magic_link_service
 from polar.models import MagicLink, User
@@ -105,15 +107,17 @@ async def test_send(
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
     record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
-    record_file_name = "./tests/magic_link/testdata/magic_link.html"
+    record_file_path = template.path(__file__, "testdata/magic_link.html")
 
     if record:
-        with open(record_file_name, "w+") as f:
+        with open(record_file_path, "w+") as f:
             f.write(sent_content)
 
-    with open(record_file_name) as f:
-        content = f.read()
-        assert content == sent_content
+    content = template.render(
+        record_file_path,
+        year=str(utc_now().year),
+    )
+    assert content == sent_content
 
 
 @pytest.mark.asyncio
@@ -139,15 +143,17 @@ async def test_send_return_to(
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
     record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
-    record_file_name = "./tests/magic_link/testdata/magic_link_return_to.html"
+    record_file_path = template.path(__file__, "testdata/magic_link_return_to.html")
 
     if record:
-        with open(record_file_name, "w+") as f:
+        with open(record_file_path, "w+") as f:
             f.write(sent_content)
 
-    with open(record_file_name) as f:
-        content = f.read()
-        assert content == sent_content
+    content = template.render(
+        record_file_path,
+        year=str(utc_now().year),
+    )
+    assert content == sent_content
 
 
 @pytest.mark.asyncio

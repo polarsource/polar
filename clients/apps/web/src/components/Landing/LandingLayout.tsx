@@ -31,7 +31,7 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="dark:bg-polar-800 shadow-3xl fixed inset-x-4 top-6 z-30 flex flex-row items-center justify-between rounded-full bg-white px-8 py-4 md:sticky md:inset-x-0 md:top-12 md:w-full md:max-w-2xl">
+    <div className="dark:bg-polar-900 shadow-3xl fixed inset-x-4 top-6 z-30 flex flex-row items-center justify-between rounded-full bg-white px-8 py-4 md:sticky md:inset-x-0 md:top-12 md:w-full md:max-w-2xl">
       <TopbarNavigation />
       <BrandingMenu
         className="mt-1 hidden md:block"

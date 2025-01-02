@@ -157,3 +157,11 @@ class Customer(MetadataMixin, RecordModel):
         if self.name:
             return self.name[0]
         return self.email[0]
+
+    def mark_deleted(self) -> None:
+        # We do soft deletes (transaction records).
+        # So prefix email as deleted to free up the real one for future purchases.
+        now = int(time.time())
+        email = f"deleted.{now}.{self.email}"
+        self.email = email
+        self.set_deleted_at()

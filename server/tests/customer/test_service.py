@@ -10,6 +10,8 @@ from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer
 
 
 @pytest.fixture
@@ -122,3 +124,56 @@ class TestUpdate:
 
         assert customer.email == email
         assert customer.name == "John"
+
+
+@pytest.mark.asyncio
+class TestDelete:
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="delete-me@gmail.com",
+        )
+        customer = await customer_service.delete(
+            session,
+            customer,
+        )
+        await session.flush()
+        assert customer.deleted_at is not None
+
+    async def test_valid_recreation(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        email = "delete-me@gmail.com"
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=email,
+        )
+        customer = await customer_service.delete(
+            session,
+            customer,
+        )
+
+        assert customer.deleted_at is not None
+        assert customer.email.startswith("deleted.")
+        assert customer.email.endswith(email)
+        await session.commit()
+
+        recreated = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=email,
+        )
+        assert recreated

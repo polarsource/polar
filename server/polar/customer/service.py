@@ -156,7 +156,7 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def delete(self, session: AsyncSession, customer: Customer) -> Customer:
         # TODO: cancel subscriptions, revoke benefits, etc.
 
-        customer.set_deleted_at()
+        customer.mark_deleted()
         session.add(customer)
         return customer
 

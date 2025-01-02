@@ -5,22 +5,37 @@ keywords: authentication, pat, oauth, openid connect
 ---
 
 import Callout from '@/components/Markdown/Callout'
+import Button from 'polarkit/components/ui/atoms/button'
 import OAuthSettings from '@/components/Documentation/OAuthSettings'
 
 # Authentication
 
-To authenticate requests, Polar API has two mechanisms:
+To authenticate requests, Polar API has two mechanisms.
 
-1. Personal Access Tokens: those are long-lived tokens generated from your [user settings](https://polar.sh/settings#pat).
-2. [OpenID Connect](#openid-connect): a standardized OAuth2 specification.
+<Callout type="IMPORTANT">
+  All tokens should be kept private and never shared or exposed in client-side
+  code. See [Security](#security) for more details.
+</Callout>
 
-## Which one should I use?
+## Personal Access Tokens (PAT)
 
-If you want to make simple scripts to read or write your own data, use **Personal Access Tokens**. They are simple to use and don't require any additional setup.
+**Recommended authentication method**. Personal access tokens make it super easy to securely integrate
+Polar billing for your own site or service.
 
-If you want to build an application that interacts with Polar API on behalf of other users, use **OpenID Connect**. This way, you can authenticate users and make requests on their behalf.
+<a href="https://polar.sh/settings#pat">
+  <Button>
+    Manage Personal Access Tokens
+  </Button>
+</a>
 
 ## OpenID Connect (OAuth2)
+
+<Callout type="NOTE">
+  Only use our **OpenID Connect** in case you want to act on the
+  behalf of other users via our API, e.g building an app/service for Polar customers.
+  Otherwise, always use a **Personal Access Token (PAT)** to integrate Polar
+  billing for your own service.
+</Callout>
 
 Polar implements the [OpenID Connect specification](https://openid.net/developers/how-connect-works/) to enable third-party authentication. It's a layer on top of the OAuth2 framework aiming at making integration more standard and predictable.
 
@@ -147,3 +162,13 @@ Once you have an access token, either from a Personal Access Token or from the O
 curl -X GET https://api.polar.sh/v1/oauth2/userinfo \
   -H 'Authorization: Bearer polar_at_XXX'
 ```
+
+## Security
+
+To protect your data and ensure the security of Polar, we've several mechanisms in place to automatically revoke tokens that may have been leaked publicly on the web.
+
+In particular, we're part of the [GitHub Secret Scanning Program](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning). If GitHub systems detect a Polar token in a code repository or public discussion, our systems are notified and the tokens are immediately revoked.
+
+If you received an email about one of your token being leaked, it means that we were notified of such situation. The email contains the details about the nature of the token and the source of the leak.
+
+In the future, it's crucial that you remain extra cautious about not leaking your tokens publicly online. You can read more about the good practices to manage secrets in the [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html).

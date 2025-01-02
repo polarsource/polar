@@ -1,4 +1,3 @@
-from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -54,13 +53,10 @@ class TestRevokeLeaked:
         oauth2_client: OAuth2Client,
         enqueue_email_mock: MagicMock,
     ) -> None:
-        token = cast(
-            str,
-            (
-                oauth2_client.client_secret
-                if token_type == TokenType.client_secret
-                else oauth2_client.registration_access_token
-            ),
+        token = (
+            oauth2_client.client_secret
+            if token_type == TokenType.client_secret
+            else oauth2_client.registration_access_token
         )
 
         result = await oauth2_client_service.revoke_leaked(
@@ -72,7 +68,7 @@ class TestRevokeLeaked:
         assert updated_oauth2_client is not None
 
         if token_type == TokenType.client_secret:
-            assert cast(str, updated_oauth2_client.client_secret) != token
+            assert updated_oauth2_client.client_secret != token
         else:
             assert updated_oauth2_client.registration_access_token != token
 

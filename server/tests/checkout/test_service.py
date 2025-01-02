@@ -238,7 +238,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=uuid.uuid4(),
                 ),
                 auth_subject,
@@ -258,7 +257,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time.prices[0].id,
                 ),
                 auth_subject,
@@ -285,9 +283,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe, product_price_id=price.id
-                ),
+                CheckoutPriceCreate(product_price_id=price.id),
                 auth_subject,
             )
 
@@ -309,7 +305,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time.prices[0].id,
                 ),
                 auth_subject,
@@ -339,7 +334,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=product_one_time_custom_price.prices[0].id,
                     amount=amount,
                 ),
@@ -399,7 +393,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     subscription_id=uuid.uuid4(),
                     metadata={"key": "value"},
@@ -425,7 +418,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     discount_id=uuid.uuid4(),
                 ),
@@ -451,7 +443,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     discount_id=discount_fixed_once.id,
                 ),
@@ -482,7 +473,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     subscription_id=subscription.id,
                     metadata={"key": "value"},
@@ -508,7 +498,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
                 metadata={"key": "value"},
@@ -540,7 +529,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
                 metadata={"key": "value"},
@@ -575,7 +563,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
                 metadata={"key": "value"},
@@ -608,7 +595,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
@@ -632,7 +618,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_ID}"
@@ -659,7 +644,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}"
@@ -691,7 +675,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "US"}),
             ),
@@ -718,7 +701,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "FR"}),
             ),
@@ -753,7 +735,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 subscription_id=subscription.id,
                 metadata={"key": "value"},
@@ -787,7 +768,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     custom_field_data=custom_field_data,
                 ),
@@ -810,7 +790,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 custom_field_data={"text": "abc", "select": "a"},
             ),
@@ -837,7 +816,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 amount=amount,
                 embed_origin="https://example.com",
@@ -860,7 +838,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_billing_address=Address.model_validate({"country": "FR"}),
             ),
@@ -885,7 +862,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 discount_id=discount_fixed_once.id,
             ),
@@ -908,7 +884,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutProductCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_id=uuid.uuid4(),
                 ),
                 auth_subject,
@@ -928,7 +903,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutProductCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_id=product_one_time.id,
                 ),
                 auth_subject,
@@ -951,7 +925,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutProductCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_id=product_one_time.id,
                 ),
                 auth_subject,
@@ -971,7 +944,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutProductCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_id=product_one_time.id,
             ),
             auth_subject,
@@ -998,7 +970,6 @@ class TestCreate:
             await checkout_service.create(
                 session,
                 CheckoutPriceCreate(
-                    payment_processor=PaymentProcessor.stripe,
                     product_price_id=price.id,
                     customer_id=uuid.uuid4(),
                 ),
@@ -1023,7 +994,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutPriceCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_price_id=price.id,
                 customer_id=customer.id,
             ),
@@ -1050,7 +1020,6 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutProductCreate(
-                payment_processor=PaymentProcessor.stripe,
                 product_id=product_one_time.id,
                 customer_metadata={"key": "value"},
             ),

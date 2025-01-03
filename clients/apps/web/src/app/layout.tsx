@@ -3,6 +3,7 @@ import '../styles/globals.scss'
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { defaultFrontendHostname } from '@/utils/domain'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { GoogleTagManager } from '@next/third-parties/google'
 import { Organization, UserRead } from '@polar-sh/sdk'
@@ -58,6 +59,12 @@ export default async function RootLayout({
     }
   }
 
+  const faviconPath = defaultFrontendHostname.startsWith(
+    'https://sandbox.polar.sh',
+  )
+    ? '/favicon-sandbox.png'
+    : '/favicon.png'
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -73,7 +80,7 @@ export default async function RootLayout({
           media="(prefers-color-scheme: dark)"
         ></link>
         <link
-          href="/favicon-dark.png"
+          href={faviconPath}
           rel="icon"
           media="(prefers-color-scheme: light)"
         ></link>

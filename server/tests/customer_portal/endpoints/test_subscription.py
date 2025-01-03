@@ -32,7 +32,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCustomerSubscriptionPriceUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
@@ -146,7 +145,6 @@ class TestCustomerSubscriptionPriceUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCustomerSubscriptionUpdateCancel:
     async def test_anonymous(
         self,
@@ -237,7 +235,6 @@ class TestCustomerSubscriptionUpdateCancel:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestSubscriptionUpdateUncancel:
     async def test_anonymous(
         self,
@@ -342,7 +339,6 @@ class TestSubscriptionUpdateUncancel:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCustomerSubscriptionCancel:
     async def test_anonymous(
         self,

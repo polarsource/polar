@@ -25,5 +25,6 @@
     },
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
-  "ruff.lint.args": ["--config=ruff.vscode.toml"]
+  "ruff.lint.args": ["--config=ruff.vscode.toml"],
+  "mypy-type-checker.preferDaemon": true
 }

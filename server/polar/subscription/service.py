@@ -952,18 +952,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if became_revoked:
             await self._on_subscription_revoked(session, subscription)
 
-        log.info(
-            "ON.UPDATE",
-            previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
-            became_activated=became_activated,
-            ends_at=subscription.ends_at,
-            is_canceled=is_canceled,
-            updated_ends_at=updated_ends_at,
-            cancellation_changed=cancellation_changed,
-            became_revoked=became_revoked,
-        )
-
     async def _on_subscription_updated(
         self,
         session: AsyncSession,

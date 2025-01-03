@@ -23,9 +23,6 @@ from polar.subscription.service import SubscriptionDoesNotExist
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.dispute import (
-    DisputeUnknownPaymentTransaction,
-)
-from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 from polar.transaction.service.payment import (
@@ -232,51 +229,16 @@ async def charge_refunded(
                 )
 
 
-@task("stripe.webhook.charge.dispute.created", max_tries=MAX_RETRIES)
+@task("stripe.webhook.charge.dispute.closed")
 @stripe_api_connection_error_retry
-async def charge_dispute_created(
+async def charge_dispute_closed(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             dispute = event["data"]["object"]
 
-            try:
-                await dispute_transaction_service.create_dispute(
-                    session, dispute=dispute
-                )
-            except DisputeUnknownPaymentTransaction as e:
-                log.warning(e.message, event_id=event["id"])
-                # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle charge.succeeded yet!
-                if ctx["job_try"] <= MAX_RETRIES:
-                    raise Retry(compute_backoff(ctx["job_try"])) from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-
-            charge = await stripe_service.get_charge(dispute.charge)
-            if charge.metadata.get("type") == ProductType.pledge:
-                await pledge_service.mark_charge_disputed_by_payment_id(
-                    session=session,
-                    payment_id=dispute["payment_intent"],
-                    amount=dispute["amount"],
-                    transaction_id=dispute["id"],
-                )
-
-
-@task("stripe.webhook.charge.dispute.funds_reinstated")
-@stripe_api_connection_error_retry
-async def charge_dispute_funds_reinstated(
-    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
-) -> None:
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            dispute = event["data"]["object"]
-
-            await dispute_transaction_service.create_dispute_reversal(
-                session, dispute=dispute
-            )
+            await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
 
 @task("stripe.webhook.customer.subscription.created")

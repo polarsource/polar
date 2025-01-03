@@ -160,6 +160,11 @@ class PlatformFeeType(StrEnum):
     Fee applied recurrently by the payment processor to an active account.
     """
 
+    dispute = "dispute"
+    """
+    Fee applied when a dispute was opened on a payment.
+    """
+
     platform = "platform"
     """
     Polar platform fee.

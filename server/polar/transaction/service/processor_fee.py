@@ -140,7 +140,10 @@ class ProcessorFeeTransactionService(BaseTransactionService):
 
         dispute = await stripe_service.get_dispute(dispute_transaction.dispute_id)
         for balance_transaction in dispute.balance_transactions:
-            if balance_transaction.reporting_category == category:
+            if (
+                balance_transaction.reporting_category == category
+                and balance_transaction.fee > 0
+            ):
                 dispute_fee_transaction = Transaction(
                     type=TransactionType.processor_fee,
                     processor=PaymentProcessor.stripe,

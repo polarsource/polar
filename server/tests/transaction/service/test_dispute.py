@@ -15,11 +15,13 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
     DisputeNotResolved,
     DisputeUnknownPaymentTransaction,
+    platform_fee_transaction_service,
     processor_fee_transaction_service,
 )
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
+from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
@@ -100,6 +102,16 @@ def create_dispute_fees_mock(mocker: MockerFixture) -> AsyncMock:
     )
 
 
+@pytest.fixture(autouse=True)
+def create_dispute_fees_balances_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch.object(
+        platform_fee_transaction_service,
+        "create_dispute_fees_balances",
+        spec=PlatformFeeTransactionService.create_dispute_fees_balances,
+        return_value=[],
+    )
+
+
 @pytest.mark.asyncio
 class TestCreateDispute:
     async def test_not_resolved(self, session: AsyncSession) -> None:
@@ -122,6 +134,7 @@ class TestCreateDispute:
         pledge: Pledge,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
+        create_dispute_fees_balances_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
         dispute = build_stripe_dispute(
@@ -249,6 +262,7 @@ class TestCreateDispute:
         assert second_call[1]["amount"] == dispute.amount * 0.25
 
         create_dispute_fees_mock.assert_awaited_once()
+        create_dispute_fees_balances_mock.assert_awaited_once()
 
     async def test_valid_won(
         self,
@@ -258,6 +272,7 @@ class TestCreateDispute:
         pledge: Pledge,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
+        create_dispute_fees_balances_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
         dispute = build_stripe_dispute(
@@ -378,6 +393,8 @@ class TestCreateDispute:
 
         create_dispute_fees_mock.assert_awaited()
         assert create_dispute_fees_mock.call_count == 2
+
+        create_dispute_fees_balances_mock.assert_awaited_once()
 
 
 @pytest.mark.asyncio

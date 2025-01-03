@@ -4881,12 +4881,6 @@ export interface CheckoutPriceCreate {
      */
     custom_field_data?: object;
     /**
-     * Payment processor to use. Currently only Stripe is supported.
-     * @type {string}
-     * @memberof CheckoutPriceCreate
-     */
-    payment_processor: CheckoutPriceCreatePaymentProcessorEnum;
-    /**
      * 
      * @type {string}
      * @memberof CheckoutPriceCreate
@@ -4980,16 +4974,6 @@ export interface CheckoutPriceCreate {
      */
     product_price_id: string;
 }
-
-
-/**
- * @export
- */
-export const CheckoutPriceCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutPriceCreatePaymentProcessorEnum = typeof CheckoutPriceCreatePaymentProcessorEnum[keyof typeof CheckoutPriceCreatePaymentProcessorEnum];
-
 /**
  * Product data for a checkout session.
  * @export
@@ -5094,12 +5078,6 @@ export interface CheckoutProductCreate {
      */
     custom_field_data?: object;
     /**
-     * Payment processor to use. Currently only Stripe is supported.
-     * @type {string}
-     * @memberof CheckoutProductCreate
-     */
-    payment_processor: CheckoutProductCreatePaymentProcessorEnum;
-    /**
      * 
      * @type {string}
      * @memberof CheckoutProductCreate
@@ -5193,16 +5171,6 @@ export interface CheckoutProductCreate {
      */
     product_id: string;
 }
-
-
-/**
- * @export
- */
-export const CheckoutProductCreatePaymentProcessorEnum = {
-    STRIPE: 'stripe'
-} as const;
-export type CheckoutProductCreatePaymentProcessorEnum = typeof CheckoutProductCreatePaymentProcessorEnum[keyof typeof CheckoutProductCreatePaymentProcessorEnum];
-
 /**
  * Checkout session data retrieved using the client secret.
  * @export
@@ -8494,6 +8462,12 @@ export interface CustomerSession {
      * @memberof CustomerSession
      */
     expires_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CustomerSession
+     */
+    customer_portal_url: string;
     /**
      * 
      * @type {string}
@@ -15854,6 +15828,7 @@ export const PlatformFeeType = {
     CROSS_BORDER_TRANSFER: 'cross_border_transfer',
     PAYOUT: 'payout',
     ACCOUNT: 'account',
+    DISPUTE: 'dispute',
     PLATFORM: 'platform'
 } as const;
 export type PlatformFeeType = typeof PlatformFeeType[keyof typeof PlatformFeeType];

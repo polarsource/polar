@@ -10,6 +10,7 @@ from polar.postgres import AsyncSession
 
 from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
+from .platform_fee import platform_fee_transaction as platform_fee_transaction_service
 from .processor_fee import (
     processor_fee_transaction as processor_fee_transaction_service,
 )
@@ -79,6 +80,7 @@ class DisputeTransactionService(BaseTransactionService):
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
             order_id=payment_transaction.order_id,
+            incurred_transactions=[],
         )
         session.add(dispute_transaction)
         dispute_fees = await processor_fee_transaction_service.create_dispute_fees(
@@ -108,6 +110,7 @@ class DisputeTransactionService(BaseTransactionService):
                 pledge_id=payment_transaction.pledge_id,
                 issue_reward_id=payment_transaction.issue_reward_id,
                 order_id=payment_transaction.order_id,
+                incurred_transactions=[],
             )
             session.add(dispute_reversal_transaction)
             dispute_reversal_fees = (
@@ -125,6 +128,14 @@ class DisputeTransactionService(BaseTransactionService):
                 payment_transaction=payment_transaction,
                 dispute_amount=dispute_amount,
             )
+
+        # Balance the (crazy high) dispute fees on the organization's account
+        all_fees = dispute_fees
+        if dispute_reversal_transaction is not None:
+            all_fees += dispute_reversal_fees
+        await self._create_dispute_fees_balances(
+            session, payment_transaction=payment_transaction, dispute_fees=all_fees
+        )
 
         await session.flush()
 
@@ -194,6 +205,22 @@ class DisputeTransactionService(BaseTransactionService):
             )
 
         return reversal_balances
+
+    async def _create_dispute_fees_balances(
+        self,
+        session: AsyncSession,
+        *,
+        payment_transaction: Transaction,
+        dispute_fees: list[Transaction],
+    ) -> list[tuple[Transaction, Transaction]]:
+        balance_transactions_couples = await self._get_balance_transactions_for_payment(
+            session, payment_transaction=payment_transaction
+        )
+        return await platform_fee_transaction_service.create_dispute_fees_balances(
+            session,
+            dispute_fees=dispute_fees,
+            balance_transactions=balance_transactions_couples[0],
+        )
 
 
 dispute_transaction = DisputeTransactionService(Transaction)

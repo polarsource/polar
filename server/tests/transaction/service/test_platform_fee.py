@@ -18,7 +18,12 @@ from polar.models import (
     Transaction,
     User,
 )
-from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
+from polar.models.transaction import (
+    PaymentProcessor,
+    PlatformFeeType,
+    ProcessorFeeType,
+    TransactionType,
+)
 from polar.postgres import AsyncSession
 from polar.transaction.service.platform_fee import PayoutAmountTooLow
 from polar.transaction.service.platform_fee import (
@@ -480,6 +485,62 @@ class TestCreateFeesReversalBalances:
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
         assert reversal_incoming.incurred_by_transaction == outgoing
+
+
+@pytest.mark.asyncio
+class TestCreateDisputeFeesBalances:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account_processor_fees: Account,
+        transaction_order_subscription: Order,
+    ) -> None:
+        payment_balance_transactions = await create_balance_transactions(
+            save_fixture,
+            account=account_processor_fees,
+            order=transaction_order_subscription,
+            payment_charge_id="STRIPE_CHARGE_ID",
+        )
+
+        dispute_fee = Transaction(
+            type=TransactionType.processor_fee,
+            processor=PaymentProcessor.stripe,
+            processor_fee_type=ProcessorFeeType.dispute,
+            currency="usd",
+            amount=-1500,
+            account_currency="usd",
+            account_amount=-1500,
+            tax_amount=0,
+        )
+        await save_fixture(dispute_fee)
+
+        fees_balances = (
+            await platform_fee_transaction_service.create_dispute_fees_balances(
+                session,
+                dispute_fees=[dispute_fee],
+                balance_transactions=payment_balance_transactions,
+            )
+        )
+
+        assert len(fees_balances) == 1
+
+        fee_balances = fees_balances[0]
+        reversal_outgoing, reversal_incoming = fee_balances
+
+        assert reversal_outgoing.amount == -1500
+        assert reversal_outgoing.account == payment_balance_transactions[1].account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.dispute
+        assert (
+            reversal_outgoing.incurred_by_transaction == payment_balance_transactions[1]
+        )
+
+        assert reversal_incoming.amount == 1500
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.dispute
+        assert (
+            reversal_incoming.incurred_by_transaction == payment_balance_transactions[0]
+        )
 
 
 @pytest.mark.asyncio

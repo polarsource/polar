@@ -46,6 +46,29 @@ class PlatformFeeTransactionService(BaseTransactionService):
             session, balance_transactions=balance_transactions
         )
 
+    async def create_dispute_fees_balances(
+        self,
+        session: AsyncSession,
+        *,
+        dispute_fees: list[Transaction],
+        balance_transactions: tuple[Transaction, Transaction],
+    ) -> list[tuple[Transaction, Transaction]]:
+        outgoing, incoming = balance_transactions
+
+        fees_balances: list[tuple[Transaction, Transaction]] = []
+        for dispute_fee in dispute_fees:
+            fee_balances = await balance_transaction_service.create_reversal_balance(
+                session,
+                balance_transactions=balance_transactions,
+                amount=-dispute_fee.amount,
+                platform_fee_type=PlatformFeeType.dispute,
+                outgoing_incurred_by=incoming,
+                incoming_incurred_by=outgoing,
+            )
+            fees_balances.append(fee_balances)
+
+        return fees_balances
+
     async def get_payout_fees(
         self, session: AsyncSession, *, account: Account, balance_amount: int
     ) -> list[tuple[PlatformFeeType, int]]:

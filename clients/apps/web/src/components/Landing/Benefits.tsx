@@ -13,6 +13,22 @@ interface BenefitItemProps {
   image?: string
 }
 
+const benefitItemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 1 } },
+}
+
+const accordionVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      duration: 1,
+    },
+  },
+}
+
 const BenefitItem = ({
   index,
   title,
@@ -21,12 +37,16 @@ const BenefitItem = ({
   onClick,
 }: BenefitItemProps) => {
   return (
-    <button
+    <motion.button
       className={twMerge(
         'flex w-full flex-col items-start gap-y-1 py-4 text-left',
         isOpen ? 'cursor-default' : '',
       )}
       onClick={() => !isOpen && onClick(index)}
+      variants={benefitItemVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
     >
       <div className="flex w-full flex-row items-center justify-between text-lg">
         {title}
@@ -37,13 +57,12 @@ const BenefitItem = ({
           className="dark:text-polar-500 text-gray-500"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.5 }}
         >
           {description}
         </motion.p>
       )}
-    </button>
+    </motion.button>
   )
 }
 
@@ -55,7 +74,13 @@ interface AccordionProps {
 
 const Accordion = ({ items, activeItem, setActiveItem }: AccordionProps) => {
   return (
-    <div className="dark:divide-polar-700 dark:border-polar-700 flex flex-col divide-y divide-gray-200 border-y border-gray-200">
+    <motion.div
+      className="dark:divide-polar-700 dark:border-polar-700 flex flex-col divide-y divide-gray-200 border-y border-gray-200"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      variants={accordionVariants}
+    >
       {items.map((item, index) => (
         <BenefitItem
           {...item}
@@ -65,7 +90,7 @@ const Accordion = ({ items, activeItem, setActiveItem }: AccordionProps) => {
           onClick={setActiveItem}
         />
       ))}
-    </div>
+    </motion.div>
   )
 }
 
@@ -134,7 +159,7 @@ export const Benefits = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 1 }}
       />
     </div>
   )

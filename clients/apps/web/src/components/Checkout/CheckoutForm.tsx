@@ -969,10 +969,11 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             },
             '.Input': {
               padding: '12px',
-              backgroundColor: theme === 'dark' ? 'rgb(21, 22, 25)' : 'white',
+              backgroundColor:
+                theme === 'dark' ? 'rgb(26.4, 26.8, 29.7)' : 'white',
               color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
               borderRadius: '9999px',
-              borderColor: theme === 'dark' ? 'rgb(28, 29, 33)' : '#EEE',
+              borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
               boxShadow: inputBoxShadow,
             },
             '.Input:focus': {
@@ -981,8 +982,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               boxShadow: focusBoxShadow,
             },
             '.Tab': {
-              backgroundColor: theme === 'dark' ? 'rgb(21 22 25)' : 'white',
-              borderColor: theme === 'dark' ? 'rgb(28, 29, 33)' : '#EEE',
+              backgroundColor:
+                theme === 'dark' ? 'rgb(26.4, 26.8, 29.7)' : 'white',
+              borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
             },
             '.Tab--selected': {
               backgroundColor: 'rgb(51, 129, 255)',

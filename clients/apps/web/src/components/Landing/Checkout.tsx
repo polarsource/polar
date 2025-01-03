@@ -20,7 +20,7 @@ export const Checkout = () => {
         <Link href="/docs/checkout">
           <Button
             fullWidth
-            wrapperClassNames="flex flex-row items-center gap-x-2 text-lg"
+            wrapperClassNames="flex flex-row items-center gap-x-2"
             variant="ghost"
           >
             <span>Integrate Checkouts</span>

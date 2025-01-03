@@ -17,7 +17,7 @@ const CheckoutProductInfo = ({
 }: CheckoutProductInfoProps) => {
   return (
     <>
-      <div className="flex flex-col gap-y-6 md:gap-y-12">
+      <div className="flex flex-col gap-y-6 md:gap-y-8">
         {organization.profile_settings?.enabled ? (
           <Link href={organizationPageLink(organization)}>
             <Avatar

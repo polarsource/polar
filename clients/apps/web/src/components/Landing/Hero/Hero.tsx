@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { motion } from 'framer-motion'
 import { useCallback, useMemo, useState } from 'react'
 
 export const Hero = () => {
@@ -24,23 +25,46 @@ export const Hero = () => {
     )
   }, [])
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 1 } },
+  }
+
   return (
-    <div className="flex w-full flex-col items-center justify-center gap-8 text-center">
-      {/*   <Canvas
-        camera={{
-          zoom: 0.8,
-        }}
+    <motion.div
+      className="flex w-full flex-col items-center justify-center gap-8 text-center"
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+    >
+      <motion.h1
+        className="max-w-2xl text-pretty text-4xl !leading-tight text-gray-950 md:text-6xl dark:text-white"
+        variants={itemVariants}
       >
-        <Coins />
-      </Canvas> */}
-      <h1 className="max-w-2xl text-pretty text-4xl !leading-tight text-gray-950 md:text-6xl dark:text-white">
         Payment infrastructure for the{' '}
         <span className="dark:text-polar-500 text-gray-400">21st century</span>
-      </h1>
-      <p className="text-pretty text-xl leading-relaxed">
+      </motion.h1>
+      <motion.p
+        className="text-pretty text-xl leading-relaxed"
+        variants={itemVariants}
+      >
         The modern way to sell your SaaS and digital products
-      </p>
-      <div className="flex flex-row items-center gap-x-4">
+      </motion.p>
+      <motion.div
+        className="flex flex-row items-center gap-x-4"
+        variants={itemVariants}
+      >
         <form
           className="dark:bg-polar-900 shadow-3xl hidden flex-row items-center gap-x-2 rounded-full bg-gray-50 py-2 pl-6 pr-2 md:flex"
           role="form"
@@ -88,7 +112,7 @@ export const Hero = () => {
             text="Get Started"
           />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

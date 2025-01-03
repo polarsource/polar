@@ -75,7 +75,7 @@ export const CheckoutCard = ({
     [onCheckoutUpdate],
   )
   return (
-    <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl border bg-gray-50 md:ring-gray-200 dark:md:border-none">
+    <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
       <h2 className="text-lg font-medium">{product.name}</h2>
       {!disabled && hasBothIntervals && (
         <SubscriptionTierRecurringIntervalSwitch

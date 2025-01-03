@@ -16,7 +16,6 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -27,7 +26,6 @@ from .account import Account
 
 if TYPE_CHECKING:
     from .customer import Customer
-    from .user_customer import UserCustomer
 
 
 class OAuthPlatform(StrEnum):
@@ -115,12 +113,13 @@ class User(RecordModel):
         return relationship(OAuthAccount, lazy="joined", back_populates="user")
 
     @declared_attr
-    def user_customers(cls) -> Mapped[list["UserCustomer"]]:
-        return relationship("UserCustomer", lazy="raise", back_populates="user")
-
-    customers: AssociationProxy[list["Customer"]] = association_proxy(
-        "user_customers", "customer"
-    )
+    def customers(cls) -> Mapped[list["Customer"]]:
+        return relationship(
+            "Customer",
+            lazy="raise",
+            back_populates="user",
+            foreign_keys="[Customer.user_id]",
+        )
 
     accepted_terms_of_service: Mapped[bool] = mapped_column(
         Boolean,

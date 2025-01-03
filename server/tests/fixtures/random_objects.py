@@ -39,7 +39,6 @@ from polar.models import (
     Repository,
     Subscription,
     User,
-    UserCustomer,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
@@ -838,6 +837,7 @@ async def create_customer(
     name: str = "Customer",
     stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
     user_metadata: dict[str, Any] = {},
+    user: User | None = None,
 ) -> Customer:
     customer = Customer(
         email=email,
@@ -846,6 +846,7 @@ async def create_customer(
         stripe_customer_id=stripe_customer_id,
         organization=organization,
         user_metadata=user_metadata,
+        user=user,
     )
     await save_fixture(customer)
     return customer
@@ -1332,29 +1333,6 @@ async def customer_second(
         email=lstr("customer.second@example.com"),
         stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_2"),
     )
-
-
-async def create_user_customer(
-    save_fixture: SaveFixture,
-    *,
-    user: User,
-    organization: Organization,
-    email: str = "user.customer@example.com",
-    email_verified: bool = False,
-    name: str = "Customer",
-    stripe_customer_id: str = "STRIPE_USER_CUSTOMER_ID",
-) -> Customer:
-    customer = await create_customer(
-        save_fixture,
-        organization=organization,
-        email=email,
-        email_verified=email_verified,
-        name=name,
-        stripe_customer_id=stripe_customer_id,
-    )
-    user_customer = UserCustomer(user=user, customer=customer)
-    await save_fixture(user_customer)
-    return customer
 
 
 @pytest_asyncio.fixture

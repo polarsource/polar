@@ -1,7 +1,6 @@
 import pytest
-from sqlalchemy import select
 
-from polar.models import Organization, UserCustomer
+from polar.models import Customer, Organization
 from polar.postgres import AsyncSession
 from polar.user.service.user import user as user_service
 from tests.fixtures.database import SaveFixture
@@ -22,10 +21,8 @@ async def test_link_customers(
     user = await create_user(save_fixture)
 
     customer1 = await create_customer(
-        save_fixture, organization=organization, email=user.email
+        save_fixture, organization=organization, email=user.email, user=user
     )
-    user_customer1 = UserCustomer(user=user, customer=customer1)
-    await save_fixture(user_customer1)
 
     customer2 = await create_customer(
         save_fixture, organization=organization_second, email=user.email
@@ -38,13 +35,7 @@ async def test_link_customers(
 
     await user_service.link_customers(session, user)
 
-    user_customer_statement = select(UserCustomer).where(
-        UserCustomer.user_id == user.id
-    )
-    result = await session.execute(user_customer_statement)
-    user_customers = result.scalars().all()
-
-    assert len(user_customers) == 3
-    assert user_customers[0].customer_id == customer1.id
-    assert user_customers[1].customer_id == customer2.id
-    assert user_customers[2].customer_id == customer3.id
+    for customer in [customer1, customer2, customer3]:
+        updated_customer = await session.get(Customer, customer.id)
+        assert updated_customer is not None
+        assert updated_customer.user_id == user.id

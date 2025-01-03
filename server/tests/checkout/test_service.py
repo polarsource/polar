@@ -70,7 +70,6 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_price_fixed,
     create_subscription,
-    create_user_customer,
 )
 
 
@@ -1186,7 +1185,7 @@ class TestClientCreate:
         product_one_time: Product,
         organization: Organization,
     ) -> None:
-        await create_user_customer(
+        await create_customer(
             save_fixture, user=auth_subject.subject, organization=organization
         )
 
@@ -1213,7 +1212,7 @@ class TestClientCreate:
         product_one_time: Product,
         organization: Organization,
     ) -> None:
-        customer = await create_user_customer(
+        customer = await create_customer(
             save_fixture, user=auth_subject.subject, organization=organization
         )
 

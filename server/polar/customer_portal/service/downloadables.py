@@ -18,7 +18,7 @@ from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit, Customer, User, UserCustomer
+from polar.models import Benefit, Customer, User
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -243,8 +243,8 @@ class DownloadableService(
         if is_user(auth_subject):
             statement = statement.where(
                 Downloadable.customer_id.in_(
-                    sql.select(UserCustomer.customer_id).where(
-                        UserCustomer.user_id == auth_subject.subject.id
+                    sql.select(Customer.id).where(
+                        Customer.user_id == auth_subject.subject.id
                     )
                 )
             )

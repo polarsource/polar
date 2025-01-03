@@ -81,10 +81,8 @@ const CANCELLATION_REASONS: {
   other: 'Other',
 }
 
-const getHumanCancellationReason = (
-  key: string | null,
-) => {
-  if (key && (key in CANCELLATION_REASONS)) {
+const getHumanCancellationReason = (key: string | null) => {
+  if (key && key in CANCELLATION_REASONS) {
     return CANCELLATION_REASONS[key]
   }
   return null
@@ -467,22 +465,20 @@ const SubscriptionModal = ({
   if (!subscription) return null
 
   const isCancelled = subscription.status == 'canceled'
-
-  const viewClickHandler = (view: SubscriptionModalViews) => {
-    return (e: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
-      e.preventDefault()
-      setView(view)
-    }
+  const onCancelClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setView('cancel')
   }
 
-  const onCancelClick = viewClickHandler('cancel')
-  const onOverviewClick = viewClickHandler('overview')
+  const showOverview = () => {
+    setView('overview')
+  }
 
   if (view == 'cancel') {
     return (
       <CancelSubscriptionView
         subscription={subscription}
-        onOverviewClick={onOverviewClick}
+        showOverview={showOverview}
       />
     )
   }
@@ -564,9 +560,7 @@ const SubscriptionDetails = ({
         {nextEventDatetime && (
           <div className="flex justify-between">
             <span className="dark:text-polar-500 text-gray-500">
-              {subscription.ends_at
-                ? 'Ending Date'
-                : 'Renewal Date'}
+              {subscription.ends_at ? 'Ending Date' : 'Renewal Date'}
             </span>
             <span>
               <FormattedDateTime datetime={nextEventDatetime} />
@@ -668,9 +662,7 @@ const SubscriptionDetails = ({
 
 interface CancelSubscriptionViewProps {
   subscription: Subscription
-  onOverviewClick: (
-    e: MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
-  ) => void
+  showOverview: () => void
 }
 
 type CancellationAction = 'revoke' | 'cancel_at_period_end'
@@ -681,7 +673,7 @@ interface SubscriptionCancelForm extends SubscriptionCancel {
 
 const CancelSubscriptionView = ({
   subscription,
-  onOverviewClick,
+  showOverview,
 }: CancelSubscriptionViewProps) => {
   const cancelSubscription = useCancelSubscription()
   const form = useForm<SubscriptionCancelForm>({
@@ -692,11 +684,17 @@ const CancelSubscriptionView = ({
   })
   const { control, handleSubmit, setError, setValue } = form
 
+  const onOverviewClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    showOverview()
+  }
+
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
       try {
         let body: SubscriptionCancel = {
-          customer_cancellation_reason: cancellation.customer_cancellation_reason
+          customer_cancellation_reason:
+            cancellation.customer_cancellation_reason,
         }
         if (cancellation.cancellation_action === 'revoke') {
           body.revoke = true
@@ -706,8 +704,9 @@ const CancelSubscriptionView = ({
 
         await cancelSubscription.mutateAsync({
           id: subscription.id,
-          body: body
+          body: body,
         })
+        showOverview()
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -720,17 +719,15 @@ const CancelSubscriptionView = ({
         }
       }
     },
-    [
-      cancelSubscription,
-      subscription.id,
-      setError,
-    ],
+    [cancelSubscription, subscription.id, setError, showOverview],
   )
 
   const reasons = Object.keys(CANCELLATION_REASONS)
   let periodEndOutput: string | undefined = undefined
   if (subscription.current_period_end) {
-    periodEndOutput = new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+    periodEndOutput = new Date(
+      subscription.current_period_end,
+    ).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -774,7 +771,8 @@ const CancelSubscriptionView = ({
                             End of current period
                             {periodEndOutput && (
                               <>
-                                {'  '}<span>({periodEndOutput})</span>
+                                {'  '}
+                                <span>({periodEndOutput})</span>
                               </>
                             )}
                           </SelectItem>

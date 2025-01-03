@@ -162,7 +162,7 @@ async def update(
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Update a subscription of the authenticated customer or user."""
+    """Update a subscription."""
     subscription = await subscription_service.user_get(session, auth_subject, id)
     if subscription is None:
         raise ResourceNotFound()

@@ -33,9 +33,9 @@ router = APIRouter(
     prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
 )
 
-SubscriptionID = Annotated[UUID4, Path(description="Your subscription ID.")]
+SubscriptionID = Annotated[UUID4, Path(description="Customer subscription ID.")]
 SubscriptionNotFound = {
-    "description": "Your subscription was not found.",
+    "description": "Customer subscription was not found.",
     "model": ResourceNotFound.schema(),
 }
 

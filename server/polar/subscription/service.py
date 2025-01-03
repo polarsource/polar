@@ -939,17 +939,21 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         is_canceled = subscription.ends_at and subscription.canceled_at
         updated_ends_at = subscription.ends_at != previous_ends_at
+
         cancellation_changed = is_canceled and updated_ends_at
+        became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
+            previous_status
+        )
+
         if cancellation_changed:
-            await self._on_subscription_canceled(session, subscription)
+            await self._on_subscription_canceled(
+                session, subscription, revoked=became_revoked
+            )
 
         became_uncanceled = previous_ends_at and not is_canceled
         if became_uncanceled:
             await self._on_subscription_uncanceled(session, subscription)
 
-        became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
-            previous_status
-        )
         if became_revoked:
             await self._on_subscription_revoked(session, subscription)
 
@@ -988,11 +992,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         subscription: Subscription,
+        revoked: bool = False,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_canceled
         )
-        await self.send_cancellation_email(session, subscription)
+
+        # Revokation both cancels & revokes simultaneously.
+        # Send webhook for both, but avoid duplicate email to customers.
+        if revoked:
+            await self.send_cancellation_email(session, subscription)
 
     async def _on_subscription_revoked(
         self,

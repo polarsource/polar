@@ -17,7 +17,6 @@ from polar.models import (
     LicenseKeyActivation,
     Organization,
     User,
-    UserCustomer,
     UserOrganization,
 )
 from polar.models.benefit import BenefitLicenseKeys
@@ -487,8 +486,8 @@ class LicenseKeyService(
         if is_user(auth_subject):
             statement = statement.where(
                 LicenseKey.customer_id.in_(
-                    select(UserCustomer.customer_id).where(
-                        UserCustomer.user_id == auth_subject.subject.id
+                    select(Customer.id).where(
+                        Customer.user_id == auth_subject.subject.id
                     )
                 )
             )

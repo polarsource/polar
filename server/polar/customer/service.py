@@ -3,7 +3,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql.base import ExecutableOption
 from stripe import Customer as StripeCustomer
 
@@ -13,7 +12,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Organization, User, UserCustomer, UserOrganization
+from polar.models import Customer, Organization, User, UserOrganization
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
@@ -184,14 +183,10 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def get_by_id_and_user(
         self, session: AsyncSession, id: uuid.UUID, user: User
     ) -> Customer | None:
-        statement = (
-            select(Customer)
-            .join(UserCustomer, onclause=UserCustomer.customer_id == Customer.id)
-            .where(
-                Customer.deleted_at.is_(None),
-                Customer.id == id,
-                UserCustomer.user_id == user.id,
-            )
+        statement = select(Customer).where(
+            Customer.deleted_at.is_(None),
+            Customer.id == id,
+            Customer.user_id == user.id,
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -199,14 +194,10 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def get_by_user_and_organization(
         self, session: AsyncSession, user: User, organization: Organization
     ) -> Customer | None:
-        statement = (
-            select(Customer)
-            .join(UserCustomer, onclause=UserCustomer.customer_id == Customer.id)
-            .where(
-                Customer.deleted_at.is_(None),
-                UserCustomer.user_id == user.id,
-                Customer.organization_id == organization.id,
-            )
+        statement = select(Customer).where(
+            Customer.deleted_at.is_(None),
+            Customer.user_id == user.id,
+            Customer.organization_id == organization.id,
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -214,13 +205,9 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def get_by_user(
         self, session: AsyncSession, user: User
     ) -> Sequence[Customer]:
-        statement = (
-            select(Customer)
-            .join(UserCustomer, onclause=UserCustomer.customer_id == Customer.id)
-            .where(
-                Customer.deleted_at.is_(None),
-                UserCustomer.user_id == user.id,
-            )
+        statement = select(Customer).where(
+            Customer.deleted_at.is_(None),
+            Customer.user_id == user.id,
         )
         result = await session.execute(statement)
         return result.unique().scalars().all()
@@ -275,13 +262,10 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def link_user(
         self, session: AsyncSession, customer: Customer, user: User
     ) -> None:
-        insert_statement = insert(UserCustomer).values(
-            user_id=user.id, customer_id=customer.id
-        )
-        insert_statement = insert_statement.on_conflict_do_nothing(
-            index_elements=["customer_id"]
-        )
-        await session.execute(insert_statement)
+        if customer.user_id is not None:
+            return
+        customer.user = user
+        session.add(customer)
 
     def _get_readable_customer_statement(
         self, auth_subject: AuthSubject[User | Organization]

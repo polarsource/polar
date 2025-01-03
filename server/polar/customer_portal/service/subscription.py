@@ -19,7 +19,6 @@ from polar.models import (
     ProductPrice,
     Subscription,
     User,
-    UserCustomer,
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
@@ -215,8 +214,8 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         if is_user(auth_subject):
             statement = statement.where(
                 Subscription.customer_id.in_(
-                    select(UserCustomer.customer_id).where(
-                        UserCustomer.user_id == auth_subject.subject.id
+                    select(Customer.id).where(
+                        Customer.user_id == auth_subject.subject.id
                     )
                 )
             )

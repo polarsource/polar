@@ -21,7 +21,6 @@ from polar.models import (
     Organization,
     Subscription,
     User,
-    UserCustomer,
 )
 from polar.models.benefit import BenefitType
 from polar.worker import enqueue_job
@@ -209,8 +208,8 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if is_user(auth_subject):
             statement = statement.where(
                 BenefitGrant.customer_id.in_(
-                    select(UserCustomer.customer_id).where(
-                        UserCustomer.user_id == auth_subject.subject.id
+                    select(Customer.id).where(
+                        Customer.user_id == auth_subject.subject.id
                     )
                 )
             )

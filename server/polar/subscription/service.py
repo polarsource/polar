@@ -971,17 +971,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, subscription, WebhookEventType.subscription_active
         )
 
-        # TODO: Copied this logic over. Why the extra check for customer
-        # confirmation vs. webhook/creator notification? Look into it, but avoid
-        # changing for now.
-        if (
-            subscription.started_at is not None
-            and subscription.started_at.date()
-            == subscription.current_period_start.date()
-            and not subscription.ends_at
-        ):
-            await self.send_confirmation_email(session, subscription)
-
+        await self.send_confirmation_email(session, subscription)
         await self._send_new_subscription_notification(session, subscription)
 
     async def _on_subscription_uncanceled(

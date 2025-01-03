@@ -77,7 +77,6 @@ class TestListSubscriptions:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestCustomerSubscriptionPriceUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
@@ -234,7 +233,6 @@ class TestCustomerSubscriptionPriceUpdate:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestSubscriptionUpdateCancel:
     async def test_anonymous(
         self,
@@ -335,7 +333,6 @@ class TestSubscriptionUpdateCancel:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestSubscriptionUpdateUncancel:
     async def test_anonymous(
         self,
@@ -445,7 +442,6 @@ class TestSubscriptionUpdateUncancel:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestSubscriptionUpdateRevoke:
     async def test_anonymous(
         self,
@@ -546,7 +542,6 @@ class TestSubscriptionUpdateRevoke:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
 class TestSubscriptionRevoke:
     async def test_anonymous(
         self,

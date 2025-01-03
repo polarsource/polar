@@ -615,7 +615,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False
-        if not (updates.revoke or cancel or uncancel):
+        # Exit early unless we're asked to revoke, cancel or uncancel
+        if not any((updates.revoke, cancel, uncancel)):
             return subscription
 
         if updates.revoke and (cancel or uncancel):

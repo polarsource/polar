@@ -872,16 +872,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # queue removal of grants
             await self.enqueue_benefits_grants(session, subscription)
 
-        # Trigger hooks since we update subscriptions directly upon cancellation
-        # Doing so upon Stripe webhooks would prevent us from truly
-        # knowing/identifying changes made, i.e cancellations.
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
-        )
-
         log.info(
             "subscription.canceled",
             id=subscription.id,
@@ -892,6 +882,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             reason=customer_reason,
         )
         session.add(subscription)
+
+        # Trigger hooks since we update subscriptions directly upon cancellation
+        # Doing so upon Stripe webhooks would prevent us from truly
+        # knowing/identifying changes made, i.e cancellations.
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
         return subscription
 
     def update_cancellation_from_stripe(

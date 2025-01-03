@@ -103,7 +103,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
               <>
                 <div>
                   <Link
-                    className=" text-blue-500 dark:text-blue-400"
+                    className="text-blue-500 dark:text-blue-400"
                     href={`/${transactionMeta.organization?.slug}/products/${transactionMeta.meta.product.id}`}
                   >
                     <ProductPill
@@ -117,7 +117,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
             {'issue' in transactionMeta.meta && (
               <div>
                 <Link
-                  className=" text-blue-500 dark:text-blue-400"
+                  className="text-blue-500 dark:text-blue-400"
                   href={`/${transactionMeta.meta.issue.organization?.name}/${transactionMeta.meta.issue.repository.name}/issues/${transactionMeta.meta.issue.number}`}
                 >
                   {transactionMeta.meta.issue.title}
@@ -141,6 +141,7 @@ export const platformFeesDisplayNames: {
   [PlatformFeeType.CROSS_BORDER_TRANSFER]: 'Cross-border transfer payout fee',
   [PlatformFeeType.PAYOUT]: 'Payout fee',
   [PlatformFeeType.ACCOUNT]: 'Active payout account fee',
+  [PlatformFeeType.DISPUTE]: 'Dispute fee',
   [PlatformFeeType.PLATFORM]: 'Polar fee',
 }
 

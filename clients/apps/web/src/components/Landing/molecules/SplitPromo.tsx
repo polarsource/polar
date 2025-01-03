@@ -47,7 +47,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <div className="flex aspect-square flex-1 flex-col justify-center gap-y-8 p-16">
+      <div className="flex flex-1 flex-col justify-center gap-y-8 p-8 md:aspect-square md:p-16">
         <motion.h2
           className="text-2xl !leading-normal md:text-3xl"
           variants={itemVariants}
@@ -83,7 +83,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
         </motion.div>
       </div>
       <motion.div
-        className="flex aspect-square flex-1 bg-cover bg-center p-16"
+        className="flex aspect-square flex-1 bg-cover bg-center p-8 md:p-16"
         style={{
           backgroundImage: `url(${image})`,
         }}

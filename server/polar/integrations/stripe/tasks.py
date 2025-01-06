@@ -9,6 +9,7 @@ import structlog
 from arq import Retry
 
 from polar.account.service import account as account_service
+from polar.checkout.service import NotConfirmedCheckout
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarTaskError
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
@@ -99,7 +100,7 @@ async def account_updated(
             )
 
 
-@task("stripe.webhook.payment_intent.succeeded")
+@task("stripe.webhook.payment_intent.succeeded", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def payment_intent_succeeded(
     ctx: JobContext,
@@ -117,9 +118,18 @@ async def payment_intent_succeeded(
                 metadata.get("type") == ProductType.product
                 and (checkout_id := metadata.get("checkout_id")) is not None
             ):
-                await checkout_service.handle_stripe_success(
-                    session, uuid.UUID(checkout_id), payment_intent
-                )
+                try:
+                    await checkout_service.handle_stripe_success(
+                        session, uuid.UUID(checkout_id), payment_intent
+                    )
+                except NotConfirmedCheckout as e:
+                    # Retry because we've seen in the wild a Stripe webhook coming
+                    # *before* we updated the Checkout Session status in the database!
+                    if ctx["job_try"] <= MAX_RETRIES:
+                        raise Retry(compute_backoff(ctx["job_try"])) from e
+                    # Raise the exception to be notified about it
+                    else:
+                        raise
                 return
 
             # Check if there is a Stripe Checkout Session related,

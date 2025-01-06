@@ -154,7 +154,7 @@ class PlainService:
             return {
                 "componentContainer": {
                     "containerContent": [
-                        {"componentText": {"text": customer.name}},
+                        {"componentText": {"text": customer.name or customer.email}},
                         {"componentDivider": {"dividerSpacingSize": "M"}},
                         {
                             "componentRow": {

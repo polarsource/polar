@@ -3,28 +3,54 @@ import { api, queryClient } from '@/utils/api'
 import {
   Organization,
   OrganizationIDFilter1,
+  Product,
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
   ProductsApiListRequest,
 } from '@polar-sh/sdk'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useProducts = (
-  organizationId?: OrganizationIDFilter1,
+  organizationId: OrganizationIDFilter1,
   parameters?: Omit<ProductsApiListRequest, 'organizationId'>,
 ) =>
   useQuery({
     queryKey: ['products', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       api.products.list({
-        organizationId: organizationId ?? '',
+        organizationId,
         isArchived: false,
         ...(parameters || {}),
       }),
     retry: defaultRetry,
-    enabled: !!organizationId,
+  })
+
+export const useSelectedProducts = (id: string[]) =>
+  useQuery({
+    queryKey: ['products', { id }],
+    queryFn: async () => {
+      const products: Product[] = []
+      let page = 1
+      while (true) {
+        const data = await api.products.list({
+          id,
+          isArchived: false,
+          page,
+          limit: 1,
+        })
+        products.push(...data.items)
+        if (data.pagination.max_page === page) {
+          break
+        }
+        page++
+      }
+      return products
+    },
+    placeholderData: keepPreviousData,
+    retry: defaultRetry,
+    enabled: id.length > 0,
   })
 
 export const useBenefitProducts = (

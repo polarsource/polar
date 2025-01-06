@@ -41,6 +41,9 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     auth_subject: auth.CreatorProductsRead,
+    id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -65,6 +68,7 @@ async def list(
     results, count = await product_service.list(
         session,
         auth_subject,
+        id=id,
         organization_id=organization_id,
         query=query,
         is_archived=is_archived,

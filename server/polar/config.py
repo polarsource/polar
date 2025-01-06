@@ -154,6 +154,9 @@ class Settings(BaseSettings):
     # Logfire
     LOGFIRE_TOKEN: str | None = None
 
+    # Plain
+    PLAIN_REQUEST_SIGNING_SECRET: str | None = None
+
     # AWS (File Downloads)
     AWS_ACCESS_KEY_ID: str = "polar-development"
     AWS_SECRET_ACCESS_KEY: str = "polar123456789"

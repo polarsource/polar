@@ -228,12 +228,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.ExternalOrganizations.List(ctx, operations.ExternalOrganizationsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceExternalOrganization != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.externalOrganizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -496,12 +496,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Repositories.List(ctx, operations.RepositoriesListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceRepository != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -593,12 +593,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Repositories.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Repository != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -706,12 +706,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Repositories.Update(ctx, \"<value>\", components.RepositoryUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Repository != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.update({\n    id: \"<value>\",\n    repositoryUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -863,12 +863,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceOrganization != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -937,12 +937,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.Create(ctx, components.OrganizationCreate{\n        Name: \"<value>\",\n        Slug: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.create({\n    name: \"<value>\",\n    slug: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -1033,12 +1033,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -1146,12 +1146,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Organizations.Update(ctx, \"<value>\", components.OrganizationUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.update({\n    id: \"<value>\",\n    organizationUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -1442,12 +1442,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.List(ctx, operations.SubscriptionsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceSubscription != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -1547,18 +1547,226 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "export",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Export(ctx, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "export",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.export({});\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "export",
             "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.subscriptions.export()\n\n    # Handle response\n    print(res)"
+          }
+        ]
+      }
+    },
+    "/v1/subscriptions/{id}": {
+      "patch": {
+        "tags": [
+          "subscriptions",
+          "documented"
+        ],
+        "summary": "Update Subscription",
+        "description": "Update a subscription.",
+        "operationId": "subscriptions:update",
+        "security": [
+          {
+            "oidc": [
+              "subscriptions:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The subscription ID.",
+              "title": "Id"
+            },
+            "description": "The subscription ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Subscription is already canceled or will be at the end of the period.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlreadyCanceledSubscription"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subscription not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "subscriptions",
+        "x-speakeasy-name-override": "update",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Update(ctx, \"<value>\", components.CreateSubscriptionUpdateSubscriptionCancel(\n        components.SubscriptionCancel{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Subscription != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.update({\n    id: \"<value>\",\n    subscriptionUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "update",
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.subscriptions.update(id=\"<value>\", subscription_update={\n        \"revoke\": True,\n    })\n\n    # Handle response\n    print(res)"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "subscriptions",
+          "documented"
+        ],
+        "summary": "Revoke Subscription",
+        "description": "Revoke a subscription, i.e cancel immediately.",
+        "operationId": "subscriptions:revoke",
+        "security": [
+          {
+            "oidc": [
+              "subscriptions:write"
+            ]
+          },
+          {
+            "pat": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The subscription ID.",
+              "title": "Id"
+            },
+            "description": "The subscription ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "This subscription is already revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlreadyCanceledSubscription"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subscription not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "subscriptions",
+        "x-speakeasy-name-override": "revoke",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Revoke(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Subscription != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.revoke({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "python",
+            "label": "revoke",
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.subscriptions.revoke(id=\"<value>\")\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -1686,12 +1894,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Advertisements.List(ctx, \"<value>\", nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.AdvertisementCampaignListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -1762,12 +1970,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Advertisements.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.AdvertisementCampaign != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -1873,12 +2081,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.List(ctx, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceOAuth2Client != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -1945,12 +2153,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create_client",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Create(ctx, components.OAuth2ClientConfiguration{\n        RedirectUris: []string{\n            \"https://inferior-chainstay.com\",\n        },\n        ClientName: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create_client",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"https://inferior-chainstay.com\",\n    ],\n    clientName: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2019,12 +2227,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get_client",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Get(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get_client",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.get({\n    clientId: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2101,12 +2309,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update_client",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Update(ctx, \"<id>\", components.OAuth2ClientConfigurationUpdate{\n        RedirectUris: []string{\n            \"https://grown-worth.name\",\n            \"https://worthwhile-avalanche.org/\",\n            \"https://general-digit.com/\",\n        },\n        ClientName: \"<value>\",\n        ClientID: \"<id>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update_client",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<id>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2173,12 +2381,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete_client",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Delete(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete_client",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.delete({\n    clientId: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2241,12 +2449,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "authorize",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Authorize(ctx)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseOauth2Authorize != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "authorize",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.authorize();\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2376,18 +2584,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "request_token",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Token(ctx, operations.CreateOauth2RequestTokenRequestBodyOnev11oauth21tokenPostXComponentsAuthorizationCodeTokenRequest(\n        components.Onev11oauth21tokenPostXComponentsAuthorizationCodeTokenRequest{\n            ClientID: \"<id>\",\n            ClientSecret: \"<value>\",\n            Code: \"<value>\",\n            RedirectURI: \"https://talkative-barracks.com\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.TokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "request_token",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "request_token",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.oauth2.token(request={\n        \"grant_type\": polar_sdk.GrantType.AUTHORIZATION_CODE,\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n        \"code\": \"<value>\",\n        \"redirect_uri\": \"https://old-fort.name\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.oauth2.token(request={\n        \"grant_type\": \"authorization_code\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n        \"code\": \"<value>\",\n        \"redirect_uri\": \"https://old-fort.name\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -2464,12 +2672,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "revoke_token",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Revoke(ctx, operations.Oauth2RevokeTokenRevokeTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.RevokeTokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "revoke_token",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2552,12 +2760,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "introspect_token",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Introspect(ctx, operations.Oauth2IntrospectTokenIntrospectTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.IntrospectTokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "introspect_token",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2608,12 +2816,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "userinfo",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Userinfo(ctx)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseOauth2Userinfo != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "userinfo",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.userinfo();\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -2784,12 +2992,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceBenefit != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -2859,18 +3067,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Create(ctx, components.CreateBenefitCreateBenefitDownloadablesCreate(\n        components.BenefitDownloadablesCreate{\n            Description: \"yuck forager beneath please shadowy foodstuffs welcome\",\n            Properties: components.BenefitDownloadablesCreateProperties{\n                Files: []string{\n                    \"<value>\",\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"delightfully fumigate convection though zowie up bulky electronics\",\n    properties: {\n      guildToken: \"<value>\",\n      roleId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.create(request={\n        \"type\": polar_sdk.BenefitDiscordCreateType.DISCORD,\n        \"description\": \"delightfully fumigate convection though zowie up bulky electronics\",\n        \"properties\": {\n            \"guild_token\": \"<value>\",\n            \"role_id\": \"<id>\",\n        },\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.create(request={\n        \"type\": \"discord\",\n        \"description\": \"delightfully fumigate convection though zowie up bulky electronics\",\n        \"properties\": {\n            \"guild_token\": \"<value>\",\n            \"role_id\": \"<id>\",\n        },\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -2955,12 +3163,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -3088,18 +3296,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitGitHubRepositoryUpdate(\n        components.BenefitGitHubRepositoryUpdate{\n            Properties: &components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.BenefitGitHubRepositoryCreatePropertiesPermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.update(id=\"<value>\", request_body={\n        \"type\": polar_sdk.BenefitLicenseKeysUpdateType.LICENSE_KEYS,\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.update(id=\"<value>\", request_body={\n        \"type\": \"license_keys\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       },
@@ -3183,12 +3391,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.benefits.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -3367,12 +3575,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "grants",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Grants(ctx, operations.BenefitsGrantsRequest{\n        ID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceBenefitGrant != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "grants",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.grants({\n    id: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -3636,12 +3844,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.List(ctx, operations.ProductsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceProduct != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -3712,18 +3920,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Create(ctx, components.CreateProductCreateProductRecurringCreate(\n        components.ProductRecurringCreate{\n            Name: \"<value>\",\n            Prices: components.CreateProductRecurringCreatePricesArrayOfProductPriceRecurringFixedCreate(\n                []components.ProductPriceRecurringFixedCreate{\n                    components.ProductPriceRecurringFixedCreate{\n                        PriceAmount: 796474,\n                        RecurringInterval: components.SubscriptionRecurringIntervalYear,\n                    },\n                },\n            ),\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        recurringInterval: \"month\",\n      },\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.products.create(request={\n        \"name\": \"<value>\",\n        \"prices\": [\n            {\n                \"type\": polar_sdk.ProductPriceRecurringFreeCreateType.RECURRING,\n                \"amount_type\": polar_sdk.ProductPriceRecurringFreeCreateAmountType.FREE,\n                \"recurring_interval\": polar_sdk.SubscriptionRecurringInterval.MONTH,\n            },\n        ],\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.products.create(request={\n        \"name\": \"<value>\",\n        \"prices\": [\n            {\n                \"type\": \"recurring\",\n                \"amount_type\": \"free\",\n                \"recurring_interval\": polar_sdk.SubscriptionRecurringInterval.MONTH,\n            },\n        ],\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -3808,12 +4016,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -3921,12 +4129,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Update(ctx, \"<value>\", components.ProductUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.update({\n    id: \"<value>\",\n    productUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -4036,12 +4244,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update_benefits",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.UpdateBenefits(ctx, \"<value>\", components.ProductBenefitsUpdate{\n        Benefits: []string{\n            \"<value>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update_benefits",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -4325,12 +4533,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.List(ctx, operations.OrdersListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceOrder != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -4415,12 +4623,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Order != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -4505,12 +4713,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "invoice",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.Invoice(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.OrderInvoice != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "invoice",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -4721,12 +4929,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.List(ctx, operations.CheckoutsCustomListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCheckout != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -4797,18 +5005,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Create(ctx, components.CreateCheckoutCreateCheckoutPriceCreate(\n        components.CheckoutPriceCreate{\n            ProductPriceID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Create(ctx, components.CreateCheckoutCreateCheckoutProductCreate(\n        components.CheckoutProductCreate{\n            ProductID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.create({\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.custom.create(request={\n        \"payment_processor\": polar_sdk.CheckoutProductCreatePaymentProcessor.STRIPE,\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.custom.create(request={\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -4890,12 +5098,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -4990,12 +5198,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.Update(ctx, \"<value>\", components.CheckoutUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.update({\n    id: \"<value>\",\n    checkoutUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -5067,12 +5275,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "client_get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.ClientGet(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "client_get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.clientGet({\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -5152,12 +5360,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "client_update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "client_update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -5251,12 +5459,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "client_confirm",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Custom.ClientConfirm(ctx, \"<value>\", components.CheckoutConfirmStripe{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublicConfirmed != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "client_confirm",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.custom.clientConfirm({\n    clientSecret: \"<value>\",\n    checkoutConfirmStripe: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -5517,12 +5725,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceFileRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -5591,18 +5799,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Create(ctx, components.CreateFileCreateProductMediaFileCreate(\n        components.ProductMediaFileCreate{\n            Name: \"<value>\",\n            MimeType: \"<value>\",\n            Size: 951062,\n            Upload: components.S3FileCreateMultipart{\n                Parts: []components.S3FileCreatePart{\n                    components.S3FileCreatePart{\n                        Number: 86,\n                        ChunkStart: 169727,\n                        ChunkEnd: 89964,\n                    },\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.FileUpload != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 638424,\n    upload: {\n      parts: [\n        {\n          number: 417458,\n          chunkStart: 134365,\n          chunkEnd: 69025,\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.files.create(request={\n        \"name\": \"<value>\",\n        \"mime_type\": \"<value>\",\n        \"size\": 638424,\n        \"upload\": {\n            \"parts\": [\n                {\n                    \"number\": 417458,\n                    \"chunk_start\": 134365,\n                    \"chunk_end\": 69025,\n                },\n            ],\n        },\n        \"service\": polar_sdk.OrganizationAvatarFileCreateService.ORGANIZATION_AVATAR,\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.files.create(request={\n        \"name\": \"<value>\",\n        \"mime_type\": \"<value>\",\n        \"size\": 638424,\n        \"upload\": {\n            \"parts\": [\n                {\n                    \"number\": 417458,\n                    \"chunk_start\": 134365,\n                    \"chunk_end\": 69025,\n                },\n            ],\n        },\n        \"service\": \"organization_avatar\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -5720,12 +5928,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "uploaded",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Uploaded(ctx, \"<value>\", components.FileUploadCompleted{\n        ID: \"<id>\",\n        Path: \"/sys\",\n        Parts: []components.S3FileUploadCompletedPart{\n            components.S3FileUploadCompletedPart{\n                Number: 173116,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 894030,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 673715,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseFilesUploaded != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "uploaded",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 173116,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 894030,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 673715,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -5849,12 +6057,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Update(ctx, \"<value>\", components.FilePatch{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseFilesUpdate != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.update({\n    id: \"<value>\",\n    filePatch: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -5938,12 +6146,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.files.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -6140,18 +6348,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Get(ctx, operations.MetricsGetRequest{\n        StartDate: types.MustDateFromString(\"2024-02-07\"),\n        EndDate: types.MustDateFromString(\"2023-09-05\"),\n        Interval: components.IntervalWeek,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsResponse != nil {\n        // handle response\n    }\n}"
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Get(ctx, operations.MetricsGetRequest{\n        StartDate: types.MustDateFromString(\"2025-02-06\"),\n        EndDate: types.MustDateFromString(\"2024-09-04\"),\n        Interval: components.IntervalWeek,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2023-09-05\"),\n    interval: \"week\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2025-02-06\"),\n    endDate: new RFCDate(\"2024-09-04\"),\n    interval: \"week\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.get(start_date=dateutil.parser.parse(\"2024-02-07\").date(), end_date=dateutil.parser.parse(\"2023-09-05\").date(), interval=polar_sdk.Interval.WEEK)\n\n    # Handle response\n    print(res)"
+            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.get(start_date=dateutil.parser.parse(\"2025-02-06\").date(), end_date=dateutil.parser.parse(\"2024-09-04\").date(), interval=polar_sdk.Interval.WEEK)\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -6196,12 +6404,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "limits",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Limits(ctx)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsLimits != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "limits",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.limits();\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -6407,12 +6615,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceLicenseKeyRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -6507,12 +6715,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyWithActivations != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -6614,12 +6822,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Update(ctx, \"<value>\", components.LicenseKeyUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyRead != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.update({\n    id: \"<value>\",\n    licenseKeyUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -6724,12 +6932,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get_activation",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.GetActivation(ctx, \"<value>\", \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get_activation",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.getActivation({\n    id: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -6938,12 +7146,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.List(ctx, operations.CheckoutLinksListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCheckoutLink != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -7012,18 +7220,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Create(ctx, components.CreateCheckoutLinkCreateCheckoutLinkPriceCreate(\n        components.CheckoutLinkPriceCreate{\n            ProductPriceID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkout_links.create(request={\n        \"payment_processor\": polar_sdk.CheckoutLinkProductCreatePaymentProcessor.STRIPE,\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkout_links.create(request={\n        \"payment_processor\": \"stripe\",\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -7103,12 +7311,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -7201,12 +7409,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Update(ctx, \"<value>\", components.CheckoutLinkUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.update({\n    id: \"<value>\",\n    checkoutLinkUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -7282,12 +7490,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.checkoutLinks.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -7500,12 +7708,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.List(ctx, operations.CustomFieldsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomField != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -7575,18 +7783,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Create(ctx, components.CreateCustomFieldCreateCustomFieldCreateSelect(\n        components.CustomFieldCreateSelect{\n            Slug: \"<value>\",\n            Name: \"<value>\",\n            Properties: components.CustomFieldSelectProperties{\n                Options: []components.CustomFieldSelectOption{\n                    components.CustomFieldSelectOption{\n                        Value: \"<value>\",\n                        Label: \"<value>\",\n                    },\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    slug: \"<value>\",\n    name: \"<value>\",\n    properties: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.custom_fields.create(request={\n        \"type\": polar_sdk.CustomFieldCreateNumberType.NUMBER,\n        \"slug\": \"<value>\",\n        \"name\": \"<value>\",\n        \"properties\": {},\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.custom_fields.create(request={\n        \"type\": \"number\",\n        \"slug\": \"<value>\",\n        \"name\": \"<value>\",\n        \"properties\": {},\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -7667,12 +7875,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -7766,18 +7974,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Update(ctx, \"<value>\", components.CreateCustomFieldUpdateCustomFieldUpdateNumber(\n        components.CustomFieldUpdateNumber{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.update({\n    id: \"<value>\",\n    customFieldUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.custom_fields.update(id=\"<value>\", custom_field_update={\n        \"type\": polar_sdk.CustomFieldUpdateTextType.TEXT,\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.custom_fields.update(id=\"<value>\", custom_field_update={\n        \"type\": \"text\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       },
@@ -7847,12 +8055,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.customFields.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -8042,12 +8250,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.List(ctx, operations.DiscountsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDiscount != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -8118,12 +8326,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Create(ctx, components.CreateDiscountCreateDiscountFixedRepeatDurationCreate(\n        components.DiscountFixedRepeatDurationCreate{\n            Duration: components.DiscountDurationForever,\n            DurationInMonths: 417458,\n            Type: components.DiscountTypeFixed,\n            Amount: 69025,\n            Name: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.create({\n    duration: \"forever\",\n    durationInMonths: 417458,\n    type: \"fixed\",\n    amount: 69025,\n    name: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -8211,12 +8419,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -8311,12 +8519,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Update(ctx, \"<value>\", components.DiscountUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.update({\n    id: \"<value>\",\n    discountUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -8393,12 +8601,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.discounts.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -8588,12 +8796,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.List(ctx, operations.CustomersListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomer != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -8663,12 +8871,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Create(ctx, components.CustomerCreate{\n        Email: \"Loyal79@yahoo.com\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    email: \"Loyal79@yahoo.com\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -8755,12 +8963,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -8854,12 +9062,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -8936,12 +9144,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "delete",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Delete(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "delete",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.customers.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -9244,12 +9452,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.BenefitGrants.List(ctx, operations.CustomerPortalBenefitGrantsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerBenefitGrant != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -9340,12 +9548,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.BenefitGrants.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerBenefitGrant != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -9454,18 +9662,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.BenefitGrants.Update(ctx, \"<value>\", components.CreateCustomerBenefitGrantUpdateCustomerBenefitGrantDownloadablesUpdate(\n        components.CustomerBenefitGrantDownloadablesUpdate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerBenefitGrant != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.update({\n    id: \"<value>\",\n    customerBenefitGrantUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.benefit_grants.update(id=\"<value>\", customer_benefit_grant_update={\n        \"benefit_type\": polar_sdk.CustomerBenefitGrantLicenseKeysUpdateBenefitType.LICENSE_KEYS,\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.benefit_grants.update(id=\"<value>\", customer_benefit_grant_update={\n        \"benefit_type\": \"license_keys\",\n    })\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -9549,12 +9757,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Customers.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPortalCustomer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.customers.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -9742,12 +9950,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Downloadables.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDownloadableRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -9815,12 +10023,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Downloadables.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.get({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -10016,12 +10224,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.List(ctx, nil, nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceLicenseKeyRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -10110,12 +10318,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyWithActivations != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -10184,12 +10392,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "validate",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Validate(ctx, components.LicenseKeyValidate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ValidatedLicenseKey != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "validate",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -10268,12 +10476,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "activate",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Activate(ctx, components.LicenseKeyActivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        Label: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "activate",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -10335,12 +10543,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "deactivate",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Deactivate(ctx, components.LicenseKeyDeactivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        ActivationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "deactivate",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.customerPortal.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
@@ -10621,12 +10829,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Orders.List(ctx, operations.CustomerPortalOrdersListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerOrder != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -10716,12 +10924,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Orders.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrder != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -10811,12 +11019,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "invoice",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Orders.Invoice(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrderInvoice != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "invoice",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -10887,12 +11095,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Organizations.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Organization != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.organizations.get({\n    slug: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -11142,12 +11350,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "list",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.List(ctx, operations.CustomerPortalSubscriptionsListRequest{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerSubscription != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "list",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
@@ -11191,10 +11399,10 @@
             "schema": {
               "type": "string",
               "format": "uuid4",
-              "description": "The subscription ID.",
+              "description": "Customer subscription ID.",
               "title": "Id"
             },
-            "description": "The subscription ID."
+            "description": "Customer subscription ID."
           }
         ],
         "responses": {
@@ -11209,7 +11417,7 @@
             }
           },
           "404": {
-            "description": "Subscription not found.",
+            "description": "Customer subscription was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11238,12 +11446,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "get",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "get",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -11284,10 +11492,10 @@
             "schema": {
               "type": "string",
               "format": "uuid4",
-              "description": "The subscription ID.",
+              "description": "Customer subscription ID.",
               "title": "Id"
             },
-            "description": "The subscription ID."
+            "description": "Customer subscription ID."
           }
         ],
         "requestBody": {
@@ -11302,7 +11510,7 @@
         },
         "responses": {
           "200": {
-            "description": "Subscription updated.",
+            "description": "Customer subscription updated.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11311,8 +11519,18 @@
               }
             }
           },
+          "403": {
+            "description": "Customer subscription is already canceled or will be at the end of the period.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlreadyCanceledSubscription"
+                }
+              }
+            }
+          },
           "404": {
-            "description": "Subscription not found.",
+            "description": "Customer subscription was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11341,18 +11559,18 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "update",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Update(ctx, \"<value>\", components.CustomerSubscriptionUpdate{\n        ProductPriceID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Update(ctx, \"<value>\", components.CreateCustomerSubscriptionUpdateCustomerSubscriptionCancel(\n        components.CustomerSubscriptionCancel{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.update({\n    id: \"<value>\",\n    customerSubscriptionUpdate: {\n      productPriceId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.update({\n    id: \"<value>\",\n    customerSubscriptionUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.subscriptions.update(id=\"<value>\", customer_subscription_update={\n        \"product_price_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.subscriptions.update(id=\"<value>\", customer_subscription_update={})\n\n    # Handle response\n    print(res)"
           }
         ]
       },
@@ -11387,15 +11605,15 @@
             "schema": {
               "type": "string",
               "format": "uuid4",
-              "description": "The subscription ID.",
+              "description": "Customer subscription ID.",
               "title": "Id"
             },
-            "description": "The subscription ID."
+            "description": "Customer subscription ID."
           }
         ],
         "responses": {
           "200": {
-            "description": "Subscription canceled.",
+            "description": "Customer subscription is canceled.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11405,7 +11623,7 @@
             }
           },
           "403": {
-            "description": "This subscription is already canceled or will be at the end of the period.",
+            "description": "Customer subscription is already canceled or will be at the end of the period.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11415,7 +11633,7 @@
             }
           },
           "404": {
-            "description": "Subscription not found.",
+            "description": "Customer subscription was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11444,12 +11662,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "cancel",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Subscriptions.Cancel(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSubscription != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "cancel",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.cancel({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -11521,12 +11739,12 @@
         "x-codeSamples": [
           {
             "lang": "go",
-            "label": "create",
+            "label": "Go (SDK)",
             "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n    \n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, components.CustomerSessionCreate{\n        CustomerID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "typescript",
-            "label": "create",
+            "label": "Typescript (SDK)",
             "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    customerId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
@@ -11764,13 +11982,50 @@
     "subscription.canceled": {
       "post": {
         "summary": "subscription.canceled",
-        "description": "Sent when a subscription is canceled by the user.\nThey might still have access until the end of the current period.\n\n**Discord & Slack support:** Full",
+        "description": "Sent when a subscription is canceled.\nCustomers might still have access until the end of the current period.\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointsubscription_canceled_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebhookSubscriptionCanceledPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "subscription.uncanceled": {
+      "post": {
+        "summary": "subscription.uncanceled",
+        "description": "Sent when a subscription is uncanceled.\n\n**Discord & Slack support:** Full",
+        "operationId": "_endpointsubscription_uncanceled_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionUncanceledPayload"
               }
             }
           },
@@ -14431,6 +14686,9 @@
             "title": "Benefit Id",
             "description": "The ID of the benefit concerned by this grant."
           },
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
           "properties": {
             "anyOf": [
               {
@@ -14467,6 +14725,7 @@
           "customer_id",
           "user_id",
           "benefit_id",
+          "customer",
           "properties"
         ],
         "title": "BenefitGrant"
@@ -14670,6 +14929,9 @@
             "title": "Benefit Id",
             "description": "The ID of the benefit concerned by this grant."
           },
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
           "properties": {
             "anyOf": [
               {
@@ -14736,6 +14998,7 @@
           "customer_id",
           "user_id",
           "benefit_id",
+          "customer",
           "properties",
           "benefit"
         ],
@@ -16635,12 +16898,6 @@
             "title": "Custom Field Data",
             "description": "Key-value object storing custom field values."
           },
-          "payment_processor": {
-            "type": "string",
-            "const": "stripe",
-            "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -16820,7 +17077,6 @@
         },
         "type": "object",
         "required": [
-          "payment_processor",
           "product_price_id"
         ],
         "title": "CheckoutPriceCreate",
@@ -16959,12 +17215,6 @@
             "type": "object",
             "title": "Custom Field Data",
             "description": "Key-value object storing custom field values."
-          },
-          "payment_processor": {
-            "type": "string",
-            "const": "stripe",
-            "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
           },
           "discount_id": {
             "anyOf": [
@@ -17145,7 +17395,6 @@
         },
         "type": "object",
         "required": [
-          "payment_processor",
           "product_id"
         ],
         "title": "CheckoutProductCreate",
@@ -19990,6 +20239,9 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomer"
+          },
           "benefit": {
             "$ref": "#/components/schemas/BenefitAdsSubscriber"
           },
@@ -20010,6 +20262,7 @@
           "order_id",
           "is_granted",
           "is_revoked",
+          "customer",
           "benefit",
           "properties"
         ],
@@ -20122,6 +20375,9 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomer"
+          },
           "benefit": {
             "$ref": "#/components/schemas/BenefitCustomSubscriber"
           },
@@ -20142,6 +20398,7 @@
           "order_id",
           "is_granted",
           "is_revoked",
+          "customer",
           "benefit",
           "properties"
         ],
@@ -20254,6 +20511,9 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomer"
+          },
           "benefit": {
             "$ref": "#/components/schemas/BenefitDiscordSubscriber"
           },
@@ -20274,6 +20534,7 @@
           "order_id",
           "is_granted",
           "is_revoked",
+          "customer",
           "benefit",
           "properties"
         ],
@@ -20403,6 +20664,9 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomer"
+          },
           "benefit": {
             "$ref": "#/components/schemas/BenefitDownloadablesSubscriber"
           },
@@ -20423,6 +20687,7 @@
           "order_id",
           "is_granted",
           "is_revoked",
+          "customer",
           "benefit",
           "properties"
         ],
@@ -20535,6 +20800,9 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomer"
+          },
           "benefit": {
             "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
           },
@@ -20555,6 +20823,7 @@
           "order_id",
           "is_granted",
           "is_revoked",
+          "customer",
           "benefit",
           "properties"
         ],
@@ -20684,6 +20953,9 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomer"
+          },
           "benefit": {
             "$ref": "#/components/schemas/BenefitLicenseKeysSubscriber"
           },
@@ -20704,6 +20976,7 @@
           "order_id",
           "is_granted",
           "is_revoked",
+          "customer",
           "benefit",
           "properties"
         ],
@@ -20767,6 +21040,20 @@
             "license_keys": "#/components/schemas/CustomerBenefitGrantLicenseKeysUpdate"
           }
         }
+      },
+      "CustomerCancellationReason": {
+        "type": "string",
+        "enum": [
+          "customer_service",
+          "low_quality",
+          "missing_features",
+          "switched_service",
+          "too_complex",
+          "too_expensive",
+          "unused",
+          "other"
+        ],
+        "title": "CustomerCancellationReason"
       },
       "CustomerCreate": {
         "properties": {
@@ -21162,6 +21449,18 @@
             "type": "boolean",
             "title": "Cancel At Period End"
           },
+          "canceled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canceled At"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -21173,6 +21472,18 @@
               }
             ],
             "title": "Started At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
           },
           "ended_at": {
             "anyOf": [
@@ -21224,6 +21535,27 @@
               }
             ],
             "title": "Checkout Id"
+          },
+          "customer_cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Cancellation Comment"
           }
         },
         "type": "object",
@@ -21238,13 +21570,17 @@
           "current_period_start",
           "current_period_end",
           "cancel_at_period_end",
+          "canceled_at",
           "started_at",
+          "ends_at",
           "ended_at",
           "customer_id",
           "product_id",
           "price_id",
           "discount_id",
-          "checkout_id"
+          "checkout_id",
+          "customer_cancellation_reason",
+          "customer_cancellation_comment"
         ],
         "title": "CustomerOrderSubscription"
       },
@@ -21408,6 +21744,10 @@
             "format": "date-time",
             "title": "Expires At"
           },
+          "customer_portal_url": {
+            "type": "string",
+            "title": "Customer Portal Url"
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
@@ -21424,6 +21764,7 @@
           "id",
           "token",
           "expires_at",
+          "customer_portal_url",
           "customer_id",
           "customer"
         ],
@@ -21534,6 +21875,18 @@
             "type": "boolean",
             "title": "Cancel At Period End"
           },
+          "canceled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canceled At"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -21545,6 +21898,18 @@
               }
             ],
             "title": "Started At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
           },
           "ended_at": {
             "anyOf": [
@@ -21597,6 +21962,27 @@
             ],
             "title": "Checkout Id"
           },
+          "customer_cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Cancellation Comment"
+          },
           "user_id": {
             "type": "string",
             "format": "uuid4",
@@ -21622,18 +22008,63 @@
           "current_period_start",
           "current_period_end",
           "cancel_at_period_end",
+          "canceled_at",
           "started_at",
+          "ends_at",
           "ended_at",
           "customer_id",
           "product_id",
           "price_id",
           "discount_id",
           "checkout_id",
+          "customer_cancellation_reason",
+          "customer_cancellation_comment",
           "user_id",
           "product",
           "price"
         ],
         "title": "CustomerSubscription"
+      },
+      "CustomerSubscriptionCancel": {
+        "properties": {
+          "cancel_at_period_end": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel At Period End",
+            "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end."
+          },
+          "cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customers reason for cancellation.\n\n* `too_expensive`: Too expensive for the customer.\n* `missing_features`: Customer is missing certain features.\n* `switched_service`: Customer switched to another service.\n* `unused`: Customer is not using it enough.\n* `customer_service`: Customer is not satisfied with the customer service.\n* `low_quality`: Customer is unhappy with the quality.\n* `too_complex`: Customer considers the service too complicated.\n* `other`: Other reason(s)."
+          },
+          "cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellation Comment",
+            "description": "Customer feedback and why they decided to cancel."
+          }
+        },
+        "type": "object",
+        "title": "CustomerSubscriptionCancel"
       },
       "CustomerSubscriptionProduct": {
         "properties": {
@@ -21757,18 +22188,29 @@
         "title": "CustomerSubscriptionSortProperty"
       },
       "CustomerSubscriptionUpdate": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CustomerSubscriptionUpdatePrice"
+          },
+          {
+            "$ref": "#/components/schemas/CustomerSubscriptionCancel"
+          }
+        ]
+      },
+      "CustomerSubscriptionUpdatePrice": {
         "properties": {
           "product_price_id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Product Price Id"
+            "title": "Product Price Id",
+            "description": "Update subscription to another price."
           }
         },
         "type": "object",
         "required": [
           "product_price_id"
         ],
-        "title": "CustomerSubscriptionUpdate"
+        "title": "CustomerSubscriptionUpdatePrice"
       },
       "CustomerUpdate": {
         "properties": {
@@ -27544,6 +27986,18 @@
             "type": "boolean",
             "title": "Cancel At Period End"
           },
+          "canceled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canceled At"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -27555,6 +28009,18 @@
               }
             ],
             "title": "Started At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
           },
           "ended_at": {
             "anyOf": [
@@ -27607,6 +28073,27 @@
             ],
             "title": "Checkout Id"
           },
+          "customer_cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Cancellation Comment"
+          },
           "user_id": {
             "type": "string",
             "format": "uuid4",
@@ -27627,13 +28114,17 @@
           "current_period_start",
           "current_period_end",
           "cancel_at_period_end",
+          "canceled_at",
           "started_at",
+          "ends_at",
           "ended_at",
           "customer_id",
           "product_id",
           "price_id",
           "discount_id",
           "checkout_id",
+          "customer_cancellation_reason",
+          "customer_cancellation_comment",
           "user_id"
         ],
         "title": "OrderSubscription"
@@ -30938,6 +31429,18 @@
             "type": "boolean",
             "title": "Cancel At Period End"
           },
+          "canceled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canceled At"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -30949,6 +31452,18 @@
               }
             ],
             "title": "Started At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
           },
           "ended_at": {
             "anyOf": [
@@ -31000,6 +31515,27 @@
               }
             ],
             "title": "Checkout Id"
+          },
+          "customer_cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Cancellation Comment"
           },
           "metadata": {
             "additionalProperties": {
@@ -31080,13 +31616,17 @@
           "current_period_start",
           "current_period_end",
           "cancel_at_period_end",
+          "canceled_at",
           "started_at",
+          "ends_at",
           "ended_at",
           "customer_id",
           "product_id",
           "price_id",
           "discount_id",
           "checkout_id",
+          "customer_cancellation_reason",
+          "customer_cancellation_comment",
           "metadata",
           "customer",
           "user_id",
@@ -31096,6 +31636,60 @@
           "discount"
         ],
         "title": "Subscription"
+      },
+      "SubscriptionCancel": {
+        "properties": {
+          "cancel_at_period_end": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel At Period End",
+            "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end."
+          },
+          "revoke": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoke",
+            "description": "Cancel and revoke an active subscription immediately"
+          },
+          "customer_cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer reason for cancellation.\n\nHelpful to monitor reasons behind churn for future improvements.\n\nOnly set this in case your own service is requesting the reason from the\ncustomer. Or you know based on direct conversations, i.e support, with\nthe customer.\n\n* `too_expensive`: Too expensive for the customer.\n* `missing_features`: Customer is missing certain features.\n* `switched_service`: Customer switched to another service.\n* `unused`: Customer is not using it enough.\n* `customer_service`: Customer is not satisfied with the customer service.\n* `low_quality`: Customer is unhappy with the quality.\n* `too_complex`: Customer considers the service too complicated.\n* `other`: Other reason(s)."
+          },
+          "customer_cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Cancellation Comment",
+            "description": "Customer feedback and why they decided to cancel.\n\n**IMPORTANT:**\nDo not use this to store internal notes! It's intended to be input\nfrom the customer and is therefore also available in their Polar\npurchases library.\n\nOnly set this in case your own service is requesting the reason from the\ncustomer. Or you copy a message directly from a customer\nconversation, i.e support."
+          }
+        },
+        "type": "object",
+        "title": "SubscriptionCancel"
       },
       "SubscriptionCustomer": {
         "properties": {
@@ -31258,6 +31852,31 @@
           "unpaid"
         ],
         "title": "SubscriptionStatus"
+      },
+      "SubscriptionUpdate": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SubscriptionUpdatePrice"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionCancel"
+          }
+        ]
+      },
+      "SubscriptionUpdatePrice": {
+        "properties": {
+          "product_price_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Price Id",
+            "description": "Update subscription to another price."
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_price_id"
+        ],
+        "title": "SubscriptionUpdatePrice"
       },
       "SubscriptionUser": {
         "properties": {
@@ -31977,7 +32596,7 @@
           "data"
         ],
         "title": "WebhookSubscriptionCanceledPayload",
-        "description": "Sent when a subscription is canceled by the user.\nThey might still have access until the end of the current period.\n\n**Discord & Slack support:** Full"
+        "description": "Sent when a subscription is canceled.\nCustomers might still have access until the end of the current period.\n\n**Discord & Slack support:** Full"
       },
       "WebhookSubscriptionCreatedPayload": {
         "properties": {
@@ -32016,6 +32635,25 @@
         ],
         "title": "WebhookSubscriptionRevokedPayload",
         "description": "Sent when a subscription is revoked, the user looses access immediately.\nHappens when the subscription is canceled, or payment is past due.\n\n**Discord & Slack support:** Full"
+      },
+      "WebhookSubscriptionUncanceledPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "subscription.uncanceled",
+            "title": "Type"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Subscription"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookSubscriptionUncanceledPayload",
+        "description": "Sent when a subscription is uncanceled.\n\n**Discord & Slack support:** Full"
       },
       "WebhookSubscriptionUpdatedPayload": {
         "properties": {

@@ -97,7 +97,7 @@ Below are the two main endpoints to activate & validate license keys. Want to
 review the full API docs?
 
 - [License Key Management](/docs/api/v1/license-keys/get)
-- [User/Customer License Keys](/docs/api/v1/users/license-keys/get)
+- [User/Customer License Keys](/docs/api/v1/customer-portal/license-keys/get)
 
 ### Activate License Keys (Optional)
 
@@ -108,7 +108,7 @@ instance prior to validating license keys / activation.
 **No activation limit?** You can skip this step.
 
 ```sh
-curl -X POST https://api.polar.app/v1/users/license-keys/activate
+curl -X POST https://api.polar.app/v1/customer-portal/license-keys/activate
 -H "Content-Type: application/json"
 -d '{
   "key": "1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA",
@@ -159,10 +159,10 @@ curl -X POST https://api.polar.app/v1/users/license-keys/activate
 ### Validate License Keys
 
 For each session of your premium app, library or API, we recommend you validate
-the users license key via the `/users/license-keys/validate` endpoint.
+the users license key via the `/customer-portal/license-keys/validate` endpoint.
 
 ```sh
-curl -X POST https://api.polar.app/v1/users/license-keys/validate
+curl -X POST https://api.polar.app/v1/customer-portal/license-keys/validate
 -H "Content-Type: application/json"
 -d '{
   "key": "1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA",

@@ -26,6 +26,7 @@ from polar.integrations.github_repository_benefit.endpoints import (
     router as github_repository_benefit_router,
 )
 from polar.integrations.google.endpoints import router as google_router
+from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.license_key.endpoints import router as license_key_router
@@ -138,3 +139,5 @@ router.include_router(customer_portal_router)
 router.include_router(email_update_router)
 # /customer-sessions
 router.include_router(customer_session_router)
+# /integrations/plain
+router.include_router(plain_router)

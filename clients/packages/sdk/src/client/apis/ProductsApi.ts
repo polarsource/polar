@@ -23,6 +23,7 @@ import type {
   Product,
   ProductBenefitsUpdate,
   ProductCreate,
+  ProductIDFilter,
   ProductSortProperty,
   ProductUpdate,
   ResourceNotFound,
@@ -37,6 +38,7 @@ export interface ProductsApiGetRequest {
 }
 
 export interface ProductsApiListRequest {
+    id?: ProductIDFilter | null;
     organizationId?: OrganizationIDFilter1 | null;
     query?: string | null;
     isArchived?: boolean | null;
@@ -157,6 +159,10 @@ export class ProductsApi extends runtime.BaseAPI {
      */
     async listRaw(requestParameters: ProductsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceProduct>> {
         const queryParameters: any = {};
+
+        if (requestParameters['id'] != null) {
+            queryParameters['id'] = requestParameters['id'];
+        }
 
         if (requestParameters['organizationId'] != null) {
             queryParameters['organization_id'] = requestParameters['organizationId'];

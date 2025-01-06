@@ -214,7 +214,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a subscription of the authenticated customer or user.
+     * Update a subscription.
      * Update Subscription
      */
     async updateRaw(requestParameters: SubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
@@ -258,7 +258,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a subscription of the authenticated customer or user.
+     * Update a subscription.
      * Update Subscription
      */
     async update(requestParameters: SubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {

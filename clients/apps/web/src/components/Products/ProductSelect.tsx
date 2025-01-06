@@ -1,4 +1,4 @@
-import { useProducts } from '@/hooks/queries'
+import { useProducts, useSelectedProducts } from '@/hooks/queries'
 import { CheckOutlined, ExpandMoreOutlined } from '@mui/icons-material'
 import {
   Organization,
@@ -89,36 +89,43 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
-  // All products to maintain the selection even if the product is not in the filtered list
-  const { data: allProducts } = useProducts(organization.id, {
-    isArchived: false,
-  })
+  // Selected products, with a dedicated hook to exhaust pagination
+  const { data: selectedProducts } = useSelectedProducts(value)
 
-  // Filtered products based on the query
-  const productslistParameters = useMemo<
+  // Queried products, show a selection of products based on the query
+  const queriedProductsParameters = useMemo<
     Omit<ProductsApiListRequest, 'organizationId'>
   >(
     () => ({
       isArchived: false,
       ...(query ? { query } : {}),
       sorting: ['name'],
+      limit: 20,
     }),
     [query],
   )
-  const { data: filteredProducts } = useProducts(
+  const { data: queriedProducts } = useProducts(
     organization.id,
-    productslistParameters,
+    queriedProductsParameters,
   )
 
-  // Group filtered products by product price type
-  const groupedProducts = useMemo<Record<ProductPriceType, Product[]>>(() => {
-    if (!filteredProducts) {
-      return {
-        [ProductPriceType.ONE_TIME]: [],
-        [ProductPriceType.RECURRING]: [],
+  // Products displayed in the selector
+  const displayedProducts = useMemo(() => {
+    let products = queriedProducts?.items || []
+    // If no current query, show selected products no matter what
+    if (!query) {
+      for (const product of selectedProducts || []) {
+        if (!products.some(({ id }) => id === product.id)) {
+          products = [...products, product]
+        }
       }
     }
-    return filteredProducts.items.reduce<Record<ProductPriceType, Product[]>>(
+    return products
+  }, [queriedProducts, selectedProducts, query])
+
+  // Group displayed products by product price type
+  const groupedProducts = useMemo<Record<ProductPriceType, Product[]>>(() => {
+    return displayedProducts.reduce<Record<ProductPriceType, Product[]>>(
       (acc, product) => {
         const type = product.is_recurring
           ? ProductPriceType.RECURRING
@@ -133,24 +140,17 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         [ProductPriceType.RECURRING]: [],
       },
     )
-  }, [filteredProducts])
-
-  const selectedProducts = useMemo(() => {
-    if (!allProducts) {
-      return []
-    }
-    return allProducts.items.filter((product) => value.includes(product.id))
-  }, [allProducts, value])
+  }, [displayedProducts])
 
   const buttonLabel = useMemo(() => {
-    if (selectedProducts.length === 0) {
+    if (value.length === 0) {
       return 'All products'
     }
-    if (selectedProducts.length === 1) {
-      return selectedProducts[0].name
+    if (value.length === 1) {
+      return selectedProducts?.[0].name
     }
-    return `${selectedProducts.length} products`
-  }, [selectedProducts])
+    return `${value.length} products`
+  }, [value, selectedProducts])
 
   const onSelectProduct = useCallback(
     (product: Product) => {
@@ -211,14 +211,14 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             onValueChange={setQuery}
           />
           <CommandList>
-            {filteredProducts?.items && filteredProducts.items.length ? (
+            {queriedProducts?.items && queriedProducts.items.length ? (
               <>
                 <ProductsCommandGroup
                   groupedProducts={groupedProducts}
                   productPriceType={ProductPriceType.ONE_TIME}
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
-                  selectedProducts={selectedProducts}
+                  selectedProducts={selectedProducts || []}
                 />
                 <CommandSeparator />
                 <ProductsCommandGroup
@@ -226,7 +226,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   productPriceType={ProductPriceType.RECURRING}
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
-                  selectedProducts={selectedProducts}
+                  selectedProducts={selectedProducts || []}
                   className="!mt-0"
                 />
               </>

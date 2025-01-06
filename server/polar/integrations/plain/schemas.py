@@ -7,7 +7,7 @@ from pydantic import BaseModel
 class CustomerCardKey(StrEnum):
     organization = "organization"
     customer = "customer"
-    latest_order = "latest_order"
+    order = "order"
 
 
 class CustomerCardCustomer(BaseModel):

@@ -3,9 +3,18 @@ from typing import Any
 
 import pycountry
 import pycountry.db
+from babel.numbers import format_currency
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import contains_eager
 
-from polar.models import Customer, Organization, User, UserOrganization
+from polar.models import (
+    Customer,
+    Order,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.postgres import AsyncSession
 
 from .schemas import (
@@ -28,6 +37,8 @@ class PlainService:
                 )
             if CustomerCardKey.customer in request.cardKeys:
                 tasks.append(tg.create_task(self.get_customer_card(session, request)))
+            if CustomerCardKey.order in request.cardKeys:
+                tasks.append(tg.create_task(self._get_order_card(session, request)))
 
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)
@@ -247,6 +258,159 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.customer,
+            timeToLiveSeconds=86400,
+            components=components,
+        )
+
+    async def _get_order_card(
+        self, session: AsyncSession, request: CustomerCardsRequest
+    ) -> CustomerCard | None:
+        email = request.customer.email
+
+        statement = (
+            (
+                select(Order)
+                .join(Customer, onclause=Customer.id == Order.customer_id)
+                .join(Product, onclause=Product.id == Order.product_id)
+                .where(func.lower(Customer.email) == email.lower())
+            )
+            .order_by(Order.created_at.desc())
+            .limit(3)
+            .options(
+                contains_eager(Order.product),
+                contains_eager(Order.customer),
+            )
+        )
+        result = await session.execute(statement)
+        orders = result.unique().scalars().all()
+
+        if len(orders) == 0:
+            return None
+
+        def _get_order_container(order: Order) -> dict[str, Any]:
+            product = order.product
+
+            return {
+                "componentContainer": {
+                    "containerContent": [
+                        {"componentText": {"text": product.name}},
+                        {"componentDivider": {"dividerSpacingSize": "M"}},
+                        {
+                            "componentRow": {
+                                "rowMainContent": [
+                                    {
+                                        "componentText": {
+                                            "text": "ID",
+                                            "textSize": "S",
+                                            "textColor": "MUTED",
+                                        }
+                                    },
+                                    {"componentText": {"text": order.id}},
+                                ],
+                                "rowAsideContent": [
+                                    {
+                                        "componentCopyButton": {
+                                            "copyButtonValue": order.id,
+                                            "copyButtonTooltipLabel": "Copy Order ID",
+                                        }
+                                    }
+                                ],
+                            }
+                        },
+                        {"componentSpacer": {"spacerSize": "M"}},
+                        {
+                            "componentText": {
+                                "text": "Date",
+                                "textSize": "S",
+                                "textColor": "MUTED",
+                            }
+                        },
+                        {
+                            "componentText": {
+                                "text": order.created_at.date().isoformat()
+                            }
+                        },
+                        {"componentSpacer": {"spacerSize": "M"}},
+                        {
+                            "componentText": {
+                                "text": "Billing Reason",
+                                "textSize": "S",
+                                "textColor": "MUTED",
+                            }
+                        },
+                        {"componentText": {"text": order.billing_reason}},
+                        {"componentDivider": {"dividerSpacingSize": "M"}},
+                        {"componentSpacer": {"spacerSize": "M"}},
+                        {
+                            "componentText": {
+                                "text": "Amount",
+                                "textSize": "S",
+                                "textColor": "MUTED",
+                            }
+                        },
+                        {
+                            "componentText": {
+                                "text": format_currency(
+                                    order.amount / 100,
+                                    order.currency.upper(),
+                                    locale="en_US",
+                                )
+                            }
+                        },
+                        {
+                            "componentText": {
+                                "text": "Tax Amount",
+                                "textSize": "S",
+                                "textColor": "MUTED",
+                            }
+                        },
+                        {
+                            "componentText": {
+                                "text": format_currency(
+                                    order.tax_amount / 100,
+                                    order.currency.upper(),
+                                    locale="en_US",
+                                )
+                            }
+                        },
+                        {
+                            "componentRow": {
+                                "rowMainContent": [
+                                    {
+                                        "componentText": {
+                                            "text": "Stripe Invoice ID",
+                                            "textSize": "S",
+                                            "textColor": "MUTED",
+                                        }
+                                    },
+                                    {
+                                        "componentText": {
+                                            "text": order.stripe_invoice_id,
+                                        }
+                                    },
+                                ],
+                                "rowAsideContent": [
+                                    {
+                                        "componentLinkButton": {
+                                            "linkButtonLabel": "Stripe ↗",
+                                            "linkButtonUrl": f"https://dashboard.stripe.com/invoices/{order.stripe_invoice_id}",
+                                        }
+                                    }
+                                ],
+                            }
+                        },
+                    ]
+                }
+            }
+
+        components = []
+        for i, order in enumerate(orders):
+            components.append(_get_order_container(order))
+            if i < len(orders) - 1:
+                components.append({"componentDivider": {"dividerSpacingSize": "M"}})
+
+        return CustomerCard(
+            key=CustomerCardKey.order,
             timeToLiveSeconds=86400,
             components=components,
         )

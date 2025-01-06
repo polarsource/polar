@@ -62,6 +62,7 @@ class ProductService(ResourceServiceReader[Product]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
+        id: Sequence[uuid.UUID] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -90,6 +91,9 @@ class ProductService(ResourceServiceReader[Product]):
             ),
             isouter=True,
         )
+
+        if id is not None:
+            statement = statement.where(Product.id.in_(id))
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))

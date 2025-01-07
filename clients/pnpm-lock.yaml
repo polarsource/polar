@@ -107,6 +107,9 @@ importers:
       '@react-three/fiber':
         specifier: ^8.17.10
         version: 8.17.10(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.170.0)
+      '@scalar/nextjs-api-reference':
+        specifier: ^0.5.0
+        version: 0.5.0(next@14.2.21(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.0))(react@18.3.1)
       '@sentry/nextjs':
         specifier: ^8.40.0
         version: 8.47.0(@opentelemetry/core@1.30.0(@opentelemetry/api@1.9.0))(@opentelemetry/instrumentation@0.56.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.30.0(@opentelemetry/api@1.9.0))(next@14.2.21(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.0))(react@18.3.1)(webpack@5.91.0(esbuild@0.19.12))
@@ -3770,6 +3773,21 @@ packages:
   '@rushstack/eslint-patch@1.7.2':
     resolution: {integrity: sha512-RbhOOTCNoCrbfkRyoXODZp75MlpiHMgbE5MEBZAnnnLyQNgrigEj4p0lzsMDyc1zVsJDLrivB58tgg3emX0eEA==}
 
+  '@scalar/nextjs-api-reference@0.5.0':
+    resolution: {integrity: sha512-xWgzFvl8+eEDoZSnOcbfHz8P8mR764cOj5AkxHsL6xujl8HadgEHN8pg+QzdgLtVBgOWdDLT8wKfHdIx9kSb1w==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      next: ^15.0.0
+      react: ^19.0.0
+
+  '@scalar/openapi-types@0.1.5':
+    resolution: {integrity: sha512-6geH9ehvQ/sG/xUyy3e0lyOw3BaY5s6nn22wHjEJhcobdmWyFER0O6m7AU0ZN4QTjle/gYvFJOjj552l/rsNSw==}
+    engines: {node: '>=18'}
+
+  '@scalar/types@0.0.25':
+    resolution: {integrity: sha512-sGnOFnfiSn4o23rklU/jrg81hO+630bsFIdHg8MZ/w2Nc6IoUwARA2hbe4d4Fg+D0KBu40Tan/L+WAYDXkTJQg==}
+    engines: {node: '>=18'}
+
   '@sentry-internal/browser-utils@8.47.0':
     resolution: {integrity: sha512-vOXzYzHTKkahTLDzWWIA4EiVCQ+Gk+7xGWUlNcR2ZiEPBqYZVb5MjsUozAcc7syrSUy6WicyFjcomZ3rlCVQhg==}
     engines: {node: '>=14.18'}
@@ -4596,6 +4614,9 @@ packages:
 
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
+
+  '@unhead/schema@1.11.15':
+    resolution: {integrity: sha512-UkLz1dqw4yoh4jELEyLsgSG7yrXc+gv68GkQeTv8LysEPa8sXtFqhfuqTBLhY3sHqSnP8RkDknhtFhG2S3fuKQ==}
 
   '@use-gesture/core@10.3.1':
     resolution: {integrity: sha512-WcINiDt8WjqBdUXye25anHiNxPc0VOrlT8F6LLkU6cycrOGUDyY/yyFmsg3k8i5OLvv25llc0QC45GhR/C8llw==}
@@ -6625,6 +6646,9 @@ packages:
 
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
+
+  hookable@5.5.3:
+    resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
 
   html-encoding-sniffer@3.0.0:
     resolution: {integrity: sha512-oWv4T4yJ52iKrufjnyZPkrN0CH3QnrUqdB6In1g5Fe1mia8GmF36gnfNySxoZtxD5+NmYw1EElVXiBk93UeskA==}
@@ -10126,6 +10150,9 @@ packages:
 
   yoga-wasm-web@0.3.3:
     resolution: {integrity: sha512-N+d4UJSJbt/R3wqY7Coqs5pcV0aUj2j9IaQ3rNj9bVCLld8tTGKRa2USARjnvZJWVx1NDmQev8EknoczaOQDOA==}
+
+  zhead@2.2.4:
+    resolution: {integrity: sha512-8F0OI5dpWIA5IGG5NHUg9staDwz/ZPxZtvGVf01j7vHqSyZ0raHY+78atOVxRqb73AotX22uV1pXt3gYSstGag==}
 
   zustand@3.7.2:
     resolution: {integrity: sha512-PIJDIZKtokhof+9+60cpockVOq05sJzHCriyvaLBmEJixseQ1a5Kdov6fWZfWOu5SK9c+FhH1jU0tntLxRJYMA==}
@@ -13682,6 +13709,19 @@ snapshots:
 
   '@rushstack/eslint-patch@1.7.2': {}
 
+  '@scalar/nextjs-api-reference@0.5.0(next@14.2.21(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.0))(react@18.3.1)':
+    dependencies:
+      '@scalar/types': 0.0.25
+      next: 14.2.21(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.83.0)
+      react: 18.3.1
+
+  '@scalar/openapi-types@0.1.5': {}
+
+  '@scalar/types@0.0.25':
+    dependencies:
+      '@scalar/openapi-types': 0.1.5
+      '@unhead/schema': 1.11.15
+
   '@sentry-internal/browser-utils@8.47.0':
     dependencies:
       '@sentry/core': 8.47.0
@@ -14861,6 +14901,11 @@ snapshots:
       eslint-visitor-keys: 3.4.3
 
   '@ungap/structured-clone@1.2.0': {}
+
+  '@unhead/schema@1.11.15':
+    dependencies:
+      hookable: 5.5.3
+      zhead: 2.2.4
 
   '@use-gesture/core@10.3.1': {}
 
@@ -17356,6 +17401,8 @@ snapshots:
   hoist-non-react-statics@3.3.2:
     dependencies:
       react-is: 16.13.1
+
+  hookable@5.5.3: {}
 
   html-encoding-sniffer@3.0.0:
     dependencies:
@@ -21501,6 +21548,8 @@ snapshots:
   yocto-queue@1.0.0: {}
 
   yoga-wasm-web@0.3.3: {}
+
+  zhead@2.2.4: {}
 
   zustand@3.7.2(react@18.3.1):
     optionalDependencies:

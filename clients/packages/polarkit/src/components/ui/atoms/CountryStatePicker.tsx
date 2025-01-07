@@ -60,6 +60,7 @@ const US_STATES: Record<string, string> = {
   'US-WV': 'West Virginia',
   'US-WI': 'Wisconsin',
   'US-WY': 'Wyoming',
+  'US-DC': 'District of Columbia',
 }
 
 const CA_PROVINCES: Record<string, string> = {

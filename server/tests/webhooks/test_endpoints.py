@@ -250,6 +250,12 @@ class TestListWebhookDeliveries:
         json = response.json()
         assert len(json["items"]) == 1
         assert json["items"][0]["id"] == str(webhook_delivery.id)
+        assert json["items"][0]["webhook_endpoint"]["id"] == str(
+            webhook_endpoint_organization.id
+        )
+        assert json["items"][0]["webhook_endpoint"]["url"] == str(
+            webhook_endpoint_organization.url
+        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -266,3 +272,9 @@ class TestListWebhookDeliveries:
         json = response.json()
         assert len(json["items"]) == 1
         assert json["items"][0]["id"] == str(webhook_delivery.id)
+        assert json["items"][0]["webhook_endpoint"]["id"] == str(
+            webhook_endpoint_organization.id
+        )
+        assert json["items"][0]["webhook_endpoint"]["url"] == str(
+            webhook_endpoint_organization.url
+        )

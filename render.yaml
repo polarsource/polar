@@ -420,6 +420,8 @@ envVarGroups:
         sync: false
       - key: POLAR_PLAIN_REQUEST_SIGNING_SECRET
         sync: false
+      - key: POLAR_PLAIN_TOKEN
+        sync: false
       - key: POLAR_TESTING
         value: 0
 

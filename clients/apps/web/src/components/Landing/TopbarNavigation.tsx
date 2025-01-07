@@ -164,7 +164,7 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="OAuth"
                 description="Streamline authentication and unlocking user benefits"
-                link="/docs/api/authentication"
+                link="/docs/api/sdk/authentication"
               />
               <PopoverLinkItem
                 title="Webhooks"

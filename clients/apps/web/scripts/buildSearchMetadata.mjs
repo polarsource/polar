@@ -36,27 +36,6 @@ function* walkSync(dir, filePredicate) {
   }
 }
 
-const buildOpenAPIMetadata = (schema) => {
-  const result = []
-  for (const path in schema.paths) {
-    const pathItem = schema.paths[path]
-    for (const method in pathItem) {
-      const operation = pathItem[method]
-
-      const doc = {
-        id: `/docs/api${path}/${method}`,
-        title: operation.summary,
-        body: operation.description,
-        path: path,
-        method,
-      }
-
-      result.push(doc)
-    }
-  }
-  return result
-}
-
 const buildDocsMetadata = async () => {
   const docsPath = path.resolve(baseURL, '../../src/app/(main)/docs')
 
@@ -122,7 +101,6 @@ if (!fs.existsSync(outputPath)) {
 writeFile(
   metadataOutputPath,
   JSON.stringify({
-    openapi: buildOpenAPIMetadata(openapiSchema),
     docs: await buildDocsMetadata(),
   }),
   (err) => {

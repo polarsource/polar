@@ -121,12 +121,12 @@ To enable wallet payment methods on your website, please [email us](mailto:suppo
 
 If you want to integrate more deeply the checkout process with your website or application, you can use our dedicated API.
 
-The first step is to [create a Checkout session](/docs/api/v1/checkouts/custom/post). For this you'll need at least your **Product Price ID**.
+The first step is to [create a Checkout session](/docs/api#tag/checkouts/POST/v1/checkouts/custom/). For this you'll need at least your **Product ID**.
 
 <Callout type="TIP">
-  You can retrieve your Product Price ID from `Products` in your dashboard,
+  You can retrieve your Product ID from `Products` in your dashboard,
   click on "context-menu" button in front of your product and click on `Copy
-  Price ID`.
+  Product ID`.
 </Callout>
 
 The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.

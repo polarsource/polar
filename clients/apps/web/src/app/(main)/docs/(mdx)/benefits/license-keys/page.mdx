@@ -96,8 +96,8 @@ application, library or API.
 Below are the two main endpoints to activate & validate license keys. Want to
 review the full API docs?
 
-- [License Key Management](/docs/api/v1/license-keys/get)
-- [User/Customer License Keys](/docs/api/v1/customer-portal/license-keys/get)
+- [License Key Management](/docs/api#tag/license_keys/GET/v1/license-keys/{id})
+- [User/Customer License Keys](/docs/api#tag/customer_portal/GET/v1/customer-portal/license-keys/{id})
 
 ### Activate License Keys (Optional)
 
@@ -120,7 +120,7 @@ curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/activate
 ```
 
 - **key**. Replace with the users license key (from input in your app).
-- **organization_id**. Replace with your <a href="/docs/api/v1/organizations/%7Bid%7D/get">organization ID here (logged in).</a>
+- **organization_id**. Replace with your <a href="/docs/api#tag/organizations/GET/v1/organizations/{id}">organization ID here (logged in).</a>
 - **label**. Set a label to associate with this specific activation.
 - **conditions (optional)**. JSON object with custom conditions to validate against in the future, e.g IP,
   mac address, major version etc.
@@ -174,7 +174,7 @@ curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/validate
 ```
 
 - **key**. Replace with the users license key (from input in your app).
-- **organization_id**. Replace with your <a href="/docs/api/v1/organizations/%7Bid%7D/get">organization ID here (logged in).</a>
+- **organization_id**. Replace with your <a href="/docs/api#tag/organizations/GET/v1/organizations/{id}">organization ID here (logged in).</a>
 - **activation_id (optional)**. The activation ID to validate - required in case
   activations limit is enabled and used (above).
 - **conditions (optional)**. In case of activation instances. Same exact JSON object as upon registration of the

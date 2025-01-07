@@ -48,6 +48,7 @@ dependencies = [
   "psycopg2-binary>=2.9.5",
   "apscheduler>=3.10.4",
   "supervisor>=4.2.5",
+  "plain-client>=0.0.1",
 ]
 
 [dependency-groups]

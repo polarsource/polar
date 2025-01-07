@@ -1,7 +1,6 @@
-import fs, { readFileSync, writeFile } from 'node:fs';
+import { readFileSync, writeFile } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import GitHubSlugger from 'github-slugger';
 
 const require = createRequire(import.meta.url);
 const lunr = require('lunr')
@@ -25,7 +24,6 @@ const idx = lunr(function () {
     this.searchPipeline.remove(lunr.stopWordFilter)
 
     const docs = [
-        ...metadata.openapi,
         ...metadata.docs,
     ]
 

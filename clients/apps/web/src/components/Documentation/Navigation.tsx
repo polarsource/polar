@@ -21,7 +21,6 @@ import {
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
-import { OpenAPIV3_1 } from 'openapi-types'
 import { Pill } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren, useEffect, useState } from 'react'
@@ -29,14 +28,6 @@ import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Layout/Public/BrandingMenu'
 import { NavigationItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
-import {
-  APISection,
-  HttpMethod,
-  getAPISections,
-  isFeaturedEndpoint,
-  isIssueFundingEndpoint,
-  isOtherEndpoint,
-} from './openapi'
 
 export const NavigationSection = ({
   title,
@@ -65,17 +56,6 @@ export const NavigationHeadline = ({
 }) => {
   return (
     <h2 className="mb-4 font-medium text-black dark:text-white">{children}</h2>
-  )
-}
-
-const APISections = () => {
-  return (
-    <div className="flex flex-col">
-      <NavigationItem href="/docs/api">Introduction</NavigationItem>
-      <NavigationItem href="/docs/api/authentication">
-        Authentication
-      </NavigationItem>
-    </div>
   )
 }
 
@@ -212,6 +192,9 @@ export const SDKNavigation = () => {
   return (
     <div className="flex flex-col gap-y-6">
       <div className="flex flex-col">
+        <NavigationItem href="/docs/developers/sdk/authentication">
+          Authentication
+        </NavigationItem>
         <NavigationItem
           href="/docs/developers/sdk/typescript"
           icon={<TSIcon width={14} />}
@@ -254,72 +237,6 @@ export const SDKNavigation = () => {
         <NavigationItem href="/docs/developers/sdk/github-actions">
           GitHub Actions
         </NavigationItem>
-      </div>
-    </div>
-  )
-}
-
-const APIMethodPill = ({ method }: { method: HttpMethod }) => {
-  return (
-    <span
-      className={twMerge(
-        'dark:bg-polar-800 rounded-sm bg-gray-200/50 px-1.5 py-0 font-mono text-[10px] font-normal',
-        method === HttpMethod.GET &&
-          'bg-green-100 text-green-500 dark:bg-green-950/50',
-        method === HttpMethod.POST &&
-          'bg-blue-100 text-blue-500 dark:bg-blue-950/50',
-        method === HttpMethod.DELETE &&
-          'bg-red-100 text-red-500 dark:bg-red-950/50',
-        (method === HttpMethod.PATCH || method === HttpMethod.PUT) &&
-          'bg-orange-100 text-orange-500 dark:bg-orange-950/50',
-      )}
-    >
-      {method.toUpperCase()}
-    </span>
-  )
-}
-
-const APIReferenceSections = ({
-  openAPISchema,
-  filter,
-  title,
-  activeOperationId,
-}: {
-  openAPISchema: OpenAPIV3_1.Document
-  filter: (endpoint: OpenAPIV3_1.PathItemObject) => boolean
-  title: string
-  activeOperationId: string | undefined
-}) => {
-  const sections = getAPISections(openAPISchema, filter)
-  const isOpenedSection = (section: APISection) =>
-    section.endpoints.some((endpoint) => endpoint.id === activeOperationId)
-
-  return (
-    <div className="flex flex-col gap-y-6">
-      <h3>{title}</h3>
-      <div className="flex flex-col gap-y-5">
-        {sections.map((section) => (
-          <CollapsibleSection
-            key={section.name}
-            title={section.name}
-            defaultOpened={isOpenedSection(section)}
-            isSubMenu={true}
-          >
-            {section.endpoints.map((endpoint) => (
-              <NavigationItem
-                key={endpoint.id}
-                className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
-                href={`/docs/api${endpoint.path}${endpoint.path.endsWith('/') ? '' : '/'}${endpoint.method}`}
-                active={() => endpoint.id === activeOperationId}
-              >
-                <div className="flex w-full flex-row items-center justify-between gap-x-4">
-                  {endpoint.name}
-                  <APIMethodPill method={endpoint.method} />
-                </div>
-              </NavigationItem>
-            ))}
-          </CollapsibleSection>
-        ))}
       </div>
     </div>
   )
@@ -577,38 +494,6 @@ export const GuidesNavigation = () => {
         Setting up Webhooks
       </NavigationItem>
     </div>
-  )
-}
-
-export const APINavigation = ({
-  openAPISchema,
-  activeOperationId,
-}: {
-  openAPISchema: OpenAPIV3_1.Document
-  activeOperationId: string | undefined
-}) => {
-  return (
-    <>
-      <APISections />
-      <APIReferenceSections
-        openAPISchema={openAPISchema}
-        filter={isFeaturedEndpoint}
-        title="Featured Endpoints"
-        activeOperationId={activeOperationId}
-      />
-      <APIReferenceSections
-        openAPISchema={openAPISchema}
-        filter={isIssueFundingEndpoint}
-        title="Issue Funding Endpoints"
-        activeOperationId={activeOperationId}
-      />
-      <APIReferenceSections
-        openAPISchema={openAPISchema}
-        filter={isOtherEndpoint}
-        title="Other Endpoints"
-        activeOperationId={activeOperationId}
-      />
-    </>
   )
 }
 

@@ -7,6 +7,7 @@ from polar.integrations.discord.internal_webhook import (
     get_branded_discord_embed,
     send_internal_webhook,
 )
+from polar.integrations.plain.service import plain as plain_service
 from polar.models import Account
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
@@ -69,7 +70,7 @@ async def account_under_review(
             ),
         )
 
-        await send_account_under_review_discord_notification(account)
+        await plain_service.create_account_review_thread(session, account)
 
 
 @task("account.reviewed")

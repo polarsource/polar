@@ -1,13 +1,44 @@
+# pyright: reportCallIssue=false
 import asyncio
+import contextlib
+import uuid
+from collections.abc import AsyncIterator
 from typing import Any
 
 import pycountry
 import pycountry.db
 from babel.numbers import format_currency
+from plain_client import (
+    ComponentContainerContentInput,
+    ComponentContainerInput,
+    ComponentCopyButtonInput,
+    ComponentDividerInput,
+    ComponentDividerSpacingSize,
+    ComponentInput,
+    ComponentRowContentInput,
+    ComponentRowInput,
+    ComponentSpacerInput,
+    ComponentSpacerSize,
+    ComponentTextColor,
+    ComponentTextInput,
+    ComponentTextSize,
+    CreateThreadInput,
+    CustomerIdentifierInput,
+    EmailAddressInput,
+    OptionalStringInput,
+    Plain,
+    UpsertCustomerIdentifierInput,
+    UpsertCustomerInput,
+    UpsertCustomerOnCreateInput,
+    UpsertCustomerOnUpdateInput,
+)
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager
 
+from polar.config import settings
+from polar.exceptions import PolarError
 from polar.models import (
+    Account,
     Customer,
     Order,
     Organization,
@@ -16,6 +47,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
+from polar.user.service.user import user as user_service
 
 from .schemas import (
     CustomerCard,
@@ -23,6 +55,24 @@ from .schemas import (
     CustomerCardsRequest,
     CustomerCardsResponse,
 )
+
+
+class PlainServiceError(PolarError): ...
+
+
+class AccountAdminDoesNotExistError(PlainServiceError):
+    def __init__(self, account_id: uuid.UUID) -> None:
+        self.account_id = account_id
+        super().__init__(f"Account admin does not exist for account ID {account_id}")
+
+
+class AccountReviewThreadCreationError(PlainServiceError):
+    def __init__(self, account_id: uuid.UUID, message: str) -> None:
+        self.account_id = account_id
+        self.message = message
+        super().__init__(
+            f"Error creating thread for account ID {account_id}: {message}"
+        )
 
 
 class PlainService:
@@ -42,6 +92,71 @@ class PlainService:
 
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)
+
+    async def create_account_review_thread(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        admin = await user_service.get(session, account.admin_id)
+        if admin is None:
+            raise AccountAdminDoesNotExistError(account.id)
+
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(admin.id),
+                        full_name=admin.email,
+                        email=EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=str(admin.id)),
+                        email=EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                )
+            )
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    account.id, customer_result.error.message
+                )
+
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=str(admin.id)
+                    ),
+                    title="Account Review",
+                    label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"The account `{account.id}` should be reviewed, as it hit a threshold. It's used by the following organizations:"
+                            )
+                        ),
+                        ComponentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        *(
+                            ComponentInput(
+                                component_container=self._get_organization_component_container(
+                                    organization
+                                )
+                            )
+                            for organization in account.organizations
+                        ),
+                    ],
+                )
+            )
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    account.id, thread_result.error.message
+                )
 
     async def _get_organization_card(
         self, session: AsyncSession, request: CustomerCardsRequest
@@ -70,67 +185,92 @@ class PlainService:
         if len(organizations) == 0:
             return None
 
-        def _get_organization_container(organization: Organization) -> dict[str, Any]:
-            return {
-                "componentContainer": {
-                    "containerContent": [
-                        {"componentText": {"text": organization.name}},
-                        {
-                            "componentText": {
-                                "text": organization.slug,
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {"componentDivider": {"dividerSpacingSize": "M"}},
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {
-                                        "componentText": {
-                                            "text": "ID",
-                                            "textSize": "S",
-                                            "textColor": "MUTED",
-                                        }
-                                    },
-                                    {"componentText": {"text": organization.id}},
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentCopyButton": {
-                                            "copyButtonValue": organization.id,
-                                            "copyButtonTooltipLabel": "Copy Organization ID",
-                                        }
-                                    }
-                                ],
-                            }
-                        },
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentText": {
-                                "text": "Created At",
-                                "textSize": "S",
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {
-                            "componentText": {
-                                "text": organization.created_at.date().isoformat()
-                            }
-                        },
-                    ]
-                }
-            }
-
-        components = []
+        components: list[ComponentInput] = []
         for i, organization in enumerate(organizations):
-            components.append(_get_organization_container(organization))
+            components.append(
+                ComponentInput(
+                    component_container=self._get_organization_component_container(
+                        organization
+                    )
+                )
+            )
             if i < len(organizations) - 1:
-                components.append({"componentDivider": {"dividerSpacingSize": "M"}})
+                components.append(
+                    ComponentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    )
+                )
 
         return CustomerCard(
             key=CustomerCardKey.organization,
             timeToLiveSeconds=86400,
-            components=components,
+            components=[component.model_dump() for component in components],
+        )
+
+    def _get_organization_component_container(
+        self, organization: Organization
+    ) -> ComponentContainerInput:
+        return ComponentContainerInput(
+            container_content=[
+                ComponentContainerContentInput(
+                    component_text=ComponentTextInput(text=organization.name)
+                ),
+                ComponentContainerContentInput(
+                    component_text=ComponentTextInput(
+                        text=organization.slug, text_color=ComponentTextColor.MUTED
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_divider=ComponentDividerInput(
+                        divider_spacing_size=ComponentDividerSpacingSize.M
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_row=ComponentRowInput(
+                        row_main_content=[
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text="ID",
+                                    text_size=ComponentTextSize.S,
+                                    text_color=ComponentTextColor.MUTED,
+                                )
+                            ),
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=str(organization.id)
+                                )
+                            ),
+                        ],
+                        row_aside_content=[
+                            ComponentRowContentInput(
+                                component_copy_button=ComponentCopyButtonInput(
+                                    copy_button_value=str(organization.id),
+                                    copy_button_tooltip_label="Copy Organization ID",
+                                )
+                            )
+                        ],
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_spacer=ComponentSpacerInput(
+                        spacer_size=ComponentSpacerSize.M
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_text=ComponentTextInput(
+                        text="Created At",
+                        text_size=ComponentTextSize.S,
+                        text_color=ComponentTextColor.MUTED,
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_text=ComponentTextInput(
+                        text=organization.created_at.date().isoformat()
+                    )
+                ),
+            ]
         )
 
     async def get_customer_card(
@@ -414,6 +554,14 @@ class PlainService:
             timeToLiveSeconds=86400,
             components=components,
         )
+
+    @contextlib.asynccontextmanager
+    async def _get_plain_client(self) -> AsyncIterator[Plain]:
+        async with Plain(
+            "https://core-api.uk.plain.com/graphql/v1",
+            {"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
+        ) as plain:
+            yield plain
 
 
 plain = PlainService()

@@ -54,14 +54,14 @@ class TestAccountUnderReview:
             "send_to_user",
             spec=NotificationsService.send_to_user,
         )
-        send_account_under_review_discord_notification_mock = mocker.patch(
-            "polar.account.tasks.send_account_under_review_discord_notification"
+        create_account_review_thread_mock = mocker.patch(
+            "polar.account.tasks.plain_service.create_account_review_thread"
         )
 
         await account_under_review(job_context, account.id, polar_worker_context)
 
         send_to_user_mock.assert_called_once()
-        send_account_under_review_discord_notification_mock.assert_called_once()
+        create_account_review_thread_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

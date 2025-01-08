@@ -445,6 +445,13 @@ class PayoutTransactionService(BaseTransactionService):
             )
         )
 
+        # Sort payment_balance_transactions by increasing transferable amount
+        # This way, if we have negative transferrable amount, they'll increase the outstanding amount
+        # and be compensated by the positive transferrable amounts coming after
+        payment_balance_transactions.sort(
+            key=lambda balance_transaction: balance_transaction.transferable_amount
+        )
+
         # Compute transfers out of each payment balance, making sure to subtract the outstanding amount
         transfers: list[tuple[str, int, Transaction]] = []
         for balance_transaction in payment_balance_transactions:

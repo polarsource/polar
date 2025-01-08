@@ -41,6 +41,8 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.security
     if "3d secure" in description:
         return ProcessorFeeType.payment
+    if "authorization optimization" in description:
+        return ProcessorFeeType.payment
     raise UnsupportedStripeFeeType(description)
 
 

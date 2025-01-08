@@ -33,7 +33,6 @@ const apiParser = new SwaggerParser()
 
 // @ts-ignore
 const searchMetadataLookup = new Map([
-  ...lunrSearchMetadata.openapi.map((m) => [m.id, m]),
   ...lunrSearchMetadata.docs.map((m) => [m.id, m]),
 ])
 

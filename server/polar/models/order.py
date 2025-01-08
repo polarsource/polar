@@ -30,15 +30,28 @@ class OrderBillingReason(StrEnum):
     subscription_update = "subscription_update"
 
 
+class OrderStatus(StrEnum):
+    paid = "paid"
+    refunded = "refunded"
+    partially_refunded = "partially_refunded"
+
+
 class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "orders"
 
+    status: Mapped[OrderStatus] = mapped_column(
+        String, nullable=False, default=OrderStatus.paid
+    )
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
         String, nullable=False, index=True
     )
+
+    refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     billing_address: Mapped[Address | None] = mapped_column(AddressType, nullable=True)
     stripe_invoice_id: Mapped[str | None] = mapped_column(
         String, nullable=True, unique=True
@@ -103,3 +116,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship("Checkout", lazy="raise")
+
+    def set_refunded(self, refunded_amount: int, refunded_tax_amount: int) -> None:
+        fully_refunded = (
+            refunded_amount == self.amount and refunded_tax_amount == self.tax_amount
+        )
+        new_status = OrderStatus.partially_refunded
+        if fully_refunded:
+            new_status = OrderStatus.refunded
+
+        self.status = new_status
+        self.refunded_amount = refunded_amount
+        self.refunded_tax_amount = refunded_tax_amount

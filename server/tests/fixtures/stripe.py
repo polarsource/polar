@@ -188,3 +188,58 @@ def construct_stripe_invoice(
         },
         None,
     )
+
+
+def build_stripe_balance_transaction(
+    *,
+    fee: int | None = 100,
+) -> stripe_lib.BalanceTransaction:
+    return stripe_lib.BalanceTransaction.construct_from(
+        {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": fee}, None
+    )
+
+
+def build_stripe_charge(
+    *,
+    amount: int = 1000,
+    customer: str | None = None,
+    invoice: str | None = None,
+    payment_intent: str | None = None,
+    balance_transaction: str | None = None,
+    amount_refunded: int = 0,
+) -> stripe_lib.Charge:
+    return stripe_lib.Charge.construct_from(
+        {
+            "id": "STRIPE_CHARGE_ID",
+            "customer": customer,
+            "currency": "usd",
+            "amount": amount,
+            "invoice": invoice,
+            "payment_intent": payment_intent,
+            "balance_transaction": balance_transaction,
+            "amount_refunded": amount_refunded,
+        },
+        None,
+    )
+
+
+def build_stripe_refund(
+    *,
+    id: str = "STRIPE_REFUND_ID",
+    status: str = "succeeded",
+    amount: int = 100,
+    balance_transaction: str | None = None,
+) -> stripe_lib.Refund:
+    return stripe_lib.Refund.construct_from(
+        {
+            "id": id,
+            "status": status,
+            "currency": "usd",
+            "amount": amount,
+            "reason": "requested_by_customer",
+            "destination_details": "{}",
+            "balance_transaction": balance_transaction,
+            "receipt_number": None,
+        },
+        None,
+    )

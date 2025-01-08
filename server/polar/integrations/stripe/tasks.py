@@ -20,6 +20,7 @@ from polar.order.service import (
 )
 from polar.order.service import order as order_service
 from polar.pledge.service import pledge as pledge_service
+from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -34,9 +35,6 @@ from polar.transaction.service.payment import (
 )
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
-)
-from polar.transaction.service.refund import (
-    refund_transaction as refund_transaction_service,
 )
 from polar.worker import (
     AsyncSessionMaker,
@@ -227,16 +225,7 @@ async def charge_refunded(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             charge = event["data"]["object"]
-
-            await refund_transaction_service.create_refunds(session, charge=charge)
-
-            if charge.metadata.get("type") == ProductType.pledge:
-                await pledge_service.refund_by_payment_id(
-                    session=session,
-                    payment_id=charge["payment_intent"],
-                    amount=charge["amount_refunded"],
-                    transaction_id=charge["id"],
-                )
+            await refund_service.upsert_from_stripe_charge(session, charge=charge)
 
 
 @task("stripe.webhook.charge.dispute.closed")

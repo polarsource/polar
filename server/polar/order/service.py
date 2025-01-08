@@ -38,6 +38,7 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
+    Refund,
     Subscription,
     Transaction,
     User,
@@ -549,6 +550,25 @@ class OrderService(ResourceServiceReader[Order]):
                 product_id=product.id,
                 order_id=order.id,
             )
+
+    async def refund(
+        self,
+        session: AsyncSession,
+        *,
+        order: Order,
+        refunds: Sequence[Refund],
+    ) -> Order:
+        refunded_amount = 0
+        refunded_tax_amount = 0
+        for refund in refunds:
+            if refund.succeeded:
+                refunded_amount += refund.amount
+                refunded_tax_amount += refund.tax_amount
+
+        order.set_refunded(refunded_amount, refunded_tax_amount=refunded_tax_amount)
+        session.add(order)
+        # Trigger webhooks
+        return order
 
     async def _create_order_balance(
         self, session: AsyncSession, order: Order, charge_id: str

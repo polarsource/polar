@@ -3,6 +3,7 @@ import { DataTableSortingState } from '@/utils/datatable'
 import {
   OnChangeFn,
   PaginationState,
+  RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -21,6 +22,8 @@ export interface MetersListProps {
   setSorting: OnChangeFn<SortingState>
   sorting: DataTableSortingState
   isLoading: boolean
+  selectedMeterState: RowSelectionState
+  setSelectedMeterState: OnChangeFn<RowSelectionState>
 }
 
 export const MetersList = ({
@@ -31,6 +34,8 @@ export const MetersList = ({
   setSorting,
   sorting,
   isLoading,
+  selectedMeterState,
+  setSelectedMeterState,
 }: MetersListProps) => {
   const columns: DataTableColumnDef<Meter>[] = [
     {
@@ -124,6 +129,12 @@ export const MetersList = ({
       sorting={sorting}
       onSortingChange={setSorting}
       isLoading={isLoading}
+      onRowSelectionChange={(state) => {
+        setSelectedMeterState(state)
+      }}
+      rowSelection={selectedMeterState}
+      getRowId={(row) => row.id}
+      enableRowSelection
     />
   )
 }

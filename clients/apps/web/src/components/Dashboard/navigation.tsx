@@ -5,6 +5,7 @@ import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
+  DonutLargeOutlined,
   HiveOutlined,
   HowToVote,
   ModeStandby,
@@ -182,6 +183,13 @@ const generalRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/benefits/license-keys`,
       },
     ],
+  },
+  {
+    id: 'meters',
+    title: 'Meters',
+    icon: <DonutLargeOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/meters`,
+    if: true,
   },
   {
     id: 'customers',

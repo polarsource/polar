@@ -1,4 +1,4 @@
-import { Meter } from '@/hooks/queries/meters'
+import { Meter } from '@/app/api/meter/[slug]/data'
 import { DataTableSortingState } from '@/utils/datatable'
 import {
   OnChangeFn,

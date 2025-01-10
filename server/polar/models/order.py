@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         Organization,
         Product,
         ProductPrice,
+        Refund,
         Subscription,
     )
 
@@ -116,6 +117,20 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship("Checkout", lazy="raise")
+
+    @declared_attr
+    def refunds(cls) -> Mapped[list["Refund"]]:
+        return relationship(
+            "Refund",
+            lazy="selectin",
+            primaryjoin=(
+                "and_("
+                "Refund.order_id == Order.id, "
+                "Refund.status == 'succeeded'"
+                ")"
+            ),
+            viewonly=True,
+        )
 
     def set_refunded(self, refunded_amount: int, refunded_tax_amount: int) -> None:
         fully_refunded = (

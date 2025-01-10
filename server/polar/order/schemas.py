@@ -11,14 +11,18 @@ from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason
 from polar.product.schemas import ProductBase, ProductPrice
+from polar.refund.schemas import Refund
 from polar.subscription.schemas import SubscriptionBase
 
 
 class OrderBase(
     CustomFieldDataOutputMixin, MetadataOutputMixin, IDSchema, TimestampedSchema
 ):
+    status: str
     amount: int
     tax_amount: int
+    refunded_amount: int
+    refunded_tax_amount: int
     currency: str
     billing_reason: OrderBillingReason
     billing_address: Address | None
@@ -105,6 +109,7 @@ class Order(OrderBase):
     product_price: ProductPrice
     discount: OrderDiscount | None
     subscription: OrderSubscription | None
+    refunds: list[Refund]
 
 
 class OrderInvoice(Schema):

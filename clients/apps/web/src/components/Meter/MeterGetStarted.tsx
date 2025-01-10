@@ -15,7 +15,7 @@ export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
         <h2 className="text-xl">Get started with metering</h2>
         <p className="dark:text-polar-500 text-gray-500">
           Meter usage by sending meter events to the Polar API. Use our handy
-          NextJS Usage utility if you're using Next.js.
+          NextJS Usage utility if you&apos;re using Next.js.
         </p>
       </div>
       <pre className="dark:bg-polar-900 rounded-lg bg-white p-4 font-mono text-sm">

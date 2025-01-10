@@ -96,7 +96,13 @@ export const useDashboardRoutes = (
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  return useResolveRoutes(dashboardRoutesList, org, allowAll)
+  const posthog = usePostHog()
+
+  return useResolveRoutes(
+    (org) => dashboardRoutesList(org, posthog),
+    org,
+    allowAll,
+  )
 }
 
 export const useGeneralRoutes = (
@@ -274,8 +280,8 @@ const fundingRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (org: Organization): Route[] => [
-  ...generalRoutesList(org),
+const dashboardRoutesList = (org: Organization, posthog: PolarHog): Route[] => [
+  ...generalRoutesList(org, posthog),
   ...fundingRoutesList(org),
   ...organizationRoutesList(org),
 ]

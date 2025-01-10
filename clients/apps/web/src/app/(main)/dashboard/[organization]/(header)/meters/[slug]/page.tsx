@@ -7,10 +7,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Page({
-  params,
-}: {
-  params: { organization: string }
-}) {
+export default async function Page() {
   return <ClientPage />
 }

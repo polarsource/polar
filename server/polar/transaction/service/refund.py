@@ -33,6 +33,17 @@ class RefundTransactionService(BaseTransactionService):
         refunds = result.scalars().all()
         return refunds
 
+    async def get_by_stripe_refund_id(
+        self, session: AsyncSession, refund_id: str
+    ) -> Transaction | None:
+        statement = select(Transaction).where(
+            Transaction.type == TransactionType.refund,
+            Transaction.refund_id == refund_id,
+        )
+        result = await session.execute(statement)
+        refund = result.scalars().one_or_none()
+        return refund
+
     async def create(
         self,
         session: AsyncSession,
@@ -42,6 +53,10 @@ class RefundTransactionService(BaseTransactionService):
         refund: Refund,
     ) -> Transaction | None:
         if not refund.succeeded:
+            return None
+
+        existing = await self.get_by_stripe_refund_id(session, refund.stripe_id)
+        if existing:
             return None
 
         refund_transaction = Transaction(

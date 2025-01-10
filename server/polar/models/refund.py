@@ -108,7 +108,7 @@ class Refund(MetadataMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
 
-    stripe_id: Mapped[str | None] = mapped_column(
+    stripe_id: Mapped[str] = mapped_column(
         String,
         nullable=False,
         unique=True,

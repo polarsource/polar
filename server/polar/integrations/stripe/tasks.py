@@ -217,6 +217,53 @@ async def charge_succeeded(
                     raise
 
 
+@task("stripe.webhook.refund.created")
+@stripe_api_connection_error_retry
+async def refund_created(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            refund = event["data"]["object"]
+            log.info(
+                "stripe.webhook.refund.created",
+                refund_id=refund.id,
+                charge_id=refund.charge,
+                payment_intent=refund.payment_intent,
+            )
+            log.info("webhook.refund.created", refund=refund)
+            await refund_service.create_from_stripe(session, stripe_refund=refund)
+
+
+@task("stripe.webhook.refund.updated")
+@stripe_api_connection_error_retry
+async def refund_updated(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            refund = event["data"]["object"]
+            log.info(
+                "stripe.webhook.refund.updated",
+                refund_id=refund.id,
+                charge_id=refund.charge,
+                payment_intent=refund.payment_intent,
+            )
+            log.info("webhook.refund.updated", refund=refund)
+            await refund_service.update_from_stripe(session, stripe_refund=refund)
+
+
+@task("stripe.webhook.refund.failed")
+@stripe_api_connection_error_retry
+async def refund_failed(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            refund = event["data"]["object"]
+            log.info("webhook.refund.failed", refund=refund)
+
+
 @task("stripe.webhook.charge.refunded")
 @stripe_api_connection_error_retry
 async def charge_refunded(
@@ -225,7 +272,8 @@ async def charge_refunded(
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
             charge = event["data"]["object"]
-            await refund_service.upsert_from_stripe_charge(session, charge=charge)
+            log.info("webhook.charge.refunded", charge=charge)
+            await refund_service.handle_refunded_stripe_charge(session, charge=charge)
 
 
 @task("stripe.webhook.charge.dispute.closed")

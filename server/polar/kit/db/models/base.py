@@ -43,6 +43,9 @@ class TimestampedModel(Model):
     def set_deleted_at(self) -> None:
         self.deleted_at = utc_now()
 
+    def set_modified(self) -> None:
+        self.modified_at = utc_now()
+
 
 class RecordModel(TimestampedModel):
     __abstract__ = True

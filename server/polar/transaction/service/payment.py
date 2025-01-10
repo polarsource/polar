@@ -32,6 +32,15 @@ class PledgeDoesNotExist(PaymentTransactionError):
 
 
 class PaymentTransactionService(BaseTransactionService):
+    async def get_by_charge_id(
+        self, session: AsyncSession, charge_id: str
+    ) -> Transaction | None:
+        return await self.get_by(
+            session,
+            type=TransactionType.payment,
+            charge_id=charge_id,
+        )
+
     async def create_payment(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> Transaction:

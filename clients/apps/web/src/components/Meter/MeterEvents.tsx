@@ -10,7 +10,7 @@ export const MeterEvents = ({ events }: { events: MeterEvent[] }) => {
         {
           header: 'Customer',
           accessorKey: 'customer',
-          cell: ({ row }) => (
+          cell: () => (
             <div className="flex flex-row items-center gap-x-2">
               <Avatar
                 className="dark:bg-polar-900 text-xxs bg-white"

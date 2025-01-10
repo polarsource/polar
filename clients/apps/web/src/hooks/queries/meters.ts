@@ -19,8 +19,8 @@ const MOCKED_METERS: Meter[] = [
     status: 'active',
     aggregation_type: 'sum',
     value: 98012839,
-    created_at: '2021-01-01',
-    updated_at: '2021-01-01',
+    created_at: '2024-07-01',
+    updated_at: '2025-01-01',
   },
   {
     id: '2',
@@ -29,8 +29,18 @@ const MOCKED_METERS: Meter[] = [
     status: 'active',
     aggregation_type: 'sum',
     value: 312313,
-    created_at: '2021-01-01',
-    updated_at: '2021-01-01',
+    created_at: '2024-03-14',
+    updated_at: '2025-02-11',
+  },
+  {
+    id: '3',
+    name: 'OpenAI Total',
+    slug: 'openai-total',
+    status: 'disabled',
+    aggregation_type: 'sum',
+    value: 129244173,
+    created_at: '2023-11-23',
+    updated_at: '2025-02-03',
   },
 ]
 
@@ -42,4 +52,11 @@ export const useMeters = (organizationId?: string) =>
       items: MOCKED_METERS,
     }),
     enabled: !!organizationId,
+  })
+
+export const useMeter = (id?: string) =>
+  useQuery({
+    queryKey: ['meter', id],
+    queryFn: () => MOCKED_METERS.find((meter) => meter.id === id),
+    enabled: !!id,
   })

@@ -12,7 +12,7 @@ import {
 import { Order, OrderCustomer, Organization, Product } from '@polar-sh/sdk'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   DataTable,
@@ -21,6 +21,24 @@ import {
 } from 'polarkit/components/ui/atoms/datatable'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useEffect, useState } from 'react'
+
+const AmountColumn = ({ order }: { order: Order }) => {
+  return (
+    <div className="flex flex-row gap-x-2">
+      <span>{formatCurrencyAndAmount(order.amount, order.currency)}</span>
+      {order.status == 'refunded' && (
+        <Pill color="red" className="flex flex-row">
+          <span>Refunded</span>
+        </Pill>
+      )}
+      {order.status == 'partially_refunded' && (
+        <Pill color="gray" className="flex flex-row">
+          <span>Partial Refund</span>
+        </Pill>
+      )}
+    </div>
+  )
+}
 
 interface ClientPageProps {
   organization: Organization
@@ -132,14 +150,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
-      accessorKey: 'created_at',
+      accessorKey: 'amount',
       enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
+        <DataTableColumnHeader column={column} title="Amount" />
       ),
-      cell: (props) => (
-        <FormattedDateTime datetime={props.getValue() as string} />
-      ),
+      cell: ({ row: { original: order } }) => <AmountColumn order={order} />,
     },
     {
       accessorKey: 'product',
@@ -162,13 +178,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
-      accessorKey: 'amount',
+      accessorKey: 'created_at',
       enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Amount" />
+        <DataTableColumnHeader column={column} title="Date" />
       ),
-      cell: ({ row: { original: order } }) => (
-        <>{formatCurrencyAndAmount(order.amount, order.currency)}</>
+      cell: (props) => (
+        <FormattedDateTime datetime={props.getValue() as string} />
       ),
     },
   ]

@@ -14556,6 +14556,12 @@ export interface Order {
     custom_field_data?: object;
     /**
      * 
+     * @type {string}
+     * @memberof Order
+     */
+    status: string;
+    /**
+     * 
      * @type {number}
      * @memberof Order
      */
@@ -14566,6 +14572,18 @@ export interface Order {
      * @memberof Order
      */
     tax_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Order
+     */
+    refunded_amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Order
+     */
+    refunded_tax_amount: number;
     /**
      * 
      * @type {string}
@@ -14664,6 +14682,12 @@ export interface Order {
      * @memberof Order
      */
     subscription: OrderSubscription | null;
+    /**
+     * 
+     * @type {Array<Refund>}
+     * @memberof Order
+     */
+    refunds: Array<Refund>;
 }
 
 
@@ -18006,6 +18030,73 @@ export interface Reactions {
      */
     eyes: number;
 }
+/**
+ * 
+ * @export
+ * @interface Refund
+ */
+export interface Refund {
+    /**
+     * 
+     * @type {RefundStatus}
+     * @memberof Refund
+     */
+    status: RefundStatus;
+    /**
+     * 
+     * @type {RefundReason}
+     * @memberof Refund
+     */
+    reason: RefundReason;
+    /**
+     * 
+     * @type {number}
+     * @memberof Refund
+     */
+    amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Refund
+     */
+    tax_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    currency: string;
+}
+
+
+
+/**
+ * 
+ * @export
+ */
+export const RefundReason = {
+    DUPLICATE: 'duplicate',
+    FRAUDULENT: 'fraudulent',
+    CUSTOMER_REQUEST: 'customer_request',
+    SERVICE_DISRUPTION: 'service_disruption',
+    SATISFACTION_GUARANTEE: 'satisfaction_guarantee',
+    OTHER: 'other'
+} as const;
+export type RefundReason = typeof RefundReason[keyof typeof RefundReason];
+
+
+/**
+ * 
+ * @export
+ */
+export const RefundStatus = {
+    PENDING: 'pending',
+    SUCCEEDED: 'succeeded',
+    FAILED: 'failed',
+    CANCELED: 'canceled'
+} as const;
+export type RefundStatus = typeof RefundStatus[keyof typeof RefundStatus];
+
 /**
  * 
  * @export

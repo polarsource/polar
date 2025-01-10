@@ -6,7 +6,7 @@ const Pill = ({
   className,
 }: {
   children: React.ReactNode
-  color: 'gray' | 'blue' | 'purple'
+  color: 'gray' | 'blue' | 'purple' | 'red'
   className?: string
 }) => {
   return (
@@ -21,7 +21,10 @@ const Pill = ({
           ? 'dark:bg-polar-700 dark:text-polar-300 bg-gray-100 text-gray-600'
           : '',
         color === 'purple'
-          ? 'bg-purple-100 text-purple-600 dark:bg-purple-700 dark:text-purple-300  '
+          ? 'bg-purple-100 text-purple-600 dark:bg-purple-700 dark:text-purple-300'
+          : '',
+        color === 'red'
+          ? 'bg-red-100 text-red-600 dark:bg-red-700 dark:text-red-300'
           : '',
         className,
       )}

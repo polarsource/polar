@@ -41,7 +41,9 @@ const ClientPage = ({
 
   useEffect(() => {
     if (selectedMeter) {
-      router.push(`/dashboard/${organization.slug}/meters/${selectedMeter.id}`)
+      router.push(
+        `/dashboard/${organization.slug}/meters/${selectedMeter.slug}`,
+      )
     }
   }, [selectedMeter, router, organization])
 

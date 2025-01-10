@@ -2,7 +2,7 @@
 
 import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useMeter } from '@/hooks/queries/meters'
+import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
 import { AddOutlined, MoreVert } from '@mui/icons-material'
 import { MetricType, Organization } from '@polar-sh/sdk'
 import { useParams } from 'next/navigation'
@@ -20,58 +20,6 @@ import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Status } from 'polarkit/components/ui/atoms/Status'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-const mockedMeterData = [
-  ...Array.from({ length: new Date().getDate() }, (_, i) => ({
-    timestamp: new Date(new Date().getFullYear(), new Date().getMonth(), i + 1),
-    usage: Math.floor(Math.random() * 10000),
-  })),
-]
-
-const mockedEvents = [
-  {
-    value: 12430,
-    customer: 'Emil Widlund',
-    timestamp: new Date(
-      Date.now() - Math.floor(Math.random() * 30 * 60 * 1000),
-    ).toISOString(),
-  },
-  {
-    value: 202340,
-    customer: 'Joe Doe',
-    timestamp: new Date(
-      Date.now() - Math.floor(Math.random() * 30 * 60 * 1000),
-    ).toISOString(),
-  },
-  {
-    value: 523,
-    customer: 'Jane Doe',
-    timestamp: new Date(
-      Date.now() - Math.floor(Math.random() * 30 * 60 * 1000),
-    ).toISOString(),
-  },
-  {
-    value: 23,
-    customer: 'Emil Widlund',
-    timestamp: new Date(
-      Date.now() - Math.floor(Math.random() * 30 * 60 * 1000),
-    ).toISOString(),
-  },
-  {
-    value: 411,
-    customer: 'Joe Doe',
-    timestamp: new Date(
-      Date.now() - Math.floor(Math.random() * 30 * 60 * 1000),
-    ).toISOString(),
-  },
-  {
-    value: 345,
-    customer: 'Jane Doe',
-    timestamp: new Date(
-      Date.now() - Math.floor(Math.random() * 30 * 60 * 1000),
-    ).toISOString(),
-  },
-]
 
 const mockedMeterProducts = [
   {
@@ -92,13 +40,13 @@ const mockedMeterAlerts = [
   {
     id: '123',
     name: 'Small beginnings',
-    threshold: 100000,
+    threshold: 100,
     frequency: 'once_per_customer',
   },
   {
     id: '456',
     name: 'To the moon',
-    threshold: 1000000,
+    threshold: 1000,
     frequency: 'once_per_customer',
   },
 ] as const
@@ -118,8 +66,8 @@ function MeterDetail({
 }: {
   label: string
   value: React.ReactNode
-  valueClassName?: string
   action?: React.ReactNode
+  valueClassName?: string
 }) {
   return (
     <div className="flex flex-row items-baseline justify-between gap-x-4 text-sm">
@@ -142,8 +90,25 @@ export default function ClientPage({
 }: {
   organization: Organization
 }) {
-  const { id } = useParams()
-  const { data: meter } = useMeter(id as string)
+  const { slug } = useParams()
+  const { data: meter } = useMeter(slug as string)
+  const { data: meterEvents } = useMeterEvents(meter?.slug)
+
+  const { resolvedTheme } = useTheme()
+
+  const mockedMeterData = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - i)
+    return {
+      timestamp: date,
+      usage: meterEvents?.items
+        .filter((event: MeterEvent) => {
+          const eventDate = new Date(event.created_at)
+          return eventDate.toDateString() === date.toDateString()
+        })
+        .reduce((total: number, event: MeterEvent) => total + event.value, 0),
+    }
+  }).reverse()
 
   const ContextView = useCallback(() => {
     if (!meter) return null
@@ -168,7 +133,6 @@ export default function ClientPage({
             <MeterDetail
               label="Slug"
               value={meter.slug}
-              valueClassName="font-mono text-sm"
               action={<CopyToClipboardButton text={meter.slug} />}
             />
             <MeterDetail
@@ -247,7 +211,11 @@ export default function ClientPage({
                         r="8"
                         strokeWidth="3"
                         fill="none"
-                        stroke="none"
+                        stroke={
+                          resolvedTheme === 'dark'
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.1)'
+                        }
                       />
                       <circle
                         cx="18"
@@ -382,7 +350,6 @@ export default function ClientPage({
           <code>{`curl https://api.polar.sh/v1/billing/meter_events \\
   -u "sk_test_...:gHzA" \\
   -d slug=${meter.slug} \\
-  -d timestamp=1736464874 \\
   -d "payload[customer_id]"="{{ CUSTOMER_ID }}" \\
   -d "payload[value]"=1`}</code>
         </pre>
@@ -403,10 +370,10 @@ export default function ClientPage({
                 <div className="flex flex-row items-center gap-x-2">
                   <Avatar
                     className="dark:bg-polar-900 text-xxs bg-white"
-                    name={row.original.customer}
+                    name={'Emil Widlund'}
                     avatar_url={null}
                   />
-                  <span>{row.original.customer}</span>
+                  <span>Emil Widlund</span>
                 </div>
               ),
             },
@@ -422,16 +389,16 @@ export default function ClientPage({
               ),
             },
             {
-              header: 'Timestamp',
-              accessorKey: 'timestamp',
+              header: 'Created At',
+              accessorKey: 'created_at',
               cell: ({ row }) => (
                 <span className="font-mono text-xs capitalize">
-                  <PolarTimeAgo date={new Date(row.original.timestamp)} />
+                  <PolarTimeAgo date={new Date(row.original.created_at)} />
                 </span>
               ),
             },
           ]}
-          data={mockedEvents}
+          data={meterEvents?.items ?? []}
           isLoading={false}
         />
       </div>
@@ -439,11 +406,13 @@ export default function ClientPage({
   )
 }
 
+import { MeterEvent } from '@/app/api/meter/[slug]/data'
 import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
 import { Interval, Metric } from '@polar-sh/sdk'
 import * as d3 from 'd3'
 import { GeistMono } from 'geist/font/mono'
+import { useTheme } from 'next-themes'
 import { useEffect, useMemo, useState } from 'react'
 
 const primaryColor = 'rgb(0 98 255)'

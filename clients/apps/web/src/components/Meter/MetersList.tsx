@@ -13,6 +13,7 @@ import {
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
 import { Status } from 'polarkit/components/ui/atoms/Status'
+import { twMerge } from 'tailwind-merge'
 
 export interface MetersListProps {
   meters: Meter[]
@@ -99,7 +100,12 @@ export const MetersList = ({
       cell: ({ row: { original: meter } }) => {
         return (
           <Status
-            className="w-fit bg-emerald-100 capitalize text-emerald-500 dark:bg-emerald-950"
+            className={twMerge(
+              'w-fit capitalize',
+              meter.status === 'active'
+                ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
+                : 'bg-red-100 text-red-500 dark:bg-red-950',
+            )}
             status={meter.status}
           />
         )

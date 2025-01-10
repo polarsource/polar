@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { MOCKED_METER_EVENTS, MOCKED_METERS } from '../../data'
 
 export const GET = async (
-  req: NextRequest,
+  _: NextRequest,
   { params: { slug } }: { params: { slug: string } },
 ) => {
   if (!slug) {

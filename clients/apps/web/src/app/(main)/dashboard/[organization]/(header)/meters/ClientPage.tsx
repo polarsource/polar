@@ -94,8 +94,8 @@ const ClientPage = ({
   return (
     <DashboardBody
       header={
-        <Button wrapperClassNames="flex items-center flex-row gap-x-1">
-          <AddOutlined fontSize="small" />
+        <Button wrapperClassNames="flex items-center flex-row gap-x-2">
+          <AddOutlined fontSize="inherit" />
           <span>New Meter</span>
         </Button>
       }

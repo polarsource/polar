@@ -103,7 +103,13 @@ export const useGeneralRoutes = (
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  return useResolveRoutes(generalRoutesList, org, allowAll)
+  const posthog = usePostHog()
+
+  return useResolveRoutes(
+    (org) => generalRoutesList(org, posthog),
+    org,
+    allowAll,
+  )
 }
 
 export const useFundingRoutes = (
@@ -134,7 +140,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (org: Organization): Route[] => [
+const generalRoutesList = (org: Organization, posthog: PolarHog): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -189,7 +195,7 @@ const generalRoutesList = (org: Organization): Route[] => [
     title: 'Meters',
     icon: <DonutLargeOutlined fontSize="inherit" />,
     link: `/dashboard/${org.slug}/meters`,
-    if: true,
+    if: posthog?.isFeatureEnabled('usage_based_billing'),
   },
   {
     id: 'customers',

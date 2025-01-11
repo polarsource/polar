@@ -33,7 +33,7 @@ export const GetStarted = () => {
             </li>
           </ul>
         </div>
-        <Link href="/docs/developers/guides/nextjs">
+        <Link href="/docs/documentation/integration-guides/nextjs">
           <Button
             size="lg"
             fullWidth

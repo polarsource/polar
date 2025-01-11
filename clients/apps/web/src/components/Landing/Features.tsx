@@ -80,7 +80,7 @@ export const Features = () => {
           icon={Box}
           title="Digital Products"
           description="Manage and distribute your digital products with our robust platform."
-          link="/docs/products"
+          link="/docs/documentation/features/products"
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">

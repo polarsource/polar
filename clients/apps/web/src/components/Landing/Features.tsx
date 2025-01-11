@@ -104,7 +104,7 @@ export const Features = () => {
           icon={ShoppingBagOutlined}
           title="Simple Checkouts"
           description="Streamlined checkouts for a seamless user experience."
-          link="https://docs.polar.sh/checkout"
+          link="https://docs.polar.sh/documentation/features/checkouts/checkout-links"
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">

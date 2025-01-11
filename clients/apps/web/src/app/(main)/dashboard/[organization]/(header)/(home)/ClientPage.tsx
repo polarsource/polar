@@ -185,13 +185,16 @@ app.listen(port, () => {
         </div>
       </div>
       <div className="flex flex-row items-center gap-x-2">
-        <Link href={`/docs/developers/guides/node`} target="_blank">
+        <Link
+          href={`/docs/documentation/integration-guides/nextjs`}
+          target="_blank"
+        >
           <Button wrapperClassNames="flex flex-row items-center gap-x-2">
             <span>Checkout API Guide</span>
             <ChevronRight className="text-sm" fontSize="inherit" />
           </Button>
         </Link>
-        <Link href={`/docs/api`} target="_blank">
+        <Link href={`/docs/api/`} target="_blank">
           <Button
             wrapperClassNames="flex flex-row items-center gap-x-2"
             variant="ghost"

@@ -60,17 +60,17 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Products & Subscriptions"
                 description="Offer digital products or subscriptions"
-                link="/docs/products"
+                link="/docs/documentation/features/products"
               />
               <PopoverLinkItem
-                title="Issue Funding & Rewards"
-                description="Crowdfunding for GitHub issues with contributor rewards"
-                link="/docs/issue-funding"
+                title="Checkouts"
+                description="Integrate with our Checkout API"
+                link="/docs/documentation/features/checkouts/checkout-links"
               />
               <PopoverLinkItem
-                title="Donations"
-                description="Get ad-hoc support from your community"
-                link="/docs/donations"
+                title="Customer Portal"
+                description="Let your customers manage their subscriptions and orders"
+                link="/docs/documentation/features/customer-portal"
               />
             </div>
           </div>
@@ -80,27 +80,27 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="License Keys"
                 description="Sell access to your custom software with License Keys"
-                link="/docs/benefits/license-keys"
+                link="/docs/documentation/features/benefits/license-keys"
               />
               <PopoverLinkItem
-                title="Private GitHub Repositories"
+                title="GitHub Repository Access"
                 description="Grant access to private repositories"
-                link="/docs/benefits/github-repositories"
+                link="/docs/documentation/features/benefits/github-repository-access"
               />
               <PopoverLinkItem
                 title="Discord Server Access"
                 description="Automatic Discord role assignment"
-                link="/docs/benefits/discord"
+                link="/docs/documentation/features/benefits/discord-server-roles"
               />
               <PopoverLinkItem
                 title="File Downloads"
                 description="Access to exclusive file downloads"
-                link="/docs/benefits/file-downloads"
+                link="/docs/documentation/features/benefits/file-downloads"
               />
               <PopoverLinkItem
                 title="Custom"
                 description="Offer custom benefits for your special usecase"
-                link="/docs/benefits#create-a-custom-benefit"
+                link="/docs/documentation/features/benefits/custom-benefit"
               />
             </div>
           </div>
@@ -142,14 +142,14 @@ const DocumentationPopover = () => {
                 link="/docs"
               />
               <PopoverLinkItem
-                title="Developer Guides"
+                title="Integration Guides"
                 description="How-to guides for common frameworks and use cases"
-                link="/docs/developers"
+                link="/docs/documentation/integration-guides/nextjs"
               />
               <PopoverLinkItem
                 title="Support"
                 description="Get help from the Polar team"
-                link="/docs/support"
+                link="/docs/documentation/support"
               />
             </div>
           </div>
@@ -159,27 +159,22 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="API Reference"
                 description="Integrate Polar with your application"
-                link="/docs/api"
+                link="/docs/api-reference"
               />
               <PopoverLinkItem
                 title="OAuth"
                 description="Streamline authentication and unlocking user benefits"
-                link="/docs/api/sdk/authentication"
+                link="/docs/documentation/integration-guides/authenticating-with-polar"
               />
               <PopoverLinkItem
                 title="Webhooks"
                 description="Integrate Polar with your application"
-                link="/docs/developers/webhooks"
+                link="/docs/documentation/integration-guides/webhooks"
               />
               <PopoverLinkItem
                 title="Polar SDKs"
                 description="Build with our JavaScript & Python SDKs"
-                link="/docs/developers/sdk"
-              />
-              <PopoverLinkItem
-                title="GitHub Actions"
-                description="Use Polar in your CI/CD pipeline"
-                link="/docs/developers/sdk/github-actions"
+                link="/docs/documentation/sdks/typescript-sdk"
               />
             </div>
           </div>

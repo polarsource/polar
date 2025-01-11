@@ -29,7 +29,11 @@ const FAQ_BACKERS: FAQItems = [
     question: 'What happens if the issue is never completed?',
     answer: (
       <>
-        <Link href="/docs/support" target="_blank" className="text-blue-400">
+        <Link
+          href="/docs/documentation/support"
+          target="_blank"
+          className="text-blue-400"
+        >
           Contact our support
         </Link>{' '}
         if nothing has happened within 6 months - we can help direct the pledge

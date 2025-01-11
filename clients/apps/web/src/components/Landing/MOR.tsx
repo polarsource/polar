@@ -15,7 +15,7 @@ export const MerchantOfRecord = () => {
       ]}
       image="/assets/landing/transactions.jpg"
       cta1={
-        <Link href="/docs/merchant-of-record/tax">
+        <Link href="/docs/documentation/polar-as-merchant-of-record/tax">
           <Button variant="ghost">
             Learn More
             <span className="ml-1">

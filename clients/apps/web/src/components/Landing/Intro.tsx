@@ -23,7 +23,7 @@ export const Intro = () => {
           />
         }
         cta2={
-          <Link href="/docs/api">
+          <Link href="/docs/api-reference">
             <Button variant="ghost">API Reference</Button>
           </Link>
         }

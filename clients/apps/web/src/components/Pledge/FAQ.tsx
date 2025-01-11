@@ -30,7 +30,7 @@ const FAQ_BACKERS: FAQItems = [
     answer: (
       <>
         <Link
-          href="/docs/documentation/support"
+          href="https://docs.polar.sh/documentation/support"
           target="_blank"
           className="text-blue-400"
         >

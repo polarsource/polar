@@ -23,7 +23,7 @@ export const Intro = () => {
           />
         }
         cta2={
-          <Link href="/docs/api-reference">
+          <Link href="https://docs.polar.sh/api-reference">
             <Button variant="ghost">API Reference</Button>
           </Link>
         }

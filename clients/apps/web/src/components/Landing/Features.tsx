@@ -80,7 +80,7 @@ export const Features = () => {
           icon={Box}
           title="Digital Products"
           description="Manage and distribute your digital products with our robust platform."
-          link="/docs/documentation/features/products"
+          link="https://docs.polar.sh/documentation/features/products"
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">
@@ -104,7 +104,7 @@ export const Features = () => {
           icon={ShoppingBagOutlined}
           title="Simple Checkouts"
           description="Streamlined checkouts for a seamless user experience."
-          link="/docs/checkout"
+          link="https://docs.polar.sh/checkout"
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">

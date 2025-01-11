@@ -17,12 +17,12 @@ const frameworks: Framework[] = [
   {
     name: 'Node.js',
     icon: <NodeJsIcon />,
-    href: '/docs/documentation/sdks/typescript-sdk',
+    href: 'https://docs.polar.sh/documentation/sdks/typescript-sdk',
   },
   {
     name: 'Python',
     icon: <PythonIcon />,
-    href: '/docs/documentation/sdks/python-sdk',
+    href: 'https://docs.polar.sh/documentation/sdks/python-sdk',
   },
   {
     name: 'PHP',
@@ -34,7 +34,11 @@ const frameworks: Framework[] = [
     icon: <GoIcon />,
     href: 'https://github.com/polarsource/polar-go',
   },
-  { name: 'CURL', icon: <CurlIcon />, href: '/docs/api-reference' },
+  {
+    name: 'CURL',
+    icon: <CurlIcon />,
+    href: 'https://docs.polar.sh/api-reference',
+  },
 ]
 
 const containerVariants = {

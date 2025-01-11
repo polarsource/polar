@@ -186,7 +186,7 @@ app.listen(port, () => {
       </div>
       <div className="flex flex-row items-center gap-x-2">
         <Link
-          href={`/docs/documentation/integration-guides/nextjs`}
+          href={`https://docs.polar.sh/documentation/integration-guides/nextjs`}
           target="_blank"
         >
           <Button wrapperClassNames="flex flex-row items-center gap-x-2">
@@ -194,7 +194,7 @@ app.listen(port, () => {
             <ChevronRight className="text-sm" fontSize="inherit" />
           </Button>
         </Link>
-        <Link href={`/docs/api/`} target="_blank">
+        <Link href={`https://docs.polar.sh/api/`} target="_blank">
           <Button
             wrapperClassNames="flex flex-row items-center gap-x-2"
             variant="ghost"
@@ -317,7 +317,7 @@ const polar = new Polar({
           <p className="dark:text-polar-400 text-lg text-gray-500">
             Build your own solutions using our SDKs & API
           </p>
-          <Link href={`/docs/api`} target="_blank">
+          <Link href={`https://docs.polar.sh/api`} target="_blank">
             <Button wrapperClassNames="flex flex-row items-center gap-x-2">
               <span>API Documentation</span>
               <ChevronRight className="text-sm" fontSize="inherit" />

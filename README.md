@@ -23,7 +23,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/docs">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://polar.sh/docs/api-reference">API Reference</a>
+<a href="https://docs.polar.sh/api-reference">API Reference</a>
 
 
 <p align="center">
@@ -53,7 +53,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 - 4% + 40¢
 - No fixed monthly costs
-- Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
+- Additional fees may apply. [Read more](https://docs.polar.sh/documentation/polar-as-merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests
 **🎯 Upcoming milestones.** [Check out what we're building towards](https://github.com/polarsource/polar/issues/3242)

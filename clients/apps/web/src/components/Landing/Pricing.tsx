@@ -22,7 +22,7 @@ export const Pricing = () => {
           <p className="dark:text-polar-400 text-gray-600">
             We only earn when you do.{' '}
             <Link
-              href="/docs/documentation/polar-as-merchant-of-record/fees"
+              href="https://docs.polar.sh/documentation/polar-as-merchant-of-record/fees"
               className="text-blue-500"
             >
               See how our fees apply.

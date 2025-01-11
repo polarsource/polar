@@ -33,7 +33,7 @@ export const GetStarted = () => {
             </li>
           </ul>
         </div>
-        <Link href="/docs/documentation/integration-guides/nextjs">
+        <Link href="https://docs.polar.sh/documentation/integration-guides/nextjs">
           <Button
             size="lg"
             fullWidth

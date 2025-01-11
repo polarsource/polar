@@ -67,7 +67,7 @@ const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
 
           <a
             className="text-xs text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-            href="/docs/documentation/polar-as-merchant-of-record/supported-countries"
+            href="https://docs.polar.sh/documentation/polar-as-merchant-of-record/supported-countries"
           >
             Make sure you’re eligible to receive Stripe payouts.
           </a>

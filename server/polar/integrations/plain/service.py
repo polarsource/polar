@@ -206,7 +206,9 @@ class PlainService:
         return CustomerCard(
             key=CustomerCardKey.organization,
             timeToLiveSeconds=86400,
-            components=[component.model_dump() for component in components],
+            components=[
+                component.model_dump(by_alias=True) for component in components
+            ],
         )
 
     def _get_organization_component_container(

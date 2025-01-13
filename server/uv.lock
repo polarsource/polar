@@ -112,10 +112,12 @@ wheels = [
 [[package]]
 name = "asgi-admin"
 version = "0.0.0"
-source = { git = "https://github.com/polarsource/asgi-admin?rev=147b6e5ba23d99dc281bdf2e8ab5d08aae2e26fd#147b6e5ba23d99dc281bdf2e8ab5d08aae2e26fd" }
+source = { git = "https://github.com/polarsource/asgi-admin?rev=7ab0e0e3c86ae6740781b71ceb856e24b6bc365e#7ab0e0e3c86ae6740781b71ceb856e24b6bc365e" }
 dependencies = [
     { name = "jinja2" },
+    { name = "python-multipart" },
     { name = "starlette" },
+    { name = "wtforms" },
 ]
 
 [[package]]
@@ -1307,7 +1309,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.9.2" },
     { name = "apscheduler", specifier = ">=3.10.4" },
     { name = "arq", specifier = ">=0.25.0" },
-    { name = "asgi-admin", git = "https://github.com/polarsource/asgi-admin?rev=147b6e5ba23d99dc281bdf2e8ab5d08aae2e26fd" },
+    { name = "asgi-admin", git = "https://github.com/polarsource/asgi-admin?rev=7ab0e0e3c86ae6740781b71ceb856e24b6bc365e" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "authlib", specifier = ">=1.3.2" },
     { name = "babel", specifier = ">=2.16.0" },
@@ -2456,6 +2458,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4c/6b/1aaccf3efe58eb95e10ce8e77c8909b7a6b0da93449a92c4e6d6d10b3a3d/wrapt-1.17.0-cp312-cp312-win32.whl", hash = "sha256:0a0a1a1ec28b641f2a3a2c35cbe86c00051c04fffcfcc577ffcdd707df3f8635", size = 36647 },
     { url = "https://files.pythonhosted.org/packages/b3/4f/243f88ac49df005b9129194c6511b3642818b3e6271ddea47a15e2ee4934/wrapt-1.17.0-cp312-cp312-win_amd64.whl", hash = "sha256:3c34f6896a01b84bab196f7119770fd8466c8ae3dfa73c59c0bb281e7b588ce7", size = 38830 },
     { url = "https://files.pythonhosted.org/packages/4b/d9/a8ba5e9507a9af1917285d118388c5eb7a81834873f45df213a6fe923774/wrapt-1.17.0-py3-none-any.whl", hash = "sha256:d2c63b93548eda58abf5188e505ffed0229bf675f7c3090f8e36ad55b8cbc371", size = 23592 },
+]
+
+[[package]]
+name = "wtforms"
+version = "3.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markupsafe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/e4/633d080897e769ed5712dcfad626e55dbd6cf45db0ff4d9884315c6a82da/wtforms-3.2.1.tar.gz", hash = "sha256:df3e6b70f3192e92623128123ec8dca3067df9cfadd43d59681e210cfb8d4682", size = 137801 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/c9/2088fb5645cd289c99ebe0d4cdcc723922a1d8e1beaefb0f6f76dff9b21c/wtforms-3.2.1-py3-none-any.whl", hash = "sha256:583bad77ba1dd7286463f21e11aa3043ca4869d03575921d1a1698d0715e0fd4", size = 152454 },
 ]
 
 [[package]]

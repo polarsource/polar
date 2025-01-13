@@ -2678,6 +2678,34 @@ class TestHandleFreeSuccess:
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
         stripe_service_mock.create_out_of_band_invoice.assert_not_called()
 
+    async def test_valid_custom_pricing_discount_percentage_100(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_custom_price: Product,
+        discount_percentage_100: Discount,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            price=product_one_time_custom_price.prices[0],
+            amount=1000,
+            status=CheckoutStatus.confirmed,
+            discount=discount_percentage_100,
+            payment_processor_metadata={"customer_id": "STRIPE_CUSTOMER_ID"},
+        )
+
+        stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
+            id="STRIPE_INVOICE_ID"
+        )
+
+        checkout = await checkout_service.handle_free_success(session, checkout.id)
+
+        assert checkout.status == CheckoutStatus.succeeded
+        stripe_service_mock.create_price_for_product.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestExpireOpenCheckouts:

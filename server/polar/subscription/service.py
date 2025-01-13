@@ -607,6 +607,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         updates: SubscriptionUpdate,
     ) -> Subscription:
         if isinstance(updates, SubscriptionUpdatePrice):
+            if subscription.revoked or subscription.cancel_at_period_end:
+                raise AlreadyCanceledSubscription()
             return await self.update_product_price(
                 session,
                 subscription,

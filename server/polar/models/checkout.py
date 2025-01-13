@@ -33,7 +33,12 @@ from .customer import Customer
 from .discount import Discount
 from .organization import Organization
 from .product import Product
-from .product_price import ProductPrice, ProductPriceFixed, ProductPriceFree
+from .product_price import (
+    ProductPrice,
+    ProductPriceCustom,
+    ProductPriceFixed,
+    ProductPriceFree,
+)
 from .subscription import Subscription
 
 
@@ -196,7 +201,9 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_discount_applicable(self) -> bool:
-        return isinstance(self.product_price, ProductPriceFixed)
+        return isinstance(self.product_price, ProductPriceFixed) or isinstance(
+            self.product_price, ProductPriceCustom
+        )
 
     @property
     def is_free_product_price(self) -> bool:

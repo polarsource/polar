@@ -432,11 +432,11 @@ class TestCreate:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
-        product_one_time_custom_price: Product,
+        product_one_time_free_price: Product,
         discount_fixed_once: Discount,
     ) -> None:
-        price = product_one_time_custom_price.prices[0]
-        assert isinstance(price, ProductPriceCustom)
+        price = product_one_time_free_price.prices[0]
+        assert isinstance(price, ProductPriceFree)
 
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
@@ -1486,26 +1486,26 @@ class TestUpdate:
     async def test_invalid_discount_id_not_applicable(
         self,
         session: AsyncSession,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_free: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                checkout_one_time_custom,
+                checkout_one_time_free,
                 CheckoutUpdate(discount_id=discount_fixed_once.id),
             )
 
     async def test_invalid_discount_code_not_applicable(
         self,
         session: AsyncSession,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_free: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                checkout_one_time_custom,
+                checkout_one_time_free,
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
 
@@ -2086,6 +2086,64 @@ class TestConfirm:
         updated_discount = await discount_service.get(
             session,
             discount_percentage_100.id,
+            options=(joinedload(Discount.discount_redemptions),),
+        )
+        assert updated_discount is not None
+        assert len(updated_discount.discount_redemptions) == 1
+        assert updated_discount.discount_redemptions[0].checkout_id == checkout.id
+
+    async def test_valid_custom_pricing_discount(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_custom: Checkout,
+        discount_percentage_50: Discount,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_custom,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "amount": 2000,
+                    "discount_code": discount_percentage_50.code,
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.payment_processor_metadata == {
+            "intent_client_secret": "CLIENT_SECRET",
+            "intent_status": "succeeded",
+            "customer_id": "STRIPE_CUSTOMER_ID",
+        }
+        assert checkout.total_amount == 1000
+
+        stripe_service_mock.create_customer.assert_called_once()
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
+            "checkout_id": str(checkout.id),
+            "type": ProductType.product,
+            "tax_amount": "0",
+            "tax_country": "FR",
+        }
+
+        updated_discount = await discount_service.get(
+            session,
+            discount_percentage_50.id,
             options=(joinedload(Discount.discount_redemptions),),
         )
         assert updated_discount is not None

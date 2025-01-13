@@ -1236,13 +1236,16 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         product: Product,
         price: ProductPrice,
     ) -> Discount:
-        if price.amount_type != ProductPriceAmountType.fixed:
+        if price.amount_type not in {
+            ProductPriceAmountType.fixed,
+            ProductPriceAmountType.custom,
+        }:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "discount_id"),
-                        "msg": "Discounts are only applicable to fixed prices.",
+                        "msg": "Discounts are only applicable to fixed and custom prices.",
                         "input": discount_id,
                     }
                 ]

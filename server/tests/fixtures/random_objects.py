@@ -815,6 +815,20 @@ async def discount_fixed_once(
 
 
 @pytest_asyncio.fixture
+async def discount_percentage_50(
+    save_fixture: SaveFixture, organization: Organization
+) -> DiscountPercentage:
+    return await create_discount(
+        save_fixture,
+        type=DiscountType.percentage,
+        basis_points=5_000,
+        duration=DiscountDuration.once,
+        organization=organization,
+        code="DISCOUNTPERCENTAGE50",
+    )
+
+
+@pytest_asyncio.fixture
 async def discount_percentage_100(
     save_fixture: SaveFixture, organization: Organization
 ) -> DiscountPercentage:

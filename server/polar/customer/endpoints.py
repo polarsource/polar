@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
+from sqlalchemy.orm import joinedload
 
 from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
@@ -111,7 +112,9 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update a customer."""
-    customer = await customer_service.get_by_id(session, auth_subject, id)
+    customer = await customer_service.get_by_id(
+        session, auth_subject, id, options=(joinedload(Customer.organization),)
+    )
 
     if customer is None:
         raise ResourceNotFound()

@@ -21,9 +21,8 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { CommandPaletteTrigger } from '../CommandPalette/CommandPaletteTrigger'
 import MaintainerNavigation from '../Dashboard/DashboardNavigation'
-import { DashboardProvider, useDashboard } from '../Dashboard/DashboardProvider'
+import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
@@ -35,8 +34,6 @@ import TopbarRight from './Public/TopbarRight'
 const DashboardSidebar = () => {
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
-
-  const { showCommandPalette } = useDashboard()
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
@@ -73,15 +70,6 @@ const DashboardSidebar = () => {
         >
           <div className="flex flex-col gap-y-12">
             <MaintainerNavigation />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex">
-              <CommandPaletteTrigger
-                title="Documentation"
-                className="w-full cursor-text"
-                onClick={showCommandPalette}
-              />
-            </div>
           </div>
         </div>
       </div>

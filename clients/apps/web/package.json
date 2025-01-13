@@ -3,25 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm run docs:build && next dev --port 3000",
-    "build": "pnpm run docs:build && next build",
+    "dev": "next dev --port 3000",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "pnpm run docs:build && storybook build",
-    "chromatic": "pnpm run docs:build && chromatic --exit-zero-on-changes --exit-once-uploaded",
+    "build-storybook": "storybook build",
+    "chromatic": "chromatic --exit-zero-on-changes --exit-once-uploaded",
     "test": "DOTENV_CONFIG_PATH=.env.test jest",
-    "typecheck": "tsc --noEmit",
-    "docs:build": "pnpm run docs:schema && pnpm run docs:metadata && pnpm run docs:index",
-    "docs:schema": "cp ../../../sdk/schema.json src/openapi.json",
-    "docs:metadata": "node scripts/buildSearchMetadata.mjs",
-    "docs:index": "node scripts/buildSearchIndex.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">= 18 <20"
   },
   "dependencies": {
-    "@apidevtools/swagger-parser": "^10.1.0",
     "@dnd-kit/core": "^6.2.0",
     "@dnd-kit/sortable": "^9.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -68,7 +63,6 @@
     "html-entities": "^2.5.2",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.461.0",
-    "lunr": "^2.3.9",
     "markdown-to-jsx": "^7.7.0",
     "next": "^14.2.18",
     "next-nprogress-bar": "^2.3.15",

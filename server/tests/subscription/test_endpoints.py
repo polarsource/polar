@@ -77,7 +77,7 @@ class TestListSubscriptions:
 
 
 @pytest.mark.asyncio
-class TestCustomerSubscriptionPriceUpdate:
+class TestSubscriptionPriceUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -87,6 +87,29 @@ class TestCustomerSubscriptionPriceUpdate:
             json=dict(product_price_id=str(non_existing)),
         )
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_canceled_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        new_price = product_second.prices[0]
+
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(product_price_id=str(new_price.id)),
+        )
+        assert response.status_code == 403
 
     @pytest.mark.auth
     async def test_non_existing_product(

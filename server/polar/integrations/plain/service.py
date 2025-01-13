@@ -207,7 +207,8 @@ class PlainService:
             key=CustomerCardKey.organization,
             timeToLiveSeconds=86400,
             components=[
-                component.model_dump(by_alias=True) for component in components
+                component.model_dump(by_alias=True, exclude_none=True)
+                for component in components
             ],
         )
 

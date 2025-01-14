@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 from polar import receivers, worker  # noqa
-from polar.admin import admin
+from polar.admin import admin_viewset
 from polar.api import router
 from polar.checkout import ip_geolocation
 from polar.config import settings
@@ -163,7 +163,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
 
     # /admin
-    app.mount("/admin", admin)
+    app.mount("/admin", admin_viewset.router)
 
     app.include_router(router)
     document_webhooks(app)

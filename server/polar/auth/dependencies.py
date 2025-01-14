@@ -40,14 +40,23 @@ async def get_user_session(
 
 
 async def _get_auth_subject(
+    customer_session_credentials: tuple[CustomerSession | None, bool] = (None, False),
     user_session: UserSession | None = None,
     oauth2_credentials: tuple[OAuth2Token | None, bool] = (None, False),
     personal_access_token_credentials: tuple[PersonalAccessToken | None, bool] = (
         None,
         False,
     ),
-    customer_session_credentials: tuple[CustomerSession | None, bool] = (None, False),
 ) -> AuthSubject[Subject]:
+    # Customer session is prioritized over web session
+    customer_session, customer_session_authorization_set = customer_session_credentials
+    if customer_session:
+        return AuthSubject(
+            customer_session.customer,
+            {Scope.customer_portal_write},
+            AuthMethod.CUSTOMER_SESSION_TOKEN,
+        )
+
     # Web session
     if user_session is not None:
         user = user_session.user
@@ -64,7 +73,6 @@ async def _get_auth_subject(
     personal_access_token, personal_access_token_authorization_set = (
         personal_access_token_credentials
     )
-    customer_session, customer_session_authorization_set = customer_session_credentials
 
     if oauth2_token:
         return AuthSubject(
@@ -76,13 +84,6 @@ async def _get_auth_subject(
             personal_access_token.user,
             personal_access_token.scopes,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
-        )
-
-    if customer_session:
-        return AuthSubject(
-            customer_session.customer,
-            {Scope.customer_portal_write},
-            AuthMethod.CUSTOMER_SESSION_TOKEN,
         )
 
     if any(

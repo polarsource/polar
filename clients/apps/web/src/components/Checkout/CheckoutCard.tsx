@@ -3,6 +3,7 @@
 import { BenefitList } from '@/components/Products/BenefitList'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
+import useDebouncedCallback from '@/hooks/utils'
 import { hasIntervals } from '@/utils/product'
 import { AttachMoneyOutlined } from '@mui/icons-material'
 import {
@@ -11,13 +12,13 @@ import {
   SubscriptionRecurringInterval,
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
-import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   Form,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
@@ -65,15 +66,50 @@ export const CheckoutCard = ({
   const form = useForm<{ amount: number }>({
     defaultValues: { amount: checkout.amount || 0 },
   })
-  const { control, handleSubmit } = form
-  const [updatingAmount, setUpdatingAmount] = useState(false)
+  const { control, handleSubmit, setValue, trigger } = form
   const onAmountChangeSubmit: SubmitHandler<{ amount: number }> = useCallback(
     async ({ amount }) => {
       onCheckoutUpdate?.({ amount })
-      setUpdatingAmount(false)
     },
     [onCheckoutUpdate],
   )
+
+  const submitAmountUpdate = () => {
+    handleSubmit(onAmountChangeSubmit)()
+  }
+
+  const debouncedAmountUpdate = useDebouncedCallback(
+    async () => {
+      const isValid = await trigger('amount')
+      if (isValid) {
+        submitAmountUpdate()
+      }
+    },
+    600,
+    [onAmountChangeSubmit, submitAmountUpdate, trigger],
+  )
+
+  const onAmountChange = (amount: number) => {
+    setValue('amount', amount)
+    debouncedAmountUpdate()
+  }
+
+  let customAmountMinLabel = null
+  let customAmountMaxLabel = null
+  if (productPrice.amount_type === 'custom') {
+    customAmountMinLabel = formatCurrencyAndAmount(
+      productPrice.minimum_amount || 50,
+      checkout.currency || 'usd',
+    )
+
+    if (productPrice.maximum_amount) {
+      customAmountMaxLabel = formatCurrencyAndAmount(
+        productPrice.maximum_amount,
+        checkout.currency || 'usd',
+      )
+    }
+  }
+
   return (
     <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
       <h2 className="text-lg font-medium">{product.name}</h2>
@@ -100,58 +136,53 @@ export const CheckoutCard = ({
               ) : (
                 <Form {...form}>
                   <form
-                    className="flex w-full flex-row items-center gap-2"
-                    onSubmit={handleSubmit(onAmountChangeSubmit)}
+                    className="flex w-full flex-col gap-3"
+                    onSubmit={submitAmountUpdate}
                   >
-                    <FormField
-                      control={control}
-                      disabled={!updatingAmount}
-                      name="amount"
-                      rules={{
-                        min: {
-                          value: productPrice.minimum_amount || 50,
-                          message: `Price must be greater than ${(productPrice.minimum_amount || 50) / 100}`,
-                        },
-                        ...(productPrice.maximum_amount
-                          ? {
-                              max: {
-                                value: productPrice.maximum_amount,
-                                message: `Price must be less than ${productPrice.maximum_amount / 100}`,
-                              },
-                            }
-                          : {}),
-                      }}
-                      render={({ field }) => {
-                        return (
-                          <FormItem className="w-full">
-                            <MoneyInput
-                              className="text-md dark:border-polar-600"
-                              name={field.name}
-                              value={field.value || undefined}
-                              onChange={field.onChange}
-                              placeholder={0}
-                              disabled={field.disabled}
-                              preSlot={<AttachMoneyOutlined fontSize="small" />}
-                            />
-                            <FormMessage />
-                          </FormItem>
-                        )
-                      }}
-                    />
-                    {!updatingAmount && (
-                      <Button
-                        type="button"
-                        size="lg"
-                        onClick={() => setUpdatingAmount(true)}
-                      >
-                        Change
-                      </Button>
-                    )}
-                    {updatingAmount && (
-                      <Button type="submit" size="lg">
-                        Submit
-                      </Button>
-                    )}
+                    <FormLabel>
+                      Name a fair price{' '}
+                      <span className="text-gray-400">
+                        ({customAmountMinLabel} minimum)
+                      </span>
+                    </FormLabel>
+                    <div className="flex flex-row items-center gap-2">
+                      <FormField
+                        control={control}
+                        name="amount"
+                        rules={{
+                          min: {
+                            value: productPrice.minimum_amount || 50,
+                            message: `Price must be greater than ${customAmountMinLabel}`,
+                          },
+                          ...(productPrice.maximum_amount
+                            ? {
+                                max: {
+                                  value: productPrice.maximum_amount,
+                                  message: `Price must be less than ${customAmountMaxLabel}`,
+                                },
+                              }
+                            : {}),
+                        }}
+                        render={({ field }) => {
+                          return (
+                            <FormItem className="w-full">
+                              <MoneyInput
+                                className="text-md dark:border-polar-600"
+                                name={field.name}
+                                value={field.value || undefined}
+                                onChange={onAmountChange}
+                                placeholder={0}
+                                disabled={field.disabled}
+                                preSlot={
+                                  <AttachMoneyOutlined fontSize="small" />
+                                }
+                              />
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    </div>
                   </form>
                 </Form>
               )}

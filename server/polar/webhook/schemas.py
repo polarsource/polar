@@ -128,3 +128,6 @@ class WebhookDelivery(TimestampedSchema):
     webhook_event: WebhookEvent = Field(
         description="The webhook event sent by this delivery."
     )
+    webhook_endpoint: WebhookEndpoint = Field(
+        description="The webhook endpoint called by this delivery."
+    )

@@ -195,7 +195,10 @@ class WebhookService:
                     readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
                 ),
             )
-            .options(joinedload(WebhookDelivery.webhook_event))
+            .options(
+                contains_eager(WebhookDelivery.webhook_endpoint),
+                joinedload(WebhookDelivery.webhook_event),
+            )
             .order_by(desc(WebhookDelivery.created_at))
         )
 

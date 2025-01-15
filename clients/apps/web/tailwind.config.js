@@ -71,7 +71,7 @@ module.exports = {
         sans: ['var(--font-geist)', ...defaultTheme.fontFamily.sans],
       },
       fontSize: {
-        xxs: '0.65rem'
+        xxs: '0.65rem',
       },
       colors: {
         blue: {
@@ -125,7 +125,7 @@ module.exports = {
           700: 'hsl(233, 10%, 20%)',
           800: 'hsl(233, 10%, 10%)',
           900: 'hsl(233, 10%, 5%)',
-          950: 'hsl(233, 10%, 0%)'
+          950: 'hsl(233, 10%, 0%)',
         },
         polar: {
           50: 'hsl(233, 8%, 85%)',
@@ -136,9 +136,9 @@ module.exports = {
           500: 'hsl(233, 8%, 46%)',
           600: 'hsl(233, 8%, 24%)',
           700: 'hsl(233, 8%, 14%)',
-          800: 'hsl(233, 8%, 11%)',
+          800: 'hsl(233, 8%, 10.5%)',
           900: 'hsl(233, 8%, 8%)',
-          950: 'hsl(233, 8%, 4%)'
+          950: 'hsl(233, 8%, 5%)',
         },
 
         // chadcn/ui start
@@ -183,7 +183,7 @@ module.exports = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
-        '4xl': '2rem'
+        '4xl': '2rem',
       },
       keyframes: {
         'accordion-down': {

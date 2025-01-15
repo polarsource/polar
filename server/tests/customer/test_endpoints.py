@@ -8,6 +8,59 @@ from tests.fixtures.random_objects import create_customer
 
 
 @pytest.mark.asyncio
+class TestListCustomers:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/customers/")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get("/v1/customers/")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_metadata_filter(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            user_metadata={"user_id": "ABC"},
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            user_metadata={"user_id": "DEF"},
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer3@example.com",
+            user_metadata={"user_id": "GHI"},
+        )
+
+        response = await client.get(
+            "/v1/customers/", params={"metadata[user_id]": ["ABC", "DEF"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+
+@pytest.mark.asyncio
 class TestUpdateCustomer:
     async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
         response = await client.patch(

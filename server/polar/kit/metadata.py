@@ -1,6 +1,8 @@
 import inspect
+import re
 from typing import Annotated, Any
 
+from fastapi import Depends, Request
 from pydantic import AliasChoices, BaseModel, Field, StringConstraints
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -72,3 +74,56 @@ class MetadataOutputMixin(BaseModel):
     metadata: dict[str, str | int | bool] = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")
     )
+
+
+def get_metadata_query_openapi_schema() -> dict[str, Any]:
+    return {
+        "name": "metadata",
+        "in": "query",
+        "required": False,
+        "style": "deepObject",
+        "schema": {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": {
+                        "anyOf": [
+                            {"type": "string"},
+                            {"type": "integer"},
+                            {"type": "boolean"},
+                            {"type": "array", "items": {"type": "string"}},
+                            {"type": "array", "items": {"type": "integer"}},
+                            {"type": "array", "items": {"type": "boolean"}},
+                        ]
+                    },
+                },
+                {"type": "null"},
+            ],
+            "title": "Metadata",
+        },
+        "description": (
+            "Filter by metadata key-value pairs. "
+            "It uses the `deepObject` style, e.g. `?metadata[key]=value`."
+        ),
+    }
+
+
+_metadata_pattern = r"metadata\[([^\]]+)\]"
+
+
+def _get_metadata_query(request: Request) -> dict[str, list[str]] | None:
+    query_params = request.query_params
+    metadata: dict[str, list[str]] = {}
+
+    for key, value in query_params.multi_items():
+        if match := re.match(_metadata_pattern, key):
+            metadata_key = match.group(1)
+            try:
+                metadata[metadata_key] = [*metadata[metadata_key], value]
+            except KeyError:
+                metadata[metadata_key] = [value]
+
+    return metadata
+
+
+MetadataQuery = Annotated[dict[str, list[str]], Depends(_get_metadata_query)]

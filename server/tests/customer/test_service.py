@@ -7,14 +7,74 @@ from polar.authz.service import Authz
 from polar.customer.schemas import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.pagination import PaginationParams
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer
 
 
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+@pytest.mark.asyncio
+class TestList:
+    @pytest.mark.auth
+    async def test_not_accessible_organization(
+        self, session: AsyncSession, auth_subject: AuthSubject[User], customer: Customer
+    ) -> None:
+        customers, total = await customer_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+        assert len(customers) == 0
+        assert total == 0
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_metadata_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            user_metadata={"user_id": "ABC"},
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            user_metadata={"user_id": "DEF"},
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer3@example.com",
+            user_metadata={"user_id": "GHI"},
+        )
+
+        customers, total = await customer_service.list(
+            session,
+            auth_subject,
+            metadata={"user_id": ["ABC", "DEF"]},
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(customers) == 2
+        assert total == 2
+
+        assert customer1 in customers
+        assert customer2 in customers
 
 
 @pytest.mark.asyncio

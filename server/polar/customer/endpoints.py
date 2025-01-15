@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Customer
@@ -31,14 +32,21 @@ CustomerNotFound = {
 }
 
 
-@router.get("/", summary="List Customers", response_model=ListResource[CustomerSchema])
+@router.get(
+    "/",
+    summary="List Customers",
+    response_model=ListResource[CustomerSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
 async def list(
     auth_subject: auth.CustomerRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
+    metadata: MetadataQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
+    email: str | None = Query(None, description="Filter by exact email."),
     query: str | None = Query(None, description="Filter by name or email."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerSchema]:
@@ -47,6 +55,8 @@ async def list(
         session,
         auth_subject,
         organization_id=organization_id,
+        email=email,
+        metadata=metadata,
         query=query,
         pagination=pagination,
         sorting=sorting,

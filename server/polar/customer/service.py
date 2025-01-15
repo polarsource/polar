@@ -9,6 +9,7 @@ from stripe import Customer as StripeCustomer
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -27,6 +28,8 @@ class CustomerService(ResourceServiceReader[Customer]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        email: str | None = None,
+        metadata: MetadataQuery | None = None,
         query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerSortProperty]] = [
@@ -37,6 +40,16 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
+
+        if email is not None:
+            statement = statement.where(func.lower(Customer.email) == email.lower())
+
+        if metadata is not None:
+            for key, values in metadata.items():
+                clauses = []
+                for value in values:
+                    clauses.append(Customer.user_metadata[key].astext == value)
+                statement = statement.where(or_(*clauses))
 
         if query is not None:
             statement = statement.where(

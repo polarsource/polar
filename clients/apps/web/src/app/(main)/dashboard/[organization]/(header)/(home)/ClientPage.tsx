@@ -1,10 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { ProductCard } from '@/components/Products/ProductCard'
-import { ProductWizard } from '@/components/Products/ProductWizard/ProductWizard'
 import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
-import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -17,7 +14,7 @@ import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronRight } from '@mui/icons-material'
-import { Organization, Product } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -27,7 +24,7 @@ import {
   SelectTrigger,
 } from 'polarkit/components/ui/atoms/select'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import React, { useContext, useEffect, useMemo } from 'react'
+import React, { useContext } from 'react'
 
 interface OverviewPageProps {
   organization: Organization
@@ -35,69 +32,30 @@ interface OverviewPageProps {
   endDate: Date
 }
 
-const OverviewPage: React.FC<OverviewPageProps> = ({ organization }) => {
-  const [createdProduct, setCreatedProduct] = React.useState<
-    Product | undefined
-  >()
-
-  const { onboarding } = useContext(MaintainerOrganizationContext)
-
-  if (onboarding.loading && !createdProduct) {
-    return <DashboardBody header={false} />
-  }
+export default function OverviewPage({ organization }: OverviewPageProps) {
+  const { data: products } = useProducts(organization.id)
 
   return (
-    <DashboardBody
-      header={onboarding.completed && !createdProduct}
-      className="gap-y-16 pb-16"
-    >
-      <OnboardingView
-        organization={organization}
-        createdProduct={createdProduct}
-        onSuccess={setCreatedProduct}
-      />
+    <DashboardBody className="gap-y-16 pb-16">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10">
+        <ActivityWidget className="col-span-2" />
+        <OrdersWidget />
+        <RevenueWidget />
+        <SubscribersWidget />
+        <AccountWidget />
+      </div>
 
-      {onboarding.completed && !createdProduct && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10">
-          <ActivityWidget className="col-span-2" />
-          <OrdersWidget />
-          <RevenueWidget />
-          <SubscribersWidget />
-          <AccountWidget />
-        </div>
-      )}
-
-      {!organization.profile_settings?.enabled && onboarding.completed && (
-        <IntegrationView />
-      )}
+      {!organization.profile_settings?.enabled &&
+        (products?.items.length ?? 0) > 0 && <IntegrationView />}
     </DashboardBody>
   )
 }
 
 const IntegrationView = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
-  const [selectedPriceId, setSelectedPriceId] = React.useState<string>()
+  const [selectedProduct, setSelectedProduct] = React.useState<string>()
 
   const { data: products } = useProducts(organization.id)
-
-  const productPrices = useMemo(() => {
-    return new Map(
-      products?.items.flatMap((product) =>
-        product.prices.map((price) => [
-          price.id,
-          price.type === 'recurring'
-            ? `${product.name} (${price.recurring_interval}ly)`
-            : product.name,
-        ]),
-      ),
-    )
-  }, [products])
-
-  useEffect(() => {
-    if (products?.items.length && !selectedPriceId) {
-      setSelectedPriceId(products.items[0].prices[0].id)
-    }
-  }, [products])
 
   return (
     <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-16 p-12">
@@ -110,7 +68,7 @@ const IntegrationView = () => {
 
       <div className="flex flex-col gap-y-6">
         <h4 className="text-xl font-medium">Install the SDK</h4>
-        <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-3xl border border-transparent bg-white px-8 py-6 text-sm shadow-sm">
+        <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-xl border border-transparent bg-white px-5 py-3 text-sm shadow-sm">
           pnpm install @polar-sh/sdk
         </pre>
       </div>
@@ -134,21 +92,23 @@ const IntegrationView = () => {
           </p>
         </div>
         <div className="flex flex-col gap-y-2">
-          <span className="text-sm font-medium">Product Price</span>
-          <Select onValueChange={setSelectedPriceId}>
+          <span className="text-sm font-medium">Product</span>
+          <Select onValueChange={setSelectedProduct}>
             <SelectTrigger className="w-full max-w-96 capitalize">
-              {selectedPriceId
-                ? productPrices.get(selectedPriceId)
-                : 'Select Product Price'}
+              {selectedProduct
+                ? products?.items.find(
+                    (product) => product.id === selectedProduct,
+                  )?.name
+                : 'Select Product'}
             </SelectTrigger>
             <SelectContent>
-              {[...productPrices].map(([id, name]) => (
+              {products?.items.map((product) => (
                 <SelectItem
-                  key={id}
+                  key={product.id}
                   className="flex flex-row items-center gap-x-4"
-                  value={id}
+                  value={product.id}
                 >
-                  <span className="capitalize">{name}</span>
+                  <span className="capitalize">{product.name}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -167,7 +127,7 @@ const polar = new Polar({
 });
 
 const checkout = await polar.checkouts.custom.create({
-  productPriceId: "${selectedPriceId ?? '<PRODUCT_PRICE_ID>'}",
+  productId: "${selectedProduct ?? '<PRODUCT_ID>'}",
 });
 
 redirect(checkout.url)
@@ -199,71 +159,3 @@ redirect(checkout.url)
     </ShadowBox>
   )
 }
-
-const OnboardingView = ({
-  organization,
-  createdProduct,
-  onSuccess,
-}: {
-  organization: Organization
-  createdProduct?: Product
-  onSuccess?: (product: Product) => void
-}) => {
-  const { onboarding } = useContext(MaintainerOrganizationContext)
-
-  if (onboarding.completed && !createdProduct) {
-    return null
-  }
-
-  return (
-    <div className="flex flex-col gap-y-16 py-16">
-      <div className="flex flex-col gap-y-4">
-        <h3 className="text-3xl font-medium">Welcome to Polar!</h3>
-        <p className="dark:text-polar-400 text-lg text-gray-500">
-          Let&apos;s get up to speed by setting up your first product
-        </p>
-      </div>
-
-      <div className="flex w-full flex-col gap-y-8">
-        <ProductWizard
-          organization={organization}
-          completed={!!createdProduct}
-          onSuccess={onSuccess}
-        />
-      </div>
-
-      {createdProduct && (
-        <ShadowBox className="flex w-full flex-row items-center gap-x-16 p-12">
-          <div className="flex w-1/2 flex-col gap-y-6">
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-2xl font-medium">
-                Your product was successfully created
-              </h3>
-              <p className="dark:text-polar-400 text-lg text-gray-500">
-                Let&apos;s see how this product looks when customers look at it
-                in Checkout mode
-              </p>
-            </div>
-            <div className="flex flex-row items-center gap-x-4">
-              <Link
-                href={`/dashboard/${organization.slug}/storefront?mode=checkout&productId=${createdProduct.id}`}
-              >
-                <Button>Customize Checkout</Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="flex w-1/2 flex-col gap-y-6">
-            {createdProduct.is_recurring ? (
-              <SubscriptionTierCard subscriptionTier={createdProduct} />
-            ) : (
-              <ProductCard product={createdProduct} />
-            )}
-          </div>
-        </ShadowBox>
-      )}
-    </div>
-  )
-}
-
-export default OverviewPage

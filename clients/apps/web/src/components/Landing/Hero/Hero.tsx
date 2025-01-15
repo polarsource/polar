@@ -66,7 +66,7 @@ export const Hero = () => {
         variants={itemVariants}
       >
         <form
-          className="dark:bg-polar-900 shadow-3xl hidden flex-row items-center gap-x-2 rounded-full bg-gray-50 py-2 pl-6 pr-2 md:flex"
+          className="dark:bg-polar-900 shadow-3xl dark:border-polar-700 hidden flex-row items-center gap-x-2 rounded-full border border-transparent bg-gray-50 py-2 pl-6 pr-2 md:flex"
           role="form"
           onSubmit={(e) => {
             e.preventDefault()

@@ -21,6 +21,7 @@ import { useForm } from 'react-hook-form'
 import { CheckoutInfo } from '../Checkout/CheckoutInfo'
 import { createCheckoutPreview } from '../Customization/utils'
 import { DashboardBody } from '../Layout/DashboardLayout'
+import { getStatusRedirect } from '../Toast/utils'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 import { productCreateToProduct } from './utils'
@@ -102,7 +103,13 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
         clearDraft('ProductCreate')
 
-        router.push(`/dashboard/${organization.slug}/products`)
+        router.push(
+          getStatusRedirect(
+            `/dashboard/${organization.slug}/products`,
+            'Product Created',
+            `Product ${product.name} created successfully`,
+          ),
+        )
       } catch (e) {
         setLoading(false)
         if (e instanceof ResponseError) {

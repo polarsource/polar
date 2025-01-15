@@ -24,6 +24,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import { getStatusRedirect } from '../Toast/utils'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import { ProductCheckoutModal } from './ProductCheckoutModal'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
@@ -98,7 +99,13 @@ export const EditProductPage = ({
           },
         })
 
-        router.push(`/dashboard/${organization.slug}/products`)
+        router.push(
+          getStatusRedirect(
+            `/dashboard/${organization.slug}/products`,
+            'Product Updated',
+            `Product ${product.name} updated successfully`,
+          ),
+        )
       } catch (e) {
         setLoading(false)
         if (e instanceof ResponseError) {
@@ -273,9 +280,11 @@ export const EditProductPage = ({
           >
             Save Product
           </Button>
-          {!product.is_archived && <Button variant="secondary" size="lg" onClick={showArchiveModal}>
-            Archive
-          </Button>}
+          {!product.is_archived && (
+            <Button variant="secondary" size="lg" onClick={showArchiveModal}>
+              Archive
+            </Button>
+          )}
         </div>
       </div>
     </DashboardBody>

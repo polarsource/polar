@@ -100,7 +100,7 @@ const IntegrationView = () => {
   }, [products])
 
   return (
-    <ShadowBox className="flex w-full flex-col gap-y-16 p-12">
+    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-16 p-12">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-3xl font-medium">Integrate Polar using the API</h3>
         <p className="dark:text-polar-400 text-lg text-gray-500">
@@ -110,7 +110,7 @@ const IntegrationView = () => {
 
       <div className="flex flex-col gap-y-6">
         <h4 className="text-xl font-medium">Install the SDK</h4>
-        <pre className="dark:border-polar-700 dark:bg-polar-950 rounded-3xl border border-transparent bg-white px-8 py-6 text-sm shadow-sm">
+        <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-3xl border border-transparent bg-white px-8 py-6 text-sm shadow-sm">
           pnpm install @polar-sh/sdk
         </pre>
       </div>
@@ -156,29 +156,22 @@ const IntegrationView = () => {
         </div>
 
         <div className="flex flex-col">
-          <pre className="dark:border-polar-700 dark:bg-polar-950 rounded-3xl border border-transparent bg-white p-8 text-sm shadow-sm">
+          <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-3xl border border-transparent bg-white p-8 text-sm shadow-sm">
             <SyntaxHighlighterProvider>
               <SyntaxHighlighterClient
                 lang="javascript"
                 code={`import { Polar } from "@polar-sh/sdk";
-import express, { Request, Response } from 'express';
 
-const app = express();
-const port = 3000;
 const polar = new Polar({
-    accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
 });
 
-app.get('/checkout', async (req: Request, res: Response) => {
-    const checkout = await polar.checkouts.custom.create({
-        productPriceId: "${selectedPriceId ?? '<PRODUCT_PRICE_ID>'}",
-    });
-    res.redirect(checkout.url);
+const checkout = await polar.checkouts.custom.create({
+  productPriceId: "${selectedPriceId ?? '<PRODUCT_PRICE_ID>'}",
 });
 
-app.listen(port, () => {
-    console.log(\`Server is running on http://localhost:\${port}\`);
-});`}
+redirect(checkout.url)
+`}
               />
             </SyntaxHighlighterProvider>
           </pre>
@@ -194,7 +187,7 @@ app.listen(port, () => {
             <ChevronRight className="text-sm" fontSize="inherit" />
           </Button>
         </Link>
-        <Link href={`https://docs.polar.sh/api/`} target="_blank">
+        <Link href={`https://docs.polar.sh/api-reference`} target="_blank">
           <Button
             wrapperClassNames="flex flex-row items-center gap-x-2"
             variant="ghost"
@@ -269,62 +262,6 @@ const OnboardingView = ({
           </div>
         </ShadowBox>
       )}
-
-      {/* <ShadowBox className="flex w-full flex-row items-center gap-x-16 p-12">
-        <div className="flex w-1/2 flex-col gap-y-6">
-          <h3 className="text-3xl font-medium">
-            Launch your Storefront on Polar
-          </h3>
-          <p className="dark:text-polar-400 text-lg text-gray-500">
-            Start selling your products on Polar with a hosted storefront
-          </p>
-          <Link href={`/dashboard/${organization.slug}/storefront`}>
-            <Button>Enable Storefront</Button>
-          </Link>
-        </div>
-        <div className="dark:bg-polar-950 rounded-4xl flex w-1/2 flex-col items-center bg-gray-100 p-8">
-          <StorefrontHeader organization={organization} />
-        </div>
-      </ShadowBox>
-      <ShadowBox className="flex w-full flex-row items-center gap-x-16 p-12">
-        <div className="flex flex-col">
-          <pre className="dark:border-polar-700 dark:bg-polar-950 rounded-3xl border border-transparent bg-white p-8 text-sm shadow-sm">
-            <SyntaxHighlighterProvider>
-              <SyntaxHighlighterClient
-                lang="javascript"
-                code={`import { Polar } from "@polar-sh/sdk";
-
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
-});
-
-(async () => {
-  const result = await polar.products.list({
-    organizationId: "${organization.id}",
-  });
-
-  for await (const page of result) {
-    // Handle the page
-    console.log(page);
-  }
-})();`}
-              />
-            </SyntaxHighlighterProvider>
-          </pre>
-        </div>
-        <div className="flex w-1/2 flex-col gap-y-6">
-          <h3 className="text-3xl font-medium">Build with the Polar API</h3>
-          <p className="dark:text-polar-400 text-lg text-gray-500">
-            Build your own solutions using our SDKs & API
-          </p>
-          <Link href={`https://docs.polar.sh/api`} target="_blank">
-            <Button wrapperClassNames="flex flex-row items-center gap-x-2">
-              <span>API Documentation</span>
-              <ChevronRight className="text-sm" fontSize="inherit" />
-            </Button>
-          </Link>
-        </div>
-      </ShadowBox> */}
     </div>
   )
 }

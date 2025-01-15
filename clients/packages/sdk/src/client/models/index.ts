@@ -12160,6 +12160,12 @@ export const ListFundingSortBy = {
 export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundingSortBy];
 
 /**
+ * @type ListMetadataParameterValue
+ * @export
+ */
+export type ListMetadataParameterValue = Array<boolean | null> | Array<number> | Array<string> | boolean | number | string;
+
+/**
  * 
  * @export
  * @interface ListResourceAccount

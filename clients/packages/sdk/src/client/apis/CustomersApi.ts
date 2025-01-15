@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * Polar API
- * Read the docs at https://docs.polar.sh/api
+ * Read the docs at https://docs.polar.sh/api-reference
  *
  * The version of the OpenAPI document: 0.1.0
  * 
@@ -20,6 +20,7 @@ import type {
   CustomerSortProperty,
   CustomerUpdate,
   HTTPValidationError,
+  ListMetadataParameterValue,
   ListResourceCustomer,
   OrganizationIDFilter1,
   ResourceNotFound,
@@ -39,10 +40,12 @@ export interface CustomersApiGetRequest {
 
 export interface CustomersApiListRequest {
     organizationId?: OrganizationIDFilter1 | null;
+    email?: string | null;
     query?: string | null;
     page?: number;
     limit?: number;
     sorting?: Array<CustomerSortProperty> | null;
+    metadata?: { [key: string]: ListMetadataParameterValue; } | null;
 }
 
 export interface CustomersApiUpdateRequest {
@@ -197,6 +200,10 @@ export class CustomersApi extends runtime.BaseAPI {
             queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
+        if (requestParameters['email'] != null) {
+            queryParameters['email'] = requestParameters['email'];
+        }
+
         if (requestParameters['query'] != null) {
             queryParameters['query'] = requestParameters['query'];
         }
@@ -211,6 +218,10 @@ export class CustomersApi extends runtime.BaseAPI {
 
         if (requestParameters['sorting'] != null) {
             queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        if (requestParameters['metadata'] != null) {
+            queryParameters['metadata'] = requestParameters['metadata'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

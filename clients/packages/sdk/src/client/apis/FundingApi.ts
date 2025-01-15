@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * Polar API
- * Read the docs at https://docs.polar.sh/api
+ * Read the docs at https://docs.polar.sh/api-reference
  *
  * The version of the OpenAPI document: 0.1.0
  * 

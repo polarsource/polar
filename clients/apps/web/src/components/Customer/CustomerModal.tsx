@@ -13,6 +13,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
+import { EditCustomerModal } from './EditCustomerModal'
 
 const CustomerStatBox = ({
   title,
@@ -48,6 +49,8 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
 
   const { organization } = useContext(MaintainerOrganizationContext)
 
+  const [editCustomerModalOpen, setEditCustomerModalOpen] = useState(false)
+
   const [customerSessionLoading, setCustomerSessionLoading] = useState(false)
   const [customerSessionError, setCustomerSessionError] = useState<
     string | null
@@ -70,6 +73,15 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
     }
   }, [customer])
 
+  if (editCustomerModalOpen) {
+    return (
+      <EditCustomerModal
+        customer={customer}
+        onClose={() => setEditCustomerModalOpen(false)}
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="text-xl">Customer Details</h2>
@@ -88,21 +100,15 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
       </div>
       <div className="flex flex-row justify-between gap-4">
         <CustomerStatBox title="Name">
-          <span className="flex-wrap text-sm">{customer.name ?? '—'}</span>
+          <span className="flex-wrap text-sm">
+            {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+          </span>
         </CustomerStatBox>
         <CustomerStatBox title="First Seen">
           <FormattedDateTime datetime={customer.created_at} />
         </CustomerStatBox>
       </div>
       <div className="flex flex-col gap-4">
-        <a
-          href={`mailto:${customer.email}`}
-          className="text-blue-500 dark:text-blue-400"
-        >
-          <Button className="w-full" size="lg">
-            Send Email
-          </Button>
-        </a>
         {customerSession ? (
           <CopyToClipboardInput
             value={`${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${customerSession.token}`}
@@ -113,13 +119,31 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
           <Button
             className="w-full"
             size="lg"
-            variant="secondary"
             loading={customerSessionLoading}
             onClick={createCustomerSession}
           >
-            Generate Customer Portal Link
+            Generate Customer Portal
           </Button>
         )}
+        <div className="flex flex-row gap-4">
+          <a
+            href={`mailto:${customer.email}`}
+            className="w-1/2 text-blue-500 dark:text-blue-400"
+          >
+            <Button className="w-full" size="lg" variant="secondary">
+              Send Email
+            </Button>
+          </a>
+          <Button
+            className="w-1/2"
+            size="lg"
+            variant="secondary"
+            onClick={() => setEditCustomerModalOpen(true)}
+          >
+            Edit
+          </Button>
+        </div>
+
         {customerSessionError && (
           <p className="text-destructive-foreground text-sm">
             {customerSessionError}

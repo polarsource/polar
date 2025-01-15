@@ -257,7 +257,7 @@ export const DashboardBody = ({
   )
 
   return (
-    <div className={twMerge('flex h-full w-full flex-row gap-x-2')}>
+    <div className={twMerge('flex h-full w-full flex-row gap-x-3')}>
       <div
         onScroll={handleScroll}
         className={twMerge(

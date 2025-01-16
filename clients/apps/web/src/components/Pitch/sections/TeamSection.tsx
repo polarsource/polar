@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { Link } from '../Link'
+import { Section } from '../Section'
 
 const team = [
   {
@@ -21,30 +22,32 @@ const team = [
 
 export const TeamSection = () => {
   return (
-    <div className="flex flex-col gap-y-16 md:flex-row md:gap-x-32">
-      <div className="flex max-w-lg flex-col gap-y-8">
-        <h1 className="text-lg">05. Team</h1>
-        <h1 className="text-4xl">We are hiring</h1>
-        <p>
-          What used to be a simple way to pay for things has become a complex
-          mess.
-        </p>
-        <p>
-          Software as a Service (SaaS) has become the norm, but the underlying
-          payment infrastructure has not evolved.
-        </p>
-        <p>
-          This is why we are building Polar 2.0, payment infrastructure for the
-          21st century.
-        </p>
-        <Link href="/pitch/what">Join Us →</Link>
-      </div>
-      <div className="flex flex-row gap-x-4">
+    <Section header={{ index: '05', name: 'Team' }} title="We are hiring">
+      <p>
+        Are you passionate about building the future of payment infrastructure?
+        Get in touch.
+      </p>
+      <ul className="border-polar-200 flex flex-col gap-y-4 border-l pl-4">
+        <li>
+          You are passionate about building great user experiences and products.
+        </li>
+        <li>
+          You&apos;re humble and eager to constantly learn and improve based on
+          feedback from customers and peers or new insights, technical trends
+          and tools.
+        </li>
+        <li>
+          You&apos;re autonomous and don&apos;t hesitate to roll up your sleeves
+          to get stuff done vs. waiting on instructions, guidance or permission.
+        </li>
+      </ul>
+      <Link href="/pitch/what">Join Us →</Link>
+      <div className="flex flex-col gap-y-12 md:flex-row md:gap-x-4">
         {team.map((profile) => (
           <Profile key={profile.name} {...profile} />
         ))}
       </div>
-    </div>
+    </Section>
   )
 }
 
@@ -56,8 +59,14 @@ interface ProfileProps {
 
 const Profile = ({ name, title, image }: ProfileProps) => {
   return (
-    <div className="flex h-fit w-[200px] flex-col gap-y-4">
-      <Image src={image} alt={name} width={200} height={200} />
+    <div className="relative flex h-fit w-full flex-col gap-y-4 md:w-[200px]">
+      <Image
+        className="w-full"
+        src={image}
+        alt={name}
+        width={200}
+        height={200}
+      />
       <div className="flex flex-col gap-y-1">
         <h1 className="text-xs">{name}</h1>
         <h1 className="text-polar-500 text-xs">{title}</h1>

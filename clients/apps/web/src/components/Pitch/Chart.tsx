@@ -5,72 +5,6 @@ import * as d3 from 'd3'
 import { GeistMono } from 'geist/font/mono'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-const primaryColor = 'rgb(0 98 255)'
-const primaryColorFaded = 'rgba(0, 98, 255, 0.3)'
-const gradientId = 'chart-gradient'
-const createAreaGradient = (id: string) => {
-  // Create a <defs> element
-  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-
-  // Create a <linearGradient> element
-  const linearGradient = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'linearGradient',
-  )
-  linearGradient.setAttribute('id', id)
-  linearGradient.setAttribute('gradientTransform', 'rotate(90)')
-
-  // Create the first <stop> element
-  const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
-  stop1.setAttribute('offset', '0%')
-  stop1.setAttribute('stop-color', primaryColorFaded)
-  stop1.setAttribute('stop-opacity', '0.5')
-
-  // Create the second <stop> element
-  const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
-  stop2.setAttribute('offset', '100%')
-  stop2.setAttribute('stop-color', primaryColorFaded)
-  stop2.setAttribute('stop-opacity', '0')
-
-  // Append the <stop> elements to the <linearGradient> element
-  linearGradient.appendChild(stop1)
-  linearGradient.appendChild(stop2)
-
-  // Append the <linearGradient> element to the <defs> element
-  defs.appendChild(linearGradient)
-
-  return defs
-}
-
-class Callback extends Plot.Dot {
-  private callbackFunction: (index: number | undefined) => void
-
-  public constructor(
-    data: Plot.Data,
-    options: Plot.DotOptions,
-    callbackFunction: (data: any) => void,
-  ) {
-    // @ts-ignore
-    super(data, options)
-    this.callbackFunction = callbackFunction
-  }
-
-  // @ts-ignore
-  public render(
-    index: number[],
-    _scales: Plot.ScaleFunctions,
-    _values: Plot.ChannelValues,
-    _dimensions: Plot.Dimensions,
-    _context: Plot.Context,
-    _next?: Plot.RenderFunction,
-  ): SVGElement | null {
-    if (index.length) {
-      this.callbackFunction(index[0])
-    }
-    return null
-  }
-}
-
 const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
   const step = Math.ceil(timestamps.length / maxTicks)
   return timestamps.filter((_, index) => index % step === 0)
@@ -172,7 +106,6 @@ export const Chart: React.FC<ChartProps> = ({
       width,
       height,
       marks: [
-        () => createAreaGradient(gradientId),
         Plot.axisX({
           tickFormat: getTickFormat(interval, ticks),
           ticks,
@@ -191,6 +124,7 @@ export const Chart: React.FC<ChartProps> = ({
           y: metric.slug,
           stroke: 'currentColor',
           strokeWidth: 1,
+          marker: 'circle-fill',
         }),
         Plot.ruleX(data, {
           x: 'timestamp',

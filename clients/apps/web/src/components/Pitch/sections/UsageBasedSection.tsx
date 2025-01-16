@@ -1,53 +1,53 @@
 import { MetricType } from '@polar-sh/sdk'
 import { Chart } from '../Chart'
 import { Link } from '../Link'
+import { Section } from '../Section'
 
 export const UsageBasedSection = () => {
   return (
-    <div className="flex flex-col gap-y-16 md:flex-row md:gap-x-32">
-      <div className="flex max-w-lg flex-col gap-y-8">
-        <h1 className="text-lg">01. Usage Based</h1>
-        <h1 className="text-4xl">The future of payments is usage based</h1>
-        <p>
-          What used to be a simple way to pay for things has become a complex
-          mess.
-        </p>
-        <p>
-          Software as a Service (SaaS) has become the norm, but the underlying
-          payment infrastructure has not evolved.
-        </p>
-        <p>
-          This is why we are building Polar 2.0, payment infrastructure for the
-          21st century.
-        </p>
-        <Link href="/pitch/what">Why →</Link>
-      </div>
-      <Chart
-        data={[
-          ...(() => {
-            const getLastMonthValues = () => {
-              const values = []
-              for (let i = 31; i >= 0; i--) {
-                values.push({
-                  timestamp: new Date(
-                    new Date().setDate(new Date().getDate() - i),
-                  ),
-                  value: Math.floor(Math.random() * 500),
-                })
+    <Section
+      header={{ index: '01', name: 'Usage Based Future' }}
+      title="The future of payments is usage based"
+      context={
+        <Chart
+          data={[
+            ...(() => {
+              const getLastMonthValues = () => {
+                const values = []
+                for (let i = 0; i <= 31; i++) {
+                  values.push({
+                    timestamp: new Date(
+                      new Date().setDate(new Date().getDate() + i),
+                    ),
+                    value: Math.floor(Math.exp(i / 5)), // Exponential growth
+                  })
+                }
+                return values
               }
-              return values
-            }
 
-            return getLastMonthValues()
-          })(),
-        ]}
-        interval="day"
-        metric={{
-          slug: 'value',
-          display_name: 'Value',
-          type: MetricType.SCALAR,
-        }}
-      />
-    </div>
+              return getLastMonthValues()
+            })(),
+          ]}
+          interval="day"
+          metric={{
+            slug: 'value',
+            display_name: 'Value',
+            type: MetricType.SCALAR,
+          }}
+        />
+      }
+    >
+      <p>
+        In a world where Artificial Intelligence is becoming more and more
+        prevalent, the intelligence we consume will be charged based on usage.
+        It's time for payment infrastructure, built for the 21st century.
+      </p>
+      <p>
+        We believe that the future of payments is usage based, and we are
+        committed to build the gold standard for adapters that sits in between
+        artificial intelligence and the world.
+      </p>
+      <Link href="/pitch/what">Why →</Link>
+    </Section>
   )
 }

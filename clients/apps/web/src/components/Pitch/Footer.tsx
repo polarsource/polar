@@ -6,7 +6,7 @@ import { sections } from './Navigation'
 export const Footer = ({ className }: { className?: string }) => {
   return (
     <div
-      className={twMerge('hidden flex-row gap-x-8 text-xs md:flex', className)}
+      className={twMerge('hidden flex-row gap-x-12 text-xs md:flex', className)}
     >
       <NavigationLegend />
       <SectionsLegend />
@@ -71,7 +71,7 @@ const OpenSourceLegend = () => {
 const ContactUsLegend = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'm') {
+      if (event.key === 'c') {
         window.open('mailto:birk@polar.sh', '_blank')
       }
     }
@@ -86,7 +86,7 @@ const ContactUsLegend = () => {
   return (
     <div className="flex flex-col gap-y-2">
       <div className="flex flex-row gap-x-2">
-        <Button variant="icon">M</Button>
+        <Button variant="icon">C</Button>
       </div>
       <span>Contact Us</span>
     </div>

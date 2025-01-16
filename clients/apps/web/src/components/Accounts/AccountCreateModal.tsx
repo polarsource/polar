@@ -1,6 +1,7 @@
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { getValidationErrorsMap } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import {
   Account,
   AccountType,
@@ -18,6 +19,8 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import { ChangeEvent, useState } from 'react'
+
+const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 
 const AccountCreateModal = ({
   forOrganizationId,
@@ -178,7 +181,11 @@ const AccountCreateModal = ({
             )}
 
             <div>
-              <CountryPicker onChange={onChangeCountry} value={country} stripeConnectOnly={true} />
+              <CountryPicker
+                onChange={onChangeCountry}
+                value={country}
+                allowedCountries={stripeConnectWhitelist}
+              />
               <p className="dark:text-polar-500 mt-2 text-justify text-xs text-gray-500">
                 If this is a personal account, please select your country of
                 residence. If this is an organization or business, select the

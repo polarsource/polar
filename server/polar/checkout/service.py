@@ -368,6 +368,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
 
         checkout = Checkout(
+            payment_processor=PaymentProcessor.stripe,
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
@@ -407,6 +408,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         checkout_attribute,
                         getattr(checkout.customer, attribute),
                     )
+
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            checkout.payment_processor_metadata = {
+                **(checkout.payment_processor_metadata or {}),
+                "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+            }
 
         session.add(checkout)
 
@@ -535,6 +542,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             checkout.customer_email = checkout_create.customer_email
 
         if checkout.payment_processor == PaymentProcessor.stripe:
+            checkout.payment_processor_metadata = {
+                **(checkout.payment_processor_metadata or {}),
+                "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+            }
             if checkout.customer and checkout.customer.stripe_customer_id is not None:
                 stripe_customer_session = await stripe_service.create_customer_session(
                     checkout.customer.stripe_customer_id
@@ -646,6 +657,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             success_url=checkout_link.success_url,
             user_metadata=checkout_link.user_metadata,
         )
+
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            checkout.payment_processor_metadata = {
+                **(checkout.payment_processor_metadata or {}),
+                "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+            }
+
         session.add(checkout)
 
         checkout = await self._update_checkout_ip_geolocation(
@@ -797,7 +815,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             checkout.customer = customer
             stripe_customer_id = customer.stripe_customer_id
             assert stripe_customer_id is not None
-            checkout.payment_processor_metadata = {"customer_id": stripe_customer_id}
+            checkout.payment_processor_metadata = {
+                **checkout.payment_processor_metadata,
+                "customer_id": stripe_customer_id,
+            }
 
             if checkout.is_payment_required or checkout.is_payment_setup_required:
                 assert checkout_confirm.confirmation_token_id is not None

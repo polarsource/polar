@@ -76,6 +76,29 @@ class MetadataOutputMixin(BaseModel):
     )
 
 
+def add_metadata_query_schema(openapi_schema: dict[str, Any]) -> dict[str, Any]:
+    openapi_schema["components"]["schemas"]["MetadataQuery"] = {
+        "anyOf": [
+            {
+                "type": "object",
+                "additionalProperties": {
+                    "anyOf": [
+                        {"type": "string"},
+                        {"type": "integer"},
+                        {"type": "boolean"},
+                        {"type": "array", "items": {"type": "string"}},
+                        {"type": "array", "items": {"type": "integer"}},
+                        {"type": "array", "items": {"type": "boolean"}},
+                    ]
+                },
+            },
+            {"type": "null"},
+        ],
+        "title": "MetadataQuery",
+    }
+    return openapi_schema
+
+
 def get_metadata_query_openapi_schema() -> dict[str, Any]:
     return {
         "name": "metadata",
@@ -83,23 +106,7 @@ def get_metadata_query_openapi_schema() -> dict[str, Any]:
         "required": False,
         "style": "deepObject",
         "schema": {
-            "anyOf": [
-                {
-                    "type": "object",
-                    "additionalProperties": {
-                        "anyOf": [
-                            {"type": "string"},
-                            {"type": "integer"},
-                            {"type": "boolean"},
-                            {"type": "array", "items": {"type": "string"}},
-                            {"type": "array", "items": {"type": "integer"}},
-                            {"type": "array", "items": {"type": "boolean"}},
-                        ]
-                    },
-                },
-                {"type": "null"},
-            ],
-            "title": "Metadata",
+            "$ref": "#/components/schemas/MetadataQuery",
         },
         "description": (
             "Filter by metadata key-value pairs. "

@@ -7,7 +7,7 @@ import {
   MoreVertOutlined,
   RemoveOutlined,
 } from '@mui/icons-material'
-import { type Benefit, BenefitType, Organization } from '@polar-sh/sdk'
+import { type Benefit, BenefitType, Organization } from '@polar-sh/api'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'

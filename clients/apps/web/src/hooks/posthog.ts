@@ -1,7 +1,7 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
-import { UserRead } from '@polar-sh/sdk'
+import { UserRead } from '@polar-sh/api'
 import { PostHog, Properties } from 'posthog-js'
 import { usePostHog as useOfficialPostHog } from 'posthog-js/react'
 

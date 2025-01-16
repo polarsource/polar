@@ -4,7 +4,7 @@ import {
   DiscountCreate,
   DiscountsApiListRequest,
   DiscountUpdate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

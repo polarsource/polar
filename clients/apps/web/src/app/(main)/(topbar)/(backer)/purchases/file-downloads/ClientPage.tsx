@@ -11,7 +11,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { FileDownloadOutlined } from '@mui/icons-material'
-import { DownloadableRead } from '@polar-sh/sdk'
+import { DownloadableRead } from '@polar-sh/api'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'

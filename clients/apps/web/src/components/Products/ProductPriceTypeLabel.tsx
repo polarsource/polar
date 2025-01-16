@@ -1,4 +1,4 @@
-import { ProductPriceType } from '@polar-sh/sdk'
+import { ProductPriceType } from '@polar-sh/api'
 import React from 'react'
 
 interface ProductPriceTypeLabelProps {

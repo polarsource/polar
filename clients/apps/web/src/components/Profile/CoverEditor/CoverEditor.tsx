@@ -4,7 +4,7 @@ import {
   EditOutlined,
   PanoramaOutlined,
 } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
 import Button from 'polarkit/components/ui/atoms/button'

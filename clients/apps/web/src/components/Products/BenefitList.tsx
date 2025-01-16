@@ -3,7 +3,7 @@ import {
   KeyboardArrowRight,
   KeyboardArrowUp,
 } from '@mui/icons-material'
-import { BenefitBase } from '@polar-sh/sdk'
+import { BenefitBase } from '@polar-sh/api'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 

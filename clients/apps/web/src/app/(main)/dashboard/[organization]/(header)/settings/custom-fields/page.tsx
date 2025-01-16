@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { CustomFieldType } from '@polar-sh/sdk'
+import { CustomFieldType } from '@polar-sh/api'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 

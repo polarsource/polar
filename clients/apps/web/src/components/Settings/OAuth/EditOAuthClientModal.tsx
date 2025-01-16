@@ -10,7 +10,7 @@ import {
   OAuth2Client,
   OAuth2ClientConfigurationUpdate,
   ResponseError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'

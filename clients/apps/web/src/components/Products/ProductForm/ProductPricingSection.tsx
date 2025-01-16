@@ -6,7 +6,7 @@ import {
   ProductPrice,
   ProductPriceType,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import {

@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { isCrawler } from '@/utils/crawlers'
-import { ResponseError } from '@polar-sh/sdk'
+import { ResponseError } from '@polar-sh/api'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'

@@ -3,7 +3,7 @@ import {
   ACCOUNT_TYPE_DISPLAY_NAMES,
 } from '@/utils/account'
 import { api } from '@/utils/api'
-import { Account, Status } from '@polar-sh/sdk'
+import { Account, Status } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import AccountAssociations from './AccountAssociations'

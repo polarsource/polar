@@ -1,5 +1,5 @@
 import { CommandLineIcon, HeartIcon } from '@heroicons/react/24/solid'
-import { Issue, Organization } from '@polar-sh/sdk'
+import { Issue, Organization } from '@polar-sh/api'
 import {
   Tabs,
   TabsContent,

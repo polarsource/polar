@@ -1,5 +1,5 @@
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
-import { Issue } from '@polar-sh/sdk'
+import { Issue } from '@polar-sh/api'
 import CircledNumber from './CircledNumber'
 
 const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {

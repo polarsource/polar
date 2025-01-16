@@ -2,7 +2,7 @@
 
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { organizationPageLink } from '@/utils/nav'
-import { ListResourceIssueFunding, Organization } from '@polar-sh/sdk'
+import { ListResourceIssueFunding, Organization } from '@polar-sh/api'
 import { redirect } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 

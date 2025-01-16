@@ -12,7 +12,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { Key } from '@mui/icons-material'
-import { BenefitType, CustomerBenefitGrantLicenseKeys } from '@polar-sh/sdk'
+import { BenefitType, CustomerBenefitGrantLicenseKeys } from '@polar-sh/api'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'

@@ -22,7 +22,7 @@ import {
   Product,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { Pill, Switch } from 'polarkit/components/ui/atoms'
 import {
   Accordion,

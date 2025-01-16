@@ -1,5 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import {
   getRecurringBillingLabel,

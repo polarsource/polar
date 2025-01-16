@@ -5,7 +5,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { DownloadOutlined } from '@mui/icons-material'
-import { Transaction, TransactionEmbedded } from '@polar-sh/sdk'
+import { Transaction, TransactionEmbedded } from '@polar-sh/api'
 import Link from 'next/link'
 import {
   DataTableColumnDef,

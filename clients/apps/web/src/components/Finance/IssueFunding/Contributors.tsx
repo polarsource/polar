@@ -2,7 +2,7 @@
 
 import Finance from '@/components/Finance/Finance'
 import { useListPledgesForOrganization, useListRewards } from '@/hooks/queries'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 
 export default function ClientPage({
   organization,

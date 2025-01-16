@@ -18,7 +18,7 @@ import {
 
 import ImageUpload from '@/components/Form/ImageUpload'
 import { AddOutlined, ClearOutlined } from '@mui/icons-material'
-import { Scope } from '@polar-sh/sdk'
+import { Scope } from '@polar-sh/api'
 import Link from 'next/link'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useFieldArray, useFormContext } from 'react-hook-form'

@@ -5,7 +5,7 @@ import {
   Product,
   ProductPriceType,
   ProductsApiListRequest,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Command,

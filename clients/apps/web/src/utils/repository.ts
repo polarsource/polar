@@ -4,7 +4,7 @@ import {
   PolarAPI,
   RepositoriesApiListRequest,
   Repository,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { getStorefront } from './storefront'
 
 const getRepositoryBy = async (

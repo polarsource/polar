@@ -4,7 +4,7 @@ import {
   ProductPrice,
   ProductPriceType,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPrices {

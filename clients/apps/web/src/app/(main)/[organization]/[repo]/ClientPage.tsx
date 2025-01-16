@@ -19,7 +19,7 @@ import {
   Organization,
   Repository,
   RepositoryProfileSettingsUpdate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Link from 'next/link'
 import type { SuccessResult } from 'open-graph-scraper-lite'
 import Avatar from 'polarkit/components/ui/atoms/avatar'

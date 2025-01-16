@@ -1,6 +1,6 @@
 import OpenCollective from '@/components/Icons/OpenCollective'
 import Stripe from '@/components/Icons/Stripe'
-import { AccountType, Status } from '@polar-sh/sdk'
+import { AccountType, Status } from '@polar-sh/api'
 
 export const ALL_ACCOUNT_TYPES: AccountType[] = Object.values(AccountType)
 

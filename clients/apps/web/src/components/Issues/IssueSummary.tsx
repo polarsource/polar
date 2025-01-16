@@ -3,7 +3,7 @@
 import { CONFIG } from '@/utils/config'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
-import { Issue, Label, State } from '@polar-sh/sdk'
+import { Issue, Label, State } from '@polar-sh/api'
 import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'

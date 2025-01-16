@@ -1,5 +1,5 @@
 {
-  "name": "@polar-sh/sdk",
+  "name": "@polar-sh/api",
   "version": "0.5.2",
   "type": "module",
   "main": "./dist/index.js",

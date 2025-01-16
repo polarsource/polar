@@ -1,4 +1,4 @@
-import { ResponseError, UserRead } from '@polar-sh/sdk'
+import { ResponseError, UserRead } from '@polar-sh/api'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { buildServerSideAPI } from './utils/api'

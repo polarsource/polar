@@ -1,8 +1,8 @@
 'use client'
 
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { CheckoutPublic } from '@polar-sh/api'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import { CheckoutPublic } from '@polar-sh/sdk'
 import { useCallback, useEffect } from 'react'
 
 interface CheckoutEmbedCloseProps {

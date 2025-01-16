@@ -2,7 +2,7 @@ import { FileObject } from '@/components/FileUpload'
 import { useDraggable } from '@/hooks/draggable'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { ProductMediaFileRead } from '@polar-sh/sdk'
+import { ProductMediaFileRead } from '@polar-sh/api'
 import { DraggableFileListItem, FileListItem } from './FileListItem'
 
 type ProductMediaFileObject = FileObject<ProductMediaFileRead>

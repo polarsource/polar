@@ -2,7 +2,7 @@
 
 import { useUpdateOrganization } from '@/hooks/queries'
 import { Bolt } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useState } from 'react'

@@ -1,4 +1,4 @@
-import { Pledge } from '@polar-sh/sdk'
+import { Pledge } from '@polar-sh/api'
 import { StateCreator } from 'zustand'
 
 export interface OnboardingState {

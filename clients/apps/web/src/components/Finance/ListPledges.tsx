@@ -4,7 +4,7 @@ import Icon from '@/components/Icons/Icon'
 import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
-import { Pledge, PledgeState, PledgeType } from '@polar-sh/sdk'
+import { Pledge, PledgeState, PledgeType } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
@@ -53,26 +53,26 @@ const List = (props: {
           <tr>
             <th
               scope="col"
-              className="relative isolate  whitespace-nowrap px-2  py-3.5 text-left text-sm font-medium "
+              className="relative isolate whitespace-nowrap px-2 py-3.5 text-left text-sm font-medium"
             >
               {subtitle}
             </th>
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium "
+              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium"
             >
               Backer
             </th>
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
+              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium"
             >
               Date
             </th>
             {showEstimatedPayoutDate && (
               <th
                 scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
+                className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium"
               >
                 Est. payout date
               </th>
@@ -80,7 +80,7 @@ const List = (props: {
             {showRefundedDate && (
               <th
                 scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-semibold"
+                className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-semibold"
               >
                 Refunded date
               </th>
@@ -88,7 +88,7 @@ const List = (props: {
 
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-right text-sm font-semibold"
+              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-right text-sm font-semibold"
             >
               Amount
             </th>
@@ -98,7 +98,7 @@ const List = (props: {
           {pledges &&
             pledges.map((t) => (
               <tr key={t.id}>
-                <td className="dark:text-polar-400 px-2 py-3 text-sm text-gray-500 ">
+                <td className="dark:text-polar-400 px-2 py-3 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     {icon(t)}
                     <span className="inline-flex flex-col">
@@ -115,7 +115,7 @@ const List = (props: {
                 </td>
                 <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 ">
+                    <div className="flex items-center gap-1">
                       {t.pledger?.avatar_url && (
                         <img
                           src={t.pledger.avatar_url}

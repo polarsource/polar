@@ -14,7 +14,7 @@ import {
   ProductPriceType,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ProductFullMediasMixin } from '../ProductForm/ProductForm'

@@ -1,4 +1,4 @@
-import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
+import { type RepositoryBadgeSettingsRead } from '@polar-sh/api'
 
 import IssueLabel from '@/components/Issues/IssueLabel'
 import { twMerge } from 'tailwind-merge'

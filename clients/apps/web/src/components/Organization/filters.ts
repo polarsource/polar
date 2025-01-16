@@ -1,4 +1,4 @@
-import { ListFundingSortBy } from '@polar-sh/sdk'
+import { ListFundingSortBy } from '@polar-sh/api'
 import { ReadonlyURLSearchParams } from 'next/navigation'
 
 export type FundingFilters = {

@@ -5,7 +5,7 @@ import {
   FileServiceTypes,
   FileUpload,
   Organization,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 import { useState } from 'react'
 import { Accept, FileRejection, useDropzone } from 'react-dropzone'

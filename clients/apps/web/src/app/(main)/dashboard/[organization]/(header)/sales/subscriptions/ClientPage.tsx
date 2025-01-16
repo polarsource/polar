@@ -37,7 +37,7 @@ import {
   SubscriptionCancel,
   SubscriptionStatus,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'

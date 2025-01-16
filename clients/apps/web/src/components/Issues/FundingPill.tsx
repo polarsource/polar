@@ -1,4 +1,4 @@
-import { CurrencyAmount } from '@polar-sh/sdk'
+import { CurrencyAmount } from '@polar-sh/api'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 
 interface FundingPillProps {

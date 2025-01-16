@@ -1,5 +1,5 @@
 import { useStore } from '@/store'
-import { ResponseError } from '@polar-sh/sdk'
+import { ResponseError } from '@polar-sh/api'
 
 export const authenticatingRetry = (
   failureCount: number,

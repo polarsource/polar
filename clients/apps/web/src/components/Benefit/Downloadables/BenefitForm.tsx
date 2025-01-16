@@ -5,7 +5,7 @@ import {
   FileRead,
   FileServiceTypes,
   Organization,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 

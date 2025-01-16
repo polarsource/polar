@@ -1,4 +1,4 @@
-import { ProductStorefront } from '@polar-sh/sdk'
+import { ProductStorefront } from '@polar-sh/api'
 
 export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<ProductStorefront> = {
   name: 'Just an Example',

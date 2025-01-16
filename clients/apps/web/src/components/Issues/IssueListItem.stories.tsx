@@ -17,7 +17,7 @@ import {
   PledgeType,
   Reward,
   RewardState,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import IssueListItem from './IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>

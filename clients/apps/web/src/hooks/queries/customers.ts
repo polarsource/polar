@@ -1,5 +1,5 @@
 import { api, queryClient } from '@/utils/api'
-import { CustomersApiListRequest, CustomerUpdate } from '@polar-sh/sdk'
+import { CustomersApiListRequest, CustomerUpdate } from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

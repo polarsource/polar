@@ -1,6 +1,6 @@
 'use client'
 
-import { Organization, UserRead } from '@polar-sh/sdk'
+import { Organization, UserRead } from '@polar-sh/api'
 import React from 'react'
 
 export type AuthContextValue = {

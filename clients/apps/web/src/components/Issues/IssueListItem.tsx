@@ -3,7 +3,7 @@
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { api } from '@/utils/api'
-import { Issue, Pledge, PledgesTypeSummaries, Reward } from '@polar-sh/sdk'
+import { Issue, Pledge, PledgesTypeSummaries, Reward } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'

@@ -1,6 +1,6 @@
 import { useUpdateCustomer } from '@/hooks/queries'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { Customer, CustomerUpdate } from '@polar-sh/sdk'
+import { Customer, CustomerUpdate } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {

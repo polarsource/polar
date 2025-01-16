@@ -2,7 +2,7 @@ import {
   CustomerBenefitGrantLicenseKeys,
   LicenseKeyWithActivations,
   PolarAPI,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKey } from '@/hooks/queries'

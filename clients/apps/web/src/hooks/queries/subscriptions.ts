@@ -1,5 +1,9 @@
-import { SubscriptionsApiListRequest, SubscriptionCancel, ListResourceSubscription } from '@polar-sh/sdk'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import {
+  ListResourceSubscription,
+  SubscriptionCancel,
+  SubscriptionsApiListRequest,
+} from '@polar-sh/api'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { api, queryClient } from '@/utils/api'
 import { defaultRetry } from './retry'
@@ -21,7 +25,7 @@ export const useListSubscriptions = (
 
 export const useCancelSubscription = () =>
   useMutation({
-    mutationFn: (variables: { id: string, body: SubscriptionCancel }) => {
+    mutationFn: (variables: { id: string; body: SubscriptionCancel }) => {
       return api.subscriptions.update(variables)
     },
     onSuccess: (result, _variables, _ctx) => {
@@ -29,7 +33,7 @@ export const useCancelSubscription = () =>
         {
           queryKey: [
             'subscriptions',
-            { organizationId: result.product.organization_id }
+            { organizationId: result.product.organization_id },
           ],
         },
         (old) => {

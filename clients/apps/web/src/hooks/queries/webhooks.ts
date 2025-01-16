@@ -5,7 +5,7 @@ import {
   ResponseError,
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

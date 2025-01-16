@@ -1,4 +1,4 @@
-import { Configuration, PolarAPI } from '@polar-sh/sdk'
+import { Configuration, PolarAPI } from '@polar-sh/api'
 
 export { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 export { queryClient } from './query'

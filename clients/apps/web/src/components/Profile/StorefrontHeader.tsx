@@ -2,7 +2,7 @@
 
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
-import { Organization, Platforms } from '@polar-sh/sdk'
+import { Organization, Platforms } from '@polar-sh/api'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { PropsWithChildren, useEffect, useMemo } from 'react'

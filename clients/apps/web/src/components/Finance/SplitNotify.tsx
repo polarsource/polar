@@ -1,6 +1,6 @@
 import { api } from '@/utils/api'
 import { githubIssueLink } from '@/utils/github'
-import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/sdk'
+import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/api'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'

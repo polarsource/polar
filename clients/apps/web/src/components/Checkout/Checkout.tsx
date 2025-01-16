@@ -10,7 +10,7 @@ import {
   Organization,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useTheme } from 'next-themes'
 import ShadowBox, {
   ShadowBoxOnMd,

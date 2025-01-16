@@ -1,4 +1,4 @@
-import { Funding } from '@polar-sh/sdk'
+import { Funding } from '@polar-sh/api'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 
 const IssueBadge = ({

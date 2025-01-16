@@ -3,7 +3,7 @@ import {
   Issue,
   Organization,
   PledgesTypeSummaries,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import FundingPill from './FundingPill'
 import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'

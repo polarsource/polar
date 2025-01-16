@@ -2,7 +2,7 @@
 
 import { useBackofficeAllPledges } from '@/hooks/queries'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import { BackofficePledge } from '@polar-sh/sdk'
+import { BackofficePledge } from '@polar-sh/api'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
@@ -41,21 +41,21 @@ const Pledges = () => {
             <span>&quot;{i[0].issue.title}&quot;</span>
 
             {i[0].issue.confirmed_solved_at ? (
-              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-green-400 px-2 text-sm text-white">
                 confirmed solved
               </div>
             ) : (
-              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-orange-400 px-2 text-sm text-white">
                 not confirmed solved
               </div>
             )}
 
             {i[0].issue.needs_confirmation_solved ? (
-              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-green-400 px-2 text-sm text-white">
                 awaiting confirmation
               </div>
             ) : (
-              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-orange-400 px-2 text-sm text-white">
                 not awaiting confirmation
               </div>
             )}

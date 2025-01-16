@@ -1,4 +1,4 @@
-import { Interval } from '@polar-sh/sdk'
+import { Interval } from '@polar-sh/api'
 import {
   Select,
   SelectContent,

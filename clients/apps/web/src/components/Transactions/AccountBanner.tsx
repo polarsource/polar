@@ -7,7 +7,7 @@ import {
   Organization,
   Status,
   UserRead,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'

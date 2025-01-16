@@ -4,7 +4,7 @@ import {
   BenefitLicenseKeyActivationProperties,
   BenefitLicenseKeyExpirationProperties,
   BenefitLicenseKeysCreate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Input from 'polarkit/components/ui/atoms/input'
 import {

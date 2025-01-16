@@ -1,4 +1,4 @@
-import { Issue } from '@polar-sh/sdk'
+import { Issue } from '@polar-sh/api'
 
 export const githubIssueLink = (issue: Issue): string => {
   return `https://github.com/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`

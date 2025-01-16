@@ -14,7 +14,7 @@ import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronRight } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -69,7 +69,7 @@ const IntegrationView = () => {
       <div className="flex flex-col gap-y-6">
         <h4 className="text-xl font-medium">Install the SDK</h4>
         <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-xl border border-transparent bg-white px-5 py-3 text-sm shadow-sm">
-          pnpm install @polar-sh/sdk
+          pnpm install @polar-sh/api
         </pre>
       </div>
 
@@ -120,7 +120,7 @@ const IntegrationView = () => {
             <SyntaxHighlighterProvider>
               <SyntaxHighlighterClient
                 lang="javascript"
-                code={`import { Polar } from "@polar-sh/sdk";
+                code={`import { Polar } from "@polar-sh/api";
 
 const polar = new Polar({
   accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",

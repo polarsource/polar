@@ -1,7 +1,7 @@
 import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
 import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
-import { OAuthAccountRead } from '@polar-sh/sdk'
+import { OAuthAccountRead } from '@polar-sh/api'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
   FormattedDateTime,

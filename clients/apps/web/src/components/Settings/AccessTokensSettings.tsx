@@ -11,7 +11,7 @@ import {
   AvailableScope,
   PersonalAccessToken,
   PersonalAccessTokenCreateResponse,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import {
   AlertDialog,
   AlertDialogAction,

@@ -6,7 +6,7 @@ import {
   IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
   IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
   MagicLinkApiMagicLinkAuthenticateRequest,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 export const getGitHubAuthorizeURL = (
   params: IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,

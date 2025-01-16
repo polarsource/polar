@@ -5,7 +5,7 @@ import {
   KeyOutlined,
   WebOutlined,
 } from '@mui/icons-material'
-import { BenefitBase, BenefitType } from '@polar-sh/sdk'
+import { BenefitBase, BenefitType } from '@polar-sh/api'
 import { twMerge } from 'tailwind-merge'
 
 export type CreatableBenefit = BenefitType

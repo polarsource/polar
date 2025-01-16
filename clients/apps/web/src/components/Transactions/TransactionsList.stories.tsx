@@ -9,7 +9,7 @@ import {
   TransactionPledge,
   TransactionProduct,
   TransactionRepository,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import type { Meta, StoryObj } from '@storybook/react'
 import TransactionsList from './TransactionsList'
 

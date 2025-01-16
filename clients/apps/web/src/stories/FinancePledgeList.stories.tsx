@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import List, { Column } from '@/components/Finance/ListPledges'
 import { issue } from '@/utils/testdata'
-import { Pledge, PledgeState, PledgeType } from '@polar-sh/sdk'
+import { Pledge, PledgeState, PledgeType } from '@polar-sh/api'
 
 type Story = StoryObj<typeof List>
 

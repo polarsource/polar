@@ -5,7 +5,7 @@ import {
   ProductStorefront,
   ResponseError,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 

@@ -8,7 +8,7 @@ import { MeterEvents } from '@/components/Meter/MeterEvents'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
 import { MoreVert } from '@mui/icons-material'
-import { Interval, MetricType } from '@polar-sh/sdk'
+import { Interval, MetricType } from '@polar-sh/api'
 import { useParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {

@@ -6,7 +6,7 @@ import {
   TransactionSortProperty,
   TransactionType,
   TransactionsSummary,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

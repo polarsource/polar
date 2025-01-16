@@ -2,7 +2,7 @@ import {
   ExternalOrganization,
   InitOverrideFunction,
   PolarAPI,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 export const getExternalOrganizationByName = async (
   api: PolarAPI,

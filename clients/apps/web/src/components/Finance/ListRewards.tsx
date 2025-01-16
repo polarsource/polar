@@ -4,7 +4,7 @@ import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
-import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/sdk'
+import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/api'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   formatCurrencyAndAmount,
@@ -51,7 +51,7 @@ const List = (props: {
           <tr>
             <th
               scope="col"
-              className="relative isolate  whitespace-nowrap px-2  py-3.5 text-left text-sm font-medium "
+              className="relative isolate whitespace-nowrap px-2 py-3.5 text-left text-sm font-medium"
             >
               {subtitle}
             </th>
@@ -59,7 +59,7 @@ const List = (props: {
             {showReceiver && (
               <th
                 scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-semibold"
+                className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-semibold"
               >
                 Receiver
               </th>
@@ -68,7 +68,7 @@ const List = (props: {
             {showBacker && (
               <th
                 scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-semibold"
+                className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-semibold"
               >
                 Backer
               </th>
@@ -84,7 +84,7 @@ const List = (props: {
             {showPaymentStatus && (
               <th
                 scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
+                className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium"
               >
                 Status
               </th>
@@ -93,7 +93,7 @@ const List = (props: {
             {showPaidOutDate && (
               <th
                 scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
+                className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium"
               >
                 Paid out date
               </th>
@@ -101,7 +101,7 @@ const List = (props: {
 
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-right text-sm font-semibold"
+              className="relative isolate whitespace-nowrap py-3.5 pr-2 text-right text-sm font-semibold"
             >
               Amount
             </th>
@@ -129,7 +129,7 @@ const List = (props: {
 
                 {showReceiver && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    <div className="flex items-center gap-1 ">
+                    <div className="flex items-center gap-1">
                       {t.user && (
                         <Avatar
                           avatar_url={t.user.avatar_url}
@@ -144,7 +144,7 @@ const List = (props: {
 
                 {showBacker && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    <div className="flex items-center gap-1 ">
+                    <div className="flex items-center gap-1">
                       {t.pledge.pledger && (
                         <Avatar
                           avatar_url={t.pledge.pledger.avatar_url}

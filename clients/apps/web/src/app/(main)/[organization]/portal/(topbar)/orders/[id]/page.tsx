@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
-import { CustomerOrder, ResponseError } from '@polar-sh/sdk'
+import { CustomerOrder, ResponseError } from '@polar-sh/api'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'

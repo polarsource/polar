@@ -2,7 +2,7 @@ import {
   CheckoutPublic,
   CheckoutUpdatePublic,
   Organization,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'

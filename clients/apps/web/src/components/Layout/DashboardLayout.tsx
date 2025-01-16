@@ -6,7 +6,7 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
-import { Repository } from '@polar-sh/sdk'
+import { Repository } from '@polar-sh/api'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'

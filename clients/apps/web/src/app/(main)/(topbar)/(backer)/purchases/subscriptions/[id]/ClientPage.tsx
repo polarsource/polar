@@ -3,7 +3,7 @@
 import CustomerPortalSubscription from '@/components/CustomerPortal/CustomerPortalSubscription'
 import { api } from '@/utils/api'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { CustomerSubscription } from '@polar-sh/sdk'
+import { CustomerSubscription } from '@polar-sh/api'
 import Link from 'next/link'
 
 const ClientPage = ({
@@ -24,6 +24,5 @@ const ClientPage = ({
     </div>
   )
 }
-
 
 export default ClientPage

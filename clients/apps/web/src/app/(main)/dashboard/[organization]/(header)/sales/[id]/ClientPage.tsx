@@ -7,17 +7,17 @@ import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { Organization, Product} from '@polar-sh/sdk'
+import { Organization, Product } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import { Separator } from '@radix-ui/react-dropdown-menu'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'
+import { Status } from 'polarkit/components/ui/atoms/Status'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Status } from 'polarkit/components/ui/atoms/Status'
 
 interface OrderProductItemProps {
   product: Product
@@ -25,14 +25,12 @@ interface OrderProductItemProps {
 
 const OrderProductItem = ({ product }: OrderProductItemProps) => {
   return (
-    <div className="flex bg-white dark:bg-polar-800 flex-row items-center gap-6 border border-gray-200 dark:border-polar-700 rounded-3xl p-4">
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-6 rounded-3xl border border-gray-200 bg-white p-4">
       <ProductThumbnail product={product} size="medium" />
       <div className="flex flex-col gap-2">
-        <div className='flex flex-row items-center gap-x-4'>
+        <div className="flex flex-row items-center gap-x-4">
           <h3 className="text-xl">{product.name}</h3>
-          {product.is_archived && (
-           <Pill color='gray'>Archived</Pill>
-          )}
+          {product.is_archived && <Pill color="gray">Archived</Pill>}
         </div>
         {product.description && (
           <div
@@ -56,10 +54,7 @@ interface ClientPageProps {
   orderId: string
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
- organization,
-  orderId
-}) => {
+const ClientPage: React.FC<ClientPageProps> = ({ organization, orderId }) => {
   const { data: order } = useOrder(orderId)
   const { data: product } = useProduct(order?.product.id)
   const { data: customFields } = useCustomFields(organization.id)
@@ -71,22 +66,35 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody
       title={
-        <div className='flex flex-row items-baseline gap-8'>
+        <div className="flex flex-row items-baseline gap-8">
           <h2 className="text-xl font-normal">Order</h2>
-          <span className='text-gray-500 font-mono text-sm dark:text-polar-500'>{order.id}</span>
+          <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
+            {order.id}
+          </span>
         </div>
       }
-      className='gap-y-8'
+      className="gap-y-8"
       contextView={<CustomerModal customer={order.customer} />}
     >
-      <ShadowBox className="flex flex-col bg-gray-100 gap-8">
+      <ShadowBox className="flex flex-col gap-8 bg-gray-100">
         <OrderProductItem product={product} />
         <div className="flex flex-row gap-4">
-          {!product.is_archived && <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-            <Button>View Product</Button>
-          </Link>}
-          <Link href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}>
-            <Button variant="secondary" className='bg-gray-300 hover:bg-gray-200'>All Product Orders</Button>
+          {!product.is_archived && (
+            <Link
+              href={`/dashboard/${organization.slug}/products/${product.id}`}
+            >
+              <Button>View Product</Button>
+            </Link>
+          )}
+          <Link
+            href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}
+          >
+            <Button
+              variant="secondary"
+              className="bg-gray-300 hover:bg-gray-200"
+            >
+              All Product Orders
+            </Button>
           </Link>
         </div>
       </ShadowBox>
@@ -94,16 +102,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <h2 className="text-xl">Order Details</h2>
         <div className="flex flex-col gap-1">
           <DetailRow title="Order ID">
-            <span className='font-mono text-sm'>{order.id}</span>
+            <span className="font-mono text-sm">{order.id}</span>
           </DetailRow>
           <DetailRow title="Order Date">
-            <span><FormattedDateTime dateStyle='long' datetime={order.created_at} /></span>
+            <span>
+              <FormattedDateTime dateStyle="long" datetime={order.created_at} />
+            </span>
           </DetailRow>
           <DetailRow title="Billing Reason">
-            <Status status={order.billing_reason.split('_').join(' ')} className='capitalize text-emerald-500 dark:bg-emerald-950 bg-emerald-100' />
+            <Status
+              status={order.billing_reason.split('_').join(' ')}
+              className="bg-emerald-100 capitalize text-emerald-500 dark:bg-emerald-950"
+            />
           </DetailRow>
 
-          <Separator className='h-[1px] my-4 dark:bg-polar-700 bg-gray-300' />
+          <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
 
           <DetailRow title="Tax">
             <span>{formatCurrencyAndAmount(order.tax_amount)}</span>
@@ -116,7 +129,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </DetailRow>
           {order.billing_address ? (
             <>
-              <Separator className='h-[1px] my-4 dark:bg-polar-700 bg-gray-300' />
+              <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
               <DetailRow title="Country">
                 <span>{order.billing_address?.country}</span>
               </DetailRow>
@@ -124,7 +137,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <span>{order.billing_address?.line1 ?? '—'}</span>
               </DetailRow>
               <DetailRow title="Address 2">
-              <span>{order.billing_address?.line2 ?? '—'}</span>
+                <span>{order.billing_address?.line2 ?? '—'}</span>
               </DetailRow>
               <DetailRow title="Postal Code">
                 <span>{order.billing_address?.postal_code ?? '—'}</span>
@@ -135,7 +148,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
               <DetailRow title="State">
                 <span>{order.billing_address?.state ?? '—'}</span>
               </DetailRow>
-            </>) : <></>}
+            </>
+          ) : (
+            <></>
+          )}
         </div>
       </ShadowBox>
 
@@ -167,7 +183,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
   )
 }
 
-const DetailRow = ({ title, children }: PropsWithChildren<{ title: string;}>) => {
+const DetailRow = ({
+  title,
+  children,
+}: PropsWithChildren<{ title: string }>) => {
   return (
     <div className="flex flex-row justify-between gap-8">
       <span className="dark:text-polar-500 text-gray-500">{title}</span>

@@ -1,5 +1,5 @@
 import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
-import { CustomField } from '@polar-sh/sdk'
+import { CustomField } from '@polar-sh/api'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 

@@ -3,11 +3,7 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { useAuth } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import {
-  Organization,
-  Platforms,
-  UserRead,
-} from '@polar-sh/sdk'
+import { Organization, Platforms, UserRead } from '@polar-sh/api'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -48,10 +44,7 @@ const Topbar = ({
     return (
       <>
         {shouldShowGitHubAuthUpsell && (
-          <GithubLoginButton
-            text="Connect with GitHub"
-            returnTo={returnTo}
-          />
+          <GithubLoginButton text="Connect with GitHub" returnTo={returnTo} />
         )}
         {!hasOrgs && (
           <Link href="/dashboard/create">
@@ -85,7 +78,7 @@ const Topbar = ({
           <BrandingMenu />
         </div>
         {!hideProfile ? (
-          <div className="relative flex flex-1 flex-shrink-0 flex-row items-center justify-end gap-x-6 md:ml-0 ">
+          <div className="relative flex flex-1 flex-shrink-0 flex-row items-center justify-end gap-x-6 md:ml-0">
             {upsell}
             <TopbarRight authenticatedUser={authenticatedUser} />
           </div>

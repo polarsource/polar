@@ -1,4 +1,4 @@
-import { ProductCreate, ProductMediaFileRead } from '@polar-sh/sdk'
+import { ProductCreate, ProductMediaFileRead } from '@polar-sh/api'
 import { StateCreator } from 'zustand'
 
 interface FormDrafts {

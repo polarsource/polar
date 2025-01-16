@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { ResponseError, WebhookEndpoint } from '@polar-sh/sdk'
+import { ResponseError, WebhookEndpoint } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 import {
   BreadcrumbPageParams,

@@ -9,7 +9,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Order, OrderCustomer, Organization, Product } from '@polar-sh/sdk'
+import { Order, OrderCustomer, Organization, Product } from '@polar-sh/api'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'

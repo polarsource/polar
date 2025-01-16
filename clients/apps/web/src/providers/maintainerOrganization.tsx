@@ -1,7 +1,7 @@
 'use client'
 
 import { useProducts } from '@/hooks/queries'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import React, { useMemo } from 'react'
 
 const stub = (): never => {

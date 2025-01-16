@@ -4,7 +4,7 @@ import {
   ProductPrice,
   ProductStorefront,
   TransactionProduct,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPillProps {

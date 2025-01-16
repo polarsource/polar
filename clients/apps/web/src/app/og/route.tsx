@@ -5,7 +5,7 @@ import {
   Organization,
   Repository,
   Storefront,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 

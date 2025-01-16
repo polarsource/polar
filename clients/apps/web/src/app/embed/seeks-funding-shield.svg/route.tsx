@@ -1,7 +1,7 @@
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { PolarAPI } from '@polar-sh/sdk'
+import { PolarAPI } from '@polar-sh/api'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

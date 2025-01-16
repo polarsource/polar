@@ -18,7 +18,7 @@ import {
   useDeleteBenefit,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { type Benefit, Organization } from '@polar-sh/sdk'
+import { type Benefit, Organization } from '@polar-sh/api'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'

@@ -9,7 +9,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { AddOutlined } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import {
   PaginationState,
   RowSelectionState,

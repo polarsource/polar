@@ -1,4 +1,4 @@
-import { Interval, Metric, MetricType } from '@polar-sh/sdk'
+import { Interval, Metric, MetricType } from '@polar-sh/api'
 import { format, parse } from 'date-fns'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 

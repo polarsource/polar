@@ -1,7 +1,7 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
-import { Order } from '@polar-sh/sdk'
+import { Order } from '@polar-sh/api'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -78,9 +78,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   ]
 
   return (
-    <div
-      className={twMerge('hidden h-80 md:block', className)}
-    >
+    <div className={twMerge('hidden h-80 md:block', className)}>
       {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="relative h-full">
           {orders.data?.items

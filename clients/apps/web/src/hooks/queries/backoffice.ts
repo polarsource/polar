@@ -3,7 +3,7 @@ import {
   BackofficeBadge,
   BackofficePledge,
   BackofficeReward,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import {
   UseMutationResult,
   UseQueryResult,

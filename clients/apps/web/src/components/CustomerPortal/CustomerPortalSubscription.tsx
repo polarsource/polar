@@ -8,7 +8,7 @@ import {
   useCustomerOrders,
 } from '@/hooks/queries'
 import { ReceiptOutlined } from '@mui/icons-material'
-import { CustomerOrder, CustomerSubscription, PolarAPI } from '@polar-sh/sdk'
+import { CustomerOrder, CustomerSubscription, PolarAPI } from '@polar-sh/api'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'

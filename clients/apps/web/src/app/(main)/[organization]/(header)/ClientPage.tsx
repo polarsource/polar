@@ -1,7 +1,7 @@
 'use client'
 
 import { Storefront } from '@/components/Profile/Storefront'
-import { IssueFunding, Organization, ProductStorefront } from '@polar-sh/sdk'
+import { IssueFunding, Organization, ProductStorefront } from '@polar-sh/api'
 
 const ClientPage = ({
   organization,

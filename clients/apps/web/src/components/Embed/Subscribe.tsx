@@ -1,4 +1,4 @@
-import { StorefrontCustomer } from '@polar-sh/sdk'
+import { StorefrontCustomer } from '@polar-sh/api'
 import React from 'react'
 
 export const Subscribe = ({

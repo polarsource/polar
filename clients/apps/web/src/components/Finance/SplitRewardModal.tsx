@@ -4,7 +4,7 @@ import {
   useIssueMarkConfirmed,
   useListPledesForIssue,
 } from '@/hooks/queries'
-import { ConfirmIssueSplit } from '@polar-sh/sdk'
+import { ConfirmIssueSplit } from '@polar-sh/api'
 import { useState } from 'react'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'

@@ -8,7 +8,7 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { CustomerSubscription } from '@polar-sh/sdk'
+import { CustomerSubscription } from '@polar-sh/api'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -201,14 +201,11 @@ const SubscriptionItem = ({
               {nextEventTitle}
             </span>
             <span>
-              {nextEventDate.toLocaleDateString(
-                'en-US',
-                {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                },
-              )}
+              {nextEventDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </span>
           </div>
         )}

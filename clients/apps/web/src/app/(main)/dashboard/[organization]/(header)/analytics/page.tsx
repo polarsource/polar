@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Interval } from '@polar-sh/sdk'
+import { Interval } from '@polar-sh/api'
 import {
   addDays,
   endOfMonth,

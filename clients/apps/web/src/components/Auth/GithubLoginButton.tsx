@@ -1,17 +1,17 @@
 'use client'
 
+import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGitHubAuthorizeURL } from '@/utils/auth'
+import { UserSignupAttribution } from '@polar-sh/api'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
-import { UserSignupAttribution } from '@polar-sh/sdk'
-import { usePostHog, type EventName } from '@/hooks/posthog'
 
 const GithubLoginButton = (props: {
   className?: string
   returnTo?: string
-  signup?: UserSignupAttribution,
+  signup?: UserSignupAttribution
   size?: 'large' | 'small'
   fullWidth?: boolean
   text: string
@@ -34,7 +34,7 @@ const GithubLoginButton = (props: {
     }
 
     posthog.capture(eventName, {
-      method: 'github'
+      method: 'github',
     })
   }
 

@@ -1,4 +1,4 @@
-import { CustomFieldType } from '@polar-sh/sdk'
+import { CustomFieldType } from '@polar-sh/api'
 import CustomFieldTypeIcon from './CustomFieldTypeIcon'
 
 const getLabel = (type: CustomFieldType) => {

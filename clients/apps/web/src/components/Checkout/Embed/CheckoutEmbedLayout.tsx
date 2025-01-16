@@ -1,4 +1,4 @@
-import { CheckoutPublic } from '@polar-sh/sdk'
+import { CheckoutPublic } from '@polar-sh/api'
 import CheckoutEmbedClose from './CheckoutEmbedClose'
 import CheckoutEmbedLoaded from './CheckoutEmbedLoaded'
 

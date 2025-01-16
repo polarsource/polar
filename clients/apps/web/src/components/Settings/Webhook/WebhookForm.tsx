@@ -3,7 +3,7 @@ import {
   WebhookEndpointUpdate,
   WebhookEventType,
   WebhookFormat,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {

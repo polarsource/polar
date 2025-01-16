@@ -6,7 +6,7 @@ import {
   PledgeState,
   PledgesTypeSummaries,
   Reward,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

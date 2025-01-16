@@ -1,4 +1,4 @@
-import { OAuthAccountRead, OAuthPlatform } from '@polar-sh/sdk'
+import { OAuthAccountRead, OAuthPlatform } from '@polar-sh/api'
 import { useMemo } from 'react'
 import { useAuth } from '.'
 

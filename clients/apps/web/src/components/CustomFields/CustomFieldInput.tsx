@@ -6,7 +6,7 @@ import {
   CustomFieldSelect,
   CustomFieldText,
   CustomFieldType,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Markdown, { MarkdownToJSX } from 'markdown-to-jsx'
 import Input from 'polarkit/components/ui/atoms/input'
 import {

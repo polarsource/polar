@@ -9,7 +9,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({

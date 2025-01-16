@@ -3,7 +3,7 @@
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
-import { CheckoutPublic, CheckoutStatus, Organization } from '@polar-sh/sdk'
+import { CheckoutPublic, CheckoutStatus, Organization } from '@polar-sh/api'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
 import Link from 'next/link'
@@ -110,7 +110,7 @@ export const CheckoutConfirmation = ({
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-md flex-col gap-y-8">
-        {organization.profile_settings?.enabled ?
+        {organization.profile_settings?.enabled ? (
           <Link
             href={organizationPageLink(organization)}
             className="flex self-start"
@@ -120,13 +120,14 @@ export const CheckoutConfirmation = ({
               avatar_url={organization.avatar_url}
               name={organization.name}
             />
-          </Link> :
+          </Link>
+        ) : (
           <Avatar
             className="h-16 w-16"
             avatar_url={organization.avatar_url}
             name={organization.name}
           />
-        }
+        )}
         <h1 className="text-2xl font-medium">
           {status === CheckoutStatus.CONFIRMED &&
             'We are processing your order'}

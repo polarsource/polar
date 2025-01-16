@@ -9,7 +9,7 @@ import {
   CustomerSubscriptionCancel,
   CustomerSubscriptionUpdate,
   PolarAPI,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -157,7 +157,7 @@ export const useCustomerUpdateSubscription = (api: PolarAPI) =>
 export const useCustomerCancelSubscription = (api: PolarAPI) =>
   useMutation({
     mutationFn: (variables: {
-      id: string,
+      id: string
       body: CustomerSubscriptionCancel
     }) => {
       return api.customerPortalSubscriptions.update(variables)

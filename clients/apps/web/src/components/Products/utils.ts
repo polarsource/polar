@@ -4,7 +4,7 @@ import {
   ProductCreate,
   ProductPrice,
   ProductUpdate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { ProductFullMediasMixin } from './ProductForm/ProductForm'
 
 export const productUpdateToProduct = (

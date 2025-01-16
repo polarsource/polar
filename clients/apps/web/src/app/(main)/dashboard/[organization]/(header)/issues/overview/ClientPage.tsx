@@ -13,7 +13,7 @@ import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { HowToVoteOutlined } from '@mui/icons-material'
-import { IssueSortBy, Organization, Repository } from '@polar-sh/sdk'
+import { IssueSortBy, Organization, Repository } from '@polar-sh/api'
 import { useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {

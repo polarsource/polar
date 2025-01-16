@@ -1,30 +1,24 @@
 'use client'
 
-import Spinner from '@/components/Shared/Spinner'
-import { useListRepositories } from '@/hooks/queries'
-import { useHasLinkedExternalOrganizations } from '@/hooks'
-import { useSearchParams } from 'next/navigation'
-import { Organization } from '@polar-sh/sdk'
 import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import Spinner from '@/components/Shared/Spinner'
+import { useHasLinkedExternalOrganizations } from '@/hooks'
+import { useListRepositories } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { Organization } from '@polar-sh/api'
+import { useSearchParams } from 'next/navigation'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import { ReactElement, useState } from 'react'
-import { useContext } from 'react'
-
+import { ReactElement, useContext, useState } from 'react'
 
 interface Embeddable {
   preview: ReactElement
   tag: string
 }
 
-const EmbedPage = ({
-  organization,
-}: {
-  organization: Organization
-}) => {
+const EmbedPage = ({ organization }: { organization: Organization }) => {
   const searchParams = useSearchParams()
   const repoSlug = searchParams.get('repo')
   const repositories = useListRepositories(
@@ -49,11 +43,21 @@ const EmbedPage = ({
 
   const embeds: Record<string, Embeddable> = {
     Issues: {
-      preview: <img src={`/embed/fund-our-backlog.svg?${orgRepoParams}`} alt="GitHub Embed of Fundable Backlog" />,
+      preview: (
+        <img
+          src={`/embed/fund-our-backlog.svg?${orgRepoParams}`}
+          alt="GitHub Embed of Fundable Backlog"
+        />
+      ),
       tag: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     },
     Shield: {
-      preview: <img src={`/embed/seeks-funding-shield.svg?${orgRepoParams}`} alt="GitHub Shield of Fundable Issues" />,
+      preview: (
+        <img
+          src={`/embed/seeks-funding-shield.svg?${orgRepoParams}`}
+          alt="GitHub Shield of Fundable Issues"
+        />
+      ),
       tag: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
     },
   }

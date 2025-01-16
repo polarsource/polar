@@ -10,7 +10,7 @@ import {
   CheckoutPublic,
   CheckoutUpdatePublic,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'

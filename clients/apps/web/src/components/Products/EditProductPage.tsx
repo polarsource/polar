@@ -11,7 +11,7 @@ import {
   ProductUpdate,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'

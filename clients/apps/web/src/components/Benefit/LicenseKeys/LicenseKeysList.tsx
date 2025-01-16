@@ -1,5 +1,5 @@
 import { DataTableSortingState } from '@/utils/datatable'
-import { LicenseKeyRead } from '@polar-sh/sdk'
+import { LicenseKeyRead } from '@polar-sh/api'
 import {
   OnChangeFn,
   PaginationState,

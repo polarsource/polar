@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 
 import {
   Organization,
+  ResponseError,
   WebhookEndpoint,
   WebhookEndpointUpdate,
 } from '@polar-sh/sdk'
@@ -18,6 +19,8 @@ import {
   FieldSecret,
   FieldUrl,
 } from '@/components/Settings/Webhook/WebhookForm'
+import { toast } from '@/components/Toast/use-toast'
+import { getStatusRedirect } from '@/components/Toast/utils'
 import {
   useDeleteWebhookEndpoint,
   useEditWebhookEndpoint,
@@ -52,12 +55,29 @@ export default function EditWebhookModal({
   const onSubmit = useCallback(
     async (form: WebhookEndpointUpdate) => {
       setIsSaving(true)
-      await updateWebhookEndpoint.mutateAsync({
-        id: endpoint.id,
-        body: form,
-      })
-      setIsSaving(false)
-      hide()
+
+      try {
+        await updateWebhookEndpoint.mutateAsync({
+          id: endpoint.id,
+          body: form,
+        })
+
+        toast({
+          title: 'Webhook Endpoint Updated',
+          description: `Webhook Endpoint was updated successfully`,
+        })
+
+        hide()
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          toast({
+            title: 'Webhook Endpoint Update Failed',
+            description: `Error updating Webhook Endpoint: ${e.message}`,
+          })
+        }
+      } finally {
+        setIsSaving(false)
+      }
     },
     [endpoint],
   )
@@ -73,10 +93,25 @@ export default function EditWebhookModal({
   const deleteWebhookEndpoint = useDeleteWebhookEndpoint()
 
   const handleDeleteWebhookEndpoint = useCallback(async () => {
-    await deleteWebhookEndpoint.mutateAsync({ id: endpoint.id })
-    hideDeleteModal()
-    hide()
-    router.push(`/dashboard/${organization.slug}/settings`)
+    try {
+      await deleteWebhookEndpoint.mutateAsync({ id: endpoint.id })
+      hideDeleteModal()
+      hide()
+      router.push(
+        getStatusRedirect(
+          `/dashboard/${organization.slug}/settings`,
+          'Webhook Endpoint Deleted',
+          'Webhook Endpoint was deleted successfully',
+        ),
+      )
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        toast({
+          title: 'Webhook Endpoint Deletion Failed',
+          description: `Error deleting Webhook Endpoint: ${e.message}`,
+        })
+      }
+    }
   }, [
     deleteWebhookEndpoint,
     hideDeleteModal,

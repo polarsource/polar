@@ -1,20 +1,17 @@
 'use client'
 
+import { Modal, ModalProps } from '@/components/Modal'
+import { setValidationErrors } from '@/utils/api/errors'
 import {
-  CustomerSubscription,
   CustomerCancellationReason,
+  CustomerSubscription,
   CustomerSubscriptionCancel,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import { UseMutationResult } from '@tanstack/react-query'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
-import { Label } from 'polarkit/components/ui/label'
-import { UseMutationResult } from '@tanstack/react-query'
-import { setValidationErrors } from '@/utils/api/errors'
-import { Modal, ModalProps } from '@/components/Modal'
-import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
-import { useCallback, useState } from 'react'
 import {
   Form,
   FormControl,
@@ -22,7 +19,11 @@ import {
   FormItem,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { Label } from 'polarkit/components/ui/label'
+import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
+import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from '../Toast/use-toast'
 
 const CancellationReasonRadio = ({
   value,
@@ -44,7 +45,12 @@ const CancellationReasonRadio = ({
 interface CustomerCancellationModalProps
   extends Omit<ModalProps, 'modalContent'> {
   subscription: CustomerSubscription
-  cancelSubscription: UseMutationResult<CustomerSubscription, Error, { id: string, body: CustomerSubscriptionCancel }, unknown>
+  cancelSubscription: UseMutationResult<
+    CustomerSubscription,
+    Error,
+    { id: string; body: CustomerSubscriptionCancel },
+    unknown
+  >
   onAbort?: () => void
 }
 
@@ -80,8 +86,14 @@ const CustomerCancellationModal = ({
         setIsLoading(true)
         await cancelSubscription.mutateAsync({
           id: subscription.id,
-          body: cancellation
+          body: cancellation,
         })
+
+        toast({
+          title: 'Subscription Cancelled',
+          description: `Subscription was cancelled successfully`,
+        })
+
         props.hide()
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -92,6 +104,11 @@ const CustomerCancellationModal = ({
           } else {
             setError('root', { message: e.message })
           }
+
+          toast({
+            title: 'Subscription Cancellation Failed',
+            description: `Error cancelling subscription: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

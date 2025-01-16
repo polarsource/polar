@@ -5,6 +5,7 @@ import CustomFieldTypeLabel from '@/components/CustomFields/CustomFieldTypeLabel
 import UpdateCustomFieldModalContent from '@/components/CustomFields/UpdateCustomFieldModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
+import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -96,6 +97,26 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
+  const handleDeleteCustomField = useCallback(
+    (customField: CustomField) => () => {
+      deleteCustomField
+        .mutateAsync(customField)
+        .then(() => {
+          toast({
+            title: 'Custom Field Deleted',
+            description: `Custom field ${customField.name} successfully deleted`,
+          })
+        })
+        .catch((error) => {
+          toast({
+            title: 'Custom Field Deletion Failed',
+            description: `Error deleting custom field ${customField.name}: ${error.message}`,
+          })
+        })
+    },
+    [toast],
+  )
+
   const customFieldsHook = useCustomFields(organization.id, {
     ...getAPIParams(pagination, sorting),
     type,
@@ -166,9 +187,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               >
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => deleteCustomField.mutate(customField)}
-              >
+              <DropdownMenuItem onClick={handleDeleteCustomField(customField)}>
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

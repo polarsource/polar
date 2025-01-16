@@ -15,6 +15,10 @@ export const useLicenseKeyUpdate = (organizationId: string) =>
       queryClient.invalidateQueries({
         queryKey: ['license_keys', 'organization', organizationId],
       })
+
+      queryClient.invalidateQueries({
+        queryKey: ['license_keys', _variables.id],
+      })
     },
   })
 

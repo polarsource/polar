@@ -107,7 +107,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
           getStatusRedirect(
             `/dashboard/${organization.slug}/products`,
             'Product Created',
-            `Product ${product.name} created successfully`,
+            `Product ${product.name} was created successfully`,
           ),
         )
       } catch (e) {

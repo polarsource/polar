@@ -12,6 +12,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
 interface CreateCustomFieldModalContentProps {
@@ -48,6 +49,12 @@ const CreateCustomFieldModalContent = ({
         setIsLoading(true)
         const customField =
           await createCustomField.mutateAsync(customFieldCreate)
+
+        toast({
+          title: 'Custom Field Created',
+          description: `Custom field ${customField.name} was created successfully`,
+        })
+
         onCustomFieldCreated(customField)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -61,6 +68,11 @@ const CreateCustomFieldModalContent = ({
               Object.values(CustomFieldType),
             )
           }
+
+          toast({
+            title: 'Custom Field Creation Failed',
+            description: `Error creating custom field: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

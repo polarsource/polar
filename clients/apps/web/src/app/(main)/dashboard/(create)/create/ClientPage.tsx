@@ -1,6 +1,8 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { useToast } from '@/components/Toast/use-toast'
+import { getStatusRedirect } from '@/components/Toast/utils'
 import { useAuth } from '@/hooks'
 import { usePostHog } from '@/hooks/posthog'
 import { useCreateOrganization } from '@/hooks/queries'
@@ -80,6 +82,8 @@ export default function ClientPage({
     }
   }, [name, editedSlug, slug, setValue])
 
+  const { toast } = useToast()
+
   const onSubmit = async (data: { name: string; slug: string }) => {
     try {
       const params = {
@@ -90,7 +94,13 @@ export default function ClientPage({
       const organization = await createOrganization.mutateAsync(params)
       await revalidate(`users:${currentUser?.id}:organizations`)
       setUserOrganizations((orgs) => [...orgs, organization])
-      router.push(`/dashboard/${organization.slug}`)
+      router.push(
+        getStatusRedirect(
+          `/dashboard/${organization.slug}`,
+          'Organization Created',
+          `Organization ${organization.name} was created successfully`,
+        ),
+      )
     } catch (e) {
       if (e instanceof ResponseError) {
         const body = await e.response.json()
@@ -100,6 +110,11 @@ export default function ClientPage({
         } else {
           setError('root', { message: e.message })
         }
+
+        toast({
+          title: 'Organization Creation Failed',
+          description: e.message,
+        })
       }
     }
   }

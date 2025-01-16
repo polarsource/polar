@@ -13,6 +13,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { toast } from '../Toast/use-toast'
 import DiscountForm from './DiscountForm'
 
 interface CreateDiscountModalContentProps {
@@ -48,6 +49,12 @@ const CreateDiscountModalContent = ({
       try {
         setIsLoading(true)
         const discount = await createDiscount.mutateAsync(discountCreate)
+
+        toast({
+          title: 'Discount Created',
+          description: `Discount ${discount.code} was created successfully`,
+        })
+
         onDiscountCreated(discount)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -61,6 +68,11 @@ const CreateDiscountModalContent = ({
               'percentage.repeat',
             ])
           }
+
+          toast({
+            title: 'Discount Creation Failed',
+            description: `Error creating discount: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

@@ -26,6 +26,7 @@ import { usePatchFile } from '@/hooks/queries'
 import { FileObject } from '@/components/FileUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   DropdownMenu,
@@ -206,7 +207,20 @@ export const FileListItem = ({
 
   const patchFile = useCallback(
     async (attrs: { name?: string; version?: string }) => {
-      await patchFileQuery.mutateAsync(attrs)
+      await patchFileQuery
+        .mutateAsync(attrs)
+        .then(() => {
+          toast({
+            title: 'File Updated',
+            description: `File ${file.name} updated successfully`,
+          })
+        })
+        .catch((error) => {
+          toast({
+            title: 'File Update Failed',
+            description: `Error updating file ${file.name}: ${error.message}`,
+          })
+        })
     },
     [patchFileQuery],
   )
@@ -229,7 +243,20 @@ export const FileListItem = ({
   )
 
   const onDelete = useCallback(async () => {
-    deleteFile.mutateAsync()
+    deleteFile
+      .mutateAsync()
+      .then(() => {
+        toast({
+          title: 'File Deleted',
+          description: `File ${file.name} deleted successfully`,
+        })
+      })
+      .catch((error) => {
+        toast({
+          title: 'File Deletion Failed',
+          description: `Error deleting file ${file.name}: ${error.message}`,
+        })
+      })
   }, [deleteFile])
 
   const onCopySHA = useCallback(() => {

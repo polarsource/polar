@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from '@/components/Toast/use-toast'
 import {
   useListWebhooksDeliveries,
   useRedeliverWebhookEvent,
@@ -14,7 +15,12 @@ import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
-import { Organization, WebhookDelivery, WebhookEndpoint } from '@polar-sh/sdk'
+import {
+  Organization,
+  ResponseError,
+  WebhookDelivery,
+  WebhookEndpoint,
+} from '@polar-sh/sdk'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -23,7 +29,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DeliveriesTableProps {
@@ -240,6 +246,30 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
 
   const redeliver = useRedeliverWebhookEvent()
 
+  const handleRedeliver = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      try {
+        await redeliver.mutateAsync({ id: delivery.webhook_event.id })
+
+        toast({
+          title: 'Attempting Webhook Event Redelivery',
+          description: `A new attempt to deliver the webhook event has been made`,
+        })
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          toast({
+            title: 'Webhook Event Redelivery Failed',
+            description: `Error redelivering Webhook Event: ${e.message}`,
+          })
+        }
+      }
+    },
+    [redeliver, delivery.webhook_event.id],
+  )
+
   return (
     <div className="flex flex-col gap-y-4">
       <div className="grid w-fit grid-cols-2 gap-2 text-sm">
@@ -255,13 +285,7 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
       <div>
         <Button
           variant={'default'}
-          onClick={async (e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            await redeliver.mutateAsync({
-              id: delivery.webhook_event.id,
-            })
-          }}
+          onClick={handleRedeliver}
           loading={redeliver.isPending}
         >
           Redeliver

@@ -1,11 +1,16 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useDeleteOAuthClient,
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
-import { OAuth2Client, OAuth2ClientConfigurationUpdate } from '@polar-sh/sdk'
+import {
+  OAuth2Client,
+  OAuth2ClientConfigurationUpdate,
+  ResponseError,
+} from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
@@ -67,8 +72,9 @@ export const EditOAuthClientModal = ({
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
       setIsUpdating(true)
-      const res = await updateOAuth2Client
-        .mutateAsync({
+
+      try {
+        const res = await updateOAuth2Client.mutateAsync({
           clientId: client.client_id,
           body: {
             ...form,
@@ -76,9 +82,24 @@ export const EditOAuthClientModal = ({
             scope: form.scope.join(' '),
           },
         })
-        .finally(() => setIsUpdating(false))
-      setUpdated(res)
-      onSuccess(res)
+
+        toast({
+          title: 'OAuth App Updated',
+          description: `OAuth App ${client.client_name} was updated successfully`,
+        })
+
+        setUpdated(res)
+        onSuccess(res)
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          toast({
+            title: 'OAuth App Update Failed',
+            description: `Error updating OAuth App: ${e.message}`,
+          })
+        }
+      } finally {
+        setIsUpdating(false)
+      }
     },
     [onSuccess, updateOAuth2Client, setUpdated, setIsUpdating, client],
   )
@@ -86,9 +107,24 @@ export const EditOAuthClientModal = ({
   const deleteOAuthClient = useDeleteOAuthClient()
 
   const handleDeleteOAuthClient = useCallback(async () => {
-    await deleteOAuthClient.mutateAsync(client.client_id)
-    hideDeleteModal()
-    onDelete(client)
+    try {
+      await deleteOAuthClient.mutateAsync(client.client_id)
+
+      toast({
+        title: 'OAuth App Deleted',
+        description: `OAuth App ${client.client_name} was deleted successfully`,
+      })
+
+      hideDeleteModal()
+      onDelete(client)
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        toast({
+          title: 'OAuth App Deletion Failed',
+          description: `Error deleting OAuth App: ${e.message}`,
+        })
+      }
+    }
   }, [hideDeleteModal, onDelete, client, deleteOAuthClient])
 
   return (

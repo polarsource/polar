@@ -30,6 +30,7 @@ import { Section } from '../Layout/Section'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import { toast } from '../Toast/use-toast'
 
 interface BenefitRowProps {
   organization: Organization
@@ -58,7 +59,20 @@ const BenefitRow = ({
   const deleteBenefit = useDeleteBenefit(organization.id)
 
   const handleDeleteBenefit = useCallback(() => {
-    deleteBenefit.mutateAsync({ id: benefit.id })
+    deleteBenefit
+      .mutateAsync({ id: benefit.id })
+      .then(() => {
+        toast({
+          title: 'Benefit Deleted',
+          description: `Benefit ${benefit.description} was deleted successfully`,
+        })
+      })
+      .catch((e) => {
+        toast({
+          title: 'Benefit Deletion Failed',
+          description: `Error deleting benefit: ${e.message}`,
+        })
+      })
   }, [deleteBenefit, benefit])
 
   return (

@@ -3,6 +3,7 @@
 import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDetails'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useBenefits,
   useLicenseKey,
@@ -115,23 +116,36 @@ export const ClientPage = ({
   const updateLicenseKey = useLicenseKeyUpdate(organization.id)
 
   const handleToggleLicenseKeyStatus = useCallback(
-    (status: 'granted' | 'disabled' | 'revoked') => {
+    async (status: 'granted' | 'disabled' | 'revoked') => {
       if (selectedLicenseKey) {
         setStatusLoading(true)
 
-        updateLicenseKey.mutate(
-          {
-            id: selectedLicenseKey.id,
-            body: {
-              status,
+        await updateLicenseKey
+          .mutateAsync(
+            {
+              id: selectedLicenseKey.id,
+              body: {
+                status,
+              },
             },
-          },
-          {
-            onSettled: () => {
-              setStatusLoading(false)
+            {
+              onSettled: () => {
+                setStatusLoading(false)
+              },
             },
-          },
-        )
+          )
+          .then(() => {
+            toast({
+              title: 'License Key Status Updated',
+              description: `License key ending in ${selectedLicenseKey.display_key} updated to ${status}`,
+            })
+          })
+          .catch((error) => {
+            toast({
+              title: 'License Key Status Update Failed',
+              description: `Error updating license key status to ${status}: ${error.message}`,
+            })
+          })
       }
     },
     [updateLicenseKey, selectedLicenseKey, setStatusLoading],
@@ -169,6 +183,7 @@ export const ClientPage = ({
         {selectedLicenseKey.status === 'granted' && (
           <Button
             onClick={() => handleToggleLicenseKeyStatus('disabled')}
+            variant="secondary"
             loading={statusLoading}
           >
             Disable

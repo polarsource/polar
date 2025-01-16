@@ -11,6 +11,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
 interface UpdateCustomFieldModalContentProps {
@@ -45,6 +46,12 @@ const UpdateCustomFieldModalContent = ({
         setIsLoading(true)
         const customField =
           await updateCustomField.mutateAsync(customFieldUpdate)
+
+        toast({
+          title: 'Custom Field Updated',
+          description: `Custom field ${customField.name} was updated successfully`,
+        })
+
         onCustomFieldUpdated(customField)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -58,6 +65,11 @@ const UpdateCustomFieldModalContent = ({
               Object.values(CustomFieldType),
             )
           }
+
+          toast({
+            title: 'Custom Field Update Failed',
+            description: `Error updating custom field: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

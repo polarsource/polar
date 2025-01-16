@@ -1,9 +1,11 @@
+import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import { CloseOutlined } from '@mui/icons-material'
 import { LicenseKeyWithActivations, PolarAPI } from '@polar-sh/sdk'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import { useCallback } from 'react'
 
 interface LicenseKeyActivationsProps {
   api: PolarAPI
@@ -22,6 +24,30 @@ export const LicenseKeyActivations = ({
     return null
   }
 
+  const handleDeactivateActivation = useCallback(
+    (activationId: string) => () => {
+      onDeactivate
+        .mutateAsync({
+          activationId,
+          key: licenseKey.key,
+          organizationId: licenseKey.organization_id,
+        })
+        .then(() => {
+          toast({
+            title: 'License Key Activation Deleted',
+            description: `Activation deleted successfully`,
+          })
+        })
+        .catch((error) => {
+          toast({
+            title: 'Activation Deactivation Failed',
+            description: `Error deactivating activation ${activationId}: ${error.message}`,
+          })
+        })
+    },
+    [onDeactivate, licenseKey],
+  )
+
   return (
     <div className="flex flex-col gap-y-4">
       <h3>Activations</h3>
@@ -37,13 +63,7 @@ export const LicenseKeyActivations = ({
                 className="h-6 w-6"
                 variant="secondary"
                 size="icon"
-                onClick={() => {
-                  onDeactivate.mutate({
-                    activationId: activation.id,
-                    key: licenseKey.key,
-                    organizationId: licenseKey.organization_id,
-                  })
-                }}
+                onClick={handleDeactivateActivation(activation.id)}
               >
                 <CloseOutlined fontSize="inherit" />
               </Button>

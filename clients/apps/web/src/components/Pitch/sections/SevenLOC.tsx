@@ -1,9 +1,9 @@
 import { Link } from '../Link'
 import { Section } from '../Section'
 
-export const WhySection = () => {
+export const SevenLOCSection = () => {
   return (
-    <Section header={{ index: '02', name: 'Why' }} title="Why Polar">
+    <Section header={{ index: '02', name: '7 LOC' }} title="7 Lines of Code">
       <p>
         What used to be a simple way to pay for things has become a complex
         mess.

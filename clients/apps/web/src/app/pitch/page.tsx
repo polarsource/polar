@@ -3,6 +3,7 @@
 import { Footer } from '@/components/Pitch/Footer'
 import { IndexSection } from '@/components/Pitch/sections/IndexSection'
 import { InvestorsSection } from '@/components/Pitch/sections/InvestorsSection'
+import { OpenSourceSection } from '@/components/Pitch/sections/OpenSource'
 import { Polar20Section } from '@/components/Pitch/sections/Polar20'
 import { TeamSection } from '@/components/Pitch/sections/TeamSection'
 import { UsageBasedSection } from '@/components/Pitch/sections/UsageBasedSection'
@@ -35,7 +36,7 @@ export default function PitchPage() {
       case 3:
         return <Polar20Section />
       case 4:
-        return <IndexSection />
+        return <OpenSourceSection />
       case 5:
         return <TeamSection />
       case 6:

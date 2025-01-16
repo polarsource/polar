@@ -3,7 +3,7 @@ import { Section } from '../Section'
 
 export const WhySection = () => {
   return (
-    <Section header={{ index: '02', name: 'Why Polar' }} title="Why">
+    <Section header={{ index: '02', name: 'Why' }} title="Why Polar">
       <p>
         What used to be a simple way to pay for things has become a complex
         mess.

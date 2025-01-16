@@ -21,7 +21,7 @@ const team = [
 
 export const TeamSection = () => {
   return (
-    <div className="flex flex-row gap-x-32">
+    <div className="flex flex-col gap-y-16 md:flex-row md:gap-x-32">
       <div className="flex max-w-lg flex-col gap-y-8">
         <h1 className="text-lg">05. Team</h1>
         <h1 className="text-4xl">We are hiring</h1>

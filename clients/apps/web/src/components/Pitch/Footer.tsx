@@ -5,7 +5,9 @@ import { sections } from './Navigation'
 
 export const Footer = ({ className }: { className?: string }) => {
   return (
-    <div className={twMerge('flex flex-row gap-x-8 text-xs', className)}>
+    <div
+      className={twMerge('hidden flex-row gap-x-8 text-xs md:flex', className)}
+    >
       <NavigationLegend />
       <SectionsLegend />
       <OpenSourceLegend />

@@ -1,3 +1,5 @@
+import { twMerge } from 'tailwind-merge'
+
 export const sections = [
   {
     title: '00. Index',
@@ -29,17 +31,25 @@ export const sections = [
   },
 ]
 
-export const PitchNavigation = ({ activeIndex }: { activeIndex: number }) => {
+export const PitchNavigation = ({
+  activeIndex,
+  setIndex,
+}: {
+  activeIndex: number
+  setIndex: (index: number) => void
+}) => {
   return (
-    <div className="flex flex-row gap-x-16 text-xs">
+    <div className="flex flex-col gap-y-8 text-xs md:flex-row md:gap-x-16">
       <span>Polar Software Inc.</span>
-      <ul className="flex flex-row gap-x-8">
+      <ul className="flex flex-col gap-y-2 md:flex-row md:gap-x-8">
         {sections.map((section, index) => (
           <li
             key={index}
-            className={
-              index === activeIndex ? 'bg-polar-200 px-1 text-black' : ''
-            }
+            onClick={() => setIndex(index)}
+            className={twMerge(
+              'hover:bg-polar-200 cursor-pointer px-1 hover:text-black',
+              index === activeIndex ? 'bg-polar-200 text-black' : '',
+            )}
           >
             {section.title}
           </li>

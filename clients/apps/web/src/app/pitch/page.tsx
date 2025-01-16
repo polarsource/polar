@@ -45,8 +45,8 @@ export default function PitchPage() {
 
   return (
     <div className="flex h-full flex-col justify-between gap-y-12 text-sm">
-      <div className="flex flex-grow flex-col gap-y-32">
-        <PitchNavigation activeIndex={index} />
+      <div className="flex flex-grow flex-col gap-y-16 md:gap-y-32">
+        <PitchNavigation activeIndex={index} setIndex={setIndex} />
         <AnimatePresence key={index}>
           <motion.div
             initial={{ opacity: 0 }}

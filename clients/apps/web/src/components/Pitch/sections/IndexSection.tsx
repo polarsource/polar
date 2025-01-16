@@ -3,7 +3,7 @@ import { Link } from '../Link'
 
 export const IndexSection = () => {
   return (
-    <div className="flex flex-row gap-x-32">
+    <div className="flex flex-col gap-y-16 md:flex-row md:gap-x-32">
       <div className="flex max-w-lg flex-col gap-y-8">
         <h1 className="text-lg">00. Index</h1>
         <h1 className="text-4xl">Integrating payments is a mess</h1>
@@ -23,7 +23,7 @@ export const IndexSection = () => {
       </div>
 
       <Console
-        className="w-full max-w-lg"
+        className="aspect-video w-full max-w-lg"
         input="polar-init"
         output="Initializing seed round..."
       />

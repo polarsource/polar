@@ -1,3 +1,5 @@
+'use client'
+
 import { Meter } from '@/app/api/meters/data'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import { twMerge } from 'tailwind-merge'

@@ -62,6 +62,7 @@ import { Label } from 'polarkit/components/ui/label'
 import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
+import { toast } from '../Toast/use-toast'
 import ProductPriceLabel from './ProductPriceLabel'
 
 const LinkView = ({
@@ -302,6 +303,18 @@ export const ProductCheckoutModal = ({
     if (selectedLink) {
       const wasLast = (checkoutLinks?.items?.length || 0) == 1
       await deleteCheckoutLink(selectedLink)
+        .then(() => {
+          toast({
+            title: 'Checkout Link Deleted',
+            description: `Checkout Link ${selectedLink.label} was deleted successfully`,
+          })
+        })
+        .catch((e) => {
+          toast({
+            title: 'Checkout Link Deletion Failed',
+            description: `Error deleting checkout link: ${e.message}`,
+          })
+        })
       if (wasLast) {
         showCreateForm()
       }
@@ -355,9 +368,19 @@ export const ProductCheckoutModal = ({
             id: selectedLink.id,
             body,
           })
+
+          toast({
+            title: 'Checkout Link Updated',
+            description: `Checkout Link ${selectedLink.label} was updated successfully`,
+          })
         } else {
           checkoutLink = await createCheckoutLink({ body })
           setSelectedLink(checkoutLink)
+
+          toast({
+            title: 'Checkout Link Created',
+            description: `Checkout Link ${checkoutLink.label} was created successfully`,
+          })
         }
         setShowForm(false)
       } catch (e) {
@@ -383,6 +406,11 @@ export const ProductCheckoutModal = ({
           } else {
             setError('root', { message: e.message })
           }
+
+          toast({
+            title: 'Checkout Link Update Failed',
+            description: `Error updating checkout link: ${e.message}`,
+          })
         }
       }
     },

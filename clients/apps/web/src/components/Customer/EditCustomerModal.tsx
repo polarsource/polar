@@ -11,6 +11,7 @@ import {
   FormLabel,
 } from 'polarkit/components/ui/form'
 import { useForm } from 'react-hook-form'
+import { toast } from '../Toast/use-toast'
 
 export const EditCustomerModal = ({
   customer,
@@ -31,9 +32,23 @@ export const EditCustomerModal = ({
     customer.organization_id,
   )
 
-  const handleUpdateCustomer = async (customerUpdate: CustomerUpdate) => {
-    await updateCustomer.mutateAsync(customerUpdate)
-    onClose()
+  const handleUpdateCustomer = (customerUpdate: CustomerUpdate) => {
+    updateCustomer
+      .mutateAsync(customerUpdate)
+      .then((customer) => {
+        toast({
+          title: 'Customer Updated',
+          description: `Customer ${customer.email} updated successfully`,
+        })
+
+        onClose()
+      })
+      .catch((error) => {
+        toast({
+          title: 'Customer Update Failed',
+          description: `Error updating customer ${customer.email}: ${error.message}`,
+        })
+      })
   }
 
   return (

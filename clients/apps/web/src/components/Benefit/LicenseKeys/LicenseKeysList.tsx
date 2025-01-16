@@ -68,10 +68,12 @@ export const LicenseKeysList = ({
       cell: ({ row: { original: licenseKey } }) => {
         return (
           <div className="flex flex-row gap-x-2">
-            {typeof licenseKey.limit_usage === 'number' && (
+            {typeof licenseKey.limit_usage === 'number' ? (
               <span>
                 {licenseKey.usage}/{licenseKey.limit_usage}
               </span>
+            ) : (
+              <span>{licenseKey.usage}</span>
             )}
           </div>
         )
@@ -93,7 +95,7 @@ export const LicenseKeysList = ({
               name={licenseKey.customer.name || licenseKey.customer.email}
             />
             <div className="flex flex-col">
-              <span className="text-sm">{licenseKey.customer.email}</span>
+              <span className="text-sm">{licenseKey.customer.name}</span>
               <span className="dark:text-polar-500 text-xs text-gray-500">
                 {licenseKey.customer.email}
               </span>

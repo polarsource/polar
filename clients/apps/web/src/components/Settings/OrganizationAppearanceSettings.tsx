@@ -25,6 +25,7 @@ import { FileRejection } from 'react-dropzone'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
+import { toast } from '../Toast/use-toast'
 
 interface OrganizationAppearanceSettingsProps {
   organization: Organization
@@ -84,6 +85,11 @@ const OrganizationAppearanceSettings: React.FC<
         id: organization.id,
         body,
       })
+
+      toast({
+        title: 'Organization Updated',
+        description: `Organization was updated successfully`,
+      })
     } catch (e) {
       if (e instanceof ResponseError) {
         const body = await e.response.json()
@@ -93,6 +99,11 @@ const OrganizationAppearanceSettings: React.FC<
         } else {
           setError('root', { message: e.message })
         }
+
+        toast({
+          title: 'Organization Update Failed',
+          description: `Error updating organization: ${e.message}`,
+        })
       }
     }
   }

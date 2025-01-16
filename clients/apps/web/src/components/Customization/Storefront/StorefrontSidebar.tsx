@@ -1,6 +1,7 @@
 'use client'
 
 import { computeComplementaryColor } from '@/components/Profile/utils'
+import { toast } from '@/components/Toast/use-toast'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -293,6 +294,12 @@ export const StorefrontSidebar = () => {
           id: organization.id,
           body: organizationUpdate,
         })
+
+        toast({
+          title: 'Organization Updated',
+          description: `Organization ${organization.name} was successfully updated`,
+        })
+
         reset(org)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -301,6 +308,11 @@ export const StorefrontSidebar = () => {
             const validationErrors = body['detail'] as ValidationError[]
             setValidationErrors(validationErrors, setError)
           }
+
+          toast({
+            title: 'Organization Update Failed',
+            description: `Error updating organization: ${e.message}`,
+          })
         }
       } finally {
         setSaveLoading(false)
@@ -322,7 +334,19 @@ export const StorefrontSidebar = () => {
           },
         })
 
+        toast({
+          title: 'Storefront Updated',
+          description: `Storefront is now ${enabled ? 'enabled' : 'disabled'}`,
+        })
+
         reset(org)
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          toast({
+            title: 'Storefront Update Failed',
+            description: `Error updating storefront: ${e.message}`,
+          })
+        }
       } finally {
         setProfilePageEnabledLoading(false)
       }

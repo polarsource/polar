@@ -13,6 +13,7 @@ import { Form } from 'polarkit/components/ui/form'
 import { MouseEvent, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
+import { toast } from '../Toast/use-toast'
 
 interface UpdateBenefitModalContentProps {
   organization: Organization
@@ -45,6 +46,11 @@ const UpdateBenefitModalContent = ({
           },
         })
 
+        toast({
+          title: 'Benefit Updated',
+          description: `Benefit ${benefit.description} updated successfully`,
+        })
+
         hideModal()
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -60,6 +66,11 @@ const UpdateBenefitModalContent = ({
           } else {
             setError('root', { message: e.message })
           }
+
+          toast({
+            title: 'Benefit Update Failed',
+            description: `Error updating benefit ${benefit.description}: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

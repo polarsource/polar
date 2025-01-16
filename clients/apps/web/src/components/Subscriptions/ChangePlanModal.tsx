@@ -21,6 +21,8 @@ import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
+import { toast } from '../Toast/use-toast'
+import { getErrorRedirect } from '../Toast/utils'
 
 const ProductPriceListItem = ({
   product,
@@ -126,6 +128,12 @@ const ChangePlanModal = ({
           product_price_id: selectedPrice.id,
         },
       })
+
+      toast({
+        title: 'Subscription Updated',
+        description: `Subscription was updated successfully`,
+      })
+
       onUserSubscriptionUpdate(updatedUserSubscription)
       hide()
     } catch (err) {
@@ -135,7 +143,11 @@ const ChangePlanModal = ({
           const body = await err.response.json()
           if (body.error === 'SubscriptionNotActiveOnStripe') {
             router.push(
-              `/${organization.slug}/products/${subscription.product_id}`,
+              getErrorRedirect(
+                `/${organization.slug}/products/${subscription.product_id}`,
+                'Subscription Update Failed',
+                'Subscription is not active on Stripe',
+              ),
             )
           } else if (body.error === 'MissingPaymentMethod') {
             const { url } = await api.checkouts.clientCreate({

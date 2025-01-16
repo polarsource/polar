@@ -1,6 +1,11 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { toast } from '@/components/Toast/use-toast'
 import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
-import { OAuth2Client, OAuth2ClientConfiguration } from '@polar-sh/sdk'
+import {
+  OAuth2Client,
+  OAuth2ClientConfiguration,
+  ResponseError,
+} from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
@@ -49,15 +54,31 @@ export const NewOAuthClientModal = ({
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfiguration) => {
       setIsCreating(true)
-      const res = await createOAuth2Client
-        .mutateAsync({
+
+      try {
+        const res = await createOAuth2Client.mutateAsync({
           ...form,
           redirect_uris: form.redirect_uris.map(({ uri }) => uri),
           scope: form.scope.join(' '),
         })
-        .finally(() => setIsCreating(false))
-      setCreated(res)
-      onSuccess(res)
+
+        toast({
+          title: 'OAuth App Created',
+          description: `OAuth App ${res.client_name} was created successfully`,
+        })
+
+        setCreated(res)
+        onSuccess(res)
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          toast({
+            title: 'OAuth App Creation Failed',
+            description: `Error creating OAuth App: ${e.message}`,
+          })
+        }
+      } finally {
+        setIsCreating(false)
+      }
     },
     [createOAuth2Client, setCreated, setIsCreating, onSuccess],
   )

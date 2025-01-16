@@ -11,6 +11,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from '../Toast/use-toast'
 import DiscountForm from './DiscountForm'
 
 interface UpdateDiscountModalContentProps {
@@ -47,6 +48,12 @@ const UpdateDiscountModalContent = ({
       try {
         setIsLoading(true)
         const discount = await updateDiscount.mutateAsync(discountUpdate)
+
+        toast({
+          title: 'Discount Updated',
+          description: `Discount ${discount.code} was updated successfully`,
+        })
+
         onDiscountUpdated(discount)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -60,6 +67,11 @@ const UpdateDiscountModalContent = ({
               'percentage.repeat',
             ])
           }
+
+          toast({
+            title: 'Discount Update Failed',
+            description: `Error updating discount: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

@@ -8,6 +8,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useCancelSubscription,
   useCustomFields,
@@ -702,11 +703,25 @@ const CancelSubscriptionView = ({
           body.cancel_at_period_end = true
         }
 
-        await cancelSubscription.mutateAsync({
-          id: subscription.id,
-          body: body,
-        })
-        showOverview()
+        await cancelSubscription
+          .mutateAsync({
+            id: subscription.id,
+            body: body,
+          })
+          .then(() => {
+            toast({
+              title: 'Subscription Cancelled',
+              description: `Subscription ${subscription.product.name} successfully cancelled`,
+            })
+
+            showOverview()
+          })
+          .catch((error) => {
+            toast({
+              title: 'Subscription Cancellation Failed',
+              description: `Error cancelling subscription ${subscription.product.name}: ${error.message}`,
+            })
+          })
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()

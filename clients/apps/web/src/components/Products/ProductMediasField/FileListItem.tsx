@@ -6,6 +6,7 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { FileObject } from '@/components/FileUpload'
+import { toast } from '@/components/Toast/use-toast'
 import { ClearOutlined } from '@mui/icons-material'
 import { useMemo } from 'react'
 
@@ -25,7 +26,20 @@ export const FileListItem = ({
   })
 
   const onDelete = useCallback(async () => {
-    deleteFile.mutateAsync()
+    deleteFile
+      .mutateAsync()
+      .then(() => {
+        toast({
+          title: 'File Deleted',
+          description: `File ${file.name} was deleted successfully`,
+        })
+      })
+      .catch((e) => {
+        toast({
+          title: 'File Deletion Failed',
+          description: `Error deleting file: ${e.message}`,
+        })
+      })
   }, [deleteFile])
 
   const isUploading = useMemo(() => file.isUploading, [file])

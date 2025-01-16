@@ -10,6 +10,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import { useToast } from '@/components/Toast/use-toast'
 import {
   useAdvertisementDisplays,
   useBenefitProducts,
@@ -166,9 +167,24 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
 
   const deleteBenefit = useDeleteBenefit(organization.id)
 
+  const { toast } = useToast()
+
   const handleDeleteBenefit = useCallback(() => {
-    deleteBenefit.mutateAsync({ id: benefit.id })
-  }, [deleteBenefit, benefit])
+    deleteBenefit
+      .mutateAsync({ id: benefit.id })
+      .then(() => {
+        toast({
+          title: 'Benefit Deleted',
+          description: `Benefit ${benefit.description} successfully deleted`,
+        })
+      })
+      .catch((error) => {
+        toast({
+          title: 'Benefit Deletion Failed',
+          description: `Error deleting benefit ${benefit.description}: ${error.message}`,
+        })
+      })
+  }, [deleteBenefit, benefit, toast])
 
   return (
     <div className="flex w-full flex-row items-center justify-between">

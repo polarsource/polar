@@ -5,6 +5,7 @@ import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountMod
 import UpdateDiscountModalContent from '@/components/Discounts/UpdateDiscountModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
+import { toast } from '@/components/Toast/use-toast'
 import { useDeleteDiscount, useDiscounts } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import {
@@ -131,6 +132,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
     [],
   )
 
+  const handleDeleteDiscount = useCallback(
+    (discount: Discount) => () => {
+      deleteDiscount.mutateAsync(discount)
+
+      toast({
+        title: 'Discount Deleted',
+        description: `Discount ${discount.name} successfully deleted`,
+      })
+    },
+    [toast],
+  )
+
   const discountsHook = useDiscounts(organization.id, {
     ...getAPIParams(pagination, sorting),
     query: _query,
@@ -223,7 +236,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               <DropdownMenuItem onClick={handleCopyDiscountId(discount)}>
                 Copy Discount ID
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => deleteDiscount.mutate(discount)}>
+              <DropdownMenuItem onClick={handleDeleteDiscount(discount)}>
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -2,6 +2,7 @@
 
 import {
   Organization,
+  ResponseError,
   WebhookEndpoint,
   WebhookEndpointCreate,
 } from '@polar-sh/sdk'
@@ -9,6 +10,7 @@ import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { toast } from '@/components/Toast/use-toast'
 import { useCreateWebhookEndpoint } from '@/hooks/queries'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -39,10 +41,27 @@ export default function NewWebhookModal({
   const onSubmit = useCallback(
     async (form: WebhookEndpointCreate) => {
       setIsCreating(true)
-      const res = await createWebhookEndpoint.mutateAsync(form)
-      setCreated(res)
-      setIsCreating(false)
-      hide()
+
+      try {
+        const res = await createWebhookEndpoint.mutateAsync(form)
+
+        toast({
+          title: 'Webhook Endpoint Created',
+          description: `Webhook Endpoint was created successfully`,
+        })
+
+        setCreated(res)
+        hide()
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          toast({
+            title: 'Webhook Endpoint Creation Failed',
+            description: `Error creating Webhook Endpoint: ${e.message}`,
+          })
+        }
+      } finally {
+        setIsCreating(false)
+      }
     },
     [hide, createWebhookEndpoint, setCreated, setIsCreating],
   )

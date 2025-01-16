@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { NewBenefitForm } from '../Benefit/BenefitForm'
 import { CreatableBenefit } from '../Benefit/utils'
+import { useToast } from '../Toast/use-toast'
 
 export type CreateBenefitModalParams = {
   type?: CreatableBenefit
@@ -63,6 +64,8 @@ const CreateBenefitModalContent = ({
     },
   })
 
+  const { toast } = useToast()
+
   const {
     handleSubmit,
     setError,
@@ -79,6 +82,12 @@ const CreateBenefitModalContent = ({
 
         if (benefit) {
           onSelectBenefit(benefit)
+
+          toast({
+            title: 'Benefit Created',
+            description: `Benefit ${benefit.description} was created successfully`,
+          })
+
           hideModal()
         }
       } catch (e) {
@@ -93,6 +102,11 @@ const CreateBenefitModalContent = ({
               Object.values(BenefitType),
             )
           }
+
+          toast({
+            title: 'Benefit Creation Failed',
+            description: `Error creating benefit: ${e.message}`,
+          })
         }
       } finally {
         setIsLoading(false)

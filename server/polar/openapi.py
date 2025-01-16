@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from polar.config import Environment, settings
+from polar.kit.metadata import add_metadata_query_schema
 
 
 class OpenAPIExternalDoc(TypedDict):
@@ -127,6 +128,9 @@ def set_openapi_generator(app: FastAPI) -> None:
             servers=app.servers,
             separate_input_output_schemas=app.separate_input_output_schemas,
         )
+
+        openapi_schema = add_metadata_query_schema(openapi_schema)
+
         return openapi_schema
 
     app.openapi = _openapi_generator  # type: ignore[method-assign]

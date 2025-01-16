@@ -1,6 +1,6 @@
 import { useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
-import { Account, Status } from '@polar-sh/sdk'
+import { Account, Status } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {

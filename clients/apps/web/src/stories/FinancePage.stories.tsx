@@ -9,7 +9,7 @@ import {
   PledgeType,
   Reward,
   RewardState,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 type Story = StoryObj<typeof Finance>
 

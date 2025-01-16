@@ -1,4 +1,4 @@
-import { Repository } from '@polar-sh/sdk'
+import { Repository } from '@polar-sh/api'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 
 export const RepoPickerHeader = (props: {

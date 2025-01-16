@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import { organizationPageLink } from '@/utils/nav'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
-import { Organization, Pledge } from '@polar-sh/sdk'
+import { Organization, Pledge } from '@polar-sh/api'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
@@ -57,7 +57,7 @@ export const Status = (props: {
         </div>
 
         {currentUser ? (
-          <div className=" my-8 flex w-full justify-center">
+          <div className="my-8 flex w-full justify-center">
             <Link href={organizationPageLink(props.organization)}>
               <Button>Continue to {props.organization.name}</Button>
             </Link>

@@ -3,7 +3,7 @@ import {
   ListResourceRepository,
   RepositoriesApiListRequest,
   ResponseError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import {
   UseMutationResult,
   UseQueryResult,

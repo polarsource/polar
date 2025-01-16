@@ -13,7 +13,7 @@ import {
   type OrganizationBadgeSettingsRead,
   type OrganizationBadgeSettingsUpdate,
   type RepositoryBadgeSettingsRead,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'

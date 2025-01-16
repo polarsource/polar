@@ -4,7 +4,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
 import { ArrowForward } from '@mui/icons-material'
-import { OAuth2Client } from '@polar-sh/sdk'
+import { OAuth2Client } from '@polar-sh/api'
 import {
   FormattedDateTime,
   ShadowListGroup,
@@ -116,7 +116,7 @@ const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {
       className="flex w-full cursor-pointer flex-col gap-y-4"
       onClick={() => onClick(client)}
     >
-      <div className="flex flex-row items-center justify-between ">
+      <div className="flex flex-row items-center justify-between">
         <div className="flex flex-row items-center gap-x-4">
           <Avatar
             className="h-12 w-12"

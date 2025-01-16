@@ -1,7 +1,7 @@
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { Issue, ListResourceIssue, PolarAPI } from '@polar-sh/sdk'
+import { Issue, ListResourceIssue, PolarAPI } from '@polar-sh/api'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

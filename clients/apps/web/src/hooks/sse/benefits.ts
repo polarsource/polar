@@ -1,4 +1,4 @@
-import { BenefitType } from '@polar-sh/sdk'
+import { BenefitType } from '@polar-sh/api'
 
 export const onBenefitGranted = async (_: {
   subscription_benefit_id: string

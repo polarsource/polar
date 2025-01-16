@@ -1,7 +1,7 @@
 'use client'
 
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { Repository } from '@polar-sh/sdk'
+import { Repository } from '@polar-sh/api'
 import { Command } from 'cmdk'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -171,7 +171,7 @@ const SelectedRepository = ({
     <SelectedBox onClick={onClick} classNames={classNames}>
       <div className="flex items-center justify-between space-x-2">
         <RepoIcon />
-        <div className="flex items-center space-x-1 overflow-hidden ">
+        <div className="flex items-center space-x-1 overflow-hidden">
           <span className="dark:text-polar-200 overflow-hidden text-ellipsis whitespace-nowrap text-gray-900">
             {displayOrganization && `${repository.organization.name}/`}
             {repository.name}

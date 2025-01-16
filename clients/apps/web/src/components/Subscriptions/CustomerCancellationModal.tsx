@@ -8,7 +8,7 @@ import {
   CustomerSubscriptionCancel,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { UseMutationResult } from '@tanstack/react-query'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'

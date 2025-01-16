@@ -1,5 +1,5 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
-import { Funding } from '@polar-sh/sdk'
+import { Funding } from '@polar-sh/api'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

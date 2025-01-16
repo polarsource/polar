@@ -1,4 +1,4 @@
-import { Account } from '@polar-sh/sdk'
+import { Account } from '@polar-sh/api'
 import React, { useMemo } from 'react'
 
 interface AccountAssociationsProps {

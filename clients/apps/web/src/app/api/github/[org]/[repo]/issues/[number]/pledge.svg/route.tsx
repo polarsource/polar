@@ -9,7 +9,7 @@ import {
   Pledger,
   PolarAPI,
   State,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'

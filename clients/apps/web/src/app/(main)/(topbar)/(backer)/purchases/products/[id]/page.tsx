@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { CustomerOrder, ResponseError } from '@polar-sh/sdk'
+import { CustomerOrder, ResponseError } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 

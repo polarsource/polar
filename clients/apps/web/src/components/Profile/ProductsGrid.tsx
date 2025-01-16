@@ -1,4 +1,4 @@
-import { Organization, SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { Organization, SubscriptionRecurringInterval } from '@polar-sh/api'
 import {
   Select,
   SelectContent,

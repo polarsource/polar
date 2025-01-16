@@ -1,5 +1,5 @@
 import { api } from '@/utils/api'
-import { DiscordGuild } from '@polar-sh/sdk'
+import { DiscordGuild } from '@polar-sh/api'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api'
 import { org } from '@/utils/testdata'
-import { Benefit, Organization } from '@polar-sh/sdk'
+import { Benefit, Organization } from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

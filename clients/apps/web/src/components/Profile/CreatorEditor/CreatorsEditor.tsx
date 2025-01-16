@@ -1,7 +1,7 @@
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { FaceOutlined } from '@mui/icons-material'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { Modal } from '../../Modal'
 import { useModal } from '../../Modal/useModal'
 import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'

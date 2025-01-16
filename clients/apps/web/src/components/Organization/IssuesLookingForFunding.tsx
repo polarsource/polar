@@ -12,7 +12,7 @@ import {
   ListResourceIssueFunding,
   Organization,
   Repository,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import {
   ReadonlyURLSearchParams,
   useRouter,

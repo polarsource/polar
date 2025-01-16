@@ -1,4 +1,4 @@
-import { SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { SubscriptionRecurringInterval } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
 

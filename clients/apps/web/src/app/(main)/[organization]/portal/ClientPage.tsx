@@ -5,7 +5,7 @@ import {
   ListResourceCustomerOrder,
   ListResourceCustomerSubscription,
   Organization,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 const ClientPage = ({
   organization,

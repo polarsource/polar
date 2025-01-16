@@ -1,5 +1,5 @@
 import { CONFIG } from '@/utils/config'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 
 export const organizationPageLink = (
   org: Organization,

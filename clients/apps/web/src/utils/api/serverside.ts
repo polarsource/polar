@@ -1,4 +1,4 @@
-import { PolarAPI } from '@polar-sh/sdk'
+import { PolarAPI } from '@polar-sh/api'
 import { cookies, headers } from 'next/headers'
 import { cache } from 'react'
 import { buildServerSideAPI } from '.'

@@ -6,7 +6,7 @@ import {
   CustomerSubscription,
   ProductPrice,
   ProductStorefront,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
 ## Clipeo mentiris arquato obliqua lacerta

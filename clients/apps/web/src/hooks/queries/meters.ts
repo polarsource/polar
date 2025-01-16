@@ -1,5 +1,5 @@
 import { Meter, MeterEvent } from '@/app/api/meters/data'
-import { Pagination } from '@polar-sh/sdk'
+import { Pagination } from '@polar-sh/api'
 import { useQuery } from '@tanstack/react-query'
 
 export const useMeters = (organizationId?: string) =>

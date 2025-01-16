@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { api, queryClient } from '@/utils/api'
-import { FileRead } from '@polar-sh/sdk'
+import { FileRead } from '@polar-sh/api'
 import { defaultRetry } from './retry'
 
 import { useMutation } from '@tanstack/react-query'

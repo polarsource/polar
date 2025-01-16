@@ -1,5 +1,5 @@
 import { UserIcon } from '@heroicons/react/24/outline'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Input from 'polarkit/components/ui/atoms/input'

@@ -7,7 +7,7 @@ import {
   ResponseError,
   WebhookEndpoint,
   WebhookEndpointUpdate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 

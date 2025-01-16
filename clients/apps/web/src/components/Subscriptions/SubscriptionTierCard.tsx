@@ -6,7 +6,7 @@ import {
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/api'
 import Markdown from 'markdown-to-jsx'
 import {
   Card,

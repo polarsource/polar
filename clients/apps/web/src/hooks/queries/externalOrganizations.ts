@@ -1,5 +1,5 @@
 import { api } from '@/utils/api'
-import { ExternalOrganizationsApiListRequest } from '@polar-sh/sdk'
+import { ExternalOrganizationsApiListRequest } from '@polar-sh/api'
 import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

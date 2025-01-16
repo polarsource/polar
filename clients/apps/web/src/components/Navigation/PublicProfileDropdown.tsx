@@ -10,7 +10,7 @@ import {
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
-import { UserRead } from '@polar-sh/sdk'
+import { UserRead } from '@polar-sh/api'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Separator } from 'polarkit/components/ui/separator'

@@ -1,5 +1,5 @@
 import IssueLabel from '@/components/Issues/IssueLabel'
-import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
+import { type RepositoryBadgeSettingsRead } from '@polar-sh/api'
 import { motion } from 'framer-motion'
 import { twMerge } from 'tailwind-merge'
 

@@ -4,7 +4,7 @@ import { api, queryClient } from '@/utils/api'
 import {
   LicenseKeysApiListRequest,
   LicenseKeysApiUpdateRequest,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { defaultRetry } from './retry'
 
 export const useLicenseKeyUpdate = (organizationId: string) =>

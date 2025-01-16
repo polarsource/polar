@@ -1,6 +1,6 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import { getServerURL } from '@/utils/api'
-import { Storefront, StorefrontCustomer } from '@polar-sh/sdk'
+import { Storefront, StorefrontCustomer } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 

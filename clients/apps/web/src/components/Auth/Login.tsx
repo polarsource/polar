@@ -1,7 +1,7 @@
 'use client'
 
 import { usePostHog, type EventName } from '@/hooks/posthog'
-import { UserSignupAttribution } from '@polar-sh/sdk'
+import { UserSignupAttribution } from '@polar-sh/api'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import { useEffect } from 'react'

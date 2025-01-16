@@ -4,7 +4,7 @@ import { useBackofficeBadgeAction } from '@/hooks/queries'
 import {
   BackofficeBadgeActionEnum,
   BackofficeBadgeResponse,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useState } from 'react'
 
 const Badge = () => {

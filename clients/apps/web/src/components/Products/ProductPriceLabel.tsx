@@ -1,4 +1,4 @@
-import { ProductPrice, ProductPriceType } from '@polar-sh/sdk'
+import { ProductPrice, ProductPriceType } from '@polar-sh/api'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {

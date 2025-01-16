@@ -1,4 +1,4 @@
-import { Issue } from '@polar-sh/sdk'
+import { Issue } from '@polar-sh/api'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 
 const PolarLogo = () => {

@@ -16,7 +16,7 @@ import {
 } from '@/utils/datatable'
 import { getDiscountDisplay } from '@/utils/discount'
 import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
-import { Discount, Organization } from '@polar-sh/sdk'
+import { Discount, Organization } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {

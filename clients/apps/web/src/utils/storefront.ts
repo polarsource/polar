@@ -1,4 +1,4 @@
-import { PolarAPI, ResponseError, Storefront } from '@polar-sh/sdk'
+import { PolarAPI, ResponseError, Storefront } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 

@@ -4,7 +4,7 @@ import {
   ListResourceCustomerOrder,
   ListResourceCustomerSubscription,
   ResponseError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'

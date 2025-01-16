@@ -1,4 +1,4 @@
-import { Organization, PolarAPI } from '@polar-sh/sdk'
+import { Organization, PolarAPI } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 

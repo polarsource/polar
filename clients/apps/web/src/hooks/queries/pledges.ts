@@ -1,5 +1,5 @@
 import { api, queryClient } from '@/utils/api'
-import { PaymentMethod, Pledge, PledgesApiSearchRequest } from '@polar-sh/sdk'
+import { PaymentMethod, Pledge, PledgesApiSearchRequest } from '@polar-sh/api'
 import {
   UseMutationResult,
   UseQueryResult,

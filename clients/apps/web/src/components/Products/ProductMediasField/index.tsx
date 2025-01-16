@@ -3,7 +3,7 @@ import {
   FileServiceTypes,
   Organization,
   ProductMediaFileRead,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { ReactElement, useCallback, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { twMerge } from 'tailwind-merge'

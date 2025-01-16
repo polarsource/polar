@@ -5,7 +5,7 @@ import {
   Numbers,
   TextSnippet,
 } from '@mui/icons-material'
-import { CustomFieldType } from '@polar-sh/sdk'
+import { CustomFieldType } from '@polar-sh/api'
 
 const getIcon = (type: CustomFieldType) => {
   switch (type) {

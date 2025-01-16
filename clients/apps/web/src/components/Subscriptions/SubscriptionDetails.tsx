@@ -3,10 +3,7 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
-import {
-  PolarAPI,
-  CustomerSubscription,
-} from '@polar-sh/sdk'
+import { CustomerSubscription, PolarAPI } from '@polar-sh/api'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'

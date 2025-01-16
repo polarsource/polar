@@ -1,4 +1,4 @@
-import { CheckoutPublic, PolarAPI, ResponseError } from '@polar-sh/sdk'
+import { CheckoutPublic, PolarAPI, ResponseError } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 

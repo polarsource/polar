@@ -5,9 +5,9 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { ProductCheckoutModal } from '@/components/Products/ProductCheckoutModal'
-import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
+import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { useProducts } from '@/hooks/queries/products'
 import useDebouncedCallback from '@/hooks/utils'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -29,7 +29,7 @@ import {
   Product,
   ProductPrice,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'

@@ -3,7 +3,7 @@
 import { useCustomerOrders } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import Link from 'next/link'
 import { useRouter, useSelectedLayoutSegment } from 'next/navigation'
 import {

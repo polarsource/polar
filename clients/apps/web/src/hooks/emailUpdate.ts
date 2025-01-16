@@ -1,9 +1,9 @@
 'use client'
 
-import { api } from "@/utils/api"
-import { EmailUpdateRequest } from "@polar-sh/sdk"
-import { useRouter } from "next/navigation"
-import { useCallback } from "react"
+import { api } from '@/utils/api'
+import { EmailUpdateRequest } from '@polar-sh/api'
+import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
 
 export const useSendEmailUpdate = () => {
   const router = useRouter()

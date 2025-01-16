@@ -28,7 +28,7 @@ import {
   RewardPaidNotificationPayload,
   State,
   UserRead,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 export function addDays(date: Date, days: number) {
   var result = new Date(date)

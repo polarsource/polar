@@ -4,7 +4,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
-import { Issue, Organization } from '@polar-sh/sdk'
+import { Issue, Organization } from '@polar-sh/api'
 import Link from 'next/link'
 import { Tabs, TabsContent } from 'polarkit/components/ui/atoms/tabs'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'

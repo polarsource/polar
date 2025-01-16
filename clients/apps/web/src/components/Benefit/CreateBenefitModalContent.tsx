@@ -7,7 +7,7 @@ import {
   ResponseError,
   ValidationError,
   type Benefit,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'

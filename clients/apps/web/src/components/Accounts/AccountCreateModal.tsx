@@ -7,7 +7,7 @@ import {
   AccountType,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import CountryPicker from 'polarkit/components/ui/atoms/countrypicker'
 import Input from 'polarkit/components/ui/atoms/input'

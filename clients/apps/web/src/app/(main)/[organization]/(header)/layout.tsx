@@ -5,7 +5,7 @@ import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { UserRead } from '@polar-sh/sdk'
+import { UserRead } from '@polar-sh/api'
 import React from 'react'
 
 export default async function Layout({

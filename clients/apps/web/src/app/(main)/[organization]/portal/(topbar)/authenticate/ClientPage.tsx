@@ -3,7 +3,7 @@
 import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Organization, ResponseError, ValidationError } from '@polar-sh/sdk'
+import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 

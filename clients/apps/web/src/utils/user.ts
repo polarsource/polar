@@ -1,4 +1,4 @@
-import { Organization, PolarAPI, ResponseError, UserRead } from '@polar-sh/sdk'
+import { Organization, PolarAPI, ResponseError, UserRead } from '@polar-sh/api'
 import { headers } from 'next/headers'
 import { cache } from 'react'
 

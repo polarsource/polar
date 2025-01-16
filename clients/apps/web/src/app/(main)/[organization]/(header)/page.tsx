@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { ListResourceIssueFunding } from '@polar-sh/sdk'
+import { ListResourceIssueFunding } from '@polar-sh/api'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'

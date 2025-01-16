@@ -1,6 +1,6 @@
 import { githubRepoUrl } from '@/utils/github'
 import { formatStarsNumber } from '@/utils/stars'
-import { Organization, type Repository } from '@polar-sh/sdk'
+import { Organization, type Repository } from '@polar-sh/api'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import GrayCard from '../Cards/GrayCard'
 

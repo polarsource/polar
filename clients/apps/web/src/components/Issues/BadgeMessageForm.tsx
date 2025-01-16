@@ -1,4 +1,4 @@
-import { CurrencyAmount, Funding } from '@polar-sh/sdk'
+import { CurrencyAmount, Funding } from '@polar-sh/api'
 import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import { LabeledRadioButton } from 'polarkit/components/ui/atoms'

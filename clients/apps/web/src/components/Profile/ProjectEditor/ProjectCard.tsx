@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { StarIcon as StarIconOutlined } from '@heroicons/react/24/outline'
 import { DragIndicatorOutlined, HiveOutlined } from '@mui/icons-material'
-import { Organization, Repository } from '@polar-sh/sdk'
+import { Organization, Repository } from '@polar-sh/api'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import {

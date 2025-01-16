@@ -5,7 +5,7 @@ import {
   ChevronLeftOutlined,
   ChevronRightOutlined,
 } from '@mui/icons-material'
-import { Organization, Product } from '@polar-sh/sdk'
+import { Organization, Product } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'

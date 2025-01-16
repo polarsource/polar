@@ -3,7 +3,7 @@
 import CustomerPortalOrder from '@/components/CustomerPortal/CustomerPortalOrder'
 import { api } from '@/utils/api'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { CustomerOrder } from '@polar-sh/sdk'
+import { CustomerOrder } from '@polar-sh/api'
 import Link from 'next/link'
 
 const ClientPage = ({ order }: { order: CustomerOrder }) => {

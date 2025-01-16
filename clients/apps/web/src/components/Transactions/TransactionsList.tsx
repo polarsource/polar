@@ -12,7 +12,7 @@ import {
   Transaction,
   TransactionEmbedded,
   TransactionType,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'

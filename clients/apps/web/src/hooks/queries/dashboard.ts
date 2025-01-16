@@ -1,5 +1,5 @@
 import { api } from '@/utils/api'
-import { IssueListResponse, IssueSortBy } from '@polar-sh/sdk'
+import { IssueListResponse, IssueSortBy } from '@polar-sh/api'
 import {
   InfiniteData,
   UseInfiniteQueryResult,

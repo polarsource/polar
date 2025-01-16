@@ -7,7 +7,7 @@ import {
   BenefitDiscordCreate,
   BenefitType,
   Organization,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'

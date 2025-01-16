@@ -7,7 +7,7 @@ import {
   usePersonalDashboard,
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
-import { BenefitType, ProductPriceType } from '@polar-sh/sdk'
+import { BenefitType, ProductPriceType } from '@polar-sh/api'
 import Link, { LinkProps } from 'next/link'
 import { usePathname } from 'next/navigation'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'

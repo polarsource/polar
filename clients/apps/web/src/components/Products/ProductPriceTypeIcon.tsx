@@ -1,5 +1,5 @@
 import { LoopOutlined, ShoppingCartOutlined } from '@mui/icons-material'
-import { ProductPriceType } from '@polar-sh/sdk'
+import { ProductPriceType } from '@polar-sh/api'
 import React from 'react'
 
 interface ProductPriceTypeIconProps {

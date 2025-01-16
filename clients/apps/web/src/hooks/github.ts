@@ -1,7 +1,7 @@
 import { useStore } from '@/store'
 import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { CONFIG } from '@/utils/config'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
 import { useGitHubAccount } from './oauth-accounts'

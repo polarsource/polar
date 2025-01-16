@@ -4,7 +4,7 @@ import {
   IssuesApiListRequest,
   Organization,
   PolarAPI,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { getStorefront } from './storefront'
 
 const getIssueBy = async (

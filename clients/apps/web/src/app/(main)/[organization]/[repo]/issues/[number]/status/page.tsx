@@ -1,7 +1,7 @@
 import Status from '@/components/Pledge/Status'
 import { api } from '@/utils/api'
 import { resolveRepositoryPath } from '@/utils/repository'
-import { Pledge, ResponseError } from '@polar-sh/sdk'
+import { Pledge, ResponseError } from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 
 const cacheConfig = {

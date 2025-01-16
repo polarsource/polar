@@ -5,7 +5,7 @@ import {
   CheckoutDiscountPercentageOnceForeverDuration,
   CheckoutDiscountPercentageRepeatDuration,
   DiscountType,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 
 const isDiscountFixed = (

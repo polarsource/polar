@@ -12,7 +12,7 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
-import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
+import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/api'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -103,21 +103,21 @@ const Pledges = () => {
             <span>&quot;{i[0][0].pledge.issue.title}&quot;</span>
 
             {i[0][0].pledge.issue.confirmed_solved_at ? (
-              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-green-400 px-2 text-sm text-white">
                 confirmed solved
               </div>
             ) : (
-              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-orange-400 px-2 text-sm text-white">
                 not confirmed solved
               </div>
             )}
 
             {i[0][0].pledge.issue.needs_confirmation_solved ? (
-              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-green-400 px-2 text-sm text-white">
                 awaiting confirmation
               </div>
             ) : (
-              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+              <div className="flex items-center rounded-full bg-orange-400 px-2 text-sm text-white">
                 not awaiting confirmation
               </div>
             )}
@@ -331,7 +331,7 @@ const Pledges = () => {
                           <span className="whitespace-nowrap">
                             Create transfer
                           </span>
-                          <CurrencyDollarIcon className="ml-2 h-4 w-4 " />
+                          <CurrencyDollarIcon className="ml-2 h-4 w-4" />
                         </Button>
                       )}
                     </td>

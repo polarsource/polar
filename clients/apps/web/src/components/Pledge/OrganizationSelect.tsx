@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   Select,

@@ -3,7 +3,7 @@
 import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { api } from '@/utils/api'
-import { Account, Organization, Status } from '@polar-sh/sdk'
+import { Account, Organization, Status } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
@@ -60,7 +60,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     const link = await api.accounts.dashboardLink({
       id: account.id,
     })
-    window.open(link.url, '_blank');
+    window.open(link.url, '_blank')
   }
 
   return (

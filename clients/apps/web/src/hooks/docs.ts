@@ -1,6 +1,6 @@
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/api'
-import { UserRead } from '@polar-sh/sdk'
+import { UserRead } from '@polar-sh/api'
 import { useCallback, useContext, useEffect, useState } from 'react'
 
 export const useClientSideLoadedUser = (): {

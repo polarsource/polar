@@ -1,6 +1,6 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import { getTimestampFormatter, getValueFormatter } from '@/utils/metrics'
-import { Interval, Metric } from '@polar-sh/sdk'
+import { Interval, Metric } from '@polar-sh/api'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MetricChart from './MetricChart'

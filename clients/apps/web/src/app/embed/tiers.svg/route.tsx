@@ -4,7 +4,7 @@ import {
   ProductStorefront,
   Storefront,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 

@@ -20,7 +20,7 @@ import {
   ResponseError,
   WebhookDelivery,
   WebhookEndpoint,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'

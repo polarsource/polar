@@ -4,14 +4,14 @@ import { useCheckoutClientSSE } from '@/hooks/sse'
 import { CONFIG } from '@/utils/config'
 import { getDiscountDisplay } from '@/utils/discount'
 import { CloseOutlined } from '@mui/icons-material'
-import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import {
   CheckoutConfirmStripe,
   CheckoutPublic,
   CheckoutPublicConfirmed,
   CheckoutStatus,
   CheckoutUpdatePublic,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
+import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import {
   Elements,

@@ -2,7 +2,7 @@
 
 import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import { Organization, WebhookEndpoint } from '@polar-sh/sdk'
+import { Organization, WebhookEndpoint } from '@polar-sh/api'
 import Link from 'next/link'
 import {
   FormattedDateTime,

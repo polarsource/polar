@@ -1,7 +1,7 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import {
   FormControl,
   FormField,

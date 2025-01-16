@@ -1,5 +1,5 @@
 import { PolarThemeProvider } from '@/app/providers'
-import { CheckoutPublic } from '@polar-sh/sdk'
+import { CheckoutPublic } from '@polar-sh/api'
 import PublicLayout from '../Layout/PublicLayout'
 import CheckoutEmbedLayout from './Embed/CheckoutEmbedLayout'
 

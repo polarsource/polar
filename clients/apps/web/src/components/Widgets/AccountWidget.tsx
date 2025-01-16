@@ -1,6 +1,6 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Status } from '@polar-sh/sdk'
+import { Status } from '@polar-sh/api'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'

@@ -24,7 +24,7 @@ import {
   PledgerPledgePendingNotification,
   RewardPaidNotification,
   TeamAdminMemberPledgedNotification,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'

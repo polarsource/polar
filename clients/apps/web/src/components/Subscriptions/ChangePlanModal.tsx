@@ -10,7 +10,7 @@ import {
   ProductStorefront,
   ResponseError,
   SubscriptionRecurringInterval,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription, useStorefront } from '@/hooks/queries'

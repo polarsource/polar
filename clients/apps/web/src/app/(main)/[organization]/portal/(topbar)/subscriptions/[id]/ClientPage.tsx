@@ -2,7 +2,7 @@
 
 import CustomerPortalSubscription from '@/components/CustomerPortal/CustomerPortalSubscription'
 import { buildAPI } from '@/utils/api'
-import { CustomerSubscription, Organization } from '@polar-sh/sdk'
+import { CustomerSubscription, Organization } from '@polar-sh/api'
 
 const ClientPage = ({
   subscription,

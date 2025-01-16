@@ -2,7 +2,7 @@ import {
   CustomerBenefitGrantDownloadables,
   DownloadableRead,
   PolarAPI,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 import { useCustomerDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'

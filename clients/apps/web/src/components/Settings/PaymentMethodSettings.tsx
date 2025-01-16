@@ -8,7 +8,7 @@ import {
   CreditCardIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { PaymentMethod } from '@polar-sh/sdk'
+import { PaymentMethod } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useState } from 'react'
 import { prettyCardName } from '../Pledge/payment'

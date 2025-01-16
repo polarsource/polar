@@ -1,16 +1,19 @@
+import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGoogleAuthorizeURL } from '@/utils/auth'
 import { Google } from '@mui/icons-material'
-import Button from 'polarkit/components/ui/atoms/button'
-import { UserSignupAttribution } from '@polar-sh/sdk'
+import { UserSignupAttribution } from '@polar-sh/api'
 import Link from 'next/link'
-import { usePostHog, type EventName } from '@/hooks/posthog'
+import Button from 'polarkit/components/ui/atoms/button'
 
 interface GoogleLoginButtonProps {
   returnTo?: string
   signup?: UserSignupAttribution
 }
 
-const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ returnTo, signup }) => {
+const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
+  returnTo,
+  signup,
+}) => {
   const posthog = usePostHog()
 
   const onClick = () => {
@@ -20,15 +23,18 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ returnTo, signup 
     }
 
     posthog.capture(eventName, {
-      method: 'google'
+      method: 'google',
     })
   }
 
   return (
-    <Link href={getGoogleAuthorizeURL({
-      returnTo,
-      attribution: JSON.stringify(signup)
-    })} onClick={onClick}>
+    <Link
+      href={getGoogleAuthorizeURL({
+        returnTo,
+        attribution: JSON.stringify(signup),
+      })}
+      onClick={onClick}
+    >
       <Button
         variant="secondary"
         wrapperClassNames="space-x-3 p-2.5 px-5"

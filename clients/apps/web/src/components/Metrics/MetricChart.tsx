@@ -1,7 +1,7 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
-import { Interval, Metric } from '@polar-sh/sdk'
+import { Interval, Metric } from '@polar-sh/api'
 import * as d3 from 'd3'
 import { GeistMono } from 'geist/font/mono'
 import { useCallback, useEffect, useMemo, useState } from 'react'

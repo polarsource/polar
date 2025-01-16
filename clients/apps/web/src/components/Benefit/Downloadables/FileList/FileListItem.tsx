@@ -10,7 +10,7 @@ import {
   MoreVertOutlined,
   VideoFileOutlined,
 } from '@mui/icons-material'
-import { FileRead } from '@polar-sh/sdk'
+import { FileRead } from '@polar-sh/api'
 import { Switch } from 'polarkit/components/ui/atoms'
 import {
   FocusEvent,

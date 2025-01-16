@@ -3,7 +3,7 @@ import {
   ProductCreate,
   ProductMediaFileRead,
   ProductUpdate,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import React from 'react'
 import { ProductCustomFieldSection } from './ProductCustomFieldSection'
 import { ProductInfoSection } from './ProductInfoSection'

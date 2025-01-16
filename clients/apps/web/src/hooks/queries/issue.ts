@@ -8,7 +8,7 @@ import {
   ListResourceIssue,
   ListResourcePledge,
   PostIssueComment,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import {
   InfiniteData,
   UseMutationResult,

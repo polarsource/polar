@@ -1,4 +1,4 @@
-import { UserSignupAttribution } from '@polar-sh/sdk'
+import { UserSignupAttribution } from '@polar-sh/api'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import LogoIcon from '../Brand/LogoIcon'
 import Login from './Login'

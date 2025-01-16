@@ -11,7 +11,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Organization, TransactionType } from '@polar-sh/sdk'
+import { Organization, TransactionType } from '@polar-sh/api'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Tabs,

@@ -1,4 +1,4 @@
-# @polar-sh/sdk
+# @polar-sh/api
 
 ## 0.5.1
 

@@ -1,4 +1,4 @@
-import { ResponseError, ValidationError } from '@polar-sh/sdk'
+import { ResponseError, ValidationError } from '@polar-sh/api'
 import { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
 type ValidationErrorsMap = Record<string, string[]>

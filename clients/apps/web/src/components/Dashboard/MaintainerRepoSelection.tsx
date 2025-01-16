@@ -1,4 +1,4 @@
-import { Repository } from '@polar-sh/sdk'
+import { Repository } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
 import RepoSelection from '../Organization/RepoSelection'
 

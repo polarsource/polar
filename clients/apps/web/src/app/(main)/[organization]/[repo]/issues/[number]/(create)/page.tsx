@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
-import { Pledger, ResponseError, RewardsSummary } from '@polar-sh/sdk'
+import { Pledger, ResponseError, RewardsSummary } from '@polar-sh/api'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'

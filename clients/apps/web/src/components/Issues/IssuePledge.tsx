@@ -10,7 +10,7 @@ import {
   PledgeState,
   PledgeType,
   PledgesTypeSummaries,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
@@ -127,7 +127,7 @@ const IssuePledge = (props: Props) => {
         <div
           className={twMerge(
             'dark:border-polar-700 border-t',
-            'flex flex-row items-center gap-2 bg-gray-100 px-6 py-2 text-sm  dark:bg-transparent',
+            'flex flex-row items-center gap-2 bg-gray-100 px-6 py-2 text-sm dark:bg-transparent',
           )}
           key={p.id}
         >

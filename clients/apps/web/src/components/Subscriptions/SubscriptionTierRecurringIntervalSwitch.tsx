@@ -1,4 +1,4 @@
-import { SubscriptionRecurringInterval } from '@polar-sh/sdk'
+import { SubscriptionRecurringInterval } from '@polar-sh/api'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import React, { useCallback } from 'react'
 

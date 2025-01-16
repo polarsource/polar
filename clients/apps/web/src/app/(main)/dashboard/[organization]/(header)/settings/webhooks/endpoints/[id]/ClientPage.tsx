@@ -10,7 +10,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { useParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'

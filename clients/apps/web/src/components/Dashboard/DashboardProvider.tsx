@@ -1,4 +1,4 @@
-import { Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/api'
 import { PropsWithChildren, createContext, useContext } from 'react'
 
 export interface DashboardContextValue {}

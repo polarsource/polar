@@ -1,4 +1,4 @@
-import { Reward, RewardState } from '@polar-sh/sdk'
+import { Reward, RewardState } from '@polar-sh/api'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
 

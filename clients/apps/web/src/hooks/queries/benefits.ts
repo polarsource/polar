@@ -1,4 +1,4 @@
-import { BenefitCreate, BenefitTypeFilter, BenefitUpdate } from '@polar-sh/sdk'
+import { BenefitCreate, BenefitTypeFilter, BenefitUpdate } from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { api, queryClient } from '@/utils/api'

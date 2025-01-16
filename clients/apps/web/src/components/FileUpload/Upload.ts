@@ -8,7 +8,7 @@ import {
   S3FileCreatePart,
   S3FileUploadCompletedPart,
   S3FileUploadPart,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 
 const CHUNK_SIZE = 10000000 // 10MB
 

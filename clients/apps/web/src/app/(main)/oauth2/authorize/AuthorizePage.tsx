@@ -7,7 +7,7 @@ import {
   AuthorizeResponseUser,
   AuthorizeUser,
   Scope,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'

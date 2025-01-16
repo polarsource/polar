@@ -1,6 +1,6 @@
 'use client'
 
-import type { Organization } from '@polar-sh/sdk'
+import type { Organization } from '@polar-sh/api'
 import { useAuth } from './auth'
 import { useExternalOrganizations } from './queries/externalOrganizations'
 

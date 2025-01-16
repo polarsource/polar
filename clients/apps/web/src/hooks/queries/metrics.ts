@@ -1,6 +1,6 @@
 import { api } from '@/utils/api'
 import { toISODate } from '@/utils/metrics'
-import { Interval, MetricPeriod, Metrics, ResponseError } from '@polar-sh/sdk'
+import { Interval, MetricPeriod, Metrics, ResponseError } from '@polar-sh/api'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

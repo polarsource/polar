@@ -8,7 +8,7 @@ import {
   ProductCreate,
   ProductUpdate,
   ProductsApiListRequest,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

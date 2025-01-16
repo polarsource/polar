@@ -3,7 +3,7 @@
 import { useSendEmailUpdate } from '@/hooks/emailUpdate'
 import { setValidationErrors } from '@/utils/api/errors'
 import { FormControl } from '@mui/material'
-import { ResponseError, ValidationError } from '@polar-sh/sdk'
+import { ResponseError, ValidationError } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 

@@ -4,7 +4,7 @@ import {
   OAuth2ClientConfiguration,
   Oauth2ClientsApiListRequest,
   Oauth2ClientsApiUpdateClientRequest,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 export const useOAuth2Clients = (options?: Oauth2ClientsApiListRequest) =>

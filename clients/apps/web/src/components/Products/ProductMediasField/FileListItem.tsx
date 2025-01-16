@@ -1,7 +1,7 @@
 import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ProductMediaFileRead } from '@polar-sh/sdk'
+import { ProductMediaFileRead } from '@polar-sh/api'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 

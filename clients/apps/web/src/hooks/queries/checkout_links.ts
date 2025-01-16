@@ -8,7 +8,7 @@ import {
   CheckoutLinksApiUpdateRequest,
   ListResourceCheckoutLink,
   OrganizationIDFilter1,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { defaultRetry } from './retry'
 
 export const useCheckoutLinks = (

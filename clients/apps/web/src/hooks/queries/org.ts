@@ -6,7 +6,7 @@ import {
   OrganizationCreate,
   OrganizationUpdate,
   OrganizationsApiListRequest,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { UseMutationResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

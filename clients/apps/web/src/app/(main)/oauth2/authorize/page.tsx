@@ -1,5 +1,5 @@
 import { getServerURL } from '@/utils/api'
-import { Scope } from '@polar-sh/sdk'
+import { Scope } from '@polar-sh/api'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AuthorizeErrorPage from './AuthorizeErrorPage'

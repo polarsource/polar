@@ -12,6 +12,6 @@
     "@examples/checkout-embed",
     "eslint-config-custom",
     "polarkit",
-    "@polar-sh/sdk"
+    "@polar-sh/api"
   ]
 }

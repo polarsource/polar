@@ -13,7 +13,7 @@ import {
   Organization,
   ResponseError,
   ValidationError,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'

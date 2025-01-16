@@ -6,7 +6,7 @@ import {
   CustomerSubscription,
   Organization,
   PolarAPI,
-} from '@polar-sh/sdk'
+} from '@polar-sh/api'
 import Link from 'next/link'
 import { parseAsString, useQueryState } from 'nuqs'
 import Avatar from 'polarkit/components/ui/atoms/avatar'

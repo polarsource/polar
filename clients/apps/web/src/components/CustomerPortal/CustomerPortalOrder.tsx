@@ -6,7 +6,7 @@ import {
   useCustomerOrderInvoice,
 } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
-import { CustomerOrder, PolarAPI } from '@polar-sh/sdk'
+import { CustomerOrder, PolarAPI } from '@polar-sh/api'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'

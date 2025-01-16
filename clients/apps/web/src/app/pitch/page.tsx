@@ -5,9 +5,9 @@ import { IndexSection } from '@/components/Pitch/sections/IndexSection'
 import { InvestorsSection } from '@/components/Pitch/sections/InvestorsSection'
 import { OpenSourceSection } from '@/components/Pitch/sections/OpenSource'
 import { Polar20Section } from '@/components/Pitch/sections/Polar20'
+import { SevenLOCSection } from '@/components/Pitch/sections/SevenLOC'
 import { TeamSection } from '@/components/Pitch/sections/TeamSection'
 import { UsageBasedSection } from '@/components/Pitch/sections/UsageBasedSection'
-import { WhySection } from '@/components/Pitch/sections/WhySection'
 import { useArrowFocus } from '@/components/Pitch/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useState } from 'react'
@@ -32,7 +32,7 @@ export default function PitchPage() {
       case 1:
         return <UsageBasedSection />
       case 2:
-        return <WhySection />
+        return <SevenLOCSection />
       case 3:
         return <Polar20Section />
       case 4:

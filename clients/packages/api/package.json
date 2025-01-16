@@ -1,5 +1,6 @@
 {
   "name": "@polar-sh/api",
+  "private": true,
   "version": "0.5.2",
   "type": "module",
   "main": "./dist/index.js",

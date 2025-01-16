@@ -10,7 +10,7 @@ export const sections = [
     href: '/pitch/what',
   },
   {
-    title: '02. Why',
+    title: '02. 7 LOC',
     href: '/pitch/why',
   },
   {

@@ -1,3 +1,5 @@
+'use client'
+
 import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import { toast } from '@/components/Toast/use-toast'
 import Link from 'next/link'

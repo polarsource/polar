@@ -18,12 +18,6 @@ export const LicenseKeyActivations = ({
 }: LicenseKeyActivationsProps) => {
   const onDeactivate = useCustomerLicenseKeyDeactivate(api, licenseKey.id)
 
-  const hasActivations = (licenseKey?.activations?.length ?? 0) > 0
-
-  if (!hasActivations) {
-    return null
-  }
-
   const handleDeactivateActivation = useCallback(
     (activationId: string) => () => {
       onDeactivate
@@ -47,6 +41,12 @@ export const LicenseKeyActivations = ({
     },
     [onDeactivate, licenseKey],
   )
+
+  const hasActivations = (licenseKey?.activations?.length ?? 0) > 0
+
+  if (!hasActivations) {
+    return null
+  }
 
   return (
     <div className="flex flex-col gap-y-4">

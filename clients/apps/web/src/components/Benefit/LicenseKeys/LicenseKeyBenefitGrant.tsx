@@ -4,6 +4,7 @@ import {
   PolarAPI,
 } from '@polar-sh/sdk'
 
+import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKey } from '@/hooks/queries'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import { LicenseKeyActivations } from './LicenseKeyActivations'
@@ -22,7 +23,15 @@ const LicenseKey = ({
 
   return (
     <>
-      <CopyToClipboardInput value={licenseKey.key} />
+      <CopyToClipboardInput
+        value={licenseKey.key}
+        onCopy={() => {
+          toast({
+            title: 'Copied To Clipboard',
+            description: `License Key was copied to clipboard`,
+          })
+        }}
+      />
       <LicenseKeyDetails licenseKey={licenseKey} />
       <LicenseKeyActivations api={api} licenseKey={licenseKey} />
     </>

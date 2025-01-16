@@ -4,13 +4,19 @@ import { CheckOutlined, ContentPasteOutlined } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useState } from 'react'
 
-const CopyToClipboardButton = (props: { text: string }) => {
-  const { text } = props
+const CopyToClipboardButton = (props: {
+  text: string
+  onCopy?: () => void
+}) => {
+  const { text, onCopy } = props
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text)
     setCopied(true)
+
+    onCopy?.()
+
     setTimeout(() => {
       setCopied(false)
     }, 2000)

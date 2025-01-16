@@ -119,6 +119,12 @@ const LinkView = ({
             value={link.url}
             buttonLabel="Copy"
             className="bg-white"
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Checkout Link was copied to clipboard`,
+              })
+            }}
           />
         </TabsContent>
 
@@ -127,6 +133,12 @@ const LinkView = ({
             value={checkoutEmbed}
             buttonLabel="Copy"
             className="bg-white"
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Checkout Embed was copied to clipboard`,
+              })
+            }}
           />
         </TabsContent>
 
@@ -135,6 +147,12 @@ const LinkView = ({
             value={svgEmbed}
             buttonLabel="Copy"
             className="bg-white"
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `SVG Embed was copied to clipboard`,
+              })
+            }}
           />
         </TabsContent>
 

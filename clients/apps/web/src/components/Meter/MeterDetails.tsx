@@ -2,6 +2,7 @@ import { Meter } from '@/app/api/meters/data'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import { twMerge } from 'tailwind-merge'
 import CopyToClipboardButton from '../CopyToClipboardButton/CopyToClipboardButton'
+import { toast } from '../Toast/use-toast'
 
 export const MeterDetail = ({
   label,
@@ -36,17 +37,47 @@ export const MeterDetails = ({ meter }: { meter: Meter }) => {
       <MeterDetail
         label="ID"
         value={meter.id}
-        action={<CopyToClipboardButton text={meter.id} />}
+        action={
+          <CopyToClipboardButton
+            text={meter.id}
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Meter ID was copied to clipboard`,
+              })
+            }}
+          />
+        }
       />
       <MeterDetail
         label="Name"
         value={meter.name}
-        action={<CopyToClipboardButton text={meter.name} />}
+        action={
+          <CopyToClipboardButton
+            text={meter.name}
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Meter Name was copied to clipboard`,
+              })
+            }}
+          />
+        }
       />
       <MeterDetail
         label="Slug"
         value={meter.slug}
-        action={<CopyToClipboardButton text={meter.slug} />}
+        action={
+          <CopyToClipboardButton
+            text={meter.slug}
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Meter Slug was copied to clipboard`,
+              })
+            }}
+          />
+        }
       />
       <MeterDetail
         label="Aggregation Type"

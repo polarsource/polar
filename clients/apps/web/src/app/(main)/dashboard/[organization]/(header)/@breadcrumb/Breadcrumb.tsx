@@ -1,4 +1,5 @@
 import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
+import { toast } from '@/components/Toast/use-toast'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -31,7 +32,15 @@ export const CopyableBreadcrumbLink: React.FC<
     <BreadcrumbLink href={href}>
       <div className="flex flex-row items-center gap-1">
         {children}
-        <CopyToClipboardButton text={text} />
+        <CopyToClipboardButton
+          text={text}
+          onCopy={() =>
+            toast({
+              title: 'Copied To Clipboard',
+              description: `Content was copied to clipboard`,
+            })
+          }
+        />
       </div>
     </BreadcrumbLink>
   )

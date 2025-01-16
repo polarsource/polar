@@ -5,6 +5,7 @@ import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDe
 import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerBenefitGrants,
   useCustomerLicenseKey,
@@ -132,7 +133,15 @@ const LicenseKeyItem = ({ benefitGrant }: LicenseKeyItemProps) => {
       {licenseKey && (
         <>
           <div className="flex flex-col gap-y-6">
-            <CopyToClipboardInput value={licenseKey.key} />
+            <CopyToClipboardInput
+              value={licenseKey.key}
+              onCopy={() => {
+                toast({
+                  title: 'Copied To Clipboard',
+                  description: `License Key was copied to clipboard`,
+                })
+              }}
+            />
             <LicenseKeyDetails licenseKey={licenseKey} />
           </div>
           <LicenseKeyActivations api={api} licenseKey={licenseKey} />

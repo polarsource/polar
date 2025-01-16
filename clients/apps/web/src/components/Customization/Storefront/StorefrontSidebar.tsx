@@ -390,6 +390,12 @@ export const StorefrontSidebar = () => {
                 value={storefrontURL}
                 buttonLabel="Copy"
                 className="bg-white"
+                onCopy={() => {
+                  toast({
+                    title: 'Copied To Clipboard',
+                    description: `Storefront URL was copied to clipboard`,
+                  })
+                }}
               />
               <p className="text-center text-xs text-gray-500">
                 Add an official link from GitHub to Polar.{' '}

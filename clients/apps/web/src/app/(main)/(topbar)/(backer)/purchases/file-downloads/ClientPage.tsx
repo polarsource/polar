@@ -4,6 +4,7 @@ import { DownloadableItem as InnerDownloadableItem } from '@/components/Benefit/
 import Pagination from '@/components/Pagination/Pagination'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerBenefitGrants,
   useCustomerDownloadables,
@@ -141,6 +142,12 @@ const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {
         <span className="text-sm">SHA256 Checksum</span>
         <CopyToClipboardInput
           value={downloadable.file.checksum_sha256_hex ?? ''}
+          onCopy={() => {
+            toast({
+              title: 'Copied To Clipboard',
+              description: `SHA256 Checksum was copied to clipboard`,
+            })
+          }}
         />
       </div>
     </ShadowBox>

@@ -175,7 +175,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex flex-row items-center gap-1 font-mono">
             <div>{code}</div>
             <div>
-              <CopyToClipboardButton text={code} />
+              <CopyToClipboardButton
+                text={code}
+                onCopy={() => {
+                  toast({
+                    title: 'Copied To Clipboard',
+                    description: `Discount Code was copied to clipboard`,
+                  })
+                }}
+              />
             </div>
           </div>
         ) : (

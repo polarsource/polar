@@ -168,7 +168,15 @@ export const ClientPage = ({
         </div>
       </div>
       <div className="flex flex-col gap-y-6">
-        <CopyToClipboardInput value={selectedLicenseKey.key} />
+        <CopyToClipboardInput
+          value={selectedLicenseKey.key}
+          onCopy={() => {
+            toast({
+              title: 'Copied To Clipboard',
+              description: `License Key was copied to clipboard`,
+            })
+          }}
+        />
         <LicenseKeyDetails licenseKey={selectedLicenseKey} />
       </div>
       <div className="flex flex-row gap-x-4">

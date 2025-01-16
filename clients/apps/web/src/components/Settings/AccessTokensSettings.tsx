@@ -135,7 +135,15 @@ const AccessToken = (
       </div>
       {props.createdTokenJWT && (
         <>
-          <CopyToClipboardInput value={props.createdTokenJWT} />
+          <CopyToClipboardInput
+            value={props.createdTokenJWT}
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Access Token was copied to clipboard`,
+              })
+            }}
+          />
           <Banner color="blue">
             <span className="text-sm">
               Copy the access token and save it somewhere safe. You won’t be

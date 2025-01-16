@@ -5,6 +5,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Modal } from '../Modal'
+import { toast } from '../Toast/use-toast'
 
 interface WithdrawModalProps {
   account: Account
@@ -54,9 +55,21 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
         body: { account_id: account.id },
       })
       if (onSuccess) {
+        toast({
+          title: 'Withdrawal Initiated',
+          description: `Withdrawal initiated successfully`,
+        })
+
         onSuccess(id)
       }
     } catch (e) {
+      if (e instanceof ResponseError) {
+        toast({
+          title: 'Withdrawal Failed',
+          description: `Error initiating withdrawal: ${e.message}`,
+        })
+      }
+
       console.error(e)
     } finally {
       setLoading(false)
@@ -85,7 +98,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
             )}
             {payoutEstimate && (
               <>
-                <div className="flex flex-col items-center gap-8 ">
+                <div className="flex flex-col items-center gap-8">
                   <div>
                     You&apos;re about to withdraw your balance to your bank
                     account.
@@ -108,11 +121,11 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                         <div className="text-4xl">
                           {formatCurrencyAndAmount(payoutEstimate.gross_amount)}
                         </div>
-                        <div className="border-muted-foreground h-0 w-12 border-t-2  border-dashed"></div>
+                        <div className="border-muted-foreground h-0 w-12 border-t-2 border-dashed"></div>
                         <div className="text-2xl text-red-500 dark:text-red-400">
                           {formatCurrencyAndAmount(payoutEstimate.fees_amount)}
                         </div>
-                        <div className="border-muted-foreground h-0 w-12 border-t-2  border-dashed"></div>
+                        <div className="border-muted-foreground h-0 w-12 border-t-2 border-dashed"></div>
                         <div className="text-4xl text-green-500 dark:text-green-400">
                           {formatCurrencyAndAmount(payoutEstimate.net_amount)}
                         </div>

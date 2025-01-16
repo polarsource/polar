@@ -13,6 +13,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
+import { toast } from '../Toast/use-toast'
 import { EditCustomerModal } from './EditCustomerModal'
 
 const CustomerStatBox = ({
@@ -114,6 +115,12 @@ export const CustomerModal = ({ customer }: CustomerModalProps) => {
             value={`${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${customerSession.token}`}
             buttonLabel="Copy"
             className="bg-white"
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Customer Portal Link was copied to clipboard`,
+              })
+            }}
           />
         ) : (
           <Button

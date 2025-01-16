@@ -117,7 +117,15 @@ const OrganizationAppearanceSettings: React.FC<
         <div className="flex flex-col gap-y-2">
           <FormLabel>Organization Identifier</FormLabel>
           <FormControl>
-            <CopyToClipboardInput value={organization.id} />
+            <CopyToClipboardInput
+              value={organization.id}
+              onCopy={() => {
+                toast({
+                  title: 'Copied To Clipboard',
+                  description: `Organization ID was copied to clipboard`,
+                })
+              }}
+            />
           </FormControl>
         </div>
         <div className="flex flex-col gap-y-2">
@@ -125,7 +133,15 @@ const OrganizationAppearanceSettings: React.FC<
             <FormLabel>Organization Slug</FormLabel>
           </div>
           <FormControl>
-            <CopyToClipboardInput value={organization.slug} />
+            <CopyToClipboardInput
+              value={organization.slug}
+              onCopy={() => {
+                toast({
+                  title: 'Copied To Clipboard',
+                  description: `Organization Slug was copied to clipboard`,
+                })
+              }}
+            />
           </FormControl>
         </div>
         <FormField

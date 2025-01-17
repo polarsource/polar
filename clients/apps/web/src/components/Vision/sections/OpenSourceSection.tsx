@@ -10,8 +10,8 @@ export const OpenSourceSection = () => {
       context={
         <Console
           className="flex aspect-video max-w-lg flex-grow"
-          input="$ polar-init"
-          output="Initializing seed round..."
+          input="$ git clone https://github.com/polarsource/polar"
+          output="Cloning Polar..."
         />
       }
     >

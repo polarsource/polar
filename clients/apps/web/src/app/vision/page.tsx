@@ -3,9 +3,9 @@
 import { Footer } from '@/components/Vision/Footer'
 import { IndexSection } from '@/components/Vision/sections/IndexSection'
 import { InvestorsSection } from '@/components/Vision/sections/InvestorsSection'
-import { OpenSourceSection } from '@/components/Vision/sections/OpenSource'
-import { Polar20Section } from '@/components/Vision/sections/Polar20'
-import { SevenLOCSection } from '@/components/Vision/sections/SevenLOC'
+import { OpenSourceSection } from '@/components/Vision/sections/OpenSourceSection'
+import { Polar20Section } from '@/components/Vision/sections/Polar20Section'
+import { SevenLOCSection } from '@/components/Vision/sections/SevenLOCSection'
 import { TeamSection } from '@/components/Vision/sections/TeamSection'
 import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSection'
 import { useArrowFocus } from '@/components/Vision/useArrowFocus'
@@ -46,14 +46,20 @@ export default function PitchPage() {
 
   return (
     <div className="flex h-full flex-col justify-between gap-y-12 text-sm">
-      <div className="flex flex-grow flex-col gap-y-16">
+      <div className="relative flex flex-grow flex-col gap-y-16">
         <PitchNavigation activeIndex={index} setIndex={setIndex} />
         <AnimatePresence key={index}>
+          <motion.div
+            className="bg-polar-900 absolute bottom-0 left-0 right-0 z-20 h-1/2"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.07, delay: 0.06 }}
+          />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.07, repeat: 2 }}
+            transition={{ duration: 0.06, repeat: 2 }}
           >
             {activeSection}
           </motion.div>

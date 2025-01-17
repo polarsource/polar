@@ -15,9 +15,9 @@ export const useArrowFocus = ({
 }: UseArrowFocusProps) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft') {
+      if (event.key === 'ArrowLeft' || event.key === 'h') {
         onLeft()
-      } else if (event.key === 'ArrowRight') {
+      } else if (event.key === 'ArrowRight' || event.key === 'l') {
         onRight()
       }
 

@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { twMerge } from 'tailwind-merge'
 
 export const sections = [
@@ -42,18 +43,24 @@ export const PitchNavigation = ({
     <div className="flex flex-col gap-y-8 text-xs md:flex-row md:gap-x-16">
       <span>Polar Software Inc.</span>
       <ul className="flex flex-col gap-y-2 md:flex-row md:gap-x-8">
-        {sections.map((section, index) => (
-          <li
-            key={index}
-            onClick={() => setIndex(index)}
-            className={twMerge(
-              'hover:bg-polar-200 cursor-pointer px-1 hover:text-black',
-              index === activeIndex ? 'bg-polar-200 text-black' : '',
-            )}
-          >
-            {section.title}
-          </li>
-        ))}
+        <AnimatePresence key={activeIndex}>
+          {sections.map((section, index) => (
+            <motion.li
+              key={index}
+              onClick={() => setIndex(index)}
+              className={twMerge(
+                'hover:bg-polar-200 cursor-pointer px-1 hover:text-black',
+                index === activeIndex ? 'bg-polar-200 text-black' : '',
+              )}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.05, repeat: 2 }}
+            >
+              {section.title}
+            </motion.li>
+          ))}
+        </AnimatePresence>
       </ul>
     </div>
   )

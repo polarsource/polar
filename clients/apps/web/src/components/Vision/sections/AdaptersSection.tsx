@@ -19,20 +19,23 @@ export const AdaptersSection = () => {
           <Grid
             className="relative z-10 grid-cols-2 text-xs md:grid-cols-4"
             items={[
-              <span className="bg-polar-200 absolute bottom-2 right-2 flex h-full w-full flex-col items-center justify-center text-black md:bottom-4 md:right-4">
+              <span
+                key="a"
+                className="bg-polar-200 absolute bottom-2 right-2 flex h-full w-full flex-col items-center justify-center text-black md:bottom-4 md:right-4"
+              >
                 @polar-sh/nextjs
               </span>,
-              <span>@polar-sh/astro</span>,
-              <span>@polar-sh/remix</span>,
-              <span>@polar-sh/fastify</span>,
-              <span>@polar-sh/elysia</span>,
-              <span>@polar-sh/hono</span>,
-              <span>@polar-sh/deno</span>,
-              <span>@polar-sh/sveltekit</span>,
-              <span>@polar-sh/express</span>,
-              <span>@polar-sh/nuxt</span>,
-              <span>@polar-sh/tanstack</span>,
-              <span>@polar-sh/koa</span>,
+              <span key="b">@polar-sh/astro</span>,
+              <span key="c">@polar-sh/remix</span>,
+              <span key="d">@polar-sh/fastify</span>,
+              <span key="e">@polar-sh/elysia</span>,
+              <span key="f">@polar-sh/hono</span>,
+              <span key="g">@polar-sh/deno</span>,
+              <span key="h">@polar-sh/sveltekit</span>,
+              <span key="i">@polar-sh/express</span>,
+              <span key="j">@polar-sh/nuxt</span>,
+              <span key="k">@polar-sh/tanstack</span>,
+              <span key="l">@polar-sh/koa</span>,
             ]}
           />
         </div>

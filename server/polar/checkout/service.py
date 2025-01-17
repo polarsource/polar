@@ -904,14 +904,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             "product_price_id": str(checkout.product_price_id),
             "checkout_id": str(checkout.id),
         }
-        idempotency_key = f"checkout_{checkout.id}"
 
         stripe_price_id = product_price.stripe_price_id
         # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
         if isinstance(product_price, ProductPriceCustom):
-            ad_hoc_price = await self._create_ad_hoc_custom_price(
-                checkout, idempotency_key=f"{idempotency_key}_price"
-            )
+            ad_hoc_price = await self._create_ad_hoc_custom_price(checkout)
             stripe_price_id = ad_hoc_price.id
 
         if product_price.is_recurring:
@@ -936,7 +933,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         "payment_intent_id": payment_intent.id,
                         "checkout_id": str(checkout.id),
                     },
-                    idempotency_key=idempotency_key,
                 )
             # Subscription upgrade
             else:
@@ -960,12 +956,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         "payment_intent_id": payment_intent.id,
                         "checkout_id": str(checkout.id),
                     },
-                    idempotency_key=idempotency_key,
                 )
             await stripe_service.set_automatically_charged_subscription(
                 stripe_subscription.id,
                 stripe_payment_method_id,
-                idempotency_key=f"{idempotency_key}_subscription_auto_charge",
             )
         else:
             stripe_invoice = await stripe_service.create_out_of_band_invoice(
@@ -980,7 +974,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     **metadata,
                     "payment_intent_id": payment_intent.id,
                 },
-                idempotency_key=idempotency_key,
             )
 
         # Sanity check to make sure we didn't mess up the amount.
@@ -1668,7 +1661,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         return customer
 
     async def _create_ad_hoc_custom_price(
-        self, checkout: Checkout, *, idempotency_key: str
+        self, checkout: Checkout, *, idempotency_key: str | None = None
     ) -> stripe_lib.Price:
         assert checkout.amount is not None
         assert checkout.currency is not None

@@ -22,6 +22,8 @@ const NavigationLegend = () => {
       <div className="flex flex-row gap-x-2">
         <Button variant="icon">←</Button>
         <Button variant="icon">→</Button>
+        <Button variant="icon">H</Button>
+        <Button variant="icon">L</Button>
       </div>
       <span>Navigate</span>
     </div>

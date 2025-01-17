@@ -11,7 +11,10 @@ import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSectio
 import { useArrowFocus } from '@/components/Vision/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
-import { PitchNavigation, sections } from '../../components/Vision/Navigation'
+import {
+  PitchNavigation,
+  sections,
+} from '../../../components/Vision/Navigation'
 
 export default function PitchPage() {
   const [index, setIndex] = useState(0)
@@ -50,7 +53,7 @@ export default function PitchPage() {
         <PitchNavigation activeIndex={index} setIndex={setIndex} />
         <AnimatePresence key={index}>
           <motion.div
-            className="bg-polar-900 absolute bottom-0 left-0 right-0 z-20 h-1/2"
+            className="bg-polar-900 pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-3/4"
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
             transition={{ duration: 0.07, delay: 0.06 }}

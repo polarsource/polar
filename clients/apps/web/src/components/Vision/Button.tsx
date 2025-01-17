@@ -17,7 +17,7 @@ export const Button = ({
   return (
     <button
       className={twMerge(
-        'border-polar-200 hover:bg-polar-200 flex flex-col items-center justify-center border-[0.5px] border-b-2 font-mono leading-none focus-within:bg-white focus-within:text-black focus-within:outline-none hover:text-black',
+        'border-polar-200 hover:bg-polar-200 flex cursor-default flex-col items-center justify-center border-[0.5px] border-b-2 font-mono leading-none focus-within:bg-white focus-within:text-black focus-within:outline-none hover:text-black',
         variant === 'primary' ? primaryClassName : iconClassName,
         className,
       )}

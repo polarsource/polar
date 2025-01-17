@@ -10,7 +10,8 @@ export const OpenSourceSection = () => {
       context={
         <Console
           className="flex aspect-video max-w-lg flex-grow"
-          input="$ git clone https://github.com/polarsource/polar"
+          title="zsh"
+          input="~/ % git clone git@github.com:polarsource/polar.git"
           output="Cloning Polar..."
         />
       }

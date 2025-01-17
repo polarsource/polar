@@ -3,7 +3,7 @@ import { Section } from '../Section'
 
 export const SevenLOCSection = () => {
   return (
-    <Section header={{ index: '02', name: '7 LOC' }} title="7 Lines of Code">
+    <Section header={{ index: '02', name: 'Adapters' }} title="7 Lines of Code">
       <p>
         Polar aims to be the simplest way to integrate payments into your
         software. This should be a breeze. That&apos;s why we restrict the code

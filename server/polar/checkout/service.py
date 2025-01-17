@@ -1,3 +1,4 @@
+import typing
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -62,7 +63,12 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.product_price import ProductPriceAmountType, ProductPriceFree
+from polar.models.discount import DiscountDuration
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceFree,
+    ProductPriceType,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -286,7 +292,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
             discount = await self._get_validated_discount(
-                session, checkout_create.discount_id, product, price
+                session, product, price, discount_id=checkout_create.discount_id
             )
 
         customer_tax_id: TaxID | None = None
@@ -619,7 +625,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if checkout_link.discount_id is not None:
             try:
                 discount = await self._get_validated_discount(
-                    session, checkout_link.discount_id, product, price
+                    session, product, price, discount_id=checkout_link.discount_id
                 )
             # If the discount is not valid, just ignore it
             except PolarRequestValidationError:
@@ -1213,12 +1219,34 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         return product, product.prices[0]
 
+    @typing.overload
     async def _get_validated_discount(
         self,
         session: AsyncSession,
-        discount_id: uuid.UUID,
         product: Product,
         price: ProductPrice,
+        *,
+        discount_id: uuid.UUID,
+    ) -> Discount: ...
+
+    @typing.overload
+    async def _get_validated_discount(
+        self,
+        session: AsyncSession,
+        product: Product,
+        price: ProductPrice,
+        *,
+        discount_code: str,
+    ) -> Discount: ...
+
+    async def _get_validated_discount(
+        self,
+        session: AsyncSession,
+        product: Product,
+        price: ProductPrice,
+        *,
+        discount_id: uuid.UUID | None = None,
+        discount_code: str | None = None,
     ) -> Discount:
         if price.amount_type not in {
             ProductPriceAmountType.fixed,
@@ -1235,9 +1263,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        discount = await discount_service.get_by_id_and_product(
-            session, discount_id, product
-        )
+        if discount_id is not None:
+            discount = await discount_service.get_by_id_and_product(
+                session, discount_id, product
+            )
+        elif discount_code is not None:
+            discount = await discount_service.get_by_code_and_product(
+                session, discount_code, product
+            )
 
         if discount is None:
             raise PolarRequestValidationError(
@@ -1246,6 +1279,21 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         "type": "value_error",
                         "loc": ("body", "discount_id"),
                         "msg": "Discount does not exist.",
+                        "input": discount_id,
+                    }
+                ]
+            )
+
+        if (
+            price.type == ProductPriceType.one_time
+            and discount.duration == DiscountDuration.repeating
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_id"),
+                        "msg": "Discount is not applicable to this product.",
                         "input": discount_id,
                     }
                 ]
@@ -1403,9 +1451,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             if checkout_update.discount_id is not None:
                 checkout.discount = await self._get_validated_discount(
                     session,
-                    checkout_update.discount_id,
                     checkout.product,
                     checkout.product_price,
+                    discount_id=checkout_update.discount_id,
                 )
             # User explicitly removed the discount
             elif "discount_id" in checkout_update.model_fields_set:
@@ -1415,36 +1463,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             and checkout.allow_discount_codes
         ):
             if checkout_update.discount_code is not None:
-                if not checkout.is_discount_applicable:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "discount_code"),
-                                "msg": "Discounts are only applicable to fixed prices.",
-                                "input": checkout_update.discount_code,
-                            }
-                        ]
-                    )
-                discount = await discount_service.get_by_code_and_product(
+                discount = await self._get_validated_discount(
                     session,
-                    checkout_update.discount_code,
                     checkout.product,
+                    checkout.product_price,
+                    discount_code=checkout_update.discount_code,
                 )
-                if discount is None:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "discount_code"),
-                                "msg": (
-                                    "This discount code does not exist "
-                                    "or is no longer available."
-                                ),
-                                "input": checkout_update.discount_code,
-                            }
-                        ]
-                    )
                 checkout.discount = discount
             # User explicitly removed the discount
             elif "discount_code" in checkout_update.model_fields_set:

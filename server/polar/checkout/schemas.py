@@ -342,7 +342,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
     )
 
-    payment_processor_metadata: dict[str, Any]
+    payment_processor_metadata: dict[str, str]
 
 
 class CheckoutProduct(ProductBase):

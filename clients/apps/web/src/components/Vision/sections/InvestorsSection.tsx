@@ -14,13 +14,17 @@ export const InvestorsSection = () => {
             items={[
               <div
                 key="a"
-                className="bg-polar-200 absolute right-2 top-2 z-10 flex h-full w-full flex-col items-center justify-center p-6 text-black"
+                className="bg-polar-200 absolute bottom-2 right-2 z-10 flex h-full w-full flex-col items-center justify-center p-6 text-black md:bottom-4 md:right-4"
               >
                 <AbstractLogo />
               </div>,
               <div
                 key="b"
                 className="flex h-full flex-col items-center justify-center p-6"
+                style={{
+                  background:
+                    'repeating-linear-gradient(-45deg, transparent 0px, transparent 9px, hsl(233, 8%, 24%) 9px, hsl(233, 8%, 24%) 10px)',
+                }}
               >
                 <MischiefLogo />
               </div>,

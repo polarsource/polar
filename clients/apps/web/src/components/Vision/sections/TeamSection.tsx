@@ -22,7 +22,17 @@ const team = [
 
 export const TeamSection = () => {
   return (
-    <Section header={{ index: '05', name: 'Team' }} title="We are hiring">
+    <Section
+      header={{ index: '05', name: 'Team' }}
+      title="We are hiring"
+      context={
+        <div className="flex flex-col gap-y-12 md:flex-row md:gap-x-8">
+          {team.map((profile) => (
+            <Profile key={profile.name} {...profile} />
+          ))}
+        </div>
+      }
+    >
       <p>
         Are you passionate about building the future of payment infrastructure?
         Get in touch.
@@ -42,11 +52,6 @@ export const TeamSection = () => {
         </li>
       </ul>
       <Link href="/pitch/what">Join Us →</Link>
-      <div className="flex flex-col gap-y-12 md:flex-row md:gap-x-4">
-        {team.map((profile) => (
-          <Profile key={profile.name} {...profile} />
-        ))}
-      </div>
     </Section>
   )
 }

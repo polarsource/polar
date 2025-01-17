@@ -10,8 +10,15 @@ export const IndexSection = () => {
       context={
         <Console
           className="flex aspect-video max-w-lg flex-grow"
-          input="$ polar-init"
-          output="Initializing seed round..."
+          title="Terminal"
+          input="> i just want to sell my saas online, pls fix"
+          output={`1. Create a Stripe Account
+2. Setup a Product
+3. Watch this youtube video -> dub.sh/integrate-stripe
+4. Figure out which of the 258 event types you need
+5. Reconcile webhooks with your Database
+6. Keep track of state of payment intent
+7. Don't forget to report Sales Tax, VAT & GST`}
         />
       }
     >

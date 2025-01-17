@@ -1,12 +1,13 @@
 import { Link } from '../Link'
 import { Section } from '../Section'
 
-export const InvestorsSection = () => {
+export const SevenLOCSection = () => {
   return (
-    <Section header={{ index: '06', name: 'Investors' }} title="Our Angels">
+    <Section header={{ index: '02', name: '7 LOC' }} title="7 Lines of Code">
       <p>
-        What used to be a simple way to pay for things has become a complex
-        mess.
+        Polar aims to be the simplest way to integrate payments into your
+        software. This should be a breeze. That&apos;s why we restrict the code
+        you need to a maximum of 7 lines.
       </p>
       <p>
         Software as a Service (SaaS) has become the norm, but the underlying

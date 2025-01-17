@@ -10,7 +10,7 @@ export interface ConsoleProps {
 export const Console = ({ className, title, input, output }: ConsoleProps) => {
   return (
     <div className={twMerge('relative flex flex-col', className)}>
-      <div className="border-polar-600 absolute right-6 top-6 h-full w-full transform border"></div>
+      <div className="border-polar-600 absolute right-2 top-2 h-full w-full transform border md:right-6 md:top-6"></div>
       <div className="border-polar-200 bg-polar-900 relative h-full w-full border-2">
         <div className="bg-polar-200 flex flex-row justify-between px-3 py-1 text-xs text-black">
           <span className="font-bold">{title ?? 'Polar VM'}</span>

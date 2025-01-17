@@ -67,7 +67,7 @@ const Profile = ({ name, title, image }: ProfileProps) => {
         width={200}
         height={200}
       />
-      <div className="flex flex-col gap-y-1">
+      <div className="flex flex-col gap-y-1 text-left">
         <h1 className="text-xs">{name}</h1>
         <h1 className="text-polar-500 text-xs">{title}</h1>
       </div>

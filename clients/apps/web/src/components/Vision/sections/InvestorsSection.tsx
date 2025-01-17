@@ -12,10 +12,16 @@ export const InvestorsSection = () => {
           <Grid
             className="grid-cols-2 md:grid-cols-1"
             items={[
-              <div className="bg-polar-200 absolute right-2 top-2 z-10 flex h-full w-full flex-col items-center justify-center p-6 text-black">
+              <div
+                key="a"
+                className="bg-polar-200 absolute right-2 top-2 z-10 flex h-full w-full flex-col items-center justify-center p-6 text-black"
+              >
                 <AbstractLogo />
               </div>,
-              <div className="flex h-full flex-col items-center justify-center p-6">
+              <div
+                key="b"
+                className="flex h-full flex-col items-center justify-center p-6"
+              >
                 <MischiefLogo />
               </div>,
             ]}
@@ -23,22 +29,22 @@ export const InvestorsSection = () => {
           <Grid
             className="grid-cols-2 md:grid-cols-4"
             items={[
-              <AngelProfile name="A" company="Company A" />,
-              <AngelProfile name="B" company="Company B" />,
-              <AngelProfile name="C" company="Company C" />,
-              <AngelProfile name="D" company="Company D" />,
-              <AngelProfile name="E" company="Company E" />,
-              <AngelProfile name="F" company="Company F" />,
-              <AngelProfile name="G" company="Company G" />,
-              <AngelProfile name="H" company="Company H" />,
-              <AngelProfile name="I" company="Company I" />,
-              <AngelProfile name="J" company="Company J" />,
-              <AngelProfile name="K" company="Company K" />,
-              <AngelProfile name="L" company="Company L" />,
-              <AngelProfile name="M" company="Company M" />,
-              <AngelProfile name="N" company="Company N" />,
-              <AngelProfile name="O" company="Company O" />,
-              <AngelProfile name="P" company="Company P" />,
+              <AngelProfile key="A" name="John Doe" company="Company A" />,
+              <AngelProfile key="B" name="Jane Doe" company="Company B" />,
+              <AngelProfile key="C" name="John Doe" company="Company C" />,
+              <AngelProfile key="D" name="Jane Doe" company="Company D" />,
+              <AngelProfile key="E" name="John Doe" company="Company E" />,
+              <AngelProfile key="F" name="Jane Doe" company="Company F" />,
+              <AngelProfile key="G" name="John Doe" company="Company G" />,
+              <AngelProfile key="H" name="Jane Doe" company="Company H" />,
+              <AngelProfile key="I" name="John Doe" company="Company I" />,
+              <AngelProfile key="J" name="Jane Doe" company="Company J" />,
+              <AngelProfile key="K" name="John Doe" company="Company K" />,
+              <AngelProfile key="L" name="Jane Doe" company="Company L" />,
+              <AngelProfile key="M" name="John Doe" company="Company M" />,
+              <AngelProfile key="N" name="Jane Doe" company="Company N" />,
+              <AngelProfile key="O" name="John Doe" company="Company O" />,
+              <AngelProfile key="P" name="Jane Doe" company="Company P" />,
             ]}
           />
         </div>

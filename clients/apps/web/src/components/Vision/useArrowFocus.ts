@@ -31,5 +31,5 @@ export const useArrowFocus = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [onLeft, onRight])
+  }, [onLeft, onRight, onNumberPress])
 }

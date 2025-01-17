@@ -1,4 +1,4 @@
-import { MetricType } from '@polar-sh/sdk'
+import { MetricType } from '@polar-sh/api'
 import { Chart } from '../Chart'
 import { Link } from '../Link'
 import { Section } from '../Section'

@@ -1,17 +1,17 @@
 'use client'
 
-import { Footer } from '@/components/About/Footer'
-import { IndexSection } from '@/components/About/sections/IndexSection'
-import { InvestorsSection } from '@/components/About/sections/InvestorsSection'
-import { OpenSourceSection } from '@/components/About/sections/OpenSource'
-import { Polar20Section } from '@/components/About/sections/Polar20'
-import { SevenLOCSection } from '@/components/About/sections/SevenLOC'
-import { TeamSection } from '@/components/About/sections/TeamSection'
-import { UsageBasedSection } from '@/components/About/sections/UsageBasedSection'
-import { useArrowFocus } from '@/components/About/useArrowFocus'
+import { Footer } from '@/components/Vision/Footer'
+import { IndexSection } from '@/components/Vision/sections/IndexSection'
+import { InvestorsSection } from '@/components/Vision/sections/InvestorsSection'
+import { OpenSourceSection } from '@/components/Vision/sections/OpenSource'
+import { Polar20Section } from '@/components/Vision/sections/Polar20'
+import { SevenLOCSection } from '@/components/Vision/sections/SevenLOC'
+import { TeamSection } from '@/components/Vision/sections/TeamSection'
+import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSection'
+import { useArrowFocus } from '@/components/Vision/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
-import { PitchNavigation, sections } from '../../components/About/Navigation'
+import { PitchNavigation, sections } from '../../components/Vision/Navigation'
 
 export default function PitchPage() {
   const [index, setIndex] = useState(0)

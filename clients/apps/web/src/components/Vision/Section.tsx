@@ -18,8 +18,8 @@ export const Section = ({ header, title, children, context }: SectionProps) => {
           </span>
           <h1 className="text-lg">{header.name}</h1>
         </div>
-        <h1 className="text-balance text-4xl leading-normal">{title}</h1>
-        {children}
+        <h1 className="text-balance text-4xl leading-tight">{title}</h1>
+        <div className="flex flex-col gap-y-8 text-justify">{children}</div>
       </div>
       {context}
     </div>

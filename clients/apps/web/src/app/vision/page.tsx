@@ -1,17 +1,17 @@
 'use client'
 
-import { Footer } from '@/components/Pitch/Footer'
-import { IndexSection } from '@/components/Pitch/sections/IndexSection'
-import { InvestorsSection } from '@/components/Pitch/sections/InvestorsSection'
-import { OpenSourceSection } from '@/components/Pitch/sections/OpenSource'
-import { Polar20Section } from '@/components/Pitch/sections/Polar20'
-import { SevenLOCSection } from '@/components/Pitch/sections/SevenLOC'
-import { TeamSection } from '@/components/Pitch/sections/TeamSection'
-import { UsageBasedSection } from '@/components/Pitch/sections/UsageBasedSection'
-import { useArrowFocus } from '@/components/Pitch/useArrowFocus'
+import { Footer } from '@/components/About/Footer'
+import { IndexSection } from '@/components/About/sections/IndexSection'
+import { InvestorsSection } from '@/components/About/sections/InvestorsSection'
+import { OpenSourceSection } from '@/components/About/sections/OpenSource'
+import { Polar20Section } from '@/components/About/sections/Polar20'
+import { SevenLOCSection } from '@/components/About/sections/SevenLOC'
+import { TeamSection } from '@/components/About/sections/TeamSection'
+import { UsageBasedSection } from '@/components/About/sections/UsageBasedSection'
+import { useArrowFocus } from '@/components/About/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useState } from 'react'
-import { PitchNavigation, sections } from '../../components/Pitch/Navigation'
+import { useMemo, useState } from 'react'
+import { PitchNavigation, sections } from '../../components/About/Navigation'
 
 export default function PitchPage() {
   const [index, setIndex] = useState(0)
@@ -24,7 +24,7 @@ export default function PitchPage() {
       setIndex(Math.max(0, Math.min(number, sections.length - 1))),
   })
 
-  const getActiveSection = useCallback(() => {
+  const activeSection = useMemo(() => {
     switch (index) {
       case 0:
       default:
@@ -55,7 +55,7 @@ export default function PitchPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.07, repeat: 2 }}
           >
-            {getActiveSection()}
+            {activeSection}
           </motion.div>
         </AnimatePresence>
       </div>

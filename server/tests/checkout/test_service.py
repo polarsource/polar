@@ -53,6 +53,7 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
@@ -67,6 +68,7 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_custom_field,
     create_customer,
+    create_discount,
     create_product,
     create_product_price_fixed,
     create_subscription,
@@ -1507,6 +1509,30 @@ class TestUpdate:
                 session,
                 checkout_one_time_free,
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
+            )
+
+    async def test_invalid_recurring_discount_on_one_time_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        organization: Organization,
+    ) -> None:
+        recurring_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            code="RECURRING",
+            amount=1000,
+            currency="usd",
+            duration=DiscountDuration.repeating,
+            duration_in_months=12,
+            organization=organization,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_fixed,
+                CheckoutUpdatePublic(discount_code=recurring_discount.code),
             )
 
     async def test_valid_price_fixed_change(

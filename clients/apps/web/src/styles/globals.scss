@@ -15,12 +15,11 @@
 }
 
 @media (prefers-color-scheme: light) {
-  img[src$="#gh-dark-mode-only"],
-  img[src$="#only-dark"] {
-      display: none;
+  img[src$='#gh-dark-mode-only'],
+  img[src$='#only-dark'] {
+    display: none;
   }
 }
-
 
 /* Dark mode */
 

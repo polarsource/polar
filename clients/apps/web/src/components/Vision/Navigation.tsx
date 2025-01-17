@@ -11,7 +11,7 @@ export const sections = [
     href: '/pitch/what',
   },
   {
-    title: '02. 7 LOC',
+    title: '02. Adapters',
     href: '/pitch/why',
   },
   {
@@ -49,7 +49,7 @@ export const PitchNavigation = ({
               key={index}
               onClick={() => setIndex(index)}
               className={twMerge(
-                'hover:bg-polar-200 cursor-pointer px-1 hover:text-black',
+                'hover:bg-polar-200 cursor-default px-1 hover:text-black',
                 index === activeIndex ? 'bg-polar-200 text-black' : '',
               )}
               initial={{ opacity: 0 }}

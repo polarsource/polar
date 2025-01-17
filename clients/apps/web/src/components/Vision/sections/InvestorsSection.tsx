@@ -23,22 +23,22 @@ export const InvestorsSection = () => {
           <Grid
             className="grid-cols-2 md:grid-cols-4"
             items={[
-              <AngelProfile name="John Doe" company="Company A" />,
-              <AngelProfile name="Jane Doe" company="Company B" />,
-              <AngelProfile name="John Doe" company="Company C" />,
-              <AngelProfile name="Jane Doe" company="Company D" />,
-              <AngelProfile name="John Doe" company="Company E" />,
-              <AngelProfile name="Jane Doe" company="Company F" />,
-              <AngelProfile name="John Doe" company="Company G" />,
-              <AngelProfile name="Jane Doe" company="Company H" />,
-              <AngelProfile name="John Doe" company="Company I" />,
-              <AngelProfile name="Jane Doe" company="Company J" />,
-              <AngelProfile name="John Doe" company="Company K" />,
-              <AngelProfile name="Jane Doe" company="Company L" />,
-              <AngelProfile name="John Doe" company="Company M" />,
-              <AngelProfile name="Jane Doe" company="Company N" />,
-              <AngelProfile name="John Doe" company="Company O" />,
-              <AngelProfile name="Jane Doe" company="Company P" />,
+              <AngelProfile name="A" company="Company A" />,
+              <AngelProfile name="B" company="Company B" />,
+              <AngelProfile name="C" company="Company C" />,
+              <AngelProfile name="D" company="Company D" />,
+              <AngelProfile name="E" company="Company E" />,
+              <AngelProfile name="F" company="Company F" />,
+              <AngelProfile name="G" company="Company G" />,
+              <AngelProfile name="H" company="Company H" />,
+              <AngelProfile name="I" company="Company I" />,
+              <AngelProfile name="J" company="Company J" />,
+              <AngelProfile name="K" company="Company K" />,
+              <AngelProfile name="L" company="Company L" />,
+              <AngelProfile name="M" company="Company M" />,
+              <AngelProfile name="N" company="Company N" />,
+              <AngelProfile name="O" company="Company O" />,
+              <AngelProfile name="P" company="Company P" />,
             ]}
           />
         </div>

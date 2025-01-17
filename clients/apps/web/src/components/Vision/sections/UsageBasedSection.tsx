@@ -40,7 +40,7 @@ export const UsageBasedSection = () => {
       <p>
         In a world where Artificial Intelligence is becoming more and more
         prevalent, the intelligence we consume will be charged based on usage.
-        It's time for payment infrastructure, built for the 21st century.
+        It&apos;s time for payment infrastructure, built for the 21st century.
       </p>
       <p>
         We believe that the future of payments is usage based, and we are

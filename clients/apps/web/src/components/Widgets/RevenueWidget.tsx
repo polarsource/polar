@@ -77,11 +77,11 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                   style={{
                     height: `${Math.max(
                       (period.revenue / maxPeriod) * 100 || 0,
-                      8,
+                      2,
                     )}%`,
                   }}
                   className={twMerge(
-                    'dark:bg-polar-600 w-3 flex-shrink rounded-full bg-gray-300',
+                    'dark:bg-polar-700 w-3 flex-shrink bg-gray-300',
                     activeClass,
                   )}
                 />

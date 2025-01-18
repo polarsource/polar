@@ -6,7 +6,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { GoogleTagManager } from '@next/third-parties/google'
 import { Organization, UserRead } from '@polar-sh/api'
-import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
@@ -81,8 +81,8 @@ export default async function RootLayout({
       <GoogleTagManager gtmId="AW-16748688797" />
       <body
         className={twMerge(
-          `antialiased [font-feature-settings:'ss03','zero']`,
-          GeistSans.className,
+          `text-sm antialiased [font-feature-settings:'ss03','zero']`,
+          GeistMono.className,
         )}
       >
         <UserContextProvider

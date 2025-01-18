@@ -60,14 +60,17 @@ export const BrandingMenu = ({
             {logoVariant === 'logotype' ? (
               <LogoType
                 className={twMerge(
-                  '-ml-2 text-black md:ml-0 dark:text-white',
+                  'dark:text-polar-200 -ml-2 text-black md:ml-0',
                   logoClassName,
                 )}
                 width={size ?? 100}
               />
             ) : (
               <LogoIcon
-                className={twMerge('text-black dark:text-white', logoClassName)}
+                className={twMerge(
+                  'dark:text-polar-200 text-black',
+                  logoClassName,
+                )}
                 size={size ?? 42}
               />
             )}

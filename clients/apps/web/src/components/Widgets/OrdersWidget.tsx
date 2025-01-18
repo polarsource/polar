@@ -90,7 +90,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
                 href={`/dashboard/${org.slug}/sales/${order.id}`}
                 className={twMerge(
                   stackingClassNames[index],
-                  'rounded-4xl dark:bg-polar-900 dark:border-polar-700 peer absolute w-full border border-white transition-all duration-300 will-change-transform hover:z-10 hover:scale-100 peer-hover:opacity-0',
+                  'dark:bg-polar-900 peer absolute w-full transition-all duration-300 will-change-transform hover:z-10 hover:scale-100 peer-hover:opacity-0',
                 )}
               >
                 <OrderCard order={order} />

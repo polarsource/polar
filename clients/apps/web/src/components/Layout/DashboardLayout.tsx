@@ -229,7 +229,6 @@ export const DashboardBody = ({
   contextViewClassName,
   header = true,
   wide = false,
-  transparent = false,
 }: {
   children?: React.ReactNode
   wrapperClassName?: string
@@ -239,18 +238,8 @@ export const DashboardBody = ({
   contextViewClassName?: string
   header?: JSX.Element | boolean
   wide?: boolean
-  transparent?: boolean
 }) => {
   const currentRoute = useRoute()
-  const [scrolled, setScrolled] = useState(false)
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const hasScrolled = e.currentTarget.scrollTop > 1
-
-    if (hasScrolled !== scrolled) {
-      setScrolled(hasScrolled)
-    }
-  }
 
   const hasCurrent = (currentRoute?.subs as SubRouteWithActive[])?.some(
     (i) => i.isActive,
@@ -259,15 +248,8 @@ export const DashboardBody = ({
   return (
     <div className={twMerge('flex h-full w-full flex-row gap-x-3')}>
       <div
-        onScroll={handleScroll}
         className={twMerge(
-          'relative flex w-full flex-col items-center px-4 md:overflow-y-auto',
-          transparent
-            ? 'bg-transparent dark:bg-transparent'
-            : 'dark:md:bg-polar-900 dark:border-polar-700 rounded-2xl border-gray-200 md:border md:bg-white md:px-12 md:shadow-sm',
-          transparent && scrolled
-            ? 'dark:border-polar-700 border-t border-gray-200'
-            : '',
+          'relative flex w-full flex-col items-center md:overflow-y-auto',
         )}
       >
         <div
@@ -281,7 +263,6 @@ export const DashboardBody = ({
             <div
               className={twMerge(
                 'flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between',
-                transparent ? '' : 'md:py-12',
               )}
             >
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">

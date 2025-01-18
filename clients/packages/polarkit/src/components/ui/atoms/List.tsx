@@ -11,7 +11,6 @@ export const List = ({ children, className, size = 'default' }: ListProps) => {
     <div
       className={twMerge(
         'dark:divide-polar-700 dark:border-polar-700 flex flex-col divide-y divide-gray-200 overflow-hidden border border-gray-200',
-        size === 'default' ? 'rounded-4xl' : 'rounded-2xl',
         className,
       )}
     >

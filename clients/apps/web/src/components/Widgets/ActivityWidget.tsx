@@ -44,16 +44,6 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
       </CardHeader>
       <TooltipProvider>
         <CardFooter className="flex flex-row gap-x-4">
-          <div className="hidden flex-col items-center font-mono xl:flex">
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-              <span
-                key={i}
-                className="dark:text-polar-500 text-xs text-gray-300"
-              >
-                {day}
-              </span>
-            ))}
-          </div>
           <div className="grid grid-flow-col grid-cols-[repeat(52,minmax(0,1fr))] grid-rows-[repeat(7,minmax(0,1fr))] gap-1 xl:gap-2">
             {orderMetrics.data?.periods.map((period, i) => {
               const activeClass =
@@ -73,7 +63,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
                 <Tooltip key={i} delayDuration={0}>
                   <TooltipTrigger
                     className={twMerge(
-                      'dark:bg-polar-600 h-1 w-1 rounded-full bg-gray-300 xl:h-2 xl:w-2',
+                      'dark:bg-polar-700 h-1.5 w-1.5 bg-gray-300',
                       activeClass,
                     )}
                   />

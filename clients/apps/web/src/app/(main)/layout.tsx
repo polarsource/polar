@@ -5,7 +5,7 @@ import { PolarThemeProvider } from '../providers'
 export default async function Layout({ children }: PropsWithChildren) {
   return (
     <PolarThemeProvider>
-      <div className="dark:bg-polar-950 h-full bg-white dark:text-white">
+      <div className="dark:bg-polar-900 h-full bg-white dark:text-white">
         {children}
         <CookieConsent />
       </div>

@@ -1,4 +1,3 @@
-import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { twMerge } from 'tailwind-merge'
 
 export const ListItem = (props: {
@@ -22,12 +21,7 @@ export const Profile = (props: { name: string; avatar_url: string | null }) => {
     <>
       <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">
         <div className="flex w-full min-w-0 shrink grow-0 items-center">
-          <Avatar
-            name={props.name}
-            avatar_url={props.avatar_url}
-            className="h-8 w-8 rounded-full"
-          />
-          <p className="ml-4 truncate">{props.name}</p>
+          <span>[+] {props.name}</span>
         </div>
       </div>
     </>

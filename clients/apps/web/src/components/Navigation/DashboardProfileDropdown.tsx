@@ -3,11 +3,7 @@
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  AddOutlined,
-  BiotechOutlined,
-  KeyboardArrowDownOutlined,
-} from '@mui/icons-material'
+import { AddOutlined, BiotechOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useContext, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,10 +11,6 @@ import { useAuth } from '../../hooks'
 import { LinkItem, ListItem, Profile } from './Navigation'
 
 const DashboardProfileDropdown = ({ className = '' }) => {
-  const classNames = twMerge(
-    'relative flex w-full flex-col rounded-full bg-white hover:bg-white dark:hover:bg-polar-800 dark:bg-polar-900 transition-colors z-40 border border-gray-200 dark:border-polar-800',
-    className,
-  )
   const { currentUser: loggedUser } = useAuth()
 
   const [isOpen, setOpen] = useState<boolean>(false)
@@ -48,15 +40,14 @@ const DashboardProfileDropdown = ({ className = '' }) => {
       } as const)
 
   return (
-    <div className={classNames}>
+    <div className={twMerge('relative flex w-full flex-col', className)}>
       <div
         className={twMerge(
-          'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 py-2 pl-2 pr-4 transition-colors',
+          'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 transition-colors',
         )}
         onClick={() => setOpen(true)}
       >
         <Profile name={current.name} avatar_url={current.avatar_url} />
-        <KeyboardArrowDownOutlined className="dark:text-polar-50 h-5 w-5 flex-shrink-0 text-gray-400" />
       </div>
 
       {isOpen && (

@@ -104,7 +104,7 @@ export default function ClientPage() {
               <h2 className="text-xl">Activity</h2>
             </div>
             <div className="flex flex-row gap-x-8">
-              <Card className="dark:border-polar-700 flex-1 rounded-3xl border border-gray-200">
+              <Card className="flex-1">
                 <CardHeader>
                   <span className="dark:text-polar-500 text-gray-500">
                     Previous Period
@@ -132,7 +132,7 @@ export default function ClientPage() {
                   </span>
                 </CardFooter>
               </Card>
-              <Card className="dark:border-polar-700 flex-1 rounded-3xl border border-gray-200">
+              <Card className="flex-1">
                 <CardHeader>
                   <span className="dark:text-polar-500 text-gray-500">
                     Current Period

@@ -117,8 +117,6 @@ export default function ClientPage({
 
   return (
     <DashboardBody
-      wide
-      transparent
       header={
         <div className="flex flex-col items-center gap-2 lg:flex-row">
           <div className="w-full lg:w-auto">
@@ -191,9 +189,9 @@ const MetricGroup = ({
   interval,
 }: MetricGroupProps) => {
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-2xl border border-gray-200 bg-white p-8">
+    <div className="flex flex-col gap-y-8">
       <h3 className="text-xl">{title}</h3>
-      <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
+      <div className="dark:border-polar-700 flex flex-col overflow-hidden border border-gray-200">
         <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
           {metricKeys.map((metricKey, index) => (
             <MetricChartBox

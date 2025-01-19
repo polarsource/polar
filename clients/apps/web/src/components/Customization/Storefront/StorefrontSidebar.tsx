@@ -60,7 +60,7 @@ const StorefrontSidebarContentWrapper = ({
   organization: Organization
 }>) => {
   return (
-    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
+    <ShadowBox className="flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -411,7 +411,7 @@ export const StorefrontSidebar = () => {
           </>
         )}
       </div>
-      <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 p-6 lg:rounded-3xl">
+      <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 p-6">
         <div className="flex flex-col gap-y-2">
           <h3 className="text-sm">
             {storefrontEnabled

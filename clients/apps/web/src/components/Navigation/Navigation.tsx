@@ -19,7 +19,7 @@ export const ListItem = (props: {
 export const Profile = (props: { name: string; avatar_url: string | null }) => {
   return (
     <>
-      <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">
+      <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-xs">
         <div className="flex w-full min-w-0 shrink grow-0 items-center">
           <span>[+] {props.name}</span>
         </div>

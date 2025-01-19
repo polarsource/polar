@@ -203,7 +203,7 @@ const OrganizationIssues = ({
         <GitHubAppInstallationUpsell organization={org} />
       )}
       {showAddBadgeBanner && <OnboardingAddBadge />}
-      <ShadowBoxOnMd className="md:rounded-4xl md:px-12 md:py-8">
+      <ShadowBoxOnMd className="md:rounded-none md:px-12 md:py-8">
         <div className="-mx-6 space-y-8">
           <div className="mx-6">
             <RepoPickerHeader

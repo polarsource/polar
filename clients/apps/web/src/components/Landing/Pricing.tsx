@@ -4,7 +4,7 @@ export const Pricing = () => {
   return (
     <div
       id="pricing"
-      className="dark:bg-polar-900 rounded-4xl flex w-full flex-col gap-y-12 bg-white p-8 md:p-16"
+      className="dark:bg-polar-900 flex w-full flex-col gap-y-12 rounded-none bg-white p-8 md:p-16"
     >
       <div className="flex flex-col items-center gap-y-6">
         <span className="dark:text-polar-500 text-lg text-gray-400">

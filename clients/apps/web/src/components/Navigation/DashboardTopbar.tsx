@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 import React, { useContext } from 'react'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import TopbarRight from '../Layout/Public/TopbarRight'
+import DashboardProfileDropdown from './DashboardProfileDropdown'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -17,10 +18,7 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
 
   return (
     <Tabs className="md:-mx-4" value={current?.title}>
-      <TabsList
-        className="
-          flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"
-      >
+      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>
@@ -46,10 +44,14 @@ const DashboardTopbar = ({ breadcrumb }: { breadcrumb?: React.ReactNode }) => {
   const org = orgContext?.organization
 
   return (
-    <div className="hidden w-full flex-col md:flex">
+    <div className="dark:border-polar-700 hidden w-full flex-col border-b border-gray-200 px-8 py-4 md:flex">
       <div className="flex w-full flex-row items-center justify-between gap-x-8">
-        <div className="hidden w-full flex-grow flex-row items-center gap-x-8 md:flex">
-          {breadcrumb}
+        <div className="flex flex-row items-center gap-x-8">
+          <DashboardProfileDropdown />
+          <span className="text-gray-500 dark:text-gray-500">/</span>
+          <div className="hidden w-full flex-grow flex-row items-center gap-x-8 md:flex">
+            {breadcrumb}
+          </div>
         </div>
         <div className="flex flex-row items-center gap-x-6">
           {org.profile_settings?.enabled ? (

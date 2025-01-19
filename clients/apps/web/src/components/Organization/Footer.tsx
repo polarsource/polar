@@ -12,7 +12,7 @@ const Footer = ({ wide }: { wide?: boolean }) => {
     >
       <div
         className={twMerge(
-          'dark:md:bg-polar-900 md:rounded-4xl flex w-full flex-col gap-x-32 gap-y-24 md:justify-between md:gap-y-12 md:bg-gray-50 md:p-16 lg:flex-row',
+          'dark:md:bg-polar-900 flex w-full flex-col gap-x-32 gap-y-24 md:justify-between md:gap-y-12 md:rounded-none md:bg-gray-50 md:p-16 lg:flex-row',
           wide ? 'max-w-7xl' : 'max-w-[970px]',
         )}
       >

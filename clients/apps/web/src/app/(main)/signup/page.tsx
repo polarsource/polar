@@ -28,7 +28,7 @@ export default async function Page({
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
-      <div className="md:rounded-4xl md:dark:border-polar-700 md:dark:bg-polar-900 grid w-full max-w-7xl grid-cols-1 gap-y-12 p-12 md:grid-cols-3 md:gap-x-32 md:border md:border-gray-200 md:bg-gray-50 md:py-12 md:pl-12 md:pr-0">
+      <div className="md:dark:border-polar-700 md:dark:bg-polar-900 grid w-full max-w-7xl grid-cols-1 gap-y-12 p-12 md:grid-cols-3 md:gap-x-32 md:rounded-none md:border md:border-gray-200 md:bg-gray-50 md:py-12 md:pl-12 md:pr-0">
         <div className="flex flex-col justify-between gap-y-24">
           <LogoIcon className="text-blue-500 dark:text-white" size={80} />
 
@@ -50,12 +50,16 @@ export default async function Page({
               </label>
               <Input name="org-name" autoFocus />
             </div> */}
-            <Login returnTo={return_to} returnParams={rest} signup={{
+            <Login
+              returnTo={return_to}
+              returnParams={rest}
+              signup={{
                 intent: 'creator',
-            }}/>
+              }}
+            />
           </div>
         </div>
-        <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">
+        <div className="dark:bg-polar-950 dark:border-polar-700 col-span-2 hidden overflow-hidden rounded-none rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">
           <picture className="flex h-full">
             <source
               media="(prefers-color-scheme: dark)"

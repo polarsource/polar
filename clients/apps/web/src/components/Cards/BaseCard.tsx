@@ -5,7 +5,7 @@ const BaseCard = (props: CardProperties) => (
   <>
     <div
       className={twMerge(
-        'rounded-4xl w-full',
+        'w-full rounded-none',
         props.border ? 'border' : '',
         props.padding ? 'p-6' : '',
         props.className,

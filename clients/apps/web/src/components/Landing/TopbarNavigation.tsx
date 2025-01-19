@@ -51,7 +51,7 @@ const PlatformPopover = () => {
       >
         Platform
         <PopoverContent
-          className="rounded-4xl shadow-3xl flex w-[920px] flex-row divide-x p-8 dark:text-white"
+          className="shadow-3xl flex w-[920px] flex-row divide-x rounded-none p-8 dark:text-white"
           sideOffset={20}
         >
           <div className="flex w-1/2 flex-col gap-y-4 pr-8">
@@ -130,7 +130,7 @@ const DocumentationPopover = () => {
       >
         Docs
         <PopoverContent
-          className="rounded-4xl shadow-3xl flex w-[920px] flex-row divide-x p-8 dark:text-white"
+          className="shadow-3xl flex w-[920px] flex-row divide-x rounded-none p-8 dark:text-white"
           sideOffset={20}
         >
           <div className="flex w-1/2 flex-col gap-y-4 pr-8">

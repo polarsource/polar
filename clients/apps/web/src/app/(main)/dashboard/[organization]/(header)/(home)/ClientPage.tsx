@@ -58,7 +58,7 @@ const IntegrationView = () => {
   const { data: products } = useProducts(organization.id)
 
   return (
-    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-16 p-12">
+    <ShadowBox className="flex w-full flex-col gap-y-16 p-12">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-3xl font-medium">Integrate Polar using the API</h3>
         <p className="dark:text-polar-400 text-lg text-gray-500">
@@ -68,7 +68,7 @@ const IntegrationView = () => {
 
       <div className="flex flex-col gap-y-6">
         <h4 className="text-xl font-medium">Install the SDK</h4>
-        <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-xl border border-transparent bg-white px-5 py-3 text-sm shadow-sm">
+        <pre className="dark:border-polar-700 dark:bg-polar-900 border border-transparent bg-white px-5 py-3 text-sm shadow-sm">
           pnpm install @polar-sh/api
         </pre>
       </div>
@@ -76,7 +76,7 @@ const IntegrationView = () => {
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-col gap-y-2">
           <h4 className="text-xl font-medium">Create an access token</h4>
-          <p className="dark:text-polar-400 text-lg text-gray-500">
+          <p className="dark:text-polar-400 text-gray-500">
             Store it securely in an .env file and use it to authenticate with
             the Polar API
           </p>

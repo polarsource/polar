@@ -38,13 +38,16 @@ export const NavigationContainer = ({
               <Link
                 key={route.link}
                 className={twMerge(
-                  'flex flex-row items-center gap-x-4 border border-transparent px-1 transition-colors dark:border-transparent',
+                  'flex flex-row items-center gap-x-2 border border-transparent px-1 transition-colors dark:border-transparent',
                   route.isActive
                     ? 'dark:bg-polar-200 border-gray-200 bg-white text-black dark:text-black'
                     : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
                 )}
                 href={route.link}
               >
+                {route.isActive && (
+                  <span className="text-sm font-medium">{'>'}</span>
+                )}
                 <span className="text-sm font-medium">{route.title}</span>
               </Link>
             )

@@ -14,7 +14,7 @@ export const ProductThumbnail = ({
     coverUrl = product.medias[0].public_url
   }
 
-  const sizeClassName = size === 'small' ? 'h-10 rounded-md' : 'h-24 rounded-xl'
+  const sizeClassName = size === 'small' ? 'h-10' : 'h-24'
 
   return (
     <div

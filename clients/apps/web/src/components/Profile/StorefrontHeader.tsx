@@ -51,10 +51,10 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="md:rounded-4xl relative aspect-[3/1] w-full rounded-2xl bg-gray-100 md:aspect-[4/1] dark:bg-black">
+      <div className="relative aspect-[3/1] w-full rounded-2xl bg-gray-100 md:aspect-[4/1] md:rounded-none dark:bg-black">
         <canvas
           id="gradient-canvas"
-          className="md:rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl"
+          className="absolute bottom-0 left-0 right-0 top-0 h-full w-full rounded-2xl md:rounded-none"
         />
         <Avatar
           className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-32 w-32 -translate-x-1/2 border-8 border-white text-lg md:text-5xl"

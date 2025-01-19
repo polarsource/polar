@@ -29,7 +29,7 @@ const Avatar = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
+        'dark:bg-polar-800 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center bg-gray-50 text-sm',
         className,
       )}
     >
@@ -46,7 +46,7 @@ const Avatar = ({
             src={avatar_url}
             height={height}
             width={width}
-            className="z-[1] aspect-square rounded-full object-cover"
+            className="z-[1] aspect-square object-cover"
           />
         </>
       )}

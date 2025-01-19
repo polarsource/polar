@@ -7,7 +7,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 
 export const Tools = () => {
   return (
-    <div className="dark:bg-polar-900 rounded-4xl flex w-full flex-col gap-y-16 bg-white p-8 md:p-16">
+    <div className="dark:bg-polar-900 flex w-full flex-col gap-y-16 rounded-none bg-white p-8 md:p-16">
       <div className="flex flex-col items-center gap-y-8">
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Command Line Tools

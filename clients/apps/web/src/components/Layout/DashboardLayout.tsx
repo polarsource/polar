@@ -11,39 +11,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
-import {
-  PropsWithChildren,
-  UIEventHandler,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import { SubRouteWithActive } from '../Dashboard/navigation'
-import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import DashboardTopbar from '../Navigation/DashboardTopbar'
 import { useRoute } from '../Navigation/useRoute'
 import { BrandingMenu } from './Public/BrandingMenu'
 import TopbarRight from './Public/TopbarRight'
 
 const DashboardSidebar = () => {
-  const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
-
-  const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
-    setScrollTop(e.currentTarget.scrollTop)
-  }, [])
-
-  const shouldRenderUpperBorder = useMemo(() => scrollTop > 0, [scrollTop])
-
-  const upperScrollClassName = shouldRenderUpperBorder
-    ? 'border-b dark:border-b-polar-700 border-b-gray-200'
-    : ''
 
   if (!currentUser) {
     return <></>
@@ -52,7 +32,7 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[240px] md:overflow-y-visible',
+        'dark:border-polar-700 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto border-r border-gray-200 p-6 md:w-[280px] md:overflow-y-visible',
       )}
     >
       <div className="flex h-full flex-col gap-y-6">
@@ -60,14 +40,7 @@ const DashboardSidebar = () => {
           <BrandingMenu />
         </div>
 
-        <div className={upperScrollClassName}>
-          <DashboardProfileDropdown />
-        </div>
-
-        <div
-          className="flex w-full flex-grow flex-col gap-y-12 md:h-full md:justify-between md:overflow-y-auto"
-          onScroll={handleScroll}
-        >
+        <div className="flex w-full flex-grow flex-col gap-y-12 md:h-full md:justify-between md:overflow-y-auto">
           <div className="flex flex-col gap-y-12">
             <MaintainerNavigation />
           </div>
@@ -91,14 +64,14 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col gap-x-8 bg-gray-100 md:flex-row md:p-6 dark:bg-transparent">
+      <div className="relative flex h-full w-full flex-col bg-gray-100 md:flex-row dark:bg-transparent">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
         </div>
         <div
           className={twMerge(
-            'relative flex h-full w-full flex-col gap-y-4',
+            'relative flex h-full w-full flex-col',
             props.className,
           )}
         >
@@ -228,7 +201,6 @@ export const DashboardBody = ({
   contextView,
   contextViewClassName,
   header = true,
-  wide = false,
 }: {
   children?: React.ReactNode
   wrapperClassName?: string
@@ -237,7 +209,6 @@ export const DashboardBody = ({
   contextView?: React.ReactElement
   contextViewClassName?: string
   header?: JSX.Element | boolean
-  wide?: boolean
 }) => {
   const currentRoute = useRoute()
 
@@ -246,18 +217,18 @@ export const DashboardBody = ({
   )
 
   return (
-    <div className={twMerge('flex h-full w-full flex-row gap-x-3')}>
+    <div
+      className={twMerge(
+        'dark:divide-polar-700 flex h-full w-full flex-row gap-x-3 divide-x divide-gray-200',
+      )}
+    >
       <div
         className={twMerge(
-          'relative flex w-full flex-col items-center md:overflow-y-auto',
+          'relative flex w-full flex-col items-center md:overflow-y-auto md:px-8',
         )}
       >
         <div
-          className={twMerge(
-            'flex h-full w-full flex-col',
-            wrapperClassName,
-            wide ? '' : 'max-w-screen-xl',
-          )}
+          className={twMerge('flex h-full w-full flex-col', wrapperClassName)}
         >
           {header && (
             <div
@@ -290,7 +261,7 @@ export const DashboardBody = ({
       {contextView ? (
         <div
           className={twMerge(
-            'dark:bg-polar-900 dark:border-polar-700 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-sm xl:max-w-[440px]',
+            'w-full overflow-y-auto md:max-w-[320px] xl:max-w-[440px]',
             contextViewClassName,
           )}
         >

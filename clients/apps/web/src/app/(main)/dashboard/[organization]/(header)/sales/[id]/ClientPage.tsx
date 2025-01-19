@@ -25,7 +25,7 @@ interface OrderProductItemProps {
 
 const OrderProductItem = ({ product }: OrderProductItemProps) => {
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-6 rounded-3xl border border-gray-200 bg-white p-4">
+    <div className="dark:border-polar-700 flex flex-row items-center gap-6 border border-gray-200 p-4">
       <ProductThumbnail product={product} size="medium" />
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center gap-x-4">

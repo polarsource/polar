@@ -7,7 +7,7 @@ import Button from 'polarkit/components/ui/atoms/button'
 export const GetStarted = () => {
   return (
     <div className="grid grid-cols-1 gap-y-12 md:grid-cols-3 md:gap-x-16">
-      <div className="rounded-4xl dark:bg-polar-900 relative col-span-1 flex w-full flex-col justify-between gap-y-8 p-10">
+      <div className="dark:bg-polar-900 relative col-span-1 flex w-full flex-col justify-between gap-y-8 rounded-none p-10">
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex w-full max-w-sm flex-col gap-y-6">
             <h3 className="text-3xl font-medium leading-tight">

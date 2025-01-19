@@ -32,10 +32,12 @@ const DashboardProfileDropdown = ({ className = '' }) => {
   const current = currentOrg
     ? ({
         name: currentOrg.name,
+        slug: currentOrg.slug,
         avatar_url: currentOrg.avatar_url,
       } as const)
     : ({
         name: loggedUser.email,
+        slug: loggedUser.email,
         avatar_url: loggedUser.avatar_url,
       } as const)
 
@@ -47,14 +49,14 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         )}
         onClick={() => setOpen(true)}
       >
-        <Profile name={current.name} avatar_url={current.avatar_url} />
+        <Profile name={current.slug} avatar_url={current.avatar_url} />
       </div>
 
       {isOpen && (
         <div
           ref={ref}
           className={twMerge(
-            'dark:bg-polar-900 dark:text-polar-400 rounded-4xl dark:border-polar-700 border:transparent absolute -left-2 -right-4 -top-2 overflow-hidden border bg-gray-50 p-2 shadow-xl',
+            'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 border:transparent absolute -left-2 -right-4 -top-2 overflow-hidden rounded-none border bg-gray-50 p-2 shadow-xl',
           )}
         >
           {orgs.length > 0 ? (

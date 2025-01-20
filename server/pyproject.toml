@@ -150,4 +150,4 @@ warn_required_dynamic_aliases = true
 warn_untyped_fields = true
 
 [tool.uv.sources]
-asgi-admin = { git = "https://github.com/polarsource/asgi-admin", rev = "fd9bbb80647a13327f564dca97794af8f13a7dba" }
+asgi-admin = { git = "https://github.com/polarsource/asgi-admin", rev = "b6d7b8be89a13cf6bbd876ca895cbab25ec5fda8" }

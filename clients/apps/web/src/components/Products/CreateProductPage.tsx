@@ -167,7 +167,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   return (
     <DashboardBody
       title="Create Product"
-      wrapperClassName="!max-w-screen-sm"
+      wrapperClassName="!max-w-screen-md"
       className="gap-y-16"
       contextViewClassName="hidden md:block"
       contextView={
@@ -183,7 +183,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         </div>
       }
     >
-      <div className="flex flex-col gap-y-8 divide-y">
+      <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col gap-y-8 divide-y divide-gray-200 border border-gray-200">
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}

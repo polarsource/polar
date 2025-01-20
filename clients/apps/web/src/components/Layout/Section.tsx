@@ -15,7 +15,7 @@ export const Section = ({
   cta?: React.ReactNode
 }) => {
   return (
-    <div className={twMerge('relative flex flex-col gap-12 py-12', className)}>
+    <div className={twMerge('relative flex flex-col gap-12 p-12', className)}>
       <SectionDescription title={title} description={description} cta={cta} />
       {children}
     </div>

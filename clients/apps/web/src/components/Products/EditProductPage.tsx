@@ -185,7 +185,7 @@ export const EditProductPage = ({
   return (
     <DashboardBody
       title="Edit Product"
-      wrapperClassName="!max-w-screen-sm"
+      wrapperClassName="!max-w-screen-md"
       contextViewClassName="hidden md:block"
       contextView={
         <div className="flex h-full flex-col justify-between">
@@ -221,7 +221,7 @@ export const EditProductPage = ({
       }
     >
       <div className="flex flex-col gap-y-12">
-        <div className="flex flex-col divide-y">
+        <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y border border-gray-200">
           <Form {...form}>
             <form
               onSubmit={handleSubmit(onSubmit)}

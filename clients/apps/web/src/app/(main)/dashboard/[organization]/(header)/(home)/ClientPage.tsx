@@ -69,7 +69,7 @@ const IntegrationView = () => {
       <div className="flex flex-col gap-y-6">
         <h4 className="text-xl font-medium">Install the SDK</h4>
         <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-xl border border-transparent bg-white px-5 py-3 text-sm shadow-sm">
-          pnpm install @polar-sh/api
+          pnpm install @polar-sh/sdk
         </pre>
       </div>
 

@@ -37,6 +37,7 @@ module.exports = {
   content: [
     './src/**/*.{ts,tsx}',
     'node_modules/@polar-sh/ui/src/**/*.{ts,tsx}',
+    'node_modules/@polar-sh/checkout/src/**/*.{ts,tsx}',
     '.storybook/**/*.{ts,tsx}',
   ],
   darkMode: 'class',

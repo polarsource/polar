@@ -1,25 +1,21 @@
 'use client'
 
-import { Checkout } from '@/components/Checkout/Checkout'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Product } from '@polar-sh/api'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useTheme } from 'next-themes'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
 import { useContext } from 'react'
-import { CHECKOUT_PREVIEW, createCheckoutPreview } from '../utils'
 
 export interface CheckoutPreviewProps {
   product?: Product
 }
 
-export const CheckoutPreview = ({ product }: CheckoutPreviewProps) => {
+export const CheckoutPreview = ({}: CheckoutPreviewProps) => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
   const { currentUser } = useAuth()
-  const { resolvedTheme } = useTheme()
 
   return (
     <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto bg-white">
@@ -37,15 +33,6 @@ export const CheckoutPreview = ({ product }: CheckoutPreviewProps) => {
             <StorefrontHeader organization={org} />
           </>
         )}
-        <Checkout
-          organization={org}
-          checkout={
-            product
-              ? createCheckoutPreview(product, product.prices[0])
-              : CHECKOUT_PREVIEW
-          }
-          theme={resolvedTheme as 'light' | 'dark'}
-        />
       </div>
     </ShadowBox>
   )

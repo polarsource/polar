@@ -55,7 +55,7 @@ export const Chart: React.FC<ChartProps> = ({
   onDataIndexHover,
 }) => {
   const [width, setWidth] = useState(0)
-  const height = useMemo(() => _height || 400, [_height])
+  const height = useMemo(() => _height || 300, [_height])
   const maxTicks = useMemo(() => _maxTicks || 10, [_maxTicks])
 
   const timestamps = useMemo(
@@ -103,7 +103,6 @@ export const Chart: React.FC<ChartProps> = ({
       style: {
         background: 'none',
       },
-      width,
       height,
       marks: [
         Plot.axisX({
@@ -114,8 +113,7 @@ export const Chart: React.FC<ChartProps> = ({
           fontFamily: GeistMono.style.fontFamily,
         }),
         Plot.axisY({
-          tickFormat: valueFormatter,
-          label: null,
+          label: 'Growth',
           stroke: 'none',
           fontFamily: GeistMono.style.fontFamily,
         }),
@@ -151,7 +149,7 @@ export const Chart: React.FC<ChartProps> = ({
 
   return (
     <div
-      className="dark:text-polar-500 w-full"
+      className="text-polar-500 border-polar-700 w-full border p-4"
       ref={setContainerRef}
       onMouseLeave={onMouseLeave}
     />

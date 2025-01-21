@@ -1,39 +1,35 @@
-import { MetricType } from '@polar-sh/api'
-import { Chart } from '../Chart'
+import { Console } from '../Console'
 import { Link } from '../Link'
 import { Section } from '../Section'
 
 export const UsageBasedSection = () => {
   return (
     <Section
-      header={{ index: '01', name: 'Usage Based Future' }}
+      header={{ index: '01', name: 'Future is Usage Based' }}
       title="The future of payments is usage based"
       context={
-        <Chart
-          data={[
-            ...(() => {
-              const getLastMonthValues = () => {
-                const values = []
-                for (let i = 0; i <= 31; i++) {
-                  values.push({
-                    timestamp: new Date(
-                      new Date().setDate(new Date().getDate() + i),
-                    ),
-                    value: Math.floor(Math.exp(i / 5)), // Exponential growth
-                  })
-                }
-                return values
-              }
+        <Console
+          title="NextJS Adapter"
+          code={`import { Usage } from '@polar-sh/nextjs'
+import { openai } from '@ai-sdk/openai'
+import { streamText } from 'ai';
 
-              return getLastMonthValues()
-            })(),
-          ]}
-          interval="day"
-          metric={{
-            slug: 'value',
-            display_name: 'Value',
-            type: MetricType.SCALAR,
-          }}
+export const POST = Usage()
+  .customer(req => req.headers.get('X-Polar-Customer-Id'))
+  .model(openai('gpt-4o'))
+  .increment('gpt-4o-inputs', ctx => ctx.usage.inputTokens)
+  .increment('gpt-4o-outputs', ctx => ctx.usage.completionTokens)
+  .handler((req, res, model) => {
+    const { prompt }: { prompt: string } = await req.json();
+
+    const result = streamText({
+      model,
+      system: 'You are a helpful assistant.',
+      prompt,
+    });
+
+    return result.toDataStreamResponse();
+})`}
         />
       }
     >

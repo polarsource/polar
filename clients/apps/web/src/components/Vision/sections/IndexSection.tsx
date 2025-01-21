@@ -11,7 +11,7 @@ export const IndexSection = () => {
         <Console
           className="flex aspect-video max-w-lg flex-grow"
           title="Terminal"
-          input="> i just want to sell my saas online, pls fix"
+          input="> i want to sell my saas online, how to?"
           output={`1. Create a Stripe Account
 2. Setup a Product
 3. Watch this youtube video -> dub.sh/integrate-stripe

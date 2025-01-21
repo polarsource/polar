@@ -17,7 +17,7 @@ export const Grid: React.FC<GridProps> = ({ items, className }) => {
       {items.map((item, index) => (
         <div
           key={index}
-          className="bg-polar-900 relative flex aspect-square h-full w-full flex-col items-center justify-center p-6"
+          className="bg-polar-900 relative flex aspect-square h-full w-full flex-row items-center p-4"
         >
           {item}
         </div>

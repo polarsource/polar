@@ -1,4 +1,6 @@
+import { MetricType } from '@polar-sh/api'
 import Image from 'next/image'
+import { Chart } from '../Chart'
 import { Link } from '../Link'
 import { Section } from '../Section'
 
@@ -26,10 +28,82 @@ export const TeamSection = () => {
       header={{ index: '05', name: 'Team' }}
       title="We are hiring"
       context={
-        <div className="flex flex-col gap-y-12 md:flex-row md:gap-x-8">
-          {team.map((profile) => (
-            <Profile key={profile.name} {...profile} />
-          ))}
+        <div className="flex flex-col gap-y-8">
+          <div className="flex flex-col gap-y-12 md:flex-row md:gap-x-8">
+            {team.map((profile) => (
+              <Profile key={profile.name} {...profile} />
+            ))}
+          </div>
+
+          <Chart
+            data={[
+              ...(() => {
+                const getWeeksDifferenceInclusive = (
+                  startDate: Date,
+                  endDate: Date,
+                ) => {
+                  // Normalize to the start of the day (no time component)
+                  const start = new Date(startDate)
+                  start.setHours(0, 0, 0, 0)
+
+                  const end = new Date(endDate)
+                  end.setHours(0, 0, 0, 0)
+
+                  // Calculate the difference in milliseconds
+                  const timeDifference = end.getTime() - start.getTime()
+
+                  // Convert milliseconds to weeks (1 week = 7 days = 7 * 24 * 60 * 60 * 1000 milliseconds)
+                  const weeks = Math.ceil(
+                    timeDifference / (7 * 24 * 60 * 60 * 1000),
+                  )
+
+                  return weeks
+                }
+
+                const getLastMonthValues = () => {
+                  const values = []
+                  const rawValues = []
+                  const startDate = new Date(2024, 8, 30) // September 30, 2024 (Month is zero-indexed)
+                  const weeksSinceStartDate = getWeeksDifferenceInclusive(
+                    startDate,
+                    new Date(),
+                  )
+
+                  // Generate raw values
+                  for (let i = 0; i < weeksSinceStartDate; i++) {
+                    const timestamp = new Date(startDate)
+
+                    timestamp.setDate(startDate.getDate() + i * 7) // Increment by 7 days per week
+
+                    const value = Math.floor(Math.exp(i / 3)) // Exponential growth
+                    rawValues.push(value)
+                    values.push({
+                      timestamp,
+                      value,
+                    })
+                  }
+
+                  // Calculate min and max
+                  const min = Math.min(...rawValues)
+                  const max = Math.max(...rawValues)
+
+                  // Normalize values
+                  return values.map((item) => ({
+                    timestamp: item.timestamp,
+                    value: (item.value - min) / (max - min),
+                  }))
+                }
+
+                return getLastMonthValues()
+              })(),
+            ]}
+            interval="month"
+            metric={{
+              slug: 'value',
+              display_name: 'Value',
+              type: MetricType.SCALAR,
+            }}
+          />
         </div>
       }
     >

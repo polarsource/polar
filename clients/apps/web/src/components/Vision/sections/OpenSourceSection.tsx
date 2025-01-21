@@ -10,7 +10,7 @@ export const OpenSourceSection = ({ active }: { active: boolean }) => {
       title="Building the future, together"
       context={
         <Console
-          className="flex aspect-video flex-grow md:max-w-lg"
+          className="md:max-w-lg"
           title="zsh"
           input="$ git clone git@github.com:polarsource/polar.git"
           output="Cloning Polar (Apache 2.0)..."
@@ -23,13 +23,12 @@ export const OpenSourceSection = ({ active }: { active: boolean }) => {
       </p>
       <strong>1% OSS Program</strong>
       <p>
-        We&apos;re going to make it seamless for developers to automate splitting
-        a portion of their revenue to their open source dependencies.
-
+        We&apos;re going to make it seamless for developers to automate
+        splitting a portion of their revenue to their open source dependencies.
       </p>
       <p>
-        Inspired by Stripe Climate. Because we need more trees in the physical world and
-        open source software in the binary one.
+        Inspired by Stripe Climate. Because we need more trees in the physical
+        world and open source software in the binary one.
       </p>
       <Link href="https://github.com/polarsource/polar" target="_blank">
         Polar on GitHub →

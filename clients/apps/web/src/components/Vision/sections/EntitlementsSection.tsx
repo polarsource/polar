@@ -37,15 +37,17 @@ export const EntitlementsSection = () => {
           <Console
             className="text-xs"
             code={`import { Webhooks, Entitlements, EntitlementStrategy } from '@polar-sh/nextjs';
+import { WebClient } from '@slack/web-api';
 
-// Custom Entitlement which can grant or revoke access to anything
-const mySaaSEntitlement = new EntitlementStrategy()
-  .grant(async ctx => myservice.grant(...))
-  .revoke(async ctx => myservice.revoke(...));
+const slackClient = new WebClient(process.env.SLACK_TOKEN);
+
+const SlackEntitlement = new EntitlementStrategy()
+  .grant(async ({ customer: { email } }) => slackClient.admin.users.invite({ email }))
+  .revoke(async ctx => slackClient.admin.users.remove(...));
 
 export const POST = Webhooks({
   webhookSecret: process.env.WEBHOOK_SECRET,
-  entitlements: Entitlements.use('my-saas', mySaaSEntitlement)
+  entitlements: Entitlements.use('slack', SlackEntitlement)
 });
 `}
           />

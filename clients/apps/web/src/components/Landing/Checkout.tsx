@@ -1,11 +1,9 @@
-import { Checkout as CheckoutComponent } from '@/components/Checkout/Checkout'
-import {
-  CHECKOUT_PREVIEW,
-  ORGANIZATION,
-} from '@/components/Customization/utils'
+import CheckoutComponent from '@/components/Checkout/Checkout'
+import { CHECKOUT_PREVIEW } from '@/components/Customization/utils'
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
+import { DummyCheckoutContextProvider } from '../Checkout/CheckoutContextProvider'
 
 export const Checkout = () => {
   return (
@@ -30,10 +28,9 @@ export const Checkout = () => {
       </div>
       <div className="relative h-[490px] overflow-hidden">
         <div className="shadow-3xl rounded-4xl pointer-events-none absolute left-8 right-8 top-16 flex flex-col items-center md:left-16 md:right-16">
-          <CheckoutComponent
-            organization={ORGANIZATION}
-            checkout={CHECKOUT_PREVIEW}
-          />
+          <DummyCheckoutContextProvider checkout={CHECKOUT_PREVIEW}>
+            <CheckoutComponent />
+          </DummyCheckoutContextProvider>
         </div>
       </div>
     </div>

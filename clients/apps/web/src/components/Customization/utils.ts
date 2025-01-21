@@ -170,7 +170,7 @@ export const createCheckoutPreview = (
         ? price.price_amount
         : 0
 
-  return CheckoutPublic$inboundSchema.parse({
+  const checkout = CheckoutPublic$inboundSchema.parse({
     id: '123',
     created_at: new Date().toISOString(),
     modified_at: new Date().toISOString(),
@@ -208,6 +208,12 @@ export const createCheckoutPreview = (
     discount_id: null,
     allow_discount_codes: true,
   })
+
+  return {
+    ...checkout,
+    // @ts-ignore
+    paymentProcessor: 'dummy',
+  }
 }
 
 export const CHECKOUT_PREVIEW: CheckoutPublic = createCheckoutPreview(

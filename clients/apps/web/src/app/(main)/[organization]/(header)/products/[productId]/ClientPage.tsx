@@ -1,8 +1,8 @@
 'use client'
 
 import Checkout from '@/components/Checkout/Checkout'
+import { CheckoutContextProvider } from '@/components/Checkout/CheckoutContextProvider'
 import { CheckoutPublic, Organization } from '@polar-sh/api'
-import { useTheme } from 'next-themes'
 
 export default function ClientPage({
   checkout,
@@ -10,12 +10,9 @@ export default function ClientPage({
   organization: Organization
   checkout: CheckoutPublic
 }) {
-  const { resolvedTheme } = useTheme()
   return (
-    <Checkout
-      clientSecret={checkout.client_secret}
-      prefilledParameters={{}}
-      theme={resolvedTheme as 'light' | 'dark'}
-    />
+    <CheckoutContextProvider clientSecret={checkout.client_secret}>
+      <Checkout />
+    </CheckoutContextProvider>
   )
 }

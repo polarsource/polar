@@ -9,7 +9,7 @@ export const OpenSourceSection = () => {
       title="Building in public"
       context={
         <Console
-          className="flex aspect-video max-w-lg flex-grow"
+          className="flex aspect-video flex-grow md:max-w-lg"
           title="zsh"
           input="~/ % git clone git@github.com:polarsource/polar.git"
           output="Cloning Polar..."

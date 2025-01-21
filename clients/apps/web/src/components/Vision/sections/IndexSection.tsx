@@ -8,7 +8,7 @@ export const IndexSection = () => {
       title="Integrating payments is a mess"
       context={
         <Console
-          className="flex aspect-video max-w-lg flex-grow"
+          className="flex aspect-video flex-grow md:max-w-lg"
           title="Terminal"
           input="> i want to sell my saas online, how to?"
           output={`1. Create a Stripe Account

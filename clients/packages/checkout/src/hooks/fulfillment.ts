@@ -1,19 +1,33 @@
 import type { PolarCore } from '@polar-sh/sdk/core'
 import type { CheckoutStatus } from '@polar-sh/sdk/models/components/CheckoutStatus'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import { useCallback, useState } from 'react'
-import { useCheckoutClientSSE } from './sse'
+import { EventSourcePlus } from 'event-source-plus'
+import EventEmitter from 'eventemitter3'
+import { useCallback, useMemo, useState } from 'react'
 
 export const useCheckoutFulfillmentListener = (
   client: PolarCore,
   checkout: CheckoutPublic,
   maxWaitingTimeMs: number = 30000,
 ): [() => Promise<void>, string | null] => {
-  const checkoutEvents = useCheckoutClientSSE(client, checkout.clientSecret)
+  const checkoutEvents = useMemo(() => new EventEmitter(), [])
   const [fulfillmentLabel, setFulfillmentLabel] = useState<string | null>(null)
 
   const fulfillmentListener = useCallback(async () => {
     return await new Promise<void>((resolve) => {
+      // @ts-ignore
+      const baseURL = client._baseURL
+      const url = `${baseURL}v1/checkouts/custom/client/${checkout.clientSecret}/stream`
+      const eventSource = new EventSourcePlus(url, {
+        credentials: 'include',
+      })
+      const controller = eventSource.listen({
+        onMessage: async (message) => {
+          const data = JSON.parse(message.data)
+          checkoutEvents.emit(data.key, data.payload)
+        },
+      })
+
       let checkoutSuccessful = false
       let orderCreated = false
       let subscriptionCreated = checkout.productPrice.type !== 'recurring'
@@ -31,6 +45,7 @@ export const useCheckoutFulfillmentListener = (
           subscriptionCreated &&
           webhookEventDelivered
         ) {
+          controller.abort()
           resolve()
         }
       }
@@ -86,7 +101,7 @@ export const useCheckoutFulfillmentListener = (
       // Wait webhook event to be delivered for 30 seconds max
       setTimeout(() => webhookEventDeliveredListener(), maxWaitingTimeMs)
     })
-  }, [checkout, checkoutEvents, maxWaitingTimeMs])
+  }, [client, checkout, checkoutEvents, maxWaitingTimeMs])
 
   return [fulfillmentListener, fulfillmentLabel]
 }

@@ -1,36 +1,25 @@
 'use client'
 
 import { CheckoutForm, CheckoutPricing } from '@polar-sh/checkout/components'
-import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useTheme } from 'next-themes'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
-import { getServerURL } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
-import {
-  CheckoutFormProvider,
-  CheckoutProvider,
-} from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import CheckoutLayout from './CheckoutLayout'
+import { useCheckoutContext } from './CheckoutContextProvider'
 
-export interface CheckoutInnerProps {
-  embed?: boolean
-  theme?: 'light' | 'dark'
-}
+export interface CheckoutProps {}
 
-const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
-  const { resolvedTheme } = useTheme()
+const Checkout = () => {
   const {
     checkout,
     form,
@@ -38,8 +27,11 @@ const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
     confirm: _confirm,
     loading: confirmLoading,
     loadingLabel,
-  } = useCheckoutForm()
-  const { client } = useCheckout()
+    client,
+    theme,
+    embed,
+  } = useCheckoutContext()
+
   const router = useRouter()
   const [listenFulfillment, fullfillmentLabel] = useCheckoutFulfillmentListener(
     client,
@@ -49,7 +41,6 @@ const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
 
   const loading = fullfillmentLoading || confirmLoading
   const label = fullfillmentLabel || loadingLabel
-  const theme = wantedTheme || (resolvedTheme as 'light' | 'dark' | undefined)
 
   const confirm = useCallback(
     async (
@@ -109,7 +100,7 @@ const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
 
       return confirmedCheckout
     },
-    [embed, listenFulfillment, router, theme],
+    [checkout, _confirm, embed, listenFulfillment, router, theme],
   )
 
   if (embed) {
@@ -125,7 +116,7 @@ const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
           confirm={confirm}
           loading={loading}
           loadingLabel={label}
-          theme={theme || (resolvedTheme as 'light' | 'dark' | undefined)}
+          theme={theme}
         />
       </ShadowBox>
     )
@@ -148,45 +139,10 @@ const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
           confirm={confirm}
           loading={loading}
           loadingLabel={label}
-          theme={theme || (resolvedTheme as 'light' | 'dark' | undefined)}
+          theme={theme}
         />
       </div>
     </ShadowBoxOnMd>
-  )
-}
-
-const CheckoutLayoutInner = ({
-  embed,
-  theme,
-  children,
-}: React.PropsWithChildren<{ embed?: boolean; theme?: 'light' | 'dark' }>) => {
-  const { checkout } = useCheckout()
-  return (
-    <CheckoutLayout checkout={checkout} embed={embed === true} theme={theme}>
-      {children}
-    </CheckoutLayout>
-  )
-}
-
-const Checkout = ({
-  clientSecret,
-  embed,
-  theme,
-  prefilledParameters,
-}: {
-  clientSecret: string
-  prefilledParameters: Record<string, string>
-  embed?: boolean
-  theme?: 'light' | 'dark'
-}) => {
-  return (
-    <CheckoutProvider clientSecret={clientSecret} serverURL={getServerURL()}>
-      <CheckoutFormProvider prefilledParameters={prefilledParameters}>
-        <CheckoutLayoutInner embed={embed === true} theme={theme}>
-          <CheckoutInner theme={theme} embed={embed} />
-        </CheckoutLayoutInner>
-      </CheckoutFormProvider>
-    </CheckoutProvider>
   )
 }
 

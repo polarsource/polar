@@ -24,7 +24,9 @@ export const OpenSourceSection = () => {
         Software as a Service (SaaS) has become the norm, but the underlying
         payment infrastructure has not evolved.
       </p>
-      <Link href="/pitch/what">What we are building →</Link>
+      <Link href="https://github.com/polarsource/polar" target="_blank">
+        Polar on GitHub →
+      </Link>
     </Section>
   )
 }

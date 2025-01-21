@@ -1,5 +1,4 @@
 import { Grid } from '../Grid'
-import { Link } from '../Link'
 import { Section } from '../Section'
 
 export const InvestorsSection = () => {
@@ -94,7 +93,6 @@ export const InvestorsSection = () => {
         This is why we are building Polar 2.0, payment infrastructure for the
         21st century.
       </p>
-      <Link href="/pitch/what">Why →</Link>
     </Section>
   )
 }

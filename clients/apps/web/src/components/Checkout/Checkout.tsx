@@ -17,7 +17,6 @@ import ShadowBox, {
 } from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
-import { CheckoutCard } from './CheckoutCard'
 import { CheckoutForm } from './CheckoutForm'
 import { CheckoutInfo } from './CheckoutInfo'
 
@@ -118,10 +117,6 @@ export const Checkout = ({
     return (
       <ShadowBox className="dark:bg-polar-900 flex flex-col gap-y-12 bg-white">
         <FormProvider {...form}>
-          <CheckoutCard
-            checkout={checkout}
-            onCheckoutUpdate={onCheckoutUpdate}
-          />
           <CheckoutForm
             checkout={checkout}
             onCheckoutUpdate={onCheckoutUpdate}

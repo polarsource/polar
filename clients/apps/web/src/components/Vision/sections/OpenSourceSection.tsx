@@ -2,9 +2,10 @@ import { Console } from '../Console'
 import { Link } from '../Link'
 import { Section } from '../Section'
 
-export const OpenSourceSection = () => {
+export const OpenSourceSection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '04', name: 'Polar is 100% Open Source' }}
       title="Building the future, together"
       context={

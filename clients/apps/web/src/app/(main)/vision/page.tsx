@@ -10,7 +10,7 @@ import { TeamSection } from '@/components/Vision/sections/TeamSection'
 import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSection'
 import { useArrowFocus } from '@/components/Vision/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   PitchNavigation,
   sections,
@@ -26,26 +26,6 @@ export default function PitchPage() {
     onNumberPress: (number) =>
       setIndex(Math.max(0, Math.min(number, sections.length - 1))),
   })
-
-  const activeSection = useMemo(() => {
-    switch (index) {
-      case 0:
-      default:
-        return <IndexSection />
-      case 1:
-        return <UsageBasedSection />
-      case 2:
-        return <EntitlementsSection />
-      case 3:
-        return <DNASection />
-      case 4:
-        return <OpenSourceSection />
-      case 5:
-        return <TeamSection />
-      case 6:
-        return <InvestorsSection />
-    }
-  }, [index])
 
   return (
     <div className="flex h-full flex-col justify-between gap-y-12 text-sm">
@@ -64,7 +44,13 @@ export default function PitchPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.06, repeat: 2 }}
           >
-            {activeSection}
+            <IndexSection active={index == 0} />
+            <UsageBasedSection active={index == 1} />
+            <EntitlementsSection active={index == 2}/>
+            <DNASection active={index == 3} />
+            <OpenSourceSection active={index == 4} />
+            <TeamSection active={index == 5} />
+            <InvestorsSection active={index == 6} />
           </motion.div>
         </AnimatePresence>
       </div>

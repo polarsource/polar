@@ -1,9 +1,10 @@
 import { Console } from '../Console'
 import { Section } from '../Section'
 
-export const UsageBasedSection = () => {
+export const UsageBasedSection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '01', name: 'The Future is Usage & Success Based' }}
       title="Next-Gen AI without Last-Gen Pricing"
       context={

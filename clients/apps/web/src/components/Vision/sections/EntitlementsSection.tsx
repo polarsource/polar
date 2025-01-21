@@ -2,9 +2,10 @@ import { Console } from '../Console'
 import { Grid } from '../Grid'
 import { Section } from '../Section'
 
-export const EntitlementsSection = () => {
+export const EntitlementsSection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '02', name: 'Automated Entitlements' }}
       title="Going for features vs. settling for flags."
       context={

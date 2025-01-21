@@ -1,9 +1,10 @@
 import { Console } from '../Console'
 import { Section } from '../Section'
 
-export const IndexSection = () => {
+export const IndexSection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '00', name: 'Index' }}
       title="Payments for developers is a mess, again"
       context={

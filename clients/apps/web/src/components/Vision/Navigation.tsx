@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
 export const sections = [
@@ -34,7 +35,7 @@ export const PitchNavigation = ({
 }) => {
   return (
     <div className="flex flex-col gap-y-8 text-xs md:flex-row md:gap-x-16">
-      <span>Polar Software Inc.</span>
+      <Link href="/">Polar Software Inc.</Link>
       <ul className="flex flex-col gap-y-2 md:flex-row md:gap-x-8">
         <AnimatePresence key={activeIndex}>
           {sections.map((section, index) => (

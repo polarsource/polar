@@ -4,8 +4,8 @@ import { Section } from '../Section'
 export const UsageBasedSection = () => {
   return (
     <Section
-      header={{ index: '01', name: 'Future is Usage Based' }}
-      title="The future of payments is usage based"
+      header={{ index: '01', name: 'The Future is Usage & Success Based' }}
+      title="Next-Gen AI without Last-Gen Pricing"
       context={
         <Console
           title="NextJS Adapter"
@@ -33,15 +33,31 @@ export const POST = Usage()
       }
     >
       <p>
-        In a world where Artificial Intelligence is becoming more and more
-        prevalent, the intelligence we consume will be charged based on usage.
-        It&apos;s time for payment infrastructure, built for the 21st century.
+        Understandable fear and complexity around overages, credits and spend limits
+        is holding the ecosystem back from experimenting &amp; innovating on pricing.
       </p>
       <p>
-        We believe that the future of payments is usage based, and we are
-        committed to build the gold standard for adapters that sits in between
-        artificial intelligence and the world.
+        We&apos;re hell-bent at removing all those headaches and concerns for developers and their customers.
+        Both from a technical and business perspective.
       </p>
+      <p>
+        New times deserve new pricing.
+      </p>
+      <strong>Focus ahead:</strong>
+      <ul>
+        <li>
+          <p>- Unlimited events and meters per product</p>
+        </li>
+        <li>
+          <p>- Middleware and adapters to automate metering</p>
+        </li>
+        <li>
+          <p>- Real-time dashboard of events, costs and revenue/customer</p>
+        </li>
+        <li>
+          <p>- @shadcn-like components for customer forecast &amp; controls</p>
+        </li>
+      </ul>
     </Section>
   )
 }

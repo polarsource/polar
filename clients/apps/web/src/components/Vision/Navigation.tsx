@@ -12,7 +12,7 @@ export const sections = [
     title: '02. Automated Entitlements',
   },
   {
-    title: '03. DX as DNA',
+    title: '03. DX & MoR',
   },
   {
     title: '04. Open Source',

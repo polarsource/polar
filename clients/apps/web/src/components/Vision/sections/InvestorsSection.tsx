@@ -5,7 +5,7 @@ export const InvestorsSection = () => {
   return (
     <Section
       header={{ index: '06', name: 'Investors' }}
-      title="Venture Capital & Angels"
+      title="Investors, Angels & Advisors"
       context={
         <div className="flex flex-col gap-12 md:flex-row md:items-start">
           <Grid
@@ -42,27 +42,27 @@ export const InvestorsSection = () => {
                 name="Gustaf Alstromer"
                 company="Y Combinator"
               />,
+              <AngelProfile key="E" name="David Cramer" company="Sentry" />,
+              <AngelProfile key="G" name="Carl Rivera" company="Shopify" />,
+              <AngelProfile key="H" name="Tristan Handy" company="dbt Labs" />,
               <AngelProfile key="C" name="Fredrik Björk" company="Grafbase" />,
               <AngelProfile
                 key="D"
                 name="Joel Hellermark"
                 company="Sana Labs"
               />,
-              <AngelProfile key="E" name="David Cramer" company="Sentry" />,
               <AngelProfile
                 key="F"
                 name="Andrea Wang"
                 company="General Catalyst"
               />,
-              <AngelProfile key="G" name="Carl Rivera" company="Shopify" />,
-              <AngelProfile key="H" name="Tristan Handy" company="dbt Labs" />,
               <AngelProfile key="I" name="Kaj Drobin" company="Stilla AI" />,
-              <AngelProfile key="J" name="Sri Batchu" company="The RealReal" />,
               <AngelProfile
                 key="K"
                 name="Siavash Ghorbani"
                 company="Stilla AI"
               />,
+              <AngelProfile key="J" name="Sri Batchu" company="The RealReal" />,
               <AngelProfile
                 key="L"
                 name="Kieran Flanagan"
@@ -82,16 +82,8 @@ export const InvestorsSection = () => {
       }
     >
       <p>
-        What used to be a simple way to pay for things has become a complex
-        mess.
-      </p>
-      <p>
-        Software as a Service (SaaS) has become the norm, but the underlying
-        payment infrastructure has not evolved.
-      </p>
-      <p>
-        This is why we are building Polar 2.0, payment infrastructure for the
-        21st century.
+        The incredible people and early stage firms who have had our back through
+        thick and thin - supporting us from Day 1.
       </p>
     </Section>
   )

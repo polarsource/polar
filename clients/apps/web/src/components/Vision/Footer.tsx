@@ -76,7 +76,7 @@ const OpenSourceLegend = () => {
 const ContactUsLegend = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'c') {
+      if (event.key === 'm') {
         window.open('mailto:birk@polar.sh', '_blank')
       }
     }
@@ -91,7 +91,7 @@ const ContactUsLegend = () => {
   return (
     <div className="flex flex-col gap-y-2">
       <div className="flex flex-row gap-x-2">
-        <Button variant="icon">C</Button>
+        <Button variant="icon">M</Button>
       </div>
       <span>Contact Us</span>
     </div>

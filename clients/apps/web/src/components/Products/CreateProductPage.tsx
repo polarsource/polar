@@ -174,10 +174,10 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         <div className="flex h-full flex-col justify-between p-8 py-12">
           <CheckoutInfo
             className="md:w-full md:p-0"
-            organization={organization}
             checkout={createCheckoutPreview(
               reconciledProduct,
               reconciledProduct.prices[0],
+              organization,
             )}
           />
         </div>

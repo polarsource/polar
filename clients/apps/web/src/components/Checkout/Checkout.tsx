@@ -1,158 +1,193 @@
 'use client'
 
-import { api } from '@/utils/api'
-import { setValidationErrors } from '@/utils/api/errors'
-import {
-  CheckoutConfirmStripe,
-  CheckoutPublic,
-  CheckoutPublicConfirmed,
-  CheckoutUpdatePublic,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { CheckoutForm, CheckoutPricing } from '@polar-sh/checkout/components'
+import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useTheme } from 'next-themes'
-import { useCallback, useState } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 import { CheckoutCard } from './CheckoutCard'
-import { CheckoutForm } from './CheckoutForm'
-import { CheckoutInfo } from './CheckoutInfo'
+import CheckoutProductInfo from './CheckoutProductInfo'
 
-export interface CheckoutProps {
-  organization: Organization
-  checkout: CheckoutPublic
+import { getServerURL } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
+import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
+import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
+import {
+  CheckoutFormProvider,
+  CheckoutProvider,
+} from '@polar-sh/checkout/providers'
+import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
+import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import { useRouter } from 'next/navigation'
+import { useCallback, useState } from 'react'
+import CheckoutLayout from './CheckoutLayout'
+
+export interface CheckoutInnerProps {
   embed?: boolean
   theme?: 'light' | 'dark'
-  prefilledParameters?: Record<string, string>
 }
 
-const unflatten = (entries: Record<string, string>): Record<string, any> =>
-  Object.entries(entries).reduce(
-    (acc, [key, value]) =>
-      key.split('.').reduceRight(
-        (current, part, index, parts) => ({
-          ...current,
-          [part]:
-            index === parts.length - 1
-              ? value
-              : { ...current[part], ...current },
-        }),
-        acc,
-      ),
-    {} as Record<string, any>,
-  )
-
-export const Checkout = ({
-  checkout: _checkout,
-  organization,
-  embed,
-  theme,
-  prefilledParameters,
-}: CheckoutProps) => {
-  const [checkout, setCheckout] = useState(_checkout)
-
-  const form = useForm<CheckoutUpdatePublic>({
-    defaultValues: {
-      ...checkout,
-      ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
-    },
-    shouldUnregister: true,
-  })
-  const { setError } = form
+const CheckoutInner = ({ embed, theme: wantedTheme }: CheckoutInnerProps) => {
   const { resolvedTheme } = useTheme()
-
-  const onCheckoutUpdate = useCallback(
-    async (body: CheckoutUpdatePublic): Promise<CheckoutPublic> => {
-      try {
-        const updatedCheckout = await api.checkouts.clientUpdate({
-          clientSecret: checkout.client_secret,
-          body,
-        })
-        setCheckout(updatedCheckout)
-        return updatedCheckout
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          } else {
-            setError('root', { message: e.message })
-          }
-        }
-        throw e
-      }
-    },
-    [checkout, setError],
+  const {
+    checkout,
+    form,
+    update,
+    confirm: _confirm,
+    loading: confirmLoading,
+    loadingLabel,
+  } = useCheckoutForm()
+  const { client } = useCheckout()
+  const router = useRouter()
+  const [listenFulfillment, fullfillmentLabel] = useCheckoutFulfillmentListener(
+    client,
+    checkout,
   )
+  const [fullfillmentLoading, setFullfillmentLoading] = useState(false)
 
-  const onCheckoutConfirm = useCallback(
-    async (body: CheckoutConfirmStripe): Promise<CheckoutPublicConfirmed> => {
+  const loading = fullfillmentLoading || confirmLoading
+  const label = fullfillmentLabel || loadingLabel
+  const theme = wantedTheme || (resolvedTheme as 'light' | 'dark' | undefined)
+
+  const confirm = useCallback(
+    async (
+      data: CheckoutConfirmStripe,
+      stripe: Stripe | null,
+      elements: StripeElements | null,
+    ) => {
+      let confirmedCheckout: CheckoutPublicConfirmed
       try {
-        const updatedCheckout = await api.checkouts.clientConfirm({
-          clientSecret: checkout.client_secret,
-          body,
-        })
-        setCheckout(updatedCheckout)
-        return updatedCheckout
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          } else {
-            setError('root', { message: e.message })
+        confirmedCheckout = await _confirm(data, stripe, elements)
+      } catch (error) {
+        throw error
+      }
+
+      const parsedURL = new URL(confirmedCheckout.successUrl)
+      const isInternalURL = confirmedCheckout.successUrl.startsWith(
+        CONFIG.FRONTEND_BASE_URL,
+      )
+
+      if (isInternalURL) {
+        if (embed) {
+          parsedURL.searchParams.set('embed', 'true')
+          if (theme) {
+            parsedURL.searchParams.set('theme', theme)
           }
         }
-        throw e
       }
+
+      parsedURL.searchParams.set(
+        'customer_session_token',
+        confirmedCheckout.customerSessionToken,
+      )
+
+      // For external success URL, make sure the checkout is processed before redirecting
+      // It ensures the user will have an up-to-date status when they are redirected,
+      // especially if the external URL doesn't implement proper webhook handling
+      if (!isInternalURL) {
+        setFullfillmentLoading(true)
+        await listenFulfillment()
+        setFullfillmentLoading(false)
+      }
+
+      if (checkout.embedOrigin) {
+        PolarEmbedCheckout.postMessage(
+          {
+            event: 'success',
+            successURL: parsedURL.toString(),
+            redirect: !isInternalURL,
+          },
+          checkout.embedOrigin,
+        )
+      }
+
+      if (isInternalURL || !embed) {
+        router.push(parsedURL.toString())
+      }
+
+      return confirmedCheckout
     },
-    [checkout, setError],
+    [embed, listenFulfillment, router, theme],
   )
 
   if (embed) {
     return (
       <ShadowBox className="dark:bg-polar-900 flex flex-col gap-y-12 bg-white">
-        <FormProvider {...form}>
-          <CheckoutCard
-            checkout={checkout}
-            onCheckoutUpdate={onCheckoutUpdate}
-          />
-          <CheckoutForm
-            checkout={checkout}
-            onCheckoutUpdate={onCheckoutUpdate}
-            onCheckoutConfirm={onCheckoutConfirm}
-            theme={theme}
-            embed={embed}
-          />
-        </FormProvider>
+        <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
+          <CheckoutPricing checkout={checkout} update={update} />
+        </ShadowBox>
+        <CheckoutForm
+          form={form}
+          checkout={checkout}
+          update={update}
+          confirm={confirm}
+          loading={loading}
+          loadingLabel={label}
+          theme={theme || (resolvedTheme as 'light' | 'dark' | undefined)}
+        />
       </ShadowBox>
     )
   }
 
   return (
     <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-24 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
-      <FormProvider {...form}>
-        <CheckoutInfo
-          className="md:dark:bg-polar-900 md:bg-white lg:p-20"
-          organization={organization}
-          checkout={checkout}
-          onCheckoutUpdate={onCheckoutUpdate}
+      <div className="flex flex-col gap-y-8 md:p-12">
+        <CheckoutProductInfo
+          organization={checkout.organization}
+          product={checkout.product}
         />
-        <div className="flex flex-col gap-y-8 md:p-12 lg:p-20">
-          <CheckoutForm
-            checkout={checkout}
-            onCheckoutUpdate={onCheckoutUpdate}
-            onCheckoutConfirm={onCheckoutConfirm}
-            theme={theme || (resolvedTheme as 'light' | 'dark')}
-            embed={embed}
-          />
-        </div>
-      </FormProvider>
+        <CheckoutCard checkout={checkout} update={update} />
+      </div>
+      <div className="flex flex-col gap-y-8 md:p-12 lg:p-20">
+        <CheckoutForm
+          form={form}
+          checkout={checkout}
+          update={update}
+          confirm={confirm}
+          loading={loading}
+          loadingLabel={label}
+          theme={theme || (resolvedTheme as 'light' | 'dark' | undefined)}
+        />
+      </div>
     </ShadowBoxOnMd>
   )
 }
+
+const CheckoutLayoutInner = ({
+  embed,
+  theme,
+  children,
+}: React.PropsWithChildren<{ embed?: boolean; theme?: 'light' | 'dark' }>) => {
+  const { checkout } = useCheckout()
+  return (
+    <CheckoutLayout checkout={checkout} embed={embed === true} theme={theme}>
+      {children}
+    </CheckoutLayout>
+  )
+}
+
+const Checkout = ({
+  clientSecret,
+  embed,
+  theme,
+  prefilledParameters,
+}: {
+  clientSecret: string
+  prefilledParameters: Record<string, string>
+  embed?: boolean
+  theme?: 'light' | 'dark'
+}) => {
+  return (
+    <CheckoutProvider clientSecret={clientSecret} serverURL={getServerURL()}>
+      <CheckoutFormProvider prefilledParameters={prefilledParameters}>
+        <CheckoutLayoutInner embed={embed === true} theme={theme}>
+          <CheckoutInner theme={theme} embed={embed} />
+        </CheckoutLayoutInner>
+      </CheckoutFormProvider>
+    </CheckoutProvider>
+  )
+}
+
+export default Checkout

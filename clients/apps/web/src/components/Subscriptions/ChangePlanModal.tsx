@@ -222,7 +222,7 @@ const ChangePlanModal = ({
                 {addedBenefits.map((benefit) => (
                   <div key={benefit.id} className="flex flex-row align-middle">
                     <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                      {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+                      {resolveBenefitIcon(benefit.type, 'inherit', 'h-3 w-3')}
                     </span>
                     <span className="ml-2 text-sm">{benefit.description}</span>
                   </div>
@@ -239,7 +239,7 @@ const ChangePlanModal = ({
                 {removedBenefits.map((benefit) => (
                   <div key={benefit.id} className="flex flex-row align-middle">
                     <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                      {resolveBenefitIcon(benefit, 'inherit', 'h-3 w-3')}
+                      {resolveBenefitIcon(benefit.type, 'inherit', 'h-3 w-3')}
                     </span>
                     <span className="ml-2 text-sm">{benefit.description}</span>
                   </div>

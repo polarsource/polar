@@ -3,7 +3,7 @@ import {
   KeyboardArrowRight,
   KeyboardArrowUp,
 } from '@mui/icons-material'
-import { BenefitBase } from '@polar-sh/api'
+import { BenefitType } from '@polar-sh/api'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 
@@ -30,7 +30,7 @@ export const BenefitList = ({
   benefits,
   toggle = false,
 }: {
-  benefits: BenefitBase[] | undefined
+  benefits: { id: string; type: BenefitType; description: string }[] | undefined
   toggle?: boolean
 }) => {
   const [showAll, setShowAll] = useState(false)
@@ -50,7 +50,7 @@ export const BenefitList = ({
       {shown.map((benefit) => (
         <BenefitRow
           key={benefit.id}
-          icon={resolveBenefitIcon(benefit, 'small')}
+          icon={resolveBenefitIcon(benefit.type, 'small')}
         >
           {benefit.description}
         </BenefitRow>
@@ -61,7 +61,7 @@ export const BenefitList = ({
             toggled.map((benefit) => (
               <BenefitRow
                 key={benefit.id}
-                icon={resolveBenefitIcon(benefit, 'small')}
+                icon={resolveBenefitIcon(benefit.type, 'small')}
               >
                 {benefit.description}
               </BenefitRow>

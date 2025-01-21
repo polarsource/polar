@@ -5,7 +5,7 @@ import {
   KeyOutlined,
   WebOutlined,
 } from '@mui/icons-material'
-import { BenefitBase, BenefitType } from '@polar-sh/api'
+import { BenefitType } from '@polar-sh/api'
 import { twMerge } from 'tailwind-merge'
 
 export type CreatableBenefit = BenefitType
@@ -33,11 +33,11 @@ export const resolveBenefitCategoryIcon = (
 }
 
 export const resolveBenefitIcon = (
-  benefit: BenefitBase,
+  type: BenefitType,
   fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
   className?: string,
 ) => {
-  return resolveBenefitCategoryIcon(benefit?.type, fontSize, className)
+  return resolveBenefitCategoryIcon(type, fontSize, className)
 }
 
 export const resolveBenefitTypeDisplayName = (type: BenefitType | 'usage') => {

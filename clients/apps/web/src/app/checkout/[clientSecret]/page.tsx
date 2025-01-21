@@ -1,9 +1,9 @@
-import { Checkout } from '@/components/Checkout/Checkout'
-import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { getCheckoutByClientSecret } from '@/utils/checkout'
-import { CheckoutStatus } from '@polar-sh/api'
-import { redirect } from 'next/navigation'
+import { getServerURL } from '@/utils/api'
+import { PolarCore } from '@polar-sh/sdk/core'
+import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
+import { ResourceNotFound } from '@polar-sh/sdk/models/errors'
+import { notFound } from 'next/navigation'
+import ClientPage from './ClientPage'
 
 export default async function Page({
   params: { clientSecret },
@@ -16,23 +16,28 @@ export default async function Page({
   >
 }) {
   const embed = _embed === 'true'
-  const api = getServerSideAPI()
+  const client = new PolarCore({ serverURL: getServerURL() })
 
-  const checkout = await getCheckoutByClientSecret(api, clientSecret)
+  const {
+    ok,
+    value: checkout,
+    error,
+  } = await checkoutsCustomClientGet(client, { clientSecret })
 
-  if (checkout.status !== CheckoutStatus.OPEN) {
-    redirect(checkout.success_url)
+  if (!ok) {
+    if (error instanceof ResourceNotFound) {
+      notFound()
+    } else {
+      throw error
+    }
   }
 
   return (
-    <CheckoutLayout checkout={checkout} embed={embed} theme={theme}>
-      <Checkout
-        organization={checkout.organization}
-        checkout={checkout}
-        theme={theme}
-        embed={embed}
-        prefilledParameters={prefilledParameters}
-      />
-    </CheckoutLayout>
+    <ClientPage
+      checkout={checkout}
+      theme={theme}
+      embed={embed}
+      prefilledParameters={prefilledParameters}
+    />
   )
 }

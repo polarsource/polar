@@ -1,17 +1,9 @@
 'use client'
 
-import { useCheckoutClientSSE } from '@/hooks/sse'
-import { CONFIG } from '@/utils/config'
-import { getDiscountDisplay } from '@/utils/discount'
-import { CloseOutlined } from '@mui/icons-material'
-import {
-  CheckoutConfirmStripe,
-  CheckoutPublic,
-  CheckoutPublicConfirmed,
-  CheckoutStatus,
-  CheckoutUpdatePublic,
-} from '@polar-sh/api'
-import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
+import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -23,23 +15,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+} from '@polar-sh/ui/form'
 import {
   Elements,
   ElementsConsumer,
   PaymentElement,
 } from '@stripe/react-stripe-js'
 import {
-  ConfirmationToken,
   loadStripe,
   Stripe,
   StripeElements,
   StripeElementsOptions,
-  StripeError,
 } from '@stripe/stripe-js'
-import debounce from 'lodash.debounce'
-import { useRouter } from 'next/navigation'
 import {
   PropsWithChildren,
   useCallback,
@@ -47,11 +34,13 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { useFormContext, WatchObserver } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
-import LogoType from '../Brand/LogoType'
-import CustomFieldInput from '../CustomFields/CustomFieldInput'
-import AmountLabel from '../Shared/AmountLabel'
+import { UseFormReturn, WatchObserver } from 'react-hook-form'
+import useDebouncedCallback from '../hooks/debounce'
+import { getDiscountDisplay } from '../utils/discount'
+import { formatCurrencyNumber } from '../utils/money'
+import AmountLabel from './AmountLabel'
+import CustomFieldInput from './CustomFieldInput'
+import PolarLogo from './PolarLogo'
 
 const DetailRow = ({
   title,
@@ -60,10 +49,7 @@ const DetailRow = ({
 }: PropsWithChildren<{ title: string; emphasis?: boolean }>) => {
   return (
     <div
-      className={twMerge(
-        'flex flex-row items-center justify-between gap-x-8',
-        emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500',
-      )}
+      className={`flex flex-row items-center justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
     >
       <span>{title}</span>
       {children}
@@ -71,29 +57,50 @@ const DetailRow = ({
   )
 }
 
+const XIcon = ({ className }: { className?: string }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  )
+}
+
 interface BaseCheckoutFormProps {
-  onSubmit: (value: any) => Promise<void>
-  onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  form: UseFormReturn<CheckoutUpdatePublic>
   checkout: CheckoutPublic
+  confirm: (data: any) => Promise<CheckoutPublicConfirmed>
+  update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  loading: boolean
+  loadingLabel: string | undefined
   disabled?: boolean
-  loading?: boolean
-  loadingLabel?: string
 }
 
 const BaseCheckoutForm = ({
-  onSubmit,
-  onCheckoutUpdate,
+  form,
   checkout,
-  disabled,
+  confirm,
+  update,
   loading,
   loadingLabel,
+  disabled,
   children,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval =
-    checkout.product_price.type === 'recurring'
-      ? checkout.product_price.recurring_interval
+    checkout.productPrice.type === 'recurring'
+      ? checkout.productPrice.recurringInterval
       : undefined
-  const form = useFormContext<CheckoutUpdatePublic>()
   const {
     control,
     handleSubmit,
@@ -103,64 +110,64 @@ const BaseCheckoutForm = ({
     setValue,
     formState: { errors },
   } = form
-  const country = watch('customer_billing_address.country')
+  const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
     async (value, { name, type }) => {
-      if (type !== 'change' || !name || !onCheckoutUpdate) {
+      if (type !== 'change' || !name) {
         return
       }
 
       let payload: CheckoutUpdatePublic = {}
       // Update Tax ID
-      if (name === 'customer_tax_id') {
+      if (name === 'customerTaxId') {
         payload = {
           ...payload,
-          customer_tax_id: value.customer_tax_id,
+          customerTaxId: value.customerTaxId,
           // Make sure the address is up-to-date while updating the tax ID
-          ...(value.customer_billing_address &&
-          value.customer_billing_address.country
+          ...(value.customerBillingAddress &&
+          value.customerBillingAddress.country
             ? {
-                customer_billing_address: {
-                  ...value.customer_billing_address,
-                  country: value.customer_billing_address.country,
+                customerBillingAddress: {
+                  ...value.customerBillingAddress,
+                  country: value.customerBillingAddress.country,
                 },
               }
             : {}),
         }
-        clearErrors('customer_tax_id')
+        clearErrors('customerTaxId')
         // Update country, make sure to reset other address fields
-      } else if (name === 'customer_billing_address.country') {
-        const { customer_billing_address } = value
-        if (customer_billing_address && customer_billing_address.country) {
+      } else if (name === 'customerBillingAddress.country') {
+        const { customerBillingAddress } = value
+        if (customerBillingAddress && customerBillingAddress.country) {
           payload = {
             ...payload,
-            customer_billing_address: {
-              country: customer_billing_address.country,
+            customerBillingAddress: {
+              country: customerBillingAddress.country,
             },
           }
-          resetField('customer_billing_address', {
-            defaultValue: { country: customer_billing_address.country },
+          resetField('customerBillingAddress', {
+            defaultValue: { country: customerBillingAddress.country },
           })
         }
         // Update other address fields
-      } else if (name.startsWith('customer_billing_address')) {
-        const { customer_billing_address } = value
-        if (customer_billing_address && customer_billing_address.country) {
+      } else if (name.startsWith('customerBillingAddress')) {
+        const { customerBillingAddress } = value
+        if (customerBillingAddress && customerBillingAddress.country) {
           payload = {
             ...payload,
-            customer_billing_address: {
-              ...customer_billing_address,
-              country: customer_billing_address.country,
+            customerBillingAddress: {
+              ...customerBillingAddress,
+              country: customerBillingAddress.country,
             },
           }
-          clearErrors('customer_billing_address')
+          clearErrors('customerBillingAddress')
         }
-      } else if (name === 'discount_code') {
-        const { discount_code } = value
-        clearErrors('discount_code')
+      } else if (name === 'discountCode') {
+        const { discountCode } = value
+        clearErrors('discountCode')
         // Ensure we don't submit an empty discount code
-        if (discount_code === '') {
-          setValue('discount_code', undefined)
+        if (discountCode === '') {
+          setValue('discountCode', undefined)
         }
       }
 
@@ -169,44 +176,40 @@ const BaseCheckoutForm = ({
       }
 
       try {
-        await onCheckoutUpdate(payload)
+        await update(payload)
       } catch {}
     },
-    [clearErrors, resetField, onCheckoutUpdate, setValue],
+    [clearErrors, resetField, update, setValue],
   )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedWatcher = useCallback(debounce(watcher, 500), [watcher])
+  const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
-  const discountCode = watch('discount_code')
+  const discountCode = watch('discountCode')
   const addDiscountCode = useCallback(async () => {
-    if (!onCheckoutUpdate || !discountCode) {
+    if (!discountCode) {
       return
     }
-    clearErrors('discount_code')
+    clearErrors('discountCode')
     try {
-      await onCheckoutUpdate({ discount_code: discountCode })
+      await update({ discountCode: discountCode })
     } catch {}
-  }, [onCheckoutUpdate, discountCode, clearErrors])
+  }, [update, discountCode, clearErrors])
   const removeDiscountCode = useCallback(async () => {
-    if (!onCheckoutUpdate) {
-      return
-    }
-    clearErrors('discount_code')
+    clearErrors('discountCode')
     try {
-      await onCheckoutUpdate({ discount_code: null })
-      resetField('discount_code')
+      await update({ discountCode: null })
+      resetField('discountCode')
     } catch {}
-  }, [onCheckoutUpdate, clearErrors, resetField])
+  }, [update, clearErrors, resetField])
 
   useEffect(() => {
     const subscription = watch(debouncedWatcher)
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 
-  const taxId = watch('customer_tax_id')
+  const taxId = watch('customerTaxId')
   const [showTaxId, setShowTaxID] = useState(false)
   const clearTaxId = useCallback(() => {
-    setValue('customer_tax_id', '')
+    setValue('customerTaxId', '')
     setShowTaxID(false)
   }, [setValue])
   useEffect(() => {
@@ -222,13 +225,13 @@ const BaseCheckoutForm = ({
       <div className="flex flex-col gap-y-12">
         <Form {...form}>
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit(confirm)}
             className="flex flex-col gap-y-12"
           >
             <div className="flex flex-col gap-y-6">
               <FormField
                 control={control}
-                name="customer_email"
+                name="customerEmail"
                 rules={{
                   required: 'This field is required',
                 }}
@@ -242,7 +245,7 @@ const BaseCheckoutForm = ({
                         className="bg-white shadow-sm"
                         {...field}
                         value={field.value || ''}
-                        disabled={checkout.customer_id !== null}
+                        disabled={checkout.customerId !== null}
                       />
                     </FormControl>
                     <FormMessage />
@@ -252,11 +255,11 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              {checkout.is_payment_form_required && (
+              {checkout.isPaymentFormRequired && (
                 <>
                   <FormField
                     control={control}
-                    name="customer_name"
+                    name="customerName"
                     rules={{
                       required: 'This field is required',
                     }}
@@ -282,7 +285,7 @@ const BaseCheckoutForm = ({
                     <FormControl>
                       <FormField
                         control={control}
-                        name="customer_billing_address.country"
+                        name="customerBillingAddress.country"
                         rules={{
                           required: 'This field is required',
                         }}
@@ -302,7 +305,7 @@ const BaseCheckoutForm = ({
                       <FormControl>
                         <FormField
                           control={control}
-                          name="customer_billing_address.state"
+                          name="customerBillingAddress.state"
                           rules={{
                             required: 'This field is required',
                           }}
@@ -325,7 +328,7 @@ const BaseCheckoutForm = ({
                         <FormControl>
                           <FormField
                             control={control}
-                            name="customer_billing_address.line1"
+                            name="customerBillingAddress.line1"
                             rules={{
                               required: 'This field is required',
                             }}
@@ -347,7 +350,7 @@ const BaseCheckoutForm = ({
                         <FormControl>
                           <FormField
                             control={control}
-                            name="customer_billing_address.line2"
+                            name="customerBillingAddress.line2"
                             render={({ field }) => (
                               <>
                                 <Input
@@ -367,7 +370,7 @@ const BaseCheckoutForm = ({
                           <FormControl>
                             <FormField
                               control={control}
-                              name="customer_billing_address.postal_code"
+                              name="customerBillingAddress.postalCode"
                               rules={{
                                 required: 'This field is required',
                               }}
@@ -389,7 +392,7 @@ const BaseCheckoutForm = ({
                           <FormControl>
                             <FormField
                               control={control}
-                              name="customer_billing_address.city"
+                              name="customerBillingAddress.city"
                               rules={{
                                 required: 'This field is required',
                               }}
@@ -411,9 +414,9 @@ const BaseCheckoutForm = ({
                         </div>
                       </>
                     )}
-                    {errors.customer_billing_address?.message && (
+                    {errors.customerBillingAddress?.message && (
                       <p className="text-destructive-foreground text-sm">
-                        {errors.customer_billing_address.message}
+                        {errors.customerBillingAddress.message}
                       </p>
                     )}
                   </FormItem>
@@ -432,7 +435,7 @@ const BaseCheckoutForm = ({
                   {showTaxId && (
                     <FormField
                       control={control}
-                      name="customer_tax_id"
+                      name="customerTaxId"
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex flex-row items-center justify-between">
@@ -453,7 +456,7 @@ const BaseCheckoutForm = ({
                                   variant="secondary"
                                   onClick={() => clearTaxId()}
                                 >
-                                  <CloseOutlined className="h-4 w-4" />
+                                  <XIcon className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
@@ -465,74 +468,73 @@ const BaseCheckoutForm = ({
                   )}
                 </>
               )}
-              {checkout.allow_discount_codes &&
-                checkout.is_discount_applicable && (
-                  <FormField
-                    control={control}
-                    name="discount_code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          <div className="flex flex-row items-center justify-between">
-                            <div>Discount Code</div>
-                            <span className="dark:text-polar-500 text-xs text-gray-500">
-                              Optional
-                            </span>
-                          </div>
-                        </FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              type="text"
-                              autoComplete="off"
-                              className="bg-white shadow-sm"
-                              {...field}
-                              value={field.value || ''}
-                              disabled={checkoutDiscounted}
-                              onKeyDown={(e) => {
-                                if (e.key !== 'Enter') return
+              {checkout.allowDiscountCodes && checkout.isDiscountApplicable && (
+                <FormField
+                  control={control}
+                  name="discountCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        <div className="flex flex-row items-center justify-between">
+                          <div>Discount Code</div>
+                          <span className="dark:text-polar-500 text-xs text-gray-500">
+                            Optional
+                          </span>
+                        </div>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            autoComplete="off"
+                            className="bg-white shadow-sm"
+                            {...field}
+                            value={field.value || ''}
+                            disabled={checkoutDiscounted}
+                            onKeyDown={(e) => {
+                              if (e.key !== 'Enter') return
 
-                                e.preventDefault()
-                                addDiscountCode()
-                              }}
-                            />
-                            <div className="absolute inset-y-0 right-1 z-10 flex items-center">
-                              {!checkoutDiscounted && discountCode && (
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  onClick={addDiscountCode}
-                                >
-                                  Apply
-                                </Button>
-                              )}
-                              {checkoutDiscounted && (
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  onClick={removeDiscountCode}
-                                >
-                                  <CloseOutlined className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
+                              e.preventDefault()
+                              addDiscountCode()
+                            }}
+                          />
+                          <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                            {!checkoutDiscounted && discountCode && (
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={addDiscountCode}
+                              >
+                                Apply
+                              </Button>
+                            )}
+                            {checkoutDiscounted && (
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={removeDiscountCode}
+                              >
+                                <XIcon className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              {checkout.attached_custom_fields.map(
-                ({ custom_field, required }) => (
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {checkout.attachedCustomFields.map(
+                ({ customField, required }) => (
                   <FormField
-                    key={custom_field.id}
+                    key={customField.id}
                     control={control}
                     // @ts-ignore
-                    name={`custom_field_data.${custom_field.slug}`}
+                    name={`customFieldFata.${customField.slug}`}
                     render={({ field }) => (
                       <CustomFieldInput
-                        customField={custom_field}
+                        customField={customField}
                         required={required}
                         // @ts-ignore
                         field={field}
@@ -542,7 +544,7 @@ const BaseCheckoutForm = ({
                 ),
               )}
             </div>
-            {!checkout.is_free_product_price && (
+            {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
                 {checkout.amount !== null && checkout.currency ? (
                   <>
@@ -557,23 +559,23 @@ const BaseCheckoutForm = ({
                       <DetailRow
                         title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
                       >
-                        {formatCurrencyAndAmount(
-                          (checkout.subtotal_amount || 0) - checkout.amount,
+                        {formatCurrencyNumber(
+                          (checkout.subtotalAmount || 0) - checkout.amount,
                           checkout.currency,
                         )}
                       </DetailRow>
                     )}
-                    {checkout.tax_amount !== null && (
+                    {checkout.taxAmount !== null && (
                       <DetailRow title="VAT / Sales Tax">
-                        {formatCurrencyAndAmount(
-                          checkout.tax_amount,
+                        {formatCurrencyNumber(
+                          checkout.taxAmount,
                           checkout.currency,
                         )}
                       </DetailRow>
                     )}
                     <DetailRow title="Total" emphasis>
                       <AmountLabel
-                        amount={checkout.total_amount || 0}
+                        amount={checkout.totalAmount || 0}
                         currency={checkout.currency}
                         interval={interval}
                       />
@@ -593,7 +595,7 @@ const BaseCheckoutForm = ({
                 disabled={disabled}
                 loading={loading}
               >
-                {!checkout.is_payment_form_required
+                {!checkout.isPaymentFormRequired
                   ? 'Submit'
                   : interval
                     ? 'Subscribe'
@@ -619,51 +621,51 @@ const BaseCheckoutForm = ({
       </div>
       <div className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400">
         <span>Powered by</span>
-        <LogoType className="h-5" />
+        <PolarLogo className="h-5" />
       </div>
     </div>
   )
 }
 
 interface CheckoutFormProps {
+  form: UseFormReturn<CheckoutUpdatePublic>
   checkout: CheckoutPublic
-  onCheckoutUpdate?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
-  onCheckoutConfirm?: (
-    body: CheckoutConfirmStripe,
+  update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  confirm: (
+    data: CheckoutConfirmStripe,
+    stripe: Stripe | null,
+    elements: StripeElements | null,
   ) => Promise<CheckoutPublicConfirmed>
+  loading: boolean
+  loadingLabel: string | undefined
   theme?: 'light' | 'dark'
-  embed?: boolean
 }
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
-
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
-  const router = useRouter()
-  const { setError } = useFormContext<CheckoutUpdatePublic>()
-  const { checkout, onCheckoutUpdate, onCheckoutConfirm, theme, embed } = props
-  const [loading, setLoading] = useState(false)
-  const [loadingLabel, setLoadingLabel] = useState<string | undefined>(
-    undefined,
+  const { checkout, update, confirm, loading, loadingLabel, theme } = props
+  const stripePromise = loadStripe(
+    (checkout.paymentProcessorMetadata as Record<string, string>)
+      .publishable_key,
   )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
-      checkout.is_payment_setup_required &&
-      checkout.is_payment_required &&
-      checkout.total_amount
+      checkout.isPaymentSetupRequired &&
+      checkout.isPaymentRequired &&
+      checkout.totalAmount
     ) {
       return {
         mode: 'subscription',
         setupFutureUsage: 'off_session',
         paymentMethodCreation: 'manual',
-        amount: checkout.total_amount,
+        amount: checkout.totalAmount,
         currency: checkout.currency || 'usd',
       }
-    } else if (checkout.is_payment_required && checkout.total_amount) {
+    } else if (checkout.isPaymentRequired && checkout.totalAmount) {
       return {
         mode: 'payment',
         paymentMethodCreation: 'manual',
-        amount: checkout.total_amount,
+        amount: checkout.totalAmount,
         currency: checkout.currency || 'usd',
       }
     }
@@ -675,253 +677,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       currency: checkout.currency || 'usd',
     }
   }, [checkout])
-
-  const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)
-
-  const onSuccess = useCallback(
-    async (url: string, customerSessionToken: string) => {
-      const parsedURL = new URL(url)
-      const isInternalURL = url.startsWith(CONFIG.FRONTEND_BASE_URL)
-
-      if (isInternalURL) {
-        if (embed) {
-          parsedURL.searchParams.set('embed', 'true')
-          if (theme) {
-            parsedURL.searchParams.set('theme', theme)
-          }
-        }
-      }
-
-      parsedURL.searchParams.set('customer_session_token', customerSessionToken)
-
-      // For external success URL, make sure the checkout is processed before redirecting
-      // It ensures the user will have an up-to-date status when they are redirected,
-      // especially if the external URL doesn't implement proper webhook handling
-      if (!isInternalURL) {
-        await new Promise<void>((resolve) => {
-          let checkoutSuccessful = false
-          let orderCreated = false
-          let subscriptionCreated = checkout.product_price.type !== 'recurring'
-          let webhookEventDelivered = false
-
-          const checkResolution = () => {
-            if (checkoutSuccessful && orderCreated && subscriptionCreated) {
-              setLoadingLabel(
-                `Waiting confirmation from ${checkout.organization.name} `,
-              )
-            }
-            if (
-              checkoutSuccessful &&
-              orderCreated &&
-              subscriptionCreated &&
-              webhookEventDelivered
-            ) {
-              resolve()
-            }
-          }
-
-          const checkoutUpdatedListener = (data: {
-            status: CheckoutStatus
-          }) => {
-            if (data.status === CheckoutStatus.SUCCEEDED) {
-              checkoutSuccessful = true
-              setLoadingLabel('Payment successful! Processing order...')
-              checkoutEvents.off('checkout.updated', checkoutUpdatedListener)
-              checkResolution()
-            }
-          }
-          checkoutEvents.on('checkout.updated', checkoutUpdatedListener)
-
-          const orderCreatedListener = () => {
-            orderCreated = true
-            checkoutEvents.off('checkout.order_created', orderCreatedListener)
-            checkResolution()
-          }
-          checkoutEvents.on('checkout.order_created', orderCreatedListener)
-
-          const subscriptionCreatedListener = () => {
-            subscriptionCreated = true
-            checkoutEvents.off(
-              'checkout.subscription_created',
-              subscriptionCreatedListener,
-            )
-            checkResolution()
-          }
-          if (!subscriptionCreated) {
-            checkoutEvents.on(
-              'checkout.subscription_created',
-              subscriptionCreatedListener,
-            )
-          }
-
-          const webhookEventDeliveredListener = (data?: {
-            status: CheckoutStatus
-          }) => {
-            if (!data || data.status === CheckoutStatus.SUCCEEDED) {
-              webhookEventDelivered = true
-              checkoutEvents.off(
-                'checkout.webhook_event_delivered',
-                webhookEventDeliveredListener,
-              )
-              checkResolution()
-            }
-          }
-          checkoutEvents.on(
-            'checkout.webhook_event_delivered',
-            webhookEventDeliveredListener,
-          )
-          // Wait webhook event to be delivered for 30 seconds max
-          setTimeout(
-            () => webhookEventDeliveredListener(),
-            CONFIG.CHECKOUT_EXTERNAL_WEBHOOKS_WAITING_LIMIT_MS,
-          )
-        })
-      }
-
-      if (checkout.embed_origin) {
-        PolarEmbedCheckout.postMessage(
-          {
-            event: 'success',
-            successURL: parsedURL.toString(),
-            redirect: !isInternalURL,
-          },
-          checkout.embed_origin,
-        )
-      }
-
-      if (isInternalURL || !embed) {
-        router.push(parsedURL.toString())
-      }
-    },
-    [router, embed, theme, checkout, checkoutEvents],
-  )
-
-  const onSubmit = async (
-    data: CheckoutUpdatePublic,
-    stripe: Stripe | null,
-    elements: StripeElements | null,
-  ) => {
-    if (!onCheckoutConfirm) {
-      return
-    }
-
-    setLoading(true)
-
-    if (checkout.embed_origin) {
-      PolarEmbedCheckout.postMessage(
-        {
-          event: 'confirmed',
-        },
-        checkout.embed_origin,
-      )
-    }
-
-    if (!checkout.is_payment_form_required) {
-      let updatedCheckout: CheckoutPublicConfirmed
-      setLoadingLabel('Processing order')
-      try {
-        updatedCheckout = await onCheckoutConfirm(data)
-      } catch (e) {
-        setLoading(false)
-        return
-      }
-      await onSuccess(
-        updatedCheckout.success_url,
-        updatedCheckout.customer_session_token,
-      )
-      return
-    }
-
-    if (!stripe || !elements) {
-      setLoading(false)
-      return
-    }
-
-    setLoadingLabel('Processing payment')
-
-    const { error: submitError } = await elements.submit()
-    if (submitError) {
-      // Don't show validation errors, as they are already shown in their form
-      if (submitError.type !== 'validation_error') {
-        setError('root', { message: submitError.message })
-      }
-      setLoading(false)
-      return
-    }
-
-    let confirmationToken: ConfirmationToken | undefined
-    let error: StripeError | undefined
-    try {
-      const confirmationTokenResponse = await stripe.createConfirmationToken({
-        elements,
-        params: {
-          payment_method_data: {
-            // Stripe requires fields to be explicitly set to null if they are not provided
-            billing_details: {
-              name: data.customer_name,
-              email: data.customer_email,
-              address: {
-                line1: data.customer_billing_address?.line1 || null,
-                line2: data.customer_billing_address?.line2 || null,
-                postal_code: data.customer_billing_address?.postal_code || null,
-                city: data.customer_billing_address?.city || null,
-                state: data.customer_billing_address?.state || null,
-                country: data.customer_billing_address?.country || null,
-              },
-              phone: null,
-            },
-          },
-        },
-      })
-      confirmationToken = confirmationTokenResponse.confirmationToken
-      error = confirmationTokenResponse.error
-    } catch (err) {
-      setLoading(false)
-      throw err
-    }
-
-    if (!confirmationToken || error) {
-      setError('root', {
-        message:
-          error?.message ||
-          'Failed to create confirmation token, please try again later.',
-      })
-      setLoading(false)
-      return
-    }
-
-    let updatedCheckout: CheckoutPublicConfirmed
-    try {
-      updatedCheckout = await onCheckoutConfirm({
-        ...data,
-        confirmation_token_id: confirmationToken.id,
-      })
-    } catch (e) {
-      setLoading(false)
-      return
-    }
-
-    setLoadingLabel('Payment successful! Getting your products ready')
-
-    const { intent_status, intent_client_secret } =
-      updatedCheckout.payment_processor_metadata as Record<string, string>
-
-    if (intent_status === 'requires_action') {
-      const { error } = await stripe.handleNextAction({
-        clientSecret: intent_client_secret,
-      })
-      if (error) {
-        setLoading(false)
-        setError('root', { message: error.message })
-        return
-      }
-    }
-
-    await onSuccess(
-      updatedCheckout.success_url,
-      updatedCheckout.customer_session_token,
-    )
-  }
 
   const inputBoxShadow =
     theme === 'dark'
@@ -938,7 +693,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       options={{
         ...elementsOptions,
         customerSessionClientSecret: (
-          checkout.payment_processor_metadata as {
+          checkout.paymentProcessorMetadata as {
             customer_session_client_secret?: string
           }
         ).customer_session_client_secret,
@@ -1019,12 +774,12 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           <BaseCheckoutForm
             {...props}
             checkout={checkout}
-            onSubmit={(data) => onSubmit(data, stripe, elements)}
-            onCheckoutUpdate={onCheckoutUpdate}
+            confirm={(data) => confirm(data, stripe, elements)}
+            update={update}
             loading={loading}
             loadingLabel={loadingLabel}
           >
-            {checkout.is_payment_form_required && (
+            {checkout.isPaymentFormRequired && (
               <PaymentElement
                 options={{
                   fields: {
@@ -1045,24 +800,31 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   )
 }
 
-const DummyCheckoutForm = ({ checkout }: CheckoutFormProps) => {
+const DummyCheckoutForm = (props: CheckoutFormProps) => {
+  const { checkout } = props
   return (
     <BaseCheckoutForm
-      checkout={checkout}
-      onSubmit={async () => {}}
-      onCheckoutUpdate={async () => checkout}
+      {...props}
+      confirm={async () => ({
+        ...checkout,
+        status: 'confirmed',
+        customerSessionToken: '',
+      })}
+      update={async () => checkout}
       disabled={true}
     />
   )
 }
 
-export const CheckoutForm = (props: CheckoutFormProps) => {
+const CheckoutForm = (props: CheckoutFormProps) => {
   const {
-    checkout: { payment_processor },
+    checkout: { paymentProcessor },
   } = props
 
-  if (payment_processor === 'stripe') {
+  if (paymentProcessor === 'stripe') {
     return <StripeCheckoutForm {...props} />
   }
   return <DummyCheckoutForm {...props} />
 }
+
+export default CheckoutForm

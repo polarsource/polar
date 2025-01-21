@@ -1,4 +1,3 @@
-import CheckoutProductInfo from '@/components/Checkout/CheckoutProductInfo'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { isCrawler } from '@/utils/crawlers'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
@@ -75,11 +74,11 @@ export default async function Page({
     notFound()
   }
 
-  /* Avoid creating a checkout for crawlers, just render a simple product info page */
+  /* Avoid creating a checkout for crawlers */
   const headersList = headers()
   const userAgent = headersList.get('user-agent')
   if (userAgent && isCrawler(userAgent)) {
-    return <CheckoutProductInfo organization={organization} product={product} />
+    return <></>
   }
 
   let checkout: CheckoutPublic

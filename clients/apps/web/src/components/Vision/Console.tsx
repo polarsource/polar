@@ -1,13 +1,24 @@
 import { twMerge } from 'tailwind-merge'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
 export interface ConsoleProps {
   className?: string
   title?: string
   input?: string
   output?: string
+  code?: string
 }
 
-export const Console = ({ className, title, input, output }: ConsoleProps) => {
+export const Console = ({
+  className,
+  code,
+  title,
+  input,
+  output,
+}: ConsoleProps) => {
   return (
     <div className={twMerge('relative flex flex-col', className)}>
       <div className="border-polar-600 absolute left-2 top-2 h-full w-full transform border md:left-4 md:top-4" />
@@ -17,10 +28,20 @@ export const Console = ({ className, title, input, output }: ConsoleProps) => {
           <span className="mb-1 h-0.5 w-2 self-end bg-black" />
         </div>
         <div className="flex flex-col overflow-auto p-4 font-mono text-sm">
-          <pre className="flex flex-col gap-y-2">
-            <code>{input}</code>
-            <code className="text-polar-500">{output}</code>
-          </pre>
+          {code ? (
+            <SyntaxHighlighterProvider>
+              <SyntaxHighlighterClient
+                lang="js"
+                code={code}
+                customThemeConfig={{ light: 'poimandres', dark: 'poimandres' }}
+              />
+            </SyntaxHighlighterProvider>
+          ) : (
+            <pre className="flex flex-col gap-y-2">
+              <code>{input}</code>
+              <code className="text-polar-500">{output}</code>
+            </pre>
+          )}
         </div>
       </div>
     </div>

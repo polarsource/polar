@@ -4,31 +4,24 @@ import { twMerge } from 'tailwind-merge'
 export const sections = [
   {
     title: '00. Index',
-    href: '/pitch',
   },
   {
     title: '01. Usage Based Future',
-    href: '/pitch/what',
   },
   {
-    title: '02. Adapters',
-    href: '/pitch/why',
+    title: '02. Automated Entitlements',
   },
   {
-    title: '03. Polar 2.0',
-    href: '/pitch/how',
+    title: '03. DX as DNA',
   },
   {
     title: '04. Open Source',
-    href: '/pitch/us',
   },
   {
     title: '05. Team',
-    href: '/pitch/team',
   },
   {
     title: '06. Investors',
-    href: '/pitch/investors',
   },
 ]
 

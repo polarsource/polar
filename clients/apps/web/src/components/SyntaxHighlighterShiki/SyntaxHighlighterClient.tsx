@@ -88,26 +88,26 @@ export const SyntaxHighlighterProvider = ({
 export const SyntaxHighlighterClient = ({
   lang,
   code,
+  customThemeConfig,
 }: {
   lang: string
   code: string
+  customThemeConfig?: typeof themeConfig
 }) => {
   const { highlighter, loadLanguage } = useContext(SyntaxHighlighterContext)
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null)
-
-  useEffect(() => {}, [loadLanguage, lang])
 
   useEffect(() => {
     if (!highlighter) return
     loadLanguage(lang as BundledLanguage).then((success) => {
       const highlightedCode = highlighter.codeToHtml(code, {
         lang: success ? lang : 'text',
-        themes: themeConfig,
+        themes: customThemeConfig ?? themeConfig,
         transformers,
       })
       setHighlightedCode(highlightedCode)
     })
-  }, [highlighter, loadLanguage, lang, code])
+  }, [highlighter, loadLanguage, customThemeConfig, lang, code])
 
   return highlightedCode ? (
     <div dangerouslySetInnerHTML={{ __html: highlightedCode }}></div>

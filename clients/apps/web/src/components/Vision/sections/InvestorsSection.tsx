@@ -33,22 +33,50 @@ export const InvestorsSection = () => {
           <Grid
             className="grid-cols-2 md:grid-cols-4"
             items={[
-              <AngelProfile key="A" name="John Doe" company="Company A" />,
-              <AngelProfile key="B" name="Jane Doe" company="Company B" />,
-              <AngelProfile key="C" name="John Doe" company="Company C" />,
-              <AngelProfile key="D" name="Jane Doe" company="Company D" />,
-              <AngelProfile key="E" name="John Doe" company="Company E" />,
-              <AngelProfile key="F" name="Jane Doe" company="Company F" />,
-              <AngelProfile key="G" name="John Doe" company="Company G" />,
-              <AngelProfile key="H" name="Jane Doe" company="Company H" />,
-              <AngelProfile key="I" name="John Doe" company="Company I" />,
-              <AngelProfile key="J" name="Jane Doe" company="Company J" />,
-              <AngelProfile key="K" name="John Doe" company="Company K" />,
-              <AngelProfile key="L" name="Jane Doe" company="Company L" />,
-              <AngelProfile key="M" name="John Doe" company="Company M" />,
-              <AngelProfile key="N" name="Jane Doe" company="Company N" />,
-              <AngelProfile key="O" name="John Doe" company="Company O" />,
-              <AngelProfile key="P" name="Jane Doe" company="Company P" />,
+              <AngelProfile
+                key="A"
+                name="Mitchell Hashimoto"
+                company="Ghostty"
+              />,
+              <AngelProfile
+                key="B"
+                name="Gustaf Alstromer"
+                company="Y Combinator"
+              />,
+              <AngelProfile key="C" name="Fredrik Björk" company="Grafbase" />,
+              <AngelProfile
+                key="D"
+                name="Joel Hellermark"
+                company="Sana Labs"
+              />,
+              <AngelProfile key="E" name="David Cramer" company="Sentry" />,
+              <AngelProfile
+                key="F"
+                name="Andrea Wang"
+                company="General Catalyst"
+              />,
+              <AngelProfile key="G" name="Carl Rivera" company="Shopify" />,
+              <AngelProfile key="H" name="Tristan Handy" company="dbt Labs" />,
+              <AngelProfile key="I" name="Kaj Drobin" company="Stilla AI" />,
+              <AngelProfile key="J" name="Sri Batchu" company="The RealReal" />,
+              <AngelProfile
+                key="K"
+                name="Siavash Ghorbani"
+                company="Stilla AI"
+              />,
+              <AngelProfile
+                key="L"
+                name="Kieran Flanagan"
+                company="Investor"
+              />,
+              <AngelProfile
+                key="M"
+                name="Mattias Miksche"
+                company="Investor"
+              />,
+              <span key="p" />,
+              <span key="p" />,
+              <span key="p" />,
             ]}
           />
         </div>
@@ -73,7 +101,7 @@ export const InvestorsSection = () => {
 
 const AngelProfile = ({ name, company }: { name: string; company: string }) => {
   return (
-    <div className="flex h-full w-fit flex-col justify-center gap-y-1 px-4 text-left text-xs">
+    <div className="flex h-full w-fit flex-col justify-center gap-y-1 text-left text-xs">
       <h4>{name}</h4>
       <span className="text-polar-500">{company}</span>
     </div>

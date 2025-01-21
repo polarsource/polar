@@ -1,11 +1,11 @@
 'use client'
 
 import { Footer } from '@/components/Vision/Footer'
-import { AdaptersSection } from '@/components/Vision/sections/AdaptersSection'
+import { DNASection } from '@/components/Vision/sections/DNASection'
+import { EntitlementsSection } from '@/components/Vision/sections/EntitlementsSection'
 import { IndexSection } from '@/components/Vision/sections/IndexSection'
 import { InvestorsSection } from '@/components/Vision/sections/InvestorsSection'
 import { OpenSourceSection } from '@/components/Vision/sections/OpenSourceSection'
-import { Polar20Section } from '@/components/Vision/sections/Polar20Section'
 import { TeamSection } from '@/components/Vision/sections/TeamSection'
 import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSection'
 import { useArrowFocus } from '@/components/Vision/useArrowFocus'
@@ -35,9 +35,9 @@ export default function PitchPage() {
       case 1:
         return <UsageBasedSection />
       case 2:
-        return <AdaptersSection />
+        return <EntitlementsSection />
       case 3:
-        return <Polar20Section />
+        return <DNASection />
       case 4:
         return <OpenSourceSection />
       case 5:

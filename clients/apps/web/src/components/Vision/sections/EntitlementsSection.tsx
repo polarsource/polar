@@ -6,7 +6,7 @@ export const EntitlementsSection = () => {
   return (
     <Section
       header={{ index: '02', name: 'Automated Entitlements' }}
-      title="Connect entitlements to your SaaS products"
+      title="Going for features vs. settling for flags."
       context={
         <div className="flex flex-col gap-y-12 md:max-w-screen-md">
           <div className="relative flex">
@@ -24,7 +24,7 @@ export const EntitlementsSection = () => {
                   key="d"
                   className="bg-polar-200 absolute bottom-2 right-2 flex h-full w-full flex-col items-center justify-center px-4 text-black md:bottom-4 md:right-4"
                 >
-                  Custom Entitlements
+                  Custom &amp; OSS Entitlement Strategies
                 </span>,
                 <span key="a">License Keys</span>,
                 <span key="b">Digital Downloads</span>,
@@ -55,22 +55,19 @@ export const POST = Webhooks({
       }
     >
       <p>
-        Building SaaS products is all about granting and revoking access to your
-        customers. With Polar Entitlements, we want to offer a best-in-class API
-        to manage your customers&apos; access to anything.
+        We&apos;ve built an entitlement engine going beyond mere flags to automate
+        granting, revoking and delivering the features themselves depending on billing lifecycles.
       </p>
       <ul>
         <li>- License Keys</li>
         <li>- Digital Downloads</li>
         <li>- GitHub & Discord Access</li>
-        <li>- Credits</li>
-        <li>- Custom Entitlements</li>
+        <li>- Credits (Soon)</li>
       </ul>
+      <strong>Next: Open Source Entitlement Strategies</strong>
       <p>
-        We want to encourage our community to build custom entitlements that can
-        be used with ease. Want to grant access to a Slack channel when a
-        customer purchases something? There would be a Slack Entitlement
-        Strategy for that.
+        Inspired by Passport.js, we&apos;re building our SDK/adapters to design for a rich suite
+        of entitlement strategies to cherry-pick and npm, pip or gem install from.
       </p>
     </Section>
   )

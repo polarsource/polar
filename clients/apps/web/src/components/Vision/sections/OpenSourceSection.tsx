@@ -5,27 +5,36 @@ import { Section } from '../Section'
 export const OpenSourceSection = () => {
   return (
     <Section
-      header={{ index: '04', name: 'Open Source' }}
-      title="Building in public"
+      header={{ index: '04', name: 'Polar is 100% Open Source' }}
+      title="Building the future, together"
       context={
         <Console
           className="flex aspect-video flex-grow md:max-w-lg"
           title="zsh"
-          input="~/ % git clone git@github.com:polarsource/polar.git"
-          output="Cloning Polar..."
+          input="$ git clone git@github.com:polarsource/polar.git"
+          output="Cloning Polar (Apache 2.0)..."
         />
       }
     >
       <p>
-        What used to be a simple way to pay for things has become a complex
-        mess.
+        All the code powering Polar is available on GitHub under the Apache 2.0
+        license.
+      </p>
+      <strong>1% OSS Program</strong>
+      <p>
+        We&apos;re going to make it seamless for developers to automate splitting
+        a portion of their revenue to their open source dependencies.
+
       </p>
       <p>
-        Software as a Service (SaaS) has become the norm, but the underlying
-        payment infrastructure has not evolved.
+        Inspired by Stripe Climate. Because we need more trees in the physical world and
+        open source software in the binary one.
       </p>
       <Link href="https://github.com/polarsource/polar" target="_blank">
         Polar on GitHub →
+      </Link>
+      <Link href="https://dub.sh/polar-discord" target="_blank">
+        Polar Community on Discord →
       </Link>
     </Section>
   )

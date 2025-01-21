@@ -9,8 +9,8 @@ import { Section } from '../Section'
 export const DNASection = () => {
   return (
     <Section
-      header={{ index: '02', name: 'DX as DNA' }}
-      title="Developer Experience as Polar DNA"
+      header={{ index: '03', name: 'Less code and accounting' }}
+      title="Painless to integrate. Zero headaches to run."
       context={
         <div className="flex flex-col gap-y-8">
           <Grid
@@ -64,9 +64,15 @@ export const GET = Checkout({
       }
     >
       <p>
-        Polar aims to be the simplest way to integrate payments into your
-        software. This should be a breeze. That&apos;s why we restrict the code
-        you need to a maximum of 7 lines.
+        We prototype all our features directly in our SDKs and Framework Adapters first.
+        Obsessing over reducing the lines of code, naming and ergonomics.
+      </p>
+      <p>
+        Our API, Dashboard to Business Operations is designed backwards from there.
+      </p>
+      <strong>Merchant of Record</strong>
+      <p>
+        We also want you to scale internationally without concerns. So you can leave international tax liabilities to us - we&apos;re the Merchant of Record.
       </p>
     </Section>
   )

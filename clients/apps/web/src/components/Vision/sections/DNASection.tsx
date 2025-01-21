@@ -53,7 +53,7 @@ export const DNASection = ({ active }: { active: boolean }) => {
             ]}
           />
           <Console
-            className="w-full !self-start"
+            className="md:w-full md:self-start"
             code={`import { Checkout } from '@polar-sh/nextjs'
 
 export const GET = Checkout({

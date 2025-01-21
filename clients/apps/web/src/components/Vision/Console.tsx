@@ -21,7 +21,10 @@ export const Console = ({
 }: ConsoleProps) => {
   return (
     <div
-      className={twMerge('relative flex h-auto flex-col self-start', className)}
+      className={twMerge(
+        'relative flex h-auto w-full flex-col md:w-auto md:self-start',
+        className,
+      )}
     >
       <div className="border-polar-600 absolute left-2 top-2 h-full w-full transform border md:left-4 md:top-4" />
       <div className="border-polar-200 bg-polar-900 relative w-full border-2">

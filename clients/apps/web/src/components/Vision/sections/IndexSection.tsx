@@ -9,7 +9,7 @@ export const IndexSection = ({ active }: { active: boolean }) => {
       title="Payments for developers is a mess, again"
       context={
         <Console
-          className="flex aspect-video flex-grow md:max-w-lg"
+          className="flex aspect-video flex-grow self-start md:max-w-lg"
           title="Terminal"
           input="$ cat PAYMENT_INTEGRATION.md"
           output={`1. Signup
@@ -22,24 +22,21 @@ export const IndexSection = ({ active }: { active: boolean }) => {
 8. Capture user events and meters separately
 9. Develop customer spend limits, upgrade, downgrades.
 10. Congratulations. Now...
- .. handle International Sales Tax, VAT & GST`}
+... handle International Sales Tax, VAT & GST`}
         />
       }
     >
       <p>
-        SaaS with entitlements, usage based billing, meters, overages, spend limits,
-        checkout upsales, customer management...
+        SaaS with entitlements, usage based billing, meters, overages, spend
+        limits, checkout upsales, customer management...
       </p>
+      <p>Long gone are the days of integrating payments in 7 LOCs.</p>
       <p>
-        Long gone are the days of integrating payments in 7 LOCs.
+        Modern PSPs are like C in programming - stunning low-level abstractions
+        for complete control. But developers deserve a more high-level
+        abstraction focused on iteration velocity.
       </p>
-      <p>
-        Modern PSPs are like C in programming - stunning low-level abstractions for complete control.
-        But developers deserve a more high-level abstraction focused on iteration velocity.
-      </p>
-      <p>
-        It&apos;s time for the next evolution.
-      </p>
+      <p>It&apos;s time for the next evolution.</p>
     </Section>
   )
 }

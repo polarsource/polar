@@ -53,6 +53,7 @@ export const DNASection = ({ active }: { active: boolean }) => {
             ]}
           />
           <Console
+            className="w-full !self-start"
             code={`import { Checkout } from '@polar-sh/nextjs'
 
 export const GET = Checkout({
@@ -65,15 +66,19 @@ export const GET = Checkout({
       }
     >
       <p>
-        We prototype all our features directly in our SDKs and Framework Adapters first.
-        Obsessing over reducing the lines of code, naming and ergonomics.
+        We prototype all our features directly in our SDKs and Framework
+        Adapters first. Obsessing over reducing the lines of code, naming and
+        ergonomics.
       </p>
       <p>
-        Our API, Dashboard to Business Operations is designed backwards from there.
+        Our API, Dashboard to Business Operations is designed backwards from
+        there.
       </p>
       <strong>Merchant of Record</strong>
       <p>
-        We also want you to scale internationally without concerns. So you can leave international tax liabilities to us - we&apos;re the Merchant of Record.
+        We also want you to scale internationally without concerns. So you can
+        leave international tax liabilities to us - we&apos;re the Merchant of
+        Record.
       </p>
     </Section>
   )

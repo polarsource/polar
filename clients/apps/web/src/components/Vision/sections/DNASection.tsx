@@ -14,7 +14,7 @@ export const DNASection = () => {
       context={
         <div className="flex flex-col gap-y-8">
           <Grid
-            className="relative z-10 grid-cols-2 text-xs md:grid-cols-4"
+            className="relative z-10 hidden grid-cols-2 text-xs md:grid md:grid-cols-4"
             items={[
               <span
                 key="a"
@@ -43,7 +43,7 @@ export const DNASection = () => {
             ]}
           />
           <Grid
-            className="grid-cols-2 text-xs md:grid-cols-4 [&>*]:aspect-auto"
+            className="hidden grid-cols-2 text-xs md:grid md:grid-cols-4 [&>*]:aspect-auto"
             items={[
               <span key="e">@polar-sh/nextjs</span>,
               <span key="f">@polar-sh/fastify</span>,

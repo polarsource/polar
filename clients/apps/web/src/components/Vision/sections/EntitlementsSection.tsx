@@ -46,7 +46,7 @@ const SlackEntitlement = new EntitlementStrategy()
   .revoke(async ctx => slackClient.admin.users.remove(...));
 
 export const POST = Webhooks({
-  webhookSecret: process.env.WEBHOOK_SECRET,
+  webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
   entitlements: Entitlements.use('slack', SlackEntitlement)
 });
 `}

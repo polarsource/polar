@@ -22,9 +22,10 @@ const team = [
   },
 ]
 
-export const TeamSection = () => {
+export const TeamSection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '05', name: 'Team' }}
       title="Small team, big ambition"
       context={

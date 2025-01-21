@@ -6,9 +6,10 @@ import { Console } from '../Console'
 import { Grid } from '../Grid'
 import { Section } from '../Section'
 
-export const DNASection = () => {
+export const DNASection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '03', name: 'Less code and accounting' }}
       title="Painless to integrate. Zero headaches to run."
       context={

@@ -1,9 +1,10 @@
 import { Grid } from '../Grid'
 import { Section } from '../Section'
 
-export const InvestorsSection = () => {
+export const InvestorsSection = ({ active }: { active: boolean }) => {
   return (
     <Section
+      active={active}
       header={{ index: '06', name: 'Investors' }}
       title="Investors, Angels & Advisors"
       context={

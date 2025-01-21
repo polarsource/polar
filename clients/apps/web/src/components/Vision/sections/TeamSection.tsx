@@ -1,6 +1,6 @@
-import { MetricType } from '@polar-sh/api'
+// import { MetricType } from '@polar-sh/api'
+// import { Chart } from '../Chart'
 import Image from 'next/image'
-import { Chart } from '../Chart'
 import { Link } from '../Link'
 import { Section } from '../Section'
 

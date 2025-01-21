@@ -1,5 +1,4 @@
 import { Console } from '../Console'
-import { Link } from '../Link'
 import { Section } from '../Section'
 
 export const IndexSection = () => {
@@ -30,7 +29,6 @@ export const IndexSection = () => {
         Software as a Service (SaaS) has become the norm, but the underlying
         payment infrastructure has not evolved.
       </p>
-      <Link href="/pitch/what">What we are building →</Link>
     </Section>
   )
 }

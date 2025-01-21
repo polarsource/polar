@@ -1,6 +1,5 @@
 import { Console } from '../Console'
 import { Grid } from '../Grid'
-import { Link } from '../Link'
 import { Section } from '../Section'
 
 export const EntitlementsSection = () => {
@@ -29,8 +28,8 @@ export const EntitlementsSection = () => {
                 </span>,
                 <span key="a">License Keys</span>,
                 <span key="b">Digital Downloads</span>,
-                <span key="c">GitHub Repository Access</span>,
-                <span key="e">Discord Server Invites</span>,
+                <span key="c">GitHub & Discord Access</span>,
+                <span key="e">Credits</span>,
               ]}
             />
           </div>
@@ -54,18 +53,23 @@ export const POST = Webhooks({
       }
     >
       <p>
-        What used to be a simple way to pay for things has become a complex
-        mess.
+        Building SaaS products is all about granting and revoking access to your
+        customers. With Polar Entitlements, we want to offer a best-in-class API
+        to manage your customers&apos; access to anything.
       </p>
+      <ul>
+        <li>- License Keys</li>
+        <li>- Digital Downloads</li>
+        <li>- GitHub & Discord Access</li>
+        <li>- Credits</li>
+        <li>- Custom Entitlements</li>
+      </ul>
       <p>
-        Software as a Service (SaaS) has become the norm, but the underlying
-        payment infrastructure has not evolved.
+        We want to encourage our community to build custom entitlements that can
+        be used with ease. Want to grant access to a Slack channel when a
+        customer purchases something? There would be a Slack Entitlement
+        Strategy for that.
       </p>
-      <p>
-        This is why we are building Polar 2.0, payment infrastructure for the
-        21st century.
-      </p>
-      <Link href="/pitch/what">Why →</Link>
     </Section>
   )
 }

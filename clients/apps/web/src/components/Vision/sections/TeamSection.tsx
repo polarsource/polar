@@ -125,7 +125,7 @@ export const TeamSection = () => {
           to get stuff done vs. waiting on instructions, guidance or permission.
         </li>
       </ul>
-      <Link href="/pitch/what">Join Us →</Link>
+      <Link href="mailto:birk@polar.sh">Join Us →</Link>
     </Section>
   )
 }

@@ -1,3 +1,7 @@
+import GoIcon from '@/components/Icons/frameworks/go'
+import NodeJsIcon from '@/components/Icons/frameworks/nodejs'
+import PhpIcon from '@/components/Icons/frameworks/php'
+import PythonIcon from '@/components/Icons/frameworks/python'
 import { Console } from '../Console'
 import { Grid } from '../Grid'
 import { Section } from '../Section'
@@ -9,31 +13,37 @@ export const DNASection = () => {
       title="Developer Experience as Polar DNA"
       context={
         <div className="flex flex-col gap-y-8">
-          <div className="relative">
-            <div
-              className="absolute left-2 top-2 z-0 flex h-full w-full flex-col items-center justify-center text-black md:left-4 md:top-4"
-              style={{
-                background:
-                  'repeating-linear-gradient(-45deg, transparent 0px, transparent 9px, hsl(233, 8%, 24%) 9px, hsl(233, 8%, 24%) 10px)',
-              }}
-            />
-            <Grid
-              className="relative z-10 grid-cols-2 text-xs md:grid-cols-4"
-              items={[
-                <span
-                  key="a"
-                  className="bg-polar-200 absolute bottom-2 right-2 flex h-full w-full flex-col items-center justify-center text-black md:bottom-4 md:right-4"
-                >
-                  TypeScript SDK
-                </span>,
-                <span key="b">Python SDK</span>,
-                <span key="c">Go SDK</span>,
-                <span key="c">PHP SDK</span>,
-              ]}
-            />
-          </div>
           <Grid
-            className="grid-cols-2 text-xs md:grid-cols-4"
+            className="relative z-10 grid-cols-2 text-xs md:grid-cols-4"
+            items={[
+              <span
+                key="a"
+                className="bg-polar-200 absolute bottom-2 right-2 flex h-full w-full flex-col items-center justify-center text-black md:bottom-4 md:right-4"
+              >
+                <NodeJsIcon />
+              </span>,
+              <span
+                key="b"
+                className="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <PythonIcon />
+              </span>,
+              <span
+                key="c"
+                className="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <GoIcon />
+              </span>,
+              <span
+                key="c"
+                className="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <PhpIcon />
+              </span>,
+            ]}
+          />
+          <Grid
+            className="grid-cols-2 text-xs md:grid-cols-4 [&>*]:aspect-auto"
             items={[
               <span key="e">@polar-sh/nextjs</span>,
               <span key="f">@polar-sh/fastify</span>,

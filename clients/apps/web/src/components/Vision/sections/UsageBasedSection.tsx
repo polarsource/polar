@@ -1,5 +1,4 @@
 import { Console } from '../Console'
-import { Link } from '../Link'
 import { Section } from '../Section'
 
 export const UsageBasedSection = () => {
@@ -43,7 +42,6 @@ export const POST = Usage()
         committed to build the gold standard for adapters that sits in between
         artificial intelligence and the world.
       </p>
-      <Link href="/pitch/what">Why →</Link>
     </Section>
   )
 }

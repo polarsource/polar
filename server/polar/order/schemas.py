@@ -1,11 +1,13 @@
 from typing import Annotated
 
 from babel.numbers import format_currency
+from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas import CustomerBase
 from polar.discount.schemas import DiscountMinimal
+from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
@@ -13,12 +15,25 @@ from polar.models.order import OrderBillingReason
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
+OrderID = Annotated[UUID4, Path(description="The order ID.")]
+
+OrderNotFound = {
+    "description": "Order not found.",
+    "model": ResourceNotFound.schema(),
+}
+
 
 class OrderBase(
     CustomFieldDataOutputMixin, MetadataOutputMixin, IDSchema, TimestampedSchema
 ):
+    status: str
     amount: int
     tax_amount: int
+    refunded_amount: int = Field(
+        ...,
+        description="Amount refunded",
+    )
+    refunded_tax_amount: int = Field(..., description="Sales tax refunded")
     currency: str
     billing_reason: OrderBillingReason
     billing_address: Address | None
@@ -33,6 +48,13 @@ class OrderBase(
     def get_amount_display(self) -> str:
         return f"{format_currency(
             self.amount / 100,
+            self.currency.upper(),
+            locale="en_US",
+        )}"
+
+    def get_refunded_amount_display(self) -> str:
+        return f"{format_currency(
+            self.refunded_amount / 100,
             self.currency.upper(),
             locale="en_US",
         )}"

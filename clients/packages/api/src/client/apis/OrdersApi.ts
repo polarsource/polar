@@ -15,7 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
-  CustomerIDFilter2,
+  CustomerIDFilter,
   DiscountIDFilter1,
   HTTPValidationError,
   ListResourceOrder,
@@ -41,7 +41,7 @@ export interface OrdersApiListRequest {
     productId?: ProductIDFilter | null;
     productPriceType?: ProductPriceTypeFilter | null;
     discountId?: DiscountIDFilter1 | null;
-    customerId?: CustomerIDFilter2 | null;
+    customerId?: CustomerIDFilter | null;
     page?: number;
     limit?: number;
     sorting?: Array<OrderSortProperty> | null;

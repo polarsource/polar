@@ -28,15 +28,18 @@ from polar.models import (
     Organization,
     Pledge,
     Product,
+    Refund,
     Subscription,
     User,
 )
+from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.order.schemas import Order as OrderSchema
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.product.schemas import Product as ProductSchema
+from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
 
 from .slack import SlackPayload, SlackText, get_branded_slack_payload
@@ -45,11 +48,15 @@ WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
     | tuple[Literal[WebhookEventType.checkout_updated], Checkout]
     | tuple[Literal[WebhookEventType.order_created], Order]
+    | tuple[Literal[WebhookEventType.order_refunded], Order]
     | tuple[Literal[WebhookEventType.subscription_created], Subscription]
     | tuple[Literal[WebhookEventType.subscription_updated], Subscription]
     | tuple[Literal[WebhookEventType.subscription_active], Subscription]
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
+    | tuple[Literal[WebhookEventType.refund_created], Refund]
+    | tuple[Literal[WebhookEventType.refund_succeeded], Refund]
+    | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
     | tuple[Literal[WebhookEventType.pledge_created], Pledge]
@@ -240,6 +247,84 @@ class WebhookOrderCreatedPayload(BaseWebhookPayload):
                         "text": {
                             "type": "mrkdwn",
                             "text": f"New order has been made to {target.name}.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+
+class WebhookOrderRefundedPayload(BaseWebhookPayload):
+    """
+    Sent when an order is fully or partially refunded.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.order_refunded]
+    data: OrderSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        amount_display = self.data.get_refunded_amount_display()
+
+        fields: list[DiscordEmbedField] = [
+            {"name": "Product", "value": self.data.product.name},
+            {"name": "Refunded", "value": amount_display},
+            {"name": "Customer", "value": self.data.customer.email},
+        ]
+        if self.data.subscription is not None:
+            fields.append({"name": "Subscription", "value": "Yes"})
+
+        if self.data.status == OrderStatus.refunded:
+            fields.append({"name": "Fully Refunded", "value": "Yes"})
+
+        payload: DiscordPayload = {
+            "content": "Order Refunded",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Order Refunded",
+                        "description": f"Order refunded for {target.name}.",
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        amount_display = self.data.get_refunded_amount_display()
+
+        fields: list[SlackText] = [
+            {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
+            {"type": "mrkdwn", "text": f"*Refunded*\n{amount_display}"},
+            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.customer.email}"},
+        ]
+        if self.data.subscription is not None:
+            fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})
+
+        if self.data.status == OrderStatus.refunded:
+            fields.append({"type": "mrkdwn", "text": "*Fully Refunded*\nYes"})
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Order Refunded",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"Order refunded for {target.name}.",
                         },
                         "fields": fields,
                     }
@@ -647,6 +732,187 @@ class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
         return self._get_revoked_slack_payload(target)
 
 
+class WebhookRefundBase(BaseWebhookPayload):
+    """
+    Base Refund
+    """
+
+    type: (
+        Literal[WebhookEventType.refund_created]
+        | Literal[WebhookEventType.refund_succeeded]
+        | Literal[WebhookEventType.refund_updated]
+    )
+    data: RefundSchema
+
+    def _get_discord_fields(
+        self, target: User | Organization
+    ) -> list[DiscordEmbedField]:
+        amount_display = self.data.get_amount_display()
+        fields: list[DiscordEmbedField] = [
+            {"name": "Amount", "value": amount_display},
+            {"name": "Status", "value": self.data.status},
+        ]
+        return fields
+
+    def _get_slack_fields(self, target: User | Organization) -> list[SlackText]:
+        amount_display = self.data.get_amount_display()
+        fields: list[SlackText] = [
+            {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
+            {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
+        ]
+        return fields
+
+
+class WebhookRefundCreatedPayload(WebhookRefundBase):
+    """
+    Sent when a refund is created regardless of status.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.refund_created]
+    data: RefundSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        payload: DiscordPayload = {
+            "content": "Refund Created",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Refund Created",
+                        "description": f"Refund has been created for {target.name}.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+        return json.dumps(payload)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Refund Created",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"Refund has been created for {target.name}.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+        return json.dumps(payload)
+
+
+class WebhookRefundSucceededPayload(WebhookRefundBase):
+    """
+    Sent when a refund succeeds.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.refund_succeeded]
+    data: RefundSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        payload: DiscordPayload = {
+            "content": "Refund Succeeded",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Refund Succeeded",
+                        "description": f"Refund succeeded for {target.name}.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+        return json.dumps(payload)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Refund Succeeded",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"Refund succeeded for {target.name}.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+        return json.dumps(payload)
+
+
+class WebhookRefundUpdatedPayload(WebhookRefundBase):
+    """
+    Sent when a refund is updated.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.refund_updated]
+    data: RefundSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        payload: DiscordPayload = {
+            "content": "Refund Updated",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Refund Updated",
+                        "description": f"Refund has been updated for {target.name}.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+        return json.dumps(payload)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Refund Updated",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"Refund has been updated for {target.name}.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+        return json.dumps(payload)
+
+
 class WebhookProductCreatedPayload(BaseWebhookPayload):
     """
     Sent when a new product is created.
@@ -814,12 +1080,16 @@ WebhookPayload = Annotated[
     WebhookCheckoutCreatedPayload
     | WebhookCheckoutUpdatedPayload
     | WebhookOrderCreatedPayload
+    | WebhookOrderRefundedPayload
     | WebhookSubscriptionCreatedPayload
     | WebhookSubscriptionUpdatedPayload
     | WebhookSubscriptionActivePayload
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionUncanceledPayload
     | WebhookSubscriptionRevokedPayload
+    | WebhookRefundCreatedPayload
+    | WebhookRefundSucceededPayload
+    | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload
     | WebhookPledgeCreatedPayload

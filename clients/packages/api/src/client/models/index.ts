@@ -1317,6 +1317,8 @@ export const AvailableScope = {
     CUSTOMERSWRITE: 'customers:write',
     CUSTOMER_SESSIONSWRITE: 'customer_sessions:write',
     ORDERSREAD: 'orders:read',
+    REFUNDSREAD: 'refunds:read',
+    REFUNDSWRITE: 'refunds:write',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
@@ -3859,10 +3861,10 @@ export interface Checkout {
     custom_field_data?: object;
     /**
      * Payment processor used.
-     * @type {PolarEnumsPaymentProcessor}
+     * @type {PaymentProcessor}
      * @memberof Checkout
      */
-    payment_processor: PolarEnumsPaymentProcessor;
+    payment_processor: PaymentProcessor;
     /**
      * Status of the checkout session.
      * @type {CheckoutStatus}
@@ -4493,10 +4495,10 @@ export interface CheckoutLink {
     metadata: { [key: string]: MetadataValue; };
     /**
      * Payment processor used.
-     * @type {PolarEnumsPaymentProcessor}
+     * @type {PaymentProcessor}
      * @memberof CheckoutLink
      */
-    payment_processor: PolarEnumsPaymentProcessor;
+    payment_processor: PaymentProcessor;
     /**
      * Client secret used to access the checkout link.
      * @type {string}
@@ -5203,10 +5205,10 @@ export interface CheckoutPublic {
     custom_field_data?: object;
     /**
      * Payment processor used.
-     * @type {PolarEnumsPaymentProcessor}
+     * @type {PaymentProcessor}
      * @memberof CheckoutPublic
      */
-    payment_processor: PolarEnumsPaymentProcessor;
+    payment_processor: PaymentProcessor;
     /**
      * Status of the checkout session.
      * @type {CheckoutStatus}
@@ -5437,10 +5439,10 @@ export interface CheckoutPublicConfirmed {
     custom_field_data?: object;
     /**
      * Payment processor used.
-     * @type {PolarEnumsPaymentProcessor}
+     * @type {PaymentProcessor}
      * @memberof CheckoutPublicConfirmed
      */
-    payment_processor: PolarEnumsPaymentProcessor;
+    payment_processor: PaymentProcessor;
     /**
      * 
      * @type {string}
@@ -8030,20 +8032,6 @@ export type CustomerIDFilter = Array<string> | string;
  * @export
  */
 export type CustomerIDFilter1 = Array<string> | string;
-
-/**
- * @type CustomerIDFilter2
- * Filter by customer ID.
- * @export
- */
-export type CustomerIDFilter2 = Array<string> | string;
-
-/**
- * @type CustomerIDFilter3
- * Filter by customer ID.
- * @export
- */
-export type CustomerIDFilter3 = Array<string> | string;
 
 
 /**
@@ -12663,6 +12651,25 @@ export interface ListResourceProduct {
 /**
  * 
  * @export
+ * @interface ListResourceRefund
+ */
+export interface ListResourceRefund {
+    /**
+     * 
+     * @type {Array<Refund>}
+     * @memberof ListResourceRefund
+     */
+    items: Array<Refund>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceRefund
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceRepository
  */
 export interface ListResourceRepository {
@@ -14569,6 +14576,12 @@ export interface Order {
     custom_field_data?: object;
     /**
      * 
+     * @type {string}
+     * @memberof Order
+     */
+    status: string;
+    /**
+     * 
      * @type {number}
      * @memberof Order
      */
@@ -14579,6 +14592,18 @@ export interface Order {
      * @memberof Order
      */
     tax_amount: number;
+    /**
+     * Amount refunded
+     * @type {number}
+     * @memberof Order
+     */
+    refunded_amount: number;
+    /**
+     * Sales tax refunded
+     * @type {number}
+     * @memberof Order
+     */
+    refunded_tax_amount: number;
     /**
      * 
      * @type {string}
@@ -15813,6 +15838,16 @@ export const PaymentMethodTypeEnum = {
 } as const;
 export type PaymentMethodTypeEnum = typeof PaymentMethodTypeEnum[keyof typeof PaymentMethodTypeEnum];
 
+
+/**
+ * 
+ * @export
+ */
+export const PaymentProcessor = {
+    STRIPE: 'stripe'
+} as const;
+export type PaymentProcessor = typeof PaymentProcessor[keyof typeof PaymentProcessor];
+
 /**
  * 
  * @export
@@ -16485,27 +16520,6 @@ export interface PledgesTypeSummaries {
      */
     pay_directly: PledgesSummary;
 }
-
-/**
- * 
- * @export
- */
-export const PolarEnumsPaymentProcessor = {
-    STRIPE: 'stripe'
-} as const;
-export type PolarEnumsPaymentProcessor = typeof PolarEnumsPaymentProcessor[keyof typeof PolarEnumsPaymentProcessor];
-
-
-/**
- * Supported payment processors.
- * @export
- */
-export const PolarModelsTransactionPaymentProcessor = {
-    STRIPE: 'stripe',
-    OPEN_COLLECTIVE: 'open_collective'
-} as const;
-export type PolarModelsTransactionPaymentProcessor = typeof PolarModelsTransactionPaymentProcessor[keyof typeof PolarModelsTransactionPaymentProcessor];
-
 /**
  * 
  * @export
@@ -16537,6 +16551,17 @@ export type PreviousProperties = BenefitGrantAdsProperties | BenefitGrantDiscord
  * @export
  */
 export type Prices = Array<ProductPriceRecurringFixedCreate> | Array<ProductPriceRecurringFreeCreate>;
+
+
+/**
+ * Supported payment or payout processors, i.e rails for transactions.
+ * @export
+ */
+export const Processor = {
+    STRIPE: 'stripe',
+    OPEN_COLLECTIVE: 'open_collective'
+} as const;
+export type Processor = typeof Processor[keyof typeof Processor];
 
 /**
  * A product.
@@ -18022,6 +18047,264 @@ export interface Reactions {
 /**
  * 
  * @export
+ * @interface Refund
+ */
+export interface Refund {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof Refund
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof Refund
+     */
+    id: string;
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof Refund
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * 
+     * @type {RefundStatus}
+     * @memberof Refund
+     */
+    status: RefundStatus;
+    /**
+     * 
+     * @type {RefundReason}
+     * @memberof Refund
+     */
+    reason: RefundReason;
+    /**
+     * 
+     * @type {number}
+     * @memberof Refund
+     */
+    amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Refund
+     */
+    tax_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    currency: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    order_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Refund
+     */
+    customer_id: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Refund
+     */
+    revoke_benefits: boolean;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface RefundAmountTooHigh
+ */
+export interface RefundAmountTooHigh {
+    /**
+     * 
+     * @type {string}
+     * @memberof RefundAmountTooHigh
+     */
+    error: RefundAmountTooHighErrorEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof RefundAmountTooHigh
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const RefundAmountTooHighErrorEnum = {
+    REFUND_AMOUNT_TOO_HIGH: 'RefundAmountTooHigh'
+} as const;
+export type RefundAmountTooHighErrorEnum = typeof RefundAmountTooHighErrorEnum[keyof typeof RefundAmountTooHighErrorEnum];
+
+/**
+ * 
+ * @export
+ * @interface RefundCreate
+ */
+export interface RefundCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof RefundCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * 
+     * @type {string}
+     * @memberof RefundCreate
+     */
+    order_id: string;
+    /**
+     * 
+     * @type {RefundReason}
+     * @memberof RefundCreate
+     */
+    reason: RefundReason;
+    /**
+     * 
+     * @type {number}
+     * @memberof RefundCreate
+     */
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof RefundCreate
+     */
+    comment?: string | null;
+    /**
+     * Should this refund trigger the associated customer benefits to be revoked?
+     * 
+     * **Note:**
+     * Only allowed in case the `order` is a one-time purchase.
+     * Subscriptions automatically revoke customer benefits once the
+     * subscription itself is revoked, i.e fully canceled.
+     * @type {boolean}
+     * @memberof RefundCreate
+     */
+    revoke_benefits?: boolean;
+}
+
+
+/**
+ * @type RefundIDFilter
+ * Filter by refund ID.
+ * @export
+ */
+export type RefundIDFilter = Array<string> | string;
+
+
+/**
+ * 
+ * @export
+ */
+export const RefundReason = {
+    DUPLICATE: 'duplicate',
+    FRAUDULENT: 'fraudulent',
+    CUSTOMER_REQUEST: 'customer_request',
+    SERVICE_DISRUPTION: 'service_disruption',
+    SATISFACTION_GUARANTEE: 'satisfaction_guarantee',
+    OTHER: 'other'
+} as const;
+export type RefundReason = typeof RefundReason[keyof typeof RefundReason];
+
+
+/**
+ * 
+ * @export
+ */
+export const RefundSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount'
+} as const;
+export type RefundSortProperty = typeof RefundSortProperty[keyof typeof RefundSortProperty];
+
+
+/**
+ * 
+ * @export
+ */
+export const RefundStatus = {
+    PENDING: 'pending',
+    SUCCEEDED: 'succeeded',
+    FAILED: 'failed',
+    CANCELED: 'canceled'
+} as const;
+export type RefundStatus = typeof RefundStatus[keyof typeof RefundStatus];
+
+/**
+ * 
+ * @export
+ * @interface RefundedAlready
+ */
+export interface RefundedAlready {
+    /**
+     * 
+     * @type {string}
+     * @memberof RefundedAlready
+     */
+    error: RefundedAlreadyErrorEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof RefundedAlready
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const RefundedAlreadyErrorEnum = {
+    REFUNDED_ALREADY: 'RefundedAlready'
+} as const;
+export type RefundedAlreadyErrorEnum = typeof RefundedAlreadyErrorEnum[keyof typeof RefundedAlreadyErrorEnum];
+
+/**
+ * 
+ * @export
  * @interface Repository
  */
 export interface Repository {
@@ -18766,6 +19049,8 @@ export const Scope = {
     CUSTOMERSWRITE: 'customers:write',
     CUSTOMER_SESSIONSWRITE: 'customer_sessions:write',
     ORDERSREAD: 'orders:read',
+    REFUNDSREAD: 'refunds:read',
+    REFUNDSWRITE: 'refunds:write',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
@@ -19191,13 +19476,6 @@ export type SubscriptionDiscount = DiscountFixedOnceForeverDurationBase | Discou
  */
 export type SubscriptionIDFilter = Array<string> | string;
 
-/**
- * @type SubscriptionIDFilter1
- * Filter by subscription ID.
- * @export
- */
-export type SubscriptionIDFilter1 = Array<string> | string;
-
 
 /**
  * 
@@ -19597,10 +19875,10 @@ export interface Transaction {
     type: TransactionType;
     /**
      * 
-     * @type {PolarModelsTransactionPaymentProcessor}
+     * @type {Processor}
      * @memberof Transaction
      */
-    processor: PolarModelsTransactionPaymentProcessor | null;
+    processor: Processor | null;
     /**
      * 
      * @type {string}
@@ -19738,10 +20016,10 @@ export interface TransactionDetails {
     type: TransactionType;
     /**
      * 
-     * @type {PolarModelsTransactionPaymentProcessor}
+     * @type {Processor}
      * @memberof TransactionDetails
      */
-    processor: PolarModelsTransactionPaymentProcessor | null;
+    processor: Processor | null;
     /**
      * 
      * @type {string}
@@ -19885,10 +20163,10 @@ export interface TransactionEmbedded {
     type: TransactionType;
     /**
      * 
-     * @type {PolarModelsTransactionPaymentProcessor}
+     * @type {Processor}
      * @memberof TransactionEmbedded
      */
-    processor: PolarModelsTransactionPaymentProcessor | null;
+    processor: Processor | null;
     /**
      * 
      * @type {string}
@@ -21315,12 +21593,16 @@ export const WebhookEventType = {
     CHECKOUT_CREATED: 'checkout.created',
     CHECKOUT_UPDATED: 'checkout.updated',
     ORDER_CREATED: 'order.created',
+    ORDER_REFUNDED: 'order.refunded',
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',
     SUBSCRIPTION_ACTIVE: 'subscription.active',
     SUBSCRIPTION_CANCELED: 'subscription.canceled',
     SUBSCRIPTION_UNCANCELED: 'subscription.uncanceled',
     SUBSCRIPTION_REVOKED: 'subscription.revoked',
+    REFUND_CREATED: 'refund.created',
+    REFUND_SUCCEEDED: 'refund.succeeded',
+    REFUND_UPDATED: 'refund.updated',
     PRODUCT_CREATED: 'product.created',
     PRODUCT_UPDATED: 'product.updated',
     BENEFIT_CREATED: 'benefit.created',
@@ -21376,6 +21658,37 @@ export const WebhookOrderCreatedPayloadTypeEnum = {
     ORDER_CREATED: 'order.created'
 } as const;
 export type WebhookOrderCreatedPayloadTypeEnum = typeof WebhookOrderCreatedPayloadTypeEnum[keyof typeof WebhookOrderCreatedPayloadTypeEnum];
+
+/**
+ * Sent when an order is fully or partially refunded.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookOrderRefundedPayload
+ */
+export interface WebhookOrderRefundedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookOrderRefundedPayload
+     */
+    type: WebhookOrderRefundedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Order}
+     * @memberof WebhookOrderRefundedPayload
+     */
+    data: Order;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookOrderRefundedPayloadTypeEnum = {
+    ORDER_REFUNDED: 'order.refunded'
+} as const;
+export type WebhookOrderRefundedPayloadTypeEnum = typeof WebhookOrderRefundedPayloadTypeEnum[keyof typeof WebhookOrderRefundedPayloadTypeEnum];
 
 /**
  * Sent when a organization is updated.
@@ -21531,6 +21844,99 @@ export const WebhookProductUpdatedPayloadTypeEnum = {
     PRODUCT_UPDATED: 'product.updated'
 } as const;
 export type WebhookProductUpdatedPayloadTypeEnum = typeof WebhookProductUpdatedPayloadTypeEnum[keyof typeof WebhookProductUpdatedPayloadTypeEnum];
+
+/**
+ * Sent when a refund is created regardless of status.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookRefundCreatedPayload
+ */
+export interface WebhookRefundCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookRefundCreatedPayload
+     */
+    type: WebhookRefundCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Refund}
+     * @memberof WebhookRefundCreatedPayload
+     */
+    data: Refund;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookRefundCreatedPayloadTypeEnum = {
+    REFUND_CREATED: 'refund.created'
+} as const;
+export type WebhookRefundCreatedPayloadTypeEnum = typeof WebhookRefundCreatedPayloadTypeEnum[keyof typeof WebhookRefundCreatedPayloadTypeEnum];
+
+/**
+ * Sent when a refund succeeds.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookRefundSucceededPayload
+ */
+export interface WebhookRefundSucceededPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookRefundSucceededPayload
+     */
+    type: WebhookRefundSucceededPayloadTypeEnum;
+    /**
+     * 
+     * @type {Refund}
+     * @memberof WebhookRefundSucceededPayload
+     */
+    data: Refund;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookRefundSucceededPayloadTypeEnum = {
+    REFUND_SUCCEEDED: 'refund.succeeded'
+} as const;
+export type WebhookRefundSucceededPayloadTypeEnum = typeof WebhookRefundSucceededPayloadTypeEnum[keyof typeof WebhookRefundSucceededPayloadTypeEnum];
+
+/**
+ * Sent when a refund is updated.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookRefundUpdatedPayload
+ */
+export interface WebhookRefundUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookRefundUpdatedPayload
+     */
+    type: WebhookRefundUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Refund}
+     * @memberof WebhookRefundUpdatedPayload
+     */
+    data: Refund;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookRefundUpdatedPayloadTypeEnum = {
+    REFUND_UPDATED: 'refund.updated'
+} as const;
+export type WebhookRefundUpdatedPayloadTypeEnum = typeof WebhookRefundUpdatedPayloadTypeEnum[keyof typeof WebhookRefundUpdatedPayloadTypeEnum];
 
 /**
  * 

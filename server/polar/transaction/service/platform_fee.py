@@ -9,7 +9,7 @@ from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models import Account, Transaction
-from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
+from polar.models.transaction import PlatformFeeType, Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.fees.stripe import (
     get_reverse_stripe_payout_fees,
@@ -215,7 +215,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         payment_transaction = await self.get(session, payment_transaction_id)
         assert payment_transaction is not None
 
-        if payment_transaction.processor != PaymentProcessor.stripe:
+        if payment_transaction.processor != Processor.stripe:
             return False
 
         if payment_transaction.charge_id is None:

@@ -19,7 +19,7 @@ from polar.models import (
     User,
 )
 from polar.models.pledge import PledgeType
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
@@ -51,7 +51,7 @@ async def create_transaction(
     transaction = Transaction(
         created_at=created_at,
         type=type,
-        processor=PaymentProcessor.stripe,
+        processor=Processor.stripe,
         currency="usd",
         amount=amount,
         account_currency=account_currency,

@@ -7,14 +7,15 @@ from sqlalchemy.orm import joinedload
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Account, IssueReward, Order, Pledge, Transaction, User
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models import Account, Transaction, User
+from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_payment_transaction
 
 
 @pytest.fixture(autouse=True)
@@ -22,34 +23,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.transaction.service.balance.stripe_service", new=mock)
     return mock
-
-
-async def create_payment_transaction(
-    save_fixture: SaveFixture,
-    *,
-    processor: PaymentProcessor = PaymentProcessor.stripe,
-    currency: str = "usd",
-    amount: int = 1000,
-    charge_id: str = "STRIPE_CHARGE_ID",
-    pledge: Pledge | None = None,
-    order: Order | None = None,
-    issue_reward: IssueReward | None = None,
-) -> Transaction:
-    transaction = Transaction(
-        type=TransactionType.payment,
-        processor=processor,
-        currency=currency,
-        amount=amount,
-        account_currency=currency,
-        account_amount=amount,
-        tax_amount=0,
-        charge_id=charge_id,
-        pledge=pledge,
-        order=order,
-        issue_reward=issue_reward,
-    )
-    await save_fixture(transaction)
-    return transaction
 
 
 @pytest.mark.asyncio

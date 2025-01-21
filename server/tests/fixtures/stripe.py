@@ -4,6 +4,8 @@ from typing import Any
 
 import stripe as stripe_lib
 
+from polar.integrations.stripe.schemas import ProductType
+from polar.kit.utils import generate_uuid
 from polar.models import (
     Customer,
     Discount,
@@ -185,6 +187,123 @@ def construct_stripe_invoice(
                 else None
             ),
             "created": created or int(time.time()),
+        },
+        None,
+    )
+
+
+def build_stripe_balance_transaction(
+    *,
+    fee: int | None = 100,
+    reporting_category: str | None = None,
+) -> stripe_lib.BalanceTransaction:
+    obj: dict[str, Any] = {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": fee}
+    if reporting_category:
+        obj["reporting_category"] = reporting_category
+
+    return stripe_lib.BalanceTransaction.construct_from(obj, None)
+
+
+def build_stripe_invoice(
+    *, tax: int | None = 100, subscription: str | None = None
+) -> stripe_lib.Invoice:
+    return stripe_lib.Invoice.construct_from(
+        {
+            "id": "STRIPE_INVOICE_ID",
+            "tax": tax,
+            "subscription": subscription,
+            "total_tax_amounts": [{"tax_rate": {"country": "US", "state": "NY"}}],
+            "metadata": None,
+        },
+        None,
+    )
+
+
+def build_stripe_charge(
+    *,
+    amount: int = 1000,
+    customer: str | None = None,
+    invoice: str | None = None,
+    payment_intent: str | None = None,
+    balance_transaction: str | None = None,
+    type: ProductType | None = None,
+    amount_refunded: int = 0,
+    metadata: dict[str, str] | None = None,
+    risk_level: str | None = None,
+    risk_score: int | None = None,
+) -> stripe_lib.Charge:
+    metadata = metadata or {}
+    obj: dict[str, Any] = {
+        "id": "STRIPE_CHARGE_ID",
+        "customer": customer,
+        "currency": "usd",
+        "amount": amount,
+        "invoice": invoice,
+        "payment_intent": payment_intent,
+        "balance_transaction": balance_transaction,
+        "amount_refunded": amount_refunded,
+        "metadata": {"type": type, **metadata} if type is not None else metadata,
+    }
+    if risk_level or risk_score:
+        obj["outcome"] = {
+            "risk_level": risk_level if risk_level else "normal",
+            "risk_score": risk_score if risk_score else 0,
+        }
+
+    return stripe_lib.Charge.construct_from(obj, None)
+
+
+def build_stripe_refund(
+    *,
+    status: str = "succeeded",
+    amount: int = 100,
+    reason: str = "requested_by_customer",
+    id: str | None = None,
+    charge_id: str | None = None,
+    payment_intent: str | None = None,
+    balance_transaction: str | None = None,
+) -> stripe_lib.Refund:
+    if not id:
+        id = str(generate_uuid()).replace("-", "")
+        id = f"re_{id}"
+
+    if not charge_id:
+        charge_id = str(generate_uuid()).replace("-", "")
+        charge_id = f"ch_{charge_id}"
+
+    return stripe_lib.Refund.construct_from(
+        {
+            "id": id,
+            "charge": charge_id,
+            "status": status,
+            "currency": "usd",
+            "amount": amount,
+            "reason": reason,
+            "destination_details": "{}",
+            "balance_transaction": balance_transaction,
+            "receipt_number": None,
+            "payment_intent": payment_intent,
+        },
+        None,
+    )
+
+
+def build_stripe_dispute(
+    *,
+    status: str,
+    id: str = "STRIPE_DISPUTE_ID",
+    charge_id: str = "STRIPE_CHARGE_ID",
+    amount: int = 100,
+    balance_transactions: list[stripe_lib.BalanceTransaction],
+) -> stripe_lib.Dispute:
+    return stripe_lib.Dispute.construct_from(
+        {
+            "id": id,
+            "status": status,
+            "charge": charge_id,
+            "currency": "usd",
+            "amount": amount,
+            "balance_transactions": balance_transactions,
         },
         None,
     )

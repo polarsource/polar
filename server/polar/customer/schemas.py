@@ -1,5 +1,7 @@
 import hashlib
+from typing import Annotated
 
+from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
 from polar.kit.address import Address
@@ -16,6 +18,8 @@ from polar.kit.schemas import (
 )
 from polar.kit.tax import TaxID
 from polar.organization.schemas import OrganizationID
+
+CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
 
 
 class CustomerCreate(MetadataInputMixin, Schema):

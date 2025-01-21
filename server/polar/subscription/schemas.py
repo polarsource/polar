@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from babel.numbers import format_currency
+from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -20,6 +21,8 @@ from polar.kit.schemas import (
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.product.schemas import Product, ProductPriceRecurring
+
+SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 
 
 class SubscriptionCustomer(CustomerBase): ...

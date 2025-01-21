@@ -1,7 +1,4 @@
-from typing import Annotated
-
-from fastapi import Depends, Path, Query
-from pydantic import UUID4
+from fastapi import Depends, Query
 from sqlalchemy.orm import joinedload
 
 from polar.authz.service import Authz
@@ -17,7 +14,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Customer as CustomerSchema
-from .schemas import CustomerCreate, CustomerUpdate
+from .schemas import CustomerCreate, CustomerID, CustomerUpdate
 from .service import customer as customer_service
 
 router = APIRouter(
@@ -25,7 +22,6 @@ router = APIRouter(
 )
 
 
-CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
 CustomerNotFound = {
     "description": "Customer not found.",
     "model": ResourceNotFound.schema(),
@@ -81,7 +77,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Get a customer by ID."""
-    customer = await customer_service.get_by_id(session, auth_subject, id)
+    customer = await customer_service.user_get_by_id(session, auth_subject, id)
 
     if customer is None:
         raise ResourceNotFound()
@@ -122,7 +118,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update a customer."""
-    customer = await customer_service.get_by_id(
+    customer = await customer_service.user_get_by_id(
         session, auth_subject, id, options=(joinedload(Customer.organization),)
     )
 
@@ -151,7 +147,7 @@ async def delete(
 
     Immediately cancels any active subscriptions and revokes any active benefits.
     """
-    customer = await customer_service.get_by_id(session, auth_subject, id)
+    customer = await customer_service.user_get_by_id(session, auth_subject, id)
 
     if customer is None:
         raise ResourceNotFound()

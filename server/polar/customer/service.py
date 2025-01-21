@@ -72,7 +72,7 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         return await paginate(session, statement, pagination=pagination)
 
-    async def get_by_id(
+    async def user_get_by_id(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],

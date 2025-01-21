@@ -15,7 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
-  CustomerIDFilter3,
+  CustomerIDFilter,
   HTTPValidationError,
   Interval,
   MetricsLimits,
@@ -32,7 +32,7 @@ export interface MetricsApiGetRequest {
     organizationId?: OrganizationIDFilter1 | null;
     productId?: ProductIDFilter | null;
     productPriceType?: ProductPriceTypeFilter1 | null;
-    customerId?: CustomerIDFilter3 | null;
+    customerId?: CustomerIDFilter | null;
 }
 
 /**

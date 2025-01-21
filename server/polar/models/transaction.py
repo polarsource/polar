@@ -15,8 +15,19 @@ if TYPE_CHECKING:
         Order,
         Organization,
         Pledge,
+        Refund,
         User,
     )
+
+
+class Processor(StrEnum):
+    """
+    Supported payment or payout processors, i.e rails for transactions.
+    """
+
+    stripe = "stripe"
+    # Legacy
+    open_collective = "open_collective"
 
 
 class TransactionType(StrEnum):
@@ -38,15 +49,6 @@ class TransactionType(StrEnum):
     """Money flow between Polar and a user's account."""
     payout = "payout"
     """Money paid to the user's bank account."""
-
-
-class PaymentProcessor(StrEnum):
-    """
-    Supported payment processors.
-    """
-
-    stripe = "stripe"
-    open_collective = "open_collective"
 
 
 class ProcessorFeeType(StrEnum):
@@ -182,7 +184,7 @@ class Transaction(RecordModel):
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)
     """Type of transaction."""
-    processor: Mapped[PaymentProcessor | None] = mapped_column(
+    processor: Mapped[Processor | None] = mapped_column(
         String, nullable=True, index=True
     )
     """Payment processor. For TransactionType.balance, it should be `None`."""
@@ -366,6 +368,20 @@ class Transaction(RecordModel):
             foreign_keys="[Transaction.payment_transaction_id]",
             back_populates="balance_transactions",
         )
+
+    # TODO: Hopefully temporary naming. Want to prefix all processor IDs
+    # with `processor_` here and be able to rename this then to `refund_id`
+    polar_refund_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("refunds.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """ID of the `Refund` related to this transaction."""
+
+    @declared_attr
+    def refund(cls) -> Mapped["Refund | None"]:
+        return relationship("Refund", lazy="raise")
 
     @declared_attr
     def balance_transactions(cls) -> Mapped[list["Transaction"]]:

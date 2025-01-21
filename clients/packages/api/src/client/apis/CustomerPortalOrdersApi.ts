@@ -24,7 +24,7 @@ import type {
   ProductIDFilter,
   ProductPriceTypeFilter,
   ResourceNotFound,
-  SubscriptionIDFilter1,
+  SubscriptionIDFilter,
 } from '../models/index';
 
 export interface CustomerPortalOrdersApiGetRequest {
@@ -39,7 +39,7 @@ export interface CustomerPortalOrdersApiListRequest {
     organizationId?: OrganizationIDFilter1 | null;
     productId?: ProductIDFilter | null;
     productPriceType?: ProductPriceTypeFilter | null;
-    subscriptionId?: SubscriptionIDFilter1 | null;
+    subscriptionId?: SubscriptionIDFilter | null;
     query?: string | null;
     page?: number;
     limit?: number;

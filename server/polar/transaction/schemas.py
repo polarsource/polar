@@ -3,7 +3,7 @@ from pydantic import UUID4
 from polar.enums import Platforms
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
-from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
+from polar.models.transaction import PlatformFeeType, Processor, TransactionType
 from polar.product.schemas import ProductPrice
 
 
@@ -69,7 +69,7 @@ class TransactionOrder(IDSchema, TimestampedSchema):
 
 class TransactionEmbedded(IDSchema, TimestampedSchema):
     type: TransactionType
-    processor: PaymentProcessor | None
+    processor: Processor | None
 
     currency: str
     amount: int

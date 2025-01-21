@@ -1,8 +1,7 @@
 from typing import Annotated
 
 import structlog
-from fastapi import Depends, Path, Query
-from pydantic import UUID4
+from fastapi import Depends, Query
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
@@ -15,6 +14,7 @@ from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.schemas import SubscriptionID
 from polar.subscription.service import AlreadyCanceledSubscription
 
 from .. import auth
@@ -33,7 +33,6 @@ router = APIRouter(
     prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
 )
 
-SubscriptionID = Annotated[UUID4, Path(description="Customer subscription ID.")]
 SubscriptionNotFound = {
     "description": "Customer subscription was not found.",
     "model": ResourceNotFound.schema(),

@@ -1,12 +1,11 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
 from polar.models import Account, Pledge, Transaction, User
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.balance import (
@@ -24,63 +23,12 @@ from polar.transaction.service.dispute import (
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.stripe import (
+    build_stripe_balance_transaction,
+    build_stripe_charge,
+    build_stripe_dispute,
+)
 from tests.transaction.conftest import create_transaction
-
-
-def build_stripe_balance_transaction(
-    *, reporting_category: str, fee: int | None = 100
-) -> stripe_lib.BalanceTransaction:
-    return stripe_lib.BalanceTransaction.construct_from(
-        {
-            "id": "STRIPE_BALANCE_TRANSACTION_ID",
-            "reporting_category": reporting_category,
-            "fee": fee,
-        },
-        None,
-    )
-
-
-def build_stripe_charge(
-    *,
-    amount: int = 1000,
-    customer: str | None = None,
-    invoice: str | None = None,
-    payment_intent: str | None = None,
-    balance_transaction: str | None = None,
-) -> stripe_lib.Charge:
-    return stripe_lib.Charge.construct_from(
-        {
-            "id": "STRIPE_CHARGE_ID",
-            "customer": customer,
-            "currency": "usd",
-            "amount": amount,
-            "invoice": invoice,
-            "payment_intent": payment_intent,
-            "balance_transaction": balance_transaction,
-        },
-        None,
-    )
-
-
-def build_stripe_dispute(
-    *,
-    status: str,
-    id: str = "STRIPE_DISPUTE_ID",
-    charge_id: str = "STRIPE_CHARGE_ID",
-    amount: int = 100,
-    balance_transactions: list[stripe_lib.BalanceTransaction],
-) -> stripe_lib.Dispute:
-    return stripe_lib.Dispute.construct_from(
-        {
-            "id": id,
-            "status": status,
-            "charge": charge_id,
-            "currency": "usd",
-            "amount": amount,
-            "balance_transactions": balance_transactions,
-        },
-        None,
-    )
 
 
 @pytest.fixture(autouse=True)
@@ -159,7 +107,7 @@ class TestCreateDispute:
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=charge.amount,
             account_currency=charge.currency,
@@ -172,7 +120,7 @@ class TestCreateDispute:
 
         outgoing_balance_1 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.75,
             account_currency=charge.currency,
@@ -185,7 +133,7 @@ class TestCreateDispute:
         )
         incoming_balance_1 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             account=account,
             currency=charge.currency,
             amount=charge.amount * 0.75,
@@ -202,7 +150,7 @@ class TestCreateDispute:
 
         outgoing_balance_2 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.25,
             account_currency=charge.currency,
@@ -215,7 +163,7 @@ class TestCreateDispute:
         )
         incoming_balance_2 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             account=account,
             currency=charge.currency,
             amount=charge.amount * 0.25,
@@ -236,7 +184,7 @@ class TestCreateDispute:
         ) = await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
         assert dispute_transaction.type == TransactionType.dispute
-        assert dispute_transaction.processor == PaymentProcessor.stripe
+        assert dispute_transaction.processor == Processor.stripe
         assert dispute_transaction.amount == -dispute.amount
 
         assert dispute_reversal_transaction is None
@@ -302,7 +250,7 @@ class TestCreateDispute:
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=charge.amount,
             account_currency=charge.currency,
@@ -316,7 +264,7 @@ class TestCreateDispute:
         # First balance
         outgoing_balance_1 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.75,
             account_currency=charge.currency,
@@ -329,7 +277,7 @@ class TestCreateDispute:
         )
         incoming_balance_1 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             account=account,
             currency=charge.currency,
             amount=charge.amount * 0.75,
@@ -347,7 +295,7 @@ class TestCreateDispute:
         # Second balance
         outgoing_balance_2 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.25,
             account_currency=charge.currency,
@@ -360,7 +308,7 @@ class TestCreateDispute:
         )
         incoming_balance_2 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             account=account,
             currency=charge.currency,
             amount=charge.amount * 0.25,
@@ -381,12 +329,12 @@ class TestCreateDispute:
         ) = await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
         assert dispute_transaction.type == TransactionType.dispute
-        assert dispute_transaction.processor == PaymentProcessor.stripe
+        assert dispute_transaction.processor == Processor.stripe
         assert dispute_transaction.amount == -dispute.amount
 
         assert dispute_reversal_transaction is not None
         assert dispute_reversal_transaction.type == TransactionType.dispute_reversal
-        assert dispute_reversal_transaction.processor == PaymentProcessor.stripe
+        assert dispute_reversal_transaction.processor == Processor.stripe
         assert dispute_reversal_transaction.amount == dispute.amount
 
         balance_transaction_service_mock.create_reversal_balance.assert_not_called()

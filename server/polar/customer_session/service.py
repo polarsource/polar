@@ -28,7 +28,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         auth_subject: AuthSubject[User | Organization],
         customer_create: CustomerSessionCreate,
     ) -> CustomerSession:
-        customer = await customer_service.get_by_id(
+        customer = await customer_service.user_get_by_id(
             session,
             auth_subject,
             customer_create.customer_id,

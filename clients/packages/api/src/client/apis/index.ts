@@ -44,6 +44,7 @@ export * from './PaymentMethodsApi';
 export * from './PersonalAccessTokenApi';
 export * from './PledgesApi';
 export * from './ProductsApi';
+export * from './RefundsApi';
 export * from './RepositoriesApi';
 export * from './RewardsApi';
 export * from './StorefrontsApi';

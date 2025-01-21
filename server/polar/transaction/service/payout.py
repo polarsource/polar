@@ -17,7 +17,7 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.models import Account, Issue, Order, Pledge, Transaction
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.schemas import PayoutEstimate
 from polar.worker import enqueue_job
@@ -173,7 +173,7 @@ class PayoutTransactionService(BaseTransactionService):
                 unpaid_balance_transactions=unpaid_balance_transactions,
             )
         elif account.account_type == AccountType.open_collective:
-            transaction.processor = PaymentProcessor.open_collective
+            transaction.processor = Processor.open_collective
 
         for balance_transaction in unpaid_balance_transactions:
             transaction.paid_transactions.append(balance_transaction)
@@ -271,7 +271,7 @@ class PayoutTransactionService(BaseTransactionService):
 
         transaction = Transaction(
             type=TransactionType.payout,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency="usd",  # FIXME: Main Polar currency
             amount=0,
             account_currency=payout.currency,
@@ -415,7 +415,7 @@ class PayoutTransactionService(BaseTransactionService):
         This function performs the first step and returns the transaction
         with an empty payout_id.
         """
-        transaction.processor = PaymentProcessor.stripe
+        transaction.processor = Processor.stripe
         transfer_group = str(transaction.id)
 
         # Balances that we'll be able to pull money from
@@ -565,7 +565,7 @@ class PayoutTransactionService(BaseTransactionService):
             .distinct(Transaction.account_id)
             .where(
                 Transaction.type == TransactionType.payout,
-                Transaction.processor == PaymentProcessor.stripe,
+                Transaction.processor == Processor.stripe,
                 Transaction.payout_id.is_(None),
                 Transaction.created_at < utc_now() - delay,
             )

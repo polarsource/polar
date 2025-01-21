@@ -1,84 +1,39 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Account, Pledge, Transaction, User
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models import Account, Customer, Product, Transaction, User
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
+from polar.refund.service import refund as refund_service
 from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from polar.transaction.service.refund import (  # type: ignore[attr-defined]
-    RefundUnknownPaymentTransaction,
     processor_fee_transaction_service,
 )
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.transaction.conftest import create_async_iterator, create_transaction
-
-
-def build_stripe_balance_transaction(
-    *,
-    fee: int | None = 100,
-) -> stripe_lib.BalanceTransaction:
-    return stripe_lib.BalanceTransaction.construct_from(
-        {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": fee}, None
-    )
-
-
-def build_stripe_charge(
-    *,
-    amount: int = 1000,
-    customer: str | None = None,
-    invoice: str | None = None,
-    payment_intent: str | None = None,
-    balance_transaction: str | None = None,
-) -> stripe_lib.Charge:
-    return stripe_lib.Charge.construct_from(
-        {
-            "id": "STRIPE_CHARGE_ID",
-            "customer": customer,
-            "currency": "usd",
-            "amount": amount,
-            "invoice": invoice,
-            "payment_intent": payment_intent,
-            "balance_transaction": balance_transaction,
-        },
-        None,
-    )
-
-
-def build_stripe_refund(
-    *,
-    id: str = "STRIPE_REFUND_ID",
-    status: str = "succeeded",
-    amount: int = 100,
-    balance_transaction: str | None = None,
-) -> stripe_lib.Refund:
-    return stripe_lib.Refund.construct_from(
-        {
-            "id": id,
-            "status": status,
-            "currency": "usd",
-            "amount": amount,
-            "balance_transaction": balance_transaction,
-        },
-        None,
-    )
+from tests.fixtures.random_objects import create_order
+from tests.fixtures.stripe import (
+    build_stripe_balance_transaction,
+    build_stripe_charge,
+    build_stripe_refund,
+)
+from tests.transaction.conftest import create_transaction
 
 
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.transaction.service.refund.stripe_service", new=mock)
+    mocker.patch("polar.refund.service.stripe_service", new=mock)
     return mock
 
 
@@ -103,48 +58,25 @@ def create_refund_fees_mock(mocker: MockerFixture) -> AsyncMock:
 
 @pytest.mark.asyncio
 class TestCreateRefunds:
-    async def test_refund_unknown_payment_transaction(
-        self, session: AsyncSession
-    ) -> None:
-        charge = build_stripe_charge()
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(RefundUnknownPaymentTransaction):
-            await refund_transaction_service.create_refunds(session, charge=charge)
-
     async def test_valid(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
-        pledge: Pledge,
+        product: Product,
+        customer: Customer,
         stripe_service_mock: MagicMock,
         balance_transaction_service_mock: MagicMock,
         create_refund_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            amount=charge.amount,
+        )
         balance_transaction = build_stripe_balance_transaction()
-        new_refund = build_stripe_refund(
-            id="NEW_REFUND", balance_transaction=balance_transaction.id
-        )
-        handled_refund = build_stripe_refund(
-            id="HANDLED_REFUND", balance_transaction=balance_transaction.id
-        )
-        failed_refund = build_stripe_refund(
-            id="FAILED_REFUND",
-            status="failed",
-            balance_transaction=balance_transaction.id,
-        )
-
-        stripe_service_mock.list_refunds.return_value = create_async_iterator(
-            [
-                new_refund,
-                handled_refund,
-                failed_refund,
-            ]
-        )
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
 
         account = Account(
@@ -161,40 +93,40 @@ class TestCreateRefunds:
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=charge.amount,
             account_currency=charge.currency,
             account_amount=charge.amount,
             tax_amount=0,
             charge_id=charge.id,
-            pledge=pledge,
+            order=order,
         )
         await save_fixture(payment_transaction)
 
         outgoing_balance_1 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.75,
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.75,
             tax_amount=0,
-            pledge=pledge,
+            order=order,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
         )
         incoming_balance_1 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             account=account,
             currency=charge.currency,
             amount=charge.amount * 0.75,
             account_currency=charge.currency,
             account_amount=charge.amount * 0.75,
             tax_amount=0,
-            pledge=pledge,
+            order=order,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
@@ -204,27 +136,27 @@ class TestCreateRefunds:
 
         outgoing_balance_2 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=-charge.amount * 0.25,
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.25,
             tax_amount=0,
-            pledge=pledge,
+            order=order,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
         )
         incoming_balance_2 = Transaction(
             type=TransactionType.balance,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             account=account,
             currency=charge.currency,
             amount=charge.amount * 0.25,
             account_currency=charge.currency,
             account_amount=charge.amount * 0.25,
             tax_amount=0,
-            pledge=pledge,
+            order=order,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
@@ -232,30 +164,101 @@ class TestCreateRefunds:
         await save_fixture(outgoing_balance_2)
         await save_fixture(incoming_balance_2)
 
-        handled_refund_transaction = Transaction(
-            type=TransactionType.refund,
-            processor=PaymentProcessor.stripe,
-            currency=handled_refund.currency,
-            amount=-handled_refund.amount,
-            account_currency=handled_refund.currency,
-            account_amount=-handled_refund.amount,
-            tax_amount=0,
-            refund_id=handled_refund.id,
-        )
-        await save_fixture(handled_refund_transaction)
-
         # then
         session.expunge_all()
 
-        refund_transactions = await refund_transaction_service.create_refunds(
-            session, charge=charge
+        charge_id = charge["id"]
+        refund_transaction = await refund_transaction_service.get_by(
+            session, type=TransactionType.refund, charge_id=charge_id
+        )
+        assert refund_transaction is None
+        pending_refund = refund_service.build_instance_from_stripe(
+            build_stripe_refund(
+                id="PENDING_REFUND",
+                status="pending",
+                charge_id=charge.id,
+                balance_transaction=balance_transaction.id,
+            ),
+            order=order,
         )
 
-        assert len(refund_transactions) == 1
-        refund_transaction = refund_transactions[0]
+        pending_refund_transaction = await refund_transaction_service.create(
+            session,
+            charge_id=charge_id,
+            payment_transaction=payment_transaction,
+            refund=pending_refund,
+        )
+        assert pending_refund_transaction is None
+        refund_transaction = await refund_transaction_service.get_by(
+            session, type=TransactionType.refund, charge_id=charge_id
+        )
+        assert refund_transaction is None
 
+        failed_refund = refund_service.build_instance_from_stripe(
+            build_stripe_refund(
+                id="FAILED_REFUND",
+                status="failed",
+                charge_id=charge.id,
+                balance_transaction=balance_transaction.id,
+            ),
+            order=order,
+        )
+
+        failed_refund_transaction = await refund_transaction_service.create(
+            session,
+            charge_id=charge_id,
+            payment_transaction=payment_transaction,
+            refund=failed_refund,
+        )
+        assert failed_refund_transaction is None
+        refund_transaction = await refund_transaction_service.get_by(
+            session, type=TransactionType.refund, charge_id=charge_id
+        )
+        assert refund_transaction is None
+
+        new_refund = refund_service.build_instance_from_stripe(
+            build_stripe_refund(
+                id="NEW_REFUND",
+                charge_id=charge.id,
+                balance_transaction=balance_transaction.id,
+            ),
+            order=order,
+        )
+
+        new_refund_transaction = await refund_transaction_service.create(
+            session,
+            charge_id=charge_id,
+            payment_transaction=payment_transaction,
+            refund=new_refund,
+        )
+        assert new_refund_transaction
+        assert new_refund_transaction.id
+
+        existing_refund = refund_service.build_instance_from_stripe(
+            build_stripe_refund(
+                id="NEW_REFUND",
+                charge_id=charge.id,
+                balance_transaction=balance_transaction.id,
+            ),
+            order=order,
+        )
+
+        existing_refund_transaction = await refund_transaction_service.create(
+            session,
+            charge_id=charge_id,
+            payment_transaction=payment_transaction,
+            refund=existing_refund,
+        )
+        assert existing_refund_transaction is None
+
+        charge_id = charge["id"]
+        # By using `get_by` we ensure multiple records would raise too via `one_or_none()`
+        refund_transaction = await refund_transaction_service.get_by(
+            session, type=TransactionType.refund, charge_id=charge_id
+        )
+        assert refund_transaction
         assert refund_transaction.type == TransactionType.refund
-        assert refund_transaction.processor == PaymentProcessor.stripe
+        assert refund_transaction.processor == Processor.stripe
         assert refund_transaction.amount == -new_refund.amount
 
         assert balance_transaction_service_mock.create_reversal_balance.call_count == 2

@@ -1,11 +1,9 @@
 import math
 
-import stripe as stripe_lib
 from sqlalchemy import select
 
-from polar.integrations.stripe.service import stripe as stripe_service
-from polar.models import Transaction
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models import Refund, Transaction
+from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 
 from .balance import balance_transaction as balance_transaction_service
@@ -18,91 +16,69 @@ from .processor_fee import (
 class RefundTransactionError(BaseTransactionServiceError): ...
 
 
-class RefundUnknownPaymentTransaction(RefundTransactionError):
-    def __init__(self, charge_id: str) -> None:
-        self.charge_id = charge_id
-        message = (
-            f"Refund issued for charge {charge_id}, "
-            "but the payment transaction is unknown."
-        )
-        super().__init__(message)
-
-
 class RefundTransactionService(BaseTransactionService):
-    async def create_refunds(
-        self, session: AsyncSession, *, charge: stripe_lib.Charge
-    ) -> list[Transaction]:
-        payment_transaction = await self.get_by(session, charge_id=charge.id)
-        if payment_transaction is None:
-            raise RefundUnknownPaymentTransaction(charge.id)
+    async def get_by_refund_id(
+        self, session: AsyncSession, refund_id: str
+    ) -> Transaction | None:
+        statement = select(Transaction).where(
+            Transaction.type == TransactionType.refund,
+            Transaction.refund_id == refund_id,
+        )
+        result = await session.execute(statement)
+        refund = result.scalars().one_or_none()
+        return refund
 
-        # Get all the refunds for this charge
-        refunds = await stripe_service.list_refunds(charge=charge.id)
+    async def create(
+        self,
+        session: AsyncSession,
+        *,
+        charge_id: str,
+        payment_transaction: Transaction,
+        refund: Refund,
+    ) -> Transaction | None:
+        if not refund.succeeded:
+            return None
 
-        refund_transactions: list[Transaction] = []
-        # Handle each individual refund
-        async for refund in refunds:
-            if refund.status != "succeeded":
-                continue
+        existing = await self.get_by_refund_id(session, refund.processor_id)
+        if existing:
+            return None
 
-            # Already handled that refund before
-            refund_transaction = await self.get_by(
-                session, type=TransactionType.refund, refund_id=refund.id
-            )
-            if refund_transaction is not None:
-                continue
+        refund_transaction = Transaction(
+            type=TransactionType.refund,
+            processor=refund.processor,
+            currency=refund.currency,
+            amount=-refund.amount + refund.tax_amount,
+            account_currency=refund.currency,
+            account_amount=-refund.amount + refund.tax_amount,
+            tax_amount=-refund.tax_amount,
+            tax_country=payment_transaction.tax_country,
+            tax_state=payment_transaction.tax_state,
+            customer_id=payment_transaction.customer_id,
+            charge_id=charge_id,
+            refund_id=refund.processor_id,
+            polar_refund_id=refund.id,
+            payment_customer_id=payment_transaction.payment_customer_id,
+            payment_organization_id=payment_transaction.payment_organization_id,
+            payment_user_id=payment_transaction.payment_user_id,
+            pledge_id=payment_transaction.pledge_id,
+            issue_reward_id=payment_transaction.issue_reward_id,
+            order_id=payment_transaction.order_id,
+        )
 
-            refund_amount = refund.amount
-            total_amount = payment_transaction.amount + payment_transaction.tax_amount
-            tax_refund_amount = abs(
-                int(
-                    math.floor(payment_transaction.tax_amount * refund_amount)
-                    / total_amount
-                )
-            )
+        # Compute and link fees
+        transaction_fees = await processor_fee_transaction_service.create_refund_fees(
+            session, refund=refund, refund_transaction=refund_transaction
+        )
+        refund_transaction.incurred_transactions = transaction_fees
+        session.add(refund_transaction)
 
-            refund_transaction = Transaction(
-                type=TransactionType.refund,
-                processor=PaymentProcessor.stripe,
-                currency=refund.currency,
-                amount=-refund.amount + tax_refund_amount,
-                account_currency=refund.currency,
-                account_amount=-refund.amount + tax_refund_amount,
-                tax_amount=-tax_refund_amount,
-                tax_country=payment_transaction.tax_country,
-                tax_state=payment_transaction.tax_state,
-                customer_id=payment_transaction.customer_id,
-                charge_id=charge.id,
-                refund_id=refund.id,
-                payment_customer_id=payment_transaction.payment_customer_id,
-                payment_organization_id=payment_transaction.payment_organization_id,
-                payment_user_id=payment_transaction.payment_user_id,
-                pledge_id=payment_transaction.pledge_id,
-                issue_reward_id=payment_transaction.issue_reward_id,
-                order_id=payment_transaction.order_id,
-            )
-
-            # Compute and link fees
-            transaction_fees = (
-                await processor_fee_transaction_service.create_refund_fees(
-                    session, refund_transaction=refund_transaction
-                )
-            )
-            refund_transaction.incurred_transactions = transaction_fees
-
-            session.add(refund_transaction)
-            refund_transactions.append(refund_transaction)
-
-            # Create reversal balances if it was already balanced
-            await self._create_reversal_balances(
-                session,
-                payment_transaction=payment_transaction,
-                refund_amount=refund_amount,
-            )
-
-        await session.flush()
-
-        return refund_transactions
+        # Create reversal balances if it was already balanced
+        await self._create_reversal_balances(
+            session,
+            payment_transaction=payment_transaction,
+            refund_amount=refund.amount,
+        )
+        return refund_transaction
 
     async def create_reversal_balances_for_payment(
         self, session: AsyncSession, *, payment_transaction: Transaction

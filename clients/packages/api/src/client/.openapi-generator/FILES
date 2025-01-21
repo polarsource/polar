@@ -42,6 +42,7 @@ apis/PaymentMethodsApi.ts
 apis/PersonalAccessTokenApi.ts
 apis/PledgesApi.ts
 apis/ProductsApi.ts
+apis/RefundsApi.ts
 apis/RepositoriesApi.ts
 apis/RewardsApi.ts
 apis/StorefrontsApi.ts

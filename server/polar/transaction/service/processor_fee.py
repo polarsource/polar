@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from typing import Literal
 
+from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Transaction
-from polar.models.transaction import PaymentProcessor, ProcessorFeeType, TransactionType
+from polar.models import Refund, Transaction
+from polar.models.transaction import Processor, ProcessorFeeType, TransactionType
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
@@ -54,7 +55,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
     ) -> list[Transaction]:
         fee_transactions: list[Transaction] = []
 
-        if payment_transaction.processor != PaymentProcessor.stripe:
+        if payment_transaction.processor != Processor.stripe:
             return fee_transactions
 
         if payment_transaction.charge_id is None:
@@ -69,7 +70,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
             )
             payment_fee_transaction = Transaction(
                 type=TransactionType.processor_fee,
-                processor=PaymentProcessor.stripe,
+                processor=Processor.stripe,
                 processor_fee_type=ProcessorFeeType.payment,
                 currency=payment_transaction.currency,
                 amount=-stripe_balance_transaction.fee,
@@ -89,28 +90,29 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         self,
         session: AsyncSession,
         *,
+        refund: Refund,
         refund_transaction: Transaction,
     ) -> list[Transaction]:
         fee_transactions: list[Transaction] = []
 
-        if refund_transaction.processor != PaymentProcessor.stripe:
+        is_stripe_refund = refund.processor == PaymentProcessor.stripe
+        is_stripe_refund_trx = refund_transaction.processor == Processor.stripe
+        if not (is_stripe_refund and is_stripe_refund_trx):
             return fee_transactions
 
         if refund_transaction.refund_id is None:
             return fee_transactions
 
-        refund = await stripe_service.get_refund(refund_transaction.refund_id)
-
-        if refund.balance_transaction is None:
+        if refund.processor_balance_transaction_id is None:
             return fee_transactions
 
         balance_transaction = await stripe_service.get_balance_transaction(
-            get_expandable_id(refund.balance_transaction)
+            refund.processor_balance_transaction_id,
         )
 
         refund_fee_transaction = Transaction(
             type=TransactionType.processor_fee,
-            processor=PaymentProcessor.stripe,
+            processor=refund_transaction.processor,
             processor_fee_type=ProcessorFeeType.refund,
             currency=refund_transaction.currency,
             amount=-balance_transaction.fee,
@@ -136,7 +138,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
     ) -> list[Transaction]:
         fee_transactions: list[Transaction] = []
 
-        if dispute_transaction.processor != PaymentProcessor.stripe:
+        if dispute_transaction.processor != Processor.stripe:
             return fee_transactions
 
         if dispute_transaction.dispute_id is None:
@@ -150,7 +152,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
             ):
                 dispute_fee_transaction = Transaction(
                     type=TransactionType.processor_fee,
-                    processor=PaymentProcessor.stripe,
+                    processor=Processor.stripe,
                     processor_fee_type=ProcessorFeeType.dispute,
                     currency=dispute_transaction.currency,
                     amount=-balance_transaction.fee,
@@ -190,7 +192,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
             transaction = Transaction(
                 created_at=datetime.fromtimestamp(balance_transaction.created, tz=UTC),
                 type=TransactionType.processor_fee,
-                processor=PaymentProcessor.stripe,
+                processor=Processor.stripe,
                 processor_fee_type=processor_fee_type,
                 currency=balance_transaction.currency,
                 amount=balance_transaction.net,

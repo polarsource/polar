@@ -238,6 +238,25 @@ class OrderService(ResourceServiceReader[Order]):
     async def get_by_id(
         self,
         session: AsyncSession,
+        id: uuid.UUID,
+    ) -> Order | None:
+        statement = (
+            self._get_base_order_statement()
+            .where(Order.id == id)
+            .options(
+                joinedload(Order.customer),
+                joinedload(Order.product_price),
+                joinedload(Order.subscription).joinedload(Subscription.customer),
+                joinedload(Order.discount),
+            )
+        )
+
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
+
+    async def user_get_by_id(
+        self,
+        session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Order | None:
@@ -550,6 +569,20 @@ class OrderService(ResourceServiceReader[Order]):
                 order_id=order.id,
             )
 
+    async def increment_refunds(
+        self,
+        session: AsyncSession,
+        order: Order,
+        *,
+        refunded_amount: int,
+        refunded_tax_amount: int,
+    ) -> Order:
+        order.increment_refunds(
+            refunded_amount, refunded_tax_amount=refunded_tax_amount
+        )
+        session.add(order)
+        return order
+
     async def _create_order_balance(
         self, session: AsyncSession, order: Order, charge_id: str
     ) -> None:
@@ -648,16 +681,19 @@ class OrderService(ResourceServiceReader[Order]):
         assert organization is not None
         await webhook_service.send(session, organization, event)
 
-    def _get_readable_order_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Order]]:
+    def _get_base_order_statement(self) -> Select[tuple[Order]]:
         statement = (
             select(Order)
             .where(Order.deleted_at.is_(None))
             .join(Order.product)
             .options(contains_eager(Order.product))
         )
+        return statement
 
+    def _get_readable_order_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Order]]:
+        statement = self._get_base_order_statement()
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(

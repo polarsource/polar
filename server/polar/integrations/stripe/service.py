@@ -564,17 +564,24 @@ class StripeService:
         result = await stripe_lib.BalanceTransaction.list_async(**params)
         return result.auto_paging_iter()
 
-    async def list_refunds(
+    async def create_refund(
         self,
         *,
-        charge: str | None = None,
-    ) -> AsyncIterator[stripe_lib.Refund]:
-        params: stripe_lib.Refund.ListParams = {"limit": 100}
-        if charge is not None:
-            params["charge"] = charge
+        charge_id: str,
+        amount: int,
+        reason: Literal["duplicate", "requested_by_customer"],
+        metadata: dict[str, str] | None = None,
+    ) -> stripe_lib.Refund:
+        stripe_metadata: Literal[""] | dict[str, str] = ""
+        if metadata is not None:
+            stripe_metadata = metadata
 
-        result = await stripe_lib.Refund.list_async(**params)
-        return result.auto_paging_iter()
+        return await stripe_lib.Refund.create_async(
+            charge=charge_id,
+            amount=amount,
+            reason=reason,
+            metadata=stripe_metadata,
+        )
 
     async def get_charge(
         self,

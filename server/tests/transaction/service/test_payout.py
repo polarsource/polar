@@ -1,4 +1,5 @@
 import datetime
+from functools import partial
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -12,7 +13,7 @@ from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import Account, Organization, Transaction, User
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payout import (
     InsufficientBalance,
@@ -24,6 +25,7 @@ from polar.transaction.service.payout import (
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
+from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import (
     create_account,
@@ -39,75 +41,9 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-async def create_payment_transaction(
-    save_fixture: SaveFixture,
-    *,
-    amount: int = 10000,
-    charge_id: str = "STRIPE_CHARGE_ID",
-) -> Transaction:
-    transaction = Transaction(
-        type=TransactionType.payment,
-        account=None,
-        processor=PaymentProcessor.stripe,
-        currency="usd",
-        amount=amount,
-        account_currency="usd",
-        account_amount=amount,
-        tax_amount=0,
-        charge_id=charge_id,
-    )
-    await save_fixture(transaction)
-    return transaction
-
-
-async def create_refund_transaction(
-    save_fixture: SaveFixture,
-    *,
-    amount: int = -10000,
-    charge_id: str = "STRIPE_CHARGE_ID",
-    refund_id: str = "STRIPE_REFUND_ID",
-) -> Transaction:
-    transaction = Transaction(
-        type=TransactionType.refund,
-        account=None,
-        processor=PaymentProcessor.stripe,
-        currency="usd",
-        amount=amount,
-        account_currency="usd",
-        account_amount=amount,
-        tax_amount=0,
-        charge_id=charge_id,
-        refund_id=refund_id,
-    )
-    await save_fixture(transaction)
-    return transaction
-
-
-async def create_balance_transaction(
-    save_fixture: SaveFixture,
-    *,
-    account: Account,
-    currency: str = "usd",
-    amount: int = 10000,
-    payment_transaction: Transaction | None = None,
-    balance_reversal_transaction: Transaction | None = None,
-    payout_transaction: Transaction | None = None,
-) -> Transaction:
-    transaction = Transaction(
-        type=TransactionType.balance,
-        account=account,
-        processor=None,
-        currency=currency,
-        amount=amount,
-        account_currency=currency,
-        account_amount=amount,
-        tax_amount=0,
-        payment_transaction=payment_transaction,
-        balance_reversal_transaction=balance_reversal_transaction,
-        payout_transaction=payout_transaction,
-    )
-    await save_fixture(transaction)
-    return transaction
+create_payment_transaction = partial(ro.create_payment_transaction, amount=10000)
+create_refund_transaction = partial(ro.create_refund_transaction, amount=-10000)
+create_balance_transaction = partial(ro.create_balance_transaction, amount=10000)
 
 
 @pytest.mark.asyncio
@@ -232,7 +168,7 @@ class TestCreatePayout:
         )
 
         assert payout.account == account
-        assert payout.processor == PaymentProcessor.stripe
+        assert payout.processor == Processor.stripe
         assert payout.payout_id is None
         assert payout.currency == "usd"
         assert payout.amount < 0
@@ -318,7 +254,7 @@ class TestCreatePayout:
         )
 
         assert payout.account == account
-        assert payout.processor == PaymentProcessor.stripe
+        assert payout.processor == Processor.stripe
         assert payout.payout_id is None
         assert payout.currency == "usd"
         assert payout.amount < 0
@@ -402,7 +338,7 @@ class TestCreatePayout:
         )
 
         assert payout.account == account
-        assert payout.processor == PaymentProcessor.stripe
+        assert payout.processor == Processor.stripe
         assert payout.payout_id is None
         assert payout.currency == "usd"
         assert payout.amount < 0
@@ -465,7 +401,7 @@ class TestCreatePayout:
         previous_payout = Transaction(
             type=TransactionType.payout,
             account=account,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency="usd",
             amount=-10000,
             account_currency="usd",
@@ -523,7 +459,7 @@ class TestCreatePayout:
         )
 
         assert payout.account == account
-        assert payout.processor == PaymentProcessor.stripe
+        assert payout.processor == Processor.stripe
         assert payout.payout_id is None
         assert payout.currency == "usd"
         assert payout.amount < 0
@@ -585,7 +521,7 @@ class TestCreatePayout:
         )
 
         assert payout.account == account
-        assert payout.processor == PaymentProcessor.open_collective
+        assert payout.processor == Processor.open_collective
         assert payout.currency == "usd"
         assert payout.amount == -balance_transaction.amount
         assert payout.account_currency == "usd"
@@ -626,9 +562,11 @@ def build_stripe_balance_transaction(
         {
             "id": "STRIPE_BALANCE_TRANSACTION_ID",
             "fee": fee,
-            "source": {"source_transfer": source_transfer}
-            if source_transfer is not None
-            else None,
+            "source": (
+                {"source_transfer": source_transfer}
+                if source_transfer is not None
+                else None
+            ),
         },
         None,
     )
@@ -681,7 +619,7 @@ class TestCreatePayoutFromStripe:
 
         transaction_params = {
             "type": TransactionType.balance,
-            "processor": PaymentProcessor.stripe,
+            "processor": Processor.stripe,
             "currency": "usd",
             "amount": 1000,
             "account_currency": "usd",
@@ -718,7 +656,7 @@ class TestCreatePayoutFromStripe:
         )
 
         assert transaction.type == TransactionType.payout
-        assert transaction.processor == PaymentProcessor.stripe
+        assert transaction.processor == Processor.stripe
         assert transaction.currency == stripe_payout.currency
         assert transaction.amount == -stripe_payout.amount
         assert transaction.tax_amount == 0
@@ -755,7 +693,7 @@ class TestCreatePayoutFromStripe:
 
         transaction_params = {
             "type": TransactionType.balance,
-            "processor": PaymentProcessor.stripe,
+            "processor": Processor.stripe,
             "currency": "usd",
             "amount": 1000,
             "account_currency": "eur",
@@ -793,7 +731,7 @@ class TestCreatePayoutFromStripe:
         )
 
         assert transaction.type == TransactionType.payout
-        assert transaction.processor == PaymentProcessor.stripe
+        assert transaction.processor == Processor.stripe
         assert transaction.currency == "usd"
         assert transaction.amount == -sum(
             transaction.amount for transaction in transactions

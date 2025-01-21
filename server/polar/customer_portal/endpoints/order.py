@@ -1,7 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, Path, Query
-from pydantic import UUID4
+from fastapi import Depends, Query
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
@@ -11,10 +10,12 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
+from polar.order.schemas import OrderID
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
 from ..schemas.order import CustomerOrder, CustomerOrderInvoice
@@ -23,7 +24,6 @@ from ..service.order import customer_order as customer_order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
 
-OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 
 ListSorting = Annotated[
@@ -53,7 +53,7 @@ async def list(
             "`one_time` will return orders corresponding to one-time purchases."
         ),
     ),
-    subscription_id: MultipleQueryFilter[UUID4] | None = Query(
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
     query: str | None = Query(

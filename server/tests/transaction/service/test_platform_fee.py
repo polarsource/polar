@@ -19,8 +19,8 @@ from polar.models import (
     User,
 )
 from polar.models.transaction import (
-    PaymentProcessor,
     PlatformFeeType,
+    Processor,
     ProcessorFeeType,
     TransactionType,
 )
@@ -44,7 +44,7 @@ async def create_balance_transactions(
 ) -> tuple[Transaction, Transaction]:
     payment_transaction = Transaction(
         type=TransactionType.payment,
-        processor=PaymentProcessor.stripe,
+        processor=Processor.stripe,
         currency="usd",
         amount=10000,
         account_currency="usd",
@@ -59,7 +59,7 @@ async def create_balance_transactions(
 
     payment_transaction_fee = Transaction(
         type=TransactionType.processor_fee,
-        processor=PaymentProcessor.stripe,
+        processor=Processor.stripe,
         currency="usd",
         amount=-500,
         account_currency="usd",
@@ -505,7 +505,7 @@ class TestCreateDisputeFeesBalances:
 
         dispute_fee = Transaction(
             type=TransactionType.processor_fee,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             processor_fee_type=ProcessorFeeType.dispute,
             currency="usd",
             amount=-1500,
@@ -613,7 +613,7 @@ class TestCreatePayoutFeesBalances:
             payout_transaction = Transaction(
                 created_at=payout_created_at,
                 type=TransactionType.payout,
-                processor=PaymentProcessor.stripe,
+                processor=Processor.stripe,
                 currency="usd",
                 amount=-10000,
                 account_currency="usd",
@@ -657,7 +657,7 @@ class TestCreatePayoutFeesBalances:
         payout_transaction = Transaction(
             created_at=datetime.now(UTC) - timedelta(days=7),
             type=TransactionType.payout,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency="usd",
             amount=-10000,
             account_currency="usd",

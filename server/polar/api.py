@@ -40,6 +40,7 @@ from polar.payment_method.endpoints import router as payment_method_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.pledge.endpoints import router as pledge_router
 from polar.product.endpoints import router as product_router
+from polar.refund.endpoints import router as refund_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
 from polar.storefront.endpoints import router as storefront_router
@@ -109,6 +110,8 @@ router.include_router(webhook_router)
 router.include_router(product_router)
 # /orders
 router.include_router(order_router)
+# /refunds
+router.include_router(refund_router)
 # /checkouts/custom
 router.include_router(checkout_router)
 # /checkouts

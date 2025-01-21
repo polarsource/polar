@@ -2,10 +2,10 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 import structlog
-from fastapi import Depends, Path, Query, Response
+from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
-from pydantic import UUID4
 
+from polar.customer.schemas import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import (
     IterableCSVWriter,
@@ -22,7 +22,7 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionUpdate
+from .schemas import SubscriptionID, SubscriptionUpdate
 from .service import AlreadyCanceledSubscription, SubscriptionSortProperty
 from .service import subscription as subscription_service
 
@@ -30,7 +30,6 @@ log = structlog.get_logger()
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.documented])
 
-SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 SubscriptionNotFound = {
     "description": "Subscription not found.",
     "model": ResourceNotFound.schema(),
@@ -56,7 +55,7 @@ async def list(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
-    customer_id: MultipleQueryFilter[UUID4] | None = Query(
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
     discount_id: MultipleQueryFilter[ProductID] | None = Query(

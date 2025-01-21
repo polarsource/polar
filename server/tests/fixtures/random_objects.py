@@ -27,6 +27,7 @@ from polar.models import (
     Discount,
     DiscountProduct,
     ExternalOrganization,
+    IssueReward,
     Order,
     Organization,
     Product,
@@ -36,8 +37,10 @@ from polar.models import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    Refund,
     Repository,
     Subscription,
+    Transaction,
     User,
     UserOrganization,
 )
@@ -71,6 +74,7 @@ from polar.models.order import OrderBillingReason
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import HasPriceCurrency, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
+from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
 from tests.fixtures.database import SaveFixture
 
@@ -337,6 +341,7 @@ async def create_pledge(
     pledging_user: User | None = None,
     state: PledgeState = PledgeState.created,
     type: PledgeType = PledgeType.pay_upfront,
+    payment_id: str = "STRIPE_PAYMENT_INTENT",
 ) -> Pledge:
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
@@ -352,6 +357,7 @@ async def create_pledge(
         fee=fee,
         state=state,
         type=type,
+        payment_id=payment_id,
         invoice_id="INVOICE_ID" if type == PledgeType.pay_on_completion else None,
     )
     await save_fixture(pledge)
@@ -900,6 +906,27 @@ async def create_order(
     return order
 
 
+async def create_order_and_payment(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    customer: Customer,
+    amount: int,
+    tax_amount: int,
+) -> tuple[Order, Transaction]:
+    order = await create_order(
+        save_fixture,
+        product=product,
+        customer=customer,
+        amount=amount,
+        tax_amount=tax_amount,
+    )
+    payment = await create_payment_transaction(
+        save_fixture, amount=amount, tax_amount=tax_amount, order=order
+    )
+    return order, payment
+
+
 async def create_benefit(
     save_fixture: SaveFixture,
     *,
@@ -1375,6 +1402,38 @@ async def create_benefit_grant(
     return grant
 
 
+async def create_refund(
+    save_fixture: SaveFixture,
+    order: Order,
+    *,
+    status: str = "succeeded",
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    amount: int = 1000,
+    tax_amount: int = 0,
+    reason: str = "customer_request",
+    processor_id: str = "STRIPE_REFUND_ID",
+    processor_reason: str = "requested_by_customer",
+    processor_balance_transaction_id: str = "STRIPE_BALANCE_TRANSACTION_ID",
+) -> Refund:
+    refund = Refund(
+        status=status,
+        reason=reason,
+        amount=amount,
+        tax_amount=tax_amount,
+        currency="usd",
+        order_id=order.id,
+        subscription_id=order.subscription_id,
+        customer_id=order.customer_id,
+        organization_id=order.product.organization_id,
+        processor=processor,
+        processor_id=processor_id,
+        processor_reason=processor_reason,
+        processor_balance_transaction_id=processor_balance_transaction_id,
+    )
+    await save_fixture(refund)
+    return refund
+
+
 async def create_advertisement_campaign(
     save_fixture: SaveFixture, *, user: User
 ) -> AdvertisementCampaign:
@@ -1386,3 +1445,120 @@ async def create_advertisement_campaign(
     )
     await save_fixture(advertisement_campaign)
     return advertisement_campaign
+
+
+async def create_payment_transaction(
+    save_fixture: SaveFixture,
+    *,
+    processor: Processor = Processor.stripe,
+    currency: str = "usd",
+    amount: int = 1000,
+    tax_amount: int = 0,
+    charge_id: str | None = "STRIPE_CHARGE_ID",
+    pledge: Pledge | None = None,
+    order: Order | None = None,
+    issue_reward: IssueReward | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.payment,
+        account=None,
+        processor=processor,
+        currency=currency,
+        amount=amount,
+        tax_amount=tax_amount,
+        account_currency=currency,
+        account_amount=amount,
+        charge_id=charge_id,
+        pledge=pledge,
+        order=order,
+        issue_reward=issue_reward,
+    )
+    await save_fixture(transaction)
+    return transaction
+
+
+async def create_refund_transaction(
+    save_fixture: SaveFixture,
+    *,
+    processor: Processor = Processor.stripe,
+    amount: int = -1000,
+    charge_id: str = "STRIPE_CHARGE_ID",
+    refund_id: str | None = "STRIPE_REFUND_ID",
+    pledge: Pledge | None = None,
+    order: Order | None = None,
+    issue_reward: IssueReward | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.refund,
+        account=None,
+        processor=processor,
+        currency="usd",
+        amount=amount,
+        account_currency="usd",
+        account_amount=amount,
+        tax_amount=0,
+        charge_id=charge_id,
+        refund_id=refund_id,
+        pledge=pledge,
+        order=order,
+        issue_reward=issue_reward,
+    )
+    await save_fixture(transaction)
+    return transaction
+
+
+async def create_dispute_transaction(
+    save_fixture: SaveFixture,
+    *,
+    processor: Processor = Processor.stripe,
+    currency: str = "usd",
+    amount: int = 1000,
+    charge_id: str | None = "STRIPE_CHARGE_ID",
+    dispute_id: str | None = "STRIPE_DISPUTE_ID",
+    pledge: Pledge | None = None,
+    order: Order | None = None,
+    issue_reward: IssueReward | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.dispute,
+        processor=processor,
+        currency=currency,
+        amount=amount,
+        account_currency=currency,
+        account_amount=amount,
+        tax_amount=0,
+        charge_id=charge_id,
+        dispute_id=dispute_id,
+        pledge=pledge,
+        order=order,
+        issue_reward=issue_reward,
+    )
+    await save_fixture(transaction)
+    return transaction
+
+
+async def create_balance_transaction(
+    save_fixture: SaveFixture,
+    *,
+    account: Account,
+    currency: str = "usd",
+    amount: int = 1000,
+    payment_transaction: Transaction | None = None,
+    balance_reversal_transaction: Transaction | None = None,
+    payout_transaction: Transaction | None = None,
+) -> Transaction:
+    transaction = Transaction(
+        type=TransactionType.balance,
+        account=account,
+        processor=None,
+        currency=currency,
+        amount=amount,
+        account_currency=currency,
+        account_amount=amount,
+        tax_amount=0,
+        payment_transaction=payment_transaction,
+        balance_reversal_transaction=balance_reversal_transaction,
+        payout_transaction=payout_transaction,
+    )
+    await save_fixture(transaction)
+    return transaction

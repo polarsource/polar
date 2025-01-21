@@ -12,7 +12,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.endpoints import (  # type: ignore[attr-defined]
     payout_transaction_service,
@@ -176,7 +176,7 @@ class TestCreatePayout:
     ) -> None:
         payout = Transaction(
             type=TransactionType.payout,
-            processor=PaymentProcessor.open_collective,
+            processor=Processor.open_collective,
             currency="usd",  # FIXME: Main Polar currency
             amount=-1000,
             account_currency=account.currency,

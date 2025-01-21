@@ -1,4 +1,5 @@
 from typing import cast
+from uuid import UUID
 
 import stripe as stripe_lib
 from sqlalchemy import select
@@ -7,7 +8,7 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Organization, Pledge, Transaction, User
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 
@@ -32,13 +33,32 @@ class PledgeDoesNotExist(PaymentTransactionError):
 
 
 class PaymentTransactionService(BaseTransactionService):
+    async def get_by_charge_id(
+        self, session: AsyncSession, charge_id: str
+    ) -> Transaction | None:
+        statement = select(Transaction).where(
+            Transaction.type == TransactionType.payment,
+            Transaction.charge_id == charge_id,
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_by_order_id(
+        self, session: AsyncSession, order_id: UUID
+    ) -> Transaction | None:
+        return await self.get_by(
+            session,
+            type=TransactionType.payment,
+            order_id=order_id,
+        )
+
     async def create_payment(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> Transaction:
         pledge: Pledge | None = None
 
         # Make sure we don't already have this transaction
-        existing_transaction = await self._get_by_charge_id(session, charge.id)
+        existing_transaction = await self.get_by_charge_id(session, charge.id)
         if existing_transaction is not None:
             return existing_transaction
 
@@ -90,7 +110,7 @@ class PaymentTransactionService(BaseTransactionService):
         risk = getattr(charge, "outcome", {})
         transaction = Transaction(
             type=TransactionType.payment,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=charge.currency,
             amount=charge.amount - tax_amount,
             account_currency=charge.currency,
@@ -120,16 +140,6 @@ class PaymentTransactionService(BaseTransactionService):
         await session.flush()
 
         return transaction
-
-    async def _get_by_charge_id(
-        self, session: AsyncSession, charge_id: str
-    ) -> Transaction | None:
-        statement = select(Transaction).where(
-            Transaction.type == TransactionType.payment,
-            Transaction.charge_id == charge_id,
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
 
 
 payment_transaction = PaymentTransactionService(Transaction)

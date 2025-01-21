@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Transaction
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 
 from .balance import balance_transaction as balance_transaction_service
@@ -63,7 +63,7 @@ class DisputeTransactionService(BaseTransactionService):
         # Create the dispute, i.e. the transaction withdrawing the amount
         dispute_transaction = Transaction(
             type=TransactionType.dispute,
-            processor=PaymentProcessor.stripe,
+            processor=Processor.stripe,
             currency=dispute.currency,
             amount=-dispute.amount + tax_refund_amount,
             account_currency=dispute.currency,
@@ -93,7 +93,7 @@ class DisputeTransactionService(BaseTransactionService):
         if dispute.status == "won":
             dispute_reversal_transaction = Transaction(
                 type=TransactionType.dispute_reversal,
-                processor=PaymentProcessor.stripe,
+                processor=Processor.stripe,
                 currency=dispute.currency,
                 amount=dispute.amount - tax_refund_amount,
                 account_currency=dispute.currency,

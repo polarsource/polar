@@ -764,7 +764,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 transaction_id=transaction_id,
             )
         )
-        await session.commit()
         await self.after_pledge_updated(session, pledge)
 
     async def mark_charge_disputed_by_payment_id(
@@ -1270,9 +1269,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
             sum_pledges = sum([p.amount for p in pledges])
 
             funding = Funding(
-                funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
-                if i.funding_goal
-                else None,
+                funding_goal=(
+                    CurrencyAmount(currency="USD", amount=i.funding_goal)
+                    if i.funding_goal
+                    else None
+                ),
                 pledges_sum=CurrencyAmount(currency="USD", amount=sum_pledges),
             )
 

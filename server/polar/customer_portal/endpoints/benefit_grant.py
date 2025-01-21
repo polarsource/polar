@@ -11,9 +11,11 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import BenefitGrant
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag
+from polar.order.schemas import OrderID
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
+from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
 from ..schemas.benefit_grant import (
@@ -64,10 +66,10 @@ async def list(
     checkout_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="CheckoutID Filter", description="Filter by checkout ID."
     ),
-    order_id: MultipleQueryFilter[UUID4] | None = Query(
+    order_id: MultipleQueryFilter[OrderID] | None = Query(
         None, title="OrderID Filter", description="Filter by order ID."
     ),
-    subscription_id: MultipleQueryFilter[UUID4] | None = Query(
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
     session: AsyncSession = Depends(get_db_session),

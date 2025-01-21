@@ -1,8 +1,7 @@
-from typing import Annotated
-
-from fastapi import Depends, Path, Query
+from fastapi import Depends, Query
 from pydantic import UUID4
 
+from polar.customer.schemas import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -16,14 +15,10 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema
-from .schemas import OrderInvoice
+from .schemas import OrderID, OrderInvoice, OrderNotFound
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
-
-
-OrderID = Annotated[UUID4, Path(description="The order ID.")]
-OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 
 
 @router.get("/", summary="List Orders", response_model=ListResource[OrderSchema])
@@ -50,7 +45,7 @@ async def list(
     discount_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
-    customer_id: MultipleQueryFilter[UUID4] | None = Query(
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -87,7 +82,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Get an order by ID."""
-    order = await order_service.get_by_id(session, auth_subject, id)
+    order = await order_service.user_get_by_id(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()
@@ -107,7 +102,7 @@ async def invoice(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrderInvoice:
     """Get an order's invoice data."""
-    order = await order_service.get_by_id(session, auth_subject, id)
+    order = await order_service.user_get_by_id(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()

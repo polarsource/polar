@@ -3,7 +3,7 @@ from pytest_mock import MockerFixture
 
 from polar.account.service import account as account_service
 from polar.models import Account, Transaction, User
-from polar.models.transaction import PaymentProcessor, TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from tests.account.conftest import create_account
 from tests.fixtures.database import SaveFixture
@@ -14,7 +14,7 @@ async def create_transaction(
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.balance,
-        processor=PaymentProcessor.stripe,
+        processor=Processor.stripe,
         currency="usd",
         amount=amount,
         account_currency="eur",

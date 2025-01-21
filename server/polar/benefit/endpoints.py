@@ -1,7 +1,7 @@
 from fastapi import Depends, Query
-from pydantic import UUID4
 
 from polar.authz.service import Authz
+from polar.customer.schemas import CustomerID
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -100,7 +100,7 @@ async def grants(
             "If `false`, only revoked benefits will be returned. "
         ),
     ),
-    customer_id: MultipleQueryFilter[UUID4] | None = Query(
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer."
     ),
     session: AsyncSession = Depends(get_db_session),

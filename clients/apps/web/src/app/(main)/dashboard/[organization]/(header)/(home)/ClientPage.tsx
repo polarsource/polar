@@ -120,7 +120,7 @@ const IntegrationView = () => {
             <SyntaxHighlighterProvider>
               <SyntaxHighlighterClient
                 lang="javascript"
-                code={`import { Polar } from "@polar-sh/api";
+                code={`import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
   accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",

@@ -5,8 +5,8 @@ import {
   AuthorizeOrganization,
   AuthorizeResponseOrganization,
 } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
 const OrganizationSelectionPage = ({

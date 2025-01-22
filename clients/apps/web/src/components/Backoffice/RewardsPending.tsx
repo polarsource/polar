@@ -13,8 +13,8 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

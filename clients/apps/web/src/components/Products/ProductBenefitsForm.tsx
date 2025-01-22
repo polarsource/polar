@@ -8,8 +8,8 @@ import {
   RemoveOutlined,
 } from '@mui/icons-material'
 import { type Benefit, BenefitType, Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Switch from '@polar-sh/ui/components/atoms/switch'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   DropdownMenu,
   DropdownMenuContent,

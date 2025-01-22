@@ -28,27 +28,27 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@polar-sh/ui/components/atoms/accordion'
-import Button from '@polar-sh/ui/components/atoms/button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
-import Input from '@polar-sh/ui/components/atoms/input'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
-import Pill from '@polar-sh/ui/components/atoms/pill'
+} from '@polar-sh/ui/components/atoms/Accordion'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
-import Switch from '@polar-sh/ui/components/atoms/switch'
+} from '@polar-sh/ui/components/atoms/Select'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/Tabs'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,

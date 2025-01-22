@@ -5,7 +5,7 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import { Issue, Organization } from '@polar-sh/api'
-import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/tabs'
+import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'

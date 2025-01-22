@@ -13,14 +13,14 @@ import {
   TransactionEmbedded,
   TransactionType,
 } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
   ReactQueryLoading,
-} from '@polar-sh/ui/components/atoms/datatable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
+} from '@polar-sh/ui/components/atoms/DataTable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useMemo } from 'react'

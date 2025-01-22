@@ -9,8 +9,8 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import TextArea from '@polar-sh/ui/components/atoms/textarea'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   Form,
   FormControl,

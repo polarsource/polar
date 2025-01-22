@@ -9,7 +9,7 @@ import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { Organization } from '@polar-sh/api'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useState } from 'react'
 

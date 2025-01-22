@@ -10,9 +10,9 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   Form,
   FormField,

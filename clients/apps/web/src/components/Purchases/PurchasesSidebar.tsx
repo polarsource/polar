@@ -8,7 +8,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { BenefitType, ProductPriceType } from '@polar-sh/api'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link, { LinkProps } from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PropsWithChildren, useMemo } from 'react'

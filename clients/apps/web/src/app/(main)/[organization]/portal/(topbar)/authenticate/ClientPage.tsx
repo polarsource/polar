@@ -4,15 +4,15 @@ import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { useRouter } from 'next/navigation'
 
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from '@polar-sh/ui/components/atoms/input-otp'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+} from '@polar-sh/ui/components/atoms/InputOTP'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
 import {
   Form,

@@ -14,17 +14,17 @@ import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import Button from '@polar-sh/ui/components/atoms/button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
-import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/tabs'
-import TextArea from '@polar-sh/ui/components/atoms/textarea'
+} from '@polar-sh/ui/components/atoms/Tabs'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import Banner from '@polar-sh/ui/components/molecules/banner'
 import {
   formatCurrencyAndAmount,

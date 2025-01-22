@@ -1,4 +1,4 @@
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 
 const testimonials = [

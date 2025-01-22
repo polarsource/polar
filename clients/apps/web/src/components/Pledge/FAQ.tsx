@@ -3,7 +3,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@polar-sh/ui/components/atoms/accordion'
+} from '@polar-sh/ui/components/atoms/Accordion'
 import type { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 

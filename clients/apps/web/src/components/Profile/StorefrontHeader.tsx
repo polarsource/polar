@@ -3,7 +3,7 @@
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import { Organization, Platforms } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'

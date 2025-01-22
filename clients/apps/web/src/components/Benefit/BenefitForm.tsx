@@ -8,8 +8,8 @@ import {
   BenefitType,
   Organization,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
@@ -19,8 +19,8 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import TextArea from '@polar-sh/ui/components/atoms/textarea'
+} from '@polar-sh/ui/components/atoms/Select'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   FormControl,
   FormDescription,

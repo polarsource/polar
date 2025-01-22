@@ -6,13 +6,13 @@ import { StarIcon } from '@heroicons/react/20/solid'
 import { StarIcon as StarIconOutlined } from '@heroicons/react/24/outline'
 import { DragIndicatorOutlined, HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 

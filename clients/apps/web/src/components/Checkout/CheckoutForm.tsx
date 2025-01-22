@@ -12,10 +12,10 @@ import {
   CheckoutUpdatePublic,
 } from '@polar-sh/api'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import Button from '@polar-sh/ui/components/atoms/button'
-import CountryPicker from '@polar-sh/ui/components/atoms/country-picker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/country-state-picker'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
+import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Form,
   FormControl,

@@ -15,7 +15,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'

@@ -3,7 +3,7 @@
 import { usePostHog } from '@/hooks/posthog'
 import { KeyboardArrowRight } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'

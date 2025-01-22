@@ -1,4 +1,4 @@
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import React, {
   FunctionComponent,

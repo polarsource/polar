@@ -3,8 +3,8 @@
 import { parseGitHubIssueLink } from '@/utils/github'
 import { useRouter } from 'next/navigation'
 
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 import WhiteCard from '../Cards/WhiteCard'
 import HowItWorks from './HowItWorks'

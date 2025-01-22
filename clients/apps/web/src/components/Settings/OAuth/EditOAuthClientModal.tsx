@@ -11,8 +11,8 @@ import {
   OAuth2ClientConfigurationUpdate,
   ResponseError,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'

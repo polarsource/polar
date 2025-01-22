@@ -7,8 +7,8 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { Issue, Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { usePathname, useRouter } from 'next/navigation'

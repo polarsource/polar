@@ -9,17 +9,17 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@polar-sh/ui/components/atoms/accordion'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
+} from '@polar-sh/ui/components/atoms/Accordion'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import Switch from '@polar-sh/ui/components/atoms/switch'
+} from '@polar-sh/ui/components/atoms/Select'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   FormControl,
   FormDescription,

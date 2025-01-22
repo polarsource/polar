@@ -1,7 +1,7 @@
 import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
 import { CustomField } from '@polar-sh/api'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
-import TextArea from '@polar-sh/ui/components/atoms/textarea'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 
 const numberFormat = new Intl.NumberFormat(undefined, {})
 

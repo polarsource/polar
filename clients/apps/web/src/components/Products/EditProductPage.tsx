@@ -12,7 +12,7 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

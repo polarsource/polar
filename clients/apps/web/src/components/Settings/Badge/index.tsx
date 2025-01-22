@@ -14,9 +14,9 @@ import {
   type OrganizationBadgeSettingsUpdate,
   type RepositoryBadgeSettingsRead,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'

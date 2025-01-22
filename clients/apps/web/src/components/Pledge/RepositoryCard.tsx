@@ -1,7 +1,7 @@
 import { githubRepoUrl } from '@/utils/github'
 import { formatStarsNumber } from '@/utils/stars'
 import { Organization, type Repository } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import GrayCard from '../Cards/GrayCard'
 
 const prettyURL = (url: string): string => {

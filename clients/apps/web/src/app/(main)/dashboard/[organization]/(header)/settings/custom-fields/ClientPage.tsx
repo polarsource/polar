@@ -15,12 +15,12 @@ import {
 } from '@/utils/datatable'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { CustomField, CustomFieldType, Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
   DropdownMenuContent,

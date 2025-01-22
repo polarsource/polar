@@ -5,7 +5,7 @@ import {
   PanoramaOutlined,
 } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
 import { useRef, useState } from 'react'

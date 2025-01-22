@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronLeftRounded, ChevronRightRounded } from '@mui/icons-material'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useState } from 'react'
 

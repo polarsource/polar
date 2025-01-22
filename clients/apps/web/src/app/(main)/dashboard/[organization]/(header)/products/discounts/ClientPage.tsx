@@ -17,13 +17,13 @@ import {
 import { getDiscountDisplay } from '@/utils/discount'
 import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
 import { Discount, Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/datatable'
-import Input from '@polar-sh/ui/components/atoms/input'
+} from '@polar-sh/ui/components/atoms/DataTable'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   DropdownMenu,
   DropdownMenuContent,

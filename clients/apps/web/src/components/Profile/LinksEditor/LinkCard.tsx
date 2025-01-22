@@ -12,7 +12,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

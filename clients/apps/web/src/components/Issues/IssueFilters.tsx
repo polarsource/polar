@@ -3,7 +3,7 @@
 import { DropdownMenuCheckboxItemProps } from '@radix-ui/react-dropdown-menu'
 import * as React from 'react'
 
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

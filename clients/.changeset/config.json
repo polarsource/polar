@@ -10,7 +10,6 @@
   "ignore": [
     "web",
     "@examples/checkout-embed",
-    "eslint-config-custom",
     "@polar-sh/api"
   ]
 }

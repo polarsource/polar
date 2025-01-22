@@ -14,23 +14,23 @@ import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/api'
-import Image from 'next/image'
-import Avatar from 'polarkit/components/atoms/avatar'
-import Button from 'polarkit/components/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
-import MoneyInput from 'polarkit/components/atoms/money-input'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Button from '@polar-sh/ui/components/atoms/button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
+import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/atoms/tabs'
-import TextArea from 'polarkit/components/atoms/textarea'
-import Banner from 'polarkit/components/molecules/banner'
+} from '@polar-sh/ui/components/atoms/tabs'
+import TextArea from '@polar-sh/ui/components/atoms/textarea'
+import Banner from '@polar-sh/ui/components/molecules/banner'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
-} from 'polarkit/lib/money'
+} from '@polar-sh/ui/lib/money'
+import Image from 'next/image'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

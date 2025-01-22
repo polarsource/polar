@@ -5,7 +5,7 @@ import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
 import { Pledge, PledgeState, PledgeType } from '@polar-sh/api'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 

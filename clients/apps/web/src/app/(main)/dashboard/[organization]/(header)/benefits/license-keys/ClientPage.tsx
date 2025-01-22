@@ -17,22 +17,22 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { Organization } from '@polar-sh/api'
-import {
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
-import Avatar from 'polarkit/components/atoms/avatar'
-import Button from 'polarkit/components/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Button from '@polar-sh/ui/components/atoms/button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/select'
+import {
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
+import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
 export const ClientPage = ({

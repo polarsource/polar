@@ -17,20 +17,20 @@ import {
 import { getDiscountDisplay } from '@/utils/discount'
 import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
 import { Discount, Organization } from '@polar-sh/api'
-import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
-import Input from 'polarkit/components/atoms/input'
+} from '@polar-sh/ui/components/atoms/datatable'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 
 interface ClientPageProps {

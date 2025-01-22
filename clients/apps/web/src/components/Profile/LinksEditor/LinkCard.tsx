@@ -7,13 +7,13 @@ import {
   LanguageOutlined,
   X,
 } from '@mui/icons-material'
-import Link from 'next/link'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/card'
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Link as LinkItem } from './LinksEditor'

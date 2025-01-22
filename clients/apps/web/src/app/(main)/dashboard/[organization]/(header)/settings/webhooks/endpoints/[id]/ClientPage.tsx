@@ -11,9 +11,9 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { Organization } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { useParams } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export default function ClientPage({
   organization,

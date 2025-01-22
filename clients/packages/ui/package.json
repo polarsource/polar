@@ -1,17 +1,51 @@
 {
-  "name": "polarkit",
+  "name": "@polar-sh/ui",
   "version": "0.0.4",
-  "private": true,
   "exports": {
-    "./components/atoms": {
-      "source": "./src/components/atoms/index.ts",
-      "types": "./dist/components/atoms.d.ts",
-      "default": "./dist/components/atoms.js"
-    },
     "./components/atoms/accordion": {
       "source": "./src/components/atoms/Accordion.tsx",
       "types": "./dist/components/atoms/accordion.d.ts",
       "default": "./dist/components/atoms/accordion.js"
+    },
+    "./components/atoms/formatted-date-time": {
+      "source": "./src/components/atoms/FormattedDateTime.tsx",
+      "types": "./dist/components/atoms/formatted-date-time.d.ts",
+      "default": "./dist/components/atoms/formatted-date-time.js"
+    },
+    "./components/atoms/issue-body-renderer": {
+      "source": "./src/components/atoms/IssueBodyRenderer.tsx",
+      "types": "./dist/components/atoms/issue-body-renderer.d.ts",
+      "default": "./dist/components/atoms/issue-body-renderer.js"
+    },
+    "./components/atoms/labeled-radio-button": {
+      "source": "./src/components/atoms/LabeledRadioButton.tsx",
+      "types": "./dist/components/atoms/labeled-radio-button.d.ts",
+      "default": "./dist/components/atoms/labeled-radio-button.js"
+    },
+    "./components/atoms/labeled-separator": {
+      "source": "./src/components/atoms/LabeledSeparator.tsx",
+      "types": "./dist/components/atoms/labeled-separator.d.ts",
+      "default": "./dist/components/atoms/labeled-separator.js"
+    },
+    "./components/atoms/paginator": {
+      "source": "./src/components/atoms/Paginator.tsx",
+      "types": "./dist/components/atoms/paginator.d.ts",
+      "default": "./dist/components/atoms/paginator.js"
+    },
+    "./components/atoms/pill": {
+      "source": "./src/components/atoms/Pill.tsx",
+      "types": "./dist/components/atoms/pill.d.ts",
+      "default": "./dist/components/atoms/pill.js"
+    },
+    "./components/atoms/polar-time-ago": {
+      "source": "./src/components/atoms/PolarTimeAgo.tsx",
+      "types": "./dist/components/atoms/polar-time-ago.d.ts",
+      "default": "./dist/components/atoms/polar-time-ago.js"
+    },
+    "./components/atoms/shadow-list-group": {
+      "source": "./src/components/atoms/ShadowListGroup.tsx",
+      "types": "./dist/components/atoms/shadow-list-group.d.ts",
+      "default": "./dist/components/atoms/shadow-list-group.js"
     },
     "./components/atoms/alert": {
       "source": "./src/components/atoms/Alert.tsx",

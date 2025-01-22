@@ -1,10 +1,10 @@
 import useDebouncedCallback from '@/hooks/utils'
-import Link from 'next/link'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from 'polarkit/components/ui/popover'
+} from '@polar-sh/ui/components/ui/popover'
+import Link from 'next/link'
 import { useState } from 'react'
 
 const PopoverLinkItem = ({

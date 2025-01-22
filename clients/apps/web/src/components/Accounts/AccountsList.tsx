@@ -4,7 +4,7 @@ import {
 } from '@/utils/account'
 import { api } from '@/utils/api'
 import { Account, Status } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import AccountAssociations from './AccountAssociations'
 

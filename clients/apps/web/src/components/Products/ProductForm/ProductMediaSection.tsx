@@ -7,7 +7,7 @@ import {
   FormField,
   FormItem,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
 import ProductMediasField from '../ProductMediasField'
 import { ProductFormType } from './ProductForm'

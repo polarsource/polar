@@ -1,4 +1,4 @@
-# polarkit
+# @polar-sh/ui
 
 ## 0.0.4
 

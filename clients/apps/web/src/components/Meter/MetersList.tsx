@@ -1,18 +1,18 @@
 import { Meter } from '@/app/api/meters/data'
 import { DataTableSortingState } from '@/utils/datatable'
 import {
+  DataTable,
+  DataTableColumnDef,
+  DataTableColumnHeader,
+} from '@polar-sh/ui/components/atoms/datatable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
+import { Status } from '@polar-sh/ui/components/atoms/status'
+import {
   OnChangeFn,
   PaginationState,
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import { FormattedDateTime } from 'polarkit/components/atoms'
-import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
-import { Status } from 'polarkit/components/atoms/status'
 import { twMerge } from 'tailwind-merge'
 
 export interface MetersListProps {

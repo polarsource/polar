@@ -11,16 +11,16 @@ import {
   CheckoutUpdatePublic,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
-import { formatCurrencyAndAmount } from '@polarkit/lib/money'
-import MoneyInput from 'polarkit/components/atoms/money-input'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
+import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
 import {
   Form,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback, useMemo, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 

@@ -13,13 +13,13 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { TransactionType } from '@polar-sh/api'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/tabs'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
 export default function ClientPage({

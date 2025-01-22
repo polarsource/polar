@@ -1,11 +1,11 @@
-import type { NextLayoutComponentType } from 'next'
-import Link from 'next/link'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/atoms/accordion'
+} from '@polar-sh/ui/components/atoms/accordion'
+import type { NextLayoutComponentType } from 'next'
+import Link from 'next/link'
 
 interface FAQProps {
   question: string

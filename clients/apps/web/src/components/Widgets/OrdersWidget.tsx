@@ -2,15 +2,15 @@ import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
 import { Order } from '@polar-sh/api'
-import { getCentsInDollarString } from '@polarkit/lib/money'
-import Link from 'next/link'
-import Avatar from 'polarkit/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/card'
+import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 

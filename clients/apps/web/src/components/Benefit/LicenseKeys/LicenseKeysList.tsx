@@ -1,17 +1,17 @@
 import { DataTableSortingState } from '@/utils/datatable'
 import { LicenseKeyRead } from '@polar-sh/api'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import {
+  DataTable,
+  DataTableColumnDef,
+  DataTableColumnHeader,
+} from '@polar-sh/ui/components/atoms/datatable'
 import {
   OnChangeFn,
   PaginationState,
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import Avatar from 'polarkit/components/atoms/avatar'
-import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
 
 export interface LicenseKeysListProps {
   licenseKeys: LicenseKeyRead[]

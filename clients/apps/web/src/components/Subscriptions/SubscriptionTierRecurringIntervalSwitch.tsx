@@ -1,5 +1,5 @@
 import { SubscriptionRecurringInterval } from '@polar-sh/api'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/tabs'
 import React, { useCallback } from 'react'
 
 interface SubscriptionTierRecurringIntervalSwitchProps {

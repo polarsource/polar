@@ -13,15 +13,14 @@ import {
   GitHubInvitesBenefitRepository,
   OAuthPlatform,
 } from '@polar-sh/api'
-import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/select'
 import {
   FormControl,
   FormDescription,
@@ -29,7 +28,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 

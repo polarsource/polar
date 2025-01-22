@@ -13,13 +13,13 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/api'
-import Link from 'next/link'
-import Avatar from 'polarkit/components/atoms/avatar'
-import Button from 'polarkit/components/atoms/button'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
-} from 'polarkit/lib/money'
+} from '@polar-sh/ui/lib/money'
+import Link from 'next/link'
 import { Fragment, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

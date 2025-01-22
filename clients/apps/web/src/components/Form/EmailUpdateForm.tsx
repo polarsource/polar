@@ -4,10 +4,10 @@ import { useSendEmailUpdate } from '@/hooks/emailUpdate'
 import { setValidationErrors } from '@/utils/api/errors'
 import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
 
-import { Form, FormField, FormItem } from 'polarkit/components/ui/form'
+import { Form, FormField, FormItem } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 

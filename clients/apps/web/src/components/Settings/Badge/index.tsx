@@ -14,11 +14,11 @@ import {
   type OrganizationBadgeSettingsUpdate,
   type RepositoryBadgeSettingsRead,
 } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import MoneyInput from 'polarkit/components/atoms/money-input'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
 import { twMerge } from 'tailwind-merge'

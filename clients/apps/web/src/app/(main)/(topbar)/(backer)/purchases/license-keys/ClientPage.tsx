@@ -13,11 +13,11 @@ import {
 import { api } from '@/utils/api'
 import { Key } from '@mui/icons-material'
 import { BenefitType, CustomerBenefitGrantLicenseKeys } from '@polar-sh/api'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import Avatar from 'polarkit/components/atoms/avatar'
-import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { useCallback, useContext, useMemo } from 'react'
 
 export default function ClientPage() {

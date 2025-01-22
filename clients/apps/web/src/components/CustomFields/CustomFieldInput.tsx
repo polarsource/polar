@@ -7,24 +7,24 @@ import {
   CustomFieldText,
   CustomFieldType,
 } from '@polar-sh/api'
-import Markdown, { MarkdownToJSX } from 'markdown-to-jsx'
-import Input from 'polarkit/components/atoms/input'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import Textarea from 'polarkit/components/atoms/textarea'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
+} from '@polar-sh/ui/components/atoms/select'
+import Textarea from '@polar-sh/ui/components/atoms/textarea'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
+import Markdown, { MarkdownToJSX } from 'markdown-to-jsx'
 import { ControllerRenderProps } from 'react-hook-form'
 
 const markdownOptions: MarkdownToJSX.Options = {

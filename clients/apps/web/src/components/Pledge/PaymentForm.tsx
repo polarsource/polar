@@ -9,13 +9,13 @@ import {
   PledgeStripePaymentIntentMutationResponse,
   Repository,
 } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import {
   PaymentIntent,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import Button from 'polarkit/components/atoms/button'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useEffect, useState } from 'react'
 import Subtotal from './Subtotal'
 

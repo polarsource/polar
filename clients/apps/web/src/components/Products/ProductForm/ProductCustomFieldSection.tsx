@@ -5,18 +5,22 @@ import { Section } from '@/components/Layout/Section'
 import { useCustomFields } from '@/hooks/queries'
 import { ClearOutlined } from '@mui/icons-material'
 import { CustomField, Organization } from '@polar-sh/api'
-import Link from 'next/link'
-import { Switch } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
-import { List, ListItem } from 'polarkit/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import { FormControl, FormField, FormLabel } from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/atoms/select'
+import Switch from '@polar-sh/ui/components/atoms/switch'
+import {
+  FormControl,
+  FormField,
+  FormLabel,
+} from '@polar-sh/ui/components/ui/form'
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'

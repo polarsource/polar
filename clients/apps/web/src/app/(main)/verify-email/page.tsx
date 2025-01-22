@@ -1,8 +1,8 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { CONFIG } from '@/utils/config'
+import Button from '@polar-sh/ui/components/atoms/button'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
 
 export const metadata: Metadata = {
   title: 'Email Update confirmation',

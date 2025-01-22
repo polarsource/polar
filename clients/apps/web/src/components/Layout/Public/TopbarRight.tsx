@@ -8,8 +8,8 @@ import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown
 import Popover from '@/components/Notifications/Popover'
 import { usePostHog } from '@/hooks/posthog'
 import { Organization, UserRead } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
 
 const TopbarRight = ({
   authenticatedUser,

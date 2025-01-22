@@ -4,16 +4,16 @@ import { useCustomerOrders } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/api'
-import Link from 'next/link'
-import { useRouter, useSelectedLayoutSegment } from 'next/navigation'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/select'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/tabs'
+import Link from 'next/link'
+import { useRouter, useSelectedLayoutSegment } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 interface OrganizationStorefrontNavProps {

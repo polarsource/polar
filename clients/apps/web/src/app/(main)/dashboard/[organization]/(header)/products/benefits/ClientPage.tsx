@@ -19,18 +19,18 @@ import {
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { type Benefit, Organization } from '@polar-sh/api'
-import { encode } from 'html-entities'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import { List, ListItem } from 'polarkit/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
-import { Textarea } from 'polarkit/components/ui/textarea'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { Textarea } from '@polar-sh/ui/components/ui/textarea'
+import { encode } from 'html-entities'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

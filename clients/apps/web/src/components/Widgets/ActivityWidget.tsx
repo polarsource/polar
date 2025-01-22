@@ -1,12 +1,16 @@
 import { useMetrics } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Card, CardFooter, CardHeader } from 'polarkit/components/atoms/card'
+import {
+  Card,
+  CardFooter,
+  CardHeader,
+} from '@polar-sh/ui/components/atoms/card'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from 'polarkit/components/ui/tooltip'
+} from '@polar-sh/ui/components/ui/tooltip'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 

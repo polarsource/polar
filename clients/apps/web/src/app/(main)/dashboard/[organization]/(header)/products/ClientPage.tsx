@@ -30,20 +30,20 @@ import {
   ProductPrice,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
-import Markdown from 'markdown-to-jsx'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
-import { List, ListItem } from 'polarkit/components/atoms/list'
-import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import Markdown from 'markdown-to-jsx'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

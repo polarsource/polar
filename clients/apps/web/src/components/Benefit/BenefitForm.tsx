@@ -8,9 +8,8 @@ import {
   BenefitType,
   Organization,
 } from '@polar-sh/api'
-import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Select,
   SelectContent,
@@ -20,8 +19,8 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import TextArea from 'polarkit/components/atoms/textarea'
+} from '@polar-sh/ui/components/atoms/select'
+import TextArea from '@polar-sh/ui/components/atoms/textarea'
 import {
   FormControl,
   FormDescription,
@@ -29,7 +28,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
+import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'

@@ -1,12 +1,12 @@
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/select'
 import {
   FormControl,
   FormDescription,
@@ -14,13 +14,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 
 import ImageUpload from '@/components/Form/ImageUpload'
 import { AddOutlined, ClearOutlined } from '@mui/icons-material'
 import { Scope } from '@polar-sh/api'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
 

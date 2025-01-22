@@ -5,8 +5,8 @@ import { useLoginLink } from '@/hooks/login'
 import { usePostHog } from '@/hooks/posthog'
 import { CONFIG } from '@/utils/config'
 import { Organization, UserRead } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
 import GetStartedButton from '../Auth/GetStartedButton'
 
 const PolarMenu = ({

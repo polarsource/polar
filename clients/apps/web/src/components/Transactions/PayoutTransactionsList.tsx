@@ -6,11 +6,11 @@ import {
 } from '@/utils/datatable'
 import { DownloadOutlined } from '@mui/icons-material'
 import { Transaction, TransactionEmbedded } from '@polar-sh/api'
-import Link from 'next/link'
 import {
   DataTableColumnDef,
   ReactQueryLoading,
-} from 'polarkit/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/datatable'
+import Link from 'next/link'
 import TransactionsList, { isTransaction } from './TransactionsList'
 
 interface PayoutTransactionsListProps {

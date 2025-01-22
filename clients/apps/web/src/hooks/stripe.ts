@@ -2,7 +2,7 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useStore } from '@/store'
 import { api } from '@/utils/api'
 import { Pledge, PledgeState } from '@polar-sh/api'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useEffect, useState } from 'react'
 
 export const useToastLatestPledged = (

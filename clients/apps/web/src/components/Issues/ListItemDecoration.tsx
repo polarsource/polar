@@ -10,7 +10,7 @@ import {
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
-} from 'polarkit/lib/money'
+} from '@polar-sh/ui/lib/money'
 import IssuePledge from './IssuePledge'
 import IssueRewards from './IssueRewards'
 

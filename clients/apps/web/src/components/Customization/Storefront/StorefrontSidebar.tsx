@@ -16,22 +16,22 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Link from 'next/link'
-import Avatar from 'polarkit/components/atoms/avatar'
-import Button from 'polarkit/components/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
-import Input from 'polarkit/components/atoms/input'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
-import TextArea from 'polarkit/components/atoms/textarea'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Button from '@polar-sh/ui/components/atoms/button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
+import Input from '@polar-sh/ui/components/atoms/input'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import TextArea from '@polar-sh/ui/components/atoms/textarea'
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
-import { Label } from 'polarkit/components/ui/label'
-import { Separator } from 'polarkit/components/ui/separator'
+} from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
+import { Separator } from '@polar-sh/ui/components/ui/separator'
+import Link from 'next/link'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'

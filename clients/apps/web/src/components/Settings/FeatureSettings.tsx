@@ -3,8 +3,9 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
-import { ShadowListGroup, Switch } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
+import ShadowListGroup from '@polar-sh/ui/components/atoms/shadow-list-group'
+import Switch from '@polar-sh/ui/components/atoms/switch'
 import {
   Form,
   FormControl,
@@ -12,7 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 
 interface Features {

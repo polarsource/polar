@@ -6,14 +6,14 @@ import {
 
 import { useCustomerDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
-import { Pill } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Pill from '@polar-sh/ui/components/atoms/pill'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FilePreview } from './FileList/FileListItem'

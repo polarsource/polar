@@ -12,10 +12,10 @@ import { useForm } from 'react-hook-form'
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateWebhookEndpoint } from '@/hooks/queries'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Banner from '@polar-sh/ui/components/molecules/banner'
+import { Form } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
-import Banner from 'polarkit/components/molecules/banner'
-import { Form } from 'polarkit/components/ui/form'
 import { FieldEvents, FieldFormat, FieldSecret, FieldUrl } from './WebhookForm'
 
 export default function NewWebhookModal({

@@ -7,7 +7,7 @@ This [Turborepo](https://turbo.build/) includes the following packages/apps:
 ### Apps and Packages
 
 - `apps/web`: [polar.sh](https://polar.sh) – [Next.js](https://nextjs.org/) app
-- `packages/polarkit`: Shared resources
+- `packages/ui`: Shared resources
 - `packages/sdk`: API types
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).

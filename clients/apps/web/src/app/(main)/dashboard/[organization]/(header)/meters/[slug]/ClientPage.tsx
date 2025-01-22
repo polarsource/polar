@@ -9,21 +9,21 @@ import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
 import { MoreVert } from '@mui/icons-material'
 import { Interval, MetricType } from '@polar-sh/api'
-import { useParams } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/atoms/card'
-import { Status } from 'polarkit/components/atoms/status'
+} from '@polar-sh/ui/components/atoms/card'
+import { Status } from '@polar-sh/ui/components/atoms/status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/tabs'
+import { useParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage() {

@@ -1,15 +1,15 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import Input from 'polarkit/components/atoms/input'
-import TextArea from 'polarkit/components/atoms/textarea'
+import Input from '@polar-sh/ui/components/atoms/input'
+import TextArea from '@polar-sh/ui/components/atoms/textarea'
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from './ProductForm'
 

@@ -8,16 +8,16 @@ import {
   CustomerBenefitGrantLicenseKeys,
   PolarAPI,
 } from '@polar-sh/api'
-import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
+} from '@polar-sh/ui/components/atoms/select'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import { usePathname } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DownloadablesBenefitGrant from './Downloadables/DownloadablesBenefitGrant'

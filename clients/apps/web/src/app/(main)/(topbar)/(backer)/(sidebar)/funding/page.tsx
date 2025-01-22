@@ -9,9 +9,9 @@ import {
   usePersonalDashboard,
 } from '@/hooks/queries'
 import { HowToVoteOutlined } from '@mui/icons-material'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import Banner from '@polar-sh/ui/components/molecules/banner'
 import Link from 'next/link'
-import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
-import Banner from 'polarkit/components/molecules/banner'
 
 export default function Page() {
   const { currentUser } = useAuth()

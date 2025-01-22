@@ -10,10 +10,11 @@ import {
   Pledger,
   RewardsSummary,
 } from '@polar-sh/api'
-import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/atoms'
-import Alert from 'polarkit/components/atoms/alert'
-import Avatar from 'polarkit/components/atoms/avatar'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import Alert from '@polar-sh/ui/components/atoms/alert'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import IssueBodyRenderer from '@polar-sh/ui/components/atoms/issue-body-renderer'
+import PolarTimeAgo from '@polar-sh/ui/components/atoms/polar-time-ago'
+import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 import Pledgers from '../Issues/Pledgers'
 import { generateMarkdownTitle } from '../Issues/markdown'

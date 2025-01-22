@@ -10,16 +10,17 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { Order, OrderCustomer, Organization, Product } from '@polar-sh/api'
-import { RowSelectionState } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
-import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
+} from '@polar-sh/ui/components/atoms/datatable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { RowSelectionState } from '@tanstack/react-table'
+import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
 const AmountColumn = ({ order }: { order: Order }) => {

@@ -7,9 +7,9 @@ import {
   Organization,
   PolarAPI,
 } from '@polar-sh/api'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
 import Link from 'next/link'
 import { parseAsString, useQueryState } from 'nuqs'
-import Avatar from 'polarkit/components/atoms/avatar'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'

@@ -8,10 +8,10 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Avatar from 'polarkit/components/atoms/avatar'
-import Button from 'polarkit/components/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
-import Input from 'polarkit/components/atoms/input'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Button from '@polar-sh/ui/components/atoms/button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Form,
   FormControl,
@@ -19,7 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm } from 'react-hook-form'

@@ -7,8 +7,8 @@ import {
   ProductPriceType,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
+import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/button'
 import Link from 'next/link'
-import Button, { ButtonProps } from 'polarkit/components/atoms/button'
 import React, { useMemo } from 'react'
 
 const buttonClasses =

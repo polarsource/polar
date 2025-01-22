@@ -1,13 +1,17 @@
 import { useMetrics } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { getCentsInDollarString } from '@polarkit/lib/money'
-import { Card, CardFooter, CardHeader } from 'polarkit/components/atoms/card'
+import {
+  Card,
+  CardFooter,
+  CardHeader,
+} from '@polar-sh/ui/components/atoms/card'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from 'polarkit/components/ui/tooltip'
+} from '@polar-sh/ui/components/ui/tooltip'
+import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 

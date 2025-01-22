@@ -8,15 +8,15 @@ import {
   RemoveOutlined,
 } from '@mui/icons-material'
 import { type Benefit, BenefitType, Organization } from '@polar-sh/api'
-import { useSearchParams } from 'next/navigation'
-import { Switch } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Switch from '@polar-sh/ui/components/atoms/switch'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { useSearchParams } from 'next/navigation'
 import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'

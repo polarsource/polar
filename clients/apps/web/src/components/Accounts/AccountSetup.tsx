@@ -4,16 +4,16 @@ import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { Account, Organization, Status } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import { Form, FormField } from 'polarkit/components/ui/form'
-import { Separator } from 'polarkit/components/ui/separator'
+} from '@polar-sh/ui/components/atoms/select'
+import { Form, FormField } from '@polar-sh/ui/components/ui/form'
+import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useForm } from 'react-hook-form'
 
 interface AccoutSetupProps {

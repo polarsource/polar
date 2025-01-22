@@ -1,7 +1,11 @@
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from '@polar-sh/ui/components/atoms/card'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader } from 'polarkit/components/atoms/card'
 import { getBlogPosts } from './utils'
 
 export default async function BlogPage() {

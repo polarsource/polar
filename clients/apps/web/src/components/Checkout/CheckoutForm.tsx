@@ -12,7 +12,19 @@ import {
   CheckoutUpdatePublic,
 } from '@polar-sh/api'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import { formatCurrencyAndAmount } from '@polarkit/lib/money'
+import Button from '@polar-sh/ui/components/atoms/button'
+import CountryPicker from '@polar-sh/ui/components/atoms/country-picker'
+import CountryStatePicker from '@polar-sh/ui/components/atoms/country-state-picker'
+import Input from '@polar-sh/ui/components/atoms/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@polar-sh/ui/components/ui/form'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import {
   Elements,
   ElementsConsumer,
@@ -28,18 +40,6 @@ import {
 } from '@stripe/stripe-js'
 import debounce from 'lodash.debounce'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import CountryPicker from 'polarkit/components/atoms/country-picker'
-import CountryStatePicker from 'polarkit/components/atoms/country-state-picker'
-import Input from 'polarkit/components/atoms/input'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'polarkit/components/ui/form'
 import {
   PropsWithChildren,
   useCallback,

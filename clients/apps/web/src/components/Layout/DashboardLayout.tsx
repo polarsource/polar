@@ -7,10 +7,10 @@ import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/tabs'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
 import {
   PropsWithChildren,
   UIEventHandler,

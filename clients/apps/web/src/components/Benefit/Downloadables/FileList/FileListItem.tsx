@@ -11,7 +11,7 @@ import {
   VideoFileOutlined,
 } from '@mui/icons-material'
 import { FileRead } from '@polar-sh/api'
-import { Switch } from 'polarkit/components/atoms'
+import Switch from '@polar-sh/ui/components/atoms/switch'
 import {
   FocusEvent,
   FormEventHandler,
@@ -27,13 +27,13 @@ import { FileObject } from '@/components/FileUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo } from 'react'
 
 export const FilePreview = ({ mimeType }: { mimeType: string }) => {

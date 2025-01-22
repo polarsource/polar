@@ -11,21 +11,21 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/atoms/accordion'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
-import MoneyInput from 'polarkit/components/atoms/money-input'
-import PercentageInput from 'polarkit/components/atoms/percentage-input'
+} from '@polar-sh/ui/components/atoms/accordion'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
+import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
+import PercentageInput from '@polar-sh/ui/components/atoms/percentage-input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/select'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/tabs'
 
-import DateTimePicker from 'polarkit/components/atoms/date-time-picker'
+import DateTimePicker from '@polar-sh/ui/components/atoms/date-time-picker'
 import {
   FormControl,
   FormDescription,
@@ -33,7 +33,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import React, { useCallback, useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'

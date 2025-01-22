@@ -8,9 +8,9 @@ import {
   AuthorizeUser,
   Scope,
 } from '@polar-sh/api'
-import Avatar from 'polarkit/components/atoms/avatar'
-import Button from 'polarkit/components/atoms/button'
-import { List, ListItem } from 'polarkit/components/atoms/list'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
 
 const isSubTypeOrganization = (
   sub_type: string,

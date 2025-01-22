@@ -15,15 +15,15 @@ import { useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronRight } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
-import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from 'polarkit/components/atoms/select'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
+} from '@polar-sh/ui/components/atoms/select'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import Link from 'next/link'
 import React, { useContext } from 'react'
 
 interface OverviewPageProps {

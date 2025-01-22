@@ -1,7 +1,7 @@
 'use client'
 
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
-import { CustomerModal } from '@/components/Customer/CustomerModal'
+import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { useCustomFields, useProduct } from '@/hooks/queries'
@@ -74,7 +74,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, orderId }) => {
         </div>
       }
       className="gap-y-8"
-      contextView={<CustomerModal customer={order.customer} />}
+      contextView={<CustomerContextView customer={order.customer} />}
     >
       <ShadowBox className="flex flex-col gap-8 bg-gray-100">
         <OrderProductItem product={product} />

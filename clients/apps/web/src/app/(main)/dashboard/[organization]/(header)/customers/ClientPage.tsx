@@ -1,9 +1,6 @@
 'use client'
 
-import { CustomerModal } from '@/components/Customer/CustomerModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useModal } from '@/components/Modal/useModal'
 import { useCustomers } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import {
@@ -44,7 +41,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const [selectedCustomerState, setSelectedOrderState] =
     useState<RowSelectionState>({})
-  const { hide: hideModal, show: showModal, isShown: isModalShown } = useModal()
 
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -179,11 +175,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   useEffect(() => {
     if (selectedCustomer) {
-      showModal()
-    } else {
-      hideModal()
+      router.push(
+        `/dashboard/${organization.slug}/customers/${selectedCustomer.id}`,
+      )
     }
-  }, [selectedCustomer, showModal, hideModal])
+  }, [selectedCustomer, router, organization.slug])
 
   return (
     <DashboardBody>
@@ -216,20 +212,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
           />
         )}
       </div>
-      <InlineModal
-        modalContent={
-          selectedCustomer ? (
-            <CustomerModal customer={selectedCustomer} />
-          ) : (
-            <></>
-          )
-        }
-        isShown={isModalShown}
-        hide={() => {
-          setSelectedOrderState({})
-          hideModal()
-        }}
-      />
     </DashboardBody>
   )
 }

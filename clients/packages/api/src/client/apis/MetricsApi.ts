@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  CustomerIDFilter3,
   HTTPValidationError,
   Interval,
   MetricsLimits,
@@ -31,6 +32,7 @@ export interface MetricsApiGetRequest {
     organizationId?: OrganizationIDFilter1 | null;
     productId?: ProductIDFilter | null;
     productPriceType?: ProductPriceTypeFilter1 | null;
+    customerId?: CustomerIDFilter3 | null;
 }
 
 /**
@@ -88,6 +90,10 @@ export class MetricsApi extends runtime.BaseAPI {
 
         if (requestParameters['productPriceType'] != null) {
             queryParameters['product_price_type'] = requestParameters['productPriceType'];
+        }
+
+        if (requestParameters['customerId'] != null) {
+            queryParameters['customer_id'] = requestParameters['customerId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

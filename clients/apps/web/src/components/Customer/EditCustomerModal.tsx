@@ -1,5 +1,5 @@
+import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
-import { ArrowBackOutlined } from '@mui/icons-material'
 import { Customer, CustomerUpdate } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -35,11 +35,13 @@ export const EditCustomerModal = ({
   const handleUpdateCustomer = (customerUpdate: CustomerUpdate) => {
     updateCustomer
       .mutateAsync(customerUpdate)
-      .then((customer) => {
+      .then(async (customer) => {
         toast({
           title: 'Customer Updated',
           description: `Customer ${customer.email} updated successfully`,
         })
+
+        revalidate(`customer:${customer.id}`)
 
         onClose()
       })
@@ -54,9 +56,6 @@ export const EditCustomerModal = ({
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <ArrowBackOutlined fontSize="small" />
-        </Button>
         <h2 className="text-xl">Edit Customer</h2>
       </div>
       <Form {...form}>

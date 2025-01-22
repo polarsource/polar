@@ -25,7 +25,7 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

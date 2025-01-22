@@ -9,8 +9,8 @@ import {
   usePersonalDashboard,
 } from '@/hooks/queries'
 import { HowToVoteOutlined } from '@mui/icons-material'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import Link from 'next/link'
 
 export default function Page() {

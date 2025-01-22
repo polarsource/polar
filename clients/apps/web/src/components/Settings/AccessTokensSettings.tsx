@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import {
   AlertDialog,
   AlertDialogAction,

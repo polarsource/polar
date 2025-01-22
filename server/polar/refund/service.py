@@ -458,6 +458,16 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> None:
+        transaction = await refund_transaction_service.create(
+            session,
+            charge_id=charge_id,
+            payment_transaction=payment,
+            refund=refund,
+        )
+        # Already recorded in ledger - return early
+        if transaction is None:
+            return
+
         if order:
             await order_service.increment_refunds(
                 session,
@@ -472,13 +482,6 @@ class RefundService(ResourceServiceReader[Refund]):
                 amount=refund.amount,
                 transaction_id=payment.charge_id,
             )
-
-        await refund_transaction_service.create(
-            session,
-            charge_id=charge_id,
-            payment_transaction=payment,
-            refund=refund,
-        )
 
     async def _after_created(
         self,

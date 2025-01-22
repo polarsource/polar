@@ -1,6 +1,6 @@
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
 import { Column } from '@tanstack/react-table'
 
+import { MoveDown, MoveUp } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import Button from '../Button'
 
@@ -29,9 +29,9 @@ export function DataTableColumnHeader<TData, TValue>({
       >
         <span>{title}</span>
         {column.getIsSorted() === 'desc' ? (
-          <KeyboardArrowDown className="ml-2 h-4 w-4" />
+          <MoveDown className="ml-2 h-4 w-4" />
         ) : column.getIsSorted() === 'asc' ? (
-          <KeyboardArrowUp className="ml-2 h-4 w-4" />
+          <MoveUp className="ml-2 h-4 w-4" />
         ) : null}
       </Button>
     </div>

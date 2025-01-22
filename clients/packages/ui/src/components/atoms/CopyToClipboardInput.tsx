@@ -1,4 +1,4 @@
-import { CheckOutlined } from '@mui/icons-material'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Button from './Button'
@@ -53,7 +53,7 @@ const CopyToClipboardInput = ({
           onClick={copyToClipboard}
         >
           {isCopied ? (
-            <CheckOutlined className="text-sm" fontSize="inherit" />
+            <Check className="text-sm" fontSize="inherit" />
           ) : (
             buttonLabel || 'Copy'
           )}

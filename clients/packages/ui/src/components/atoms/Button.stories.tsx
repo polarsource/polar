@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { Smile } from 'lucide-react'
 
-import { FaceOutlined } from '@mui/icons-material'
 import Button from './Button'
 
 const meta: Meta<typeof Button> = {
@@ -22,7 +22,7 @@ export const Default: Story = {
 
 export const DefaultWithIcon: Story = {
   args: {
-    children: <FaceOutlined fontSize="small" />,
+    children: <Smile />,
     size: 'icon',
   },
 }

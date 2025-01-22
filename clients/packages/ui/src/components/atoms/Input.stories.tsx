@@ -1,5 +1,5 @@
-import { FaceOutlined } from '@mui/icons-material'
 import type { Meta, StoryObj } from '@storybook/react'
+import { Smile } from 'lucide-react'
 import Input from './Input'
 
 const meta: Meta<typeof Input> = {
@@ -46,7 +46,7 @@ export const WithIcon: Story = {
     id: 'x',
     name: 'xx',
     placeholder: 'This is an input',
-    preSlot: <FaceOutlined fontSize="small" />,
+    preSlot: <Smile fontSize="small" />,
   },
   render: (args) => {
     return (

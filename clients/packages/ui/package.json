@@ -3,9 +3,9 @@
   "version": "0.0.4",
   "exports": {
     "./components/atoms/DataTable": {
+      "types": "./dist/components/atoms/datatable/index.d.ts",
       "import": "./dist/components/atoms/datatable/index.mjs",
-      "require": "./dist/components/atoms/datatable/index.js",
-      "types": "./dist/components/atoms/datatable/index.d.ts"
+      "require": "./dist/components/atoms/datatable/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",

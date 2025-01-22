@@ -20,8 +20,8 @@ import type {
   CustomerSortProperty,
   CustomerUpdate,
   HTTPValidationError,
-  ListMetadataParameterValue,
   ListResourceCustomer,
+  MetadataQueryValue,
   OrganizationIDFilter1,
   ResourceNotFound,
 } from '../models/index';
@@ -45,7 +45,7 @@ export interface CustomersApiListRequest {
     page?: number;
     limit?: number;
     sorting?: Array<CustomerSortProperty> | null;
-    metadata?: { [key: string]: ListMetadataParameterValue; } | null;
+    metadata?: { [key: string]: MetadataQueryValue; } | null;
 }
 
 export interface CustomersApiUpdateRequest {

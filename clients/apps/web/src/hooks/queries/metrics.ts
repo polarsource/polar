@@ -10,6 +10,7 @@ interface GetMetricsRequest {
   interval: Interval
   organizationId?: string
   productId?: string[]
+  customerId?: string[]
 }
 
 // @ts-ignore

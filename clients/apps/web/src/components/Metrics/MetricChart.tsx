@@ -179,46 +179,39 @@ const MetricChart: React.FC<MetricChartProps> = ({
           fontFamily: GeistMono.style.fontFamily,
         }),
         Plot.axisY({
-          tickFormat: valueFormatter,
           label: null,
+          tickFormat: valueFormatter,
           stroke: 'none',
           fontFamily: GeistMono.style.fontFamily,
-        }),
-        Plot.areaY(data, {
-          x: 'timestamp',
-          y: metric.slug,
-          fill: `url(#${gradientId})`,
         }),
         Plot.lineY(data, {
           x: 'timestamp',
           y: metric.slug,
-          stroke: primaryColor,
-          strokeWidth: 2,
+          stroke: 'currentColor',
+          strokeWidth: 1,
+          marker: 'circle-fill',
         }),
         Plot.ruleX(data, {
           x: 'timestamp',
           stroke: 'currentColor',
           strokeWidth: 1,
-          strokeOpacity: 0.2,
+          strokeOpacity: 0.08,
         }),
         Plot.ruleX(
           data,
           Plot.pointerX({
             x: 'timestamp',
             stroke: 'currentColor',
+            strokeWidth: 1,
             strokeOpacity: 0.5,
-            strokeWidth: 2,
           }),
         ),
-        Plot.dot(
-          data,
-          Plot.pointerX({
-            x: 'timestamp',
-            y: metric.slug,
-            fill: primaryColor,
-            r: 5,
-          }),
-        ),
+        Plot.dot(data, {
+          x: 'timestamp',
+          y: metric.slug,
+          fill: 'currentColor',
+          r: 2,
+        }),
         ...(onDataIndexHover
           ? [
               new Callback(

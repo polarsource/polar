@@ -4021,10 +4021,10 @@ export interface Checkout {
     customer_tax_id: string | null;
     /**
      * 
-     * @type {object}
+     * @type {{ [key: string]: string; }}
      * @memberof Checkout
      */
-    payment_processor_metadata: object;
+    payment_processor_metadata: { [key: string]: string; };
     /**
      * 
      * @type {{ [key: string]: MetadataValue; }}
@@ -5365,10 +5365,10 @@ export interface CheckoutPublic {
     customer_tax_id: string | null;
     /**
      * 
-     * @type {object}
+     * @type {{ [key: string]: string; }}
      * @memberof CheckoutPublic
      */
-    payment_processor_metadata: object;
+    payment_processor_metadata: { [key: string]: string; };
     /**
      * 
      * @type {CheckoutProduct}
@@ -5599,10 +5599,10 @@ export interface CheckoutPublicConfirmed {
     customer_tax_id: string | null;
     /**
      * 
-     * @type {object}
+     * @type {{ [key: string]: string; }}
      * @memberof CheckoutPublicConfirmed
      */
-    payment_processor_metadata: object;
+    payment_processor_metadata: { [key: string]: string; };
     /**
      * 
      * @type {CheckoutProduct}
@@ -8037,6 +8037,13 @@ export type CustomerIDFilter1 = Array<string> | string;
  * @export
  */
 export type CustomerIDFilter2 = Array<string> | string;
+
+/**
+ * @type CustomerIDFilter3
+ * Filter by customer ID.
+ * @export
+ */
+export type CustomerIDFilter3 = Array<string> | string;
 
 
 /**
@@ -12160,12 +12167,6 @@ export const ListFundingSortBy = {
 export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundingSortBy];
 
 /**
- * @type ListMetadataParameterValue
- * @export
- */
-export type ListMetadataParameterValue = Array<boolean | null> | Array<number> | Array<string> | boolean | number | string;
-
-/**
  * 
  * @export
  * @interface ListResourceAccount
@@ -13725,6 +13726,12 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
      */
     maintainer_has_account: boolean;
 }
+/**
+ * @type MetadataQueryValue
+ * @export
+ */
+export type MetadataQueryValue = Array<boolean> | Array<number> | Array<string> | boolean | number | string;
+
 /**
  * @type MetadataValue
  * @export

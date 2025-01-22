@@ -12,7 +12,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import { Status } from 'polarkit/components/ui/atoms/Status'
+import { Status } from 'polarkit/components/ui/atoms/status'
 import { twMerge } from 'tailwind-merge'
 
 export interface MetersListProps {

@@ -29,9 +29,9 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/ui/atoms/Accordion'
+} from 'polarkit/components/ui/atoms/accordion'
 import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import {

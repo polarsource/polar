@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from './Select'
 
 const getCountryList = (codes: TCountryCode[]) => {
   return codes

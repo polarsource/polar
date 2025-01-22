@@ -28,7 +28,7 @@ import {
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Select,

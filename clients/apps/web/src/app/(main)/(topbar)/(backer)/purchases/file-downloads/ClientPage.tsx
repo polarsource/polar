@@ -15,7 +15,7 @@ import { DownloadableRead } from '@polar-sh/api'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useContext, useMemo } from 'react'
 

@@ -9,7 +9,7 @@ import {
   ValidationError,
 } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
-import CountryPicker from 'polarkit/components/ui/atoms/countrypicker'
+import CountryPicker from 'polarkit/components/ui/atoms/country-picker'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Select,

@@ -20,6 +20,7 @@ from sqlalchemy import (
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.models import (
+    Customer,
     Order,
     Organization,
     Product,
@@ -93,6 +94,7 @@ class QueryCallable(Protocol):
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         product_price_type: Sequence[ProductPriceType] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
     ) -> CTE: ...
 
 
@@ -105,6 +107,7 @@ def get_orders_cte(
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     product_price_type: Sequence[ProductPriceType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -140,6 +143,12 @@ def get_orders_cte(
             ProductPrice,
             onclause=Order.product_price_id == ProductPrice.id,
         ).where(ProductPrice.type.in_(product_price_type))
+
+    if customer_id is not None:
+        readable_orders_statement = readable_orders_statement.join(
+            Customer,
+            onclause=Order.customer_id == Customer.id,
+        ).where(Customer.id.in_(customer_id))
 
     return cte(
         select(
@@ -177,6 +186,7 @@ def get_active_subscriptions_cte(
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     product_price_type: Sequence[ProductPriceType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -212,6 +222,12 @@ def get_active_subscriptions_cte(
             ProductPrice,
             onclause=Subscription.price_id == ProductPrice.id,
         ).where(ProductPrice.type.in_(product_price_type))
+
+    if customer_id is not None:
+        readable_subscriptions_statement = readable_subscriptions_statement.join(
+            Customer,
+            onclause=Subscription.customer_id == Customer.id,
+        ).where(Customer.id.in_(customer_id))
 
     return cte(
         select(

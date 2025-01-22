@@ -19,7 +19,7 @@ import {
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
 import Input from 'polarkit/components/ui/atoms/input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import TextArea from 'polarkit/components/ui/atoms/textarea'

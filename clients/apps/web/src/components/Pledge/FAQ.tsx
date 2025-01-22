@@ -5,7 +5,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/ui/atoms/Accordion'
+} from 'polarkit/components/ui/atoms/accordion'
 
 interface FAQProps {
   question: string

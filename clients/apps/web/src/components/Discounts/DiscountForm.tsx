@@ -11,11 +11,11 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/ui/atoms/Accordion'
+} from 'polarkit/components/ui/atoms/accordion'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
-import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
-import PercentageInput from 'polarkit/components/ui/atoms/percentageinput'
+import MoneyInput from 'polarkit/components/ui/atoms/money-input'
+import PercentageInput from 'polarkit/components/ui/atoms/percentage-input'
 import {
   Select,
   SelectContent,
@@ -25,7 +25,7 @@ import {
 } from 'polarkit/components/ui/atoms/select'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
 
-import DateTimePicker from 'polarkit/components/ui/atoms/datetimepicker'
+import DateTimePicker from 'polarkit/components/ui/atoms/date-time-picker'
 import {
   FormControl,
   FormDescription,

@@ -29,8 +29,8 @@ import {
 import debounce from 'lodash.debounce'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import CountryPicker from 'polarkit/components/ui/atoms/countrypicker'
-import CountryStatePicker from 'polarkit/components/ui/atoms/countrystatepicker'
+import CountryPicker from 'polarkit/components/ui/atoms/country-picker'
+import CountryStatePicker from 'polarkit/components/ui/atoms/country-state-picker'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
   Form,

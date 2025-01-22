@@ -8,7 +8,7 @@ import {
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
 import Button from 'polarkit/components/ui/atoms/button'
-import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import MoneyInput from 'polarkit/components/ui/atoms/money-input'
 import {
   Select,
   SelectContent,

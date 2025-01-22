@@ -17,7 +17,7 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { Status } from 'polarkit/components/ui/atoms/Status'
+import { Status } from 'polarkit/components/ui/atoms/status'
 import {
   Tabs,
   TabsContent,

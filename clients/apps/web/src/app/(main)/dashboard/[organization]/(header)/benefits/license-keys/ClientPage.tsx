@@ -25,7 +25,7 @@ import {
 import { useRouter } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
+import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
 import {
   Select,
   SelectContent,

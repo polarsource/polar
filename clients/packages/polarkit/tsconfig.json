@@ -3,6 +3,7 @@
   "compilerOptions": {
     "baseUrl": "src/",
     "allowSyntheticDefaultImports": true,
+    "lib": ["esnext", "dom"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {

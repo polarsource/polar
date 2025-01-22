@@ -1,13 +1,13 @@
 'use client'
 
-import Input from 'polarkit/components/ui/atoms/input'
+import Input from '../atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from './Select'
 
 const US_STATES: Record<string, string> = {
   'US-AL': 'Alabama',

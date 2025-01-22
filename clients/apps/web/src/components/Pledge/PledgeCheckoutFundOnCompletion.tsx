@@ -9,7 +9,7 @@ import {
 import { Issue, Organization } from '@polar-sh/api'
 import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import MoneyInput from 'polarkit/components/ui/atoms/money-input'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useState } from 'react'

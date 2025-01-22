@@ -3,52 +3,224 @@
   "version": "0.0.4",
   "private": true,
   "exports": {
-    "./components/ui/atoms": "./src/components/ui/atoms/index.ts",
-    "./components/ui/atoms/Accordion": "./src/components/ui/atoms/Accordion.tsx",
-    "./components/ui/atoms/alert": "./src/components/ui/atoms/Alert.tsx",
-    "./components/ui/atoms/avatar": "./src/components/ui/atoms/Avatar.tsx",
-    "./components/ui/atoms/button": "./src/components/ui/atoms/Button.tsx",
-    "./components/ui/atoms/card": "./src/components/ui/atoms/Card.tsx",
-    "./components/ui/atoms/copytoclipboardinput": "./src/components/ui/atoms/CopyToClipboardInput.tsx",
-    "./components/ui/atoms/countrypicker": "./src/components/ui/atoms/CountryPicker.tsx",
-    "./components/ui/atoms/countrystatepicker": "./src/components/ui/atoms/CountryStatePicker.tsx",
-    "./components/ui/atoms/datatable": "./src/components/ui/atoms/datatable/index.ts",
-    "./components/ui/atoms/input": "./src/components/ui/atoms/Input.tsx",
-    "./components/ui/atoms/input-otp": "./src/components/ui/atoms/InputOTP.tsx",
-    "./components/ui/atoms/list": "./src/components/ui/atoms/List.tsx",
-    "./components/ui/atoms/moneyinput": "./src/components/ui/atoms/MoneyInput.tsx",
-    "./components/ui/atoms/percentageinput": "./src/components/ui/atoms/PercentageInput.tsx",
-    "./components/ui/atoms/datetimepicker": "./src/components/ui/atoms/DateTimePicker.tsx",
-    "./components/ui/atoms/select": "./src/components/ui/atoms/Select.tsx",
-    "./components/ui/atoms/shadowbox": "./src/components/ui/atoms/ShadowBox.tsx",
-    "./components/ui/atoms/switch": "./src/components/ui/atoms/Switch.tsx",
-    "./components/ui/atoms/tabs": "./src/components/ui/atoms/Tabs.tsx",
-    "./components/ui/atoms/textarea": "./src/components/ui/atoms/TextArea.tsx",
-    "./components/ui/atoms/Status": "./src/components/ui/atoms/Status.tsx",
-    "./components/ui/calendar": "./src/components/ui/calendar.tsx",
-    "./components/ui/command": "./src/components/ui/command.tsx",
-    "./components/ui/alert-dialog": "./src/components/ui/alert-dialog.tsx",
-    "./components/ui/card": "./src/components/ui/card.tsx",
-    "./components/ui/checkbox": "./src/components/ui/checkbox.tsx",
-    "./components/ui/dropdown-menu": "./src/components/ui/dropdown-menu.tsx",
-    "./components/ui/form": "./src/components/ui/form.tsx",
-    "./components/ui/input": "./src/components/ui/input.tsx",
-    "./components/ui/label": "./src/components/ui/label.tsx",
-    "./components/ui/molecules": "./src/components/ui/molecules/index.ts",
-    "./components/ui/popover": "./src/components/ui/popover.tsx",
-    "./components/ui/radio-group": "./src/components/ui/radio-group.tsx",
-    "./components/ui/separator": "./src/components/ui/separator.tsx",
-    "./components/ui/skeleton": "./src/components/ui/skeleton.tsx",
-    "./components/ui/table": "./src/components/ui/table.tsx",
-    "./components/ui/textarea": "./src/components/ui/textarea.tsx",
-    "./components/ui/tooltip": "./src/components/ui/tooltip.tsx",
-    "./components/ui/toggle": "./src/components/ui/toggle.tsx",
-    "./components/ui/toggle-group": "./src/components/ui/toggle-group.tsx",
-    "./lib/money": "./src/lib/money.ts",
-    "./package.json": "./package.json"
+    "./components/ui/atoms": {
+      "source": "./src/components/ui/atoms/index.ts",
+      "types": "./dist/components/ui/atoms.d.ts",
+      "default": "./dist/components/ui/atoms.js"
+    },
+    "./components/ui/atoms/accordion": {
+      "source": "./src/components/ui/atoms/Accordion.tsx",
+      "types": "./dist/components/ui/atoms/Accordion.d.ts",
+      "default": "./dist/components/ui/atoms/accordion.js"
+    },
+    "./components/ui/atoms/alert": {
+      "source": "./src/components/ui/atoms/Alert.tsx",
+      "types": "./dist/components/ui/atoms/Alert.d.ts",
+      "default": "./dist/components/ui/atoms/alert.js"
+    },
+    "./components/ui/atoms/avatar": {
+      "source": "./src/components/ui/atoms/Avatar.tsx",
+      "types": "./dist/components/ui/atoms/Avatar.d.ts",
+      "default": "./dist/components/ui/atoms/avatar.js"
+    },
+    "./components/ui/atoms/button": {
+      "source": "./src/components/ui/atoms/Button.tsx",
+      "types": "./dist/components/ui/atoms/Button.d.ts",
+      "default": "./dist/components/ui/atoms/button.js"
+    },
+    "./components/ui/atoms/card": {
+      "source": "./src/components/ui/atoms/Card.tsx",
+      "types": "./dist/components/ui/atoms/Card.d.ts",
+      "default": "./dist/components/ui/atoms/card.js"
+    },
+    "./components/ui/atoms/copy-to-clipboard-input": {
+      "source": "./src/components/ui/atoms/CopyToClipboardInput.tsx",
+      "types": "./dist/components/ui/atoms/CopyToClipboardInput.d.ts",
+      "default": "./dist/components/ui/atoms/copy-to-clipboard-input.js"
+    },
+    "./components/ui/atoms/country-picker": {
+      "source": "./src/components/ui/atoms/CountryPicker.tsx",
+      "types": "./dist/components/ui/atoms/CountryPicker.d.ts",
+      "default": "./dist/components/ui/atoms/country-picker.js"
+    },
+    "./components/ui/atoms/country-state-picker": {
+      "source": "./src/components/ui/atoms/CountryStatePicker.tsx",
+      "types": "./dist/components/ui/atoms/CountryStatePicker.d.ts",
+      "default": "./dist/components/ui/atoms/country-state-picker.js"
+    },
+    "./components/ui/atoms/datatable": {
+      "source": "./src/components/ui/atoms/datatable/index.ts",
+      "types": "./dist/components/ui/atoms/datatable/index.d.ts",
+      "default": "./dist/components/ui/atoms/datatable.js"
+    },
+    "./components/ui/atoms/input": {
+      "source": "./src/components/ui/atoms/Input.tsx",
+      "types": "./dist/components/ui/atoms/Input.d.ts",
+      "default": "./dist/components/ui/atoms/input.js"
+    },
+    "./components/ui/atoms/input-otp": {
+      "source": "./src/components/ui/atoms/InputOTP.tsx",
+      "types": "./dist/components/ui/atoms/InputOTP.d.ts",
+      "default": "./dist/components/ui/atoms/input-otp.js"
+    },
+    "./components/ui/atoms/list": {
+      "source": "./src/components/ui/atoms/List.tsx",
+      "types": "./dist/components/ui/atoms/List.d.ts",
+      "default": "./dist/components/ui/atoms/list.js"
+    },
+    "./components/ui/atoms/money-input": {
+      "source": "./src/components/ui/atoms/MoneyInput.tsx",
+      "types": "./dist/components/ui/atoms/MoneyInput.d.ts",
+      "default": "./dist/components/ui/atoms/money-input.js"
+    },
+    "./components/ui/atoms/percentage-input": {
+      "source": "./src/components/ui/atoms/PercentageInput.tsx",
+      "types": "./dist/components/ui/atoms/PercentageInput.d.ts",
+      "default": "./dist/components/ui/atoms/percentage-input.js"
+    },
+    "./components/ui/atoms/date-time-picker": {
+      "source": "./src/components/ui/atoms/DateTimePicker.tsx",
+      "types": "./dist/components/ui/atoms/DateTimePicker.d.ts",
+      "default": "./dist/components/ui/atoms/date-time-picker.js"
+    },
+    "./components/ui/atoms/select": {
+      "source": "./src/components/ui/atoms/Select.tsx",
+      "types": "./dist/components/ui/atoms/Select.d.ts",
+      "default": "./dist/components/ui/atoms/select.js"
+    },
+    "./components/ui/atoms/shadowbox": {
+      "source": "./src/components/ui/atoms/ShadowBox.tsx",
+      "types": "./dist/components/ui/atoms/ShadowBox.d.ts",
+      "default": "./dist/components/ui/atoms/shadowbox.js"
+    },
+    "./components/ui/atoms/switch": {
+      "source": "./src/components/ui/atoms/Switch.tsx",
+      "types": "./dist/components/ui/atoms/Switch.d.ts",
+      "default": "./dist/components/ui/atoms/switch.js"
+    },
+    "./components/ui/atoms/tabs": {
+      "source": "./src/components/ui/atoms/Tabs.tsx",
+      "types": "./dist/components/ui/atoms/Tabs.d.ts",
+      "default": "./dist/components/ui/atoms/tabs.js"
+    },
+    "./components/ui/atoms/textarea": {
+      "source": "./src/components/ui/atoms/TextArea.tsx",
+      "types": "./dist/components/ui/atoms/TextArea.d.ts",
+      "default": "./dist/components/ui/atoms/textarea.js"
+    },
+    "./components/ui/atoms/status": {
+      "source": "./src/components/ui/atoms/Status.tsx",
+      "types": "./dist/components/ui/atoms/Status.d.ts",
+      "default": "./dist/components/ui/atoms/status.js"
+    },
+    "./components/ui/button": {
+      "source": "./src/components/ui/button.tsx",
+      "types": "./dist/components/ui/button.d.ts",
+      "default": "./dist/components/ui/button.js"
+    },
+    "./components/ui/calendar": {
+      "source": "./src/components/ui/calendar.tsx",
+      "types": "./dist/components/ui/calendar.d.ts",
+      "default": "./dist/components/ui/calendar.js"
+    },
+    "./components/ui/command": {
+      "source": "./src/components/ui/command.tsx",
+      "types": "./dist/components/ui/command.d.ts",
+      "default": "./dist/components/ui/command.js"
+    },
+    "./components/ui/alert-dialog": {
+      "source": "./src/components/ui/alert-dialog.tsx",
+      "types": "./dist/components/ui/alert-dialog.d.ts",
+      "default": "./dist/components/ui/alert-dialog.js"
+    },
+    "./components/ui/card": {
+      "source": "./src/components/ui/card.tsx",
+      "types": "./dist/components/ui/card.d.ts",
+      "default": "./dist/components/ui/card.js"
+    },
+    "./components/ui/checkbox": {
+      "source": "./src/components/ui/checkbox.tsx",
+      "types": "./dist/components/ui/checkbox.d.ts",
+      "default": "./dist/components/ui/checkbox.js"
+    },
+    "./components/ui/dropdown-menu": {
+      "source": "./src/components/ui/dropdown-menu.tsx",
+      "types": "./dist/components/ui/dropdown-menu.d.ts",
+      "default": "./dist/components/ui/dropdown-menu.js"
+    },
+    "./components/ui/form": {
+      "source": "./src/components/ui/form.tsx",
+      "types": "./dist/components/ui/form.d.ts",
+      "default": "./dist/components/ui/form.js"
+    },
+    "./components/ui/input": {
+      "source": "./src/components/ui/input.tsx",
+      "types": "./dist/components/ui/input.d.ts",
+      "default": "./dist/components/ui/input.js"
+    },
+    "./components/ui/label": {
+      "source": "./src/components/ui/label.tsx",
+      "types": "./dist/components/ui/label.d.ts",
+      "default": "./dist/components/ui/label.js"
+    },
+    "./components/ui/molecules": {
+      "source": "./src/components/ui/molecules/index.ts",
+      "types": "./dist/components/ui/molecules.d.ts",
+      "default": "./dist/components/ui/molecules.js"
+    },
+    "./components/ui/popover": {
+      "source": "./src/components/ui/popover.tsx",
+      "types": "./dist/components/ui/popover.d.ts",
+      "default": "./dist/components/ui/popover.js"
+    },
+    "./components/ui/radio-group": {
+      "source": "./src/components/ui/radio-group.tsx",
+      "types": "./dist/components/ui/radio-group.d.ts",
+      "default": "./dist/components/ui/radio-group.js"
+    },
+    "./components/ui/separator": {
+      "source": "./src/components/ui/separator.tsx",
+      "types": "./dist/components/ui/separator.d.ts",
+      "default": "./dist/components/ui/separator.js"
+    },
+    "./components/ui/skeleton": {
+      "source": "./src/components/ui/skeleton.tsx",
+      "types": "./dist/components/ui/skeleton.d.ts",
+      "default": "./dist/components/ui/skeleton.js"
+    },
+    "./components/ui/table": {
+      "source": "./src/components/ui/table.tsx",
+      "types": "./dist/components/ui/table.d.ts",
+      "default": "./dist/components/ui/table.js"
+    },
+    "./components/ui/textarea": {
+      "source": "./src/components/ui/textarea.tsx",
+      "types": "./dist/components/ui/textarea.d.ts",
+      "default": "./dist/components/ui/textarea.js"
+    },
+    "./components/ui/tooltip": {
+      "source": "./src/components/ui/tooltip.tsx",
+      "types": "./dist/components/ui/tooltip.d.ts",
+      "default": "./dist/components/ui/tooltip.js"
+    },
+    "./components/ui/toggle": {
+      "source": "./src/components/ui/toggle.tsx",
+      "types": "./dist/components/ui/toggle.d.ts",
+      "default": "./dist/components/ui/toggle.js"
+    },
+    "./components/ui/toggle-group": {
+      "source": "./src/components/ui/toggle-group.tsx",
+      "types": "./dist/components/ui/toggle-group.d.ts",
+      "default": "./dist/components/ui/toggle-group.js"
+    },
+    "./lib/money": {
+      "source": "./src/lib/money.ts",
+      "types": "./dist/lib/money.d.ts",
+      "default": "./dist/lib/money.js"
+    }
   },
   "scripts": {
-    "lint": "TIMING=1 eslint \"**/*.ts*\""
+    "build": "tsup"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -96,6 +268,7 @@
     "eslint": "^8.57.1",
     "eslint-config-custom": "workspace:*",
     "tsconfig": "workspace:*",
+    "tsup": "^8.3.5",
     "typescript": "5.3.3"
   }
 }

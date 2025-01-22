@@ -17,7 +17,7 @@ import {
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import MoneyInput from 'polarkit/components/ui/atoms/money-input'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'

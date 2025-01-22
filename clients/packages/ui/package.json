@@ -42,9 +42,7 @@
     "date-fns": "^3.6.0",
     "input-otp": "^1.4.1",
     "lucide-react": "^0.461.0",
-    "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "react-timeago": "^7.2.0",
     "tailwind-merge": "^2.5.5"
@@ -56,8 +54,14 @@
     "@types/react-timeago": "^4.1.7",
     "eslint": "^8.57.1",
     "eslint-config-custom": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "tsconfig": "workspace:*",
     "tsup": "^8.3.5",
     "typescript": "5.3.3"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

@@ -7,15 +7,15 @@ import {
   CustomFieldText,
   CustomFieldType,
 } from '@polar-sh/api'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import Textarea from '@polar-sh/ui/components/atoms/textarea'
+} from '@polar-sh/ui/components/atoms/Select'
+import Textarea from '@polar-sh/ui/components/atoms/TextArea'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,

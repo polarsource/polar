@@ -30,10 +30,10 @@ import {
   ProductPrice,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -1,8 +1,8 @@
 import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { Customer, CustomerUpdate } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Form,
   FormControl,

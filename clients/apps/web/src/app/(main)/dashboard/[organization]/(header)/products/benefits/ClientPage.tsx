@@ -19,8 +19,8 @@ import {
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { type Benefit, Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   DropdownMenu,
   DropdownMenuContent,

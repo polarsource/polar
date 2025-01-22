@@ -21,12 +21,12 @@ import {
   WebhookDelivery,
   WebhookEndpoint,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/DataTable'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'

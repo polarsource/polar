@@ -12,18 +12,18 @@ import {
   PersonalAccessToken,
   PersonalAccessTokenCreateResponse,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/shadow-list-group'
+} from '@polar-sh/ui/components/atoms/Select'
+import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import Banner from '@polar-sh/ui/components/molecules/banner'
 import {
   AlertDialog,

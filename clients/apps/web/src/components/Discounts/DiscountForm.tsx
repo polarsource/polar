@@ -11,21 +11,21 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@polar-sh/ui/components/atoms/accordion'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
-import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
-import PercentageInput from '@polar-sh/ui/components/atoms/percentage-input'
+} from '@polar-sh/ui/components/atoms/Accordion'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import PercentageInput from '@polar-sh/ui/components/atoms/PercentageInput'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/Select'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 
-import DateTimePicker from '@polar-sh/ui/components/atoms/date-time-picker'
+import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   FormControl,
   FormDescription,

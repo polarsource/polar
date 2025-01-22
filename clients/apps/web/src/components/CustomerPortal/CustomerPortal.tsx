@@ -7,7 +7,7 @@ import {
   Organization,
   PolarAPI,
 } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useEffect, useMemo } from 'react'

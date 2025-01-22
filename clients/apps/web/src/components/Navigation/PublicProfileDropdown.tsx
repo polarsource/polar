@@ -11,7 +11,7 @@ import {
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
 import { UserRead } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import Link from 'next/link'
 import { useRef, useState } from 'react'

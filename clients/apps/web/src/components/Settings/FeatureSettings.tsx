@@ -3,9 +3,9 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/shadow-list-group'
-import Switch from '@polar-sh/ui/components/atoms/switch'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Form,
   FormControl,

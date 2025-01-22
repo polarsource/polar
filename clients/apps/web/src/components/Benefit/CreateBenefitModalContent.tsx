@@ -8,7 +8,7 @@ import {
   ValidationError,
   type Benefit,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'

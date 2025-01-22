@@ -3,7 +3,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getBlogPosts } from './utils'

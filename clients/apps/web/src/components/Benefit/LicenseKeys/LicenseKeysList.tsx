@@ -1,11 +1,11 @@
 import { DataTableSortingState } from '@/utils/datatable'
 import { LicenseKeyRead } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/DataTable'
 import {
   OnChangeFn,
   PaginationState,

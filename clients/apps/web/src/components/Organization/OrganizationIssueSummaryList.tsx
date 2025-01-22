@@ -1,6 +1,6 @@
 import { organizationPageLink } from '@/utils/nav'
 import { IssueFunding, Organization } from '@polar-sh/api'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { Fragment } from 'react'
 import IssueActivityBox from '../Issues/IssueActivityBox'

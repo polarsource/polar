@@ -11,8 +11,8 @@ import {
   PledgeType,
   PledgesTypeSummaries,
 } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'

@@ -9,7 +9,7 @@ import { Transaction, TransactionEmbedded } from '@polar-sh/api'
 import {
   DataTableColumnDef,
   ReactQueryLoading,
-} from '@polar-sh/ui/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/DataTable'
 import Link from 'next/link'
 import TransactionsList, { isTransaction } from './TransactionsList'
 

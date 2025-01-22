@@ -2,7 +2,7 @@ import { Slideshow } from '@/components/Products/Slideshow'
 import { markdownOptions } from '@/utils/markdown'
 import { organizationPageLink } from '@/utils/nav'
 import { CheckoutProduct, Organization } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 

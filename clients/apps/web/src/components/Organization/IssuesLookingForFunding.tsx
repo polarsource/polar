@@ -13,8 +13,8 @@ import {
   Organization,
   Repository,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

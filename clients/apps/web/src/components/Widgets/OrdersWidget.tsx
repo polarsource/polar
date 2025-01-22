@@ -2,13 +2,13 @@ import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
 import { Order } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext } from 'react'

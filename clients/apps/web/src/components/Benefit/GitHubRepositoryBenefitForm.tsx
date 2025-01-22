@@ -13,14 +13,14 @@ import {
   GitHubInvitesBenefitRepository,
   OAuthPlatform,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/Select'
 import {
   FormControl,
   FormDescription,

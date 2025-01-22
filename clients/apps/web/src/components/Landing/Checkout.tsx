@@ -4,7 +4,7 @@ import {
   ORGANIZATION,
 } from '@/components/Customization/utils'
 import { KeyboardArrowRight } from '@mui/icons-material'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
 export const Checkout = () => {

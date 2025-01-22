@@ -5,15 +5,15 @@ import {
   BenefitLicenseKeyExpirationProperties,
   BenefitLicenseKeysCreate,
 } from '@polar-sh/api'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import Switch from '@polar-sh/ui/components/atoms/switch'
+} from '@polar-sh/ui/components/atoms/Select'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,

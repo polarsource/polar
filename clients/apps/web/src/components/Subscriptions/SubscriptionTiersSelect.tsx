@@ -6,7 +6,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/Select'
 import React from 'react'
 
 interface SubscriptionTiersSelectProps {

@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { CONFIG } from '@/utils/config'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 

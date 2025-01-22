@@ -1,4 +1,4 @@
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { useCallback } from 'react'
 import { Modal, ModalProps } from '.'
 

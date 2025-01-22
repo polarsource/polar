@@ -1,4 +1,4 @@
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 
 export const Section = ({
   id,

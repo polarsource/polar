@@ -8,7 +8,7 @@ import {
   Status,
   UserRead,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/banner'
 import Link from 'next/link'
 import Icon from '../Icons/Icon'

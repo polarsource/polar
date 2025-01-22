@@ -10,8 +10,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/Select'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import { useRouter, useSelectedLayoutSegment } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'

@@ -4,7 +4,7 @@ import {
   Card,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import {
   Tooltip,
   TooltipContent,

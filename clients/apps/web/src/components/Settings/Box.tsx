@@ -1,4 +1,4 @@
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
 const Box = (props: {
   children: React.ReactElement | React.ReactElement[]

@@ -25,8 +25,8 @@ import {
   RewardPaidNotification,
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import PolarTimeAgo from '@polar-sh/ui/components/atoms/polar-time-ago'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'

@@ -1,12 +1,12 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Status } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext } from 'react'

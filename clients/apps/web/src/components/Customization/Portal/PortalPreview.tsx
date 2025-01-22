@@ -1,6 +1,6 @@
 import { CustomerPortal } from '@/components/CustomerPortal/CustomerPortal'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useContext } from 'react'
 import { ORDER_PREVIEW, SUBSCRIPTION_ORDER_PREVIEW } from '../utils'
 

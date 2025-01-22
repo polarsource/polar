@@ -10,14 +10,14 @@ import {
   Pledger,
   RewardsSummary,
 } from '@polar-sh/api'
-import Alert from '@polar-sh/ui/components/atoms/alert'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import IssueBodyRenderer from '@polar-sh/ui/components/atoms/issue-body-renderer'
-import PolarTimeAgo from '@polar-sh/ui/components/atoms/polar-time-ago'
+import Alert from '@polar-sh/ui/components/atoms/Alert'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import IssueBodyRenderer from '@polar-sh/ui/components/atoms/IssueBodyRenderer'
+import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
-import Pledgers from '../Issues/Pledgers'
 import { generateMarkdownTitle } from '../Issues/markdown'
+import Pledgers from '../Issues/Pledgers'
 
 const IssueCard = ({
   issue,

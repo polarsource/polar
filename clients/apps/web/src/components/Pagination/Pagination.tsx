@@ -1,4 +1,4 @@
-import Paginator from '@polar-sh/ui/components/atoms/paginator'
+import Paginator from '@polar-sh/ui/components/atoms/Paginator'
 import {
   ReadonlyURLSearchParams,
   useRouter,

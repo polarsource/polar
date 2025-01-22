@@ -14,8 +14,8 @@ import {
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription, useStorefront } from '@/hooks/queries'
-import Button from '@polar-sh/ui/components/atoms/button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'

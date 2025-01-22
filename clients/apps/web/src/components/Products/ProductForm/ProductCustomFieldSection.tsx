@@ -5,16 +5,16 @@ import { Section } from '@/components/Layout/Section'
 import { useCustomFields } from '@/hooks/queries'
 import { ClearOutlined } from '@mui/icons-material'
 import { CustomField, Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
-import Switch from '@polar-sh/ui/components/atoms/switch'
+} from '@polar-sh/ui/components/atoms/Select'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   FormControl,
   FormField,

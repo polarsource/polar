@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 
 import { useListOrganizationMembers } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'

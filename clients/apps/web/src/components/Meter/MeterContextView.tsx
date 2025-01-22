@@ -1,8 +1,8 @@
 import { Meter } from '@/app/api/meters/data'
 import { MeterDetails } from '@/components/Meter/MeterDetails'
 import { AddOutlined } from '@mui/icons-material'
-import Button from '@polar-sh/ui/components/atoms/button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useTheme } from 'next-themes'
 
 const mockedMeterProducts = [

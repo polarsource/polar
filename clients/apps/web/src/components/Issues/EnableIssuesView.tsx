@@ -3,7 +3,7 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { Bolt } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'

@@ -3,7 +3,7 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { UserSignupAttribution } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'

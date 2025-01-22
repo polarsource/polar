@@ -1,8 +1,8 @@
 import { useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { Account, Status } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

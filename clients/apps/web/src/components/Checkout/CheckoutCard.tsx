@@ -11,8 +11,8 @@ import {
   CheckoutUpdatePublic,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
-import MoneyInput from '@polar-sh/ui/components/atoms/money-input'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   Form,
   FormField,

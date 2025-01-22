@@ -20,8 +20,8 @@ import {
   Repository,
   RepositoryProfileSettingsUpdate,
 } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import type { SuccessResult } from 'open-graph-scraper-lite'
 import { useMemo } from 'react'

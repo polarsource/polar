@@ -9,20 +9,20 @@ import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
 import { MoreVert } from '@mui/icons-material'
 import { Interval, MetricType } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
-import { Status } from '@polar-sh/ui/components/atoms/status'
+} from '@polar-sh/ui/components/atoms/Card'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/Tabs'
 import { useParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 

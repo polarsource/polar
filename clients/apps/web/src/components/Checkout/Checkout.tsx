@@ -13,7 +13,7 @@ import {
 } from '@polar-sh/api'
 import ShadowBox, {
   ShadowBoxOnMd,
-} from '@polar-sh/ui/components/atoms/shadowbox'
+} from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useTheme } from 'next-themes'
 import { useCallback, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'

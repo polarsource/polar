@@ -1,6 +1,6 @@
 'use client'
 
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 
 export default function Error({ error }: { error: Error }) {
   return (

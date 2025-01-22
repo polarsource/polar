@@ -12,14 +12,14 @@ import {
 
 import { Search } from '@mui/icons-material'
 import { Customer, Organization } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/datatable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
-import Input from '@polar-sh/ui/components/atoms/input'
+} from '@polar-sh/ui/components/atoms/DataTable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useState } from 'react'

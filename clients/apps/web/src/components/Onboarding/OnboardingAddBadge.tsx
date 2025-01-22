@@ -1,5 +1,5 @@
 import { CONFIG } from '@/utils/config'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import IconCounter from '../Issues/IconCounter'
 import IssueLabel from '../Issues/IssueLabel'
 

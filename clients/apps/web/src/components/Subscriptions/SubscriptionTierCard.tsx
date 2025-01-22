@@ -12,7 +12,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/card'
+} from '@polar-sh/ui/components/atoms/Card'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Markdown from 'markdown-to-jsx'
 import { twMerge } from 'tailwind-merge'

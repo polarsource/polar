@@ -8,16 +8,16 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
-import CountryPicker from '@polar-sh/ui/components/atoms/country-picker'
-import Input from '@polar-sh/ui/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/Select'
 import { ChangeEvent, useState } from 'react'
 
 const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')

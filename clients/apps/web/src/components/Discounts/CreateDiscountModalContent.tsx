@@ -9,7 +9,7 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Button from '@polar-sh/ui/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'

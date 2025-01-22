@@ -16,12 +16,12 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Avatar from '@polar-sh/ui/components/atoms/avatar'
-import Button from '@polar-sh/ui/components/atoms/button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
-import Input from '@polar-sh/ui/components/atoms/input'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
-import TextArea from '@polar-sh/ui/components/atoms/textarea'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   FormControl,
   FormField,

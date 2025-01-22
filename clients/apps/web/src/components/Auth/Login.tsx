@@ -2,7 +2,7 @@
 
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { UserSignupAttribution } from '@polar-sh/api'
-import LabeledSeparator from '@polar-sh/ui/components/atoms/labeled-separator'
+import LabeledSeparator from '@polar-sh/ui/components/atoms/LabeledSeparator'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'

@@ -9,7 +9,6 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
 from polar.customer.service import customer as customer_service
-from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
@@ -25,7 +24,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.refund import Refund, RefundFailureReason, RefundReason, RefundStatus
+from polar.models.refund import Refund, RefundReason, RefundStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
@@ -38,7 +37,7 @@ from polar.transaction.service.refund import (
 )
 from polar.webhook.service import webhook as webhook_service
 
-from .schemas import RefundCreate
+from .schemas import InternalRefundCreate, RefundCreate
 from .sorting import RefundSortProperty
 
 log: Logger = structlog.get_logger()
@@ -194,15 +193,16 @@ class RefundService(ResourceServiceReader[Refund]):
                 revoke_benefits="1" if create_schema.revoke_benefits else "0",
             ),
         )
-        # Set base from Stripe
-        instance = self.build_instance_from_stripe(stripe_refund, order=order)
-        # Override with our own attributes
-        instance.reason = create_schema.reason
-        instance.comment = create_schema.comment
-        instance.revoke_benefits = create_schema.revoke_benefits
+        internal_create_schema = self.build_create_schema_from_stripe(
+            stripe_refund,
+            order=order,
+        )
+        internal_create_schema.reason = create_schema.reason
+        internal_create_schema.comment = create_schema.comment
+        internal_create_schema.revoke_benefits = create_schema.revoke_benefits
         refund = await self._save_created(
             session,
-            instance,
+            internal_create_schema,
             charge_id=payment.charge_id,
             payment=payment,
             order=order,
@@ -273,6 +273,43 @@ class RefundService(ResourceServiceReader[Refund]):
         refunded_amount = stripe_amount - refunded_tax_amount
         return refunded_amount, refunded_tax_amount
 
+    def build_create_schema_from_stripe(
+        self,
+        stripe_refund: stripe_lib.Refund,
+        *,
+        order: Order | None = None,
+        pledge: Pledge | None = None,
+    ) -> InternalRefundCreate:
+        order_id = None
+        subscription_id = None
+        customer_id = None
+        organization_id = None
+        refunded_amount = stripe_refund.amount
+        refunded_tax_amount = 0  # Default since pledges don't have VAT
+        pledge_id = pledge.id if pledge else None
+
+        if order:
+            order_id = order.id
+            subscription_id = order.subscription_id
+            customer_id = order.customer_id
+            organization_id = order.product.organization_id
+            refunded_amount, refunded_tax_amount = self.calculate_tax_from_stripe(
+                order,
+                stripe_amount=stripe_refund.amount,
+            )
+
+        schema = InternalRefundCreate.from_stripe(
+            stripe_refund,
+            refunded_amount=refunded_amount,
+            refunded_tax_amount=refunded_tax_amount,
+            order_id=order_id,
+            subscription_id=subscription_id,
+            customer_id=customer_id,
+            organization_id=organization_id,
+            pledge_id=pledge_id,
+        )
+        return schema
+
     def build_instance_from_stripe(
         self,
         stripe_refund: stripe_lib.Refund,
@@ -280,38 +317,12 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> Refund:
-        refunded_amount = stripe_refund.amount
-        refunded_tax_amount = 0
-        # Pledges never have VAT
-        if order:
-            refunded_amount, refunded_tax_amount = self.calculate_tax_from_stripe(
-                order,
-                stripe_amount=stripe_refund.amount,
-            )
-
-        failure_reason = getattr(stripe_refund, "failure_reason", None)
-        stripe_reason = stripe_refund.reason if stripe_refund.reason else "other"
-        reason = RefundReason.from_stripe(stripe_refund.reason)
-
-        instance = Refund(
-            status=stripe_refund.status,
-            reason=reason,
-            amount=refunded_amount,
-            tax_amount=refunded_tax_amount,
-            currency=stripe_refund.currency,
-            failure_reason=RefundFailureReason.from_stripe(failure_reason),
-            destination_details=stripe_refund.destination_details,
+        internal_create_schema = self.build_create_schema_from_stripe(
+            stripe_refund,
             order=order,
-            subscription_id=order.subscription_id if order else None,
-            customer_id=order.customer_id if order else None,
-            organization_id=order.product.organization_id if order else None,
             pledge=pledge,
-            processor=PaymentProcessor.stripe,
-            processor_id=stripe_refund.id,
-            processor_receipt_number=stripe_refund.receipt_number,
-            processor_reason=stripe_reason,
-            processor_balance_transaction_id=stripe_refund.balance_transaction,
         )
+        instance = Refund(**internal_create_schema.model_dump())
         return instance
 
     ###############################################################################
@@ -326,14 +337,14 @@ class RefundService(ResourceServiceReader[Refund]):
         resources = await self._get_resources(session, stripe_refund)
         charge_id, payment, order, pledge = resources
 
-        instance = self.build_instance_from_stripe(
+        internal_create_schema = self.build_create_schema_from_stripe(
             stripe_refund,
             order=order,
             pledge=pledge,
         )
         return await self._save_created(
             session,
-            instance,
+            internal_create_schema,
             charge_id=charge_id,
             payment=payment,
             order=order,
@@ -343,13 +354,15 @@ class RefundService(ResourceServiceReader[Refund]):
     async def _save_created(
         self,
         session: AsyncSession,
-        instance: Refund,
+        internal_create_schema: InternalRefundCreate,
         *,
         charge_id: str,
         payment: Transaction,
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> Refund:
+        # Upsert
+        instance = Refund(**internal_create_schema.model_dump())
         session.add(instance)
         if instance.succeeded:
             await self._refund_resources(
@@ -387,7 +400,7 @@ class RefundService(ResourceServiceReader[Refund]):
     ) -> Refund:
         resources = await self._get_resources(session, stripe_refund)
         charge_id, payment, order, pledge = resources
-        updated = self.build_instance_from_stripe(
+        updated = self.build_create_schema_from_stripe(
             stripe_refund,
             order=order,
             pledge=pledge,

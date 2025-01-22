@@ -30,7 +30,17 @@ export default function PitchPage() {
   return (
     <div className="flex h-full flex-col justify-between gap-y-12 text-sm">
       <div className="relative flex flex-grow flex-col gap-y-16">
-        <PitchNavigation activeIndex={index} setIndex={setIndex} />
+        <PitchNavigation
+          activeIndex={index}
+          setIndex={(index) => {
+            const sectionId = `0${index}`
+            document
+              .getElementById(sectionId)
+              ?.scrollIntoView({ behavior: 'smooth' })
+
+            setIndex(index)
+          }}
+        />
         <AnimatePresence key={index}>
           <motion.div
             className="bg-polar-900 pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-3/4"
@@ -46,7 +56,7 @@ export default function PitchPage() {
           >
             <IndexSection active={index == 0} />
             <UsageBasedSection active={index == 1} />
-            <EntitlementsSection active={index == 2}/>
+            <EntitlementsSection active={index == 2} />
             <DNASection active={index == 3} />
             <OpenSourceSection active={index == 4} />
             <TeamSection active={index == 5} />

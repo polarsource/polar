@@ -8,7 +8,7 @@ import { Repository } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { useState } from 'react'
 

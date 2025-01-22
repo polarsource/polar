@@ -4,7 +4,7 @@ import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 

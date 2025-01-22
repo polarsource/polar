@@ -3,7 +3,7 @@ import { Organization } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { useMemo, useRef, useState } from 'react'
 
 const PublicRewardsSetting = (props: {

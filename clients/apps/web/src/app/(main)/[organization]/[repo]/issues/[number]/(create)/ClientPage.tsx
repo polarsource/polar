@@ -7,7 +7,7 @@ import IssueCard from '@/components/Pledge/IssueCard'
 import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
 import { usePostHog } from '@/hooks/posthog'
 import { Issue, Organization, Pledger, RewardsSummary } from '@polar-sh/api'
-import Banner from '@polar-sh/ui/components/molecules/banner'
+import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { useEffect, useState } from 'react'
 
 const ClientPage = ({

@@ -1,6 +1,5 @@
 import * as React from 'react'
 
-import { twMerge } from 'tailwind-merge'
 import {
   CardContent as CardContentPrimitive,
   CardDescription as CardDescriptionPrimitive,
@@ -8,7 +7,8 @@ import {
   CardHeader as CardHeaderPrimitive,
   Card as CardPrimitive,
   CardTitle as CardTitlePrimitive,
-} from '../card'
+} from '@/components/ui/card'
+import { twMerge } from 'tailwind-merge'
 
 const Card = React.forwardRef<
   React.ElementRef<typeof CardPrimitive>,

@@ -4,7 +4,7 @@ import * as React from "react"
 import { OTPInput, OTPInputContext } from "input-otp"
 import { Dot } from "lucide-react"
 
-import { cn } from "@polarkit/lib/utils"
+import { cn } from "@/lib/utils"
 
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,

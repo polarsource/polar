@@ -2,8 +2,6 @@
 
 import * as React from 'react'
 
-import { Trigger as SelectTriggerBase } from '@radix-ui/react-select'
-import { twMerge } from 'tailwind-merge'
 import {
   SelectContent as SelectContentPrimitive,
   SelectGroup as SelectGroupPrimitive,
@@ -13,7 +11,9 @@ import {
   SelectSeparator as SelectSeparatorPrimitive,
   SelectTrigger as SelectTriggerPrimitive,
   SelectValue as SelectValuePrimitive,
-} from '../select'
+} from '@/components/ui/select'
+import { Trigger as SelectTriggerBase } from '@radix-ui/react-select'
+import { twMerge } from 'tailwind-merge'
 
 const Select = SelectPrimitive
 

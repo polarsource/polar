@@ -15,9 +15,7 @@ export const options: Options = {
   format: ['cjs', 'esm'],
   minify: true,
   dts: true,
-  clean: true,
   bundle: true,
-  external: ['react', 'react-dom'],
 }
 
 export default defineConfig(options)

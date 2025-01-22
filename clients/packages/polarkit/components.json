@@ -10,7 +10,8 @@
     "cssVariables": true
   },
   "aliases": {
+    "ui": "@/components/ui",
     "components": "@/components",
-    "utils": "@polarkit/lib/utils"
+    "utils": "@/lib/utils"
   }
 }

@@ -1,6 +1,6 @@
+import { Textarea } from '@/components/ui/textarea'
 import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Textarea } from '../textarea'
 
 export interface TextAreaProps extends React.ComponentProps<'textarea'> {
   resizable?: boolean | undefined

@@ -2,13 +2,13 @@
 
 import * as React from 'react'
 
-import { cn } from '@polarkit/lib/utils'
 import {
   Accordion as ShadAccordion,
   AccordionContent as ShadAccordionContent,
   AccordionItem as ShadAccordionItem,
   AccordionTrigger as ShadAccordionTrigger,
-} from '../accordion'
+} from '@/components/ui/accordion'
+import { cn } from '@/lib/utils'
 
 const Accordion = ShadAccordion
 

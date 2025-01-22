@@ -1,7 +1,7 @@
+import { ButtonProps, Button as ShadcnButton } from '@/components/ui/button'
 import { cva } from 'class-variance-authority'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ButtonProps, Button as ShadcnButton } from '../button'
 
 const buttonVariants = cva(
   'relative font-normal inline-flex items-center select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',

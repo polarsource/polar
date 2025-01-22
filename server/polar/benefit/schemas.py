@@ -286,6 +286,13 @@ class BenefitCreateBase(Schema):
             "Will be displayed on products having this benefit."
         ),
     )
+    slug: str | None = Field(
+        None,
+        description=(
+            "An easily identifiable slug for the benefit. "
+            "Optional – will be generated if not provided."
+        ),
+    )
     organization_id: OrganizationID | None = Field(
         None,
         description=(
@@ -345,6 +352,13 @@ BenefitCreate = Annotated[
 
 
 class BenefitUpdateBase(Schema):
+    slug: str | None = Field(
+        None,
+        description=(
+            "An easily identifiable slug for the benefit. "
+            "A unique slug will be generated if not provided."
+        ),
+    )
     description: str | None = Field(
         None,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
@@ -403,6 +417,7 @@ class BenefitBase(IDSchema, TimestampedSchema):
     id: UUID4 = Field(..., description="The ID of the benefit.")
     type: BenefitType = Field(..., description="The type of the benefit.")
     description: str = Field(..., description="The description of the benefit.")
+    slug: str = Field(..., description="An easily identifiable slug for the benefit.")
     selectable: bool = Field(
         ..., description="Whether the benefit is selectable when creating a product."
     )

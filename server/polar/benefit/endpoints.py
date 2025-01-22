@@ -44,6 +44,9 @@ async def list(
     type: MultipleQueryFilter[BenefitType] | None = Query(
         None, title="BenefitType Filter", description="Filter by benefit type."
     ),
+    slug: MultipleQueryFilter[str] | None = Query(
+        None, title="Slug Filter", description="Filter by slug."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:
     """List benefits."""
@@ -52,6 +55,7 @@ async def list(
         auth_subject,
         type=type,
         organization_id=organization_id,
+        slug=slug,
         pagination=pagination,
     )
 

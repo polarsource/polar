@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, TypedDict
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -91,8 +91,17 @@ class BenefitLicenseKeysProperties(BenefitProperties):
 
 class Benefit(RecordModel):
     __tablename__ = "benefits"
+    __table_args__ = (
+        Index(
+            "ix_benefits_organization_id_slug",
+            "organization_id",
+            "slug",
+            unique=True,
+        ),
+    )
 
     type: Mapped[BenefitType] = mapped_column(String, nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

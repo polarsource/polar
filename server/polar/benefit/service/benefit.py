@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Any, TypeVar, overload
 
 from pydantic import BaseModel
+from slugify import slugify
 from sqlalchemy import Select, delete, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload
@@ -96,6 +97,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         *,
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        slug: Sequence[str] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)
@@ -105,6 +107,9 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))
+
+        if slug is not None:
+            statement = statement.where(Benefit.slug.in_(slug))
 
         statement = statement.order_by(
             Benefit.type,
@@ -124,6 +129,24 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         statement = (
             self._get_readable_benefit_statement(auth_subject)
             .where(Benefit.id == id, Benefit.deleted_at.is_(None))
+            .options(contains_eager(Benefit.organization))
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_by_slug(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        slug: str,
+    ) -> Benefit | None:
+        statement = (
+            self._get_readable_benefit_statement(auth_subject)
+            .where(
+                Benefit.slug == slug,
+                Benefit.deleted_at.is_(None),
+            )
             .options(contains_eager(Benefit.organization))
         )
 
@@ -169,8 +192,27 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             create_schema.properties.model_dump(mode="json", by_alias=True),
         )
 
+        if create_schema.slug is None:
+            slug = await self.generate_slug(
+                session, auth_subject, create_schema.description
+            )
+        else:
+            existing = await self.get_by_slug(session, auth_subject, create_schema.slug)
+            if existing is not None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": ("body", "slug"),
+                            "msg": "Benefit with slug already exists.",
+                            "type": "value_error",
+                            "input": create_schema.slug,
+                        }
+                    ]
+                )
+
         benefit = Benefit(
             organization=organization,
+            slug=slug,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
             **create_schema.model_dump(
@@ -179,6 +221,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
                     "organization_id",
                     "is_tax_applicable",
                     "properties",
+                    "slug",
                 },
             ),
         )
@@ -211,6 +254,22 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         update_dict = update_schema.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}
         )
+
+        if update_dict.get("slug") is not None:
+            existing = await self.get_by_slug(
+                session, auth_subject, update_dict["slug"]
+            )
+            if existing is not None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": ("body", "slug"),
+                            "msg": "Benefit with slug already exists.",
+                            "type": "value_error",
+                            "input": update_dict["slug"],
+                        }
+                    ]
+                )
 
         properties_update: BaseModel | None = getattr(update_schema, "properties", None)
         if properties_update is not None:
@@ -271,6 +330,30 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             )
 
         return benefit
+
+    async def generate_slug(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        slug: str,
+    ) -> str:
+        orig_slug = slugify(slug)
+
+        for n in range(0, 100):
+            test_slug = orig_slug if n == 0 else f"{orig_slug}-{n}"
+            exists = await self.get_by_slug(session, auth_subject, test_slug)
+            # slug is unused, continue with creating an article with this slug
+            if exists is None:
+                slug = test_slug
+                break
+            # continue until a free slug has been found
+            else:
+                # if no free slug has been found in 100 attempts, error out
+                raise Exception(
+                    "This slug has been used more than 100 times in this organization."
+                )
+
+        return slug
 
     async def _with_organization(
         self, session: AsyncSession, benefit: Benefit

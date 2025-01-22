@@ -54,6 +54,19 @@ class TestListBenefits:
         AuthSubjectFixture(subject="organization", scopes={Scope.web_default}),
         AuthSubjectFixture(subject="organization", scopes={Scope.benefits_read}),
     )
+    async def test_slug(self, client: AsyncClient, benefits: list[Benefit]) -> None:
+        response = await client.get("/v1/benefits/", params={"slug": benefits[0].slug})
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(benefits[0].id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.web_default}),
+        AuthSubjectFixture(subject="organization", scopes={Scope.benefits_read}),
+    )
     async def test_organization(
         self, client: AsyncClient, benefits: list[Benefit]
     ) -> None:

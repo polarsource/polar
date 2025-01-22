@@ -910,6 +910,7 @@ async def create_benefit(
     selectable: bool = True,
     deletable: bool = True,
     properties: dict[str, Any] = {"note": None},
+    slug: str = "benefit-slug",
 ) -> Benefit:
     benefit = Benefit(
         type=type,
@@ -919,6 +920,7 @@ async def create_benefit(
         selectable=selectable,
         deletable=deletable,
         properties=properties,
+        slug=slug,
     )
     await save_fixture(benefit)
     return benefit

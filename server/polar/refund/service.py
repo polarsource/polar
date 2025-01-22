@@ -216,6 +216,99 @@ class RefundService(ResourceServiceReader[Refund]):
         await self.enqueue_benefits_revokation(session, order)
         return refund
 
+    async def upsert_from_stripe(
+        self, session: AsyncSession, stripe_refund: stripe_lib.Refund
+    ) -> Refund:
+        refund = await self.get_by(session, processor_id=stripe_refund.id)
+        if refund:
+            return await self.update_from_stripe(session, refund, stripe_refund)
+        return await self.create_from_stripe(session, stripe_refund)
+
+    async def create_from_stripe(
+        self,
+        session: AsyncSession,
+        stripe_refund: stripe_lib.Refund,
+    ) -> Refund:
+        resources = await self._get_resources(session, stripe_refund)
+        charge_id, payment, order, pledge = resources
+
+        internal_create_schema = self.build_create_schema_from_stripe(
+            stripe_refund,
+            order=order,
+            pledge=pledge,
+        )
+        return await self._create(
+            session,
+            internal_create_schema,
+            charge_id=charge_id,
+            payment=payment,
+            order=order,
+            pledge=pledge,
+        )
+
+    async def update_from_stripe(
+        self,
+        session: AsyncSession,
+        refund: Refund,
+        stripe_refund: stripe_lib.Refund,
+    ) -> Refund:
+        resources = await self._get_resources(session, stripe_refund)
+        charge_id, payment, order, pledge = resources
+        updated = self.build_create_schema_from_stripe(
+            stripe_refund,
+            order=order,
+            pledge=pledge,
+        )
+
+        had_succeeded = refund.succeeded
+
+        # Reference: https://docs.stripe.com/refunds#see-also
+        # Only `metadata` and `destination_details` should update according to
+        # docs, but a pending refund can surely become `succeeded`, `canceled` or `failed`
+        refund.status = updated.status
+        refund.failure_reason = updated.failure_reason
+        refund.destination_details = updated.destination_details
+        refund.processor_receipt_number = updated.processor_receipt_number
+        session.add(refund)
+
+        transitioned_to_succeeded = refund.succeeded and not had_succeeded
+        if transitioned_to_succeeded:
+            refund_transaction = await self._create_refund_transaction(
+                session,
+                charge_id=charge_id,
+                refund=refund,
+                payment=payment,
+                order=order,
+                pledge=pledge,
+            )
+            # Double check transition by ensuring ledger entry was made
+            transitioned_to_succeeded = refund_transaction is not None
+
+        await session.flush()
+        log.info(
+            "refund.updated",
+            id=refund.id,
+            amount=refund.amount,
+            tax_amount=refund.tax_amount,
+            order_id=refund.order_id,
+            reason=refund.reason,
+            processor=refund.processor,
+            processor_id=refund.processor_id,
+        )
+        if order is None:
+            return refund
+
+        organization = await organization_service.get(
+            session, order.product.organization_id
+        )
+        if not organization:
+            return refund
+
+        await self._on_updated(session, organization, refund)
+        if transitioned_to_succeeded:
+            await self._on_succeeded(session, organization, refund, order)
+        return refund
+
     async def enqueue_benefits_revokation(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -248,14 +341,6 @@ class RefundService(ResourceServiceReader[Refund]):
         ratio = order.tax_amount / order.amount
         tax_amount = round(refund_amount * ratio)
         return tax_amount
-
-    async def upsert_from_stripe(
-        self, session: AsyncSession, stripe_refund: stripe_lib.Refund
-    ) -> Refund:
-        refund = await self.get_by(session, processor_id=stripe_refund.id)
-        if refund:
-            return await self._update_from_stripe(session, refund, stripe_refund)
-        return await self._create_from_stripe(session, stripe_refund)
 
     def calculate_tax_from_stripe(
         self,
@@ -332,28 +417,6 @@ class RefundService(ResourceServiceReader[Refund]):
     # INTERNALS
     ###############################################################################
 
-    async def _create_from_stripe(
-        self,
-        session: AsyncSession,
-        stripe_refund: stripe_lib.Refund,
-    ) -> Refund:
-        resources = await self._get_resources(session, stripe_refund)
-        charge_id, payment, order, pledge = resources
-
-        internal_create_schema = self.build_create_schema_from_stripe(
-            stripe_refund,
-            order=order,
-            pledge=pledge,
-        )
-        return await self._create(
-            session,
-            internal_create_schema,
-            charge_id=charge_id,
-            payment=payment,
-            order=order,
-            pledge=pledge,
-        )
-
     async def _create(
         self,
         session: AsyncSession,
@@ -388,7 +451,7 @@ class RefundService(ResourceServiceReader[Refund]):
             return instance
 
         if instance.succeeded:
-            await self._refund_resources(
+            await self._create_refund_transaction(
                 session,
                 charge_id=charge_id,
                 refund=instance,
@@ -418,75 +481,12 @@ class RefundService(ResourceServiceReader[Refund]):
         if not organization:
             return instance
 
-        await self._on_created(session, organization, order, instance)
+        await self._on_created(session, organization, instance)
         if instance.succeeded:
-            await self._on_succeeded(session, organization, order, instance)
+            await self._on_succeeded(session, organization, instance, order)
         return instance
 
-    async def _update_from_stripe(
-        self,
-        session: AsyncSession,
-        refund: Refund,
-        stripe_refund: stripe_lib.Refund,
-    ) -> Refund:
-        resources = await self._get_resources(session, stripe_refund)
-        charge_id, payment, order, pledge = resources
-        updated = self.build_create_schema_from_stripe(
-            stripe_refund,
-            order=order,
-            pledge=pledge,
-        )
-
-        had_succeeded = refund.succeeded
-
-        # Reference: https://docs.stripe.com/refunds#see-also
-        # Only `metadata` and `destination_details` should update according to
-        # docs, but a pending refund can surely become `succeeded`, `canceled` or `failed`
-        refund.status = updated.status
-        refund.failure_reason = updated.failure_reason
-        refund.destination_details = updated.destination_details
-        refund.processor_receipt_number = updated.processor_receipt_number
-        session.add(refund)
-
-        transitioned_to_succeeded = refund.succeeded and not had_succeeded
-        if transitioned_to_succeeded:
-            refund_transaction = await self._refund_resources(
-                session,
-                charge_id=charge_id,
-                refund=refund,
-                payment=payment,
-                order=order,
-                pledge=pledge,
-            )
-            # Double check transition by ensuring ledger entry was made
-            transitioned_to_succeeded = refund_transaction is not None
-
-        await session.flush()
-        log.info(
-            "refund.updated",
-            id=refund.id,
-            amount=refund.amount,
-            tax_amount=refund.tax_amount,
-            order_id=refund.order_id,
-            reason=refund.reason,
-            processor=refund.processor,
-            processor_id=refund.processor_id,
-        )
-        if order is None:
-            return refund
-
-        organization = await organization_service.get(
-            session, order.product.organization_id
-        )
-        if not organization:
-            return refund
-
-        await self._on_updated(session, organization, order, refund)
-        if transitioned_to_succeeded:
-            await self._on_succeeded(session, organization, order, refund)
-        return refund
-
-    async def _refund_resources(
+    async def _create_refund_transaction(
         self,
         session: AsyncSession,
         *,
@@ -527,7 +527,6 @@ class RefundService(ResourceServiceReader[Refund]):
         self,
         session: AsyncSession,
         organization: Organization,
-        order: Order,
         refund: Refund,
     ) -> None:
         await webhook_service.send(
@@ -540,8 +539,8 @@ class RefundService(ResourceServiceReader[Refund]):
         self,
         session: AsyncSession,
         organization: Organization,
-        order: Order,
         refund: Refund,
+        order: Order,
     ) -> None:
         # Send refund.succeeded
         await webhook_service.send(
@@ -560,7 +559,6 @@ class RefundService(ResourceServiceReader[Refund]):
         self,
         session: AsyncSession,
         organization: Organization,
-        order: Order,
         refund: Refund,
     ) -> None:
         await webhook_service.send(

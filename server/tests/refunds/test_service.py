@@ -355,11 +355,9 @@ class TestCreatedWebhooks(StripeRefund):
             charge_id=payment.charge_id,
         )
         # Could be created from our API
-        refund = await refund_service._create_from_stripe(session, stripe_refund)
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
         # ... and simultaneously from Stripe `refund.created` webhook
-        webhook_refund = await refund_service._create_from_stripe(
-            session, stripe_refund
-        )
+        webhook_refund = await refund_service.create_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
         assert webhook_refund
@@ -400,9 +398,9 @@ class TestCreatedWebhooks(StripeRefund):
             charge_id=payment.charge_id,
         )
         # Could be created from our API
-        refund = await refund_service._create_from_stripe(session, stripe_refund)
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
         # ... and simultaneously from Stripe `refund.created` webhook
-        await refund_service._create_from_stripe(session, stripe_refund)
+        await refund_service.create_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
         await self.assert_transaction_amounts_from_refund(session, refund)
@@ -421,9 +419,9 @@ class TestCreatedWebhooks(StripeRefund):
             charge_id=payment.charge_id,
         )
         # Could be created from our API
-        refund = await refund_service._create_from_stripe(session, stripe_refund)
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
         # ... and simultaneously from Stripe `refund.created` webhook
-        await refund_service._create_from_stripe(session, stripe_refund)
+        await refund_service.create_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
         await self.assert_transaction_amounts_from_refund(session, refund)

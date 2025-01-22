@@ -46,12 +46,20 @@
       "outputs": [
         ".next/**",
         "!.next/cache/**",
+        "storybook-static/**",
         "dist/**"
       ]
     },
     "lint": {},
     "test": {},
     "dev": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": false,
+      "persistent": true
+    },
+    "storybook": {
       "dependsOn": [
         "^build"
       ],

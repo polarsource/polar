@@ -98,7 +98,6 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
         customer_id: UUID | None = None,
         organization_id: UUID | None = None,
         pledge_id: UUID | None = None,
-        comment: str | None = None,
     ):
         failure_reason = getattr(stripe_refund, "failure_reason", None)
         failure_reason = RefundFailureReason.from_stripe(failure_reason)
@@ -124,7 +123,6 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
             amount=refunded_amount,
             tax_amount=refunded_tax_amount,
             currency=stripe_refund.currency,
-            comment=comment,
             failure_reason=failure_reason,
             destination_details=destination_details,
             order_id=order_id,
@@ -139,3 +137,7 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
             processor_reason=stripe_reason,
             processor_balance_transaction_id=balance_transaction_id,
         )
+
+
+class InternalRefundUpdate(MetadataInputMixin, Schema):
+    id: UUID

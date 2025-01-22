@@ -488,7 +488,7 @@ class TestUpdatedWebhooks(StripeRefund):
         assert refund
         assert refund.status == RefundStatus.succeeded
         assert create_refund_transaction.call_count == 1
-        assert_hooks_called_once(refund_hooks, {"updated"})
+        assert_hooks_called_once(refund_hooks, {"updated", "succeeded"})
 
         order = await order_service.get(session, order.id)  # type: ignore
         assert order

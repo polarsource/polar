@@ -1,7 +1,7 @@
 'use client'
 
 import { CheckOutlined, ContentPasteOutlined } from '@mui/icons-material'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { useState } from 'react'
 
 const CopyToClipboardButton = (props: {

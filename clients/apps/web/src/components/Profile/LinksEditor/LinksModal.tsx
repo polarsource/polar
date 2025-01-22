@@ -1,7 +1,7 @@
 import { CloseOutlined } from '@mui/icons-material'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
-import { Banner } from 'polarkit/components/ui/molecules'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
+import Banner from 'polarkit/components/molecules/banner'
 import { useMemo, useState } from 'react'
 import { Link } from './LinksEditor'
 

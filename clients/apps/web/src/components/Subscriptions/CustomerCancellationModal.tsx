@@ -10,8 +10,8 @@ import {
   ValidationError,
 } from '@polar-sh/api'
 import { UseMutationResult } from '@tanstack/react-query'
-import Button from 'polarkit/components/ui/atoms/button'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
+import Button from 'polarkit/components/atoms/button'
+import TextArea from 'polarkit/components/atoms/textarea'
 import {
   Form,
   FormControl,

@@ -7,8 +7,8 @@ import {
 import { IssueListResponse, IssueSortBy } from '@polar-sh/api'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

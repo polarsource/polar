@@ -4,13 +4,13 @@ import { ShoppingCartOutlined } from '@mui/icons-material'
 import { Order } from '@polar-sh/api'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms/card'
+} from 'polarkit/components/atoms/card'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 

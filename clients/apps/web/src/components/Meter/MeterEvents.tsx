@@ -1,7 +1,7 @@
 import { MeterEvent } from '@/app/api/meters/data'
-import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { DataTable } from 'polarkit/components/ui/atoms/datatable'
+import { PolarTimeAgo } from 'polarkit/components/atoms'
+import Avatar from 'polarkit/components/atoms/avatar'
+import { DataTable } from 'polarkit/components/atoms/datatable'
 
 export const MeterEvents = ({ events }: { events: MeterEvent[] }) => {
   return (

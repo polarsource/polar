@@ -3,7 +3,7 @@ import { getGoogleAuthorizeURL } from '@/utils/auth'
 import { Google } from '@mui/icons-material'
 import { UserSignupAttribution } from '@polar-sh/api'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 interface GoogleLoginButtonProps {
   returnTo?: string

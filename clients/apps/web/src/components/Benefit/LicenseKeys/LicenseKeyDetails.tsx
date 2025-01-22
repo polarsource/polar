@@ -1,6 +1,6 @@
 import { LicenseKeyRead } from '@polar-sh/api'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { FormattedDateTime } from 'polarkit/components/atoms'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeyDetails {

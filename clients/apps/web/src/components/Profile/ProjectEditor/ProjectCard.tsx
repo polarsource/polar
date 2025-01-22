@@ -7,13 +7,13 @@ import { StarIcon as StarIconOutlined } from '@heroicons/react/24/outline'
 import { DragIndicatorOutlined, HiveOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/api'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms/card'
+} from 'polarkit/components/atoms/card'
 import { twMerge } from 'tailwind-merge'
 
 export const ProjectCard = ({

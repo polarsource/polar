@@ -16,16 +16,16 @@ import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
-import MoneyInput from 'polarkit/components/ui/atoms/money-input'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
+import MoneyInput from 'polarkit/components/atoms/money-input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from 'polarkit/components/atoms/select'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

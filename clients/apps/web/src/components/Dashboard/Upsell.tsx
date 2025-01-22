@@ -4,8 +4,8 @@ import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
-import { Banner } from 'polarkit/components/ui/molecules'
+import Button from 'polarkit/components/atoms/button'
+import Banner from 'polarkit/components/molecules/banner'
 import { PropsWithChildren } from 'react'
 
 export const MaintainerUpsell = () => {

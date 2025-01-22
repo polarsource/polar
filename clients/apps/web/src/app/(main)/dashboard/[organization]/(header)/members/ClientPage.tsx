@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 
 import { useListOrganizationMembers } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -42,7 +42,7 @@ export default function ClientPage() {
           <TableBody>
             {sortedMembers.map((m) => (
               <TableRow key={m.email}>
-                <TableCell className="font-medium ">
+                <TableCell className="font-medium">
                   <div className="inline-flex items-center gap-2">
                     <Avatar
                       className="h-8 w-8"

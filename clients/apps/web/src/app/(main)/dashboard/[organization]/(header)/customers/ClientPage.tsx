@@ -14,14 +14,14 @@ import { Search } from '@mui/icons-material'
 import { Customer, Organization } from '@polar-sh/api'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import { FormattedDateTime } from 'polarkit/components/atoms'
+import Avatar from 'polarkit/components/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
-import Input from 'polarkit/components/ui/atoms/input'
+} from 'polarkit/components/atoms/datatable'
+import Input from 'polarkit/components/atoms/input'
 import React, { useCallback, useEffect, useState } from 'react'
 
 interface ClientPageProps {

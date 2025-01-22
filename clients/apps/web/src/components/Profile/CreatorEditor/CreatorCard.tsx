@@ -4,14 +4,14 @@ import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined, GitHub } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
 import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Button from 'polarkit/components/atoms/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms/card'
+} from 'polarkit/components/atoms/card'
 import { twMerge } from 'tailwind-merge'
 
 export const CreatorCard = ({

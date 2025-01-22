@@ -26,8 +26,8 @@ import {
   useEditWebhookEndpoint,
 } from '@/hooks/queries'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 
 export default function EditWebhookModal({

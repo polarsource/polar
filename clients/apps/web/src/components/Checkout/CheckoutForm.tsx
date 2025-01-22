@@ -28,10 +28,10 @@ import {
 } from '@stripe/stripe-js'
 import debounce from 'lodash.debounce'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import CountryPicker from 'polarkit/components/ui/atoms/country-picker'
-import CountryStatePicker from 'polarkit/components/ui/atoms/country-state-picker'
-import Input from 'polarkit/components/ui/atoms/input'
+import Button from 'polarkit/components/atoms/button'
+import CountryPicker from 'polarkit/components/atoms/country-picker'
+import CountryStatePicker from 'polarkit/components/atoms/country-state-picker'
+import Input from 'polarkit/components/atoms/input'
 import {
   Form,
   FormControl,

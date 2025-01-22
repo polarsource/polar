@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import * as React from 'react'
 import { useEffect } from 'react'
 
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   Calendar,
   DateRange as InternalDateRange,

@@ -3,11 +3,8 @@ import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
 import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
 import { OAuthAccountRead } from '@polar-sh/api'
 import { usePathname, useSearchParams } from 'next/navigation'
-import {
-  FormattedDateTime,
-  ShadowListGroup,
-} from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { FormattedDateTime, ShadowListGroup } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import { useEffect, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
 

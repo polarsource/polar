@@ -1,7 +1,7 @@
 'use client'
 
 import { Meter } from '@/app/api/meters/data'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { FormattedDateTime } from 'polarkit/components/atoms'
 import { twMerge } from 'tailwind-merge'
 import CopyToClipboardButton from '../CopyToClipboardButton/CopyToClipboardButton'
 import { toast } from '../Toast/use-toast'

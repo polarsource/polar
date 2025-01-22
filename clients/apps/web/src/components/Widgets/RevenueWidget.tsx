@@ -1,7 +1,7 @@
 import { useMetrics } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { getCentsInDollarString } from '@polarkit/lib/money'
-import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
+import { Card, CardFooter, CardHeader } from 'polarkit/components/atoms/card'
 import {
   Tooltip,
   TooltipContent,

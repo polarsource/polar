@@ -14,7 +14,7 @@ import {
   PaymentIntent,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useEffect, useState } from 'react'
 import Subtotal from './Subtotal'

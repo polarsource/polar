@@ -16,12 +16,12 @@ import {
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { CustomField, CustomFieldType, Organization } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
+} from 'polarkit/components/atoms/datatable'
 import {
   DropdownMenu,
   DropdownMenuContent,

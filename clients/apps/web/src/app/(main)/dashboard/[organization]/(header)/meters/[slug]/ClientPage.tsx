@@ -10,20 +10,20 @@ import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
 import { MoreVert } from '@mui/icons-material'
 import { Interval, MetricType } from '@polar-sh/api'
 import { useParams } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms/card'
-import { Status } from 'polarkit/components/ui/atoms/status'
+} from 'polarkit/components/atoms/card'
+import { Status } from 'polarkit/components/atoms/status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
+} from 'polarkit/components/atoms/tabs'
 import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage() {

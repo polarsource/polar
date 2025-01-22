@@ -15,18 +15,18 @@ import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/api'
 import Image from 'next/image'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
-import MoneyInput from 'polarkit/components/ui/atoms/money-input'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Button from 'polarkit/components/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
+import MoneyInput from 'polarkit/components/atoms/money-input'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
-import { Banner } from 'polarkit/components/ui/molecules'
+} from 'polarkit/components/atoms/tabs'
+import TextArea from 'polarkit/components/atoms/textarea'
+import Banner from 'polarkit/components/molecules/banner'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

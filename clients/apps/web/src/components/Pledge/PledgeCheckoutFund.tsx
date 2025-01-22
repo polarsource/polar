@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { Issue, Organization } from '@polar-sh/api'
 import Link from 'next/link'
-import { Tabs, TabsContent } from 'polarkit/components/ui/atoms/tabs'
+import { Tabs, TabsContent } from 'polarkit/components/atoms/tabs'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 import PledgeCheckoutFundToday from './PledgeCheckoutFundToday'

@@ -16,14 +16,14 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { ChevronRight } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from 'polarkit/components/ui/atoms/select'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+} from 'polarkit/components/atoms/select'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import React, { useContext } from 'react'
 
 interface OverviewPageProps {

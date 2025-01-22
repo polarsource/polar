@@ -13,7 +13,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms/card'
+} from 'polarkit/components/atoms/card'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Link as LinkItem } from './LinksEditor'

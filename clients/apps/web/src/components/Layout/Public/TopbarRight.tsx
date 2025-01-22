@@ -9,7 +9,7 @@ import Popover from '@/components/Notifications/Popover'
 import { usePostHog } from '@/hooks/posthog'
 import { Organization, UserRead } from '@polar-sh/api'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 const TopbarRight = ({
   authenticatedUser,

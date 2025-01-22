@@ -18,13 +18,13 @@ import { getDiscountDisplay } from '@/utils/discount'
 import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
 import { Discount, Organization } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
-import Input from 'polarkit/components/ui/atoms/input'
+} from 'polarkit/components/atoms/datatable'
+import Input from 'polarkit/components/atoms/input'
 import {
   DropdownMenu,
   DropdownMenuContent,

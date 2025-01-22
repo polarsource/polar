@@ -6,7 +6,7 @@ import {
 
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKey } from '@/hooks/queries'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
+import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
 import { LicenseKeyActivations } from './LicenseKeyActivations'
 import { LicenseKeyDetails } from './LicenseKeyDetails'
 

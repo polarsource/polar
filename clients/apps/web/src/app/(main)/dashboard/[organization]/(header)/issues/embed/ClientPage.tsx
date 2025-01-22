@@ -8,9 +8,9 @@ import { useListRepositories } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Organization } from '@polar-sh/api'
 import { useSearchParams } from 'next/navigation'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
 import { ReactElement, useContext, useState } from 'react'
 
 interface Embeddable {

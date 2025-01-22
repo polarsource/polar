@@ -15,8 +15,8 @@ import {
   ValidationError,
 } from '@polar-sh/api'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Button from 'polarkit/components/atoms/button'
 import { useCallback, useEffect, useState } from 'react'
 
 export default function Page() {

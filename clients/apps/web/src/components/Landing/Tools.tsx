@@ -3,7 +3,7 @@
 import { CommandLineIcon } from '@heroicons/react/24/outline'
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 export const Tools = () => {
   return (

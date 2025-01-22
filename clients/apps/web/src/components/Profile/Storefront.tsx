@@ -9,7 +9,7 @@ import { organizationPageLink } from '@/utils/nav'
 import { HiveOutlined } from '@mui/icons-material'
 import { IssueFunding, Organization, ProductStorefront } from '@polar-sh/api'
 import Link from 'next/link'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 import { useMemo } from 'react'
 import { ProductsGrid } from './ProductsGrid'
 

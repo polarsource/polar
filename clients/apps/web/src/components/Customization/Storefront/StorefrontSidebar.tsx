@@ -17,12 +17,12 @@ import {
   ValidationError,
 } from '@polar-sh/api'
 import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
-import Input from 'polarkit/components/ui/atoms/input'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Button from 'polarkit/components/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
+import Input from 'polarkit/components/atoms/input'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
+import TextArea from 'polarkit/components/atoms/textarea'
 import {
   FormControl,
   FormField,

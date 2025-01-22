@@ -33,10 +33,10 @@ import {
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
+import { List, ListItem } from 'polarkit/components/atoms/list'
+import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,

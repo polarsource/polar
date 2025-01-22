@@ -12,8 +12,8 @@ import { GitHub } from '@mui/icons-material'
 import { Platforms } from '@polar-sh/api'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShadowListGroup } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowListGroup } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import { useContext } from 'react'
 
 export default function ClientPage() {

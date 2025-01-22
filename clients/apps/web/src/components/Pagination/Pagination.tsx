@@ -3,7 +3,7 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
-import { Paginator } from 'polarkit/components/ui/atoms'
+import { Paginator } from 'polarkit/components/atoms'
 import {
   PropsWithChildren,
   useCallback,

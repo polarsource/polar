@@ -1,9 +1,9 @@
 import { UserIcon } from '@heroicons/react/24/outline'
 import { Organization } from '@polar-sh/api'
-import { Switch } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Input from 'polarkit/components/ui/atoms/input'
-import { Banner } from 'polarkit/components/ui/molecules'
+import { Switch } from 'polarkit/components/atoms'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Input from 'polarkit/components/atoms/input'
+import Banner from 'polarkit/components/molecules/banner'
 import { useMemo, useRef, useState } from 'react'
 
 const PublicRewardsSetting = (props: {

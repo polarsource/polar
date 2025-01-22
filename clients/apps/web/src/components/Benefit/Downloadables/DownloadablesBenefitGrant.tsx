@@ -6,8 +6,8 @@ import {
 
 import { useCustomerDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
-import { Pill } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { Pill } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import {
   DropdownMenu,
   DropdownMenuContent,

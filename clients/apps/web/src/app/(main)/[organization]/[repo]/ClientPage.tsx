@@ -22,8 +22,8 @@ import {
 } from '@polar-sh/api'
 import Link from 'next/link'
 import type { SuccessResult } from 'open-graph-scraper-lite'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
+import Avatar from 'polarkit/components/atoms/avatar'
+import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 import { useMemo } from 'react'
 
 type OgObject = SuccessResult['result']

@@ -5,7 +5,7 @@ import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
 import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/api'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

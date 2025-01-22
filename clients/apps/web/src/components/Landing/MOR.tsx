@@ -1,6 +1,6 @@
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { SplitPromo } from './molecules/SplitPromo'
 
 export const MerchantOfRecord = () => {

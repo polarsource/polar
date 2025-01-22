@@ -14,7 +14,7 @@ import {
 } from '@polar-sh/api'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'

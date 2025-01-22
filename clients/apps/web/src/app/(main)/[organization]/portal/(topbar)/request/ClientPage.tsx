@@ -5,9 +5,9 @@ import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 
 import {
   Form,

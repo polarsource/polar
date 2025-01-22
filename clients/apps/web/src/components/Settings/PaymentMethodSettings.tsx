@@ -9,7 +9,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { PaymentMethod } from '@polar-sh/api'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { useState } from 'react'
 import { prettyCardName } from '../Pledge/payment'
 import Spinner from '../Shared/Spinner'

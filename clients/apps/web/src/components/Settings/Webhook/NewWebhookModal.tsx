@@ -13,9 +13,9 @@ import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateWebhookEndpoint } from '@/hooks/queries'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
+import Banner from 'polarkit/components/molecules/banner'
 import { Form } from 'polarkit/components/ui/form'
-import { Banner } from 'polarkit/components/ui/molecules'
 import { FieldEvents, FieldFormat, FieldSecret, FieldUrl } from './WebhookForm'
 
 export default function NewWebhookModal({

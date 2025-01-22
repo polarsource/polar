@@ -1,8 +1,8 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import Input from 'polarkit/components/ui/atoms/input'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
+import Input from 'polarkit/components/atoms/input'
+import TextArea from 'polarkit/components/atoms/textarea'
 import {
   FormControl,
   FormField,

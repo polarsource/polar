@@ -12,9 +12,7 @@ import {
   ValidationError,
 } from '@polar-sh/api'
 import { useTheme } from 'next-themes'
-import ShadowBox, {
-  ShadowBoxOnMd,
-} from 'polarkit/components/ui/atoms/shadowbox'
+import ShadowBox, { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 import { useCallback, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { CheckoutCard } from './CheckoutCard'

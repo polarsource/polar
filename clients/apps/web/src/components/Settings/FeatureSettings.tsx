@@ -3,8 +3,8 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
-import { ShadowListGroup, Switch } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowListGroup, Switch } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import {
   Form,
   FormControl,

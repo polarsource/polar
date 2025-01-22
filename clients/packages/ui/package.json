@@ -17,10 +17,8 @@
     "build": "rm -rf dist && tsup"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
     "@mui/icons-material": "^6.1.8",
     "@mui/material": "^6.1.8",
-    "@polar-sh/api": "workspace:*",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -51,8 +49,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "react-timeago": "^7.2.0",
-    "tailwind-merge": "^2.5.5",
-    "zod": "^3.24.1"
+    "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
     "@storybook/react": "^8.4.5",

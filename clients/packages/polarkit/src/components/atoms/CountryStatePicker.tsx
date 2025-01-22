@@ -1,6 +1,6 @@
 'use client'
 
-import Input from '../atoms/Input'
+import Input from './Input'
 import {
   Select,
   SelectContent,

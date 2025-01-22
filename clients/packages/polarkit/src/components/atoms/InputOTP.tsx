@@ -3,6 +3,6 @@ import {
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
-} from '../input-otp'
+} from '@/components/ui/input-otp'
 
 export { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot }

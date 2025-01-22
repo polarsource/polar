@@ -14,8 +14,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import {
   Table,
   TableBody,
@@ -23,7 +21,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../table'
+} from '@/components/ui/table'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 import { DataTablePagination } from './DataTablePagination'
 
 export interface ReactQueryLoading {

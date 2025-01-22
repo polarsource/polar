@@ -1,4 +1,4 @@
-import { cn } from "@polarkit/lib/utils"
+import { cn } from "@/lib/utils"
 
 function Skeleton({
   className,

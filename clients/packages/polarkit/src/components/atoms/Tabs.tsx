@@ -1,11 +1,11 @@
-import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import {
   TabsContent as TabsContentPrimitive,
   TabsList as TabsListPrimitive,
   Tabs as TabsPrimitive,
   TabsTrigger as TabsTriggerPrimitive,
-} from '../tabs'
+} from '@/components/ui/tabs'
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const Tabs = TabsPrimitive
 

@@ -7,8 +7,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./*"],
-      "@polarkit/lib/*": ["./lib/*"]
+      "@/*": ["./*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

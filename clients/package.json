@@ -3,7 +3,7 @@
   "name": "polar",
   "scripts": {
     "build": "turbo run build --filter='!./examples/*'",
-    "dev": "turbo run dev",
+    "dev": "turbo watch dev",
     "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
     "test": "turbo run test",

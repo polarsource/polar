@@ -8,8 +8,8 @@ import {
   UserSignupAttribution,
   ValidationError,
 } from '@polar-sh/api'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
 import {
   Form,
   FormControl,

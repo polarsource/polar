@@ -8,9 +8,9 @@ import {
 import { organizationPageLink } from '@/utils/nav'
 import { CustomerOrder, PolarAPI } from '@polar-sh/api'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import { List, ListItem } from 'polarkit/components/atoms/list'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useCallback } from 'react'
 

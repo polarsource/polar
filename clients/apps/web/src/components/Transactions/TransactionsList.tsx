@@ -14,14 +14,14 @@ import {
   TransactionType,
 } from '@polar-sh/api'
 import Link from 'next/link'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import { FormattedDateTime } from 'polarkit/components/atoms'
+import Avatar from 'polarkit/components/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
   ReactQueryLoading,
-} from 'polarkit/components/ui/atoms/datatable'
+} from 'polarkit/components/atoms/datatable'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'

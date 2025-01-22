@@ -7,7 +7,7 @@ import { resolveRepositoryPath } from '@/utils/repository'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 import React from 'react'
 
 const cacheConfig = {

@@ -9,7 +9,7 @@ import {
 import { motion } from 'framer-motion'
 import { Box, Check, LucideIcon } from 'lucide-react'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 interface FeatureCardProps {
   title: string

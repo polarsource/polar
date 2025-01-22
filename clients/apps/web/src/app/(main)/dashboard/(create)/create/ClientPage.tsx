@@ -12,9 +12,9 @@ import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/api'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import {
   Form,
   FormField,

@@ -6,7 +6,7 @@ import {
   useBackofficeRewards,
 } from '@/hooks/queries'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,

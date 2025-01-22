@@ -23,16 +23,16 @@ import {
   SortingState,
 } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Button from 'polarkit/components/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from 'polarkit/components/atoms/select'
 import { useCallback, useState } from 'react'
 
 export const ClientPage = ({

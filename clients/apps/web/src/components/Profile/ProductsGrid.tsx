@@ -5,7 +5,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from 'polarkit/components/atoms/select'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 

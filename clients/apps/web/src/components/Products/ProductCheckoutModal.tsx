@@ -23,31 +23,31 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import { Pill, Switch } from 'polarkit/components/ui/atoms'
+import { Pill, Switch } from 'polarkit/components/atoms'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/ui/atoms/accordion'
-import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copy-to-clipboard-input'
-import Input from 'polarkit/components/ui/atoms/input'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+} from 'polarkit/components/atoms/accordion'
+import Button from 'polarkit/components/atoms/button'
+import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
+import Input from 'polarkit/components/atoms/input'
+import { List, ListItem } from 'polarkit/components/atoms/list'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+} from 'polarkit/components/atoms/select'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
+} from 'polarkit/components/atoms/tabs'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   Form,

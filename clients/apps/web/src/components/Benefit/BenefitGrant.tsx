@@ -9,15 +9,15 @@ import {
   PolarAPI,
 } from '@polar-sh/api'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+} from 'polarkit/components/atoms/select'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DownloadablesBenefitGrant from './Downloadables/DownloadablesBenefitGrant'

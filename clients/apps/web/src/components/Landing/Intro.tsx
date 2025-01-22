@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { SplitPromo } from './molecules/SplitPromo'
 

@@ -23,12 +23,12 @@ import {
 } from '@polar-sh/api'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
+} from 'polarkit/components/atoms/datatable'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 

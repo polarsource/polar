@@ -7,7 +7,7 @@ import {
 import { Organization } from '@polar-sh/api'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

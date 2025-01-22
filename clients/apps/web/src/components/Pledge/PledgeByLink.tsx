@@ -3,8 +3,8 @@
 import { parseGitHubIssueLink } from '@/utils/github'
 import { useRouter } from 'next/navigation'
 
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 import WhiteCard from '../Cards/WhiteCard'
 import HowItWorks from './HowItWorks'
@@ -60,7 +60,7 @@ const PledgeByLink = ({
                   className="text mb-2 mt-4 text-sm font-medium"
                 >
                   GitHub issue link{' '}
-                  <span className="dark:text-polar-400 font-normal	 text-gray-500 ">
+                  <span className="dark:text-polar-400 font-normal text-gray-500">
                     (e.g. https://github.com/
                     <wbr />
                     polarsource/

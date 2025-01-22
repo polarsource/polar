@@ -6,16 +6,16 @@ import { useCustomFields } from '@/hooks/queries'
 import { ClearOutlined } from '@mui/icons-material'
 import { CustomField, Organization } from '@polar-sh/api'
 import Link from 'next/link'
-import { Switch } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import { Switch } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
+import { List, ListItem } from 'polarkit/components/atoms/list'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from 'polarkit/components/atoms/select'
 import { FormControl, FormField, FormLabel } from 'polarkit/components/ui/form'
 import { useMemo, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'

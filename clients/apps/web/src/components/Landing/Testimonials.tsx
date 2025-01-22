@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 
 const testimonials = [
   {

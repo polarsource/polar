@@ -13,7 +13,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/atoms/card'
+} from 'polarkit/components/atoms/card'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
 

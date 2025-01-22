@@ -9,8 +9,8 @@ import {
   Organization,
 } from '@polar-sh/api'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
+import Button from 'polarkit/components/atoms/button'
+import Input from 'polarkit/components/atoms/input'
 import {
   Select,
   SelectContent,
@@ -20,8 +20,8 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
+} from 'polarkit/components/atoms/select'
+import TextArea from 'polarkit/components/atoms/textarea'
 import {
   FormControl,
   FormDescription,

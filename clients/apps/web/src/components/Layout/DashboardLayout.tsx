@@ -9,8 +9,8 @@ import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/api'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import Button from 'polarkit/components/atoms/button'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
 import {
   PropsWithChildren,
   UIEventHandler,

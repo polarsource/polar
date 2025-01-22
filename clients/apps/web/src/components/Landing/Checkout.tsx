@@ -5,7 +5,7 @@ import {
 } from '@/components/Customization/utils'
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 export const Checkout = () => {
   return (

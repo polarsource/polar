@@ -6,13 +6,13 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
+import { FormattedDateTime } from 'polarkit/components/atoms'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
-import { Status } from 'polarkit/components/ui/atoms/status'
+} from 'polarkit/components/atoms/datatable'
+import { Status } from 'polarkit/components/atoms/status'
 import { twMerge } from 'tailwind-merge'
 
 export interface MetersListProps {

@@ -6,7 +6,7 @@ import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, Platforms, UserRead } from '@polar-sh/api'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 import { BrandingMenu } from './BrandingMenu'
 import TopbarRight from './TopbarRight'

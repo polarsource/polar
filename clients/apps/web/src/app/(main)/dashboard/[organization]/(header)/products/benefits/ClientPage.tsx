@@ -22,8 +22,8 @@ import { type Benefit, Organization } from '@polar-sh/api'
 import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import Button from 'polarkit/components/atoms/button'
+import { List, ListItem } from 'polarkit/components/atoms/list'
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -10,8 +10,8 @@ import {
 } from '@/hooks/queries'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import Link from 'next/link'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
-import { Banner } from 'polarkit/components/ui/molecules'
+import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
+import Banner from 'polarkit/components/molecules/banner'
 
 export default function Page() {
   const { currentUser } = useAuth()

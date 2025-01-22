@@ -12,7 +12,7 @@ import {
 } from '@/utils/datatable'
 import { Organization } from '@polar-sh/api'
 import { useParams } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export default function ClientPage({

@@ -8,7 +8,7 @@ import {
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
 import Link from 'next/link'
-import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
+import Button, { ButtonProps } from 'polarkit/components/atoms/button'
 import React, { useMemo } from 'react'
 
 const buttonClasses =

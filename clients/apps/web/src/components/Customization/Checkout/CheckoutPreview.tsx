@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Product } from '@polar-sh/api'
 import { useTheme } from 'next-themes'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { useContext } from 'react'
 import { CHECKOUT_PREVIEW, createCheckoutPreview } from '../utils'
 

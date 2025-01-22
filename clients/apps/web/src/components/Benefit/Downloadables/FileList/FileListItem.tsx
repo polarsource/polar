@@ -11,7 +11,7 @@ import {
   VideoFileOutlined,
 } from '@mui/icons-material'
 import { FileRead } from '@polar-sh/api'
-import { Switch } from 'polarkit/components/ui/atoms'
+import { Switch } from 'polarkit/components/atoms'
 import {
   FocusEvent,
   FormEventHandler,
@@ -27,7 +27,7 @@ import { FileObject } from '@/components/FileUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   DropdownMenu,
   DropdownMenuContent,

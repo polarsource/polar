@@ -1,6 +1,6 @@
 import { useMetrics } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
+import { Card, CardFooter, CardHeader } from 'polarkit/components/atoms/card'
 import {
   Tooltip,
   TooltipContent,

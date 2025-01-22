@@ -1,6 +1,6 @@
 import LogoType70 from '@/components/Brand/LogoType70'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 export default function Page({
   searchParams: { message, return_to },

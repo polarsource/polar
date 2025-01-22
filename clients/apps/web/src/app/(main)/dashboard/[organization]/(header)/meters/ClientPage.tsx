@@ -16,7 +16,7 @@ import {
   SortingState,
 } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { useEffect, useMemo, useState } from 'react'
 
 const ClientPage = ({

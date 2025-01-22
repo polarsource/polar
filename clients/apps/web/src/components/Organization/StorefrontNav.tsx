@@ -12,8 +12,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+} from 'polarkit/components/atoms/select'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
 import { twMerge } from 'tailwind-merge'
 
 interface OrganizationStorefrontNavProps {

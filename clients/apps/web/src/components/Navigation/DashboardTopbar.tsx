@@ -4,8 +4,8 @@ import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import Button from 'polarkit/components/atoms/button'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
 import React, { useContext } from 'react'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import TopbarRight from '../Layout/Public/TopbarRight'
@@ -17,10 +17,7 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
 
   return (
     <Tabs className="md:-mx-4" value={current?.title}>
-      <TabsList
-        className="
-          flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0"
-      >
+      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
         {props.items.map((item) => {
           return (
             <Link key={item.title} href={item.link}>

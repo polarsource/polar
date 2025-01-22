@@ -5,12 +5,9 @@ import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
 import { ArrowForward } from '@mui/icons-material'
 import { OAuth2Client } from '@polar-sh/api'
-import {
-  FormattedDateTime,
-  ShadowListGroup,
-} from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
+import { FormattedDateTime, ShadowListGroup } from 'polarkit/components/atoms'
+import Avatar from 'polarkit/components/atoms/avatar'
+import Button from 'polarkit/components/atoms/button'
 import { useState } from 'react'
 import { EditOAuthClientModal } from './EditOAuthClientModal'
 import { NewOAuthClientModal } from './NewOAuthClientModal'

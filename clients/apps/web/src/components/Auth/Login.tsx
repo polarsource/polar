@@ -3,7 +3,7 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { UserSignupAttribution } from '@polar-sh/api'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { LabeledSeparator } from 'polarkit/components/ui/atoms'
+import { LabeledSeparator } from 'polarkit/components/atoms'
 import { useEffect } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'

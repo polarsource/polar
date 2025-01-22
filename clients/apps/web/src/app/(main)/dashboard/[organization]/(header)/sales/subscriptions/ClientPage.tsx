@@ -24,6 +24,7 @@ import {
 } from '@polar-sh/api'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
+import { Pill } from 'polarkit/components/atoms'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -33,6 +34,104 @@ import {
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
 import React, { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+const CANCELLATION_REASONS: {
+  [key: string]: string
+} = {
+  unused: 'Unused',
+  too_expensive: 'Too Expensive',
+  missing_features: 'Missing Features',
+  switched_service: 'Switched Service',
+  customer_service: 'Customer Service',
+  low_quality: 'Low Quality',
+  too_complex: 'Too Complicated',
+  other: 'Other',
+}
+
+const getHumanCancellationReason = (key: string | null) => {
+  if (key && key in CANCELLATION_REASONS) {
+    return CANCELLATION_REASONS[key]
+  }
+  return null
+}
+
+const StatusLabel = ({
+  color,
+  dt,
+  icon,
+  children,
+}: {
+  color: string
+  dt?: string | null
+  icon?: React.ReactNode
+  children: React.ReactNode
+}) => {
+  let prettyEventDate = null
+  if (dt) {
+    const event = new Date(dt)
+    const now = new Date()
+    if (event.getFullYear() != now.getFullYear()) {
+      prettyEventDate = event.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    } else {
+      prettyEventDate = event.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+      })
+    }
+  }
+
+  return (
+    <div className={`flex flex-row items-center gap-x-2`}>
+      <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
+      <span className="capitalize">{children}</span>
+      {prettyEventDate && (
+        <Pill color="gray" className="flex flex-row">
+          {icon}
+          <span className="!ml-1">{prettyEventDate}</span>
+        </Pill>
+      )}
+    </div>
+  )
+}
+
+const Status = ({ subscription }: { subscription: Subscription }) => {
+  switch (subscription.status) {
+    case 'active':
+      if (!subscription.ends_at) {
+        return <StatusLabel color="border-emerald-500">Active</StatusLabel>
+      }
+      return (
+        <StatusLabel
+          color="border-yellow-500"
+          dt={subscription.ends_at}
+          icon={<AccessTimeOutlined fontSize="inherit" />}
+        >
+          Ending
+        </StatusLabel>
+      )
+    case 'canceled':
+      return (
+        <StatusLabel
+          color="border-red-500"
+          dt={subscription.ended_at}
+          icon={<CancelOutlined fontSize="inherit" />}
+        >
+          Canceled
+        </StatusLabel>
+      )
+    default:
+      return (
+        <StatusLabel color="border-red-500">
+          {subscriptionStatusDisplayNames[subscription.status]}
+        </StatusLabel>
+      )
+  }
+}
 
 interface ClientPageProps {
   organization: Organization

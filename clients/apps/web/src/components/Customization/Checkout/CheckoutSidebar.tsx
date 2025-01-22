@@ -1,7 +1,7 @@
 'use client'
 
-import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 

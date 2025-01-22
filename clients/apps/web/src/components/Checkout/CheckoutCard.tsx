@@ -12,8 +12,8 @@ import {
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
-import MoneyInput from 'polarkit/components/ui/atoms/money-input'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import MoneyInput from 'polarkit/components/atoms/money-input'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import {
   Form,
   FormField,

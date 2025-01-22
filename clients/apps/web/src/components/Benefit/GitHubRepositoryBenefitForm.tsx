@@ -14,14 +14,14 @@ import {
   OAuthPlatform,
 } from '@polar-sh/api'
 import { usePathname } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
+} from 'polarkit/components/atoms/select'
 import {
   FormControl,
   FormDescription,

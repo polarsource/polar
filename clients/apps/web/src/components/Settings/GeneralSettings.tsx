@@ -1,6 +1,6 @@
 import { ExpandMoreOutlined } from '@mui/icons-material'
-import { ShadowListGroup } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowListGroup } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import {
   DropdownMenu,
   DropdownMenuContent,

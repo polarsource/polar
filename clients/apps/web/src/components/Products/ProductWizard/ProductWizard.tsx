@@ -6,8 +6,8 @@ import {
   ChevronRightOutlined,
 } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/api'
-import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import Button from 'polarkit/components/atoms/button'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import { Separator } from 'polarkit/components/ui/separator'
 import React, { useMemo, useState } from 'react'

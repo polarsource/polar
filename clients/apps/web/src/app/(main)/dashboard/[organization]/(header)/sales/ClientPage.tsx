@@ -12,13 +12,13 @@ import {
 import { Order, OrderCustomer, Organization, Product } from '@polar-sh/api'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
+} from 'polarkit/components/atoms/datatable'
+import { FormattedDateTime, Pill } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useEffect, useState } from 'react'
 

@@ -4,11 +4,8 @@ import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { Organization, WebhookEndpoint } from '@polar-sh/api'
 import Link from 'next/link'
-import {
-  FormattedDateTime,
-  ShadowListGroup,
-} from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { FormattedDateTime, ShadowListGroup } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import { InlineModal } from '../../Modal/InlineModal'
 import { useModal } from '../../Modal/useModal'
 import NewWebhookModal from './NewWebhookModal'

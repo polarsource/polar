@@ -1,7 +1,7 @@
 import { usePayoutEstimate } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { Account, ResponseError } from '@polar-sh/api'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Modal } from '../Modal'

@@ -8,15 +8,15 @@ import {
   CustomFieldType,
 } from '@polar-sh/api'
 import Markdown, { MarkdownToJSX } from 'markdown-to-jsx'
-import Input from 'polarkit/components/ui/atoms/input'
+import Input from 'polarkit/components/atoms/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import Textarea from 'polarkit/components/ui/atoms/textarea'
+} from 'polarkit/components/atoms/select'
+import Textarea from 'polarkit/components/atoms/textarea'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,

@@ -5,14 +5,14 @@ import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/ui/atoms/button'
+import Button from 'polarkit/components/atoms/button'
 
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from 'polarkit/components/ui/atoms/input-otp'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+} from 'polarkit/components/atoms/input-otp'
+import ShadowBox from 'polarkit/components/atoms/shadowbox'
 
 import {
   Form,

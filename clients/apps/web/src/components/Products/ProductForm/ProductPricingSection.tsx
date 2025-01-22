@@ -7,16 +7,16 @@ import {
   ProductPriceType,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
-import Button from 'polarkit/components/ui/atoms/button'
-import MoneyInput from 'polarkit/components/ui/atoms/money-input'
+import Button from 'polarkit/components/atoms/button'
+import MoneyInput from 'polarkit/components/atoms/money-input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+} from 'polarkit/components/atoms/select'
+import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/atoms/tabs'
 import {
   FormControl,
   FormField,

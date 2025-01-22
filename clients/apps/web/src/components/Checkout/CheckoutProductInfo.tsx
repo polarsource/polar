@@ -4,7 +4,7 @@ import { organizationPageLink } from '@/utils/nav'
 import { CheckoutProduct, Organization } from '@polar-sh/api'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 
 interface CheckoutProductInfoProps {
   organization: Organization

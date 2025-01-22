@@ -26,8 +26,8 @@ import {
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/api'
 import Link from 'next/link'
-import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import Button from 'polarkit/components/ui/atoms/button'
+import { PolarTimeAgo } from 'polarkit/components/atoms'
+import Button from 'polarkit/components/atoms/button'
 import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

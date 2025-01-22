@@ -10,7 +10,7 @@ import Link from 'next/link'
 import {
   DataTableColumnDef,
   ReactQueryLoading,
-} from 'polarkit/components/ui/atoms/datatable'
+} from 'polarkit/components/atoms/datatable'
 import TransactionsList, { isTransaction } from './TransactionsList'
 
 interface PayoutTransactionsListProps {

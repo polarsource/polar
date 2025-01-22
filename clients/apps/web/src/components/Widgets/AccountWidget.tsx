@@ -3,8 +3,8 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { Status } from '@polar-sh/api'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
-import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
+import Button from 'polarkit/components/atoms/button'
+import { Card, CardFooter, CardHeader } from 'polarkit/components/atoms/card'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 

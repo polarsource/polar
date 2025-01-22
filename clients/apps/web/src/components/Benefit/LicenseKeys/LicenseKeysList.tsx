@@ -6,12 +6,12 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
+import Avatar from 'polarkit/components/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/ui/atoms/datatable'
+} from 'polarkit/components/atoms/datatable'
 
 export interface LicenseKeysListProps {
   licenseKeys: LicenseKeyRead[]

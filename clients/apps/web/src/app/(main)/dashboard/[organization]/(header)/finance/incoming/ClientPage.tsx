@@ -18,7 +18,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/atoms/tabs'
+} from 'polarkit/components/atoms/tabs'
 import { useCallback } from 'react'
 
 export default function ClientPage({

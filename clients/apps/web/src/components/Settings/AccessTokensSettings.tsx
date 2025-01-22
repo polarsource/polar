@@ -12,18 +12,19 @@ import {
   PersonalAccessToken,
   PersonalAccessTokenCreateResponse,
 } from '@polar-sh/api'
-import { FormattedDateTime, ShadowListGroup } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/atoms/copy-to-clipboard-input'
-import Input from 'polarkit/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/copy-to-clipboard-input'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import Banner from 'polarkit/components/molecules/banner'
+} from '@polar-sh/ui/components/atoms/select'
+import ShadowListGroup from '@polar-sh/ui/components/atoms/shadow-list-group'
+import Banner from '@polar-sh/ui/components/molecules/banner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +35,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from 'polarkit/components/ui/alert-dialog'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
+} from '@polar-sh/ui/components/ui/alert-dialog'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -43,7 +44,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState, type MouseEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'

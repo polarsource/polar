@@ -2,9 +2,9 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import { CloseOutlined } from '@mui/icons-material'
 import { LicenseKeyWithActivations, PolarAPI } from '@polar-sh/api'
-import { FormattedDateTime } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
-import { List, ListItem } from 'polarkit/components/atoms/list'
+import Button from '@polar-sh/ui/components/atoms/button'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
 import { useCallback } from 'react'
 
 interface LicenseKeyActivationsProps {

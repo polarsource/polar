@@ -14,8 +14,8 @@ import { useOrganizationSSE } from '@/hooks/sse'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { IssueSortBy, Organization, Repository } from '@polar-sh/api'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
 import { useSearchParams } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 import {
   Dispatch,
   SetStateAction,

@@ -3,8 +3,8 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { Bolt } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
 import { useState } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
 

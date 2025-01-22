@@ -25,10 +25,10 @@ import {
   useDeleteWebhookEndpoint,
   useEditWebhookEndpoint,
 } from '@/hooks/queries'
+import Button from '@polar-sh/ui/components/atoms/button'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
-import { Form } from 'polarkit/components/ui/form'
 
 export default function EditWebhookModal({
   organization,

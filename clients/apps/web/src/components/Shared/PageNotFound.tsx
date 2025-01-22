@@ -1,7 +1,7 @@
 'use client'
 
+import Button from '@polar-sh/ui/components/atoms/button'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
 import { StaggerReveal } from './StaggerReveal'
 
 const PageNotFound = () => {

@@ -3,8 +3,8 @@
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { organizationPageLink } from '@/utils/nav'
 import { ListResourceIssueFunding, Organization } from '@polar-sh/api'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
 import { redirect } from 'next/navigation'
-import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 
 const ClientPage = ({
   organization,

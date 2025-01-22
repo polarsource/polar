@@ -4,10 +4,10 @@ import { useCustomerPortalSessionRequest } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
 
 import {
   Form,
@@ -15,7 +15,7 @@ import {
   FormField,
   FormItem,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 

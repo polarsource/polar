@@ -21,14 +21,14 @@ import {
   WebhookDelivery,
   WebhookEndpoint,
 } from '@polar-sh/api'
-import { CellContext } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/datatable'
+import { CellContext } from '@tanstack/react-table'
+import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 

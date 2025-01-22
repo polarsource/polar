@@ -5,7 +5,7 @@ import {
   TabsContent,
   TabsList as TabsListPrimitive,
   TabsTrigger as TabsTriggerPrimitive,
-} from 'polarkit/components/atoms/tabs'
+} from '@polar-sh/ui/components/atoms/tabs'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import PledgeCheckoutContribute from './PledgeCheckoutContribute'

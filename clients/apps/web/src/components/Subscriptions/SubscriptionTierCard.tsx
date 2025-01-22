@@ -7,14 +7,14 @@ import {
 } from '@/hooks/products'
 import { markdownOptionsJustText } from '@/utils/markdown'
 import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/api'
-import Markdown from 'markdown-to-jsx'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/atoms/card'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
+} from '@polar-sh/ui/components/atoms/card'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import Markdown from 'markdown-to-jsx'
 import { twMerge } from 'tailwind-merge'
 
 export interface SubscriptionTierCardProps {

@@ -5,10 +5,8 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { IssueListResponse, IssueSortBy } from '@polar-sh/api'
-import { InfiniteData } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -18,7 +16,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { InfiniteData } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { ChangeEvent, Dispatch, SetStateAction, useMemo } from 'react'
 import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'

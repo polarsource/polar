@@ -20,10 +20,10 @@ import {
   Repository,
   RepositoryProfileSettingsUpdate,
 } from '@polar-sh/api'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
 import Link from 'next/link'
 import type { SuccessResult } from 'open-graph-scraper-lite'
-import Avatar from 'polarkit/components/atoms/avatar'
-import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
 import { useMemo } from 'react'
 
 type OgObject = SuccessResult['result']

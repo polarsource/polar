@@ -10,10 +10,10 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { getGitHubOrganizationInstallationURL } from '@/utils/auth'
 import { GitHub } from '@mui/icons-material'
 import { Platforms } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import ShadowListGroup from '@polar-sh/ui/components/atoms/shadow-list-group'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShadowListGroup } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
 import { useContext } from 'react'
 
 export default function ClientPage() {

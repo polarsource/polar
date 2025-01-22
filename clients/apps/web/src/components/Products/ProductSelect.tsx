@@ -6,7 +6,7 @@ import {
   ProductPriceType,
   ProductsApiListRequest,
 } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   Command,
   CommandEmpty,
@@ -15,12 +15,12 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from 'polarkit/components/ui/command'
+} from '@polar-sh/ui/components/ui/command'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from 'polarkit/components/ui/popover'
+} from '@polar-sh/ui/components/ui/popover'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceTypeIcon from './ProductPriceTypeIcon'

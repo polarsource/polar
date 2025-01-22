@@ -1,12 +1,12 @@
 import { useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { Account, Status } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
-import { ShadowBoxOnMd } from 'polarkit/components/atoms/shadowbox'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/shadowbox'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
-} from 'polarkit/lib/money'
+} from '@polar-sh/ui/lib/money'
 import React, { useCallback, useState } from 'react'
 import WithdrawModal from './WithdrawModal'
 

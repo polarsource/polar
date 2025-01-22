@@ -1,6 +1,6 @@
 import LogoType from '@/components/Brand/LogoType'
-import Alert from 'polarkit/components/atoms/alert'
-import Button from 'polarkit/components/atoms/button'
+import Alert from '@polar-sh/ui/components/atoms/alert'
+import Button from '@polar-sh/ui/components/atoms/button'
 
 const AuthorizeErrorPage = ({
   error,

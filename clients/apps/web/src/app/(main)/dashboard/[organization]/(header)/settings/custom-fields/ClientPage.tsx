@@ -15,19 +15,19 @@ import {
 } from '@/utils/datatable'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { CustomField, CustomFieldType, Organization } from '@polar-sh/api'
-import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
+} from '@polar-sh/ui/components/atoms/datatable'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 
 interface ClientPageProps {

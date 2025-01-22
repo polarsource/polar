@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import Avatar from 'polarkit/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
 
 import { useListOrganizationMembers } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from 'polarkit/components/ui/table'
+} from '@polar-sh/ui/components/ui/table'
 import { useContext } from 'react'
 
 export default function ClientPage() {

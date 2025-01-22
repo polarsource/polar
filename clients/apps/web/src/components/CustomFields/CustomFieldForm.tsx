@@ -4,22 +4,22 @@ import {
   CustomFieldType,
   CustomFieldUpdate,
 } from '@polar-sh/api'
-import { Switch } from 'polarkit/components/atoms'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from 'polarkit/components/atoms/accordion'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
+} from '@polar-sh/ui/components/atoms/accordion'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
+} from '@polar-sh/ui/components/atoms/select'
+import Switch from '@polar-sh/ui/components/atoms/switch'
 import {
   FormControl,
   FormDescription,
@@ -27,7 +27,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import React from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import CustomFieldTypeLabel from './CustomFieldTypeLabel'

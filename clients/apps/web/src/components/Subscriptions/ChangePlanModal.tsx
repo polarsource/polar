@@ -14,10 +14,10 @@ import {
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription, useStorefront } from '@/hooks/queries'
-import { formatCurrencyAndAmount } from '@polarkit/lib/money'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
-import { List, ListItem } from 'polarkit/components/atoms/list'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'

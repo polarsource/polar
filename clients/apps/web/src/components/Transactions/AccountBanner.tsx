@@ -8,9 +8,9 @@ import {
   Status,
   UserRead,
 } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Banner from '@polar-sh/ui/components/molecules/banner'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
-import Banner from 'polarkit/components/molecules/banner'
 import Icon from '../Icons/Icon'
 
 const GenericAccountBanner: React.FC<{

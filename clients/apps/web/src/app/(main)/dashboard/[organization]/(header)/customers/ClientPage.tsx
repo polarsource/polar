@@ -12,16 +12,16 @@ import {
 
 import { Search } from '@mui/icons-material'
 import { Customer, Organization } from '@polar-sh/api'
-import { RowSelectionState } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
-import { FormattedDateTime } from 'polarkit/components/atoms'
-import Avatar from 'polarkit/components/atoms/avatar'
+import Avatar from '@polar-sh/ui/components/atoms/avatar'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from 'polarkit/components/atoms/datatable'
-import Input from 'polarkit/components/atoms/input'
+} from '@polar-sh/ui/components/atoms/datatable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/formatted-date-time'
+import Input from '@polar-sh/ui/components/atoms/input'
+import { RowSelectionState } from '@tanstack/react-table'
+import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useState } from 'react'
 
 interface ClientPageProps {

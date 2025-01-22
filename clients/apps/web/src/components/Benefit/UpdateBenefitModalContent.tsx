@@ -8,8 +8,8 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
-import { Form } from 'polarkit/components/ui/form'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { Form } from '@polar-sh/ui/components/ui/form'
 import { MouseEvent, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'

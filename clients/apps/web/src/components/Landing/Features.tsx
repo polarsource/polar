@@ -6,10 +6,10 @@ import {
   KeyboardArrowRight,
   ShoppingBagOutlined,
 } from '@mui/icons-material'
+import Button from '@polar-sh/ui/components/atoms/button'
 import { motion } from 'framer-motion'
 import { Box, Check, LucideIcon } from 'lucide-react'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
 
 interface FeatureCardProps {
   title: string

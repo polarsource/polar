@@ -1,5 +1,5 @@
+import Button from '@polar-sh/ui/components/atoms/button'
 import { motion } from 'framer-motion'
-import Button from 'polarkit/components/atoms/button'
 import React, {
   FunctionComponent,
   MouseEvent,

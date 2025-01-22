@@ -5,8 +5,8 @@ import {
   FavoriteBorderOutlined,
   HiveOutlined,
 } from '@mui/icons-material'
+import { Separator } from '@polar-sh/ui/components/ui/separator'
 import Link from 'next/link'
-import { Separator } from 'polarkit/components/ui/separator'
 import { twMerge } from 'tailwind-merge'
 
 export const UpsellFooter = ({ wide }: { wide?: boolean }) => {

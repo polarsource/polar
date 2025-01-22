@@ -36,7 +36,7 @@ module.exports = {
   mode: 'jit',
   content: [
     './src/**/*.{ts,tsx}',
-    'node_modules/polarkit/src/**/*.{ts,tsx}',
+    'node_modules/@polar-sh/ui/src/**/*.{ts,tsx}',
     '.storybook/**/*.{ts,tsx}',
   ],
   darkMode: 'class',

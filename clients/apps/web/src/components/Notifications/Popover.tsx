@@ -25,10 +25,10 @@ import {
   RewardPaidNotification,
   TeamAdminMemberPledgedNotification,
 } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import PolarTimeAgo from '@polar-sh/ui/components/atoms/polar-time-ago'
+import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
-import { PolarTimeAgo } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
-import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'

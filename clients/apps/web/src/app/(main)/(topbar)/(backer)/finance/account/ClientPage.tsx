@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks'
 import { useAccount, useListAccounts } from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
-import { Separator } from 'polarkit/components/ui/separator'
+import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useEffect, useState } from 'react'
 
 export default function ClientPage() {

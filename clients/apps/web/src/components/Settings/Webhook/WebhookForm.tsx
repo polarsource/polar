@@ -4,23 +4,23 @@ import {
   WebhookEventType,
   WebhookFormat,
 } from '@polar-sh/api'
-import Button from 'polarkit/components/atoms/button'
-import Input from 'polarkit/components/atoms/input'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Input from '@polar-sh/ui/components/atoms/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/atoms/select'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
+} from '@polar-sh/ui/components/atoms/select'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 
 import Link from 'next/link'
 import { useEffect } from 'react'

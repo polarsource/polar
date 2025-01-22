@@ -1,12 +1,12 @@
 import { ExpandMoreOutlined } from '@mui/icons-material'
-import { ShadowListGroup } from 'polarkit/components/atoms'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
+import ShadowListGroup from '@polar-sh/ui/components/atoms/shadow-list-group'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Spinner from '../Shared/Spinner'
 export type Theme = 'system' | 'light' | 'dark'

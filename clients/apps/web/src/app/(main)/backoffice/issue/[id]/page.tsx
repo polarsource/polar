@@ -6,11 +6,11 @@ import {
   useBackofficeRewards,
 } from '@/hooks/queries'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import Button from 'polarkit/components/atoms/button'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
-} from 'polarkit/lib/money'
+} from '@polar-sh/ui/lib/money'
 import { twMerge } from 'tailwind-merge'
 
 export default function Page({ params }: { params: { id: string } }) {

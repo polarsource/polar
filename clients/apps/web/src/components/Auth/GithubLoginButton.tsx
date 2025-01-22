@@ -3,9 +3,9 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { UserSignupAttribution } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
 import { twMerge } from 'tailwind-merge'
 
 const GithubLoginButton = (props: {

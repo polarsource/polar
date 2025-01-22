@@ -3,9 +3,9 @@ import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import Banner from '@polar-sh/ui/components/molecules/banner'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
-import Banner from 'polarkit/components/molecules/banner'
 import { PropsWithChildren } from 'react'
 
 export const MaintainerUpsell = () => {

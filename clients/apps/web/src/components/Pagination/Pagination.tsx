@@ -1,9 +1,9 @@
+import Paginator from '@polar-sh/ui/components/atoms/paginator'
 import {
   ReadonlyURLSearchParams,
   useRouter,
   useSearchParams,
 } from 'next/navigation'
-import { Paginator } from 'polarkit/components/atoms'
 import {
   PropsWithChildren,
   useCallback,

@@ -3,8 +3,8 @@ import {
   ListBulletIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
+import Button from '@polar-sh/ui/components/atoms/button'
 import Image from 'next/image'
-import Button from 'polarkit/components/atoms/button'
 import WhiteCard from '../Cards/WhiteCard'
 import GitHubIcon from '../Icons/GitHubIcon'
 import screenshot from './dashboard.png'

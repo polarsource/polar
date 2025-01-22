@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from 'polarkit/components/ui/dropdown-menu'
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

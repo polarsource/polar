@@ -1,5 +1,5 @@
 import { PledgeStripePaymentIntentMutationResponse } from '@polar-sh/api'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 
 const Subtotal = ({
   paymentIntent,

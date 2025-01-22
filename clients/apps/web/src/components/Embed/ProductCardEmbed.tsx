@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { ProductEmbed, ProductPrice } from '@polar-sh/api'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { getRecurringBillingLabel } from '../Subscriptions/utils'
 
 export const ProductCardEmbed = ({

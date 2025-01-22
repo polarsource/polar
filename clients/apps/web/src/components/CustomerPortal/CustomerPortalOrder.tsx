@@ -7,11 +7,11 @@ import {
 } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { CustomerOrder, PolarAPI } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/list'
+import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
-import Button from 'polarkit/components/atoms/button'
-import { List, ListItem } from 'polarkit/components/atoms/list'
-import ShadowBox from 'polarkit/components/atoms/shadowbox'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useCallback } from 'react'
 
 const CustomerPortalOrder = ({

@@ -10,13 +10,13 @@ import {
 } from '@/utils/datatable'
 import { AddOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
+import Button from '@polar-sh/ui/components/atoms/button'
 import {
   PaginationState,
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import Button from 'polarkit/components/atoms/button'
 import { useEffect, useMemo, useState } from 'react'
 
 const ClientPage = ({

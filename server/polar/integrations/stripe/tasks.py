@@ -231,7 +231,7 @@ async def refund_created(
                 charge_id=refund.charge,
                 payment_intent=refund.payment_intent,
             )
-            await refund_service.upsert_from_stripe(session, stripe_refund=refund)
+            await refund_service.create_from_stripe(session, stripe_refund=refund)
 
 
 @task("stripe.webhook.refund.updated")

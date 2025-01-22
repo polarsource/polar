@@ -1,5 +1,7 @@
 'use client'
 
+import Checkout from '@/components/Checkout/Checkout'
+import { DummyCheckoutContextProvider } from '@/components/Checkout/CheckoutContextProvider'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
@@ -8,6 +10,7 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { Product } from '@polar-sh/api'
 import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
 import { useContext } from 'react'
+import { CHECKOUT_PREVIEW } from '../utils'
 
 export interface CheckoutPreviewProps {
   product?: Product
@@ -33,6 +36,9 @@ export const CheckoutPreview = ({}: CheckoutPreviewProps) => {
             <StorefrontHeader organization={org} />
           </>
         )}
+        <DummyCheckoutContextProvider checkout={CHECKOUT_PREVIEW}>
+          <Checkout />
+        </DummyCheckoutContextProvider>
       </div>
     </ShadowBox>
   )

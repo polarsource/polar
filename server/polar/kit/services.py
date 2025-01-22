@@ -91,7 +91,7 @@ class ResourceService(
         mutable_keys: set[str],
         autocommit: bool = True,
     ) -> Sequence[ModelType]:
-        values = [obj.model_dump() for obj in objects]
+        values = [obj.model_dump(by_alias=True) for obj in objects]
         if not values:
             raise ValueError("Zero values provided")
 

@@ -13,7 +13,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNo
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
+from polar.kit.services import ResourceService
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import (
@@ -37,7 +37,7 @@ from polar.transaction.service.refund import (
 )
 from polar.webhook.service import webhook as webhook_service
 
-from .schemas import InternalRefundCreate, RefundCreate
+from .schemas import InternalRefundCreate, InternalRefundUpdate, RefundCreate
 from .sorting import RefundSortProperty
 
 log: Logger = structlog.get_logger()
@@ -87,7 +87,9 @@ class RevokeSubscriptionBenefitsProhibited(RefundError):
         super().__init__(message, 400)
 
 
-class RefundService(ResourceServiceReader[Refund]):
+class RefundService(
+    ResourceService[Refund, InternalRefundCreate, InternalRefundUpdate]
+):
     async def get_list(
         self,
         session: AsyncSession,
@@ -200,6 +202,7 @@ class RefundService(ResourceServiceReader[Refund]):
         internal_create_schema.reason = create_schema.reason
         internal_create_schema.comment = create_schema.comment
         internal_create_schema.revoke_benefits = create_schema.revoke_benefits
+        internal_create_schema.metadata = create_schema.metadata
         refund = await self._save_created(
             session,
             internal_create_schema,
@@ -361,9 +364,25 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> Refund:
-        # Upsert
-        instance = Refund(**internal_create_schema.model_dump())
-        session.add(instance)
+        # Our create API triggers Stripe `refund.created`
+        # which we listen to and create upon in case of refunds from
+        # Stripe dashboard (support operations). Causing a race condition
+        # handled with an upsert.
+        instances = await self.upsert_many(
+            session,
+            create_schemas=[internal_create_schema],
+            constraints=[Refund.processor_id],
+            mutable_keys={
+                "status",
+                "failure_reason",
+                "destination_details",
+                "processor_receipt_number",
+                "user_metadata",
+            },
+            autocommit=False,
+        )
+        instance = instances[0]
+        assert instance.id is not None
         if instance.succeeded:
             await self._refund_resources(
                 session,
@@ -464,7 +483,7 @@ class RefundService(ResourceServiceReader[Refund]):
             payment_transaction=payment,
             refund=refund,
         )
-        # Already recorded in ledger - return early
+        # Already handled (Stripe webhook || Polar API) so return early
         if transaction is None:
             return
 

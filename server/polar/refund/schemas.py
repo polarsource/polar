@@ -137,7 +137,3 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
             processor_reason=stripe_reason,
             processor_balance_transaction_id=balance_transaction_id,
         )
-
-
-class InternalRefundUpdate(MetadataInputMixin, Schema):
-    id: UUID

@@ -52,9 +52,9 @@ HookNames = frozenset(Hooks._fields)
 
 @pytest.fixture
 def refund_hooks(mocker: MockerFixture) -> Hooks:
-    created = mocker.patch.object(refund_service, "_after_created")
-    updated = mocker.patch.object(refund_service, "_after_updated")
-    succeeded = mocker.patch.object(refund_service, "_after_succeeded")
+    created = mocker.patch.object(refund_service, "_on_created")
+    updated = mocker.patch.object(refund_service, "_on_updated")
+    succeeded = mocker.patch.object(refund_service, "_on_succeeded")
     return Hooks(
         created=created,
         updated=updated,
@@ -279,41 +279,55 @@ class TestCreatedWebhooks(StripeRefund):
         session: AsyncSession,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
-        product_organization_second: Product,
+        product: Product,
         refund_hooks: Hooks,
         customer: Customer,
     ) -> None:
         # Complex Swedish order. $99.9 with 25% VAT = $24.75
         order, payment = await create_order_and_payment(
             save_fixture,
-            product=product_organization_second,
+            product=product,
             customer=customer,
             amount=1000,
             tax_amount=250,
         )
 
-        create_refund_transaction = mocker.patch.object(
-            refund_transaction_service, "create"
-        )
-
         assert order.refunded_amount == 0
         assert order.refunded_tax_amount == 0
 
-        stripe_refund = build_stripe_refund(
+        pending_stripe_refund = build_stripe_refund(
             status="pending",
             amount=100,
             charge_id=payment.charge_id,
         )
-        refund = await refund_service.upsert_from_stripe(session, stripe_refund)
+        refund = await refund_service.upsert_from_stripe(session, pending_stripe_refund)
         assert refund
         assert refund.status == RefundStatus.pending
-        assert create_refund_transaction.call_count == 0
         assert_hooks_called_once(refund_hooks, {"created"})
+        refund_transaction = await refund_transaction_service.get_by_refund_id(
+            session, refund.processor_id
+        )
+        assert refund_transaction is None
 
         order = await order_service.get(session, order.id)  # type: ignore
         assert order
         assert order.refunded_amount == 0
         assert order.refunded_tax_amount == 0
+
+        reset_hooks(refund_hooks)
+        succeeded_stripe_refund = build_stripe_refund(
+            id=pending_stripe_refund.id,
+            status="succeeded",
+            amount=100,
+            charge_id=payment.charge_id,
+        )
+        refund = await refund_service.upsert_from_stripe(
+            session, succeeded_stripe_refund
+        )
+        assert refund
+        assert refund.status == RefundStatus.succeeded
+        assert_hooks_called_once(refund_hooks, {"updated", "succeeded"})
+        await self.assert_transaction_amounts_from_refund(session, refund)
 
     async def test_valid_full_refund(
         self,
@@ -342,16 +356,83 @@ class TestCreatedWebhooks(StripeRefund):
         )
         # Could be created from our API
         refund = await refund_service._create_from_stripe(session, stripe_refund)
+        # ... and simultaneously from Stripe `refund.created` webhook
+        webhook_refund = await refund_service._create_from_stripe(
+            session, stripe_refund
+        )
         assert refund
         assert refund.status == RefundStatus.succeeded
-        assert_hooks_called_once(refund_hooks, {"created"})
-        await self.assert_transaction_amounts_from_refund(session, refund)
+        assert webhook_refund
+        assert webhook_refund.status == RefundStatus.succeeded
 
+        # Ensure we only record and process refund once
+        await self.assert_transaction_amounts_from_refund(session, refund)
+        assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
         order = await order_service.get(session, order.id)  # type: ignore
         assert order
         assert order.status == OrderStatus.refunded
         assert order.refunded_amount == 1000
         assert order.refunded_tax_amount == 250
+
+    async def test_valid_partial_refunds(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        refund_hooks: Hooks,
+        customer: Customer,
+    ) -> None:
+        # Complex Swedish order. $99.9 with 25% VAT = $24.75
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            amount=1000,
+            tax_amount=250,
+        )
+        assert order.refunded_amount == 0
+        assert order.refunded_tax_amount == 0
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=375,  # 300 + 75 in VAT
+            charge_id=payment.charge_id,
+        )
+        # Could be created from our API
+        refund = await refund_service._create_from_stripe(session, stripe_refund)
+        # ... and simultaneously from Stripe `refund.created` webhook
+        await refund_service._create_from_stripe(session, stripe_refund)
+        assert refund
+        assert refund.status == RefundStatus.succeeded
+        await self.assert_transaction_amounts_from_refund(session, refund)
+        assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
+        order = await order_service.get(session, order.id)  # type: ignore
+        assert order
+        assert order.status == OrderStatus.partially_refunded
+        assert order.refunded_amount == 300
+        assert order.refunded_tax_amount == 75
+
+        reset_hooks(refund_hooks)
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=375,  # 300 + 75 in VAT
+            charge_id=payment.charge_id,
+        )
+        # Could be created from our API
+        refund = await refund_service._create_from_stripe(session, stripe_refund)
+        # ... and simultaneously from Stripe `refund.created` webhook
+        await refund_service._create_from_stripe(session, stripe_refund)
+        assert refund
+        assert refund.status == RefundStatus.succeeded
+        await self.assert_transaction_amounts_from_refund(session, refund)
+        assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
+        order = await order_service.get(session, order.id)  # type: ignore
+        assert order
+        assert order.status == OrderStatus.partially_refunded
+        assert order.refunded_amount == 600
+        assert order.refunded_tax_amount == 150
 
 
 @pytest.mark.asyncio

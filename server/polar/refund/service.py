@@ -5,6 +5,7 @@ from uuid import UUID
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy.dialects import postgresql
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
@@ -13,8 +14,9 @@ from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNo
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
     Order,
@@ -37,7 +39,7 @@ from polar.transaction.service.refund import (
 )
 from polar.webhook.service import webhook as webhook_service
 
-from .schemas import InternalRefundCreate, InternalRefundUpdate, RefundCreate
+from .schemas import InternalRefundCreate, RefundCreate
 from .sorting import RefundSortProperty
 
 log: Logger = structlog.get_logger()
@@ -87,9 +89,7 @@ class RevokeSubscriptionBenefitsProhibited(RefundError):
         super().__init__(message, 400)
 
 
-class RefundService(
-    ResourceService[Refund, InternalRefundCreate, InternalRefundUpdate]
-):
+class RefundService(ResourceServiceReader[Refund]):
     async def get_list(
         self,
         session: AsyncSession,
@@ -203,7 +203,7 @@ class RefundService(
         internal_create_schema.comment = create_schema.comment
         internal_create_schema.revoke_benefits = create_schema.revoke_benefits
         internal_create_schema.metadata = create_schema.metadata
-        refund = await self._save_created(
+        refund = await self._create(
             session,
             internal_create_schema,
             charge_id=payment.charge_id,
@@ -345,7 +345,7 @@ class RefundService(
             order=order,
             pledge=pledge,
         )
-        return await self._save_created(
+        return await self._create(
             session,
             internal_create_schema,
             charge_id=charge_id,
@@ -354,7 +354,7 @@ class RefundService(
             pledge=pledge,
         )
 
-    async def _save_created(
+    async def _create(
         self,
         session: AsyncSession,
         internal_create_schema: InternalRefundCreate,
@@ -364,25 +364,29 @@ class RefundService(
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> Refund:
-        # Our create API triggers Stripe `refund.created`
-        # which we listen to and create upon in case of refunds from
-        # Stripe dashboard (support operations). Causing a race condition
-        # handled with an upsert.
-        instances = await self.upsert_many(
-            session,
-            create_schemas=[internal_create_schema],
-            constraints=[Refund.processor_id],
-            mutable_keys={
-                "status",
-                "failure_reason",
-                "destination_details",
-                "processor_receipt_number",
-                "user_metadata",
-            },
-            autocommit=False,
+        # Upsert to circumvent issues with race conditions from Stripe
+        # sending `refund.created` from our initial API call.
+        #
+        # We want to listen and create on that webhook in case of support
+        # admin in Stripe dashboard with manual refunds outside our system.
+        statement = (
+            postgresql.insert(Refund)
+            .values(**internal_create_schema.model_dump(by_alias=True))
+            .on_conflict_do_update(
+                index_elements=[Refund.processor_id],
+                set_=dict(
+                    modified_at=utc_now(),
+                ),
+            )
+            .returning(Refund)
+            .execution_options(populate_existing=True)
         )
-        instance = instances[0]
-        assert instance.id is not None
+        res = await session.execute(statement)
+        instance = res.scalars().one()
+        # Avoid processing creation twice, i.e updated vs. inserted
+        if instance.modified_at:
+            return instance
+
         if instance.succeeded:
             await self._refund_resources(
                 session,
@@ -408,7 +412,15 @@ class RefundService(
         if order is None:
             return instance
 
-        await self._after_created(session, order, instance)
+        organization = await organization_service.get(
+            session, order.product.organization_id
+        )
+        if not organization:
+            return instance
+
+        await self._on_created(session, organization, order, instance)
+        if instance.succeeded:
+            await self._on_succeeded(session, organization, order, instance)
         return instance
 
     async def _update_from_stripe(
@@ -437,9 +449,8 @@ class RefundService(
         session.add(refund)
 
         transitioned_to_succeeded = refund.succeeded and not had_succeeded
-
         if transitioned_to_succeeded:
-            await self._refund_resources(
+            refund_transaction = await self._refund_resources(
                 session,
                 charge_id=charge_id,
                 refund=refund,
@@ -447,6 +458,8 @@ class RefundService(
                 order=order,
                 pledge=pledge,
             )
+            # Double check transition by ensuring ledger entry was made
+            transitioned_to_succeeded = refund_transaction is not None
 
         await session.flush()
         log.info(
@@ -462,9 +475,15 @@ class RefundService(
         if order is None:
             return refund
 
-        await self._after_updated(
-            session, order, refund, send_succeeded=transitioned_to_succeeded
+        organization = await organization_service.get(
+            session, order.product.organization_id
         )
+        if not organization:
+            return refund
+
+        await self._on_updated(session, organization, order, refund)
+        if transitioned_to_succeeded:
+            await self._on_succeeded(session, organization, order, refund)
         return refund
 
     async def _refund_resources(
@@ -476,7 +495,7 @@ class RefundService(
         payment: Transaction,
         order: Order | None = None,
         pledge: Pledge | None = None,
-    ) -> None:
+    ) -> Transaction | None:
         transaction = await refund_transaction_service.create(
             session,
             charge_id=charge_id,
@@ -502,42 +521,28 @@ class RefundService(
                 transaction_id=payment.charge_id,
             )
 
-    async def _after_created(
+        return transaction
+
+    async def _on_created(
         self,
         session: AsyncSession,
+        organization: Organization,
         order: Order,
         refund: Refund,
     ) -> None:
-        organization = await organization_service.get(
-            session, order.product.organization_id
-        )
-        if not organization:
-            return
-
         await webhook_service.send(
             session,
             target=organization,
             we=(WebhookEventType.refund_created, refund),
         )
-        if refund.succeeded:
-            await self._after_succeeded(
-                session, order, refund, organization=organization
-            )
 
-    async def _after_succeeded(
+    async def _on_succeeded(
         self,
         session: AsyncSession,
+        organization: Organization,
         order: Order,
         refund: Refund,
-        organization: Organization | None = None,
     ) -> None:
-        if not organization:
-            organization = await organization_service.get(
-                session, order.product.organization_id
-            )
-            if not organization:
-                return
-
         # Send refund.succeeded
         await webhook_service.send(
             session,
@@ -551,28 +556,18 @@ class RefundService(
             we=(WebhookEventType.order_refunded, order),
         )
 
-    async def _after_updated(
+    async def _on_updated(
         self,
         session: AsyncSession,
+        organization: Organization,
         order: Order,
         refund: Refund,
-        send_succeeded: bool = False,
     ) -> None:
-        organization = await organization_service.get(
-            session, order.product.organization_id
-        )
-        if not organization:
-            return
-
         await webhook_service.send(
             session,
             target=organization,
             we=(WebhookEventType.refund_updated, refund),
         )
-        if send_succeeded:
-            await self._after_succeeded(
-                session, order, refund, organization=organization
-            )
 
     async def _get_resources(
         self,

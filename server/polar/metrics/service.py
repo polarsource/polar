@@ -26,6 +26,7 @@ class MetricsService:
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         product_price_type: Sequence[ProductPriceType] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
     ) -> MetricsResponse:
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, UTC
@@ -48,6 +49,7 @@ class MetricsService:
                 organization_id=organization_id,
                 product_id=product_id,
                 product_price_type=product_price_type,
+                customer_id=customer_id,
             )
             for query in QUERIES
         ]

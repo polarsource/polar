@@ -2,6 +2,7 @@ from datetime import date
 
 from fastapi import Depends, Query
 
+from polar.customer.endpoints import CustomerID
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models.product_price import ProductPriceType
@@ -46,6 +47,9 @@ async def get(
             "`one_time` will filter data corresponding to one-time purchases."
         ),
     ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> MetricsResponse:
     """Get metrics about your orders and subscriptions."""
@@ -74,6 +78,7 @@ async def get(
         organization_id=organization_id,
         product_id=product_id,
         product_price_type=product_price_type,
+        customer_id=customer_id,
     )
 
 

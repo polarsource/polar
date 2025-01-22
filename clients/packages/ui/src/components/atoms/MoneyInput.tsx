@@ -1,4 +1,4 @@
-import { AttachMoneyOutlined } from '@mui/icons-material'
+import { DollarSign } from 'lucide-react'
 import { ChangeEvent, FocusEvent, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
@@ -75,13 +75,7 @@ const MoneyInput = (props: Props) => {
       onChange={onChange}
       onInput={onInput}
       placeholder={placeholder ? `${placeholder / 100}` : undefined}
-      preSlot={
-        preSlot ? (
-          preSlot
-        ) : (
-          <AttachMoneyOutlined className="text-lg" fontSize="inherit" />
-        )
-      }
+      preSlot={preSlot ? preSlot : <DollarSign className="h-4 w-4" />}
       postSlot={postSlot}
       onBlur={onBlur}
       onFocus={onFocus}

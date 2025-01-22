@@ -1,4 +1,4 @@
-import { PercentOutlined } from '@mui/icons-material'
+import { Percent } from 'lucide-react'
 import { ChangeEvent, FocusEvent, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
@@ -76,13 +76,7 @@ const PercentageInput = (props: Props) => {
       onChange={onChange}
       onInput={onInput}
       placeholder={placeholder ? `${placeholder / 100}` : undefined}
-      postSlot={
-        postSlot ? (
-          postSlot
-        ) : (
-          <PercentOutlined className="text-lg" fontSize="inherit" />
-        )
-      }
+      postSlot={postSlot ? postSlot : <Percent className="h-4 w-4" />}
       preSlot={preSlot}
       onBlur={onBlur}
       onFocus={onFocus}

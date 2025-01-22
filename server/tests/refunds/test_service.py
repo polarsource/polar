@@ -14,9 +14,11 @@ from polar.models import (
     Order,
     Pledge,
     Product,
+    Refund,
     Repository,
     Transaction,
 )
+from polar.models.order import OrderStatus
 from polar.models.pledge import PledgeState
 from polar.models.refund import RefundReason, RefundStatus
 from polar.order.service import order as order_service
@@ -163,11 +165,11 @@ class StripeRefund:
         *,
         amount: int,
         tax: int,
-    ) -> Order:
+    ) -> tuple[Order, Response]:
         refunded_amount = order.refunded_amount
         refunded_tax_amount = order.refunded_tax_amount
 
-        await self.create_and_assert(
+        response = await self.create_and_assert(
             client,
             stripe_service_mock,
             order,
@@ -196,7 +198,27 @@ class StripeRefund:
 
         assert updated.refunded_amount == refunded_amount
         assert updated.refunded_tax_amount == refunded_tax_amount
-        return updated
+        return updated, response
+
+    async def assert_transaction_amounts_from_response(
+        self, session: AsyncSession, response: Response
+    ) -> Transaction:
+        refund_id = response.json()["id"]
+        refund = await refund_service.get(session, refund_id)
+        assert refund
+        return await self.assert_transaction_amounts_from_refund(session, refund)
+
+    async def assert_transaction_amounts_from_refund(
+        self, session: AsyncSession, refund: Refund
+    ) -> Transaction:
+        refund_transaction = await refund_transaction_service.get_by_refund_id(
+            session, refund.processor_id
+        )
+        assert refund_transaction
+        assert refund_transaction.amount == -1 * refund.amount
+        assert refund_transaction.tax_amount == -1 * refund.tax_amount
+        assert refund_transaction.account_amount == -1 * refund.amount
+        return refund_transaction
 
 
 @pytest.mark.asyncio
@@ -292,6 +314,44 @@ class TestCreatedWebhooks(StripeRefund):
         assert order
         assert order.refunded_amount == 0
         assert order.refunded_tax_amount == 0
+
+    async def test_valid_full_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        refund_hooks: Hooks,
+        customer: Customer,
+    ) -> None:
+        # Complex Swedish order. $99.9 with 25% VAT = $24.75
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            amount=1000,
+            tax_amount=250,
+        )
+        assert order.refunded_amount == 0
+        assert order.refunded_tax_amount == 0
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=1250,
+            charge_id=payment.charge_id,
+        )
+        # Could be created from our API
+        refund = await refund_service._create_from_stripe(session, stripe_refund)
+        assert refund
+        assert refund.status == RefundStatus.succeeded
+        assert_hooks_called_once(refund_hooks, {"created"})
+        await self.assert_transaction_amounts_from_refund(session, refund)
+
+        order = await order_service.get(session, order.id)  # type: ignore
+        assert order
+        assert order.status == OrderStatus.refunded
+        assert order.refunded_amount == 1000
+        assert order.refunded_tax_amount == 250
 
 
 @pytest.mark.asyncio

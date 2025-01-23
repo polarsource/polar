@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Polar UI Components — This is a private library for the Polar project. You probably shouldn't use it directly in your own projects.",
   "author": "Polar",
   "license": "Apache-2.0",

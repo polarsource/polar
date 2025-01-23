@@ -12,6 +12,11 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { CustomerMetadataForm } from './CustomerMetadataForm'
+
+export type CustomerUpdateForm = Omit<CustomerUpdate, 'metadata'> & {
+  metadata: { key: string; value: string | number | boolean }[]
+}
 
 export const EditCustomerModal = ({
   customer,
@@ -20,10 +25,14 @@ export const EditCustomerModal = ({
   customer: Customer
   onClose: () => void
 }) => {
-  const form = useForm<CustomerUpdate>({
+  const form = useForm<CustomerUpdateForm>({
     defaultValues: {
       name: customer.name || '',
       email: customer.email || '',
+      metadata: Object.entries(customer.metadata).map(([key, value]) => ({
+        key,
+        value,
+      })),
     },
   })
 
@@ -32,9 +41,17 @@ export const EditCustomerModal = ({
     customer.organization_id,
   )
 
-  const handleUpdateCustomer = (customerUpdate: CustomerUpdate) => {
+  const handleUpdateCustomer = (customerUpdate: CustomerUpdateForm) => {
+    const data = {
+      ...customerUpdate,
+      metadata: customerUpdate.metadata?.reduce(
+        (acc, { key, value }) => ({ ...acc, [key]: value }),
+        {},
+      ),
+    }
+
     updateCustomer
-      .mutateAsync(customerUpdate)
+      .mutateAsync(data)
       .then(async (customer) => {
         toast({
           title: 'Customer Updated',
@@ -94,6 +111,11 @@ export const EditCustomerModal = ({
                   </FormControl>
                 </FormItem>
               )}
+            />
+            <FormField
+              control={form.control}
+              name="metadata"
+              render={() => <CustomerMetadataForm />}
             />
           </div>
           <Button type="submit" className="self-start">

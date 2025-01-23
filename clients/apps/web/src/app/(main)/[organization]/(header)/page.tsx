@@ -4,9 +4,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
-import { externalURL } from '@/components/Organization'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
 const cacheConfig = {
   next: {
@@ -98,42 +96,11 @@ export default async function Page({
     notFound()
   }
 
-  // Build JSON-LD for this page
-  let jsonLd: WithContext<JSONLDProfilePage> | undefined
-  const sameAs = []
-  if (organization.blog) {
-    sameAs.push(externalURL(organization.blog))
-  }
-  if (organization.twitter_username) {
-    sameAs.push(`https://twitter.com/${organization.twitter_username}`)
-  }
-
-  const org: WithContext<JSONLDProfilePage> = {
-    '@context': 'https://schema.org',
-    '@type': 'ProfilePage',
-    name: organization.name,
-    ...(organization.avatar_url ? { image: organization.avatar_url } : {}),
-    sameAs,
-    mainEntity: {
-      '@type': 'Organization',
-      name: organization.name,
-      alternateName: organization.slug,
-      ...(organization.avatar_url ? { image: organization.avatar_url } : {}),
-    },
-  }
-  jsonLd = org
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <ClientPage
-        organization={organization}
-        products={products}
-        issues={listIssueFunding?.items ?? []}
-      />
-    </>
+    <ClientPage
+      organization={organization}
+      products={products}
+      issues={listIssueFunding?.items ?? []}
+    />
   )
 }

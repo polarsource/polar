@@ -15,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import {
   Elements,
   ElementsConsumer,

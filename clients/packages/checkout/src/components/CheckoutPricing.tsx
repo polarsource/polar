@@ -3,15 +3,15 @@
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
-import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
-import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import {
   Form,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { type SubmitHandler, useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'

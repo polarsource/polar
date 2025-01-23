@@ -6,8 +6,7 @@
   "type": "module",
   "version": "0.1.8",
   "scripts": {
-    "dev": "tsup --watch",
-    "build": "tsup --minify terser --sourcemap"
+    "build": "rm -rf dist/ && tsup"
   },
   "exports": {
     "./embed": {

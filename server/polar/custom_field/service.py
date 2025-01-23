@@ -138,7 +138,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             )
 
         custom_field = CustomField(
-            **custom_field_create.model_dump(exclude={"organization_id"}),
+            **custom_field_create.model_dump(
+                exclude={"organization_id"}, by_alias=True
+            ),
             organization=organization,
         )
         session.add(custom_field)
@@ -183,7 +185,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                 )
 
         previous_slug = custom_field.slug
-        for attr, value in custom_field_update.model_dump(exclude_unset=True).items():
+        for attr, value in custom_field_update.model_dump(
+            exclude_unset=True, by_alias=True
+        ).items():
             setattr(custom_field, attr, value)
 
         # Update the slug from all custom_field_data JSONB

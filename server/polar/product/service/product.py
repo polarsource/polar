@@ -280,7 +280,8 @@ class ProductService(ResourceServiceReader[Product]):
                     "prices",
                     "medias",
                     "attached_custom_fields",
-                }
+                },
+                by_alias=True,
             ),
         )
         session.add(product)
@@ -509,6 +510,7 @@ class ProductService(ResourceServiceReader[Product]):
             exclude_unset=True,
             exclude_none=True,
             exclude={"prices", "medias", "attached_custom_fields"},
+            by_alias=True,
         ).items():
             setattr(product, attr, value)
 

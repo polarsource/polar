@@ -157,7 +157,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
         discount = discount_model(
-            **discount_create.model_dump(exclude={"organization_id", "products"}),
+            **discount_create.model_dump(
+                exclude={"organization_id", "products"}, by_alias=True
+            ),
             id=discount_id,
             organization=organization,
             discount_products=discount_products,
@@ -253,7 +255,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         updated_fields = set()
         for attr, value in discount_update.model_dump(
-            exclude_unset=True, exclude={"products"}
+            exclude_unset=True, exclude={"products"}, by_alias=True
         ).items():
             if value != getattr(discount, attr):
                 setattr(discount, attr, value)

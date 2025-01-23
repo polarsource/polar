@@ -13807,6 +13807,12 @@ export interface MetricPeriod {
      * @type {number}
      * @memberof MetricPeriod
      */
+    cumulative_revenue: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
     average_order_value: number;
     /**
      * 
@@ -13886,6 +13892,12 @@ export interface Metrics {
      * @memberof Metrics
      */
     revenue: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    cumulative_revenue: Metric;
     /**
      * 
      * @type {Metric}

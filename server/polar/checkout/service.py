@@ -1,6 +1,7 @@
+import contextlib
 import typing
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 import stripe as stripe_lib
@@ -665,21 +666,23 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def update(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        checkout = await self._update_checkout(
-            session, checkout, checkout_update, ip_geolocation_client
-        )
-        try:
-            checkout = await self._update_checkout_tax(session, checkout)
-        # Swallow incomplete tax calculation error: require it only on confirm
-        except TaxCalculationError:
-            pass
+        async with self._lock_checkout_update(session, locker, checkout) as checkout:
+            checkout = await self._update_checkout(
+                session, checkout, checkout_update, ip_geolocation_client
+            )
+            try:
+                checkout = await self._update_checkout_tax(session, checkout)
+            # Swallow incomplete tax calculation error: require it only on confirm
+            except TaxCalculationError:
+                pass
 
-        await self._after_checkout_updated(session, checkout)
-        return checkout
+            await self._after_checkout_updated(session, checkout)
+            return checkout
 
     async def confirm(
         self,
@@ -689,33 +692,33 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
-        checkout = await self._update_checkout(session, checkout, checkout_confirm)
+        async with self._lock_checkout_update(session, locker, checkout) as checkout:
+            checkout = await self._update_checkout(session, checkout, checkout_confirm)
+            # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
+            if checkout.discount is not None:
+                try:
+                    async with discount_service.redeem_discount(
+                        session, locker, checkout.discount
+                    ) as discount_redemption:
+                        discount_redemption.checkout = checkout
+                        return await self._confirm_inner(
+                            session, auth_subject, checkout, checkout_confirm
+                        )
+                except DiscountNotRedeemableError as e:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "discount_id"),
+                                "msg": "Discount is no longer redeemable.",
+                                "input": checkout.discount.id,
+                            }
+                        ]
+                    ) from e
 
-        # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
-        if checkout.discount is not None:
-            try:
-                async with discount_service.redeem_discount(
-                    session, locker, checkout.discount
-                ) as discount_redemption:
-                    discount_redemption.checkout = checkout
-                    return await self._confirm_inner(
-                        session, auth_subject, checkout, checkout_confirm
-                    )
-            except DiscountNotRedeemableError as e:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "discount_id"),
-                            "msg": "Discount is no longer redeemable.",
-                            "input": checkout.discount.id,
-                        }
-                    ]
-                ) from e
-
-        return await self._confirm_inner(
-            session, auth_subject, checkout, checkout_confirm
-        )
+            return await self._confirm_inner(
+                session, auth_subject, checkout, checkout_confirm
+            )
 
     async def _confirm_inner(
         self,
@@ -1348,6 +1351,25 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         return subscription, subscription.customer
+
+    @contextlib.asynccontextmanager
+    async def _lock_checkout_update(
+        self, session: AsyncSession, locker: Locker, checkout: Checkout
+    ) -> AsyncIterator[Checkout]:
+        """
+        Set a lock to prevent updating the checkout while confirming.
+        We've seen in the wild someone switching pricing while the payment was being made!
+
+        The timeout is purposely set to 10 seconds, a high value.
+        We've seen in the past Stripe payment requests taking more than 5 seconds,
+        causing the lock to expire while waiting for the payment to complete.
+        """
+        async with locker.lock(
+            f"checkout:{checkout.id}", timeout=10, blocking_timeout=10
+        ):
+            # Refresh the checkout status: it may have been confirmed while waiting for the lock
+            await session.refresh(checkout, {"status"})
+            yield checkout
 
     async def _update_checkout(
         self,

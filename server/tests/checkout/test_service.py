@@ -1320,11 +1320,13 @@ class TestUpdate:
     async def test_not_existing_price(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     product_price_id=uuid.uuid4(),
@@ -1335,6 +1337,7 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         product_one_time: Product,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -1347,6 +1350,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     product_price_id=price.id,
@@ -1356,12 +1360,14 @@ class TestUpdate:
     async def test_price_from_different_product(
         self,
         session: AsyncSession,
+        locker: Locker,
         product_one_time_custom_price: Product,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     product_price_id=product_one_time_custom_price.prices[0].id,
@@ -1370,11 +1376,16 @@ class TestUpdate:
 
     @pytest.mark.parametrize("amount", [10, 20_000_000_000])
     async def test_amount_update_max_limits(
-        self, amount: int, session: AsyncSession, checkout_one_time_custom: Checkout
+        self,
+        amount: int,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_custom: Checkout,
     ) -> None:
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
@@ -1387,6 +1398,7 @@ class TestUpdate:
         amount: int,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         price = checkout_one_time_custom.product.prices[0]
@@ -1398,6 +1410,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
@@ -1407,11 +1420,13 @@ class TestUpdate:
     async def test_not_open(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_confirmed_one_time,
                 CheckoutUpdate(
                     customer_email="customer@example.com",
@@ -1444,6 +1459,7 @@ class TestUpdate:
         updated_values: dict[str, Any],
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         checkout_recurring_fixed: Checkout,
     ) -> None:
         for key, value in initial_values.items():
@@ -1453,6 +1469,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_recurring_fixed,
                 CheckoutUpdate.model_validate(updated_values),
             )
@@ -1460,11 +1477,13 @@ class TestUpdate:
     async def test_invalid_discount_id(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     discount_id=uuid.uuid4(),
@@ -1474,11 +1493,13 @@ class TestUpdate:
     async def test_invalid_discount_code(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdatePublic(
                     discount_code="invalid",
@@ -1488,12 +1509,14 @@ class TestUpdate:
     async def test_invalid_discount_id_not_applicable(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_free,
                 CheckoutUpdate(discount_id=discount_fixed_once.id),
             )
@@ -1501,12 +1524,14 @@ class TestUpdate:
     async def test_invalid_discount_code_not_applicable(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_free,
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
@@ -1515,6 +1540,7 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
         organization: Organization,
     ) -> None:
@@ -1531,6 +1557,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
+                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdatePublic(discount_code=recurring_discount.code),
             )
@@ -1539,6 +1566,7 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
@@ -1547,6 +1575,7 @@ class TestUpdate:
         )
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_recurring_fixed,
             CheckoutUpdate(
                 product_price_id=new_price.id,
@@ -1561,10 +1590,12 @@ class TestUpdate:
     async def test_valid_fixed_price_amount_update(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 amount=4242,
@@ -1578,10 +1609,12 @@ class TestUpdate:
     async def test_valid_custom_price_amount_update(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_custom,
             CheckoutUpdate(
                 amount=4242,
@@ -1592,10 +1625,12 @@ class TestUpdate:
     async def test_valid_free_price_amount_update(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 amount=4242,
@@ -1609,10 +1644,12 @@ class TestUpdate:
     async def test_valid_tax_id(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_custom,
             CheckoutUpdate(
                 customer_billing_address=Address.model_validate({"country": "FR"}),
@@ -1626,6 +1663,7 @@ class TestUpdate:
     async def test_valid_unset_tax_id(
         self,
         session: AsyncSession,
+        locker: Locker,
         save_fixture: SaveFixture,
         checkout_one_time_custom: Checkout,
     ) -> None:
@@ -1634,6 +1672,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_custom,
             CheckoutUpdate(
                 customer_billing_address=Address.model_validate({"country": "US"}),
@@ -1649,6 +1688,7 @@ class TestUpdate:
     async def test_silent_calculate_tax_error(
         self,
         session: AsyncSession,
+        locker: Locker,
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -1658,6 +1698,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 customer_billing_address=Address.model_validate({"country": "US"}),
@@ -1671,6 +1712,7 @@ class TestUpdate:
     async def test_valid_calculate_tax(
         self,
         session: AsyncSession,
+        locker: Locker,
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -1678,6 +1720,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 customer_billing_address=Address.model_validate({"country": "FR"}),
@@ -1691,6 +1734,7 @@ class TestUpdate:
     async def test_ignore_email_update_if_customer_set(
         self,
         session: AsyncSession,
+        locker: Locker,
         save_fixture: SaveFixture,
         customer: Customer,
         checkout_one_time_fixed: Checkout,
@@ -1701,6 +1745,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(customer_email="updatedemail@example.com"),
         )
@@ -1710,10 +1755,12 @@ class TestUpdate:
     async def test_valid_metadata(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 metadata={"key": "value"},
@@ -1725,10 +1772,12 @@ class TestUpdate:
     async def test_valid_customer_metadata(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 customer_metadata={"key": "value"},
@@ -1748,11 +1797,13 @@ class TestUpdate:
         self,
         custom_field_data: dict[str, Any],
         session: AsyncSession,
+        locker: Locker,
         checkout_custom_fields: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
+                locker,
                 checkout_custom_fields,
                 CheckoutUpdate(custom_field_data=custom_field_data),
             )
@@ -1761,10 +1812,11 @@ class TestUpdate:
             assert error["loc"][0:2] == ("body", "custom_field_data")
 
     async def test_valid_custom_field_data(
-        self, session: AsyncSession, checkout_custom_fields: Checkout
+        self, session: AsyncSession, locker: Locker, checkout_custom_fields: Checkout
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_custom_fields,
             CheckoutUpdate(
                 custom_field_data={"text": "abc", "select": "a"},
@@ -1776,10 +1828,12 @@ class TestUpdate:
     async def test_valid_embed_origin(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 embed_origin="https://example.com",
@@ -1789,10 +1843,14 @@ class TestUpdate:
         assert checkout.embed_origin == "https://example.com"
 
     async def test_valid_tax_not_applicable(
-        self, session: AsyncSession, checkout_tax_not_applicable: Checkout
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_tax_not_applicable: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_tax_not_applicable,
             CheckoutUpdate(
                 customer_billing_address=Address.model_validate({"country": "FR"}),
@@ -1806,11 +1864,13 @@ class TestUpdate:
     async def test_valid_discount_id(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 discount_id=discount_fixed_once.id,
@@ -1831,11 +1891,13 @@ class TestUpdate:
     async def test_valid_discount_code(
         self,
         session: AsyncSession,
+        locker: Locker,
         checkout_one_time_fixed: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         checkout = await checkout_service.update(
             session,
+            locker,
             checkout_one_time_fixed,
             CheckoutUpdatePublic(
                 discount_code=discount_fixed_once.code,

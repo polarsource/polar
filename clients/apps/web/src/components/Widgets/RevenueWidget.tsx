@@ -50,7 +50,7 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
           {getCentsInDollarString(
             revenueMetrics.data?.periods[
               revenueMetrics.data?.periods.length - 1
-            ].revenue ?? 0,
+            ].cumulative_revenue ?? 0,
             false,
           )}
         </h2>

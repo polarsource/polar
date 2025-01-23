@@ -102,6 +102,7 @@ export default function ClientPage({
     'monthly_recurring_revenue',
     'orders',
     'average_order_value',
+    'cumulative_revenue',
   ]
   const subscriptionEvents: (keyof Metrics)[] = [
     'active_subscriptions',

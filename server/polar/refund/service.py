@@ -182,19 +182,28 @@ class RefundService(ResourceServiceReader[Refund]):
             raise RefundUnknownPayment(order.id, payment_type="order")
 
         refund_total = refund_amount + refund_tax_amount
-        stripe_refund = await stripe_service.create_refund(
-            charge_id=payment.charge_id,
-            amount=refund_total,
-            reason=RefundReason.to_stripe(create_schema.reason),
-            metadata=dict(
-                order_id=str(order.id),
-                charge_id=str(payment.charge_id),
-                amount=str(create_schema.amount),
-                refund_amount=str(refund_amount),
-                refund_tax_amount=str(refund_tax_amount),
-                revoke_benefits="1" if create_schema.revoke_benefits else "0",
-            ),
+        stripe_metadata = dict(
+            order_id=str(order.id),
+            charge_id=str(payment.charge_id),
+            amount=str(create_schema.amount),
+            refund_amount=str(refund_amount),
+            refund_tax_amount=str(refund_tax_amount),
+            revoke_benefits="1" if create_schema.revoke_benefits else "0",
         )
+
+        try:
+            stripe_refund = await stripe_service.create_refund(
+                charge_id=payment.charge_id,
+                amount=refund_total,
+                reason=RefundReason.to_stripe(create_schema.reason),
+                metadata=stripe_metadata,
+            )
+        except stripe_lib.InvalidRequestError as e:
+            if e.code == "charge_already_refunded":
+                raise RefundedAlready(order)
+            else:
+                raise e
+
         internal_create_schema = self.build_create_schema_from_stripe(
             stripe_refund,
             order=order,

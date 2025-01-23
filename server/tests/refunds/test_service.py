@@ -3,6 +3,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+import stripe as stripe_lib
 from httpx import AsyncClient, Response
 from pytest_mock import MockerFixture
 
@@ -25,6 +26,7 @@ from polar.order.service import order as order_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
+from polar.refund.service import RefundedAlready
 from polar.refund.service import refund as refund_service
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
@@ -219,6 +221,57 @@ class StripeRefund:
         assert refund_transaction.tax_amount == -1 * refund.tax_amount
         assert refund_transaction.account_amount == -1 * refund.amount
         return refund_transaction
+
+
+@pytest.mark.asyncio
+class TestCreateAbuse(StripeRefund):
+    async def test_create_repeatedly(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        refund_hooks: Hooks,
+        customer: Customer,
+    ) -> None:
+        # Complex Swedish order. $99.9 with 25% VAT = $24.75
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            amount=1000,
+            tax_amount=250,
+        )
+
+        assert order.refunded_amount == 0
+        assert order.refunded_tax_amount == 0
+
+        stripe_error = stripe_lib.InvalidRequestError(
+            "Charge py_XX has already been refunded.",
+            param=None,
+            code="charge_already_refunded",
+        )
+        stripe_service_mock.create_refund.side_effect = stripe_error
+
+        # Raised by us or Stripe, e.g attempting a POST request in a quick loop
+        with pytest.raises(RefundedAlready):
+            await refund_service.create(
+                session,
+                order,
+                RefundCreate(
+                    order_id=order.id,
+                    reason=RefundReason.service_disruption,
+                    amount=1000,
+                    comment=None,
+                    revoke_benefits=False,
+                ),
+            )
+
+        order = await order_service.get(session, order.id)  # type: ignore
+        assert order
+        assert order.refunded_amount == 0
+        assert order.refunded_tax_amount == 0
 
 
 @pytest.mark.asyncio

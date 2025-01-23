@@ -503,7 +503,7 @@ class RefundService(ResourceServiceReader[Refund]):
         )
         # Already handled (Stripe webhook || Polar API) so return early
         if transaction is None:
-            return
+            return None
 
         if order:
             await order_service.increment_refunds(

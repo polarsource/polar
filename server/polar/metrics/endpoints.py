@@ -2,7 +2,7 @@ from datetime import date
 
 from fastapi import Depends, Query
 
-from polar.customer.endpoints import CustomerID
+from polar.customer.schemas import CustomerID
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models.product_price import ProductPriceType

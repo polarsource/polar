@@ -217,6 +217,18 @@ async def charge_succeeded(
                     raise
 
 
+@task("stripe.webhook.charge.refunded")
+@stripe_api_connection_error_retry
+async def charge_refunded(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            # Keep for deploy to avoid any queued task issues
+            # Remove quickly thereafter
+            log.info("stripe.webhook.charge.refunded")
+
+
 @task("stripe.webhook.refund.created")
 @stripe_api_connection_error_retry
 async def refund_created(

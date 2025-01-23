@@ -200,6 +200,7 @@ class RefundService(ResourceServiceReader[Refund]):
             )
         except stripe_lib.InvalidRequestError as e:
             if e.code == "charge_already_refunded":
+                log.warn("refund.attempted_already_refunded", order_id=order.id)
                 raise RefundedAlready(order)
             else:
                 raise e

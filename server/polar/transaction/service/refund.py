@@ -115,7 +115,7 @@ class RefundTransactionService(BaseTransactionService):
         payment_transaction: Transaction,
         refund_amount: int,
     ) -> list[tuple[Transaction, Transaction]]:
-        total_amount = payment_transaction.amount + payment_transaction.tax_amount
+        total_amount = payment_transaction.amount
 
         reversal_balances: list[tuple[Transaction, Transaction]] = []
         balance_transactions_couples = await self._get_balance_transactions_for_payment(

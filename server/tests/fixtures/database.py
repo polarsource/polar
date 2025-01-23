@@ -136,7 +136,6 @@ def save_fixture_factory(session: AsyncSession) -> SaveFixture:
     async def _save_fixture(model: Model) -> None:
         session.add(model)
         await session.flush()
-        session.expunge(model)
 
     return _save_fixture
 

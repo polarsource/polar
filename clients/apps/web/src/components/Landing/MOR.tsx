@@ -17,7 +17,7 @@ export const MerchantOfRecord = () => {
       cta1={
         <Link href="https://docs.polar.sh/documentation/polar-as-merchant-of-record/tax">
           <Button variant="ghost">
-            Learn More
+            Learn more
             <span className="ml-1">
               <KeyboardArrowRight fontSize="inherit" />
             </span>

@@ -16,6 +16,7 @@ import {
 import { AddOutlined, Search } from '@mui/icons-material'
 import { Customer, Organization } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,

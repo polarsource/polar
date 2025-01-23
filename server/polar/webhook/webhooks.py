@@ -55,7 +55,6 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
-    | tuple[Literal[WebhookEventType.refund_succeeded], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
@@ -739,7 +738,6 @@ class WebhookRefundBase(BaseWebhookPayload):
 
     type: (
         Literal[WebhookEventType.refund_created]
-        | Literal[WebhookEventType.refund_succeeded]
         | Literal[WebhookEventType.refund_updated]
     )
     data: RefundSchema
@@ -804,56 +802,6 @@ class WebhookRefundCreatedPayload(WebhookRefundBase):
                         "text": {
                             "type": "mrkdwn",
                             "text": f"Refund has been created for {target.name}.",
-                        },
-                        "fields": self._get_slack_fields(target),
-                    }
-                ],
-            }
-        )
-        return json.dumps(payload)
-
-
-class WebhookRefundSucceededPayload(WebhookRefundBase):
-    """
-    Sent when a refund succeeds.
-
-    **Discord & Slack support:** Full
-    """
-
-    type: Literal[WebhookEventType.refund_succeeded]
-    data: RefundSchema
-
-    def get_discord_payload(self, target: User | Organization) -> str:
-        if isinstance(target, User):
-            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
-
-        payload: DiscordPayload = {
-            "content": "Refund Succeeded",
-            "embeds": [
-                get_branded_discord_embed(
-                    {
-                        "title": "Refund Succeeded",
-                        "description": f"Refund succeeded for {target.name}.",
-                        "fields": self._get_discord_fields(target),
-                    }
-                )
-            ],
-        }
-        return json.dumps(payload)
-
-    def get_slack_payload(self, target: User | Organization) -> str:
-        if isinstance(target, User):
-            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
-
-        payload: SlackPayload = get_branded_slack_payload(
-            {
-                "text": "Refund Succeeded",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"Refund succeeded for {target.name}.",
                         },
                         "fields": self._get_slack_fields(target),
                     }
@@ -1088,7 +1036,6 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionUncanceledPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookRefundCreatedPayload
-    | WebhookRefundSucceededPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload

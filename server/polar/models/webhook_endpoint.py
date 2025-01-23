@@ -20,7 +20,6 @@ class WebhookEventType(StrEnum):
     subscription_uncanceled = "subscription.uncanceled"
     subscription_revoked = "subscription.revoked"
     refund_created = "refund.created"
-    refund_succeeded = "refund.succeeded"
     refund_updated = "refund.updated"
     product_created = "product.created"
     product_updated = "product.updated"

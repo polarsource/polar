@@ -10,6 +10,7 @@
   "ignore": [
     "web",
     "@examples/checkout-embed",
+    "@examples/checkout-components",
     "@polar-sh/api"
   ]
 }

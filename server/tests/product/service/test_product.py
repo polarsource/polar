@@ -13,7 +13,7 @@ from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, File, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
-from polar.models.file import FileServiceTypes
+from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
@@ -619,7 +619,7 @@ class TestCreate:
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        file = File(
+        file = ProductMediaFile(
             **{
                 "organization": organization,
                 "name": "Product Cover",
@@ -1183,7 +1183,7 @@ class TestUpdate:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        file = File(
+        file = ProductMediaFile(
             **{
                 "organization": organization,
                 "name": "Product Cover",

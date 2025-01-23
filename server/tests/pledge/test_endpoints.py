@@ -114,14 +114,11 @@ async def test_get_pledge_member_sending_org_user_has_github(
         issue_linked,
         pledging_organization=pledging_organization,
     )
-    pledge.created_by_user_id = pledge_created_by_user.id
+    pledge.created_by_user = pledge_created_by_user
     await save_fixture(pledge)
 
     # make user member of the pledging organization
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=pledging_organization.id,
-    )
+    user_organization = UserOrganization(user=user, organization=pledging_organization)
     await save_fixture(user_organization)
 
     response = await client.get(f"/v1/pledges/{pledge.id}")

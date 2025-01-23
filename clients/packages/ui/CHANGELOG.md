@@ -1,5 +1,11 @@
 # @polar-sh/ui
 
+## 0.1.0
+
+### Minor Changes
+
+- 05f1a9b: Reorganize package and prepare for publishing
+
 ## 0.0.4
 
 ### Patch Changes

@@ -128,7 +128,7 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         customer = Customer(
             organization=organization,
-            **customer_create.model_dump(exclude={"organization_id"}),
+            **customer_create.model_dump(exclude={"organization_id"}, by_alias=True),
         )
 
         session.add(customer)
@@ -159,7 +159,9 @@ class CustomerService(ResourceServiceReader[Customer]):
             # Reset verification status
             customer.email_verified = False
 
-        for attr, value in customer_update.model_dump(exclude_unset=True).items():
+        for attr, value in customer_update.model_dump(
+            exclude_unset=True, by_alias=True
+        ).items():
             setattr(customer, attr, value)
 
         session.add(customer)

@@ -3,7 +3,11 @@ import hashlib
 from pydantic import UUID4, Field, computed_field
 
 from polar.kit.address import Address
-from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.metadata import (
+    MetadataInputMixin,
+    MetadataOutputMixin,
+    OptionalMetadataInputMixin,
+)
 from polar.kit.schemas import (
     EmailStrDNS,
     IDSchema,
@@ -14,7 +18,7 @@ from polar.kit.tax import TaxID
 from polar.organization.schemas import OrganizationID
 
 
-class CustomerCreate(Schema):
+class CustomerCreate(MetadataInputMixin, Schema):
     email: EmailStrDNS
     name: str | None = None
     billing_address: Address | None = None
@@ -28,7 +32,7 @@ class CustomerCreate(Schema):
     )
 
 
-class CustomerUpdate(Schema):
+class CustomerUpdate(OptionalMetadataInputMixin, Schema):
     email: EmailStrDNS | None = None
     name: str | None = None
     billing_address: Address | None = None

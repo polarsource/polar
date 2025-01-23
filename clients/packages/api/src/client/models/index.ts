@@ -21601,7 +21601,6 @@ export const WebhookEventType = {
     SUBSCRIPTION_UNCANCELED: 'subscription.uncanceled',
     SUBSCRIPTION_REVOKED: 'subscription.revoked',
     REFUND_CREATED: 'refund.created',
-    REFUND_SUCCEEDED: 'refund.succeeded',
     REFUND_UPDATED: 'refund.updated',
     PRODUCT_CREATED: 'product.created',
     PRODUCT_UPDATED: 'product.updated',
@@ -21875,37 +21874,6 @@ export const WebhookRefundCreatedPayloadTypeEnum = {
     REFUND_CREATED: 'refund.created'
 } as const;
 export type WebhookRefundCreatedPayloadTypeEnum = typeof WebhookRefundCreatedPayloadTypeEnum[keyof typeof WebhookRefundCreatedPayloadTypeEnum];
-
-/**
- * Sent when a refund succeeds.
- * 
- * **Discord & Slack support:** Full
- * @export
- * @interface WebhookRefundSucceededPayload
- */
-export interface WebhookRefundSucceededPayload {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookRefundSucceededPayload
-     */
-    type: WebhookRefundSucceededPayloadTypeEnum;
-    /**
-     * 
-     * @type {Refund}
-     * @memberof WebhookRefundSucceededPayload
-     */
-    data: Refund;
-}
-
-
-/**
- * @export
- */
-export const WebhookRefundSucceededPayloadTypeEnum = {
-    REFUND_SUCCEEDED: 'refund.succeeded'
-} as const;
-export type WebhookRefundSucceededPayloadTypeEnum = typeof WebhookRefundSucceededPayloadTypeEnum[keyof typeof WebhookRefundSucceededPayloadTypeEnum];
 
 /**
  * Sent when a refund is updated.

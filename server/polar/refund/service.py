@@ -306,7 +306,7 @@ class RefundService(ResourceServiceReader[Refund]):
 
         await self._on_updated(session, organization, refund)
         if transitioned_to_succeeded:
-            await self._on_succeeded(session, organization, refund, order)
+            await self._on_succeeded(session, organization, order)
         return refund
 
     async def enqueue_benefits_revokation(
@@ -427,16 +427,15 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> Refund:
-        # Upsert to circumvent issues with race conditions from Stripe
-        # sending `refund.created` from our initial API call.
-        #
-        # We want to listen and create on that webhook in case of support
-        # admin in Stripe dashboard with manual refunds outside our system.
+        # Upsert to handle race condition from Stripe `refund.created`.
+        # Could be fired standalone from manual support operations in Stripe dashboard.
         statement = (
             postgresql.insert(Refund)
             .values(**internal_create_schema.model_dump(by_alias=True))
             .on_conflict_do_update(
                 index_elements=[Refund.processor_id],
+                # Only update `modified_at` as race conditions from API &
+                # webhook creation should only contain the same data.
                 set_=dict(
                     modified_at=utc_now(),
                 ),
@@ -483,7 +482,7 @@ class RefundService(ResourceServiceReader[Refund]):
 
         await self._on_created(session, organization, instance)
         if instance.succeeded:
-            await self._on_succeeded(session, organization, instance, order)
+            await self._on_succeeded(session, organization, order)
         return instance
 
     async def _create_refund_transaction(
@@ -539,15 +538,8 @@ class RefundService(ResourceServiceReader[Refund]):
         self,
         session: AsyncSession,
         organization: Organization,
-        refund: Refund,
         order: Order,
     ) -> None:
-        # Send refund.succeeded
-        await webhook_service.send(
-            session,
-            target=organization,
-            we=(WebhookEventType.refund_succeeded, refund),
-        )
         # Send order.refunded
         await webhook_service.send(
             session,

@@ -4,7 +4,6 @@
   "description": "Polar UI Components — This is a private library for the Polar project. You probably shouldn't use it directly in your own projects.",
   "author": "Polar",
   "license": "Apache-2.0",
-  "type": "module",
   "publishConfig": {
     "access": "public"
   },

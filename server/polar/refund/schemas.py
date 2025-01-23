@@ -104,9 +104,9 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
         stripe_reason = stripe_refund.reason if stripe_refund.reason else "other"
         reason = RefundReason.from_stripe(stripe_refund.reason)
 
-        destination_details: dict[str, Any] = {}
-        if stripe_refund.destination_details:
-            destination_details = stripe_refund.destination_details
+        destination_details: dict[str, Any] = getattr(
+            stripe_refund, "destination_details", {}
+        )
 
         status = RefundStatus.pending
         if stripe_refund.status:

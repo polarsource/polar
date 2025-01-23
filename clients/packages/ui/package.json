@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/ui",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "exports": {
     "./components/atoms/DataTable": {
       "types": "./dist/components/atoms/datatable/index.d.ts",

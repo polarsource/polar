@@ -1,3 +1,4 @@
+import { useMetrics } from '@/hooks/queries/metrics'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
@@ -10,6 +11,7 @@ import Link from 'next/link'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import AmountLabel from '../Shared/AmountLabel'
 import { toast } from '../Toast/use-toast'
 import { EditCustomerModal } from './EditCustomerModal'
 
@@ -56,6 +58,14 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
     }
   }, [customer])
 
+  const metrics = useMetrics({
+    startDate: new Date(customer.created_at),
+    endDate: new Date(),
+    organizationId: organization.id,
+    interval: 'month',
+    customerId: [customer.id],
+  })
+
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="text-xl">Customer Details</h2>
@@ -69,17 +79,23 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
           className="h-16 w-16"
         />
         <div className="flex flex-col gap-1">
-          <p className="text-lg">{customer.email}</p>
-          <div className="dark:text-polar-500 flex flex-row items-center gap-1 font-mono text-xs text-gray-500">
-            {customer.id}
+          <p className="text-lg">
+            {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+          </p>
+          <div className="dark:text-polar-500 flex flex-row items-center gap-1 font-mono text-sm text-gray-500">
+            {customer.email}
           </div>
         </div>
       </Link>
       <div className="flex flex-row justify-between gap-4">
-        <CustomerStatBox title="Name">
-          <span className="flex-wrap text-sm">
-            {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
-          </span>
+        <CustomerStatBox title="Cumulative Revenue">
+          <AmountLabel
+            amount={
+              metrics.data?.periods[metrics.data.periods.length - 1]
+                .cumulative_revenue ?? 0
+            }
+            currency="USD"
+          />
         </CustomerStatBox>
         <CustomerStatBox title="First Seen">
           <FormattedDateTime datetime={customer.created_at} />

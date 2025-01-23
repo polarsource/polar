@@ -1,6 +1,9 @@
 'use client'
 
+import { CreateCustomerModal } from '@/components/Customer/CreateCustomerModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
 import { useCustomers } from '@/hooks/queries'
 import useDebouncedCallback from '@/hooks/utils'
 import {
@@ -10,7 +13,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 
-import { Search } from '@mui/icons-material'
+import { AddOutlined, Search } from '@mui/icons-material'
 import { Customer, Organization } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -181,8 +184,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
   }, [selectedCustomer, router, organization.slug])
 
+  const {
+    show: showCreateCustomerModal,
+    hide: hideCreateCustomerModal,
+    isShown: isCreateCustomerModalOpen,
+  } = useModal()
+
   return (
-    <DashboardBody>
+    <DashboardBody
+      header={
+        <Button onClick={showCreateCustomerModal}>
+          <AddOutlined className="mr-2" fontSize="small" />
+          <span>New Customer</span>
+        </Button>
+      }
+    >
       <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center justify-between gap-6">
           <Input
@@ -212,6 +228,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
           />
         )}
       </div>
+      <InlineModal
+        isShown={isCreateCustomerModalOpen}
+        hide={hideCreateCustomerModal}
+        modalContent={
+          <CreateCustomerModal
+            organization={organization}
+            onClose={hideCreateCustomerModal}
+          />
+        }
+      />
     </DashboardBody>
   )
 }

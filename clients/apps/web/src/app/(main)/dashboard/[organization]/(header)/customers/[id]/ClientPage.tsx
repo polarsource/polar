@@ -92,11 +92,22 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
     >
       {metrics.data?.metrics && (
         <div className="dark:border-polar-700 rounded-4xl flex flex-col gap-4 border border-gray-200 p-12">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-xl">Revenue</h3>
-            <span className="dark:text-polar-500 text-gray-500">
-              Since Customer first was seen
-            </span>
+          <div className="flex flex-row items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <h3 className="text-xl">Revenue</h3>
+              <span className="dark:text-polar-500 text-gray-500">
+                Since Customer first was seen
+              </span>
+            </div>
+            <h3 className="text-xl">
+              <AmountLabel
+                amount={
+                  metrics.data.periods[metrics.data.periods.length - 1]
+                    .cumulative_revenue
+                }
+                currency="USD"
+              />
+            </h3>
           </div>
           <MetricChart
             data={metrics.data.periods}

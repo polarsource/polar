@@ -8,6 +8,7 @@ from sqlalchemy import (
     CTE,
     ColumnElement,
     Function,
+    Select,
     SQLColumnExpression,
     TextClause,
     and_,
@@ -53,6 +54,7 @@ class Interval(StrEnum):
 
 class MetricQuery(StrEnum):
     orders = "orders"
+    cumulative_orders = "cumulative_orders"
     active_subscriptions = "active_subscriptions"
 
 
@@ -98,6 +100,49 @@ class QueryCallable(Protocol):
     ) -> CTE: ...
 
 
+def _get_readable_orders_statement(
+    auth_subject: AuthSubject[User | Organization],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    product_price_type: Sequence[ProductPriceType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> Select[tuple[uuid.UUID]]:
+    statement = select(Order.id).join(Product, onclause=Order.product_id == Product.id)
+
+    if is_user(auth_subject):
+        statement = statement.where(
+            Product.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        statement = statement.where(Product.organization_id == auth_subject.subject.id)
+
+    if organization_id is not None:
+        statement = statement.where(Product.organization_id.in_(organization_id))
+
+    if product_id is not None:
+        statement = statement.where(Order.product_id.in_(product_id))
+
+    if product_price_type is not None:
+        statement = statement.join(
+            ProductPrice,
+            onclause=Order.product_price_id == ProductPrice.id,
+        ).where(ProductPrice.type.in_(product_price_type))
+
+    if customer_id is not None:
+        statement = statement.join(
+            Customer,
+            onclause=Order.customer_id == Customer.id,
+        ).where(Customer.id.in_(customer_id))
+
+    return statement
+
+
 def get_orders_cte(
     timestamp_series: CTE,
     interval: Interval,
@@ -111,44 +156,13 @@ def get_orders_cte(
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    readable_orders_statement = select(Order.id).join(
-        Product, onclause=Order.product_id == Product.id
+    readable_orders_statement = _get_readable_orders_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        product_price_type=product_price_type,
+        customer_id=customer_id,
     )
-    if is_user(auth_subject):
-        readable_orders_statement = readable_orders_statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
-                )
-            )
-        )
-    elif is_organization(auth_subject):
-        readable_orders_statement = readable_orders_statement.where(
-            Product.organization_id == auth_subject.subject.id
-        )
-
-    if organization_id is not None:
-        readable_orders_statement = readable_orders_statement.where(
-            Product.organization_id.in_(organization_id)
-        )
-
-    if product_id is not None:
-        readable_orders_statement = readable_orders_statement.where(
-            Order.product_id.in_(product_id)
-        )
-
-    if product_price_type is not None:
-        readable_orders_statement = readable_orders_statement.join(
-            ProductPrice,
-            onclause=Order.product_price_id == ProductPrice.id,
-        ).where(ProductPrice.type.in_(product_price_type))
-
-    if customer_id is not None:
-        readable_orders_statement = readable_orders_statement.join(
-            Customer,
-            onclause=Order.customer_id == Customer.id,
-        ).where(Customer.id.in_(customer_id))
 
     return cte(
         select(
@@ -164,6 +178,54 @@ def get_orders_cte(
                 onclause=and_(
                     interval.sql_date_trunc(Order.created_at)
                     == interval.sql_date_trunc(timestamp_column),
+                    Order.id.in_(readable_orders_statement),
+                ),
+            ).join(
+                Subscription,
+                isouter=True,
+                onclause=Order.subscription_id == Subscription.id,
+            )
+        )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
+def get_cumulative_orders_cte(
+    timestamp_series: CTE,
+    interval: Interval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[Metric]"],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    product_price_type: Sequence[ProductPriceType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_orders_statement = _get_readable_orders_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        product_price_type=product_price_type,
+        customer_id=customer_id,
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.cumulative_orders, timestamp_column, interval, metrics
+            ),
+        )
+        .select_from(
+            timestamp_series.join(
+                Order,
+                isouter=True,
+                onclause=and_(
+                    interval.sql_date_trunc(Order.created_at)
+                    <= interval.sql_date_trunc(timestamp_column),
                     Order.id.in_(readable_orders_statement),
                 ),
             ).join(
@@ -270,5 +332,6 @@ def get_active_subscriptions_cte(
 
 QUERIES: list[QueryCallable] = [
     get_orders_cte,
+    get_cumulative_orders_cte,
     get_active_subscriptions_cte,
 ]

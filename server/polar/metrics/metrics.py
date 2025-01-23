@@ -53,6 +53,19 @@ class RevenueMetric(Metric):
         return func.sum(Order.amount)
 
 
+class CumulativeRevenueMetric(Metric):
+    slug = "cumulative_revenue"
+    display_name = "Cumulative Revenue"
+    type = MetricType.currency
+    query = MetricQuery.cumulative_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
+        return func.sum(Order.amount)
+
+
 class AverageOrderValueMetric(Metric):
     slug = "average_order_value"
     display_name = "Average Order Value"
@@ -209,6 +222,7 @@ class MonthlyRecurringRevenueMetric(Metric):
 METRICS: list[type[Metric]] = [
     OrdersMetric,
     RevenueMetric,
+    CumulativeRevenueMetric,
     AverageOrderValueMetric,
     OneTimeProductsMetric,
     OneTimeProductsRevenueMetric,

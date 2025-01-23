@@ -232,6 +232,7 @@ class TestGetMetrics:
         jan_1 = metrics.periods[0]
         assert jan_1.orders == 3
         assert jan_1.revenue == 1200_00
+        assert jan_1.cumulative_revenue == 1200_00
         assert jan_1.average_order_value == 400_00
         assert jan_1.one_time_products == 1
         assert jan_1.one_time_products_revenue == 100_00
@@ -245,6 +246,7 @@ class TestGetMetrics:
         feb_1 = metrics.periods[31]
         assert feb_1.orders == 1
         assert feb_1.revenue == 100_00
+        assert feb_1.cumulative_revenue == 1300_00
         assert feb_1.average_order_value == 100_00
         assert feb_1.one_time_products == 0
         assert feb_1.one_time_products_revenue == 0
@@ -258,6 +260,7 @@ class TestGetMetrics:
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 1
         assert jun_1.revenue == 100_00
+        assert jun_1.cumulative_revenue == 1400_00
         assert jun_1.average_order_value == 100_00
         assert jun_1.one_time_products == 0
         assert jun_1.one_time_products_revenue == 0
@@ -271,6 +274,7 @@ class TestGetMetrics:
         dec_31 = metrics.periods[-1]
         assert dec_31.orders == 0
         assert dec_31.revenue == 0
+        assert dec_31.cumulative_revenue == 1400_00
         assert dec_31.average_order_value == 0
         assert dec_31.one_time_products == 0
         assert dec_31.one_time_products_revenue == 0
@@ -331,6 +335,7 @@ class TestGetMetrics:
         jan_1 = metrics.periods[0]
         assert jan_1.orders == 1
         assert jan_1.revenue == 100_00
+        assert jan_1.cumulative_revenue == 100_00
         assert jan_1.average_order_value == 100_00
         assert jan_1.one_time_products == 1
         assert jan_1.one_time_products_revenue == 100_00
@@ -344,6 +349,7 @@ class TestGetMetrics:
         feb_1 = metrics.periods[31]
         assert feb_1.orders == 0
         assert feb_1.revenue == 0
+        assert feb_1.cumulative_revenue == 100_00
         assert feb_1.average_order_value == 0
         assert feb_1.one_time_products == 0
         assert feb_1.one_time_products_revenue == 0
@@ -357,6 +363,7 @@ class TestGetMetrics:
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 0
         assert jun_1.revenue == 0
+        assert jun_1.cumulative_revenue == 100_00
         assert jun_1.average_order_value == 0
         assert jun_1.one_time_products == 0
         assert jun_1.one_time_products_revenue == 0
@@ -370,6 +377,7 @@ class TestGetMetrics:
         dec_31 = metrics.periods[-1]
         assert dec_31.orders == 0
         assert dec_31.revenue == 0
+        assert dec_31.cumulative_revenue == 100_00
         assert dec_31.average_order_value == 0
         assert dec_31.one_time_products == 0
         assert dec_31.one_time_products_revenue == 0
@@ -402,6 +410,7 @@ class TestGetMetrics:
         jan_1 = metrics.periods[0]
         assert jan_1.orders == 1
         assert jan_1.revenue == 100_00
+        assert jan_1.cumulative_revenue == 100_00
         assert jan_1.average_order_value == 100_00
         assert jan_1.one_time_products == 1
         assert jan_1.one_time_products_revenue == 100_00
@@ -415,6 +424,7 @@ class TestGetMetrics:
         feb_1 = metrics.periods[31]
         assert feb_1.orders == 0
         assert feb_1.revenue == 0
+        assert feb_1.cumulative_revenue == 100_00
         assert feb_1.average_order_value == 0
         assert feb_1.one_time_products == 0
         assert feb_1.one_time_products_revenue == 0
@@ -428,6 +438,7 @@ class TestGetMetrics:
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 0
         assert jun_1.revenue == 0
+        assert jun_1.cumulative_revenue == 100_00
         assert jun_1.average_order_value == 0
         assert jun_1.one_time_products == 0
         assert jun_1.one_time_products_revenue == 0
@@ -441,6 +452,7 @@ class TestGetMetrics:
         dec_31 = metrics.periods[-1]
         assert dec_31.orders == 0
         assert dec_31.revenue == 0
+        assert dec_31.cumulative_revenue == 100_00
         assert dec_31.average_order_value == 0
         assert dec_31.one_time_products == 0
         assert dec_31.one_time_products_revenue == 0
@@ -472,6 +484,7 @@ class TestGetMetrics:
         period = metrics.periods[0]
         assert period.orders == 5
         assert period.revenue == 1400_00
+        assert period.cumulative_revenue == 1400_00
         assert period.average_order_value == 280_00
         assert period.one_time_products == 1
         assert period.one_time_products_revenue == 100_00
@@ -520,6 +533,7 @@ class TestGetMetrics:
         jan_1 = metrics.periods[0]
         assert jan_1.orders == 0
         assert jan_1.revenue == 0
+        assert jan_1.cumulative_revenue == 0
         assert jan_1.average_order_value == 0
         assert jan_1.one_time_products == 0
         assert jan_1.one_time_products_revenue == 0
@@ -533,6 +547,7 @@ class TestGetMetrics:
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 0
         assert jun_1.revenue == 0
+        assert jun_1.cumulative_revenue == 0
         assert jun_1.average_order_value == 0
         assert jun_1.one_time_products == 0
         assert jun_1.one_time_products_revenue == 0
@@ -546,6 +561,7 @@ class TestGetMetrics:
         jun_15 = metrics.periods[166]
         assert jun_15.orders == 0
         assert jun_15.revenue == 0
+        assert jun_15.cumulative_revenue == 0
         assert jun_15.average_order_value == 0
         assert jun_15.one_time_products == 0
         assert jun_15.one_time_products_revenue == 0
@@ -559,6 +575,7 @@ class TestGetMetrics:
         jun_16 = metrics.periods[167]
         assert jun_16.orders == 0
         assert jun_16.revenue == 0
+        assert jun_16.cumulative_revenue == 0
         assert jun_16.average_order_value == 0
         assert jun_16.one_time_products == 0
         assert jun_16.one_time_products_revenue == 0
@@ -614,6 +631,7 @@ class TestGetMetrics:
         jan = metrics.periods[0]
         assert jan.orders == 0
         assert jan.revenue == 0
+        assert jan.cumulative_revenue == 0
         assert jan.average_order_value == 0
         assert jan.one_time_products == 0
         assert jan.one_time_products_revenue == 0
@@ -627,6 +645,7 @@ class TestGetMetrics:
         feb = metrics.periods[1]
         assert feb.orders == 0
         assert feb.revenue == 0
+        assert feb.cumulative_revenue == 0
         assert feb.average_order_value == 0
         assert feb.one_time_products == 0
         assert feb.one_time_products_revenue == 0

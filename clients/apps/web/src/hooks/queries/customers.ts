@@ -1,5 +1,9 @@
 import { api, queryClient } from '@/utils/api'
-import { CustomersApiListRequest, CustomerUpdate } from '@polar-sh/api'
+import {
+  CustomerCreate,
+  CustomersApiListRequest,
+  CustomerUpdate,
+} from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -15,6 +19,16 @@ export const useCustomers = (
         ...(parameters || {}),
       }),
     retry: defaultRetry,
+  })
+
+export const useCreateCustomer = (organizationId: string) =>
+  useMutation({
+    mutationFn: (data: CustomerCreate) => api.customers.create({ body: data }),
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['customers', organizationId],
+      })
+    },
   })
 
 export const useUpdateCustomer = (customerId: string, organizationId: string) =>

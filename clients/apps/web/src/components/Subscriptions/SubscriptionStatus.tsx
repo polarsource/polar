@@ -3,7 +3,7 @@ import { CancelOutlined } from '@mui/icons-material'
 import { AccessTimeOutlined } from '@mui/icons-material'
 
 import { Subscription } from '@polar-sh/api'
-import { Pill } from 'polarkit/components/ui/atoms'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { twMerge } from 'tailwind-merge'
 import { subscriptionStatusDisplayNames } from './utils'
 

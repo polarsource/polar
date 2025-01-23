@@ -11,17 +11,17 @@ import {
   SubscriptionCancel,
   ValidationError,
 } from '@polar-sh/api'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
+} from '@polar-sh/ui/components/atoms/Select'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   Form,
   FormControl,
@@ -30,7 +30,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import CustomFieldValue from '../CustomFields/CustomFieldValue'

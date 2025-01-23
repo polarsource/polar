@@ -2,6 +2,7 @@ import { useMetrics } from '@/hooks/queries/metrics'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
+import { AddOutlined } from '@mui/icons-material'
 import { Customer, CustomerSession } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -12,6 +13,7 @@ import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import AmountLabel from '../Shared/AmountLabel'
+import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 import { EditCustomerModal } from './EditCustomerModal'
 
@@ -148,6 +150,22 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
             {customerSessionError}
           </p>
         )}
+      </div>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-row items-center justify-between gap-2">
+          <h3 className="text-lg">Metadata</h3>
+          <Button className="h-8 w-8" variant="secondary" onClick={showModal}>
+            <AddOutlined />
+          </Button>
+        </div>
+        {Object.entries(customer.metadata).map(([key, value]) => (
+          <DetailRow
+            key={key}
+            label={key}
+            value={value}
+            valueClassName="dark:bg-polar-800 bg-gray-100"
+          />
+        ))}
       </div>
       <InlineModal
         isShown={isModalShown}

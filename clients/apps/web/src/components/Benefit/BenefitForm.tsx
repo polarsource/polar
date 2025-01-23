@@ -1,3 +1,4 @@
+import { usePostHog } from '@/hooks/posthog'
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import {
@@ -35,6 +36,7 @@ import { useFormContext } from 'react-hook-form'
 import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
+import { UsageBenefitForm } from './Usage/UsageBenefitForm'
 import { benefitsDisplayNames } from './utils'
 
 export const NewBenefitForm = ({
@@ -62,7 +64,7 @@ export const UpdateBenefitForm = ({
 
 interface BenefitFormProps {
   organization: Organization
-  type: BenefitType
+  type: BenefitType | 'usage'
   update?: boolean
 }
 
@@ -108,6 +110,7 @@ export const BenefitForm = ({
       />
 
       {!update ? <BenefitTypeSelect /> : null}
+      {type === 'usage' && <UsageBenefitForm update={update} />}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'ads' && <AdsBenefitForm />}
       {type === 'discord' && <DiscordBenefitForm />}
@@ -333,6 +336,9 @@ export const DiscordBenefitForm = () => {
 
 const BenefitTypeSelect = ({}) => {
   const { control } = useFormContext<BenefitCustomCreate>()
+
+  const { isFeatureEnabled } = usePostHog()
+
   return (
     <FormField
       control={control}
@@ -355,6 +361,11 @@ const BenefitTypeSelect = ({}) => {
                       {benefitsDisplayNames[value]}
                     </SelectItem>
                   ))}
+                  {isFeatureEnabled('usage_benefits') && (
+                    <SelectItem key="usage" value="usage">
+                      Usage
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </FormControl>

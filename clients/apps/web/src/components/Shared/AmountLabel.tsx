@@ -6,12 +6,14 @@ interface AmountLabelProps {
   amount: number
   currency: string
   interval?: SubscriptionRecurringInterval
+  minimumFractionDigits?: number
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
   amount,
   currency,
   interval,
+  minimumFractionDigits = 0,
 }) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
@@ -29,7 +31,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
 
   return (
     <div className="flex flex-row items-baseline">
-      {formatCurrencyAndAmount(amount, currency, 0)}
+      {formatCurrencyAndAmount(amount, currency, minimumFractionDigits)}
       <span className="text-[0.5em]">{intervalDisplay}</span>
     </div>
   )

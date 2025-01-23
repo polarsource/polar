@@ -19,6 +19,11 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { CustomerMetadataForm } from './CustomerMetadataForm'
+
+export type CustomerCreateForm = Omit<CustomerCreate, 'metadata'> & {
+  metadata: { key: string; value: string | number | boolean }[]
+}
 
 export const CreateCustomerModal = ({
   organization,
@@ -27,17 +32,25 @@ export const CreateCustomerModal = ({
   organization: Organization
   onClose: () => void
 }) => {
-  const form = useForm<CustomerCreate>({
+  const form = useForm<CustomerCreateForm>({
     defaultValues: {
       organization_id: organization.id,
-      metadata: {},
+      metadata: [],
     },
   })
   const createCustomer = useCreateCustomer(organization.id)
 
-  const handleCreateCustomer = (customerCreate: CustomerCreate) => {
+  const handleCreateCustomer = (customerCreate: CustomerCreateForm) => {
+    const data = {
+      ...customerCreate,
+      metadata: customerCreate.metadata?.reduce(
+        (acc, { key, value }) => ({ ...acc, [key]: value }),
+        {},
+      ),
+    }
+
     createCustomer
-      .mutateAsync(customerCreate)
+      .mutateAsync(data)
       .then(async (customer) => {
         toast({
           title: 'Customer Created',
@@ -112,6 +125,11 @@ export const CreateCustomerModal = ({
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <FormField
+              control={form.control}
+              name="metadata"
+              render={() => <CustomerMetadataForm />}
             />
           </div>
           <Button type="submit" className="self-start">

@@ -40,8 +40,10 @@ export const resolveBenefitIcon = (
   return resolveBenefitCategoryIcon(benefit?.type, fontSize, className)
 }
 
-export const resolveBenefitTypeDisplayName = (type: BenefitType) => {
+export const resolveBenefitTypeDisplayName = (type: BenefitType | 'usage') => {
   switch (type) {
+    case 'usage':
+      return 'Usage'
     case BenefitType.ADS:
       return 'Advertisement Spot'
     case BenefitType.DISCORD:
@@ -84,7 +86,8 @@ export const DiscordIcon = ({
 
 export const benefitsDisplayNames: {
   [key in BenefitType]: string
-} = {
+} & { usage: string } = {
+  usage: 'Usage',
   [BenefitType.LICENSE_KEYS]: 'License Keys',
   [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
   [BenefitType.DISCORD]: 'Discord Invite',

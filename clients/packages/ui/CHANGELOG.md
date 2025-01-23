@@ -1,5 +1,11 @@
 # @polar-sh/ui
 
+## 0.1.1
+
+### Patch Changes
+
+- 62a3c07: Fix package.json metadata
+
 ## 0.1.0
 
 ### Minor Changes

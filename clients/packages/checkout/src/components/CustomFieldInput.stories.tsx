@@ -1,5 +1,5 @@
+import { Form, FormField } from '@polar-sh/ui/components/ui/form'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Form, FormField } from 'polarkit/components/ui/form'
 import { useForm } from 'react-hook-form'
 import CustomFieldInput from './CustomFieldInput'
 

@@ -1,6 +1,7 @@
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
-import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
+
+import { formatCurrencyNumber } from '../utils/money'
 
 interface AmountLabelProps {
   amount: number
@@ -29,7 +30,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
 
   return (
     <div className="flex flex-row items-baseline">
-      {formatCurrencyAndAmount(amount, currency, 0)}
+      {formatCurrencyNumber(amount, currency, 0)}
       <span className="text-[0.5em]">{intervalDisplay}</span>
     </div>
   )

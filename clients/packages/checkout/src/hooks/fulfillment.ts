@@ -1,3 +1,5 @@
+'use client'
+
 import type { PolarCore } from '@polar-sh/sdk/core'
 import type { CheckoutStatus } from '@polar-sh/sdk/models/components/CheckoutStatus'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'

@@ -4,25 +4,25 @@ import type { CustomFieldDate } from '@polar-sh/sdk/models/components/customfiel
 import type { CustomFieldNumber } from '@polar-sh/sdk/models/components/customfieldnumber'
 import type { CustomFieldSelect } from '@polar-sh/sdk/models/components/customfieldselect'
 import type { CustomFieldText } from '@polar-sh/sdk/models/components/customfieldtext'
-import type { MarkdownToJSX } from 'markdown-to-jsx'
-import Markdown from 'markdown-to-jsx'
-import Input from 'polarkit/components/ui/atoms/input'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms/select'
-import Textarea from 'polarkit/components/ui/atoms/textarea'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
+} from '@polar-sh/ui/components/atoms/Select'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from 'polarkit/components/ui/form'
+} from '@polar-sh/ui/components/ui/form'
+import type { MarkdownToJSX } from 'markdown-to-jsx'
+import Markdown from 'markdown-to-jsx'
 import type { ControllerRenderProps } from 'react-hook-form'
 
 const markdownOptions: MarkdownToJSX.Options = {
@@ -87,7 +87,7 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
 }) => {
   if (customField.properties.textarea) {
     return (
-      <Textarea
+      <TextArea
         {...field}
         placeholder={customField.properties.formPlaceholder}
         required={required}

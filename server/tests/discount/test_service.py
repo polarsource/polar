@@ -494,6 +494,7 @@ class TestCodeCaseInsensitivity:
         checkout_product = await create_checkout(save_fixture, price=product.prices[0])
         await checkout_service.update(
             session,
+            locker,
             checkout_product,
             CheckoutUpdatePublic(
                 discount_code="FoObAr",

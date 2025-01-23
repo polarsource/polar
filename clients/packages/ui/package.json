@@ -1,6 +1,13 @@
 {
   "name": "@polar-sh/ui",
   "version": "0.1.0",
+  "description": "Polar UI Components — This is a private library for the Polar project. You probably shouldn't use it directly in your own projects.",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./components/atoms/DataTable": {
       "types": "./dist/components/atoms/datatable/index.d.ts",

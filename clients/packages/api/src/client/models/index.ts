@@ -3855,10 +3855,10 @@ export interface Checkout {
     id: string;
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof Checkout
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * Payment processor used.
      * @type {PaymentProcessor}
@@ -4080,10 +4080,10 @@ export interface Checkout {
 export interface CheckoutConfirmStripe {
     /**
      * 
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutConfirmStripe
      */
-    custom_field_data?: object | null;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; } | null;
     /**
      * 
      * @type {string}
@@ -4878,10 +4878,10 @@ export interface CheckoutPriceCreate {
     metadata?: { [key: string]: MetadataValue1; };
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutPriceCreate
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * 
      * @type {string}
@@ -5075,10 +5075,10 @@ export interface CheckoutProductCreate {
     metadata?: { [key: string]: MetadataValue1; };
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutProductCreate
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * 
      * @type {string}
@@ -5199,10 +5199,10 @@ export interface CheckoutPublic {
     id: string;
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutPublic
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * Payment processor used.
      * @type {PaymentProcessor}
@@ -5433,10 +5433,10 @@ export interface CheckoutPublicConfirmed {
     id: string;
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutPublicConfirmed
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * Payment processor used.
      * @type {PaymentProcessor}
@@ -5687,10 +5687,10 @@ export type CheckoutStatus = typeof CheckoutStatus[keyof typeof CheckoutStatus];
 export interface CheckoutUpdate {
     /**
      * 
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutUpdate
      */
-    custom_field_data?: object | null;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; } | null;
     /**
      * 
      * @type {string}
@@ -5796,10 +5796,10 @@ export interface CheckoutUpdate {
 export interface CheckoutUpdatePublic {
     /**
      * 
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof CheckoutUpdatePublic
      */
-    custom_field_data?: object | null;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; } | null;
     /**
      * 
      * @type {string}
@@ -6367,6 +6367,12 @@ export const CustomFieldCreateTextTypeEnum = {
     TEXT: 'text'
 } as const;
 export type CustomFieldCreateTextTypeEnum = typeof CustomFieldCreateTextTypeEnum[keyof typeof CustomFieldCreateTextTypeEnum];
+
+/**
+ * @type CustomFieldDataValue
+ * @export
+ */
+export type CustomFieldDataValue = boolean | number | string;
 
 /**
  * Schema for a custom field of type date.
@@ -14612,10 +14618,10 @@ export interface Order {
     metadata: { [key: string]: MetadataValue; };
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof Order
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * 
      * @type {string}
@@ -19346,10 +19352,10 @@ export interface Subscription {
     metadata: { [key: string]: MetadataValue; };
     /**
      * Key-value object storing custom field values.
-     * @type {object}
+     * @type {{ [key: string]: CustomFieldDataValue; }}
      * @memberof Subscription
      */
-    custom_field_data?: object;
+    custom_field_data?: { [key: string]: CustomFieldDataValue; };
     /**
      * 
      * @type {SubscriptionCustomer}

@@ -1,4 +1,4 @@
-import { ValidationError } from '@polar-sh/sdk/models/components'
+import type { ValidationError } from '@polar-sh/sdk/models/components/validationerror'
 import type { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
 export const setValidationErrors = <TFieldValues extends FieldValues>(

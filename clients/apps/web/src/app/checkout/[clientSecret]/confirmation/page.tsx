@@ -3,7 +3,7 @@ import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors'
+import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 
 export default async function Page({

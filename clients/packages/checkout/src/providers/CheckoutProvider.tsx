@@ -8,16 +8,17 @@ import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/chec
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import type errors from '@polar-sh/sdk/models/errors'
 import type {
   ConnectionError,
   InvalidRequestError,
   RequestAbortedError,
   RequestTimeoutError,
-  SDKError,
-  SDKValidationError,
   UnexpectedClientError,
-} from '@polar-sh/sdk/models/errors'
+} from '@polar-sh/sdk/models/errors/httpclienterrors'
+import type { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
+import type { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
+import type { SDKError } from '@polar-sh/sdk/models/errors/sdkerror'
+import type { SDKValidationError } from '@polar-sh/sdk/models/errors/sdkvalidationerror'
 import type { Result } from '@polar-sh/sdk/types/fp'
 import {
   createContext,
@@ -37,8 +38,8 @@ export interface CheckoutContextProps {
   refresh: () => Promise<
     Result<
       CheckoutPublic,
-      | errors.ResourceNotFound
-      | errors.HTTPValidationError
+      | ResourceNotFound
+      | HTTPValidationError
       | SDKError
       | SDKValidationError
       | UnexpectedClientError
@@ -53,8 +54,8 @@ export interface CheckoutContextProps {
   ) => Promise<
     Result<
       CheckoutPublic,
-      | errors.ResourceNotFound
-      | errors.HTTPValidationError
+      | ResourceNotFound
+      | HTTPValidationError
       | SDKError
       | SDKValidationError
       | UnexpectedClientError
@@ -69,8 +70,8 @@ export interface CheckoutContextProps {
   ) => Promise<
     Result<
       CheckoutPublicConfirmed,
-      | errors.ResourceNotFound
-      | errors.HTTPValidationError
+      | ResourceNotFound
+      | HTTPValidationError
       | SDKError
       | SDKValidationError
       | UnexpectedClientError

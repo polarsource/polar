@@ -5,7 +5,7 @@ import {
 } from '@polar-sh/checkout/providers'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors'
+import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 

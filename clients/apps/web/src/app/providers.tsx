@@ -9,24 +9,43 @@ import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
-import posthog from 'posthog-js'
-import { PostHogProvider } from 'posthog-js/react'
-import { PropsWithChildren, useEffect } from 'react'
+import PostHog from 'posthog-js-lite'
+import { PropsWithChildren, useEffect, useMemo, useState } from 'react'
 
-if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
-  posthog.init(CONFIG.POSTHOG_TOKEN, {
-    api_host: '/ingest',
-    ui_host: 'https://us.posthog.com',
-    persistence:
-      cookieConsentGiven() === 'yes' ? 'localStorage+cookie' : 'memory',
-  })
+import { createContext } from 'react'
+
+const stub = (): never => {
+  throw new Error(
+    'You forgot to wrap your component in <PolarPostHogProvider>.',
+  )
 }
+
+export const PostHogContext = createContext<{
+  client: PostHog | null
+  setPersistence: (
+    persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory',
+  ) => void
+  // @ts-ignore
+}>(stub)
 
 export function PolarPostHogProvider({
   children,
 }: {
   children: React.ReactElement
 }) {
+  const [persistence, setPersistence] = useState<
+    'localStorage' | 'sessionStorage' | 'cookie' | 'memory'
+  >(cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory')
+  const posthog = useMemo(() => {
+    if (!CONFIG.POSTHOG_TOKEN) {
+      return null
+    }
+    return new PostHog(CONFIG.POSTHOG_TOKEN, {
+      host: '/ingest',
+      persistence,
+    })
+  }, [persistence])
+
   const pathname = usePathname()
   const searchParams = useSearchParams()
   // Track pageviews
@@ -36,13 +55,17 @@ export function PolarPostHogProvider({
       if (searchParams && searchParams.toString()) {
         url = url + `?${searchParams.toString()}`
       }
-      posthog.capture('$pageview', {
+      posthog?.capture('$pageview', {
         $current_url: url,
       })
     }
-  }, [pathname, searchParams])
+  }, [pathname, searchParams, posthog])
 
-  return <PostHogProvider client={posthog}>{children}</PostHogProvider>
+  return (
+    <PostHogContext.Provider value={{ client: posthog, setPersistence }}>
+      {children}
+    </PostHogContext.Provider>
+  )
 }
 
 export function PolarThemeProvider({

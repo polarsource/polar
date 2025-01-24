@@ -92,6 +92,9 @@ importers:
       '@polar-sh/mdx':
         specifier: workspace:*
         version: link:../../packages/mdx
+      '@polar-sh/sdk':
+        specifier: ^0.21.2
+        version: 0.21.2(zod@3.24.1)
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui

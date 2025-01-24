@@ -1,4 +1,12 @@
 'use client'
 
-export { CheckoutFormProvider, useCheckoutForm } from './CheckoutFormProvider'
-export { CheckoutProvider, useCheckout } from './CheckoutProvider'
+export {
+  CheckoutFormContext,
+  CheckoutFormProvider,
+  useCheckoutForm,
+} from './CheckoutFormProvider'
+export {
+  CheckoutContext,
+  CheckoutProvider,
+  useCheckout,
+} from './CheckoutProvider'

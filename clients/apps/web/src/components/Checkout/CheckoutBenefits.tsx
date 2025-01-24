@@ -1,7 +1,7 @@
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { useCustomerSSE } from '@/hooks/sse'
 import { buildAPI } from '@/utils/api'
-import { CheckoutPublic } from '@polar-sh/api'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useEffect } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'

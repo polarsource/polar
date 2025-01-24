@@ -1,9 +1,10 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { getCheckoutByClientSecret } from '@/utils/checkout'
-import { CheckoutStatus } from '@polar-sh/api'
-import { redirect } from 'next/navigation'
+import { getServerURL } from '@/utils/api'
+import { PolarCore } from '@polar-sh/sdk/core'
+import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
+import { ResourceNotFound } from '@polar-sh/sdk/models/errors'
+import { notFound, redirect } from 'next/navigation'
 
 export default async function Page({
   params: { clientSecret },
@@ -16,11 +17,22 @@ export default async function Page({
     customer_session_token?: string
   }
 }) {
-  const api = getServerSideAPI()
+  const client = new PolarCore({ serverURL: getServerURL() })
+  const {
+    ok,
+    value: checkout,
+    error,
+  } = await checkoutsCustomClientGet(client, { clientSecret })
 
-  const checkout = await getCheckoutByClientSecret(api, clientSecret)
+  if (!ok) {
+    if (error instanceof ResourceNotFound) {
+      notFound()
+    } else {
+      throw error
+    }
+  }
 
-  if (checkout.status === CheckoutStatus.OPEN) {
+  if (checkout.status === 'open') {
     redirect(checkout.url)
   }
 

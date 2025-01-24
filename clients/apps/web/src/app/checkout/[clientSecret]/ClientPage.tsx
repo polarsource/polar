@@ -1,29 +1,21 @@
 'use client'
 
 import Checkout from '@/components/Checkout/Checkout'
-import { CheckoutContextProvider } from '@/components/Checkout/CheckoutContextProvider'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
+import { useCheckout } from '@polar-sh/checkout/providers'
 
 const ClientPage = ({
-  checkout,
   embed,
   theme,
-  prefilledParameters,
 }: {
-  checkout: CheckoutPublic
   embed: boolean
-  prefilledParameters: Record<string, string>
   theme?: 'light' | 'dark'
 }) => {
+  const { checkout } = useCheckout()
   return (
-    <CheckoutContextProvider
-      clientSecret={checkout.clientSecret}
-      embed={embed}
-      theme={theme}
-      prefilledParameters={prefilledParameters}
-    >
-      <Checkout />
-    </CheckoutContextProvider>
+    <CheckoutLayout checkout={checkout} embed={embed} theme={theme}>
+      <Checkout embed={embed} theme={theme} />
+    </CheckoutLayout>
   )
 }
 

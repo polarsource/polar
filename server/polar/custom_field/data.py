@@ -1,3 +1,4 @@
+import datetime
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -15,8 +16,8 @@ if TYPE_CHECKING:
 
 
 class CustomFieldDataMixin:
-    custom_field_data: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
+    custom_field_data: Mapped[dict[str, str | int | bool | datetime.datetime]] = (
+        mapped_column(JSONB, nullable=False, default=dict)
     )
 
     # Make the type checker happy, but we should make sure actual models
@@ -36,21 +37,21 @@ def track_attached_custom_field_mixin(_mapper: Mapper[Any], class_: type) -> Non
 
 
 class CustomFieldDataInputMixin(BaseModel):
-    custom_field_data: dict[str, Any] = Field(
+    custom_field_data: dict[str, str | int | bool | datetime.datetime] = Field(
         default_factory=dict,
         description="Key-value object storing custom field values.",
     )
 
 
 class OptionalCustomFieldDataInputMixin(BaseModel):
-    custom_field_data: dict[str, Any] | None = Field(
+    custom_field_data: dict[str, str | int | bool | datetime.datetime] | None = Field(
         default=None,
         description="Key-value object storing custom field values.",
     )
 
 
 class CustomFieldDataOutputMixin(BaseModel):
-    custom_field_data: dict[str, Any] = Field(
+    custom_field_data: dict[str, str | int | bool | datetime.datetime] = Field(
         default_factory=dict,
         description="Key-value object storing custom field values.",
     )

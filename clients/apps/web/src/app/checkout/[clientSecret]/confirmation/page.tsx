@@ -40,7 +40,6 @@ export default async function Page({
     <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
       <CheckoutConfirmation
         checkout={checkout}
-        organization={checkout.organization}
         customerSessionToken={customer_session_token}
       />
     </CheckoutLayout>

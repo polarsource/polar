@@ -90,7 +90,6 @@ interface CheckoutProviderProps {
   clientSecret: string
   server?: 'production' | 'sandbox'
   serverURL?: string
-  onCheckoutConfirmed?: (checkout: CheckoutPublicConfirmed) => void
 }
 
 export const CheckoutProvider = ({

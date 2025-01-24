@@ -57,12 +57,10 @@ export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 
 interface CheckoutFormProviderProps {
   prefilledParameters?: Record<string, string>
-  onCheckoutConfirmed?: (checkout: CheckoutPublicConfirmed) => void
 }
 
 export const CheckoutFormProvider = ({
   prefilledParameters,
-  onCheckoutConfirmed,
   children,
 }: React.PropsWithChildren<CheckoutFormProviderProps>) => {
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
@@ -127,9 +125,6 @@ export const CheckoutFormProvider = ({
         setLoadingLabel('Processing order')
         try {
           const checkoutConfirmed = await _confirm(data)
-          if (onCheckoutConfirmed) {
-            onCheckoutConfirmed(checkoutConfirmed)
-          }
           return checkoutConfirmed
         } catch (e) {
           throw e
@@ -226,13 +221,9 @@ export const CheckoutFormProvider = ({
         }
       }
 
-      if (onCheckoutConfirmed) {
-        onCheckoutConfirmed(updatedCheckout)
-      }
-
       return updatedCheckout
     },
-    [checkout, setError, _confirm, onCheckoutConfirmed],
+    [checkout, setError, _confirm],
   )
 
   return (

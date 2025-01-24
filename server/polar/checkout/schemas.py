@@ -334,8 +334,8 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     )
 
     customer_id: UUID4 | None
-    customer_name: CustomerName | None
-    customer_email: CustomerEmail | None
+    customer_name: str | None = Field(description="Name of the customer.")
+    customer_email: str | None = Field(description="Email address of the customer.")
     customer_ip_address: CustomerIPAddress | None
     customer_billing_address: CustomerBillingAddress | None
     customer_tax_id: str | None = Field(

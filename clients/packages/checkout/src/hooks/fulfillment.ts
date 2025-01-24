@@ -1,8 +1,8 @@
 'use client'
 
 import type { PolarCore } from '@polar-sh/sdk/core'
-import type { CheckoutStatus } from '@polar-sh/sdk/models/components/CheckoutStatus'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutStatus } from '@polar-sh/sdk/models/components/checkoutstatus'
 import { useCallback, useState } from 'react'
 
 import { createSSEListener } from '../utils/sse'

@@ -4,6 +4,10 @@ import { usePostHog } from '@/hooks/posthog'
 import { useEffect, useState } from 'react'
 
 export function cookieConsentGiven() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return 'undecided'
+  }
+
   if (!localStorage.getItem('cookie_consent')) {
     return 'undecided'
   }
@@ -13,7 +17,7 @@ export function cookieConsentGiven() {
 
 export function CookieConsent() {
   const [consentGiven, setConsentGiven] = useState<string | null>('')
-  const posthog = usePostHog()
+  const { setPersistence } = usePostHog()
 
   useEffect(() => {
     // We want this to only run once the client loads
@@ -23,11 +27,9 @@ export function CookieConsent() {
 
   useEffect(() => {
     if (consentGiven !== '') {
-      posthog.client.set_config({
-        persistence: consentGiven === 'yes' ? 'localStorage+cookie' : 'memory',
-      })
+      setPersistence(consentGiven === 'yes' ? 'localStorage' : 'memory')
     }
-  }, [consentGiven])
+  }, [consentGiven, setPersistence])
 
   const handleAcceptCookies = () => {
     localStorage.setItem('cookie_consent', 'yes')

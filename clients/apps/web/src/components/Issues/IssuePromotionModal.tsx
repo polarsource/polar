@@ -31,7 +31,6 @@ import {
   getCentsInDollarString,
 } from '@polar-sh/ui/lib/money'
 import Image from 'next/image'
-import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
@@ -455,15 +454,6 @@ const PromoteTab = (props: {
 
   const [embed, setEmbed] = useState(embeds[0])
 
-  const onCopy = (id: string) => {
-    posthog.capture('dashboard:issues:badge_copy_promotion:click', {
-      value: id,
-      organization_name: props.issue.repository.organization.name,
-      repository_name: props.issue.repository.name,
-      issue_number: props.issue.number,
-    })
-  }
-
   return (
     <div className="grid w-full grid-cols-2 space-x-6">
       <div className="flex flex-col">
@@ -483,10 +473,7 @@ const PromoteTab = (props: {
           Share link to the pledge page
         </div>
 
-        <CopyToClipboardInput
-          value={pledgePageLink}
-          onCopy={() => onCopy('badge-page-link')}
-        />
+        <CopyToClipboardInput value={pledgePageLink} />
 
         <div className="dark:text-polar-400 my-2 flex items-center justify-between text-xs text-gray-500">
           <span>Embed badge on website</span>
@@ -512,10 +499,7 @@ const PromoteTab = (props: {
           </select>
         </div>
 
-        <CopyToClipboardInput
-          value={embed.embed}
-          onCopy={() => onCopy('badge-embed-content')}
-        />
+        <CopyToClipboardInput value={embed.embed} />
       </div>
     </div>
   )

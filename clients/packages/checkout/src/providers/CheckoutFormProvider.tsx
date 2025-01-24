@@ -4,7 +4,7 @@ import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/chec
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors'
+import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import type {
   ConfirmationToken,
   Stripe,

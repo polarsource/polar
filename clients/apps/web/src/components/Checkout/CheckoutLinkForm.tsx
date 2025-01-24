@@ -444,6 +444,7 @@ export const CheckoutLinkForm = ({
                 variant="secondary"
                 onClick={showDeleteModal}
                 disabled={isDeletePending}
+                type="button"
               >
                 Delete
               </Button>

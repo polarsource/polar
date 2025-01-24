@@ -5,7 +5,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   delay: number,
   dependencies?: any[],
 ) => {
-  const timeout = useRef<NodeJS.Timeout>()
+  const timeout = useRef<ReturnType<typeof setTimeout>>()
 
   return useCallback(
     (...args: Parameters<T>): ReturnType<T> | void => {

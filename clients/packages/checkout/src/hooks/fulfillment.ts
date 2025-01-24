@@ -3,16 +3,15 @@
 import type { PolarCore } from '@polar-sh/sdk/core'
 import type { CheckoutStatus } from '@polar-sh/sdk/models/components/CheckoutStatus'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import { EventSourcePlus } from 'event-source-plus'
-import EventEmitter from 'eventemitter3'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
+
+import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutFulfillmentListener = (
   client: PolarCore,
   checkout: CheckoutPublic,
   maxWaitingTimeMs: number = 30000,
 ): [() => Promise<void>, string | null] => {
-  const checkoutEvents = useMemo(() => new EventEmitter(), [])
   const [fulfillmentLabel, setFulfillmentLabel] = useState<string | null>(null)
 
   const fulfillmentListener = useCallback(async () => {
@@ -20,15 +19,8 @@ export const useCheckoutFulfillmentListener = (
       // @ts-ignore
       const baseURL = client._baseURL
       const url = `${baseURL}v1/checkouts/custom/client/${checkout.clientSecret}/stream`
-      const eventSource = new EventSourcePlus(url, {
-        credentials: 'include',
-      })
-      const controller = eventSource.listen({
-        onMessage: async (message) => {
-          const data = JSON.parse(message.data)
-          checkoutEvents.emit(data.key, data.payload)
-        },
-      })
+      const [checkoutEvents, listen] = createSSEListener(url)
+      const controller = listen()
 
       let checkoutSuccessful = false
       let orderCreated = false
@@ -103,7 +95,7 @@ export const useCheckoutFulfillmentListener = (
       // Wait webhook event to be delivered for 30 seconds max
       setTimeout(() => webhookEventDeliveredListener(), maxWaitingTimeMs)
     })
-  }, [client, checkout, checkoutEvents, maxWaitingTimeMs])
+  }, [client, checkout, maxWaitingTimeMs])
 
   return [fulfillmentListener, fulfillmentLabel]
 }

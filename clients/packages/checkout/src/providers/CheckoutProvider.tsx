@@ -34,6 +34,20 @@ const stub = (): never => {
 
 export interface CheckoutContextProps {
   checkout: CheckoutPublic
+  refresh: () => Promise<
+    Result<
+      CheckoutPublic,
+      | errors.ResourceNotFound
+      | errors.HTTPValidationError
+      | SDKError
+      | SDKValidationError
+      | UnexpectedClientError
+      | InvalidRequestError
+      | RequestAbortedError
+      | RequestTimeoutError
+      | ConnectionError
+    >
+  >
   update: (
     data: CheckoutUpdatePublic,
   ) => Promise<
@@ -103,6 +117,14 @@ export const CheckoutProvider = ({
     )
   }, [client, clientSecret])
 
+  const refresh = useCallback(async () => {
+    const result = await checkoutsCustomClientGet(client, { clientSecret })
+    if (result.ok) {
+      setCheckout(result.value)
+    }
+    return result
+  }, [client, clientSecret])
+
   const update = useCallback(
     async (data: CheckoutUpdatePublic) => {
       const result = await checkoutsCustomClientUpdate(client, {
@@ -141,6 +163,7 @@ export const CheckoutProvider = ({
     <CheckoutContext.Provider
       value={{
         checkout,
+        refresh,
         update,
         confirm,
         client,

@@ -74,6 +74,8 @@ export const CheckoutLinkForm = ({
       product_id: product.id,
       product_price_id: checkoutLink?.product_price_id ?? undefined,
       allow_discount_codes: checkoutLink?.allow_discount_codes ?? true,
+      success_url: checkoutLink?.success_url ?? undefined,
+      discount_id: checkoutLink?.discount_id ?? undefined,
     }
   }
 

@@ -1,7 +1,12 @@
+import { getServerURL } from '@/utils/api'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { isCrawler } from '@/utils/crawlers'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { CheckoutPublic } from '@polar-sh/api'
+import {
+  CheckoutFormProvider,
+  CheckoutProvider,
+} from '@polar-sh/checkout/providers'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -64,10 +69,7 @@ export default async function Page({
   params: { organization: string; productId: string }
 }) {
   const api = getServerSideAPI()
-  const { organization, products } = await getStorefrontOrNotFound(
-    api,
-    params.organization,
-  )
+  const { products } = await getStorefrontOrNotFound(api, params.organization)
   const product = products.find((p) => p.id === params.productId)
 
   if (!product) {
@@ -92,5 +94,14 @@ export default async function Page({
     throw err
   }
 
-  return <ClientPage checkout={checkout} organization={organization} />
+  return (
+    <CheckoutProvider
+      clientSecret={checkout.client_secret}
+      serverURL={getServerURL()}
+    >
+      <CheckoutFormProvider>
+        <ClientPage />
+      </CheckoutFormProvider>
+    </CheckoutProvider>
+  )
 }

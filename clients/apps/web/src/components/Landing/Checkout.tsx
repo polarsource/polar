@@ -3,7 +3,7 @@ import { CHECKOUT_PREVIEW } from '@/components/Customization/utils'
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
-import { DummyCheckoutContextProvider } from '../Checkout/CheckoutContextProvider'
+import { DummyCheckoutContextProvider } from '../Checkout/DummyCheckoutContextProvider'
 
 export const Checkout = () => {
   return (

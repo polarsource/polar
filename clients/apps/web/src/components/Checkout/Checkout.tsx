@@ -10,16 +10,21 @@ import CheckoutProductInfo from './CheckoutProductInfo'
 import { CONFIG } from '@/utils/config'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
+import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { useCheckoutContext } from './CheckoutContextProvider'
 
-export interface CheckoutProps {}
+export interface CheckoutProps {
+  embed?: boolean
+  theme?: 'light' | 'dark'
+}
 
-const Checkout = () => {
+const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
+  const { client } = useCheckout()
   const {
     checkout,
     form,
@@ -27,10 +32,10 @@ const Checkout = () => {
     confirm: _confirm,
     loading: confirmLoading,
     loadingLabel,
-    client,
-    theme,
-    embed,
-  } = useCheckoutContext()
+  } = useCheckoutForm()
+  const embed = _embed === true
+  const { resolvedTheme } = useTheme()
+  const theme = _theme || (resolvedTheme as 'light' | 'dark')
 
   const router = useRouter()
   const [listenFulfillment, fullfillmentLabel] = useCheckoutFulfillmentListener(

@@ -8,8 +8,7 @@ export const useHandleNextAction = (
   const [pending, setPending] = useState(false)
   const requiresAction = useMemo(() => {
     return (
-      checkout.paymentProcessorMetadata?.payment_intent_status ===
-      'requires_action'
+      checkout.paymentProcessorMetadata?.intent_status === 'requires_action'
     )
   }, [checkout])
 
@@ -25,8 +24,8 @@ export const useHandleNextAction = (
     }
     setPending(true)
     try {
-      const { payment_intent_client_secret } = checkout.paymentProcessorMetadata
-      await stripe.handleCardAction(payment_intent_client_secret)
+      const { intent_client_secret } = checkout.paymentProcessorMetadata
+      await stripe.handleCardAction(intent_client_secret)
     } finally {
       setPending(false)
     }

@@ -1,7 +1,7 @@
 'use client'
 
 import Checkout from '@/components/Checkout/Checkout'
-import { DummyCheckoutContextProvider } from '@/components/Checkout/CheckoutContextProvider'
+import { DummyCheckoutContextProvider } from '@/components/Checkout/DummyCheckoutContextProvider'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'

@@ -1,8 +1,12 @@
 import { getServerURL } from '@/utils/api'
+import {
+  CheckoutFormProvider,
+  CheckoutProvider,
+} from '@polar-sh/checkout/providers'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export default async function Page({
@@ -32,12 +36,18 @@ export default async function Page({
     }
   }
 
+  if (checkout.status !== 'open') {
+    redirect(checkout.successUrl)
+  }
+
   return (
-    <ClientPage
-      checkout={checkout}
-      theme={theme}
-      embed={embed}
-      prefilledParameters={prefilledParameters}
-    />
+    <CheckoutProvider
+      clientSecret={checkout.clientSecret}
+      serverURL={getServerURL()}
+    >
+      <CheckoutFormProvider prefilledParameters={prefilledParameters}>
+        <ClientPage theme={theme} embed={embed} />
+      </CheckoutFormProvider>
+    </CheckoutProvider>
   )
 }

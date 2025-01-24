@@ -8,7 +8,7 @@ import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Product } from '@polar-sh/api'
-import ShadowBox from '@polar-sh/ui/components/atoms/shadowbox'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useContext } from 'react'
 import { CHECKOUT_PREVIEW } from '../utils'
 

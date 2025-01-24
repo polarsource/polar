@@ -14,7 +14,7 @@ const CopyToClipboardButton = (
   const { text, onCopy } = props
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCopy = () => {
     navigator.clipboard.writeText(text)
     setCopied(true)
 

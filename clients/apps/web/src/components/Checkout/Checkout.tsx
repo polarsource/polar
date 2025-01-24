@@ -16,7 +16,7 @@ import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/ch
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 export interface CheckoutProps {
   embed?: boolean
@@ -38,14 +38,19 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
 
   const router = useRouter()
+  const [fullLoading, setFullLoading] = useState(false)
+  const loading = useMemo(
+    () => confirmLoading || fullLoading,
+    [confirmLoading, fullLoading],
+  )
   const [listenFulfillment, fullfillmentLabel] = useCheckoutFulfillmentListener(
     client,
     checkout,
   )
-  const [fullfillmentLoading, setFullfillmentLoading] = useState(false)
-
-  const loading = fullfillmentLoading || confirmLoading
-  const label = fullfillmentLabel || loadingLabel
+  const label = useMemo(
+    () => fullfillmentLabel || loadingLabel,
+    [fullfillmentLabel, loadingLabel],
+  )
 
   const confirm = useCallback(
     async (
@@ -53,10 +58,12 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       stripe: Stripe | null,
       elements: StripeElements | null,
     ) => {
+      setFullLoading(true)
       let confirmedCheckout: CheckoutPublicConfirmed
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
+        setFullLoading(false)
         throw error
       }
 
@@ -83,9 +90,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       // It ensures the user will have an up-to-date status when they are redirected,
       // especially if the external URL doesn't implement proper webhook handling
       if (!isInternalURL) {
-        setFullfillmentLoading(true)
         await listenFulfillment()
-        setFullfillmentLoading(false)
       }
 
       if (checkout.embedOrigin) {
@@ -100,7 +105,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       }
 
       if (isInternalURL || !embed) {
-        router.push(parsedURL.toString())
+        await router.push(parsedURL.toString())
       }
 
       return confirmedCheckout

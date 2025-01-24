@@ -200,9 +200,8 @@ export const CheckoutFormProvider = ({
           confirmationTokenId: confirmationToken.id,
         })
       } catch (e) {
-        throw e
-      } finally {
         setLoading(false)
+        throw e
       }
 
       setLoadingLabel('Payment successful! Getting your products ready')
@@ -221,6 +220,7 @@ export const CheckoutFormProvider = ({
         }
       }
 
+      setLoading(false)
       return updatedCheckout
     },
     [checkout, setError, _confirm],

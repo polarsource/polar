@@ -6,6 +6,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
+import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -22,6 +23,7 @@ import { RowSelectionState } from '@tanstack/react-table'
 import { usePathname, useRouter } from 'next/navigation'
 import { parseAsJson, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface ClientPageProps {
   organization: Organization
@@ -139,17 +141,78 @@ export const ClientPage = ({
               cell.getValue() ? cell.getValue() : 'Unlabeled Link',
           },
           {
-            header: 'Associated Price',
+            header: 'Default Price',
             accessorKey: 'product_price',
             cell: ({ cell }) => {
               const value = cell.row.original
               return value && value.product_price ? (
                 <ProductPriceLabel price={value.product_price} />
               ) : (
+                <ProductPriceLabel price={value.product.prices[0]} />
+              )
+            },
+          },
+          {
+            header: 'Allow Discount Codes',
+            accessorKey: 'allow_discount_codes',
+            cell: ({ cell }) => {
+              const value = cell.row.original
+              return (
                 <Status
-                  className="dark:bg-polar-800 dark:text-polar-500 w-fit bg-gray-300 text-black"
-                  status="All"
+                  className={twMerge(
+                    'w-fit',
+                    value && value.allow_discount_codes
+                      ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
+                      : 'bg-red-100 text-red-400 dark:bg-red-950',
+                  )}
+                  status={
+                    value && value.allow_discount_codes ? 'Enabled' : 'Disabled'
+                  }
                 />
+              )
+            },
+          },
+          {
+            header: 'Success URL',
+            accessorKey: 'success_url',
+            cell: ({ cell }) => {
+              return cell.row.original.success_url ? (
+                <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
+                  {cell.row.original.success_url}
+                </span>
+              ) : (
+                <Status
+                  className="dark:bg-polar-700 dark:text-polar-500 w-fit bg-gray-300 text-gray-500"
+                  status="None"
+                />
+              )
+            },
+          },
+          {
+            header: '',
+            accessorKey: 'actions',
+            cell: ({ cell }) => {
+              return (
+                <span className="flex flex-row items-center justify-end">
+                  <Button
+                    size="sm"
+                    className="w-fit"
+                    variant="default"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+
+                      navigator.clipboard.writeText(cell.row.original.url)
+
+                      toast({
+                        title: 'Copied To Clipboard',
+                        description: `Checkout Link was copied to clipboard`,
+                      })
+                    }}
+                  >
+                    Copy Link
+                  </Button>
+                </span>
               )
             },
           },

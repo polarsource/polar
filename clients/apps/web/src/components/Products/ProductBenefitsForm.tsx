@@ -194,22 +194,24 @@ const ProductBenefitsForm = ({
       className={className}
     >
       <div className="flex w-full flex-col gap-y-2">
-        {Object.entries(benefitsDisplayNames).filter(name => name !== 'Usage').map(([type, title]) => (
-          <BenefitsContainer
-            key={type}
-            title={title}
-            type={type as BenefitType}
-            handleCheckedChange={handleCheckedChange}
-            enabledBenefits={benefits}
-            benefits={organizationBenefits.filter(
-              (benefit) => benefit.type === type,
-            )}
-            onCreateNewBenefit={() => {
-              setType(type as CreatableBenefit)
-              show()
-            }}
-          />
-        ))}
+        {Object.entries(benefitsDisplayNames)
+          .filter(([type]) => type !== 'usage')
+          .map(([type, title]) => (
+            <BenefitsContainer
+              key={type}
+              title={title}
+              type={type as BenefitType}
+              handleCheckedChange={handleCheckedChange}
+              enabledBenefits={benefits}
+              benefits={organizationBenefits.filter(
+                (benefit) => benefit.type === type,
+              )}
+              onCreateNewBenefit={() => {
+                setType(type as CreatableBenefit)
+                show()
+              }}
+            />
+          ))}
       </div>
       <InlineModal
         isShown={isShown}

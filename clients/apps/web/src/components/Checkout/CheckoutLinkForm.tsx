@@ -102,7 +102,9 @@ export const CheckoutLinkForm = ({
         .then(() => {
           toast({
             title: 'Checkout Link Deleted',
-            description: `Checkout Link ${checkoutLink.label} was deleted successfully`,
+            description: `${
+              checkoutLink?.label ? checkoutLink.label : 'Unlabeled'
+            } Checkout Link  was deleted successfully`,
           })
         })
         .catch((e) => {
@@ -191,7 +193,7 @@ export const CheckoutLinkForm = ({
           }
 
           toast({
-            title: 'Checkout Link Update Failed',
+            title: `Checkout Link Update Failed`,
             description: `Error updating checkout link: ${e.message}`,
           })
         }

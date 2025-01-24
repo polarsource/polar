@@ -194,7 +194,7 @@ const ProductBenefitsForm = ({
       className={className}
     >
       <div className="flex w-full flex-col gap-y-2">
-        {Object.entries(benefitsDisplayNames).map(([type, title]) => (
+        {Object.entries(benefitsDisplayNames).filter(name => name !== 'Usage').map(([type, title]) => (
           <BenefitsContainer
             key={type}
             title={title}

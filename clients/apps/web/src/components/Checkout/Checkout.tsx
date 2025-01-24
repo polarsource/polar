@@ -67,6 +67,15 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         throw error
       }
 
+      if (checkout.embedOrigin) {
+        PolarEmbedCheckout.postMessage(
+          {
+            event: 'confirmed',
+          },
+          checkout.embedOrigin,
+        )
+      }
+
       const parsedURL = new URL(confirmedCheckout.successUrl)
       const isInternalURL = confirmedCheckout.successUrl.startsWith(
         CONFIG.FRONTEND_BASE_URL,

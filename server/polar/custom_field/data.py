@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
 
 class CustomFieldDataMixin:
-    custom_field_data: Mapped[dict[str, str | int | bool | datetime.datetime]] = (
-        mapped_column(JSONB, nullable=False, default=dict)
-    )
+    custom_field_data: Mapped[
+        dict[str, str | int | bool | datetime.datetime | None]
+    ] = mapped_column(JSONB, nullable=False, default=dict)
 
     # Make the type checker happy, but we should make sure actual models
     # declare an organization attribute by themselves.

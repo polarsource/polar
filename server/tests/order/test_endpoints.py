@@ -114,6 +114,29 @@ class TestGetOrder:
         json = response.json()
         assert json["id"] == str(orders[0].id)
 
+    @pytest.mark.auth
+    async def test_custom_field(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            custom_field_data={"test": None},
+        )
+
+        response = await client.get(f"/v1/orders/{order.id}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["custom_field_data"] == {"test": None}
+
 
 @pytest.mark.asyncio
 class TesGetOrdersStatistics:

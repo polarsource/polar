@@ -3992,13 +3992,13 @@ export interface Checkout {
      */
     customer_id: string | null;
     /**
-     * Name of the customer.
+     * 
      * @type {string}
      * @memberof Checkout
      */
     customer_name: string | null;
     /**
-     * Email address of the customer.
+     * 
      * @type {string}
      * @memberof Checkout
      */
@@ -5336,13 +5336,13 @@ export interface CheckoutPublic {
      */
     customer_id: string | null;
     /**
-     * Name of the customer.
+     * 
      * @type {string}
      * @memberof CheckoutPublic
      */
     customer_name: string | null;
     /**
-     * Email address of the customer.
+     * 
      * @type {string}
      * @memberof CheckoutPublic
      */
@@ -5570,13 +5570,13 @@ export interface CheckoutPublicConfirmed {
      */
     customer_id: string | null;
     /**
-     * Name of the customer.
+     * 
      * @type {string}
      * @memberof CheckoutPublicConfirmed
      */
     customer_name: string | null;
     /**
-     * Email address of the customer.
+     * 
      * @type {string}
      * @memberof CheckoutPublicConfirmed
      */

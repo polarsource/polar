@@ -37,21 +37,23 @@ def track_attached_custom_field_mixin(_mapper: Mapper[Any], class_: type) -> Non
 
 
 class CustomFieldDataInputMixin(BaseModel):
-    custom_field_data: dict[str, str | int | bool | datetime.datetime] = Field(
+    custom_field_data: dict[str, str | int | bool | datetime.datetime | None] = Field(
         default_factory=dict,
         description="Key-value object storing custom field values.",
     )
 
 
 class OptionalCustomFieldDataInputMixin(BaseModel):
-    custom_field_data: dict[str, str | int | bool | datetime.datetime] | None = Field(
-        default=None,
-        description="Key-value object storing custom field values.",
+    custom_field_data: dict[str, str | int | bool | datetime.datetime | None] | None = (
+        Field(
+            default=None,
+            description="Key-value object storing custom field values.",
+        )
     )
 
 
 class CustomFieldDataOutputMixin(BaseModel):
-    custom_field_data: dict[str, str | int | bool | datetime.datetime] = Field(
+    custom_field_data: dict[str, str | int | bool | datetime.datetime | None] = Field(
         default_factory=dict,
         description="Key-value object storing custom field values.",
     )

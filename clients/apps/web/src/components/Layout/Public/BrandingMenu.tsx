@@ -1,12 +1,6 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
-import {
-  ArrowDownwardOutlined,
-  ContentPasteOutlined,
-} from '@mui/icons-material'
-import Link from 'next/link'
-
 import LogoType from '@/components/Brand/LogoType'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
@@ -16,6 +10,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import { ArrowDown, Clipboard } from 'lucide-react'
+import Link from 'next/link'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -79,14 +75,14 @@ export const BrandingMenu = ({
             className="flex flex-row gap-x-3"
             onClick={handleCopyLogoToClipboard}
           >
-            <ContentPasteOutlined fontSize="inherit" />
+            <Clipboard className="h-3 w-3" />
             <span>Copy Logo as SVG</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="flex flex-row gap-x-3"
             onClick={() => setBrandingMenuOpen(false)}
           >
-            <ArrowDownwardOutlined fontSize="inherit" />
+            <ArrowDown className="h-3 w-3" />
             <Link href="/assets/brand/polar_brand.zip">
               Download Branding Assets
             </Link>

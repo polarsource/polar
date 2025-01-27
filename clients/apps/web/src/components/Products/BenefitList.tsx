@@ -1,9 +1,5 @@
-import {
-  AddOutlined,
-  KeyboardArrowRight,
-  KeyboardArrowUp,
-} from '@mui/icons-material'
 import { BenefitType } from '@polar-sh/api'
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 
@@ -50,7 +46,7 @@ export const BenefitList = ({
       {shown.map((benefit) => (
         <BenefitRow
           key={benefit.id}
-          icon={resolveBenefitIcon(benefit.type, 'small')}
+          icon={resolveBenefitIcon(benefit.type, 'h-3 w-3')}
         >
           {benefit.description}
         </BenefitRow>
@@ -61,17 +57,14 @@ export const BenefitList = ({
             toggled.map((benefit) => (
               <BenefitRow
                 key={benefit.id}
-                icon={resolveBenefitIcon(benefit.type, 'small')}
+                icon={resolveBenefitIcon(benefit.type, 'h-3 w-3')}
               >
                 {benefit.description}
               </BenefitRow>
             ))}
 
           {!toggle && (
-            <BenefitRow
-              key="show"
-              icon={<AddOutlined fontSize="small" className="h-3 w-3" />}
-            >
+            <BenefitRow key="show" icon={<Plus className="h-3 w-3" />}>
               {toggled.length} more benefits
             </BenefitRow>
           )}
@@ -79,17 +72,14 @@ export const BenefitList = ({
           {toggle && (
             <a href="#" onClick={onToggle}>
               {showAll && (
-                <BenefitRow
-                  key="hide"
-                  icon={<KeyboardArrowUp fontSize="small" />}
-                >
+                <BenefitRow key="hide" icon={<ChevronUp className="h-3 w-3" />}>
                   Show less
                 </BenefitRow>
               )}
               {!showAll && (
                 <BenefitRow
                   key="show"
-                  icon={<KeyboardArrowRight fontSize="small" />}
+                  icon={<ChevronDown className="h-3 w-3" />}
                 >
                   Show {toggled.length} more benefits
                 </BenefitRow>

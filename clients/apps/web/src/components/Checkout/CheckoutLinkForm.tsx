@@ -34,7 +34,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
@@ -66,23 +66,34 @@ export const CheckoutLinkForm = ({
   })
 
   const generateDefaultValues = (): CheckoutLinksForm => {
+    if (checkoutLink) {
+      return {
+        label: checkoutLink.label ?? null,
+        metadata: Object.entries(checkoutLink.metadata ?? {}).map(
+          ([key, value]) => ({ key, value }),
+        ),
+        product_id: product.id,
+        product_price_id: checkoutLink.product_price_id ?? undefined,
+        allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
+        success_url: checkoutLink.success_url ?? undefined,
+        discount_id: checkoutLink.discount_id ?? undefined,
+      }
+    }
+
     return {
-      label: checkoutLink?.label ?? undefined,
-      metadata: Object.entries(checkoutLink?.metadata ?? {}).map(
-        ([key, value]) => ({ key, value }),
-      ),
+      label: null,
+      metadata: [],
       product_id: product.id,
-      product_price_id: checkoutLink?.product_price_id ?? undefined,
-      allow_discount_codes: checkoutLink?.allow_discount_codes ?? true,
-      success_url: checkoutLink?.success_url ?? undefined,
-      discount_id: checkoutLink?.discount_id ?? undefined,
+      product_price_id: undefined,
+      allow_discount_codes: true,
     }
   }
 
   const form = useForm<CheckoutLinksForm>({
     defaultValues: generateDefaultValues(),
   })
-  const { control, handleSubmit, setError } = form
+
+  const { control, handleSubmit, setError, reset } = form
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'metadata',
@@ -90,6 +101,12 @@ export const CheckoutLinkForm = ({
       maxLength: 50,
     },
   })
+
+  useEffect(() => {
+    if (checkoutLink) {
+      reset(generateDefaultValues())
+    }
+  }, [checkoutLink])
 
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
     useCreateCheckoutLink()

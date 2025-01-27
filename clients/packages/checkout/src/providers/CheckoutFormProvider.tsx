@@ -29,7 +29,8 @@ const unflatten = (entries: Record<string, string>): Record<string, any> =>
       key.split('.').reduceRight(
         (current, part, index, parts) => ({
           ...current,
-          [part]:
+          // Transform each loc to camelCase, since the schema from our SDK converts everythng to camelCase
+          [part.replace(/_([a-z])/g, (g) => g[1].toUpperCase())]:
             index === parts.length - 1
               ? value
               : { ...current[part], ...current },

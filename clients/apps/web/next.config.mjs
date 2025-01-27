@@ -75,12 +75,13 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
-      {
-        protocol: process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'http',
-        hostname: process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME || '127.0.0.1',
-        port: process.env.S3_PUBLIC_IMAGES_BUCKET_PORT || '9000',
-        pathname: process.env.S3_PUBLIC_IMAGES_BUCKET_PATHNAME || '**',
-      },
+      ...process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME ? [
+        {
+          protocol: process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https',
+          hostname: process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME,
+          port: process.env.S3_PUBLIC_IMAGES_BUCKET_PORT || '',
+          pathname: process.env.S3_PUBLIC_IMAGES_BUCKET_PATHNAME || '**',
+        }] : [],
       {
         protocol: 'https',
         hostname: 'avatars.githubusercontent.com',

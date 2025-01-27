@@ -1,43 +1,33 @@
-import {
-  CheckOutlined,
-  FileDownloadOutlined,
-  GitHub,
-  KeyOutlined,
-  WebOutlined,
-} from '@mui/icons-material'
 import { BenefitType } from '@polar-sh/api'
+import { Check, Download, Globe, Key } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
+import GitHubIcon from '../Icons/GitHubIcon'
 
 export type CreatableBenefit = BenefitType
 
 export const resolveBenefitCategoryIcon = (
   type?: BenefitType,
-  fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
   className?: string,
 ) => {
   const cn = twMerge('h-4 w-4', className)
   switch (type) {
     case BenefitType.ADS:
-      return <WebOutlined className={cn} fontSize={fontSize} />
+      return <Globe className={cn} />
     case BenefitType.DISCORD:
       return <DiscordIcon className={cn} />
     case BenefitType.GITHUB_REPOSITORY:
-      return <GitHub className={cn} fontSize={fontSize} />
+      return <GitHubIcon className={cn} />
     case BenefitType.DOWNLOADABLES:
-      return <FileDownloadOutlined className={cn} fontSize={fontSize} />
+      return <Download className={cn} />
     case BenefitType.LICENSE_KEYS:
-      return <KeyOutlined className={cn} fontSize={fontSize} />
+      return <Key className={cn} />
     default:
-      return <CheckOutlined className={cn} fontSize={fontSize} />
+      return <Check className={cn} />
   }
 }
 
-export const resolveBenefitIcon = (
-  type: BenefitType,
-  fontSize: 'small' | 'inherit' | 'large' | 'medium' = 'small',
-  className?: string,
-) => {
-  return resolveBenefitCategoryIcon(type, fontSize, className)
+export const resolveBenefitIcon = (type: BenefitType, className?: string) => {
+  return resolveBenefitCategoryIcon(type, className)
 }
 
 export const resolveBenefitTypeDisplayName = (type: BenefitType | 'usage') => {

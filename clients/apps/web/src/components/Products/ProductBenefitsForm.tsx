@@ -270,7 +270,7 @@ const BenefitsContainer = ({
         role="button"
       >
         <div className="flex flex-row items-center gap-x-3">
-          {resolveBenefitCategoryIcon(type, 'small', 'h-4 w-4')}
+          {resolveBenefitCategoryIcon(type, 'h-4 w-4')}
           <span>{title}</span>
         </div>
         <span className="flex flex-row items-center gap-x-4">

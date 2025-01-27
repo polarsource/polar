@@ -1,22 +1,21 @@
 'use client'
 
-import { CheckoutForm, CheckoutPricing } from '@polar-sh/checkout/components'
-import ShadowBox, {
-  ShadowBoxOnMd,
-} from '@polar-sh/ui/components/atoms/ShadowBox'
-import { CheckoutCard } from './CheckoutCard'
-import CheckoutProductInfo from './CheckoutProductInfo'
-
 import { CONFIG } from '@/utils/config'
+import { CheckoutForm, CheckoutPricing } from '@polar-sh/checkout/components'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import ShadowBox, {
+  ShadowBoxOnMd,
+} from '@polar-sh/ui/components/atoms/ShadowBox'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
+import { CheckoutCard } from './CheckoutCard'
+import CheckoutProductInfo from './CheckoutProductInfo'
 
 export interface CheckoutProps {
   embed?: boolean

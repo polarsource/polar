@@ -10,9 +10,13 @@ import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import PostHog from 'posthog-js-lite'
-import { PropsWithChildren, useEffect, useMemo, useState } from 'react'
-
-import { createContext } from 'react'
+import {
+  createContext,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 const stub = (): never => {
   throw new Error(

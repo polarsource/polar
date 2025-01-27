@@ -1,8 +1,8 @@
 'use client'
 
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import { X } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 
 interface CheckoutEmbedCloseProps {
@@ -43,7 +43,7 @@ const CheckoutEmbedClose: React.FC<
       className="dark:bg-polar-950 fixed right-2 top-2 rounded-full bg-transparent bg-white p-2 shadow-xl md:right-4 md:top-4 dark:text-white"
       onClick={onClose}
     >
-      <XMarkIcon className="h-4 w-4 md:h-6 md:w-6" />
+      <X className="h-4 w-4 md:h-6 md:w-6" />
     </button>
   )
 }

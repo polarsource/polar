@@ -43,11 +43,6 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
       <CardHeader className="flex flex-col gap-y-2">
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-400">Revenue</span>
-          <span className="dark:text-polar-500 text-gray-400">
-            {new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-            })}
-          </span>
         </div>
         <h2 className="text-xl">
           $

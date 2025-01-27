@@ -76,7 +76,14 @@ const priceCreateUpdateToPrice = (
       }
     }
   }
-  throw new Error('Invalid price type')
+
+  return {
+    ...base,
+    type: 'one_time',
+    amount_type: 'fixed',
+    price_amount: 0,
+    price_currency: 'usd',
+  }
 }
 
 export const productUpdateToProduct = (

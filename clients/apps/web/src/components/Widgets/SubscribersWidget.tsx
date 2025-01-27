@@ -45,11 +45,6 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
           <span className="dark:text-polar-500 text-gray-400">
             Active Subscriptions
           </span>
-          <span className="dark:text-polar-500 text-gray-400">
-            {new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-            })}
-          </span>
         </div>
         <h2 className="text-xl">
           {

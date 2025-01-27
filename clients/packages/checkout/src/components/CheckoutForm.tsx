@@ -643,9 +643,12 @@ interface CheckoutFormProps {
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const { checkout, update, confirm, loading, loadingLabel, theme } = props
-  const stripePromise = loadStripe(
-    (checkout.paymentProcessorMetadata as Record<string, string>)
-      .publishable_key,
+  const {
+    paymentProcessorMetadata: { publishable_key },
+  } = checkout
+  const stripePromise = useMemo(
+    () => loadStripe(publishable_key),
+    [publishable_key],
   )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {

@@ -1272,6 +1272,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         discount_id: uuid.UUID | None = None,
         discount_code: str | None = None,
     ) -> Discount:
+        loc_field = "discount_id" if discount_id is not None else "discount_code"
+
         if price.amount_type not in {
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.custom,
@@ -1280,7 +1282,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "discount_id"),
+                        "loc": ("body", loc_field),
                         "msg": "Discounts are only applicable to fixed and custom prices.",
                         "input": discount_id,
                     }
@@ -1301,7 +1303,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "discount_id"),
+                        "loc": ("body", loc_field),
                         "msg": "Discount does not exist.",
                         "input": discount_id,
                     }
@@ -1316,7 +1318,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "discount_id"),
+                        "loc": ("body", loc_field),
                         "msg": "Discount is not applicable to this product.",
                         "input": discount_id,
                     }

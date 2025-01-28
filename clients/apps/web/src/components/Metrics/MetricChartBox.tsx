@@ -1,5 +1,9 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import { getTimestampFormatter, getValueFormatter } from '@/utils/metrics'
+import {
+  getTimestampFormatter,
+  getValueFormatter,
+  MetricMarksResolver,
+} from '@/utils/metrics'
 import { Interval, Metric } from '@polar-sh/api'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -12,6 +16,7 @@ interface MetricChartBoxProps {
   metric: Metric
   height?: number
   maxTicks?: number
+  marks?: MetricMarksResolver
 }
 
 const MetricChartBox: React.FC<MetricChartBoxProps> = ({
@@ -21,6 +26,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
   metric,
   height,
   maxTicks,
+  marks,
 }) => {
   const valueFormatter = useMemo(() => getValueFormatter(metric), [metric])
   const timestampFormatter = useMemo(
@@ -66,6 +72,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
         onDataIndexHover={(index) =>
           setHoverValueLabel(getHoverValueLabel(index))
         }
+        marks={marks}
       />
     </div>
   )

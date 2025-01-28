@@ -22,6 +22,8 @@ interface OrderCardProps {
 const OrderCard = ({ className, order }: OrderCardProps) => {
   const createdAtDate = new Date(order.created_at)
 
+  const { organization: org } = useContext(MaintainerOrganizationContext)
+
   const displayDate = createdAtDate.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -45,19 +47,21 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
           ${getCentsInDollarString(order.amount, false)}
         </span>
       </CardContent>
-      <CardFooter className="flex flex-row items-center gap-x-4">
-        <Avatar
-          className="h-10 w-10"
-          name={order.customer.name || order.customer.email}
-          avatar_url={order.customer.avatar_url}
-        />
-        <div className="flex flex-col text-sm">
-          <span>{order.user.public_name}</span>
-          <span className="dark:text-polar-500 text-gray-400">
-            {order.user.email}
-          </span>
-        </div>
-      </CardFooter>
+      <Link href={`/dashboard/${org.slug}/customers/${order.customer.id}`}>
+        <CardFooter className="dark:bg-polar-900 m-2 flex flex-row items-center gap-x-4 rounded-3xl bg-white p-4">
+          <Avatar
+            className="h-10 w-10"
+            name={order.customer.name || order.customer.email}
+            avatar_url={order.customer.avatar_url}
+          />
+          <div className="flex flex-col text-sm">
+            <span>{order.customer.name ?? '—'}</span>
+            <span className="dark:text-polar-500 text-gray-400">
+              {order.customer.email}
+            </span>
+          </div>
+        </CardFooter>
+      </Link>
     </Card>
   )
 }

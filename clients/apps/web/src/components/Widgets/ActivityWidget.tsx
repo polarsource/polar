@@ -39,20 +39,16 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
       )}
     >
       <CardHeader>
-        <h2 className="dark:text-polar-500 text-gray-400">
-          {new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-          })}
-        </h2>
+        <h2 className="dark:text-polar-500 text-gray-400">Last 365 days</h2>
         <h2 className="text-xl">Orders</h2>
       </CardHeader>
       <TooltipProvider>
-        <CardFooter className="flex flex-row gap-x-4">
+        <CardFooter className="dark:bg-polar-900 m-2 flex flex-row gap-x-4 rounded-3xl bg-white p-4">
           <div className="hidden flex-col items-center font-mono xl:flex">
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
               <span
                 key={i}
-                className="dark:text-polar-500 text-xs text-gray-300"
+                className="dark:text-polar-600 text-xs text-gray-300"
               >
                 {day}
               </span>

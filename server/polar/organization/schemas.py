@@ -22,6 +22,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
+from polar.models.organization import OrganizationSubscriptionSettings
 
 OrganizationID = Annotated[
     UUID4,
@@ -102,6 +103,10 @@ class Organization(IDSchema, TimestampedSchema):
         description="Settings for the organization features"
     )
 
+    subscription_settings: OrganizationSubscriptionSettings = Field(
+        description="Settings related to subscriptions management"
+    )
+
 
 def validate_reserved_keywords(value: str) -> str:
     if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
@@ -119,6 +124,7 @@ class OrganizationCreate(Schema):
     ]
     avatar_url: HttpUrlToStr | None = None
     feature_settings: OrganizationFeatureSettings | None = None
+    subscription_settings: OrganizationSubscriptionSettings | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -144,6 +150,7 @@ class OrganizationUpdate(Schema):
 
     profile_settings: OrganizationProfileSettings | None = None
     feature_settings: OrganizationFeatureSettings | None = None
+    subscription_settings: OrganizationSubscriptionSettings | None = None
 
     @model_validator(mode="after")
     def check_spending_limits(self) -> Self:

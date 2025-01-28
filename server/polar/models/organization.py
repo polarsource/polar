@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -17,12 +17,26 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.db.models import RecordModel
 
 from .account import Account
 
 if TYPE_CHECKING:
     from .product import Product
+
+
+class OrganizationSubscriptionSettings(TypedDict):
+    allow_multiple_subscriptions: bool
+    allow_customer_updates: bool
+    proration_behavior: SubscriptionProrationBehavior
+
+
+_default_subscription_settings: OrganizationSubscriptionSettings = {
+    "allow_multiple_subscriptions": False,
+    "allow_customer_updates": True,
+    "proration_behavior": SubscriptionProrationBehavior.prorate,
+}
 
 
 class Organization(RecordModel):
@@ -110,6 +124,10 @@ class Organization(RecordModel):
         JSONB, nullable=False, default=dict
     )
 
+    subscription_settings: Mapped[OrganizationSubscriptionSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_subscription_settings
+    )
+
     #
     # Feature Flags
     #
@@ -152,6 +170,20 @@ class Organization(RecordModel):
     @property
     def account_url(self) -> str:
         return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.slug}/finance/account"
+
+    @property
+    def allow_multiple_subscriptions(self) -> bool:
+        return self.subscription_settings["allow_multiple_subscriptions"]
+
+    @property
+    def allow_customer_updates(self) -> bool:
+        return self.subscription_settings["allow_customer_updates"]
+
+    @property
+    def proration_behavior(self) -> SubscriptionProrationBehavior:
+        return SubscriptionProrationBehavior(
+            self.subscription_settings["proration_behavior"]
+        )
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

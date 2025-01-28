@@ -126,15 +126,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </div>
         </div>
         <div className="flex flex-row gap-4 p-8">
+          <Button type="button" size="lg" onClick={showUpdateModal}>
+            Update Subscription
+          </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant="secondary"
             size="lg"
-            className="grow"
             onClick={showCancellationModal}
           >
             Cancel Subscription
           </Button>
+
           <InlineModal
             isShown={isShownCancellationModal}
             hide={hideCancellationModal}
@@ -145,14 +148,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
               />
             }
           />
-          <Button
-            type="button"
-            size="lg"
-            className="grow"
-            onClick={showUpdateModal}
-          >
-            Update Subscription
-          </Button>
           <InlineModal
             isShown={isShownUpdateModal}
             hide={hideUpdateModal}

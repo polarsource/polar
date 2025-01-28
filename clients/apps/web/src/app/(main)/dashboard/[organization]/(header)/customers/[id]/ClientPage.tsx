@@ -5,14 +5,33 @@ import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChart from '@/components/Metrics/MetricChart'
 import AmountLabel from '@/components/Shared/AmountLabel'
+import Spinner from '@/components/Shared/Spinner'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { usePostHog } from '@/hooks/posthog'
-import { useListSubscriptions, useMetrics } from '@/hooks/queries'
+import {
+  ParsedMetricPeriod,
+  useListSubscriptions,
+  useMetrics,
+} from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { Customer, Organization } from '@polar-sh/api'
+import { defaultMetricMarks, metricDisplayNames } from '@/utils/metrics'
+import {
+  Customer,
+  Metric,
+  Metrics,
+  MetricType,
+  Organization,
+} from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   Tabs,
@@ -20,8 +39,9 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
-import React from 'react'
+import React, { useCallback, useMemo } from 'react'
 
 interface ClientPageProps {
   organization: Organization
@@ -29,6 +49,11 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
+  const [selectedMetric, setSelectedMetric] =
+    React.useState<keyof Metrics>('cumulative_revenue')
+  const [hoveredMetricPeriod, setHoveredMetricPeriod] =
+    React.useState<ParsedMetricPeriod | null>(null)
+
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
     {
@@ -52,13 +77,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const startDate =
     customerCreatedAt > threeMonthsAgo ? threeMonthsAgo : customerCreatedAt
 
-  const metrics = useMetrics({
+  const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: startDate,
     endDate: new Date(),
     organizationId: organization.id,
     interval: 'month',
     customerId: [customer.id],
   })
+
+  const getMetricValue = useCallback((metric?: Metric, value?: number) => {
+    if (metric?.type === MetricType.CURRENCY) {
+      return `$${getCentsInDollarString(value ?? 0)}`
+    } else {
+      return value
+    }
+  }, [])
+
+  const currentMetricPeriod = useMemo(() => {
+    return hoveredMetricPeriod
+      ? hoveredMetricPeriod
+      : metricsData?.periods[metricsData.periods.length - 1]
+  }, [metricsData, hoveredMetricPeriod])
 
   const { isFeatureEnabled } = usePostHog()
 
@@ -82,33 +121,81 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
           )}
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12">
-          {metrics.data?.metrics && (
-            <div className="dark:border-polar-700 rounded-4xl flex flex-col gap-4 border border-gray-200 p-12">
-              <div className="flex flex-row items-center justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-xl">Revenue</h3>
-                  <span className="dark:text-polar-500 text-gray-500">
-                    Since Customer first was seen
-                  </span>
+          <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-50 p-2 shadow-sm">
+            <div className="flex flex-row justify-between p-6">
+              <div className="flex flex-col gap-3">
+                <Select
+                  value={selectedMetric}
+                  onValueChange={(value) =>
+                    setSelectedMetric(value as keyof Metrics)
+                  }
+                >
+                  <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">
+                    <SelectValue placeholder="Select a metric" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
+                    {Object.entries(metricDisplayNames).map(([key, value]) => (
+                      <SelectItem key={key} value={key}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <h2 className="text-3xl">
+                  {getMetricValue(
+                    metricsData?.metrics[selectedMetric],
+                    currentMetricPeriod?.[selectedMetric],
+                  ) ?? 0}
+                </h2>
+                <div className="flex flex-row items-center gap-x-6">
+                  <div className="flex flex-row items-center gap-x-2">
+                    <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      Current Period
+                    </span>
+                  </div>
+
+                  <div className="flex flex-row items-center gap-x-2">
+                    <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      {hoveredMetricPeriod ? (
+                        <FormattedDateTime
+                          datetime={hoveredMetricPeriod.timestamp}
+                          dateStyle="medium"
+                        />
+                      ) : (
+                        'Today'
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-xl">
-                  <AmountLabel
-                    amount={
-                      metrics.data.periods[metrics.data.periods.length - 1]
-                        .cumulative_revenue
-                    }
-                    currency="USD"
-                  />
-                </h3>
               </div>
-              <MetricChart
-                data={metrics.data.periods}
-                metric={metrics.data.metrics.revenue}
-                interval="month"
-                height={300}
-              />
             </div>
-          )}
+            <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
+              {metricsLoading ? (
+                <div className="flex h-[300px] flex-col items-center justify-center">
+                  <Spinner />
+                </div>
+              ) : metricsData ? (
+                <MetricChart
+                  height={300}
+                  data={metricsData.periods}
+                  interval="month"
+                  marks={defaultMetricMarks}
+                  metric={metricsData.metrics[selectedMetric]}
+                  onDataIndexHover={(period) =>
+                    setHoveredMetricPeriod(
+                      metricsData.periods[period as number] ?? null,
+                    )
+                  }
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center">
+                  <span className="text-lg font-medium">No data available</span>
+                </div>
+              )}
+            </div>
+          </ShadowBox>
           <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-gray-100 bg-transparent p-0">
             <div className="flex flex-col gap-4 p-12">
               <h3 className="text-lg">Subscriptions</h3>

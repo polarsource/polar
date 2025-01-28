@@ -1,4 +1,4 @@
-import { Interval, Metric, MetricType } from '@polar-sh/api'
+import { Interval, Metric, Metrics, MetricType } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { format, parse } from 'date-fns'
 
@@ -50,10 +50,12 @@ export const getValueFormatter = (
 ): ((value: number) => string) => {
   const numberFormat = new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 2,
+    notation: 'compact',
   })
   switch (metric.type) {
     case MetricType.CURRENCY:
-      return (value: number) => formatCurrencyAndAmount(value, 'usd', 0)
+      return (value: number) =>
+        formatCurrencyAndAmount(value, 'usd', 0, 'compact')
     case MetricType.SCALAR:
       return (value: number) => numberFormat.format(value)
   }
@@ -262,3 +264,18 @@ export const barMetricMarks: MetricMarksResolver = ({
       ]
     : []),
 ]
+
+export const metricDisplayNames: Record<keyof Metrics, string> = {
+  revenue: 'Revenue',
+  orders: 'Orders',
+  cumulative_revenue: 'Cumulative Revenue',
+  average_order_value: 'Average Order Value',
+  one_time_products: 'One-Time Products',
+  one_time_products_revenue: 'One-Time Products Revenue',
+  new_subscriptions: 'New Subscriptions',
+  new_subscriptions_revenue: 'New Subscriptions Revenue',
+  renewed_subscriptions: 'Renewed Subscriptions',
+  renewed_subscriptions_revenue: 'Renewed Subscriptions Revenue',
+  active_subscriptions: 'Active Subscriptions',
+  monthly_recurring_revenue: 'Monthly Recurring Revenue',
+}

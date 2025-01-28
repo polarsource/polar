@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChart from '@/components/Metrics/MetricChart'
 import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
+import Spinner from '@/components/Shared/Spinner'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -14,7 +15,7 @@ import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { ParsedMetricPeriod, useMetrics, useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { defaultMetricMarks } from '@/utils/metrics'
+import { defaultMetricMarks, metricDisplayNames } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
 import { Metric, Metrics, MetricType, Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -30,21 +31,6 @@ import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useCallback, useContext, useMemo } from 'react'
-
-const metricDisplayNames: Record<keyof Metrics, string> = {
-  revenue: 'Revenue',
-  orders: 'Orders',
-  cumulative_revenue: 'Cumulative Revenue',
-  average_order_value: 'Average Order Value',
-  one_time_products: 'One-Time Products',
-  one_time_products_revenue: 'One-Time Products Revenue',
-  new_subscriptions: 'New Subscriptions',
-  new_subscriptions_revenue: 'New Subscriptions Revenue',
-  renewed_subscriptions: 'Renewed Subscriptions',
-  renewed_subscriptions_revenue: 'Renewed Subscriptions Revenue',
-  active_subscriptions: 'Active Subscriptions',
-  monthly_recurring_revenue: 'Monthly Recurring Revenue',
-}
 
 interface HeroChartProps {
   organization: Organization
@@ -72,10 +58,10 @@ const HeroChart = ({ organization }: HeroChartProps) => {
   }, [])
 
   const currentMetricPeriod = useMemo(() => {
-    return metricsData?.periods[metricsData.periods.length - 1]
-  }, [metricsData])
-
-  if (metricsLoading) return null
+    return hoveredMetricPeriod
+      ? hoveredMetricPeriod
+      : metricsData?.periods[metricsData.periods.length - 1]
+  }, [metricsData, hoveredMetricPeriod])
 
   return (
     <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-50 p-2 shadow-sm">
@@ -100,7 +86,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
             {getMetricValue(
               metricsData?.metrics[selectedMetric],
               currentMetricPeriod?.[selectedMetric],
-            )}
+            ) ?? 0}
           </h2>
           <div className="flex flex-row items-center gap-x-6">
             <div className="flex flex-row items-center gap-x-2">
@@ -109,22 +95,20 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                 Current Period
               </span>
             </div>
-            {hoveredMetricPeriod && (
-              <div className="flex flex-row items-center gap-x-2">
-                <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
-                <span className="dark:text-polar-500 text-sm text-gray-500">
+
+            <div className="flex flex-row items-center gap-x-2">
+              <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                {hoveredMetricPeriod ? (
                   <FormattedDateTime
                     datetime={hoveredMetricPeriod.timestamp}
                     dateStyle="medium"
                   />
-                  {' — '}
-                  {getMetricValue(
-                    metricsData?.metrics[selectedMetric],
-                    hoveredMetricPeriod[selectedMetric],
-                  )}
-                </span>
-              </div>
-            )}
+                ) : (
+                  'Today'
+                )}
+              </span>
+            </div>
           </div>
         </div>
         <Link href={`/dashboard/${organization.slug}/analytics`}>
@@ -132,7 +116,11 @@ const HeroChart = ({ organization }: HeroChartProps) => {
         </Link>
       </div>
       <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
-        {metricsData && (
+        {metricsLoading ? (
+          <div className="flex h-[350px] flex-col items-center justify-center">
+            <Spinner />
+          </div>
+        ) : metricsData ? (
           <MetricChart
             height={350}
             data={metricsData.periods}
@@ -145,6 +133,10 @@ const HeroChart = ({ organization }: HeroChartProps) => {
               )
             }
           />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center">
+            <span className="text-lg font-medium">No data available</span>
+          </div>
         )}
       </div>
     </ShadowBox>

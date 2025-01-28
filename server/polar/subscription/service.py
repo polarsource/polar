@@ -23,7 +23,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email, get_email_sender
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.exceptions import (
     BadRequest,
     PolarError,
@@ -604,24 +604,25 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
         *,
-        updates: SubscriptionUpdate,
+        update: SubscriptionUpdate,
     ) -> Subscription:
-        if isinstance(updates, SubscriptionUpdatePrice):
+        if isinstance(update, SubscriptionUpdatePrice):
             if subscription.revoked or subscription.cancel_at_period_end:
                 raise AlreadyCanceledSubscription()
             return await self.update_product_price(
                 session,
                 subscription,
-                product_price_id=updates.product_price_id,
+                product_price_id=update.product_price_id,
+                proration_behavior=update.proration_behavior,
             )
 
-        cancel = updates.cancel_at_period_end is True
-        uncancel = updates.cancel_at_period_end is False
+        cancel = update.cancel_at_period_end is True
+        uncancel = update.cancel_at_period_end is False
         # Exit early unless we're asked to revoke, cancel or uncancel
-        if not any((updates.revoke, cancel, uncancel)):
+        if not any((update.revoke, cancel, uncancel)):
             return subscription
 
-        if updates.revoke and (cancel or uncancel):
+        if update.revoke and (cancel or uncancel):
             raise PolarRequestValidationError(
                 [
                     {
@@ -631,7 +632,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                             "Use either `revoke` for immediate cancellation "
                             "and revokation or `cancel_at_period_end`."
                         ),
-                        "input": updates.revoke,
+                        "input": update.revoke,
                     }
                 ]
             )
@@ -639,19 +640,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if uncancel:
             return await self.uncancel(session, subscription)
 
-        if updates.revoke:
+        if update.revoke:
             return await self.revoke(
                 session,
                 subscription,
-                customer_reason=updates.customer_cancellation_reason,
-                customer_comment=updates.customer_cancellation_comment,
+                customer_reason=update.customer_cancellation_reason,
+                customer_comment=update.customer_cancellation_comment,
             )
 
         return await self.cancel(
             session,
             subscription,
-            customer_reason=updates.customer_cancellation_reason,
-            customer_comment=updates.customer_cancellation_comment,
+            customer_reason=update.customer_cancellation_reason,
+            customer_comment=update.customer_cancellation_comment,
         )
 
     async def update_product_price(
@@ -660,6 +661,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription: Subscription,
         *,
         product_price_id: uuid.UUID,
+        proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
         price = await product_price_service.get_by_id(session, product_price_id)
         if price is None:
@@ -747,11 +749,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.stripe_subscription_id is None:
             raise SubscriptionNotActiveOnStripe()
 
+        if proration_behavior is None:
+            organization = await organization_service.get(
+                session, product.organization_id
+            )
+            assert organization is not None
+            proration_behavior = organization.proration_behavior
+
         assert subscription.price is not None
         await stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
             old_price=subscription.price.stripe_price_id,
             new_price=price.stripe_price_id,
+            proration_behavior=proration_behavior.to_stripe(),
             error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
         )
         subscription.product = product

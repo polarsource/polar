@@ -9,7 +9,7 @@ from pydantic import UUID4, AliasChoices, AliasPath, Field
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas import CustomerBase
 from polar.discount.schemas import DiscountMinimal
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import (
     EmailStrDNS,
@@ -123,6 +123,13 @@ class SubscriptionCreateEmail(Schema):
 
 class SubscriptionUpdatePrice(Schema):
     product_price_id: UUID4 = Field(description="Update subscription to another price.")
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
 
 
 class SubscriptionCancel(Schema):

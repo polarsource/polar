@@ -30,6 +30,18 @@ class SubscriptionRecurringInterval(StrEnum):
         return cast(Literal["month", "year"], self.value)
 
 
+class SubscriptionProrationBehavior(StrEnum):
+    invoice = "invoice"
+    prorate = "prorate"
+
+    def to_stripe(self) -> Literal["always_invoice", "create_prorations"]:
+        if self == SubscriptionProrationBehavior.invoice:
+            return "always_invoice"
+        if self == SubscriptionProrationBehavior.prorate:
+            return "create_prorations"
+        raise ValueError(f"Invalid proration behavior: {self}")
+
+
 class TokenType(StrEnum):
     client_secret = "polar_client_secret"
     client_registration_token = "polar_client_registration_token"

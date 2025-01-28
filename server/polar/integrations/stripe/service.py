@@ -452,7 +452,13 @@ class StripeService:
         return None
 
     async def update_subscription_price(
-        self, id: str, *, old_price: str, new_price: str, error_if_incomplete: bool
+        self,
+        id: str,
+        *,
+        old_price: str,
+        new_price: str,
+        proration_behavior: Literal["always_invoice", "create_prorations", "none"],
+        error_if_incomplete: bool,
     ) -> stripe_lib.Subscription:
         subscription = await stripe_lib.Subscription.retrieve_async(id)
 
@@ -467,6 +473,7 @@ class StripeService:
             return await stripe_lib.Subscription.modify_async(
                 id,
                 items=new_items,
+                proration_behavior=proration_behavior,
                 payment_behavior=(
                     "error_if_incomplete" if error_if_incomplete else "allow_incomplete"
                 ),

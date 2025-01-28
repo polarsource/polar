@@ -99,7 +99,7 @@ export const useUpdateOrganization = () =>
 
 export const useOrganization = (id: string, enabled: boolean = true) =>
   useQuery({
-    queryKey: ['organization', id],
+    queryKey: ['organizations', id],
     queryFn: () => api.organizations.get({ id }),
     retry: defaultRetry,
     enabled,
@@ -107,7 +107,7 @@ export const useOrganization = (id: string, enabled: boolean = true) =>
 
 export const useOrganizationAccount = (id?: string) =>
   useQuery({
-    queryKey: ['organization', 'account', id],
+    queryKey: ['organizations', 'account', id],
     queryFn: () => api.organizations.getAccount({ id: id as string }),
     retry: defaultRetry,
     enabled: !!id,

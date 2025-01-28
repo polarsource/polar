@@ -1,9 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useModal } from '@/components/Modal/useModal'
-import { SubscriptionModal } from '@/components/Subscriptions/SubscriptionModal'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
@@ -53,7 +50,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
 }) => {
   const [selectedSubscriptionState, setSelectedSubscriptionState] =
     useState<RowSelectionState>({})
-  const { show: showModal, hide: hideModal, isShown: isModalShown } = useModal()
 
   const subscriptionTiers = useProducts(organization.id, { isRecurring: true })
 
@@ -157,11 +153,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   useEffect(() => {
     if (selectedSubscription) {
-      showModal()
-    } else {
-      hideModal()
+      router.push(
+        `/dashboard/${organization.slug}/sales/subscriptions/${selectedSubscription.id}`,
+      )
     }
-  }, [selectedSubscription, showModal, hideModal])
+  }, [selectedSubscription])
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
@@ -301,19 +297,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
           />
         )}
       </div>
-      <InlineModal
-        modalContent={
-          <SubscriptionModal
-            organization={organization}
-            subscription={selectedSubscription}
-          />
-        }
-        isShown={isModalShown}
-        hide={() => {
-          setSelectedSubscriptionState({})
-          hideModal()
-        }}
-      />
     </DashboardBody>
   )
 }

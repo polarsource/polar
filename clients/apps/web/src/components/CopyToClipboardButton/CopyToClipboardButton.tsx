@@ -1,7 +1,7 @@
 'use client'
 
-import { CheckOutlined, ContentPasteOutlined } from '@mui/icons-material'
 import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/Button'
+import { Clipboard, ClipboardCheck } from 'lucide-react'
 import { PropsWithChildren, useState } from 'react'
 
 const CopyToClipboardButton = (
@@ -35,12 +35,8 @@ const CopyToClipboardButton = (
       onClick={handleCopy}
     >
       {!copied &&
-        (props.children ? (
-          props.children
-        ) : (
-          <ContentPasteOutlined fontSize="inherit" />
-        ))}
-      {copied && <CheckOutlined fontSize="inherit" />}
+        (props.children ? props.children : <Clipboard className="h-3 w-3" />)}
+      {copied && <ClipboardCheck className="h-3 w-3" />}
     </Button>
   )
 }

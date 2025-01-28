@@ -4,10 +4,7 @@ import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChart from '@/components/Metrics/MetricChart'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useModal } from '@/components/Modal/useModal'
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { SubscriptionModal } from '@/components/Subscriptions/SubscriptionModal'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { usePostHog } from '@/hooks/posthog'
 import { useListSubscriptions, useMetrics } from '@/hooks/queries'
@@ -23,9 +20,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { RowSelectionState } from '@tanstack/react-table'
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
 interface ClientPageProps {
   organization: Organization
@@ -63,27 +59,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
     interval: 'month',
     customerId: [customer.id],
   })
-
-  const [selectedSubscriptionState, setSelectedSubscriptionState] =
-    useState<RowSelectionState>({})
-
-  const selectedSubscription = subscriptions?.items.find(
-    (subscription) => selectedSubscriptionState[subscription.id],
-  )
-
-  const {
-    show: showSubscriptionModal,
-    hide: hideSubscriptionModal,
-    isShown: isSubscriptionModalShown,
-  } = useModal()
-
-  useEffect(() => {
-    if (selectedSubscription) {
-      showSubscriptionModal()
-    } else {
-      hideSubscriptionModal()
-    }
-  }, [selectedSubscription, showSubscriptionModal, hideSubscriptionModal])
 
   const { isFeatureEnabled } = usePostHog()
 
@@ -171,28 +146,24 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                         <span>—</span>
                       ),
                   },
+                  {
+                    header: '',
+                    accessorKey: 'action',
+                    cell: ({ row: { original } }) => (
+                      <div className="flex justify-end">
+                        <Link
+                          href={`/dashboard/${organization.slug}/sales/subscriptions/${original.id}`}
+                        >
+                          <Button variant="secondary" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    ),
+                  },
                 ]}
                 isLoading={subscriptionsLoading}
                 className="text-sm"
-                onRowSelectionChange={(row) => {
-                  setSelectedSubscriptionState(row)
-                }}
-                rowSelection={selectedSubscriptionState}
-                getRowId={(row) => row.id.toString()}
-                enableRowSelection
-              />
-              <InlineModal
-                modalContent={
-                  <SubscriptionModal
-                    organization={organization}
-                    subscription={selectedSubscription}
-                  />
-                }
-                isShown={isSubscriptionModalShown}
-                hide={() => {
-                  setSelectedSubscriptionState({})
-                  hideSubscriptionModal()
-                }}
               />
             </div>
             <div className="flex flex-col gap-4 p-12">

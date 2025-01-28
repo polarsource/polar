@@ -116,15 +116,16 @@ const CustomerSubscriptionDetails = ({
       </div>
 
       <div className="flex flex-col gap-2">
-        {!isCanceled && (
-          <Button
-            size="lg"
-            fullWidth
-            onClick={() => setShowChangePlanModal(true)}
-          >
-            Change Plan
-          </Button>
-        )}
+        {organization.subscription_settings.allow_customer_updates &&
+          !isCanceled && (
+            <Button
+              size="lg"
+              fullWidth
+              onClick={() => setShowChangePlanModal(true)}
+            >
+              Change Plan
+            </Button>
+          )}
         {!isCanceled && (
           <Button
             size="lg"

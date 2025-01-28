@@ -21,6 +21,7 @@ from polar.checkout.schemas import (
     CheckoutUpdatePublic,
 )
 from polar.checkout.service import (
+    AlreadyActiveSubscriptionError,
     CheckoutDoesNotExist,
     NoCustomerOnCheckout,
     NoCustomerOnPaymentIntent,
@@ -64,6 +65,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_checkout,
     create_checkout_link,
     create_custom_field,
@@ -1914,6 +1916,71 @@ class TestUpdate:
             == price.price_amount
             - discount_fixed_once.get_discount_amount(price.price_amount)
         )
+
+    async def test_multiple_subscriptions_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+
+        await create_active_subscription(
+            save_fixture, product=checkout_recurring_fixed.product, customer=customer
+        )
+
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_recurring_fixed,
+            CheckoutUpdate(customer_email=customer.email),
+        )
+
+        assert checkout.customer_email == customer.email
+
+    async def test_multiple_subscriptions_forbidden(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": False,
+        }
+        await save_fixture(organization)
+
+        await create_active_subscription(
+            save_fixture, product=checkout_recurring_fixed.product, customer=customer
+        )
+
+        # With email update
+        with pytest.raises(AlreadyActiveSubscriptionError):
+            await checkout_service.update(
+                session,
+                locker,
+                checkout_recurring_fixed,
+                CheckoutUpdate(customer_email=customer.email),
+            )
+
+        # With customer ID set
+        checkout_recurring_fixed.customer = customer
+        await save_fixture(checkout_recurring_fixed)
+
+        with pytest.raises(AlreadyActiveSubscriptionError):
+            await checkout_service.update(
+                session, locker, checkout_recurring_fixed, CheckoutUpdate()
+            )
 
 
 @pytest.mark.asyncio

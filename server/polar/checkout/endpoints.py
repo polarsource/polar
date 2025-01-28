@@ -29,6 +29,7 @@ from .schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
+from .service import AlreadyActiveSubscriptionError
 from .service import checkout as checkout_service
 
 router = APIRouter(
@@ -44,6 +45,10 @@ CheckoutClientSecret = Annotated[
 CheckoutNotFound = {
     "description": "Checkout session not found.",
     "model": ResourceNotFound.schema(),
+}
+AlreadyActiveSubscription = {
+    "description": "The customer already has an active subscription.",
+    "model": AlreadyActiveSubscriptionError.schema(),
 }
 
 
@@ -125,6 +130,7 @@ async def create(
     responses={
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
+        403: AlreadyActiveSubscription,
     },
 )
 async def update(
@@ -193,6 +199,7 @@ async def client_create(
     responses={
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
+        403: AlreadyActiveSubscription,
     },
 )
 async def client_update(
@@ -220,6 +227,7 @@ async def client_update(
     responses={
         200: {"description": "Checkout session confirmed."},
         404: CheckoutNotFound,
+        403: AlreadyActiveSubscription,
     },
 )
 async def client_confirm(

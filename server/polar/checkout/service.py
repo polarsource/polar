@@ -6,7 +6,7 @@ from typing import Any
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, select, update
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, select, update
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
@@ -87,6 +87,12 @@ log: Logger = structlog.get_logger()
 
 
 class CheckoutError(PolarError): ...
+
+
+class AlreadyActiveSubscriptionError(CheckoutError):
+    def __init__(self) -> None:
+        message = "You already have an active subscription."
+        super().__init__(message, 403)
 
 
 class PaymentError(CheckoutError):
@@ -1591,6 +1597,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             setattr(checkout, attr, value)
 
         session.add(checkout)
+
+        await self._validate_subscription_uniqueness(session, checkout)
+
         return checkout
 
     async def _update_checkout_tax(
@@ -1652,6 +1661,50 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             session.add(checkout)
 
         return checkout
+
+    async def _validate_subscription_uniqueness(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> None:
+        organization = checkout.organization
+
+        # Multiple subscriptions allowed
+        if organization.allow_multiple_subscriptions:
+            return
+
+        # One-time purchase
+        if not checkout.product.is_recurring:
+            return
+
+        # Subscription upgrade
+        if checkout.subscription is not None:
+            return
+
+        # No information yet to check customer subscription uniqueness
+        if checkout.customer_id is None and checkout.customer_email is None:
+            return
+
+        statement = (
+            select(Subscription)
+            .join(Product, onclause=Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization.id,
+                Subscription.active.is_(True),
+            )
+        )
+        if checkout.customer is not None:
+            statement = statement.where(
+                Subscription.customer_id == checkout.customer_id
+            )
+        elif checkout.customer_email is not None:
+            statement = statement.join(
+                Customer, onclause=Customer.id == Subscription.customer_id
+            ).where(func.lower(Customer.email) == checkout.customer_email.lower())
+
+        result = await session.execute(statement)
+        existing_subscriptions = result.scalars().all()
+
+        if len(existing_subscriptions) > 0:
+            raise AlreadyActiveSubscriptionError()
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[str]:
         fields = {"customer_email"}

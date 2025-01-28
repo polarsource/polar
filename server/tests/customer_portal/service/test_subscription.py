@@ -10,6 +10,9 @@ from polar.customer_portal.schemas.subscription import (
     CustomerSubscriptionUpdatePrice,
 )
 from polar.customer_portal.service.subscription import (
+    UpdateSubscriptionNotAllowed,
+)
+from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
 )
 from polar.exceptions import PolarRequestValidationError
@@ -142,6 +145,29 @@ class TestUpdate:
     ) -> None:
         subscription.stripe_subscription_id = None
         with pytest.raises(SubscriptionNotActiveOnStripe):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionUpdatePrice(
+                    product_price_id=product_second.prices[0].id
+                ),
+            )
+
+    async def test_update_not_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        product_second: Product,
+        organization: Organization,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_customer_updates": False,
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(UpdateSubscriptionNotAllowed):
             await customer_subscription_service.update(
                 session,
                 subscription,

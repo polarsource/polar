@@ -201,7 +201,7 @@ export const defaultMetricMarks: MetricMarksResolver = ({
       strokeOpacity: 0.5,
     }),
   ),
-  Plot.dot(data, {
+  Plot.circle(data, {
     x: 'timestamp',
     y: metric.slug,
     fill: primaryColor,

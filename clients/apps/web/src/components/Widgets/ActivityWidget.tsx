@@ -11,7 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { useContext } from 'react'
+import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface ActivityWidgetProps {
@@ -30,6 +30,39 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
     startDate: getNearestMonday(startDate),
     endDate: new Date(),
   })
+
+  const grid = useMemo(
+    () =>
+      orderMetrics.data?.periods.map((period, i) => {
+        const activeClass =
+          period.orders > 0
+            ? 'bg-blue-500 dark:bg-blue-500'
+            : 'hover:bg-blue-100 dark:hover:bg-blue-900'
+
+        const tooltipContent = `${period.orders} ${period.orders === 1 ? 'order' : 'orders'} ${period.timestamp.toLocaleDateString(
+          'en-US',
+          {
+            month: 'long',
+            day: 'numeric',
+          },
+        )}`
+
+        return (
+          <Tooltip key={i} delayDuration={0}>
+            <TooltipTrigger
+              className={twMerge(
+                'dark:bg-polar-700 h-1 w-1 rounded-full bg-gray-300 xl:h-2 xl:w-2',
+                activeClass,
+              )}
+            />
+            <TooltipContent className="text-sm">
+              {tooltipContent}
+            </TooltipContent>
+          </Tooltip>
+        )
+      }),
+    [orderMetrics.data?.periods],
+  )
 
   return (
     <Card
@@ -55,34 +88,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
             ))}
           </div>
           <div className="grid grid-flow-col grid-cols-[repeat(52,minmax(0,1fr))] grid-rows-[repeat(7,minmax(0,1fr))] gap-1 xl:gap-2">
-            {orderMetrics.data?.periods.map((period, i) => {
-              const activeClass =
-                period.orders > 0
-                  ? 'bg-blue-500 dark:bg-blue-500'
-                  : 'hover:bg-blue-100 dark:hover:bg-blue-900'
-
-              const tooltipContent = `${period.orders} ${period.orders === 1 ? 'order' : 'orders'} ${period.timestamp.toLocaleDateString(
-                'en-US',
-                {
-                  month: 'long',
-                  day: 'numeric',
-                },
-              )}`
-
-              return (
-                <Tooltip key={i} delayDuration={0}>
-                  <TooltipTrigger
-                    className={twMerge(
-                      'dark:bg-polar-700 h-1 w-1 rounded-full bg-gray-300 xl:h-2 xl:w-2',
-                      activeClass,
-                    )}
-                  />
-                  <TooltipContent className="text-sm">
-                    {tooltipContent}
-                  </TooltipContent>
-                </Tooltip>
-              )
-            })}
+            {grid}
           </div>
         </CardFooter>
       </TooltipProvider>

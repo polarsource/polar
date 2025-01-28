@@ -126,13 +126,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </div>
         </div>
         <div className="flex flex-row gap-4 p-8">
-          <Button type="button" size="lg" onClick={showUpdateModal}>
+          <Button type="button" onClick={showUpdateModal}>
             Update Subscription
           </Button>
           <Button
             type="button"
             variant="secondary"
-            size="lg"
             onClick={showCancellationModal}
           >
             Cancel Subscription

@@ -263,6 +263,35 @@ export type AdvertisementSortProperty = typeof AdvertisementSortProperty[keyof t
 /**
  * 
  * @export
+ * @interface AlreadyActiveSubscriptionError
+ */
+export interface AlreadyActiveSubscriptionError {
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyActiveSubscriptionError
+     */
+    error: AlreadyActiveSubscriptionErrorErrorEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyActiveSubscriptionError
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const AlreadyActiveSubscriptionErrorErrorEnum = {
+    ALREADY_ACTIVE_SUBSCRIPTION_ERROR: 'AlreadyActiveSubscriptionError'
+} as const;
+export type AlreadyActiveSubscriptionErrorErrorEnum = typeof AlreadyActiveSubscriptionErrorErrorEnum[keyof typeof AlreadyActiveSubscriptionErrorErrorEnum];
+
+/**
+ * 
+ * @export
  * @interface AlreadyCanceledSubscription
  */
 export interface AlreadyCanceledSubscription {

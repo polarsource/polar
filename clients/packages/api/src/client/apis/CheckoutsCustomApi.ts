@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  AlreadyActiveSubscriptionError,
   Checkout,
   CheckoutConfirmStripe,
   CheckoutCreate,

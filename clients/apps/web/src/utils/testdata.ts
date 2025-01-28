@@ -62,6 +62,11 @@ export const org: Organization = {
   location: null,
   email: null,
   twitter_username: null,
+  subscription_settings: {
+    allow_multiple_subscriptions: true,
+    allow_customer_updates: true,
+    proration_behavior: 'invoice',
+  },
 }
 
 export const user: UserRead = {

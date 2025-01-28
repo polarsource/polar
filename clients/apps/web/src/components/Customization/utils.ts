@@ -6,6 +6,7 @@ import {
   Organization,
   ProductPrice,
   ProductStorefront,
+  SubscriptionProrationBehavior,
 } from '@polar-sh/api'
 import {
   CheckoutPublic$inboundSchema,
@@ -156,6 +157,11 @@ export const ORGANIZATION = {
   pledge_minimum_amount: 2000,
   pledge_badge_show_amount: false,
   profile_settings: null,
+  subscription_settings: {
+    allow_multiple_subscriptions: true,
+    allow_customer_updates: true,
+    proration_behavior: SubscriptionProrationBehavior.INVOICE,
+  },
 }
 
 export const createCheckoutPreview = (

@@ -29,14 +29,14 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
 
   return (
     <Card className={twMerge('flex h-80 flex-col justify-between', className)}>
-      <CardHeader className="flex flex-col gap-y-2">
+      <CardHeader className="flex flex-col gap-y-1 pb-2">
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-400">Finance</span>
         </div>
         <h2 className="text-xl">Account Balance</h2>
       </CardHeader>
-      <CardFooter className="flex flex-col items-start gap-y-4">
-        <h2 className="text-2xl">
+      <CardFooter className="dark:bg-polar-900 m-2 flex h-full flex-col items-start justify-end gap-y-4 rounded-3xl bg-white p-4">
+        <h2 className="text-3xl">
           ${getCentsInDollarString(summary?.balance.amount ?? 0, false)}
         </h2>
         <Link href={`/dashboard/${org.slug}/finance`}>

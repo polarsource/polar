@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import MetricChart from '@/components/Metrics/MetricChart'
 import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import {
   SyntaxHighlighterClient,
@@ -11,8 +12,9 @@ import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
-import { useProducts } from '@/hooks/queries'
+import { useMetrics, useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { defaultMetricMarks } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -35,8 +37,47 @@ interface OverviewPageProps {
 export default function OverviewPage({ organization }: OverviewPageProps) {
   const { data: products } = useProducts(organization.id)
 
+  const { data: metricsData, isLoading: metricsLoading } = useMetrics({
+    organizationId: organization.id,
+    startDate: new Date(new Date().setDate(new Date().getDate() - 14)),
+    endDate: new Date(),
+    interval: 'day',
+  })
+
+  if (metricsLoading) return null
+
   return (
     <DashboardBody className="gap-y-16 pb-16">
+      <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-50 p-2">
+        <div className="flex flex-row justify-between p-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl">Revenue</h2>
+            <div className="flex flex-row items-center gap-x-2">
+              <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Last 14 days
+              </span>
+            </div>
+          </div>
+          <Link href={`/dashboard/${organization.slug}/analytics`}>
+            <Button>View Analytics</Button>
+          </Link>
+        </div>
+        <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
+          <MetricChart
+            height={350}
+            data={metricsData?.periods ?? []}
+            interval="day"
+            marks={defaultMetricMarks}
+            metric={{
+              slug: 'revenue',
+              display_name: 'Revenue',
+              type: 'currency',
+            }}
+          />
+        </div>
+      </ShadowBox>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10">
         <ActivityWidget className="col-span-2" />
         <OrdersWidget />

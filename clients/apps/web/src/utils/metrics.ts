@@ -2,6 +2,44 @@ import { Interval, Metric, MetricType } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { format, parse } from 'date-fns'
 
+const primaryColor = 'rgb(0 98 255)'
+
+const primaryColorFaded = 'rgba(0, 98, 255, 0.3)'
+const gradientId = 'chart-gradient'
+const createAreaGradient = (id: string) => {
+  // Create a <defs> element
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+
+  // Create a <linearGradient> element
+  const linearGradient = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'linearGradient',
+  )
+  linearGradient.setAttribute('id', id)
+  linearGradient.setAttribute('gradientTransform', 'rotate(90)')
+
+  // Create the first <stop> element
+  const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
+  stop1.setAttribute('offset', '0%')
+  stop1.setAttribute('stop-color', primaryColorFaded)
+  stop1.setAttribute('stop-opacity', '0.5')
+
+  // Create the second <stop> element
+  const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
+  stop2.setAttribute('offset', '100%')
+  stop2.setAttribute('stop-color', primaryColorFaded)
+  stop2.setAttribute('stop-opacity', '0')
+
+  // Append the <stop> elements to the <linearGradient> element
+  linearGradient.appendChild(stop1)
+  linearGradient.appendChild(stop2)
+
+  // Append the <linearGradient> element to the <defs> element
+  defs.appendChild(linearGradient)
+
+  return defs
+}
+
 export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 
 export const fromISODate = (date: string) =>
@@ -44,3 +82,183 @@ export const getTimestampFormatter = (
       return (value: Date) => format(value, 'yyyy')
   }
 }
+
+import { ParsedMetricPeriod } from '@/hooks/queries'
+import * as Plot from '@observablehq/plot'
+import { timeFormat, utcDay } from 'd3'
+import { GeistMono } from 'geist/font/mono'
+
+class Callback extends Plot.Dot {
+  private callbackFunction: (index: number | undefined) => void
+
+  public constructor(
+    data: Plot.Data,
+    options: Plot.DotOptions,
+    callbackFunction: (data: any) => void,
+  ) {
+    // @ts-ignore
+    super(data, options)
+    this.callbackFunction = callbackFunction
+  }
+
+  // @ts-ignore
+  public render(
+    index: number[],
+    _scales: Plot.ScaleFunctions,
+    _values: Plot.ChannelValues,
+    _dimensions: Plot.Dimensions,
+    _context: Plot.Context,
+    _next?: Plot.RenderFunction,
+  ): SVGElement | null {
+    if (index.length) {
+      this.callbackFunction(index[0])
+    }
+    return null
+  }
+}
+
+export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
+  const step = Math.ceil(timestamps.length / maxTicks)
+  return timestamps.filter((_, index) => index % step === 0)
+}
+
+const getTickFormat = (
+  interval: Interval,
+  ticks: Date[],
+): ((t: Date, i: number) => any) | string => {
+  switch (interval) {
+    case Interval.HOUR:
+      return (t: Date, i: number) => {
+        const previousDate = ticks[i - 1]
+        if (!previousDate || previousDate.getDate() < t.getDate()) {
+          return timeFormat('%a %H:%M')(t)
+        }
+        return timeFormat('%H:%M')(t)
+      }
+    case Interval.DAY:
+      return '%b %d'
+    case Interval.WEEK:
+      return '%b %d'
+    case Interval.MONTH:
+      return '%b %y'
+    case Interval.YEAR:
+      return '%Y'
+  }
+}
+
+export type MetricMarksResolver = (config: {
+  data: ParsedMetricPeriod[]
+  metric: Metric
+  interval: Interval
+  onDataIndexHover?: (index: number | undefined) => void
+  ticks: Date[]
+}) => Plot.Markish[]
+
+export const defaultMetricMarks: MetricMarksResolver = ({
+  data,
+  metric,
+  interval,
+  onDataIndexHover,
+  ticks,
+}: {
+  data: ParsedMetricPeriod[]
+  metric: Metric
+  interval: Interval
+  onDataIndexHover?: (index: number | undefined) => void
+  ticks: Date[]
+}): Plot.Markish[] => [
+  () => createAreaGradient(gradientId),
+  Plot.axisX({
+    tickFormat: getTickFormat(interval, ticks),
+    ticks,
+    label: null,
+    stroke: 'none',
+    fontFamily: GeistMono.style.fontFamily,
+  }),
+  Plot.axisY({
+    label: null,
+    tickFormat: getValueFormatter(metric),
+    stroke: 'none',
+    fontFamily: GeistMono.style.fontFamily,
+  }),
+  Plot.lineY(data, {
+    x: 'timestamp',
+    y: metric.slug,
+    strokeWidth: 1,
+    stroke: primaryColor,
+  }),
+  Plot.areaY(data, {
+    x: 'timestamp',
+    y: metric.slug,
+    fill: `url(#${gradientId})`,
+  }),
+  Plot.ruleX(
+    data,
+    Plot.pointerX({
+      x: 'timestamp',
+      stroke: 'currentColor',
+      strokeWidth: 1,
+      strokeOpacity: 0.5,
+    }),
+  ),
+  Plot.dot(data, {
+    x: 'timestamp',
+    y: metric.slug,
+    fill: primaryColor,
+    r: 2,
+  }),
+  ...(onDataIndexHover
+    ? [
+        new Callback(
+          data,
+          Plot.pointerX({
+            x: 'timestamp',
+            y: metric.slug,
+            fill: 'currentColor',
+            fillOpacity: 0.5,
+            r: 5,
+          }),
+          onDataIndexHover,
+        ),
+      ]
+    : []),
+]
+
+export const barMetricMarks: MetricMarksResolver = ({
+  data,
+  metric,
+  interval,
+  onDataIndexHover,
+  ticks,
+}) => [
+  Plot.axisX({
+    tickFormat: getTickFormat(interval, ticks),
+    ticks,
+    label: null,
+    stroke: 'none',
+    fontFamily: GeistMono.style.fontFamily,
+  }),
+  Plot.axisY({
+    label: null,
+    tickFormat: getValueFormatter(metric),
+    stroke: 'none',
+    fontFamily: GeistMono.style.fontFamily,
+  }),
+  Plot.rectY(data, {
+    x: 'timestamp',
+    y: metric.slug,
+    interval: utcDay,
+  }),
+  ...(onDataIndexHover
+    ? [
+        new Callback(
+          data,
+          Plot.pointerX({
+            x: 'timestamp',
+            y: metric.slug,
+          }),
+          onDataIndexHover,
+        ),
+      ]
+    : []),
+]

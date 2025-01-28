@@ -40,7 +40,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
 
   return (
     <Card className={twMerge('flex h-80 flex-col justify-between', className)}>
-      <CardHeader className="flex flex-col gap-y-2">
+      <CardHeader className="flex flex-col gap-y-1 pb-2">
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-400">
             Active Subscriptions
@@ -55,7 +55,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
         </h2>
       </CardHeader>
       <TooltipProvider>
-        <CardFooter className="flex h-full flex-row items-end justify-between gap-x-1">
+        <CardFooter className="dark:bg-polar-900 m-2 flex h-full flex-row items-end justify-between gap-x-1 rounded-3xl bg-white p-4">
           {subscriberMetrics.data?.periods.map((period, i) => {
             const activeClass =
               i === subscriberMetrics.data.periods.length - 1

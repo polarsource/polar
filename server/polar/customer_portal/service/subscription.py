@@ -32,6 +32,11 @@ from ..schemas.subscription import (
 class CustomerSubscriptionError(PolarError): ...
 
 
+class UpdateSubscriptionNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("Updating subscription is not allowed.", 403)
+
+
 class CustomerSubscriptionSortProperty(StrEnum):
     started_at = "started_at"
     amount = "amount"
@@ -147,6 +152,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         updates: CustomerSubscriptionUpdate,
     ) -> Subscription:
         if isinstance(updates, CustomerSubscriptionUpdatePrice):
+            organization = subscription.product.organization
+            if not organization.allow_customer_updates:
+                raise UpdateSubscriptionNotAllowed()
+
             return await self.update_product_price(
                 session,
                 subscription,

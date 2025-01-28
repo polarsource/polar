@@ -139,6 +139,26 @@ async def export(
     )
 
 
+@router.get(
+    "/{id}",
+    summary="Get Subscription",
+    response_model=SubscriptionSchema,
+    responses={404: SubscriptionNotFound},
+)
+async def get(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Get a subscription by ID."""
+    subscription = await subscription_service.user_get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return subscription
+
+
 @router.patch(
     "/{id}",
     summary="Update Subscription",
@@ -173,7 +193,7 @@ async def update(
         updates=subscription_update,
     )
     return await subscription_service.update(
-        session, subscription, updates=subscription_update
+        session, subscription, update=subscription_update
     )
 
 

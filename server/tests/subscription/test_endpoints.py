@@ -247,6 +247,7 @@ class TestSubscriptionPriceUpdate:
             subscription.stripe_subscription_id,
             old_price=previous_price.stripe_price_id,
             new_price=new_price.stripe_price_id,
+            proration_behavior=organization.proration_behavior.to_stripe(),
             error_if_incomplete=previous_free,
         )
 

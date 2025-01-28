@@ -118,6 +118,44 @@ const ChangePlanModal = ({
     }
   }, [selectedPrice, currentPrice])
 
+  const prorationBehavior = useMemo(
+    () => organization.subscription_settings.proration_behavior,
+    [organization],
+  )
+  const invoicingMessage = useMemo(() => {
+    if (!selectedPrice) return null
+
+    if (prorationBehavior === 'invoice') {
+      if (isDowngrade) {
+        return 'An invoice will be issued with a credit for the unused time this month.'
+      } else {
+        return 'An invoice will be issued with a proration for the current month.'
+      }
+    } else {
+      if (isDowngrade) {
+        if (selectedPrice.amount_type === 'free') {
+          return 'A credit invoice will be issued for the unused time this month.'
+        } else {
+          return `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
+            selectedPrice.price_amount,
+            selectedPrice.price_currency,
+            0,
+          )}, minus a credit of what we already billed for the current month.`
+        }
+      } else {
+        if (selectedPrice.amount_type === 'free') {
+          return 'An invoice will be issued with a proration for the current month.'
+        } else {
+          return `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
+            selectedPrice.price_amount,
+            selectedPrice.price_currency,
+            0,
+          )}, plus a proration for the current month.`
+        }
+      }
+    }
+  }, [selectedPrice, prorationBehavior, isDowngrade])
+
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
     if (!selectedPrice) return
@@ -247,23 +285,9 @@ const ChangePlanModal = ({
               </div>
             </div>
           )}
-          {selectedPrice && (
+          {invoicingMessage && (
             <p className="dark:text-polar-500 text-sm text-gray-500">
-              {isDowngrade
-                ? selectedPrice.amount_type === 'free'
-                  ? `We'll issue a credit invoice for the unused time this month.`
-                  : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
-                      selectedPrice.price_amount,
-                      selectedPrice.price_currency,
-                      0,
-                    )}, minus a credit of what we already billed for the current month.`
-                : selectedPrice.amount_type === 'free'
-                  ? ''
-                  : `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
-                      selectedPrice.price_amount,
-                      selectedPrice.price_currency,
-                      0,
-                    )}, plus a proration for the current month.`}
+              {invoicingMessage}
             </p>
           )}
         </div>

@@ -117,12 +117,12 @@ const HeroChart = ({ organization }: HeroChartProps) => {
       </div>
       <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
         {metricsLoading ? (
-          <div className="flex h-[350px] flex-col items-center justify-center">
+          <div className="flex h-[300px] flex-col items-center justify-center">
             <Spinner />
           </div>
         ) : metricsData ? (
           <MetricChart
-            height={350}
+            height={300}
             data={metricsData.periods}
             interval="day"
             marks={defaultMetricMarks}

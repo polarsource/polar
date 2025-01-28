@@ -33,6 +33,10 @@ export interface SubscriptionsApiExportRequest {
     organizationId?: OrganizationId | null;
 }
 
+export interface SubscriptionsApiGetRequest {
+    id: string;
+}
+
 export interface SubscriptionsApiListRequest {
     organizationId?: OrganizationIDFilter1 | null;
     productId?: ProductIDFilter | null;
@@ -99,6 +103,49 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async export(requestParameters: SubscriptionsApiExportRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.exportRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get a subscription by ID.
+     * Get Subscription
+     */
+    async getRaw(requestParameters: SubscriptionsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get a subscription by ID.
+     * Get Subscription
+     */
+    async get(requestParameters: SubscriptionsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -15234,6 +15234,12 @@ export interface Organization {
      * @memberof Organization
      */
     feature_settings: OrganizationFeatureSettings | null;
+    /**
+     * Settings related to subscriptions management
+     * @type {OrganizationSubscriptionSettings}
+     * @memberof Organization
+     */
+    subscription_settings: OrganizationSubscriptionSettings;
 }
 /**
  * Schema to create a file to be used as an organization avatar.
@@ -15549,6 +15555,12 @@ export interface OrganizationCreate {
      * @memberof OrganizationCreate
      */
     feature_settings?: OrganizationFeatureSettings | null;
+    /**
+     * 
+     * @type {OrganizationSubscriptionSettings}
+     * @memberof OrganizationCreate
+     */
+    subscription_settings?: OrganizationSubscriptionSettings | null;
 }
 /**
  * 
@@ -15719,6 +15731,33 @@ export interface OrganizationSubscribePromoteSettings {
 /**
  * 
  * @export
+ * @interface OrganizationSubscriptionSettings
+ */
+export interface OrganizationSubscriptionSettings {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationSubscriptionSettings
+     */
+    allow_multiple_subscriptions: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationSubscriptionSettings
+     */
+    allow_customer_updates: boolean;
+    /**
+     * 
+     * @type {SubscriptionProrationBehavior}
+     * @memberof OrganizationSubscriptionSettings
+     */
+    proration_behavior: SubscriptionProrationBehavior;
+}
+
+
+/**
+ * 
+ * @export
  * @interface OrganizationUpdate
  */
 export interface OrganizationUpdate {
@@ -15788,6 +15827,12 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     feature_settings?: OrganizationFeatureSettings | null;
+    /**
+     * 
+     * @type {OrganizationSubscriptionSettings}
+     * @memberof OrganizationUpdate
+     */
+    subscription_settings?: OrganizationSubscriptionSettings | null;
 }
 /**
  * 
@@ -19529,6 +19574,17 @@ export type SubscriptionIDFilter = Array<string> | string;
  * 
  * @export
  */
+export const SubscriptionProrationBehavior = {
+    INVOICE: 'invoice',
+    PRORATE: 'prorate'
+} as const;
+export type SubscriptionProrationBehavior = typeof SubscriptionProrationBehavior[keyof typeof SubscriptionProrationBehavior];
+
+
+/**
+ * 
+ * @export
+ */
 export const SubscriptionRecurringInterval = {
     MONTH: 'month',
     YEAR: 'year'
@@ -19592,7 +19648,15 @@ export interface SubscriptionUpdatePrice {
      * @memberof SubscriptionUpdatePrice
      */
     product_price_id: string;
+    /**
+     * 
+     * @type {SubscriptionProrationBehavior}
+     * @memberof SubscriptionUpdatePrice
+     */
+    proration_behavior?: SubscriptionProrationBehavior | null;
 }
+
+
 /**
  * 
  * @export

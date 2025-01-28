@@ -14,7 +14,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback, useState } from 'react'
-import { SubscriptionDetails } from '../Subscriptions/SubscriptionDetails'
+import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDetails'
 
 const CustomerPortalSubscription = ({
   api,
@@ -58,7 +58,7 @@ const CustomerPortalSubscription = ({
     <>
       <div className="flex h-full flex-col gap-12">
         <div className="flex w-full flex-col gap-8">
-          <SubscriptionDetails
+          <CustomerSubscriptionDetails
             api={api}
             subscription={subscription}
             onUserSubscriptionUpdate={setSubscription}

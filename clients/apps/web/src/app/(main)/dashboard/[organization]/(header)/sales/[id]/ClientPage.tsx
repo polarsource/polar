@@ -16,7 +16,7 @@ import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { Organization, Product, RefundReason } from '@polar-sh/api'
+import { Order, Organization, Product, RefundReason } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -74,14 +74,17 @@ const OrderStatusDisplayColor: Record<string, string> = {
 
 interface ClientPageProps {
   organization: Organization
-  orderId: string
+  order: Order
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({ organization, orderId }) => {
-  const { data: order } = useOrder(orderId)
-  const { data: product } = useProduct(order?.product.id)
+const ClientPage: React.FC<ClientPageProps> = ({
+  organization,
+  order: _order,
+}) => {
+  const { data: order } = useOrder(_order.id, _order)
+  const { data: product } = useProduct(_order.product.id)
   const { data: customFields } = useCustomFields(organization.id)
-  const { data: refunds, isLoading: refundsLoading } = useRefunds(orderId)
+  const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
 
   const {
     isShown: isRefundModalShown,

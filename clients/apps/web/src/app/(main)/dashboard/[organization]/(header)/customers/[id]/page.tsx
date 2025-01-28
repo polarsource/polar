@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getCustomerById } from '@/utils/customer'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -27,19 +27,7 @@ export default async function Page({
     api,
     params.organization,
   )
-  const customer = await api.customers.get(
-    { id: params.id },
-    {
-      next: {
-        tags: [`customer:${params.id}`],
-        revalidate: 600,
-      },
-    },
-  )
-
-  if (!customer) {
-    return notFound()
-  }
+  const customer = await getCustomerById(api, params.id)
 
   return <ClientPage organization={organization} customer={customer} />
 }

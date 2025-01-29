@@ -5,17 +5,17 @@ from typing import Any
 
 from sqlalchemy import UnaryExpression, asc, desc, or_, select
 
-from polar.auth.models import AuthSubject, is_organization
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Event, Organization, User, UserOrganization
+from polar.models import Customer, Event, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 
 from .repository import EventRepository
-from .schemas import EventsIngest, EventsIngestResponse
+from .schemas import EventCreateCustomer, EventsIngest, EventsIngestResponse
 from .sorting import EventSortProperty
 
 
@@ -108,6 +108,9 @@ class EventService:
         validate_organization_id = await self._get_organization_validation_function(
             session, auth_subject
         )
+        validate_customer_id = await self._get_customer_validation_function(
+            session, auth_subject
+        )
 
         events: list[dict[str, Any]] = []
         errors: list[ValidationError] = []
@@ -116,6 +119,8 @@ class EventService:
                 organization_id = validate_organization_id(
                     index, event_create.organization_id
                 )
+                if isinstance(event_create, EventCreateCustomer):
+                    validate_customer_id(index, event_create.customer_id)
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
@@ -204,6 +209,43 @@ class EventService:
             return organization_id
 
         return _validate_organization_id_by_user
+
+    async def _get_customer_validation_function(
+        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]
+    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+        statement = select(Customer.id).where(Customer.deleted_at.is_(None))
+        if is_user(auth_subject):
+            statement = statement.where(
+                Customer.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == auth_subject.subject.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
+            )
+        else:
+            statement = statement.where(
+                Customer.organization_id == auth_subject.subject.id
+            )
+        result = await session.execute(statement)
+        allowed_customers = set(result.scalars().all())
+
+        def _validate_customer_id(index: int, customer_id: uuid.UUID) -> uuid.UUID:
+            if customer_id not in allowed_customers:
+                raise EventIngestValidationError(
+                    [
+                        {
+                            "type": "customer_id",
+                            "msg": "Customer not found.",
+                            "loc": ("body", "events", index, "customer_id"),
+                            "input": customer_id,
+                        }
+                    ]
+                )
+
+            return customer_id
+
+        return _validate_customer_id
 
 
 event = EventService()

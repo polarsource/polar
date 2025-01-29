@@ -4,9 +4,13 @@ from datetime import datetime, timedelta
 import pytest
 from pydantic import ValidationError
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_user
 from polar.event.repository import EventRepository
-from polar.event.schemas import EventCreateExternalCustomer, EventsIngest
+from polar.event.schemas import (
+    EventCreateCustomer,
+    EventCreateExternalCustomer,
+    EventsIngest,
+)
 from polar.event.service import event as event_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
@@ -16,6 +20,7 @@ from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer
 
 
 async def create_event(
@@ -286,6 +291,50 @@ class TestIngest:
 
         errors = e.value.errors()
         assert len(errors) == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=uuid.uuid4(),
+                    organization_id=organization.id if is_user(auth_subject) else None,
+                ),
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer_organization_second.id,
+                    organization_id=organization.id if is_user(auth_subject) else None,
+                ),
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer.id,
+                    organization_id=organization.id if is_user(auth_subject) else None,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        errors = e.value.errors()
+        assert len(errors) == 2
 
     @pytest.mark.auth
     async def test_valid_user(

@@ -14,10 +14,14 @@ import {
   useMetrics,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { defaultMetricMarks, metricDisplayNames } from '@/utils/metrics'
+import {
+  computeCumulativeValue,
+  defaultMetricMarks,
+  metricDisplayNames,
+} from '@/utils/metrics'
 import {
   Customer,
-  Metric,
+  Interval,
   Metrics,
   MetricType,
   Organization,
@@ -41,7 +45,59 @@ import {
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
-import React, { useCallback, useMemo } from 'react'
+import React, { useMemo } from 'react'
+
+type Range = 'all_time' | '12m' | '3m' | '30d' | '24h'
+
+const rangeDisplayNames: Record<Range, string> = {
+  all_time: 'First Seen',
+  '12m': '12m',
+  '3m': '3m',
+  '30d': '30d',
+  '24h': '24h',
+}
+
+const rangeToInterval = (startDate: Date) => {
+  const yearsAgo = new Date().getFullYear() - startDate.getFullYear()
+  const monthsAgo =
+    (new Date().getFullYear() - startDate.getFullYear()) * 12 +
+    (new Date().getMonth() - startDate.getMonth())
+  const weeksAgo = Math.floor(
+    (new Date().getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
+  )
+  const daysAgo = Math.floor(
+    (new Date().getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+  )
+
+  console.log({ yearsAgo, monthsAgo, weeksAgo, daysAgo })
+
+  if (yearsAgo >= 3) {
+    return Interval.YEAR
+  } else if (monthsAgo >= 4) {
+    return Interval.MONTH
+  } else if (weeksAgo > 4) {
+    return Interval.WEEK
+  } else if (daysAgo > 1) {
+    return Interval.DAY
+  } else {
+    return Interval.HOUR
+  }
+}
+
+const getRangeStartDate = (range: Range, customer: Customer) => {
+  switch (range) {
+    case 'all_time':
+      return new Date(customer.created_at)
+    case '12m':
+      return new Date(new Date().setFullYear(new Date().getFullYear() - 1))
+    case '3m':
+      return new Date(new Date().setMonth(new Date().getMonth() - 3))
+    case '30d':
+      return new Date(new Date().setDate(new Date().getDate() - 30))
+    case '24h':
+      return new Date(new Date().setHours(new Date().getHours() - 24))
+  }
+}
 
 interface ClientPageProps {
   organization: Organization
@@ -70,34 +126,39 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
       sorting: ['-started_at'],
     })
 
-  const threeMonthsAgo = new Date(
-    new Date().setMonth(new Date().getMonth() - 3),
-  )
-  const customerCreatedAt = new Date(customer.created_at)
-  const startDate =
-    customerCreatedAt > threeMonthsAgo ? threeMonthsAgo : customerCreatedAt
+  const [selectedRange, setSelectedRange] = React.useState<Range>('all_time')
+
+  const startDate = getRangeStartDate(selectedRange, customer)
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: startDate,
     endDate: new Date(),
     organizationId: organization.id,
-    interval: 'month',
+    interval: rangeToInterval(startDate),
     customerId: [customer.id],
   })
 
-  const getMetricValue = useCallback((metric?: Metric, value?: number) => {
+  const metricValue = useMemo(() => {
+    if (!metricsData) return 0
+
+    const currentMetricPeriod = hoveredMetricPeriod
+      ? hoveredMetricPeriod
+      : metricsData.periods[metricsData.periods.length - 1]
+
+    const metric = metricsData.metrics[selectedMetric]
+    const value = hoveredMetricPeriod
+      ? currentMetricPeriod[selectedMetric]
+      : computeCumulativeValue(
+          metric,
+          metricsData.periods.map((period) => period[selectedMetric]),
+        )
+
     if (metric?.type === MetricType.CURRENCY) {
       return `$${getCentsInDollarString(value ?? 0)}`
     } else {
       return value
     }
-  }, [])
-
-  const currentMetricPeriod = useMemo(() => {
-    return hoveredMetricPeriod
-      ? hoveredMetricPeriod
-      : metricsData?.periods[metricsData.periods.length - 1]
-  }, [metricsData, hoveredMetricPeriod])
+  }, [hoveredMetricPeriod, metricsData, selectedMetric])
 
   const { isFeatureEnabled } = usePostHog()
 
@@ -141,12 +202,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                     ))}
                   </SelectContent>
                 </Select>
-                <h2 className="text-3xl">
-                  {getMetricValue(
-                    metricsData?.metrics[selectedMetric],
-                    currentMetricPeriod?.[selectedMetric],
-                  ) ?? 0}
-                </h2>
+                <h2 className="text-3xl">{metricValue}</h2>
                 <div className="flex flex-row items-center gap-x-6">
                   <div className="flex flex-row items-center gap-x-2">
                     <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
@@ -154,22 +210,36 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                       Current Period
                     </span>
                   </div>
-
-                  <div className="flex flex-row items-center gap-x-2">
-                    <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {hoveredMetricPeriod ? (
+                  {hoveredMetricPeriod && (
+                    <div className="flex flex-row items-center gap-x-2">
+                      <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
+                      <span className="dark:text-polar-500 text-sm text-gray-500">
                         <FormattedDateTime
                           datetime={hoveredMetricPeriod.timestamp}
                           dateStyle="medium"
                         />
-                      ) : (
-                        'Today'
-                      )}
-                    </span>
-                  </div>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
+              <Tabs
+                value={selectedRange}
+                onValueChange={(value) => setSelectedRange(value as Range)}
+              >
+                <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-white">
+                  {Object.entries(rangeDisplayNames).map(([key, value]) => (
+                    <TabsTrigger
+                      size="small"
+                      key={key}
+                      value={key}
+                      className="!rounded-sm p-1 px-2 text-xs font-normal"
+                    >
+                      {value}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
             <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
               {metricsLoading ? (
@@ -180,7 +250,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 <MetricChart
                   height={300}
                   data={metricsData.periods}
-                  interval="month"
+                  interval={rangeToInterval(startDate)}
                   marks={defaultMetricMarks}
                   metric={metricsData.metrics[selectedMetric]}
                   onDataIndexHover={(period) =>

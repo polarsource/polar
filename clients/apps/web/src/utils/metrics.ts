@@ -279,3 +279,47 @@ export const metricDisplayNames: Record<keyof Metrics, string> = {
   active_subscriptions: 'Active Subscriptions',
   monthly_recurring_revenue: 'Monthly Recurring Revenue',
 }
+
+export const metricToCumulativeType: Record<
+  Metric['slug'],
+  MetricCumulativeType
+> = {
+  revenue: 'sum',
+  orders: 'sum',
+  cumulative_revenue: 'lastValue',
+  average_order_value: 'average',
+  one_time_products: 'sum',
+  one_time_products_revenue: 'sum',
+  new_subscriptions: 'sum',
+  new_subscriptions_revenue: 'sum',
+  renewed_subscriptions: 'sum',
+  renewed_subscriptions_revenue: 'sum',
+  active_subscriptions: 'lastValue',
+  monthly_recurring_revenue: 'lastValue',
+}
+
+export type MetricCumulativeType = 'sum' | 'average' | 'lastValue'
+
+export const computeCumulativeValue = (
+  metric: Metric,
+  values: number[],
+): number => {
+  if (values.length === 0) return 0
+
+  const cumulativeType = metricToCumulativeType[metric.slug]
+
+  switch (cumulativeType) {
+    case 'sum':
+      return values.reduce((acc, value) => acc + value, 0)
+    case 'average':
+      const nonZeroValues = values.filter((value) => value !== 0)
+      return (
+        nonZeroValues.reduce((acc, value) => acc + value, 0) /
+        nonZeroValues.length
+      )
+    case 'lastValue':
+      return values[values.length - 1]
+    default:
+      return 0
+  }
+}

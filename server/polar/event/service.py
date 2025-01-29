@@ -1,15 +1,21 @@
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import insert, select
+from sqlalchemy import UnaryExpression, asc, desc, or_, select
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.kit.metadata import MetadataQuery
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.models import Event, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 
-from .schemas import EventsIngest
+from .repository import EventRepository
+from .schemas import EventsIngest, EventsIngestResponse
+from .sorting import EventSortProperty
 
 
 class EventError(PolarError): ...
@@ -22,12 +28,78 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        before: datetime | None = None,
+        after: datetime | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        metadata: MetadataQuery | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[EventSortProperty]] = [
+            (EventSortProperty.timestamp, True)
+        ],
+    ) -> tuple[Sequence[Event], int]:
+        repository = EventRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+
+        if before is not None:
+            statement = statement.where(Event.timestamp < before)
+
+        if after is not None:
+            statement = statement.where(Event.timestamp > after)
+
+        if organization_id is not None:
+            statement = statement.where(Event.organization_id.in_(organization_id))
+
+        if metadata is not None:
+            for key, values in metadata.items():
+                clauses = []
+                for value in values:
+                    clauses.append(Event.user_metadata[key].astext == value)
+                statement = statement.where(or_(*clauses))
+
+        if customer_id is not None:
+            statement = statement.where(Event.customer_id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.where(
+                Event.external_customer_id.in_(external_customer_id)
+            )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == EventSortProperty.timestamp:
+                order_by_clauses.append(clause_function(Event.timestamp))
+        statement = statement.order_by(*order_by_clauses)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Event | None:
+        repository = EventRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Event.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
     async def ingest(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         ingest: EventsIngest,
-    ) -> None:
+    ) -> EventsIngestResponse:
         validate_organization_id = await self._get_organization_validation_function(
             session, auth_subject
         )
@@ -55,8 +127,10 @@ class EventService:
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
-        statement = insert(Event)
-        await session.execute(statement, events)
+        repository = EventRepository.from_session(session)
+        await repository.insert_batch(events)
+
+        return EventsIngestResponse(inserted=len(events))
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

@@ -35,6 +35,9 @@ class Scope(StrEnum):
     benefits_read = "benefits:read"
     benefits_write = "benefits:write"
 
+    events_read = "events:read"
+    events_write = "events:write"
+
     files_read = "files:read"
     files_write = "files:write"
 

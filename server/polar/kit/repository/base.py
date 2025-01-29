@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Generic, Protocol, Self, TypeVar
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, over, select
 from sqlalchemy.orm import Mapped
 
 from polar.kit.db.postgres import AsyncSession
@@ -32,6 +32,10 @@ class RepositoryProtocol(Protocol[M]):
 
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]: ...
 
+    async def paginate(
+        self, statement: Select[tuple[M]], *, limit: int, page: int
+    ) -> tuple[list[M], int]: ...
+
     def get_base_statement(self) -> Select[tuple[M]]: ...
 
 
@@ -48,6 +52,23 @@ class RepositoryBase(Generic[M]):
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]:
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def paginate(
+        self, statement: Select[tuple[M]], *, limit: int, page: int
+    ) -> tuple[list[M], int]:
+        offset = (page - 1) * limit
+        paginated_statement: Select[tuple[M, int]] = (
+            statement.add_columns(over(func.count())).limit(limit).offset(offset)
+        )
+        results = await self.session.stream(paginated_statement)
+
+        items: list[M] = []
+        count = 0
+        async for result in results:
+            item, count = result._tuple()
+            items.append(item)
+
+        return items, count
 
     def get_base_statement(self) -> Select[tuple[M]]:
         return select(self.model)

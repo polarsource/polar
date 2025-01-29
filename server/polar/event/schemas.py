@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
+from fastapi import Path
 from pydantic import UUID4, AfterValidator, AwareDatetime, Field
 
-from polar.kit.metadata import MetadataInputMixin
-from polar.kit.schemas import Schema
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+from polar.kit.schemas import IDSchema, Schema
 from polar.organization.schemas import OrganizationID
 
 
@@ -58,3 +59,27 @@ EventCreate = EventCreateCustomer | EventCreateExternalCustomer
 
 class EventsIngest(Schema):
     events: list[EventCreate] = Field(description="List of events to ingest.")
+
+
+class EventsIngestResponse(Schema):
+    inserted: int = Field(description="Number of events inserted.")
+
+
+class Event(IDSchema, MetadataOutputMixin):
+    timestamp: datetime = Field(description="The timestamp of the event.")
+    name: str = Field(..., description="The name of the event.")
+    organization_id: OrganizationID = Field(
+        description="The ID of the organization owning the event."
+    )
+    customer_id: UUID4 | None = Field(
+        description=(
+            "ID of the customer in your Polar organization "
+            "associated with the event."
+        )
+    )
+    external_customer_id: str | None = Field(
+        description="ID of the customer in your system associated with the event."
+    )
+
+
+EventID = Annotated[UUID4, Path(description="The event ID.")]

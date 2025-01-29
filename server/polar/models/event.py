@@ -10,6 +10,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import generate_uuid, utc_now
 
 if TYPE_CHECKING:
+    from .customer import Customer
     from .organization import Organization
 
 
@@ -21,9 +22,15 @@ class Event(Model, MetadataMixin):
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=True, index=True
     )
+
+    @declared_attr
+    def customer(cls) -> Mapped["Customer"]:
+        return relationship("Customer", lazy="raise")
+
     external_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )

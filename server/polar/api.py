@@ -16,6 +16,7 @@ from polar.dashboard.endpoints import router as dashboard_router
 from polar.discount.endpoints import router as discount_router
 from polar.email_update.endpoints import router as email_update_router
 from polar.embed.endpoints import router as embed_router
+from polar.event.endpoints import router as event_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.external_organization.endpoints import router as external_organization_router
 from polar.file.endpoints import router as files_router
@@ -144,3 +145,5 @@ router.include_router(email_update_router)
 router.include_router(customer_session_router)
 # /integrations/plain
 router.include_router(plain_router)
+# /events
+router.include_router(event_router)

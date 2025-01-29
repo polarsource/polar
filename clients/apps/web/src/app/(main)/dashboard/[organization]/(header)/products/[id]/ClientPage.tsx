@@ -1,6 +1,6 @@
 'use client'
 
-import { EditProductPage } from '@/components/Products/EditProductPage'
+import { ProductPage } from '@/components/Products/ProductPage/ProductPage'
 import { useProduct } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useParams } from 'next/navigation'
@@ -12,7 +12,5 @@ export default function Page() {
 
   const { data: product } = useProduct(id as string)
 
-  return product ? (
-    <EditProductPage product={product} organization={org} />
-  ) : null
+  return product ? <ProductPage product={product} organization={org} /> : null
 }

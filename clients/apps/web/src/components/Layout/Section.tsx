@@ -7,15 +7,23 @@ export const Section = ({
   children,
   className,
   cta,
+  compact,
 }: {
   title: string
   description?: string
   children: React.ReactNode
   className?: string
   cta?: React.ReactNode
+  compact?: boolean
 }) => {
   return (
-    <div className={twMerge('relative flex flex-col gap-12 p-12', className)}>
+    <div
+      className={twMerge(
+        'relative flex flex-col',
+        compact ? 'gap-6 p-8' : 'gap-12 p-12',
+        className,
+      )}
+    >
       <SectionDescription title={title} description={description} cta={cta} />
       {children}
     </div>

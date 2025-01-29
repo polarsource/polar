@@ -16,16 +16,11 @@ import {
 import { useOrders } from '@/hooks/queries/orders'
 import {
   computeCumulativeValue,
+  dateToInterval,
   defaultMetricMarks,
   metricDisplayNames,
 } from '@/utils/metrics'
-import {
-  Customer,
-  Metrics,
-  MetricType,
-  Organization,
-  TimeInterval,
-} from '@polar-sh/api'
+import { Customer, Metrics, MetricType, Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -55,31 +50,6 @@ const rangeDisplayNames: Record<Range, string> = {
   '3m': '3m',
   '30d': '30d',
   '24h': '24h',
-}
-
-const rangeToInterval = (startDate: Date) => {
-  const yearsAgo = new Date().getFullYear() - startDate.getFullYear()
-  const monthsAgo =
-    (new Date().getFullYear() - startDate.getFullYear()) * 12 +
-    (new Date().getMonth() - startDate.getMonth())
-  const weeksAgo = Math.floor(
-    (new Date().getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
-  )
-  const daysAgo = Math.floor(
-    (new Date().getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
-  )
-
-  if (yearsAgo >= 3) {
-    return TimeInterval.YEAR
-  } else if (monthsAgo >= 4) {
-    return TimeInterval.MONTH
-  } else if (weeksAgo > 4) {
-    return TimeInterval.WEEK
-  } else if (daysAgo > 1) {
-    return TimeInterval.DAY
-  } else {
-    return TimeInterval.HOUR
-  }
 }
 
 const getRangeStartDate = (range: Range, customer: Customer) => {
@@ -132,7 +102,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
     startDate: startDate,
     endDate: new Date(),
     organizationId: organization.id,
-    interval: rangeToInterval(startDate),
+    interval: dateToInterval(startDate),
     customerId: [customer.id],
   })
 
@@ -248,7 +218,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 <MetricChart
                   height={300}
                   data={metricsData.periods}
-                  interval={rangeToInterval(startDate)}
+                  interval={dateToInterval(startDate)}
                   marks={defaultMetricMarks}
                   metric={metricsData.metrics[selectedMetric]}
                   onDataIndexHover={(period) =>

@@ -159,6 +159,7 @@ interface ProductBenefitsFormProps {
   onSelectBenefit: (benefit: Benefit) => void
   onRemoveBenefit: (benefit: Benefit) => void
   className?: string
+  compact?: boolean
 }
 
 const ProductBenefitsForm = ({
@@ -168,6 +169,7 @@ const ProductBenefitsForm = ({
   organizationBenefits,
   onSelectBenefit,
   onRemoveBenefit,
+  compact,
 }: ProductBenefitsFormProps) => {
   const searchParams = useSearchParams()
   const [type, setType] = useState<CreatableBenefit | undefined>()
@@ -192,6 +194,7 @@ const ProductBenefitsForm = ({
       description="Configure which benefits you want to grant to your customers when they
       purchase the product"
       className={className}
+      compact={compact}
     >
       <div className="flex w-full flex-col gap-y-2">
         {Object.entries(benefitsDisplayNames)

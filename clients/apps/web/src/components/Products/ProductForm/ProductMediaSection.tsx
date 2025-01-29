@@ -15,11 +15,13 @@ import { ProductFormType } from './ProductForm'
 export interface ProductMediaSectionProps {
   className?: string
   organization: Organization
+  compact?: boolean
 }
 
 export const ProductMediaSection = ({
   className,
   organization,
+  compact,
 }: ProductMediaSectionProps) => {
   const { control } = useFormContext<ProductFormType>()
 
@@ -39,6 +41,7 @@ export const ProductMediaSection = ({
                 organization={organization}
                 value={field.value}
                 onChange={field.onChange}
+                compact={compact}
               />
             </FormControl>
             <FormMessage />

@@ -15,9 +15,13 @@ import { ProductFormType } from './ProductForm'
 
 export interface ProductInfoSectionProps {
   className?: string
+  compact?: boolean
 }
 
-export const ProductInfoSection = ({ className }: ProductInfoSectionProps) => {
+export const ProductInfoSection = ({
+  className,
+  compact,
+}: ProductInfoSectionProps) => {
   const { control } = useFormContext<ProductFormType>()
 
   return (
@@ -25,6 +29,7 @@ export const ProductInfoSection = ({ className }: ProductInfoSectionProps) => {
       title="Product Information"
       description="Basic product information which helps identify the product"
       className={className}
+      compact={compact}
     >
       <div className="flex w-full flex-col gap-y-6">
         <FormField

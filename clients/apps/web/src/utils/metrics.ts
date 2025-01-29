@@ -323,3 +323,28 @@ export const computeCumulativeValue = (
       return 0
   }
 }
+
+export const dateToInterval = (startDate: Date) => {
+  const yearsAgo = new Date().getFullYear() - startDate.getFullYear()
+  const monthsAgo =
+    (new Date().getFullYear() - startDate.getFullYear()) * 12 +
+    (new Date().getMonth() - startDate.getMonth())
+  const weeksAgo = Math.floor(
+    (new Date().getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
+  )
+  const daysAgo = Math.floor(
+    (new Date().getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+  )
+
+  if (yearsAgo >= 3) {
+    return Interval.YEAR
+  } else if (monthsAgo >= 4) {
+    return Interval.MONTH
+  } else if (weeksAgo > 4) {
+    return Interval.WEEK
+  } else if (daysAgo > 1) {
+    return Interval.DAY
+  } else {
+    return Interval.HOUR
+  }
+}

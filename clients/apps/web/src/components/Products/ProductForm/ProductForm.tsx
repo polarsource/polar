@@ -20,15 +20,23 @@ export type ProductFormType = (ProductCreate | ProductUpdate) &
 interface ProductFormProps {
   organization: Organization
   update?: boolean
+  compact?: boolean
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
+const ProductForm: React.FC<ProductFormProps> = ({
+  organization,
+  update,
+  compact,
+}) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
-      <ProductInfoSection />
-      <ProductPricingSection update={update} />
-      <ProductMediaSection organization={organization} />
-      <ProductCustomFieldSection organization={organization} />
+      <ProductInfoSection compact={compact} />
+      <ProductPricingSection update={update} compact={compact} />
+      <ProductMediaSection organization={organization} compact={compact} />
+      <ProductCustomFieldSection
+        organization={organization}
+        compact={compact}
+      />
     </div>
   )
 }

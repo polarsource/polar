@@ -12,6 +12,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import Customer, Event, Organization, User, UserOrganization
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -311,6 +312,9 @@ class TestIngest:
         events = await event_repository.get_all_by_organization(organization.id)
         assert len(events) == 500
 
+        for event in events:
+            assert event.source == EventSource.user
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_valid_organization(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
@@ -330,3 +334,6 @@ class TestIngest:
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
         assert len(events) == 500
+
+        for event in events:
+            assert event.source == EventSource.user

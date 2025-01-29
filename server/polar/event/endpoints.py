@@ -7,6 +7,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Event
+from polar.models.event import EventSource
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -53,6 +54,9 @@ async def list(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
+    source: MultipleQueryFilter[EventSource] | None = Query(
+        None, title="Source Filter", description="Filter by event source."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
     """List events."""
@@ -64,6 +68,7 @@ async def list(
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        source=source,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

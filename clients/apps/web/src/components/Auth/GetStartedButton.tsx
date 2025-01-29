@@ -83,7 +83,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
             }}
           />
         }
-        className="lg:w-full lg:max-w-[480px]"
+        className="max-w-[480px]"
       />
     </>
   )

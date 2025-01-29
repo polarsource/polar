@@ -15,15 +15,13 @@ import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { ParsedMetricPeriod, useMetrics, useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { defaultMetricMarks, metricDisplayNames } from '@/utils/metrics'
-import { ChevronRight } from '@mui/icons-material'
 import {
-  Interval,
-  Metric,
-  Metrics,
-  MetricType,
-  Organization,
-} from '@polar-sh/api'
+  computeCumulativeValue,
+  defaultMetricMarks,
+  metricDisplayNames,
+} from '@/utils/metrics'
+import { ChevronRight } from '@mui/icons-material'
+import { Interval, Metrics, MetricType, Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -37,7 +35,7 @@ import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
-import React, { useCallback, useContext, useMemo } from 'react'
+import React, { useContext, useMemo } from 'react'
 
 interface HeroChartProps {
   organization: Organization
@@ -88,19 +86,27 @@ const HeroChart = ({ organization }: HeroChartProps) => {
     interval: selectedInterval,
   })
 
-  const getMetricValue = useCallback((metric?: Metric, value?: number) => {
+  const metricValue = useMemo(() => {
+    if (!metricsData) return 0
+
+    const currentMetricPeriod = hoveredMetricPeriod
+      ? hoveredMetricPeriod
+      : metricsData.periods[metricsData.periods.length - 1]
+
+    const metric = metricsData.metrics[selectedMetric]
+    const value = hoveredMetricPeriod
+      ? currentMetricPeriod[selectedMetric]
+      : computeCumulativeValue(
+          metric,
+          metricsData.periods.map((period) => period[selectedMetric]),
+        )
+
     if (metric?.type === MetricType.CURRENCY) {
       return `$${getCentsInDollarString(value ?? 0)}`
     } else {
       return value
     }
-  }, [])
-
-  const currentMetricPeriod = useMemo(() => {
-    return hoveredMetricPeriod
-      ? hoveredMetricPeriod
-      : metricsData?.periods[metricsData.periods.length - 1]
-  }, [metricsData, hoveredMetricPeriod])
+  }, [hoveredMetricPeriod, metricsData, selectedMetric])
 
   return (
     <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-50 p-2 shadow-sm">
@@ -121,12 +127,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
               ))}
             </SelectContent>
           </Select>
-          <h2 className="text-3xl">
-            {getMetricValue(
-              metricsData?.metrics[selectedMetric],
-              currentMetricPeriod?.[selectedMetric],
-            ) ?? 0}
-          </h2>
+          <h2 className="text-3xl">{metricValue}</h2>
           <div className="flex flex-row items-center gap-x-6">
             <div className="flex flex-row items-center gap-x-2">
               <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
@@ -134,11 +135,10 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                 Current Period
               </span>
             </div>
-
-            <div className="flex flex-row items-center gap-x-2">
-              <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                {hoveredMetricPeriod ? (
+            {hoveredMetricPeriod && (
+              <div className="flex flex-row items-center gap-x-2">
+                <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
+                <span className="dark:text-polar-500 text-sm text-gray-500">
                   <FormattedDateTime
                     datetime={hoveredMetricPeriod.timestamp}
                     dateStyle="medium"
@@ -146,11 +146,9 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                       selectedInterval === Interval.HOUR ? 'time' : 'day'
                     }
                   />
-                ) : (
-                  'Today'
-                )}
-              </span>
-            </div>
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <Tabs

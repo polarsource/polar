@@ -14,8 +14,6 @@ import AmountLabel from '../Shared/AmountLabel'
 export const CustomerUsageView = ({ customer }: { customer: Customer }) => {
   const { data: meters } = useMeters(customer.organization_id)
 
-  console.log(meters)
-
   return (
     <TabsContent value="usage" className="flex flex-col gap-y-12">
       <div className="flex flex-col gap-y-8">

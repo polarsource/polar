@@ -17,7 +17,13 @@ import { ParsedMetricPeriod, useMetrics, useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { defaultMetricMarks, metricDisplayNames } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
-import { Metric, Metrics, MetricType, Organization } from '@polar-sh/api'
+import {
+  Interval,
+  Metric,
+  Metrics,
+  MetricType,
+  Organization,
+} from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -28,6 +34,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useCallback, useContext, useMemo } from 'react'
@@ -36,17 +43,49 @@ interface HeroChartProps {
   organization: Organization
 }
 
+const intervalDisplayNames: Record<Interval, string> = {
+  [Interval.YEAR]: '3y',
+  [Interval.MONTH]: '12m',
+  [Interval.WEEK]: '3m',
+  [Interval.DAY]: '30d',
+  [Interval.HOUR]: '24h',
+}
+
+const getIntervalStartDate = (
+  interval: Interval,
+  organization: Organization,
+) => {
+  switch (interval) {
+    case Interval.YEAR:
+      const createdAt = new Date(organization.created_at)
+      const threeYearsAgo = new Date()
+      threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3)
+      return createdAt < threeYearsAgo ? createdAt : threeYearsAgo
+    case Interval.MONTH:
+      return new Date(new Date().setFullYear(new Date().getFullYear() - 1))
+    case Interval.WEEK:
+      return new Date(new Date().setMonth(new Date().getMonth() - 3))
+    case Interval.DAY:
+      return new Date(new Date().setDate(new Date().getDate() - 30))
+    case Interval.HOUR:
+      return new Date(new Date().setHours(new Date().getHours() - 24))
+  }
+}
+
 const HeroChart = ({ organization }: HeroChartProps) => {
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof Metrics>('cumulative_revenue')
+  const [selectedInterval, setSelectedInterval] = React.useState<Interval>(
+    Interval.DAY,
+  )
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     organizationId: organization.id,
-    startDate: new Date(new Date().setDate(new Date().getDate() - 31)),
+    startDate: getIntervalStartDate(selectedInterval, organization),
     endDate: new Date(),
-    interval: 'day',
+    interval: selectedInterval,
   })
 
   const getMetricValue = useCallback((metric?: Metric, value?: number) => {
@@ -103,6 +142,9 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                   <FormattedDateTime
                     datetime={hoveredMetricPeriod.timestamp}
                     dateStyle="medium"
+                    resolution={
+                      selectedInterval === Interval.HOUR ? 'time' : 'day'
+                    }
                   />
                 ) : (
                   'Today'
@@ -111,9 +153,25 @@ const HeroChart = ({ organization }: HeroChartProps) => {
             </div>
           </div>
         </div>
-        <Link href={`/dashboard/${organization.slug}/analytics`}>
-          <Button>View Analytics</Button>
-        </Link>
+        <Tabs
+          value={selectedInterval}
+          onValueChange={(value) => setSelectedInterval(value as Interval)}
+        >
+          <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-white">
+            {Object.entries(intervalDisplayNames)
+              .filter(([key]) => key !== Interval.YEAR)
+              .map(([key, value]) => (
+                <TabsTrigger
+                  size="small"
+                  key={key}
+                  value={key}
+                  className="!rounded-sm p-1 px-2 text-xs font-normal"
+                >
+                  {value}
+                </TabsTrigger>
+              ))}
+          </TabsList>
+        </Tabs>
       </div>
       <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
         {metricsLoading ? (
@@ -124,7 +182,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
           <MetricChart
             height={300}
             data={metricsData.periods}
-            interval="day"
+            interval={selectedInterval}
             marks={defaultMetricMarks}
             metric={metricsData.metrics[selectedMetric]}
             onDataIndexHover={(period) =>
@@ -134,8 +192,8 @@ const HeroChart = ({ organization }: HeroChartProps) => {
             }
           />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center">
-            <span className="text-lg font-medium">No data available</span>
+          <div className="flex h-[300px] flex-col items-center justify-center">
+            <span className="text-lg">No data available</span>
           </div>
         )}
       </div>

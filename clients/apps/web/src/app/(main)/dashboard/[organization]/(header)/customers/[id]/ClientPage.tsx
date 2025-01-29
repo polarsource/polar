@@ -190,8 +190,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                   }
                 />
               ) : (
-                <div className="flex h-full flex-col items-center justify-center">
-                  <span className="text-lg font-medium">No data available</span>
+                <div className="flex h-[300px] flex-col items-center justify-center">
+                  <span className="text-lg">No data available</span>
                 </div>
               )}
             </div>

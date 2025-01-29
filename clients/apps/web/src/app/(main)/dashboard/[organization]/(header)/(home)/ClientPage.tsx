@@ -72,7 +72,7 @@ const getIntervalStartDate = (
 
 const HeroChart = ({ organization }: HeroChartProps) => {
   const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof Metrics>('cumulative_revenue')
+    React.useState<keyof Metrics>('revenue')
   const [selectedInterval, setSelectedInterval] = React.useState<Interval>(
     Interval.DAY,
   )

@@ -19,7 +19,12 @@ from .schemas import EventID, EventsIngest, EventsIngestResponse
 from .service import event as event_service
 
 router = APIRouter(
-    prefix="/events", tags=["events", APITag.documented, APITag.featured]
+    prefix="/events",
+    tags=[
+        "events",
+        APITag.private,
+        # APITag.documented, APITag.featured, # Make it private for now, not ready for the show yet
+    ],
 )
 
 

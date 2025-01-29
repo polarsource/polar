@@ -48,12 +48,14 @@ interface ProductMediasFieldProps {
   organization: Organization
   value: ProductMediaFileRead[] | undefined
   onChange: (value: ProductMediaFileRead[]) => void
+  compact?: boolean
 }
 
 const ProductMediasField = ({
   organization,
   value,
   onChange,
+  compact,
 }: ProductMediasFieldProps) => {
   const onFilesUpdated = useCallback(
     (files: FileObject<ProductMediaFileRead>[]) => {
@@ -88,7 +90,12 @@ const ProductMediasField = ({
   })
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 [&>div>*]:aspect-video">
+      <div
+        className={twMerge(
+          'grid gap-3 [&>div>*]:aspect-video',
+          compact ? 'grid-cols-1' : 'grid-cols-2',
+        )}
+      >
         <FileList files={files} setFiles={setFiles} removeFile={removeFile} />
         <div {...getRootProps()}>
           <DropzoneView isDragActive={isDragActive}>

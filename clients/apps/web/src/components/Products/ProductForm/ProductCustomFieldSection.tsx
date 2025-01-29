@@ -29,11 +29,13 @@ import { ProductFormType } from './ProductForm'
 export interface ProductCustomFieldSectionProps {
   className?: string
   organization: Organization
+  compact?: boolean
 }
 
 export const ProductCustomFieldSection = ({
   className,
   organization,
+  compact,
 }: ProductCustomFieldSectionProps) => {
   const { control } = useFormContext<ProductFormType>()
   const { data: customFields } = useCustomFields(organization.id)
@@ -84,6 +86,7 @@ export const ProductCustomFieldSection = ({
       title="Checkout Fields"
       description="Ask for additional information from the customer during checkout"
       className={className}
+      compact={compact}
       cta={
         <Link
           className="text-sm text-blue-500"

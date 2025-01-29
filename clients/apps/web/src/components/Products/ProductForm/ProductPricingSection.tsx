@@ -214,11 +214,13 @@ export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = ({
 export interface ProductPricingSectionProps {
   className?: string
   update?: boolean
+  compact?: boolean
 }
 
 export const ProductPricingSection = ({
   className,
   update,
+  compact,
 }: ProductPricingSectionProps) => {
   const {
     control,
@@ -326,6 +328,7 @@ export const ProductPricingSection = ({
       title="Pricing"
       description="Set a one-time price, recurring price or a “pay what you want” pricing model"
       className={className}
+      compact={compact}
     >
       <div className="flex w-full flex-col gap-6">
         {!update && (

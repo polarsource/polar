@@ -1,7 +1,10 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
+import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefund'
+import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import {
   DataTablePaginationState,
@@ -9,6 +12,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
+import { dateToInterval } from '@/utils/metrics'
 import { Order, OrderCustomer, Organization, Product } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -17,29 +21,9 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
-
-const AmountColumn = ({ order }: { order: Order }) => {
-  return (
-    <div className="flex flex-row gap-x-2">
-      <span>{formatCurrencyAndAmount(order.amount, order.currency)}</span>
-      {order.status == 'refunded' && (
-        <Pill color="blue" className="flex flex-row">
-          <span>Refunded</span>
-        </Pill>
-      )}
-      {order.status == 'partially_refunded' && (
-        <Pill color="purple" className="flex flex-row">
-          <span>Partial Refund</span>
-        </Pill>
-      )}
-    </div>
-  )
-}
 
 interface ClientPageProps {
   organization: Organization
@@ -156,7 +140,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />
       ),
-      cell: ({ row: { original: order } }) => <AmountColumn order={order} />,
+      cell: ({ row: { original: order } }) => (
+        <OrderAmountWithRefund order={order} />
+      ),
     },
     {
       accessorKey: 'product',
@@ -198,6 +184,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
   }, [selectedOrder, router])
 
+  const { data: metricsData, isLoading: metricsLoading } = useMetrics({
+    organizationId: organization.id,
+    startDate: new Date(organization.created_at),
+    endDate: new Date(),
+    interval: dateToInterval(new Date(organization.created_at)),
+    productId,
+  })
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
@@ -210,6 +204,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
               className="w-[300px]"
             />
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-8">
+          <MetricChartBox
+            data={metricsData?.periods ?? []}
+            loading={metricsLoading}
+            metric={metricsData?.metrics.orders}
+            height={150}
+            compact
+          />
+          <MetricChartBox
+            data={metricsData?.periods ?? []}
+            loading={metricsLoading}
+            metric={metricsData?.metrics.revenue}
+            height={150}
+            compact
+          />
         </div>
         {orders && pageCount !== undefined && (
           <DataTable

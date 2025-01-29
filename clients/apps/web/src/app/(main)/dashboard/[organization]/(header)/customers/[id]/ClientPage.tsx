@@ -69,8 +69,6 @@ const rangeToInterval = (startDate: Date) => {
     (new Date().getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
   )
 
-  console.log({ yearsAgo, monthsAgo, weeksAgo, daysAgo })
-
   if (yearsAgo >= 3) {
     return Interval.YEAR
   } else if (monthsAgo >= 4) {

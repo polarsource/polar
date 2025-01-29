@@ -1,4 +1,5 @@
 import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -14,6 +15,11 @@ if TYPE_CHECKING:
     from .organization import Organization
 
 
+class EventSource(StrEnum):
+    system = "system"
+    user = "user"
+
+
 class Event(Model, MetadataMixin):
     __tablename__ = "events"
 
@@ -22,6 +28,9 @@ class Event(Model, MetadataMixin):
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    source: Mapped[EventSource] = mapped_column(
+        String, nullable=False, default=EventSource.system, index=True
+    )
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=True, index=True

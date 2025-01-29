@@ -11,6 +11,7 @@ from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Event, Organization, User, UserOrganization
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 
 from .repository import EventRepository
@@ -36,9 +37,10 @@ class EventService:
         before: datetime | None = None,
         after: datetime | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
-        metadata: MetadataQuery | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[EventSortProperty]] = [
             (EventSortProperty.timestamp, True)
@@ -56,13 +58,6 @@ class EventService:
         if organization_id is not None:
             statement = statement.where(Event.organization_id.in_(organization_id))
 
-        if metadata is not None:
-            for key, values in metadata.items():
-                clauses = []
-                for value in values:
-                    clauses.append(Event.user_metadata[key].astext == value)
-                statement = statement.where(or_(*clauses))
-
         if customer_id is not None:
             statement = statement.where(Event.customer_id.in_(customer_id))
 
@@ -70,6 +65,16 @@ class EventService:
             statement = statement.where(
                 Event.external_customer_id.in_(external_customer_id)
             )
+
+        if source is not None:
+            statement = statement.where(Event.source.in_(source))
+
+        if metadata is not None:
+            for key, values in metadata.items():
+                clauses = []
+                for value in values:
+                    clauses.append(Event.user_metadata[key].astext == value)
+                statement = statement.where(or_(*clauses))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -117,6 +122,7 @@ class EventService:
             else:
                 events.append(
                     {
+                        "source": EventSource.user,
                         "organization_id": organization_id,
                         **event_create.model_dump(
                             exclude={"organization_id"}, by_alias=True

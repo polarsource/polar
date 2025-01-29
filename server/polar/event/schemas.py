@@ -6,6 +6,7 @@ from pydantic import UUID4, AfterValidator, AwareDatetime, Field
 
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema
+from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
 
 
@@ -68,6 +69,14 @@ class EventsIngestResponse(Schema):
 class Event(IDSchema, MetadataOutputMixin):
     timestamp: datetime = Field(description="The timestamp of the event.")
     name: str = Field(..., description="The name of the event.")
+    source: EventSource = Field(
+        ...,
+        description=(
+            "The source of the event. "
+            "`system` events are created by Polar. "
+            "`user` events are the one you create through our ingestion API."
+        ),
+    )
     organization_id: OrganizationID = Field(
         description="The ID of the organization owning the event."
     )

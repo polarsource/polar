@@ -104,7 +104,7 @@ interface ClientPageProps {
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof Metrics>('cumulative_revenue')
+    React.useState<keyof Metrics>('revenue')
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
 

@@ -326,7 +326,7 @@ class TestGetById:
 class TestCreate:
     @pytest.mark.auth
     async def test_user_not_existing_organization(
-        self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
+        self, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:
         create_schema = ProductRecurringCreate(
             name="Product",
@@ -343,14 +343,13 @@ class TestCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.create(session, authz, create_schema, auth_subject)
+            await product_service.create(session, create_schema, auth_subject)
 
     @pytest.mark.auth
     async def test_user_not_writable_organization(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
     ) -> None:
         create_schema = ProductRecurringCreate(
@@ -367,15 +366,14 @@ class TestCreate:
             ],
         )
 
-        with pytest.raises(NotPermitted):
-            await product_service.create(session, authz, create_schema, auth_subject)
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(session, create_schema, auth_subject)
 
     @pytest.mark.auth
     async def test_user_valid_organization(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -402,9 +400,7 @@ class TestCreate:
             ],
         )
 
-        product = await product_service.create(
-            session, authz, create_schema, auth_subject
-        )
+        product = await product_service.create(session, create_schema, auth_subject)
         assert product.organization_id == organization.id
 
         create_product_mock.assert_called_once()
@@ -419,7 +415,6 @@ class TestCreate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -446,9 +441,7 @@ class TestCreate:
             ],
         )
 
-        product = await product_service.create(
-            session, authz, create_schema, auth_subject
-        )
+        product = await product_service.create(session, create_schema, auth_subject)
         assert product.description is None
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -456,7 +449,6 @@ class TestCreate:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
     ) -> None:
         create_schema = ProductRecurringCreate(
@@ -474,14 +466,13 @@ class TestCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.create(session, authz, create_schema, auth_subject)
+            await product_service.create(session, create_schema, auth_subject)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_valid(
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -506,9 +497,7 @@ class TestCreate:
             ],
         )
 
-        product = await product_service.create(
-            session, authz, create_schema, auth_subject
-        )
+        product = await product_service.create(session, create_schema, auth_subject)
         assert product.organization_id == organization.id
 
     @pytest.mark.auth
@@ -516,7 +505,6 @@ class TestCreate:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -542,7 +530,7 @@ class TestCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.create(session, authz, create_schema, auth_subject)
+            await product_service.create(session, create_schema, auth_subject)
 
         create_product_mock.assert_not_called()
         create_price_for_product_mock.assert_not_called()
@@ -562,7 +550,6 @@ class TestCreate:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -603,7 +590,7 @@ class TestCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await product_service.create(session, authz, create_schema, auth_subject)
+            await product_service.create(session, create_schema, auth_subject)
 
         create_product_mock.assert_not_called()
         create_price_for_product_mock.assert_not_called()
@@ -614,7 +601,6 @@ class TestCreate:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -656,9 +642,7 @@ class TestCreate:
             medias=[file.id],
         )
 
-        product = await product_service.create(
-            session, authz, create_schema, auth_subject
-        )
+        product = await product_service.create(session, create_schema, auth_subject)
 
         assert len(product.medias) == 1
 
@@ -716,7 +700,6 @@ class TestCreate:
         create_schema: ProductCreate,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -730,9 +713,7 @@ class TestCreate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema.organization_id = organization.id
-        product = await product_service.create(
-            session, authz, create_schema, auth_subject
-        )
+        product = await product_service.create(session, create_schema, auth_subject)
         assert product.organization_id == organization.id
 
         create_product_mock.assert_called_once()

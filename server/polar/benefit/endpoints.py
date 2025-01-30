@@ -140,7 +140,6 @@ async def grants(
 async def create(
     auth_subject: auth.BenefitsWrite,
     benefit_create: BenefitCreate,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> Benefit:
@@ -148,7 +147,7 @@ async def create(
     Create a benefit.
     """
     benefit = await benefit_service.user_create(
-        session, redis, authz, benefit_create, auth_subject
+        session, redis, benefit_create, auth_subject
     )
 
     posthog.auth_subject_event(

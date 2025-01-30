@@ -115,11 +115,10 @@ async def get(
 async def create(
     product_create: ProductCreate,
     auth_subject: auth.CreatorProductsWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Create a product."""
-    return await product_service.create(session, authz, product_create, auth_subject)
+    return await product_service.create(session, product_create, auth_subject)
 
 
 @router.patch(

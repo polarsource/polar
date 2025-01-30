@@ -7,7 +7,6 @@ from sqlalchemy.sql.base import ExecutableOption
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
@@ -87,26 +86,12 @@ class CustomerService(ResourceServiceReader[Customer]):
     async def create(
         self,
         session: AsyncSession,
-        authz: Authz,
         customer_create: CustomerCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Customer:
-        subject = auth_subject.subject
-
         organization = await get_payload_organization(
             session, auth_subject, customer_create
         )
-        if not await authz.can(subject, AccessType.write, organization):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "organization_id"),
-                        "msg": "Organization not found.",
-                        "input": organization.id,
-                    }
-                ]
-            )
 
         if await self.get_by_email_and_organization(
             session, customer_create.email, organization

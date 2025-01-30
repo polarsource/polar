@@ -1,7 +1,6 @@
 from fastapi import Depends, Query
 from sqlalchemy.orm import joinedload
 
-from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -96,10 +95,9 @@ async def create(
     customer_create: CustomerCreate,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> Customer:
     """Create a customer."""
-    return await customer_service.create(session, authz, customer_create, auth_subject)
+    return await customer_service.create(session, customer_create, auth_subject)
 
 
 @router.patch(

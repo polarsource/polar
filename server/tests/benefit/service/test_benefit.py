@@ -215,11 +215,7 @@ class TestGetById:
 class TestUserCreate:
     @pytest.mark.auth
     async def test_user_missing_organization(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        redis: Redis,
-        authz: Authz,
+        self, auth_subject: AuthSubject[User], session: AsyncSession, redis: Redis
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -233,16 +229,12 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, redis, authz, create_schema, auth_subject
+                session, redis, create_schema, auth_subject
             )
 
     @pytest.mark.auth
     async def test_user_not_existing_organization(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        redis: Redis,
-        authz: Authz,
+        self, auth_subject: AuthSubject[User], session: AsyncSession, redis: Redis
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -256,7 +248,7 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, redis, authz, create_schema, auth_subject
+                session, redis, create_schema, auth_subject
             )
 
     @pytest.mark.auth
@@ -265,7 +257,6 @@ class TestUserCreate:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         redis: Redis,
-        authz: Authz,
         organization: Organization,
     ) -> None:
         create_schema = BenefitCustomCreate(
@@ -280,7 +271,7 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, redis, authz, create_schema, auth_subject
+                session, redis, create_schema, auth_subject
             )
 
     @pytest.mark.auth
@@ -289,7 +280,6 @@ class TestUserCreate:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         redis: Redis,
-        authz: Authz,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
@@ -305,7 +295,7 @@ class TestUserCreate:
         session.expunge_all()
 
         benefit = await benefit_service.user_create(
-            session, redis, authz, create_schema, auth_subject
+            session, redis, create_schema, auth_subject
         )
         assert benefit.organization_id == organization.id
 
@@ -315,7 +305,6 @@ class TestUserCreate:
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         redis: Redis,
-        authz: Authz,
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -329,7 +318,7 @@ class TestUserCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
-                session, redis, authz, create_schema, auth_subject
+                session, redis, create_schema, auth_subject
             )
 
     @pytest.mark.auth
@@ -339,7 +328,6 @@ class TestUserCreate:
         mocker: MockerFixture,
         session: AsyncSession,
         redis: Redis,
-        authz: Authz,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
@@ -369,7 +357,7 @@ class TestUserCreate:
 
         with pytest.raises(BenefitPropertiesValidationError):
             await benefit_service.user_create(
-                session, redis, authz, create_schema, auth_subject
+                session, redis, create_schema, auth_subject
             )
 
 

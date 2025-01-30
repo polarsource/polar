@@ -9,7 +9,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.exceptions import NotPermitted, PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -134,29 +134,12 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         self,
         session: AsyncSession,
         redis: Redis,
-        authz: Authz,
         create_schema: BenefitCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Benefit:
-        subject = auth_subject.subject
-
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
-        if not await authz.can(subject, AccessType.write, organization):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "loc": (
-                            "body",
-                            "organization_id",
-                        ),
-                        "msg": "Organization not found.",
-                        "type": "value_error",
-                        "input": organization.id,
-                    }
-                ]
-            )
 
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")

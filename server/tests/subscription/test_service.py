@@ -7,7 +7,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import Authz
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer.service import customer as customer_service
 from polar.exceptions import BadRequest, ResourceUnavailable
@@ -50,12 +49,6 @@ from tests.fixtures.stripe import (
     construct_stripe_customer,
     construct_stripe_subscription,
 )
-
-
-@pytest.fixture
-def authz(session: AsyncSession) -> Authz:
-    return Authz(session)
-
 
 Hooks = namedtuple("Hooks", "updated activated canceled uncanceled revoked")
 HookNames = frozenset(Hooks._fields)

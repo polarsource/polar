@@ -46,11 +46,7 @@ webhook_url = cast(HttpsUrl, "https://example.com/hook")
 class TestCreateEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.web_default}))
     async def test_user_no_organization_id_valid(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        authz: Authz,
-        user: User,
+        self, auth_subject: AuthSubject[User], session: AsyncSession, user: User
     ) -> None:
         create_schema = WebhookEndpointCreate(
             url=webhook_url,
@@ -61,7 +57,7 @@ class TestCreateEndpoint:
         )
 
         endpoint = await webhook_service.create_endpoint(
-            session, authz, auth_subject, create_schema
+            session, auth_subject, create_schema
         )
         assert endpoint.user_id == user.id
         assert endpoint.organization_id is None
@@ -87,7 +83,7 @@ class TestCreateEndpoint:
         )
 
         endpoint = await webhook_service.create_endpoint(
-            session, authz, auth_subject, create_schema
+            session, auth_subject, create_schema
         )
         assert endpoint.user_id is None
         assert endpoint.organization_id == organization.id
@@ -96,10 +92,7 @@ class TestCreateEndpoint:
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_set_organization_id(
-        self,
-        auth_subject: AuthSubject[Organization],
-        session: AsyncSession,
-        authz: Authz,
+        self, auth_subject: AuthSubject[Organization], session: AsyncSession
     ) -> None:
         create_schema = WebhookEndpointCreate(
             url=webhook_url,
@@ -110,9 +103,7 @@ class TestCreateEndpoint:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await webhook_service.create_endpoint(
-                session, authz, auth_subject, create_schema
-            )
+            await webhook_service.create_endpoint(session, auth_subject, create_schema)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
@@ -121,7 +112,6 @@ class TestCreateEndpoint:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
     ) -> None:
         create_schema = WebhookEndpointCreate(
@@ -133,7 +123,7 @@ class TestCreateEndpoint:
         )
 
         endpoint = await webhook_service.create_endpoint(
-            session, authz, auth_subject, create_schema
+            session, auth_subject, create_schema
         )
         assert endpoint.user_id is None
         assert endpoint.organization_id == organization.id

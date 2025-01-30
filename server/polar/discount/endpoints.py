@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import Body, Depends, Path, Query
 from pydantic import UUID4
 
-from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
@@ -97,11 +96,10 @@ async def create(
         Body(...),
         SetSchemaReference("DiscountCreate"),
     ],
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Discount:
     """Create a discount."""
-    return await discount_service.create(session, authz, discount_create, auth_subject)
+    return await discount_service.create(session, discount_create, auth_subject)
 
 
 @router.patch(

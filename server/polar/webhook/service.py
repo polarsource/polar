@@ -11,7 +11,6 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.exceptions import (
     NotPermitted,
     PolarError,
-    PolarRequestValidationError,
     ResourceNotFound,
 )
 from polar.kit.db.postgres import AsyncSession
@@ -103,7 +102,6 @@ class WebhookService:
     async def create_endpoint(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         create_schema: WebhookEndpointCreate,
     ) -> WebhookEndpoint:
@@ -120,22 +118,6 @@ class WebhookService:
             organization = await get_payload_organization(
                 session, auth_subject, create_schema
             )
-            if not await authz.can(
-                auth_subject.subject, AccessType.write, organization
-            ):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "loc": (
-                                "body",
-                                "organization_id",
-                            ),
-                            "msg": "Organization not found.",
-                            "type": "value_error",
-                            "input": organization.id,
-                        }
-                    ]
-                )
             endpoint.organization_id = organization.id
 
         session.add(endpoint)

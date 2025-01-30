@@ -16,7 +16,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
@@ -101,26 +100,12 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
     async def create(
         self,
         session: AsyncSession,
-        authz: Authz,
         custom_field_create: CustomFieldCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CustomField:
-        subject = auth_subject.subject
-
         organization = await get_payload_organization(
             session, auth_subject, custom_field_create
         )
-        if not await authz.can(subject, AccessType.write, organization):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "organization_id"),
-                        "msg": "Organization not found.",
-                        "input": custom_field_create.organization_id,
-                    }
-                ]
-            )
 
         existing_field = await self._get_by_organization_id_and_slug(
             session, organization.id, custom_field_create.slug

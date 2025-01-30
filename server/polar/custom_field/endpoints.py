@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.authz.service import Authz
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -93,13 +92,10 @@ async def get(
 async def create(
     custom_field_create: CustomFieldCreate,
     auth_subject: auth.CustomFieldWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomField:
     """Create a custom field."""
-    return await custom_field_service.create(
-        session, authz, custom_field_create, auth_subject
-    )
+    return await custom_field_service.create(session, custom_field_create, auth_subject)
 
 
 @router.patch(

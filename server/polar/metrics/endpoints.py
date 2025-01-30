@@ -5,6 +5,7 @@ from fastapi import Depends, Query
 from polar.customer.schemas import CustomerID
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.time_queries import TimeInterval
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -14,7 +15,6 @@ from polar.routing import APIRouter
 
 from . import auth
 from .limits import MAX_INTERVAL_DAYS, MIN_DATE, is_under_limits
-from .queries import Interval
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
@@ -30,7 +30,7 @@ async def get(
         ge=MIN_DATE,  # type: ignore
     ),
     end_date: date = Query(..., description="End date."),
-    interval: Interval = Query(..., description="Interval between two timestamps."),
+    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),

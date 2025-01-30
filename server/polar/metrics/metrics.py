@@ -5,9 +5,10 @@ from typing import ClassVar, Protocol, cast
 from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, case, func
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.time_queries import TimeInterval
 from polar.models import Order, Subscription
 
-from .queries import Interval, MetricQuery
+from .queries import MetricQuery
 
 
 class MetricType(StrEnum):
@@ -23,7 +24,7 @@ class Metric(Protocol):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]: ...
 
 
@@ -35,7 +36,7 @@ class OrdersMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.count(Order.id)
 
@@ -48,7 +49,7 @@ class RevenueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.amount)
 
@@ -61,7 +62,7 @@ class CumulativeRevenueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.amount)
 
@@ -74,7 +75,7 @@ class AverageOrderValueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.cast(func.ceil(func.avg(Order.amount)), Integer)
 
@@ -87,7 +88,7 @@ class OneTimeProductsMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.count(Order.id).filter(Order.subscription_id.is_(None))
 
@@ -100,7 +101,7 @@ class OneTimeProductsRevenueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(Order.subscription_id.is_(None))
 
@@ -113,7 +114,7 @@ class NewSubscriptionsMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.count(Subscription.id).filter(
             i.sql_date_trunc(
@@ -131,7 +132,7 @@ class NewSubscriptionsRevenueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(
             i.sql_date_trunc(
@@ -149,7 +150,7 @@ class RenewedSubscriptionsMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.count(Subscription.id.distinct()).filter(
             i.sql_date_trunc(
@@ -167,7 +168,7 @@ class RenewedSubscriptionsRevenueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(
             i.sql_date_trunc(
@@ -185,7 +186,7 @@ class ActiveSubscriptionsMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.count(Subscription.id)
 
@@ -198,7 +199,7 @@ class MonthlyRecurringRevenueMetric(Metric):
 
     @classmethod
     def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: Interval
+        cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.coalesce(
             func.sum(

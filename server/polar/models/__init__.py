@@ -24,6 +24,7 @@ from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .magic_link import MagicLink
+from .meter import Meter
 from .notification import Notification
 from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_client import OAuth2Client
@@ -83,6 +84,7 @@ __all__ = [
     "LicenseKey",
     "LicenseKeyActivation",
     "MagicLink",
+    "Meter",
     "Notification",
     "OAuth2AuthorizationCode",
     "OAuth2Client",

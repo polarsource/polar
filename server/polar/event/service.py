@@ -34,8 +34,8 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        before: datetime | None = None,
-        after: datetime | None = None,
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
@@ -49,11 +49,11 @@ class EventService:
         repository = EventRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject)
 
-        if before is not None:
-            statement = statement.where(Event.timestamp < before)
+        if start_timestamp is not None:
+            statement = statement.where(Event.timestamp > start_timestamp)
 
-        if after is not None:
-            statement = statement.where(Event.timestamp > after)
+        if end_timestamp is not None:
+            statement = statement.where(Event.timestamp < end_timestamp)
 
         if organization_id is not None:
             statement = statement.where(Event.organization_id.in_(organization_id))

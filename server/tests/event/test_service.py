@@ -86,27 +86,27 @@ class TestList:
             timestamp=utc_now() + timedelta(days=1),
         )
 
-        # Before
+        # Start timestamp
         events, count = await event_service.list(
             session,
             auth_subject,
-            before=utc_now(),
-            pagination=PaginationParams(1, 10),
-        )
-        assert len(events) == 1
-        assert count == 1
-        assert events[0].id == event1.id
-
-        # After
-        events, count = await event_service.list(
-            session,
-            auth_subject,
-            after=utc_now(),
+            start_timestamp=utc_now(),
             pagination=PaginationParams(1, 10),
         )
         assert len(events) == 1
         assert count == 1
         assert events[0].id == event2.id
+
+        # End timestamp
+        events, count = await event_service.list(
+            session,
+            auth_subject,
+            end_timestamp=utc_now(),
+            pagination=PaginationParams(1, 10),
+        )
+        assert len(events) == 1
+        assert count == 1
+        assert events[0].id == event1.id
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

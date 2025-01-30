@@ -42,11 +42,11 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    before: AwareDatetime | None = Query(
-        None, description="Filter events before this timestamp."
-    ),
-    after: AwareDatetime | None = Query(
+    start_timestamp: AwareDatetime | None = Query(
         None, description="Filter events after this timestamp."
+    ),
+    end_timestamp: AwareDatetime | None = Query(
+        None, description="Filter events before this timestamp."
     ),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
@@ -68,8 +68,8 @@ async def list(
     results, count = await event_service.list(
         session,
         auth_subject,
-        before=before,
-        after=after,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,

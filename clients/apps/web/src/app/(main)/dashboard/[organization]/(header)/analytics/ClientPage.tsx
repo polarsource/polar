@@ -7,7 +7,12 @@ import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricPeriod, useMetrics } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { Interval, Metrics, MetricsLimits, Organization } from '@polar-sh/api'
+import {
+  Metrics,
+  MetricsLimits,
+  Organization,
+  TimeInterval,
+} from '@polar-sh/api'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -24,7 +29,7 @@ export default function ClientPage({
   limits: MetricsLimits
   startDate: Date
   endDate: Date
-  interval: Interval
+  interval: TimeInterval
   productId?: string[]
 }) {
   const router = useRouter()
@@ -50,7 +55,7 @@ export default function ClientPage({
 
   const getSearchParams = (
     dateRange: { from: Date; to: Date },
-    interval: Interval,
+    interval: TimeInterval,
     productId?: string[],
   ) => {
     const params = new URLSearchParams()
@@ -66,7 +71,7 @@ export default function ClientPage({
   }
 
   const onIntervalChange = useCallback(
-    (interval: Interval) => {
+    (interval: TimeInterval) => {
       const params = getSearchParams(
         { from: startDate, to: endDate },
         interval,
@@ -181,7 +186,7 @@ interface MetricGroupProps {
   metricKeys: (keyof Metrics)[]
   metrics: Metrics
   periods: ParsedMetricPeriod[]
-  interval: Interval
+  interval: TimeInterval
 }
 
 const MetricGroup = ({

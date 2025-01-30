@@ -4,7 +4,7 @@ import {
   getValueFormatter,
   MetricMarksResolver,
 } from '@/utils/metrics'
-import { Interval, Metric } from '@polar-sh/api'
+import { Metric, TimeInterval } from '@polar-sh/api'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MetricChart from './MetricChart'
@@ -12,7 +12,7 @@ import MetricChart from './MetricChart'
 interface MetricChartBoxProps {
   className?: string
   data: ParsedMetricPeriod[]
-  interval: Interval
+  interval: TimeInterval
   metric: Metric
   height?: number
   maxTicks?: number

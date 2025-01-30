@@ -21,10 +21,10 @@ import {
 } from '@/utils/metrics'
 import {
   Customer,
-  Interval,
   Metrics,
   MetricType,
   Organization,
+  TimeInterval,
 } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -70,15 +70,15 @@ const rangeToInterval = (startDate: Date) => {
   )
 
   if (yearsAgo >= 3) {
-    return Interval.YEAR
+    return TimeInterval.YEAR
   } else if (monthsAgo >= 4) {
-    return Interval.MONTH
+    return TimeInterval.MONTH
   } else if (weeksAgo > 4) {
-    return Interval.WEEK
+    return TimeInterval.WEEK
   } else if (daysAgo > 1) {
-    return Interval.DAY
+    return TimeInterval.DAY
   } else {
-    return Interval.HOUR
+    return TimeInterval.HOUR
   }
 }
 

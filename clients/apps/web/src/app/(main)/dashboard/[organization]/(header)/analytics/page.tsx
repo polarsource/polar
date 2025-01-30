@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Interval } from '@polar-sh/api'
+import { TimeInterval } from '@polar-sh/api'
 import {
   addDays,
   endOfMonth,
@@ -21,7 +21,7 @@ export default async function Page({
   searchParams: {
     start_date?: string
     end_date?: string
-    interval?: Interval
+    interval?: TimeInterval
     product_id?: string | string[]
   }
 }) {
@@ -31,7 +31,7 @@ export default async function Page({
     params.organization,
   )
 
-  const defaultInterval = Interval.MONTH
+  const defaultInterval = TimeInterval.MONTH
   const today = new Date()
   const defaultStartDate = subMonths(startOfMonth(today), 3)
   const defaultEndDate = endOfMonth(today)
@@ -45,7 +45,7 @@ export default async function Page({
       : [product_id]
     : undefined
 
-  if (!Object.values(Interval).includes(interval)) {
+  if (!Object.values(TimeInterval).includes(interval)) {
     const urlSearchParams = new URLSearchParams({
       ...restSearchParams,
       interval: defaultInterval,

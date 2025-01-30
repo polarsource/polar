@@ -21,7 +21,7 @@ import {
   metricDisplayNames,
 } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
-import { Interval, Metrics, MetricType, Organization } from '@polar-sh/api'
+import { Metrics, MetricType, Organization, TimeInterval } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -41,31 +41,31 @@ interface HeroChartProps {
   organization: Organization
 }
 
-const intervalDisplayNames: Record<Interval, string> = {
-  [Interval.YEAR]: '3y',
-  [Interval.MONTH]: '12m',
-  [Interval.WEEK]: '3m',
-  [Interval.DAY]: '30d',
-  [Interval.HOUR]: '24h',
+const intervalDisplayNames: Record<TimeInterval, string> = {
+  [TimeInterval.YEAR]: '3y',
+  [TimeInterval.MONTH]: '12m',
+  [TimeInterval.WEEK]: '3m',
+  [TimeInterval.DAY]: '30d',
+  [TimeInterval.HOUR]: '24h',
 }
 
 const getIntervalStartDate = (
-  interval: Interval,
+  interval: TimeInterval,
   organization: Organization,
 ) => {
   switch (interval) {
-    case Interval.YEAR:
+    case TimeInterval.YEAR:
       const createdAt = new Date(organization.created_at)
       const threeYearsAgo = new Date()
       threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3)
       return createdAt < threeYearsAgo ? createdAt : threeYearsAgo
-    case Interval.MONTH:
+    case TimeInterval.MONTH:
       return new Date(new Date().setFullYear(new Date().getFullYear() - 1))
-    case Interval.WEEK:
+    case TimeInterval.WEEK:
       return new Date(new Date().setMonth(new Date().getMonth() - 3))
-    case Interval.DAY:
+    case TimeInterval.DAY:
       return new Date(new Date().setDate(new Date().getDate() - 30))
-    case Interval.HOUR:
+    case TimeInterval.HOUR:
       return new Date(new Date().setHours(new Date().getHours() - 24))
   }
 }
@@ -73,8 +73,8 @@ const getIntervalStartDate = (
 const HeroChart = ({ organization }: HeroChartProps) => {
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof Metrics>('revenue')
-  const [selectedInterval, setSelectedInterval] = React.useState<Interval>(
-    Interval.DAY,
+  const [selectedInterval, setSelectedInterval] = React.useState<TimeInterval>(
+    TimeInterval.DAY,
   )
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
@@ -143,7 +143,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                     datetime={hoveredMetricPeriod.timestamp}
                     dateStyle="medium"
                     resolution={
-                      selectedInterval === Interval.HOUR ? 'time' : 'day'
+                      selectedInterval === TimeInterval.HOUR ? 'time' : 'day'
                     }
                   />
                 </span>
@@ -153,11 +153,11 @@ const HeroChart = ({ organization }: HeroChartProps) => {
         </div>
         <Tabs
           value={selectedInterval}
-          onValueChange={(value) => setSelectedInterval(value as Interval)}
+          onValueChange={(value) => setSelectedInterval(value as TimeInterval)}
         >
           <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-white">
             {Object.entries(intervalDisplayNames)
-              .filter(([key]) => key !== Interval.YEAR)
+              .filter(([key]) => key !== TimeInterval.YEAR)
               .map(([key, value]) => (
                 <TabsTrigger
                   size="small"

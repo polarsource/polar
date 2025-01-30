@@ -6,7 +6,7 @@ import pytest_asyncio
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
-from polar.metrics.queries import Interval
+from polar.kit.time_queries import TimeInterval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
     Customer,
@@ -185,19 +185,19 @@ class TestGetMetrics:
     @pytest.mark.parametrize(
         "interval,expected_count",
         [
-            (Interval.year, 1),
-            (Interval.month, 12),
+            (TimeInterval.year, 1),
+            (TimeInterval.month, 12),
             (
-                Interval.week,
+                TimeInterval.week,
                 53,  # Last week of the year (Monday 30th) is partial, so +1
             ),
-            (Interval.day, 366),  # Leap year!
-            (Interval.hour, 8784),  # Leap year!
+            (TimeInterval.day, 366),  # Leap year!
+            (TimeInterval.hour, 8784),  # Leap year!
         ],
     )
     async def test_intervals(
         self,
-        interval: Interval,
+        interval: TimeInterval,
         expected_count: int,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -226,7 +226,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            interval=Interval.day,
+            interval=TimeInterval.day,
         )
 
         jan_1 = metrics.periods[0]
@@ -297,7 +297,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            interval=Interval.day,
+            interval=TimeInterval.day,
         )
 
         for period in metrics.periods:
@@ -328,7 +328,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            interval=Interval.day,
+            interval=TimeInterval.day,
             product_id=[fixtures[0]["one_time_product"].id],
         )
 
@@ -403,7 +403,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            interval=Interval.day,
+            interval=TimeInterval.day,
             product_price_type=[ProductPriceType.one_time],
         )
 
@@ -476,7 +476,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            interval=Interval.year,
+            interval=TimeInterval.year,
         )
 
         assert len(metrics.periods) == 1
@@ -525,7 +525,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
-            interval=Interval.day,
+            interval=TimeInterval.day,
         )
 
         assert len(metrics.periods) == 366
@@ -623,7 +623,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 2, 1),
-            interval=Interval.month,
+            interval=TimeInterval.month,
         )
 
         assert len(metrics.periods) == 2

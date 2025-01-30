@@ -7,19 +7,17 @@ from typing import TYPE_CHECKING, Protocol, cast
 from sqlalchemy import (
     CTE,
     ColumnElement,
-    Function,
     Select,
     SQLColumnExpression,
-    TextClause,
     and_,
     cte,
     func,
     or_,
     select,
-    text,
 )
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.kit.time_queries import TimeInterval
 from polar.models import (
     Customer,
     Order,
@@ -36,44 +34,16 @@ if TYPE_CHECKING:
     from .metrics import Metric
 
 
-class Interval(StrEnum):
-    year = "year"
-    month = "month"
-    week = "week"
-    day = "day"
-    hour = "hour"
-
-    def sql_interval(self) -> TextClause:
-        return text(f"'1 {self.value}'::interval")
-
-    def sql_date_trunc(
-        self, column: SQLColumnExpression[datetime]
-    ) -> Function[datetime]:
-        return func.date_trunc(self.value, column)
-
-
 class MetricQuery(StrEnum):
     orders = "orders"
     cumulative_orders = "cumulative_orders"
     active_subscriptions = "active_subscriptions"
 
 
-def get_timestamp_series_cte(
-    start_timestamp: datetime, end_timestamp: datetime, interval: Interval
-) -> CTE:
-    return cte(
-        select(
-            func.generate_series(
-                start_timestamp, end_timestamp, interval.sql_interval()
-            ).column_valued("timestamp")
-        )
-    )
-
-
 def _get_metrics_columns(
     metric_cte: MetricQuery,
     timestamp_column: ColumnElement[datetime],
-    interval: Interval,
+    interval: TimeInterval,
     metrics: list["type[Metric]"],
 ) -> Generator[ColumnElement[int], None, None]:
     return (
@@ -89,7 +59,7 @@ class QueryCallable(Protocol):
     def __call__(
         self,
         timestamp_series: CTE,
-        interval: Interval,
+        interval: TimeInterval,
         auth_subject: AuthSubject[User | Organization],
         metrics: list["type[Metric]"],
         *,
@@ -145,7 +115,7 @@ def _get_readable_orders_statement(
 
 def get_orders_cte(
     timestamp_series: CTE,
-    interval: Interval,
+    interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
     *,
@@ -193,7 +163,7 @@ def get_orders_cte(
 
 def get_cumulative_orders_cte(
     timestamp_series: CTE,
-    interval: Interval,
+    interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
     *,
@@ -241,7 +211,7 @@ def get_cumulative_orders_cte(
 
 def get_active_subscriptions_cte(
     timestamp_series: CTE,
-    interval: Interval,
+    interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
     *,

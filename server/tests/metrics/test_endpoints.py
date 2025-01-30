@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.metrics.queries import Interval
+from polar.kit.time_queries import TimeInterval
 from polar.models import UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 
@@ -92,6 +92,6 @@ class TestGetMetricsLimits:
         json = response.json()
         assert "min_date" in json
         intervals = json["intervals"]
-        for interval in Interval:
+        for interval in TimeInterval:
             assert interval.name in intervals
             assert intervals[interval.name]["max_days"] > 0

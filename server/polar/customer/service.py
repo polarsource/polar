@@ -9,7 +9,7 @@ from stripe import Customer as StripeCustomer
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.metadata import MetadataQuery
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -45,11 +45,7 @@ class CustomerService(ResourceServiceReader[Customer]):
             statement = statement.where(func.lower(Customer.email) == email.lower())
 
         if metadata is not None:
-            for key, values in metadata.items():
-                clauses = []
-                for value in values:
-                    clauses.append(Customer.user_metadata[key].astext == value)
-                statement = statement.where(or_(*clauses))
+            statement = apply_metadata_clause(Customer, statement, metadata)
 
         if query is not None:
             statement = statement.where(

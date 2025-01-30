@@ -32,6 +32,7 @@ from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.magic_link.endpoints import router as magic_link_router
+from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.oauth2.endpoints.oauth2 import router as oauth2_router
@@ -147,3 +148,5 @@ router.include_router(customer_session_router)
 router.include_router(plain_router)
 # /events
 router.include_router(event_router)
+# /meters
+router.include_router(meter_router)

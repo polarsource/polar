@@ -20,27 +20,15 @@ from tests.fixtures.random_objects import create_event
 
 
 @pytest.mark.asyncio
-class TestGetValues:
+class TestGetQuantities:
     @pytest.mark.parametrize(
         "aggregation,expected_value",
         [
-            (CountAggregation(), Decimal(4)),
-            (
-                FieldAggregation(function=AggregationFunction.sum, field="tokens"),
-                Decimal(40),
-            ),
-            (
-                FieldAggregation(function=AggregationFunction.max, field="tokens"),
-                Decimal(20),
-            ),
-            (
-                FieldAggregation(function=AggregationFunction.min, field="tokens"),
-                Decimal(0),
-            ),
-            (
-                FieldAggregation(function=AggregationFunction.avg, field="tokens"),
-                Decimal(10),
-            ),
+            (CountAggregation(), 4),
+            (FieldAggregation(function=AggregationFunction.sum, field="tokens"), 40),
+            (FieldAggregation(function=AggregationFunction.max, field="tokens"), 20),
+            (FieldAggregation(function=AggregationFunction.min, field="tokens"), 0),
+            (FieldAggregation(function=AggregationFunction.avg, field="tokens"), 10),
         ],
     )
     async def test_basic(
@@ -103,18 +91,18 @@ class TestGetValues:
             aggregation=aggregation,
         )
 
-        values = await meter_service.get_values(
+        result = await meter_service.get_quantities(
             session,
             meter,
-            customer_id=customer.id,
+            customer_id=[customer.id],
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
         )
 
-        assert len(values) == 1
-        timestamp, value = values[0]
-        assert value == expected_value
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == expected_value
 
     async def test_interval(
         self,
@@ -163,28 +151,27 @@ class TestGetValues:
             ),
         )
 
-        values = await meter_service.get_values(
+        result = await meter_service.get_quantities(
             session,
             meter,
-            customer_id=customer.id,
+            customer_id=[customer.id],
             start_timestamp=past_timestamp,
             end_timestamp=future_timestamp,
             interval=TimeInterval.day,
         )
 
-        assert len(values) == 3
+        assert len(result.quantities) == 3
 
-        yesterday, value_yesterday = values[0]
-        assert yesterday.date() == past_timestamp.date()
-        assert value_yesterday == Decimal(100)
+        [yesterday_quantity, today_quantity, tomorrow_quantity] = result.quantities
 
-        today, value_today = values[1]
-        assert today.date() == today_timestamp.date()
-        assert value_today == Decimal(0)
+        assert yesterday_quantity.timestamp.date() == past_timestamp.date()
+        assert yesterday_quantity.quantity == 100
 
-        tomorrow, value_tomorrow = values[2]
-        assert tomorrow.date() == future_timestamp.date()
-        assert value_tomorrow == Decimal(500)
+        assert today_quantity.timestamp.date() == today_timestamp.date()
+        assert today_quantity.quantity == 0
+
+        assert tomorrow_quantity.timestamp.date() == future_timestamp.date()
+        assert tomorrow_quantity.quantity == 500
 
     @pytest.mark.parametrize(
         "field",
@@ -222,18 +209,18 @@ class TestGetValues:
             aggregation=FieldAggregation(function=AggregationFunction.sum, field=field),
         )
 
-        values = await meter_service.get_values(
+        result = await meter_service.get_quantities(
             session,
             meter,
-            customer_id=customer.id,
+            customer_id=[customer.id],
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
         )
 
-        assert len(values) == 1
-        timestamp, value = values[0]
-        assert value == 0
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == 0
 
     @pytest.mark.parametrize(
         "filter_clause",
@@ -281,15 +268,15 @@ class TestGetValues:
             ),
         )
 
-        values = await meter_service.get_values(
+        result = await meter_service.get_quantities(
             session,
             meter,
-            customer_id=customer.id,
+            customer_id=[customer.id],
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
         )
 
-        assert len(values) == 1
-        timestamp, value = values[0]
-        assert value == 0
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == 0

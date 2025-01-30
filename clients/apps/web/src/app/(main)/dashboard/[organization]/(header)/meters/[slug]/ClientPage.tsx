@@ -8,7 +8,7 @@ import { MeterEvents } from '@/components/Meter/MeterEvents'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
 import { MoreVert } from '@mui/icons-material'
-import { Interval, MetricType } from '@polar-sh/api'
+import { MetricType, TimeInterval } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -92,7 +92,7 @@ export default function ClientPage() {
         <TabsContent value="overview" className="flex flex-col gap-y-12">
           <MeterChart
             data={mockedMeterData}
-            interval={Interval.DAY}
+            interval={TimeInterval.DAY}
             metric={{
               display_name: 'Usage',
               slug: 'usage',

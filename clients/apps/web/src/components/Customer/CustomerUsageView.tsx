@@ -1,9 +1,7 @@
-import { Interval, MetricType } from '@polar-sh/api'
-
 import { Meter, MeterEvent } from '@/app/api/meters/data'
 import { MeterChart } from '@/components/Meter/MeterChart'
 import { useMeterEvents, useMeters } from '@/hooks/queries/meters'
-import { Customer } from '@polar-sh/api'
+import { Customer, MetricType, TimeInterval } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -92,7 +90,7 @@ const CustomerMeter = ({ meter }: { meter: Meter }) => {
       </div>
       <MeterChart
         data={mockedMeterData}
-        interval={Interval.DAY}
+        interval={TimeInterval.DAY}
         metric={{
           display_name: 'Usage',
           slug: 'usage',

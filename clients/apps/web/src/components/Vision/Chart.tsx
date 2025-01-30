@@ -1,6 +1,6 @@
 import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
-import { Interval, Metric } from '@polar-sh/api'
+import { Metric, TimeInterval } from '@polar-sh/api'
 import * as d3 from 'd3'
 import { GeistMono } from 'geist/font/mono'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -11,11 +11,11 @@ const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
 }
 
 const getTickFormat = (
-  interval: Interval,
+  interval: TimeInterval,
   ticks: Date[],
 ): ((t: Date, i: number) => any) | string => {
   switch (interval) {
-    case Interval.HOUR:
+    case TimeInterval.HOUR:
       return (t: Date, i: number) => {
         const previousDate = ticks[i - 1]
         if (!previousDate || previousDate.getDate() < t.getDate()) {
@@ -23,13 +23,13 @@ const getTickFormat = (
         }
         return d3.timeFormat('%H:%M')(t)
       }
-    case Interval.DAY:
+    case TimeInterval.DAY:
       return '%b %d'
-    case Interval.WEEK:
+    case TimeInterval.WEEK:
       return '%b %d'
-    case Interval.MONTH:
+    case TimeInterval.MONTH:
       return '%b %y'
-    case Interval.YEAR:
+    case TimeInterval.YEAR:
       return '%Y'
   }
 }
@@ -39,7 +39,7 @@ interface ChartProps {
     timestamp: Date
     value: number
   }[]
-  interval: Interval
+  interval: TimeInterval
   metric: Metric
   height?: number
   maxTicks?: number

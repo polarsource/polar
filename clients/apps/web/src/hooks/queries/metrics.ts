@@ -1,13 +1,18 @@
 import { api } from '@/utils/api'
 import { toISODate } from '@/utils/metrics'
-import { Interval, MetricPeriod, Metrics, ResponseError } from '@polar-sh/api'
+import {
+  MetricPeriod,
+  Metrics,
+  ResponseError,
+  TimeInterval,
+} from '@polar-sh/api'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 interface GetMetricsRequest {
   startDate: Date
   endDate: Date
-  interval: Interval
+  interval: TimeInterval
   organizationId?: string
   productId?: string[]
   customerId?: string[]

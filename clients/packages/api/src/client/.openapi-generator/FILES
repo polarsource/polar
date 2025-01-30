@@ -22,6 +22,7 @@ apis/DashboardApi.ts
 apis/DiscountsApi.ts
 apis/EmailUpdateApi.ts
 apis/EmbedsApi.ts
+apis/EventsApi.ts
 apis/ExternalOrganizationsApi.ts
 apis/FilesApi.ts
 apis/FundingApi.ts
@@ -32,6 +33,7 @@ apis/IntegrationsGoogleApi.ts
 apis/IssuesApi.ts
 apis/LicenseKeysApi.ts
 apis/MagicLinkApi.ts
+apis/MetersApi.ts
 apis/MetricsApi.ts
 apis/NotificationsApi.ts
 apis/Oauth2Api.ts

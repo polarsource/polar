@@ -4,24 +4,37 @@ import {
   AuthApi,
   BackofficeApi,
   BenefitsApi,
+  CheckoutLinksApi,
   CheckoutsApi,
   CheckoutsCustomApi,
   Configuration,
+  CustomFieldsApi,
+  CustomerPortalBenefitGrantsApi,
+  CustomerPortalCustomerSessionApi,
+  CustomerPortalCustomersApi,
+  CustomerPortalDownloadablesApi,
+  CustomerPortalLicenseKeysApi,
+  CustomerPortalOauthAccountsApi,
+  CustomerPortalOrdersApi,
+  CustomerPortalOrganizationsApi,
+  CustomerPortalSubscriptionsApi,
+  CustomerSessionsApi,
+  CustomersApi,
   DashboardApi,
   DiscountsApi,
   EmailUpdateApi,
+  EventsApi,
   ExternalOrganizationsApi,
   FilesApi,
   FundingApi,
-  MetricsApi,
   IntegrationsDiscordApi,
   IntegrationsGithubApi,
-  CustomerSessionsApi,
   IntegrationsGithubRepositoryBenefitApi,
   IssuesApi,
+  LicenseKeysApi,
   MagicLinkApi,
-  StorefrontsApi,
-  CustomFieldsApi,
+  MetersApi,
+  MetricsApi,
   NotificationsApi,
   Oauth2Api,
   Oauth2ClientsApi,
@@ -34,22 +47,11 @@ import {
   RefundsApi,
   RepositoriesApi,
   RewardsApi,
+  StorefrontsApi,
   SubscriptionsApi,
   TransactionsApi,
   UsersApi,
   WebhooksApi,
-  LicenseKeysApi,
-  CheckoutLinksApi,
-  CustomerPortalBenefitGrantsApi,
-  CustomerPortalCustomerSessionApi,
-  CustomerPortalCustomersApi,
-  CustomerPortalDownloadablesApi,
-  CustomerPortalLicenseKeysApi,
-  CustomerPortalOauthAccountsApi,
-  CustomerPortalOrdersApi,
-  CustomerPortalOrganizationsApi,
-  CustomerPortalSubscriptionsApi,
-  CustomersApi,
 } from '.'
 
 export class PolarAPI {
@@ -73,6 +75,7 @@ export class PolarAPI {
   public readonly checkoutLinks: CheckoutLinksApi
   public readonly customFields: CustomFieldsApi
   public readonly discounts: DiscountsApi
+  public readonly events: EventsApi
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly emailUpdate: EmailUpdateApi
@@ -84,6 +87,7 @@ export class PolarAPI {
   public readonly issues: IssuesApi
   public readonly licenseKeys: LicenseKeysApi
   public readonly magicLink: MagicLinkApi
+  public readonly meters: MetersApi
   public readonly metrics: MetricsApi
   public readonly notifications: NotificationsApi
   public readonly oauth2: Oauth2Api
@@ -110,15 +114,27 @@ export class PolarAPI {
     this.auth = new AuthApi(config)
     this.backoffice = new BackofficeApi(config)
     this.customers = new CustomersApi(config)
-    this.customerPortalBenefitGrants = new CustomerPortalBenefitGrantsApi(config)
+    this.customerPortalBenefitGrants = new CustomerPortalBenefitGrantsApi(
+      config,
+    )
     this.customerPortalCustomers = new CustomerPortalCustomersApi(config)
-    this.customerPortalCustomerSession = new CustomerPortalCustomerSessionApi(config)
-    this.customerPortalDownloadables = new CustomerPortalDownloadablesApi(config)
+    this.customerPortalCustomerSession = new CustomerPortalCustomerSessionApi(
+      config,
+    )
+    this.customerPortalDownloadables = new CustomerPortalDownloadablesApi(
+      config,
+    )
     this.customerPortalLicenseKeys = new CustomerPortalLicenseKeysApi(config)
-    this.customerPortalOauthAccounts = new CustomerPortalOauthAccountsApi(config)
+    this.customerPortalOauthAccounts = new CustomerPortalOauthAccountsApi(
+      config,
+    )
     this.customerPortalOrders = new CustomerPortalOrdersApi(config)
-    this.customerPortalOrganizations = new CustomerPortalOrganizationsApi(config)
-    this.customerPortalSubscriptions = new CustomerPortalSubscriptionsApi(config)
+    this.customerPortalOrganizations = new CustomerPortalOrganizationsApi(
+      config,
+    )
+    this.customerPortalSubscriptions = new CustomerPortalSubscriptionsApi(
+      config,
+    )
     this.customerSessions = new CustomerSessionsApi(config)
     this.legacyCheckouts = new CheckoutsApi(config)
     this.checkouts = new CheckoutsCustomApi(config)
@@ -128,6 +144,7 @@ export class PolarAPI {
     this.dashboard = new DashboardApi(config)
     this.discounts = new DiscountsApi(config)
     this.emailUpdate = new EmailUpdateApi(config)
+    this.events = new EventsApi(config)
     this.externalOrganizations = new ExternalOrganizationsApi(config)
     this.funding = new FundingApi(config)
     this.integrationsDiscord = new IntegrationsDiscordApi(config)
@@ -137,6 +154,7 @@ export class PolarAPI {
     this.issues = new IssuesApi(config)
     this.licenseKeys = new LicenseKeysApi(config)
     this.magicLink = new MagicLinkApi(config)
+    this.meters = new MetersApi(config)
     this.metrics = new MetricsApi(config)
     this.notifications = new NotificationsApi(config)
     this.oauth2 = new Oauth2Api(config)

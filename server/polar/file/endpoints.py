@@ -85,15 +85,10 @@ async def list(
 async def create(
     file_create: FileCreate,
     auth_subject: auth.CreatorFilesWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> FileUpload:
     """Create a file."""
-    subject = auth_subject.subject
-
     organization = await get_payload_organization(session, auth_subject, file_create)
-    if not await authz.can(subject, AccessType.write, organization):
-        raise NotPermitted()
 
     file_create.organization_id = organization.id
     return await file_service.generate_presigned_upload(

@@ -19,7 +19,6 @@ async def get_payload_organization(
     model: OrganizationIDModel,
 ) -> Organization:
     # Avoids a circular import :(
-    from polar.organization.service import organization as organization_service
 
     if is_organization(auth_subject):
         if model.organization_id is not None:
@@ -56,7 +55,6 @@ async def get_payload_organization(
             ]
         )
 
-    organization = await organization_service.get(session, model.organization_id)
     statement = select(Organization).where(
         Organization.id == model.organization_id,
         Organization.id.in_(

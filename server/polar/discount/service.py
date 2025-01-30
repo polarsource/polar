@@ -7,7 +7,6 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams, paginate
@@ -98,26 +97,12 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def create(
         self,
         session: AsyncSession,
-        authz: Authz,
         discount_create: DiscountCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Discount:
-        subject = auth_subject.subject
-
         organization = await get_payload_organization(
             session, auth_subject, discount_create
         )
-        if not await authz.can(subject, AccessType.write, organization):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "organization_id"),
-                        "msg": "Organization not found.",
-                        "input": discount_create.organization_id,
-                    }
-                ]
-            )
 
         if discount_create.code is not None:
             existing_discount = await self.get_by_code_and_organization(

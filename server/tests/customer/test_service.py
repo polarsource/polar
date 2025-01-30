@@ -3,7 +3,6 @@ from typing import Any
 import pytest
 
 from polar.auth.models import AuthSubject, is_user
-from polar.authz.service import Authz
 from polar.customer.schemas import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
@@ -13,11 +12,6 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
-
-
-@pytest.fixture
-def authz(session: AsyncSession) -> Authz:
-    return Authz(session)
 
 
 @pytest.mark.asyncio
@@ -39,7 +33,6 @@ class TestList:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         user_organization: UserOrganization,
@@ -83,14 +76,12 @@ class TestCreate:
     async def test_not_accessible_organization(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User],
         organization: Organization,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
                 session,
-                authz,
                 CustomerCreate(
                     email="customer@example.com", organization_id=organization.id
                 ),
@@ -103,7 +94,6 @@ class TestCreate:
     async def test_existing_email(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         user_organization: UserOrganization,
@@ -117,10 +107,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session,
-                authz,
-                CustomerCreate.model_validate(payload),
-                auth_subject,
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
             await session.flush()
 
@@ -130,7 +117,6 @@ class TestCreate:
     async def test_valid(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         user_organization: UserOrganization,
@@ -140,10 +126,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session,
-            authz,
-            CustomerCreate.model_validate(payload),
-            auth_subject,
+            session, CustomerCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 

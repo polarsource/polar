@@ -29,7 +29,7 @@ class TestEndpoints:
             json=logo_png.build_create(organization.id).model_dump(mode="json"),
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 422
 
     async def test_create_downloadable_with_web_scope(
         self, session: AsyncSession, organization: Organization, logo_png: TestFile

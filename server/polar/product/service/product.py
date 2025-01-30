@@ -256,17 +256,12 @@ class ProductService(ResourceServiceReader[Product]):
     async def create(
         self,
         session: AsyncSession,
-        authz: Authz,
         create_schema: ProductCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        subject = auth_subject.subject
-
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
-        if not await authz.can(subject, AccessType.write, organization):
-            raise NotPermitted()
 
         product = Product(
             organization=organization,

@@ -84,14 +84,11 @@ async def create_webhook_endpoint(
     endpoint_create: WebhookEndpointCreate,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
     """
     Create a webhook endpoint.
     """
-    return await webhook_service.create_endpoint(
-        session, authz, auth_subject, endpoint_create
-    )
+    return await webhook_service.create_endpoint(session, auth_subject, endpoint_create)
 
 
 @router.patch(

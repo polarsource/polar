@@ -17,18 +17,18 @@ import * as runtime from '../runtime';
 import type {
   CustomerIDFilter,
   HTTPValidationError,
-  Interval,
   MetricsLimits,
   MetricsResponse,
   OrganizationIDFilter1,
   ProductIDFilter,
   ProductPriceTypeFilter1,
+  TimeInterval,
 } from '../models/index';
 
 export interface MetricsApiGetRequest {
     startDate: string;
     endDate: string;
-    interval: Interval;
+    interval: TimeInterval;
     organizationId?: OrganizationIDFilter1 | null;
     productId?: ProductIDFilter | null;
     productPriceType?: ProductPriceTypeFilter1 | null;

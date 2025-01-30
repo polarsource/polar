@@ -261,6 +261,12 @@ export const AdvertisementSortProperty = {
 export type AdvertisementSortProperty = typeof AdvertisementSortProperty[keyof typeof AdvertisementSortProperty];
 
 /**
+ * @type Aggregation
+ * The aggregation to apply on the filtered events to calculate the meter.
+ * @export
+ */
+export type Aggregation = { func: 'avg' } & PropertyAggregation | { func: 'count' } & CountAggregation | { func: 'max' } & PropertyAggregation | { func: 'min' } & PropertyAggregation | { func: 'sum' } & PropertyAggregation;
+/**
  * 
  * @export
  * @interface AlreadyActiveSubscriptionError
@@ -1338,6 +1344,10 @@ export const AvailableScope = {
     PRODUCTSWRITE: 'products:write',
     BENEFITSREAD: 'benefits:read',
     BENEFITSWRITE: 'benefits:write',
+    EVENTSREAD: 'events:read',
+    EVENTSWRITE: 'events:write',
+    METERSREAD: 'meters:read',
+    METERSWRITE: 'meters:write',
     FILESREAD: 'files:read',
     FILESWRITE: 'files:write',
     SUBSCRIPTIONSREAD: 'subscriptions:read',
@@ -5910,6 +5920,29 @@ export interface ConfirmIssueSplit {
      */
     share_thousands: number;
 }
+/**
+ * 
+ * @export
+ * @interface CountAggregation
+ */
+export interface CountAggregation {
+    /**
+     * 
+     * @type {string}
+     * @memberof CountAggregation
+     */
+    func?: CountAggregationFuncEnum;
+}
+
+
+/**
+ * @export
+ */
+export const CountAggregationFuncEnum = {
+    COUNT: 'count'
+} as const;
+export type CountAggregationFuncEnum = typeof CountAggregationFuncEnum[keyof typeof CountAggregationFuncEnum];
+
 /**
  * 
  * @export
@@ -10721,6 +10754,209 @@ export interface Entry {
     pledges: Array<Pledge> | null;
 }
 /**
+ * 
+ * @export
+ * @interface Event
+ */
+export interface Event {
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof Event
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof Event
+     */
+    id: string;
+    /**
+     * The timestamp of the event.
+     * @type {string}
+     * @memberof Event
+     */
+    timestamp: string;
+    /**
+     * The name of the event.
+     * @type {string}
+     * @memberof Event
+     */
+    name: string;
+    /**
+     * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+     * @type {EventSource}
+     * @memberof Event
+     */
+    source: EventSource;
+    /**
+     * The ID of the organization owning the event.
+     * @type {string}
+     * @memberof Event
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Event
+     */
+    customer_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof Event
+     */
+    external_customer_id: string | null;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface EventCreateCustomer
+ */
+export interface EventCreateCustomer {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof EventCreateCustomer
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * The timestamp of the event.
+     * @type {string}
+     * @memberof EventCreateCustomer
+     */
+    timestamp?: string;
+    /**
+     * The name of the event.
+     * @type {string}
+     * @memberof EventCreateCustomer
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof EventCreateCustomer
+     */
+    organization_id?: string | null;
+    /**
+     * ID of the customer in your Polar organization associated with the event.
+     * @type {string}
+     * @memberof EventCreateCustomer
+     */
+    customer_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface EventCreateExternalCustomer
+ */
+export interface EventCreateExternalCustomer {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof EventCreateExternalCustomer
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * The timestamp of the event.
+     * @type {string}
+     * @memberof EventCreateExternalCustomer
+     */
+    timestamp?: string;
+    /**
+     * The name of the event.
+     * @type {string}
+     * @memberof EventCreateExternalCustomer
+     */
+    name: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof EventCreateExternalCustomer
+     */
+    organization_id?: string | null;
+    /**
+     * ID of the customer in your system associated with the event.
+     * @type {string}
+     * @memberof EventCreateExternalCustomer
+     */
+    external_customer_id: string;
+}
+
+/**
+ * 
+ * @export
+ */
+export const EventSortProperty = {
+    TIMESTAMP: 'timestamp',
+    TIMESTAMP2: '-timestamp'
+} as const;
+export type EventSortProperty = typeof EventSortProperty[keyof typeof EventSortProperty];
+
+
+/**
+ * 
+ * @export
+ */
+export const EventSource = {
+    SYSTEM: 'system',
+    USER: 'user'
+} as const;
+export type EventSource = typeof EventSource[keyof typeof EventSource];
+
+/**
+ * 
+ * @export
+ * @interface EventsIngest
+ */
+export interface EventsIngest {
+    /**
+     * List of events to ingest.
+     * @type {Array<EventsIngestEventsInner>}
+     * @memberof EventsIngest
+     */
+    events: Array<EventsIngestEventsInner>;
+}
+/**
+ * @type EventsIngestEventsInner
+ * @export
+ */
+export type EventsIngestEventsInner = EventCreateCustomer | EventCreateExternalCustomer;
+
+/**
+ * 
+ * @export
+ * @interface EventsIngestResponse
+ */
+export interface EventsIngestResponse {
+    /**
+     * Number of events inserted.
+     * @type {number}
+     * @memberof EventsIngestResponse
+     */
+    inserted: number;
+}
+/**
  * A price that already exists for this product.
  * 
  * Useful when updating a product if you want to keep an existing price.
@@ -10735,6 +10971,20 @@ export interface ExistingProductPrice {
      */
     id: string;
 }
+/**
+ * @type ExternalCustomerIDFilter
+ * Filter by external customer ID.
+ * @export
+ */
+export type ExternalCustomerIDFilter = Array<string> | string;
+
+/**
+ * @type ExternalCustomerIDFilter1
+ * Filter by external customer ID.
+ * @export
+ */
+export type ExternalCustomerIDFilter1 = Array<string> | string;
+
 /**
  * 
  * @export
@@ -11130,6 +11380,88 @@ export interface FileUploadCompleted {
 /**
  * 
  * @export
+ * @interface Filter
+ */
+export interface Filter {
+    /**
+     * 
+     * @type {FilterConjunction}
+     * @memberof Filter
+     */
+    conjunction: FilterConjunction;
+    /**
+     * 
+     * @type {Array<FilterClausesInner>}
+     * @memberof Filter
+     */
+    clauses: Array<FilterClausesInner>;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface FilterClause
+ */
+export interface FilterClause {
+    /**
+     * 
+     * @type {string}
+     * @memberof FilterClause
+     */
+    property: string;
+    /**
+     * 
+     * @type {FilterOperator}
+     * @memberof FilterClause
+     */
+    operator: FilterOperator;
+    /**
+     * 
+     * @type {Value}
+     * @memberof FilterClause
+     */
+    value: Value;
+}
+
+
+/**
+ * @type FilterClausesInner
+ * @export
+ */
+export type FilterClausesInner = Filter | FilterClause;
+
+
+/**
+ * 
+ * @export
+ */
+export const FilterConjunction = {
+    AND: 'and',
+    OR: 'or'
+} as const;
+export type FilterConjunction = typeof FilterConjunction[keyof typeof FilterConjunction];
+
+
+/**
+ * 
+ * @export
+ */
+export const FilterOperator = {
+    EQ: 'eq',
+    NE: 'ne',
+    GT: 'gt',
+    GTE: 'gte',
+    LT: 'lt',
+    LTE: 'lte',
+    LIKE: 'like',
+    NOT_LIKE: 'not_like'
+} as const;
+export type FilterOperator = typeof FilterOperator[keyof typeof FilterOperator];
+
+/**
+ * 
+ * @export
  * @interface Funding
  */
 export interface Funding {
@@ -11272,20 +11604,6 @@ export interface InstallationCreate {
      */
     organization_id: string;
 }
-
-/**
- * 
- * @export
- */
-export const Interval = {
-    YEAR: 'year',
-    MONTH: 'month',
-    WEEK: 'week',
-    DAY: 'day',
-    HOUR: 'hour'
-} as const;
-export type Interval = typeof Interval[keyof typeof Interval];
-
 /**
  * 
  * @export
@@ -12469,6 +12787,25 @@ export interface ListResourceDownloadableRead {
 /**
  * 
  * @export
+ * @interface ListResourceEvent
+ */
+export interface ListResourceEvent {
+    /**
+     * 
+     * @type {Array<Event>}
+     * @memberof ListResourceEvent
+     */
+    items: Array<Event>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceEvent
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceExternalOrganization
  */
 export interface ListResourceExternalOrganization {
@@ -12558,6 +12895,25 @@ export interface ListResourceLicenseKeyRead {
      * 
      * @type {Pagination}
      * @memberof ListResourceLicenseKeyRead
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceMeter
+ */
+export interface ListResourceMeter {
+    /**
+     * 
+     * @type {Array<Meter>}
+     * @memberof ListResourceMeter
+     */
+    items: Array<Meter>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceMeter
      */
     pagination: Pagination;
 }
@@ -13816,6 +14172,198 @@ export type MetadataValue = boolean | number | string;
  */
 export type MetadataValue1 = boolean | number | string;
 
+/**
+ * 
+ * @export
+ * @interface Meter
+ */
+export interface Meter {
+    /**
+     * 
+     * @type {{ [key: string]: MetadataValue; }}
+     * @memberof Meter
+     */
+    metadata: { [key: string]: MetadataValue; };
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof Meter
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Meter
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof Meter
+     */
+    id: string;
+    /**
+     * The name of the meter. Will be shown on customer's invoices and usage.
+     * @type {string}
+     * @memberof Meter
+     */
+    name: string;
+    /**
+     * The filter to apply on events that'll be used to calculate the meter.
+     * @type {Filter}
+     * @memberof Meter
+     */
+    filter: Filter;
+    /**
+     * 
+     * @type {Aggregation}
+     * @memberof Meter
+     */
+    aggregation: Aggregation;
+    /**
+     * The ID of the organization owning the meter.
+     * @type {string}
+     * @memberof Meter
+     */
+    organization_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface MeterCreate
+ */
+export interface MeterCreate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof MeterCreate
+     */
+    metadata?: { [key: string]: MetadataValue1; };
+    /**
+     * The name of the meter. Will be shown on customer's invoices and usage.
+     * @type {string}
+     * @memberof MeterCreate
+     */
+    name: string;
+    /**
+     * The filter to apply on events that'll be used to calculate the meter.
+     * @type {Filter}
+     * @memberof MeterCreate
+     */
+    filter: Filter;
+    /**
+     * 
+     * @type {Aggregation}
+     * @memberof MeterCreate
+     */
+    aggregation: Aggregation;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof MeterCreate
+     */
+    organization_id?: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface MeterQuantities
+ */
+export interface MeterQuantities {
+    /**
+     * 
+     * @type {Array<MeterQuantity>}
+     * @memberof MeterQuantities
+     */
+    quantities: Array<MeterQuantity>;
+}
+/**
+ * 
+ * @export
+ * @interface MeterQuantity
+ */
+export interface MeterQuantity {
+    /**
+     * The timestamp for the current period.
+     * @type {string}
+     * @memberof MeterQuantity
+     */
+    timestamp: string;
+    /**
+     * The quantity for the current period.
+     * @type {number}
+     * @memberof MeterQuantity
+     */
+    quantity: number;
+}
+
+/**
+ * 
+ * @export
+ */
+export const MeterSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    NAME: 'name',
+    NAME2: '-name'
+} as const;
+export type MeterSortProperty = typeof MeterSortProperty[keyof typeof MeterSortProperty];
+
+/**
+ * 
+ * @export
+ * @interface MeterUpdate
+ */
+export interface MeterUpdate {
+    /**
+     * Key-value object allowing you to store additional information.
+     * 
+     * The key must be a string with a maximum length of **40 characters**.
+     * The value must be either:
+     * 
+     * * A string with a maximum length of **500 characters**
+     * * An integer
+     * * A boolean
+     * 
+     * You can store up to **50 key-value pairs**.
+     * @type {{ [key: string]: MetadataValue1; }}
+     * @memberof MeterUpdate
+     */
+    metadata?: { [key: string]: MetadataValue1; } | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof MeterUpdate
+     */
+    name?: string | null;
+    /**
+     * 
+     * @type {Filter}
+     * @memberof MeterUpdate
+     */
+    filter?: Filter | null;
+    /**
+     * 
+     * @type {MeterUpdateAggregation}
+     * @memberof MeterUpdate
+     */
+    aggregation?: MeterUpdateAggregation | null;
+}
+/**
+ * @type MeterUpdateAggregation
+ * 
+ * @export
+ */
+export type MeterUpdateAggregation = { func: 'avg' } & PropertyAggregation | { func: 'count' } & CountAggregation | { func: 'max' } & PropertyAggregation | { func: 'min' } & PropertyAggregation | { func: 'sum' } & PropertyAggregation;
 /**
  * Information about a metric.
  * @export
@@ -18108,6 +18656,38 @@ export type Properties = BenefitGrantAdsProperties | BenefitGrantDiscordProperti
 /**
  * 
  * @export
+ * @interface PropertyAggregation
+ */
+export interface PropertyAggregation {
+    /**
+     * 
+     * @type {string}
+     * @memberof PropertyAggregation
+     */
+    func: PropertyAggregationFuncEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof PropertyAggregation
+     */
+    property: string;
+}
+
+
+/**
+ * @export
+ */
+export const PropertyAggregationFuncEnum = {
+    SUM: 'sum',
+    MAX: 'max',
+    MIN: 'min',
+    AVG: 'avg'
+} as const;
+export type PropertyAggregationFuncEnum = typeof PropertyAggregationFuncEnum[keyof typeof PropertyAggregationFuncEnum];
+
+/**
+ * 
+ * @export
  * @interface Reactions
  */
 export interface Reactions {
@@ -19163,6 +19743,10 @@ export const Scope = {
     PRODUCTSWRITE: 'products:write',
     BENEFITSREAD: 'benefits:read',
     BENEFITSWRITE: 'benefits:write',
+    EVENTSREAD: 'events:read',
+    EVENTSWRITE: 'events:write',
+    METERSREAD: 'meters:read',
+    METERSWRITE: 'meters:write',
     FILESREAD: 'files:read',
     FILESWRITE: 'files:write',
     SUBSCRIPTIONSREAD: 'subscriptions:read',
@@ -19187,6 +19771,13 @@ export const Scope = {
     CUSTOMER_PORTALWRITE: 'customer_portal:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
+
+/**
+ * @type SourceFilter
+ * Filter by event source.
+ * @export
+ */
+export type SourceFilter = Array<EventSource> | EventSource;
 
 
 /**
@@ -19931,6 +20522,20 @@ export interface TeamAdminMemberPledgedNotificationPayload {
      */
     pledge_id: string;
 }
+
+/**
+ * 
+ * @export
+ */
+export const TimeInterval = {
+    YEAR: 'year',
+    MONTH: 'month',
+    WEEK: 'week',
+    DAY: 'day',
+    HOUR: 'hour'
+} as const;
+export type TimeInterval = typeof TimeInterval[keyof typeof TimeInterval];
+
 /**
  * 
  * @export
@@ -21286,6 +21891,12 @@ export interface ValidationError {
  * @export
  */
 export type ValidationErrorLocInner = number | string;
+
+/**
+ * @type Value
+ * @export
+ */
+export type Value = boolean | number | string;
 
 /**
  * Sent when a new benefit is created.

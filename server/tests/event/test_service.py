@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from pydantic import ValidationError
@@ -15,34 +15,12 @@ from polar.event.service import event as event_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
-from polar.models import Customer, Event, Organization, User, UserOrganization
+from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
-
-
-async def create_event(
-    save_fixture: SaveFixture,
-    *,
-    organization: Organization,
-    name: str = "test",
-    timestamp: datetime | None = None,
-    customer: Customer | None = None,
-    external_customer_id: str | None = None,
-    metadata: dict[str, str | int | bool] | None = None,
-) -> Event:
-    event = Event(
-        timestamp=timestamp or utc_now(),
-        name=name,
-        customer=customer,
-        external_customer_id=external_customer_id,
-        organization_id=organization.id,
-        user_metadata=metadata or {},
-    )
-    await save_fixture(event)
-    return event
+from tests.fixtures.random_objects import create_customer, create_event
 
 
 @pytest.mark.asyncio

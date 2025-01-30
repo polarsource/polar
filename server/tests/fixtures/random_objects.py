@@ -26,6 +26,7 @@ from polar.models import (
     CustomField,
     Discount,
     DiscountProduct,
+    Event,
     ExternalOrganization,
     IssueReward,
     Order,
@@ -1562,3 +1563,25 @@ async def create_balance_transaction(
     )
     await save_fixture(transaction)
     return transaction
+
+
+async def create_event(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    name: str = "test",
+    timestamp: datetime | None = None,
+    customer: Customer | None = None,
+    external_customer_id: str | None = None,
+    metadata: dict[str, str | int | bool] | None = None,
+) -> Event:
+    event = Event(
+        timestamp=timestamp or utc_now(),
+        name=name,
+        customer=customer,
+        external_customer_id=external_customer_id,
+        organization_id=organization.id,
+        user_metadata=metadata or {},
+    )
+    await save_fixture(event)
+    return event

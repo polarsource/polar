@@ -1,7 +1,10 @@
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
 
+from polar.kit.time_queries import TimeInterval
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import (
     Aggregation,
     AggregationFunction,
@@ -17,7 +20,7 @@ from tests.fixtures.random_objects import create_event
 
 
 @pytest.mark.asyncio
-class TestGetValue:
+class TestGetValues:
     @pytest.mark.parametrize(
         "aggregation,expected_value",
         [
@@ -48,33 +51,39 @@ class TestGetValue:
         session: AsyncSession,
         customer: Customer,
     ) -> None:
+        timestamp = utc_now()
         events = [
             await create_event(
                 save_fixture,
+                timestamp=timestamp,
                 organization=customer.organization,
                 customer=customer,
                 metadata={"tokens": 20, "model": "lite"},
             ),
             await create_event(
                 save_fixture,
+                timestamp=timestamp,
                 organization=customer.organization,
                 customer=customer,
                 metadata={"tokens": 10, "model": "lite"},
             ),
             await create_event(
                 save_fixture,
+                timestamp=timestamp,
                 organization=customer.organization,
                 customer=customer,
                 metadata={"tokens": 10, "model": "lite"},
             ),
             await create_event(
                 save_fixture,
+                timestamp=timestamp,
                 organization=customer.organization,
                 customer=customer,
                 metadata={"tokens": 0, "model": "lite"},
             ),
             await create_event(
                 save_fixture,
+                timestamp=timestamp,
                 organization=customer.organization,
                 customer=customer,
                 metadata={"tokens": 100, "model": "pro"},
@@ -94,9 +103,88 @@ class TestGetValue:
             aggregation=aggregation,
         )
 
-        value = await meter_service.get_value(session, meter, customer_id=customer.id)
+        values = await meter_service.get_values(
+            session,
+            meter,
+            customer_id=customer.id,
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+        )
 
+        assert len(values) == 1
+        timestamp, value = values[0]
         assert value == expected_value
+
+    async def test_interval(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        past_timestamp = utc_now() - timedelta(days=1)
+        today_timestamp = utc_now()
+        future_timestamp = utc_now() + timedelta(days=1)
+
+        past_events = [
+            await create_event(
+                save_fixture,
+                timestamp=past_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            )
+            for _ in range(10)
+        ]
+
+        future_events = [
+            await create_event(
+                save_fixture,
+                timestamp=future_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 50, "model": "lite"},
+            )
+            for _ in range(10)
+        ]
+
+        meter = Meter(
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        field="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=FieldAggregation(
+                function=AggregationFunction.sum, field="tokens"
+            ),
+        )
+
+        values = await meter_service.get_values(
+            session,
+            meter,
+            customer_id=customer.id,
+            start_timestamp=past_timestamp,
+            end_timestamp=future_timestamp,
+            interval=TimeInterval.day,
+        )
+
+        assert len(values) == 3
+
+        yesterday, value_yesterday = values[0]
+        assert yesterday.date() == past_timestamp.date()
+        assert value_yesterday == Decimal(100)
+
+        today, value_today = values[1]
+        assert today.date() == today_timestamp.date()
+        assert value_today == Decimal(0)
+
+        tomorrow, value_tomorrow = values[2]
+        assert tomorrow.date() == future_timestamp.date()
+        assert value_tomorrow == Decimal(500)
 
     @pytest.mark.parametrize(
         "field",
@@ -112,8 +200,10 @@ class TestGetValue:
         session: AsyncSession,
         customer: Customer,
     ) -> None:
+        timestamp = utc_now()
         await create_event(
             save_fixture,
+            timestamp=timestamp,
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 10, "model": "lite"},
@@ -132,7 +222,17 @@ class TestGetValue:
             aggregation=FieldAggregation(function=AggregationFunction.sum, field=field),
         )
 
-        value = await meter_service.get_value(session, meter, customer_id=customer.id)
+        values = await meter_service.get_values(
+            session,
+            meter,
+            customer_id=customer.id,
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+        )
+
+        assert len(values) == 1
+        timestamp, value = values[0]
         assert value == 0
 
     @pytest.mark.parametrize(
@@ -161,8 +261,10 @@ class TestGetValue:
         session: AsyncSession,
         customer: Customer,
     ) -> None:
+        timestamp = utc_now()
         await create_event(
             save_fixture,
+            timestamp=timestamp,
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 10, "model": "lite"},
@@ -179,5 +281,15 @@ class TestGetValue:
             ),
         )
 
-        value = await meter_service.get_value(session, meter, customer_id=customer.id)
+        values = await meter_service.get_values(
+            session,
+            meter,
+            customer_id=customer.id,
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+        )
+
+        assert len(values) == 1
+        timestamp, value = values[0]
         assert value == 0

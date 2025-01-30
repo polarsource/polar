@@ -1,7 +1,6 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
-from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
@@ -25,7 +24,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
 from .repository import MeterRepository
-from .schemas import MeterCreate, MeterUpdate
+from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
 from .sorting import MeterSortProperty
 
 
@@ -106,7 +105,7 @@ class MeterService:
             update_dict=meter_update.model_dump(by_alias=True, exclude_unset=True),
         )
 
-    async def get_values(
+    async def get_quantities(
         self,
         session: AsyncSession,
         meter: Meter,
@@ -114,9 +113,9 @@ class MeterService:
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: TimeInterval,
-        customer_id: uuid.UUID | None = None,
-        external_customer_id: str | None = None,
-    ) -> Sequence[tuple[datetime, Decimal]]:
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+    ) -> MeterQuantities:
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
         )
@@ -127,9 +126,9 @@ class MeterService:
             == interval.sql_date_trunc(timestamp_column),
         ]
         if customer_id is not None:
-            event_clauses.append(Event.customer_id == customer_id)
+            event_clauses.append(Event.customer_id.in_(customer_id))
         if external_customer_id is not None:
-            event_clauses.append(Event.external_customer_id == external_customer_id)
+            event_clauses.append(Event.external_customer_id.in_(external_customer_id))
         event_clauses += [
             meter.filter.get_sql_clause(Event),
             # Additional clauses to make sure we work on rows with the right type for aggregation
@@ -147,7 +146,12 @@ class MeterService:
         )
 
         result = await session.stream(statement)
-        return [(row.timestamp, row[1]) async for row in result]
+        return MeterQuantities(
+            quantities=[
+                MeterQuantity(timestamp=row.timestamp, quantity=row[1])
+                async for row in result
+            ]
+        )
 
 
 meter = MeterService()

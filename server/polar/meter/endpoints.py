@@ -1,9 +1,12 @@
 from fastapi import Depends, Query
+from pydantic import AwareDatetime
 
-from polar.exceptions import ResourceNotFound
+from polar.customer.schemas import CustomerID
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
 from polar.models import Meter
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -12,7 +15,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Meter as MeterSchema
-from .schemas import MeterCreate, MeterID, MeterUpdate
+from .schemas import MeterCreate, MeterID, MeterQuantities, MeterUpdate
 from .service import meter as meter_service
 
 router = APIRouter(
@@ -79,6 +82,64 @@ async def get(
         raise ResourceNotFound()
 
     return meter
+
+
+@router.get(
+    "/{id}/quantities",
+    summary="Get Meter Quantities",
+    response_model=MeterQuantities,
+    responses={404: MeterNotFound},
+)
+async def quantities(
+    id: MeterID,
+    auth_subject: auth.MeterRead,
+    start_timestamp: AwareDatetime = Query(
+        ...,
+        description="Start timestamp.",
+        ge=MIN_DATETIME,  # type: ignore
+    ),
+    end_timestamp: AwareDatetime = Query(..., description="End timestamp."),
+    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    exernal_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> MeterQuantities:
+    """Get quantities of a meter over a time period."""
+    meter = await meter_service.get(session, auth_subject, id)
+
+    if meter is None:
+        raise ResourceNotFound()
+
+    if not is_under_limits(start_timestamp, end_timestamp, interval):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": (
+                        "The interval is too big. "
+                        "Try to change the interval or reduce the date range."
+                    ),
+                    "type": "value_error",
+                    "input": (start_timestamp, end_timestamp, interval),
+                }
+            ]
+        )
+
+    return await meter_service.get_quantities(
+        session,
+        meter,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        interval=interval,
+        customer_id=customer_id,
+        external_customer_id=exernal_customer_id,
+    )
 
 
 @router.post(

@@ -5,7 +5,12 @@ from fastapi import Depends, Query
 from polar.customer.schemas import CustomerID
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.schemas import MultipleQueryFilter
-from polar.kit.time_queries import TimeInterval
+from polar.kit.time_queries import (
+    MAX_INTERVAL_DAYS,
+    MIN_DATE,
+    TimeInterval,
+    is_under_limits,
+)
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -14,7 +19,6 @@ from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from . import auth
-from .limits import MAX_INTERVAL_DAYS, MIN_DATE, is_under_limits
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 

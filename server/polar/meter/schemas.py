@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Path
@@ -53,3 +54,12 @@ class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin):
 
 
 MeterID = Annotated[UUID4, Path(description="The meter ID.")]
+
+
+class MeterQuantity(Schema):
+    timestamp: datetime = Field(description="The timestamp for the current period.")
+    quantity: float = Field(description="The quantity for the current period.")
+
+
+class MeterQuantities(Schema):
+    quantities: list[MeterQuantity]

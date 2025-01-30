@@ -38,6 +38,9 @@ class Scope(StrEnum):
     events_read = "events:read"
     events_write = "events:write"
 
+    meters_read = "meters:read"
+    meters_write = "meters:write"
+
     files_read = "files:read"
     files_write = "files:write"
 
@@ -104,6 +107,10 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.products_write: "Create or modify products",
     Scope.benefits_read: "Read benefits",
     Scope.benefits_write: "Create or modify benefits",
+    Scope.events_read: "Read events",
+    Scope.events_write: "Create events",
+    Scope.meters_read: "Read meters",
+    Scope.meters_write: "Create or modify meters",
     Scope.files_read: "Read file uploads",
     Scope.files_write: "Create or modify file uploads",
     Scope.subscriptions_read: "Read subscriptions made on your organizations",

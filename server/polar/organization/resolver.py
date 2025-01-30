@@ -1,10 +1,11 @@
 from typing import Protocol
 
 from pydantic import UUID4
+from sqlalchemy import select
 
-from polar.auth.models import AuthSubject, Subject, is_organization
+from polar.auth.models import AuthSubject, is_organization
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization
+from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 
 
@@ -14,7 +15,7 @@ class OrganizationIDModel(Protocol):
 
 async def get_payload_organization(
     session: AsyncSession,
-    auth_subject: AuthSubject[Subject],
+    auth_subject: AuthSubject[User | Organization],
     model: OrganizationIDModel,
 ) -> Organization:
     # Avoids a circular import :(
@@ -56,6 +57,17 @@ async def get_payload_organization(
         )
 
     organization = await organization_service.get(session, model.organization_id)
+    statement = select(Organization).where(
+        Organization.id == model.organization_id,
+        Organization.id.in_(
+            select(UserOrganization.organization_id).where(
+                UserOrganization.user_id == auth_subject.subject.id,
+                UserOrganization.deleted_at.is_(None),
+            )
+        ),
+    )
+    result = await session.execute(statement)
+    organization = result.scalar_one_or_none()
 
     if organization is None:
         raise PolarRequestValidationError(

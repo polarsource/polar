@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, MetaData, Uuid, inspect
-from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -47,9 +47,7 @@ class TimestampedModel(Model):
 class RecordModel(TimestampedModel):
     __abstract__ = True
 
-    id: MappedColumn[UUID] = mapped_column(
-        Uuid, primary_key=True, default=generate_uuid
-    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, self.__class__) and self.id == __value.id

@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Generic, Protocol, Self, TypeVar
+from typing import Any, Generic, Protocol, Self, TypeVar
+from xmlrpc.client import boolean
 
 from sqlalchemy import Select, func, over, select
 from sqlalchemy.orm import Mapped
@@ -72,6 +73,32 @@ class RepositoryBase(Generic[M]):
 
     def get_base_statement(self) -> Select[tuple[M]]:
         return select(self.model)
+
+    async def create(self, object: M, *, flush: boolean = False) -> M:
+        self.session.add(object)
+
+        if flush:
+            await self.session.flush()
+
+        return object
+
+    async def update(
+        self,
+        object: M,
+        *,
+        update_dict: dict[str, Any] | None = None,
+        flush: boolean = False,
+    ) -> M:
+        if update_dict is not None:
+            for attr, value in update_dict.items():
+                setattr(object, attr, value)
+
+        self.session.add(object)
+
+        if flush:
+            await self.session.flush()
+
+        return object
 
     @classmethod
     def from_session(cls, session: AsyncSession) -> Self:

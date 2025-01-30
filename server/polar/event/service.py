@@ -3,11 +3,11 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import UnaryExpression, asc, desc, or_, select
+from sqlalchemy import UnaryExpression, asc, desc, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
-from polar.kit.metadata import MetadataQuery
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Customer, Event, Organization, User, UserOrganization
@@ -70,11 +70,7 @@ class EventService:
             statement = statement.where(Event.source.in_(source))
 
         if metadata is not None:
-            for key, values in metadata.items():
-                clauses = []
-                for value in values:
-                    clauses.append(Event.user_metadata[key].astext == value)
-                statement = statement.where(or_(*clauses))
+            statement = apply_metadata_clause(Event, statement, metadata)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

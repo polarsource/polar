@@ -67,7 +67,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, index=True, nullable=False, unique=True
     )
     expires_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=get_expires_at
+        TIMESTAMP(timezone=True), index=True, nullable=False, default=get_expires_at
     )
     payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict

@@ -56,7 +56,9 @@ class IssueFields:
             Uuid,
             ForeignKey("external_organizations.id"),
             nullable=False,
-            index=True,
+            # Don't create an index for organization_id
+            # as it's covered by the unique constraint, being the leading column of it
+            index=False,
         )
 
     @declared_attr
@@ -141,10 +143,6 @@ class Issue(IssueFields, RecordModel):
             "idx_issues_id_closed_at",
             "id",
             "issue_closed_at",
-        ),
-        Index(
-            "idx_issues_pledged_amount_sum",
-            "pledged_amount_sum",
         ),
         Index(
             "idx_issues_positive_reactions_count",

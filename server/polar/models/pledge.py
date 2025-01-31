@@ -142,7 +142,12 @@ class Pledge(RecordModel):
     __table_args__ = (Index("idx_issue_id_state", "issue_id", "state"),)
 
     issue_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("issues.id"), nullable=False, index=True
+        Uuid,
+        ForeignKey("issues.id"),
+        nullable=False,
+        # Don't create an index for issue_id
+        # as it's covered by the unique constraint, being the leading column of it
+        index=False,
     )
     repository_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("repositories.id"), nullable=False

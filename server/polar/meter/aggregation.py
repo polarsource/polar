@@ -15,7 +15,7 @@ class AggregationFunction(StrEnum):
 
 
 class CountAggregation(BaseModel):
-    function: Literal[AggregationFunction.cnt] = AggregationFunction.cnt
+    func: Literal[AggregationFunction.cnt] = AggregationFunction.cnt
 
     def get_sql_column(self, model: type[Any]) -> Any:
         return func.count()
@@ -24,40 +24,40 @@ class CountAggregation(BaseModel):
         return true()
 
 
-class FieldAggregation(BaseModel):
-    function: Literal[
+class PropertyAggregation(BaseModel):
+    func: Literal[
         AggregationFunction.sum,
         AggregationFunction.max,
         AggregationFunction.min,
         AggregationFunction.avg,
     ]
-    field: str
+    property: str
 
     def get_sql_column(self, model: type[Any]) -> Any:
         try:
-            attr = getattr(model, self.field)
+            attr = getattr(model, self.property)
         except AttributeError:
-            attr = model.user_metadata[self.field].as_integer()
-        if self.function == AggregationFunction.sum:
+            attr = model.user_metadata[self.property].as_integer()
+        if self.func == AggregationFunction.sum:
             return func.sum(attr)
-        elif self.function == AggregationFunction.max:
+        elif self.func == AggregationFunction.max:
             return func.max(attr)
-        elif self.function == AggregationFunction.min:
+        elif self.func == AggregationFunction.min:
             return func.min(attr)
-        elif self.function == AggregationFunction.avg:
+        elif self.func == AggregationFunction.avg:
             return func.avg(attr)
-        raise ValueError(f"Unsupported aggregation type: {self.function}")
+        raise ValueError(f"Unsupported aggregation function: {self.func}")
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         try:
-            getattr(model, self.field)
+            getattr(model, self.property)
             return true()
         except AttributeError:
-            return func.jsonb_typeof(model.user_metadata[self.field]) == "number"
+            return func.jsonb_typeof(model.user_metadata[self.property]) == "number"
 
 
-_Aggregation = CountAggregation | FieldAggregation
-Aggregation = Annotated[_Aggregation, Discriminator("function")]
+_Aggregation = CountAggregation | PropertyAggregation
+Aggregation = Annotated[_Aggregation, Discriminator("func")]
 AggregationTypeAdapter: TypeAdapter[Aggregation] = TypeAdapter(Aggregation)
 
 

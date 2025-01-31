@@ -13,5 +13,5 @@ class MeterSortProperty(StrEnum):
 
 ListSorting = Annotated[
     list[Sorting[MeterSortProperty]],
-    Depends(SortingGetter(MeterSortProperty, ["meter"])),
+    Depends(SortingGetter(MeterSortProperty, ["name"])),
 ]

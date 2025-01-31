@@ -16,6 +16,7 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -28,6 +29,7 @@ const ClientPage = ({
   pagination: PaginationState
   organization: Organization
 }) => {
+  console.log('ClientPage', sorting, pagination, organization)
   const router = useRouter()
 
   const { data: meters, isLoading } = useMeters(organization?.id)
@@ -41,9 +43,7 @@ const ClientPage = ({
 
   useEffect(() => {
     if (selectedMeter) {
-      router.push(
-        `/dashboard/${organization.slug}/meters/${selectedMeter.slug}`,
-      )
+      router.push(`/dashboard/${organization.slug}/meters/${selectedMeter.id}`)
     }
   }, [selectedMeter, router, organization])
 
@@ -94,10 +94,12 @@ const ClientPage = ({
   return (
     <DashboardBody
       header={
-        <Button wrapperClassNames="flex items-center flex-row gap-x-2">
-          <AddOutlined fontSize="inherit" />
-          <span>New Meter</span>
-        </Button>
+        <Link href={`/dashboard/${organization.slug}/meters/new`}>
+          <Button wrapperClassNames="flex items-center flex-row gap-x-2">
+            <AddOutlined fontSize="inherit" />
+            <span>New Meter</span>
+          </Button>
+        </Link>
       }
     >
       <MetersList

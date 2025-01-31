@@ -1,5 +1,5 @@
-import { Meter } from '@/app/api/meters/data'
 import { DataTableSortingState } from '@/utils/datatable'
+import { Meter } from '@polar-sh/api'
 import {
   DataTable,
   DataTableColumnDef,
@@ -13,7 +13,6 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import { twMerge } from 'tailwind-merge'
 
 export interface MetersListProps {
   meters: Meter[]
@@ -42,6 +41,7 @@ export const MetersList = ({
     {
       id: 'name',
       accessorKey: 'name',
+      enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
       ),
@@ -50,18 +50,8 @@ export const MetersList = ({
       },
     },
     {
-      id: 'slug',
-      accessorKey: 'slug',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Slug" />
-      ),
-      cell: ({ row: { original: meter } }) => {
-        return <span className="font-mono text-xs lowercase">{meter.slug}</span>
-      },
-    },
-    {
-      id: 'aggregation_type',
-      accessorKey: 'aggregation_type',
+      id: 'aggregation_function',
+      accessorKey: 'aggregation.func',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Aggregation Type" />
       ),
@@ -69,44 +59,7 @@ export const MetersList = ({
         return (
           <Status
             className="dark:bg-polar-700 dark:text-polar-300 w-fit bg-gray-200 capitalize text-gray-500"
-            status={meter.aggregation_type}
-          />
-        )
-      },
-    },
-    {
-      id: 'value',
-      accessorKey: 'value',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Value" />
-      ),
-      cell: ({ row: { original: meter } }) => {
-        return (
-          <span className="font-mono text-sm lowercase">
-            {new Intl.NumberFormat('en-US', {
-              notation: 'compact',
-              compactDisplay: 'short',
-            }).format(meter.value)}
-          </span>
-        )
-      },
-    },
-    {
-      id: 'status',
-      accessorKey: 'status',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row: { original: meter } }) => {
-        return (
-          <Status
-            className={twMerge(
-              'w-fit capitalize',
-              meter.status === 'active'
-                ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                : 'bg-red-100 text-red-500 dark:bg-red-950',
-            )}
-            status={meter.status}
+            status={meter.aggregation.func}
           />
         )
       },
@@ -114,6 +67,7 @@ export const MetersList = ({
     {
       id: 'created_at',
       accessorKey: 'created_at',
+      enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Created At" />
       ),

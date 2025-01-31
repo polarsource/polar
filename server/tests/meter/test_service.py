@@ -9,7 +9,7 @@ from polar.meter.aggregation import (
     Aggregation,
     AggregationFunction,
     CountAggregation,
-    FieldAggregation,
+    PropertyAggregation,
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.service import meter as meter_service
@@ -25,10 +25,10 @@ class TestGetQuantities:
         "aggregation,expected_value",
         [
             (CountAggregation(), 4),
-            (FieldAggregation(function=AggregationFunction.sum, field="tokens"), 40),
-            (FieldAggregation(function=AggregationFunction.max, field="tokens"), 20),
-            (FieldAggregation(function=AggregationFunction.min, field="tokens"), 0),
-            (FieldAggregation(function=AggregationFunction.avg, field="tokens"), 10),
+            (PropertyAggregation(func=AggregationFunction.sum, property="tokens"), 40),
+            (PropertyAggregation(func=AggregationFunction.max, property="tokens"), 20),
+            (PropertyAggregation(func=AggregationFunction.min, property="tokens"), 0),
+            (PropertyAggregation(func=AggregationFunction.avg, property="tokens"), 10),
         ],
     )
     async def test_basic(
@@ -84,7 +84,7 @@ class TestGetQuantities:
                 conjunction=FilterConjunction.and_,
                 clauses=[
                     FilterClause(
-                        field="model", operator=FilterOperator.eq, value="lite"
+                        property="model", operator=FilterOperator.eq, value="lite"
                     )
                 ],
             ),
@@ -142,12 +142,12 @@ class TestGetQuantities:
                 conjunction=FilterConjunction.and_,
                 clauses=[
                     FilterClause(
-                        field="model", operator=FilterOperator.eq, value="lite"
+                        property="model", operator=FilterOperator.eq, value="lite"
                     )
                 ],
             ),
-            aggregation=FieldAggregation(
-                function=AggregationFunction.sum, field="tokens"
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
             ),
         )
 
@@ -174,15 +174,15 @@ class TestGetQuantities:
         assert tomorrow_quantity.quantity == 500
 
     @pytest.mark.parametrize(
-        "field",
+        "property",
         [
-            pytest.param("model", id="not a numeric field"),
-            pytest.param("tokns", id="non existing field"),
+            pytest.param("model", id="not a numeric property"),
+            pytest.param("tokns", id="non existing property"),
         ],
     )
-    async def test_invalid_aggregation_field(
+    async def test_invalid_aggregation_property(
         self,
-        field: str,
+        property: str,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -202,11 +202,13 @@ class TestGetQuantities:
                 conjunction=FilterConjunction.and_,
                 clauses=[
                     FilterClause(
-                        field="model", operator=FilterOperator.eq, value="lite"
+                        property="model", operator=FilterOperator.eq, value="lite"
                     )
                 ],
             ),
-            aggregation=FieldAggregation(function=AggregationFunction.sum, field=field),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property=property
+            ),
         )
 
         result = await meter_service.get_quantities(
@@ -226,18 +228,18 @@ class TestGetQuantities:
         "filter_clause",
         [
             pytest.param(
-                FilterClause(field="model", operator=FilterOperator.eq, value=100),
-                id="value not matching metadata field type",
+                FilterClause(property="model", operator=FilterOperator.eq, value=100),
+                id="value not matching metadata property type",
             ),
             pytest.param(
                 FilterClause(
-                    field="tokens", operator=FilterOperator.like, value="lite"
+                    property="tokens", operator=FilterOperator.like, value="lite"
                 ),
-                id="operator not matching metadata field type",
+                id="operator not matching metadata property type",
             ),
             pytest.param(
-                FilterClause(field="name", operator=FilterOperator.eq, value=100),
-                id="operator not matching field type",
+                FilterClause(property="name", operator=FilterOperator.eq, value=100),
+                id="operator not matching property type",
             ),
         ],
     )
@@ -263,8 +265,8 @@ class TestGetQuantities:
                 conjunction=FilterConjunction.and_,
                 clauses=[filter_clause],
             ),
-            aggregation=FieldAggregation(
-                function=AggregationFunction.sum, field="tokens"
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
             ),
         )
 

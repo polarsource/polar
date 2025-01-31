@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -28,23 +28,23 @@ class FilterOperator(StrEnum):
 
 
 class FilterClause(BaseModel):
-    field: str
+    property: str
     operator: FilterOperator
     value: str | int | bool
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         try:
-            attr = getattr(model, self.field)
+            attr = getattr(model, self.property)
             return self._get_comparison_clause(attr, str(self.value))
         except AttributeError:
-            attr = model.user_metadata[self.field]
+            attr = model.user_metadata[self.property]
             return case(
-                # The field is a string, compare it with the value as a string
+                # The property is a string, compare it with the value as a string
                 (
                     func.jsonb_typeof(attr) == "string",
                     self._get_comparison_clause(attr.as_string(), str(self.value)),
                 ),
-                # The field is a number
+                # The property is a number
                 (
                     func.jsonb_typeof(attr) == "number",
                     # Compare it with the value if it's an integer
@@ -53,7 +53,7 @@ class FilterClause(BaseModel):
                     # Otherwise return false
                     else false(),
                 ),
-                # The field is a boolean
+                # The property is a boolean
                 (
                     func.jsonb_typeof(attr) == "boolean",
                     # Compare it with the value if it's a boolean
@@ -92,6 +92,11 @@ class FilterConjunction(StrEnum):
 class Filter(BaseModel):
     conjunction: FilterConjunction
     clauses: list["FilterClause | Filter"]
+
+    model_config = ConfigDict(
+        # IMPORTANT: this ensures FastAPI doesn't generate `-Input` for output schemas
+        json_schema_mode_override="serialization",
+    )
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         sql_clauses: list[ColumnExpressionArgument[bool]] = [

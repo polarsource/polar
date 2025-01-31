@@ -42,7 +42,9 @@ class Downloadable(RecordModel):
         Uuid,
         ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
-        index=True,
+        # Don't create an index for customer_id
+        # as it's covered by the unique constraint, being the leading column of it
+        index=False,
     )
 
     @declared_attr

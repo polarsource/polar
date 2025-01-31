@@ -80,7 +80,13 @@ class CustomField(MetadataMixin, RecordModel):
     __table_args__ = (UniqueConstraint("slug", "organization_id"),)
 
     type: Mapped[CustomFieldType] = mapped_column(String, nullable=False, index=True)
-    slug: Mapped[str] = mapped_column(CITEXT, nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(
+        CITEXT,
+        nullable=False,
+        # Don't create an index for slug
+        # as it's covered by the unique constraint, being the leading column of it
+        index=False,
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     properties: Mapped[CustomFieldProperties] = mapped_column(
         JSONB, nullable=False, default=dict

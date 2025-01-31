@@ -158,7 +158,9 @@ class BenefitGrant(RecordModel):
         Uuid,
         ForeignKey("subscriptions.id", ondelete="cascade"),
         nullable=True,
-        index=True,
+        # Don't create an index for subscription_id
+        # as it's covered by the unique constraint, being the leading column of it
+        index=False,
     )
 
     @declared_attr

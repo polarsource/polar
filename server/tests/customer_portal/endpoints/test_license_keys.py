@@ -197,7 +197,7 @@ class TestCustomerLicenseKeyEndpoints:
         )
         assert response.status_code == 200
 
-        with freeze_time(now + relativedelta(days=28, minutes=5)):
+        with freeze_time(now + relativedelta(months=1, minutes=-5)):
             response = await client.post(
                 "/v1/customer-portal/license-keys/validate",
                 json={

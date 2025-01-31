@@ -1,14 +1,14 @@
 'use client'
 
-import { MeterEvent } from '@/app/api/meters/data'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MeterChart } from '@/components/Meter/MeterChart'
 import { MeterContextView } from '@/components/Meter/MeterContextView'
-import { MeterEvents } from '@/components/Meter/MeterEvents'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
-import { useMeter, useMeterEvents } from '@/hooks/queries/meters'
+import Spinner from '@/components/Shared/Spinner'
+import { useMeter, useMeterQuantities } from '@/hooks/queries/meters'
+import { UTCDate } from '@date-fns/utc'
 import { MoreVert } from '@mui/icons-material'
-import { MetricType, TimeInterval } from '@polar-sh/api'
+import { Meter } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -16,38 +16,43 @@ import {
   CardFooter,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { useParams } from 'next/navigation'
-import { twMerge } from 'tailwind-merge'
+import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
+import { useMemo } from 'react'
 
-export default function ClientPage() {
-  const { slug } = useParams()
-  const { data: meter } = useMeter(slug as string)
-  const { data: meterEvents } = useMeterEvents(meter?.slug)
+export default function ClientPage({ meter: _meter }: { meter: Meter }) {
+  const { data: meter } = useMeter(_meter.id, _meter)
 
-  const mockedMeterData = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    return {
-      timestamp: date,
-      usage:
-        meterEvents?.items
-          .filter((event: MeterEvent) => {
-            const eventDate = new Date(event.created_at)
-            return eventDate.toDateString() === date.toDateString()
-          })
-          .reduce(
-            (total: number, event: MeterEvent) => total + event.value,
-            0,
-          ) ?? 0,
-    }
-  }).reverse()
+  const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
+  const endChart = useMemo(() => new UTCDate(), [])
+  const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
+    _meter.id,
+    startChart,
+    endChart,
+    'day',
+  )
+
+  const lastMonthStart = useMemo(
+    () => startOfMonth(subMonths(new UTCDate(), 1)),
+    [],
+  )
+  const lastMonthEnd = useMemo(
+    () => endOfMonth(subMonths(new UTCDate(), 1)),
+    [],
+  )
+  const currentMonthStart = useMemo(() => startOfMonth(new UTCDate()), [])
+  const currentMonthEnd = useMemo(() => endOfMonth(new UTCDate()), [])
+  const { data: figuresQuantities } = useMeterQuantities(
+    _meter.id,
+    lastMonthStart,
+    currentMonthEnd,
+    'month',
+  )
 
   if (!meter) return null
 
@@ -56,21 +61,11 @@ export default function ClientPage() {
       title={
         <div className="flex flex-row items-center gap-x-4">
           <h1 className="text-2xl">{meter.name}</h1>
-          <Status
-            className={twMerge(
-              'w-fit capitalize',
-              meter?.status === 'active'
-                ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                : 'bg-red-100 text-red-500 dark:bg-red-950',
-            )}
-            status={meter?.status}
-          />
         </div>
       }
       header={
         <div className="flex flex-row gap-x-4">
           <Button variant="secondary">Edit Meter</Button>
-          <Button>Add Usage</Button>
           <Button className="text-lg" size="icon" variant="secondary">
             <MoreVert
               className="dark:text-polar-500 text-gray-500"
@@ -90,15 +85,17 @@ export default function ClientPage() {
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12">
-          <MeterChart
-            data={mockedMeterData}
-            interval={TimeInterval.DAY}
-            metric={{
-              display_name: 'Usage',
-              slug: 'usage',
-              type: MetricType.SCALAR,
-            }}
-          />
+          {chartLoading ? (
+            <div className="flex h-[300px] flex-col items-center justify-center">
+              <Spinner />
+            </div>
+          ) : chartQuantities ? (
+            <MeterChart data={chartQuantities.quantities} interval="day" />
+          ) : (
+            <div className="flex h-[300px] flex-col items-center justify-center">
+              <span className="text-lg">No data available</span>
+            </div>
+          )}
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-row items-center justify-between">
               <h2 className="text-xl">Activity</h2>
@@ -111,24 +108,25 @@ export default function ClientPage() {
                   </span>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-4xl">0</span>
+                  <span className="text-4xl">
+                    {figuresQuantities
+                      ? Intl.NumberFormat('en-US', {
+                          notation: 'standard',
+                        }).format(figuresQuantities.quantities[0].quantity)
+                      : '—'}
+                  </span>
                 </CardContent>
                 <CardFooter>
                   <span className="dark:text-polar-500 text-gray-500">
-                    {new Date(
-                      new Date().setMonth(new Date().getMonth() - 1, 1),
-                    ).toLocaleDateString('en-US', {
+                    {lastMonthStart.toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
                     })}{' '}
                     -{' '}
-                    {new Date(new Date().setDate(0)).toLocaleDateString(
-                      'en-US',
-                      {
-                        month: 'long',
-                        day: 'numeric',
-                      },
-                    )}
+                    {lastMonthEnd.toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                    })}
                   </span>
                 </CardFooter>
               </Card>
@@ -140,22 +138,21 @@ export default function ClientPage() {
                 </CardHeader>
                 <CardContent>
                   <span className="text-4xl">
-                    {Intl.NumberFormat('en-US', {
-                      notation: 'standard',
-                    }).format(meter.value)}
+                    {figuresQuantities
+                      ? Intl.NumberFormat('en-US', {
+                          notation: 'standard',
+                        }).format(figuresQuantities.quantities[1].quantity)
+                      : '—'}
                   </span>
                 </CardContent>
                 <CardFooter>
                   <span className="dark:text-polar-500 text-gray-500">
-                    {new Date(new Date().setDate(1)).toLocaleDateString(
-                      'en-US',
-                      {
-                        month: 'long',
-                        day: 'numeric',
-                      },
-                    )}{' '}
+                    {currentMonthStart.toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                    })}{' '}
                     -{' '}
-                    {new Date().toLocaleDateString('en-US', {
+                    {currentMonthEnd.toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
                     })}
@@ -172,11 +169,11 @@ export default function ClientPage() {
                 Recently received meter events
               </p>
             </div>
-            <MeterEvents events={meterEvents?.items ?? []} />
+            {/* <MeterEvents events={meterEvents?.items ?? []} /> */}
           </div>
         </TabsContent>
         <TabsContent value="events">
-          <MeterEvents events={meterEvents?.items ?? []} />
+          {/* <MeterEvents events={meterEvents?.items ?? []} /> */}
         </TabsContent>
       </Tabs>
     </DashboardBody>

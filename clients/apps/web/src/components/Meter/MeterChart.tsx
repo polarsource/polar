@@ -1,7 +1,6 @@
-import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
-import { Metric, TimeInterval } from '@polar-sh/api'
-import * as d3 from 'd3'
+import { TimeInterval } from '@polar-sh/api'
+import { timeFormat } from 'd3'
 import { GeistMono } from 'geist/font/mono'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -85,9 +84,9 @@ const getTickFormat = (
       return (t: Date, i: number) => {
         const previousDate = ticks[i - 1]
         if (!previousDate || previousDate.getDate() < t.getDate()) {
-          return d3.timeFormat('%a %H:%M')(t)
+          return timeFormat('%a %H:%M')(t)
         }
-        return d3.timeFormat('%H:%M')(t)
+        return timeFormat('%H:%M')(t)
       }
     case TimeInterval.DAY:
       return '%b %d'
@@ -103,10 +102,9 @@ const getTickFormat = (
 interface MeterChartProps {
   data: {
     timestamp: Date
-    usage: number
+    quantity: number
   }[]
   interval: TimeInterval
-  metric: Metric
   height?: number
   maxTicks?: number
   onDataIndexHover?: (index: number | undefined) => void
@@ -115,7 +113,6 @@ interface MeterChartProps {
 export const MeterChart: React.FC<MeterChartProps> = ({
   data,
   interval,
-  metric,
   height: _height,
   maxTicks: _maxTicks,
   onDataIndexHover,
@@ -132,7 +129,13 @@ export const MeterChart: React.FC<MeterChartProps> = ({
     () => getTicks(timestamps, maxTicks),
     [timestamps, maxTicks],
   )
-  const valueFormatter = useMemo(() => getValueFormatter(metric), [metric])
+  const valueFormatter = useMemo(() => {
+    const numberFormat = new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: 2,
+      notation: 'compact',
+    })
+    return (value: number) => numberFormat.format(value)
+  }, [])
 
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
 
@@ -188,12 +191,12 @@ export const MeterChart: React.FC<MeterChartProps> = ({
         }),
         Plot.areaY(data, {
           x: 'timestamp',
-          y: metric.slug,
+          y: 'quantity',
           fill: `url(#${gradientId})`,
         }),
         Plot.lineY(data, {
           x: 'timestamp',
-          y: metric.slug,
+          y: 'quantity',
           stroke: primaryColor,
           strokeWidth: 2,
         }),
@@ -216,7 +219,7 @@ export const MeterChart: React.FC<MeterChartProps> = ({
           data,
           Plot.pointerX({
             x: 'timestamp',
-            y: metric.slug,
+            y: 'quantity',
             fill: primaryColor,
             r: 5,
           }),
@@ -227,7 +230,7 @@ export const MeterChart: React.FC<MeterChartProps> = ({
                 data,
                 Plot.pointerX({
                   x: 'timestamp',
-                  y: metric.slug,
+                  y: 'quantity',
                   fill: primaryColor,
                   fillOpacity: 0.5,
                   r: 5,
@@ -243,7 +246,6 @@ export const MeterChart: React.FC<MeterChartProps> = ({
     return () => plot.remove()
   }, [
     data,
-    metric,
     containerRef,
     interval,
     ticks,

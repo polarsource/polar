@@ -76,7 +76,7 @@ export const CheckoutLinkForm = ({
         product_price_id: checkoutLink.product_price_id ?? undefined,
         allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
         success_url: checkoutLink.success_url ?? undefined,
-        discount_id: checkoutLink.discount_id ?? undefined,
+        discount_id: checkoutLink.discount_id ?? '',
       }
     }
 
@@ -86,6 +86,7 @@ export const CheckoutLinkForm = ({
       product_id: product.id,
       product_price_id: undefined,
       allow_discount_codes: true,
+      discount_id: '',
     }
   }
 
@@ -103,9 +104,10 @@ export const CheckoutLinkForm = ({
   })
 
   useEffect(() => {
-    if (checkoutLink) {
-      reset(generateDefaultValues())
-    }
+    if (!checkoutLink) return
+
+    const defaultValues = generateDefaultValues()
+    reset(defaultValues)
   }, [checkoutLink])
 
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
@@ -145,6 +147,9 @@ export const CheckoutLinkForm = ({
     async (data) => {
       try {
         const { product_price_id, product_id, ...params } = data
+        if (params.discount_id === '') {
+          params.discount_id = null
+        }
         const body: CheckoutLinkCreate = {
           payment_processor: 'stripe',
           ...params,

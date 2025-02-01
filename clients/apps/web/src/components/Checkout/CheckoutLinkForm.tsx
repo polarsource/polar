@@ -75,7 +75,7 @@ export const CheckoutLinkForm = ({
         product_id: product.id,
         product_price_id: checkoutLink.product_price_id ?? undefined,
         allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
-        success_url: checkoutLink.success_url ?? undefined,
+        success_url: checkoutLink.success_url ?? '',
         discount_id: checkoutLink.discount_id ?? '',
       }
     }
@@ -86,6 +86,7 @@ export const CheckoutLinkForm = ({
       product_id: product.id,
       product_price_id: undefined,
       allow_discount_codes: true,
+      success_url: '',
       discount_id: '',
     }
   }
@@ -149,6 +150,9 @@ export const CheckoutLinkForm = ({
         const { product_price_id, product_id, ...params } = data
         if (params.discount_id === '') {
           params.discount_id = null
+        }
+        if (params.success_url === '') {
+          params.success_url = null
         }
         const body: CheckoutLinkCreate = {
           payment_processor: 'stripe',

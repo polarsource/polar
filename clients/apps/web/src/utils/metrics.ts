@@ -1,4 +1,4 @@
-import { Metric, Metrics, MetricType, TimeInterval } from '@polar-sh/api'
+import { Interval, Metric, Metrics, MetricType } from '@polar-sh/api'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { format, parse } from 'date-fns'
 
@@ -62,25 +62,25 @@ export const getValueFormatter = (
 }
 
 export const getTimestampFormatter = (
-  interval: TimeInterval,
+  interval: Interval,
   locale: string = 'en-US',
 ): ((value: Date) => string) => {
   switch (interval) {
-    case TimeInterval.HOUR:
+    case Interval.HOUR:
       return (value: Date) =>
         value.toLocaleString(locale, {
           dateStyle: 'medium',
           timeStyle: 'short',
         })
-    case TimeInterval.DAY:
-    case TimeInterval.WEEK:
+    case Interval.DAY:
+    case Interval.WEEK:
       return (value: Date) =>
         value.toLocaleDateString(locale, {
           dateStyle: 'medium',
         })
-    case TimeInterval.MONTH:
+    case Interval.MONTH:
       return (value: Date) => format(value, 'MMMM yyyy')
-    case TimeInterval.YEAR:
+    case Interval.YEAR:
       return (value: Date) => format(value, 'yyyy')
   }
 }
@@ -125,11 +125,11 @@ export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
 }
 
 const getTickFormat = (
-  interval: TimeInterval,
+  interval: Interval,
   ticks: Date[],
 ): ((t: Date, i: number) => any) | string => {
   switch (interval) {
-    case TimeInterval.HOUR:
+    case Interval.HOUR:
       return (t: Date, i: number) => {
         const previousDate = ticks[i - 1]
         if (!previousDate || previousDate.getDate() < t.getDate()) {
@@ -137,13 +137,13 @@ const getTickFormat = (
         }
         return timeFormat('%H:%M')(t)
       }
-    case TimeInterval.DAY:
+    case Interval.DAY:
       return '%b %d'
-    case TimeInterval.WEEK:
+    case Interval.WEEK:
       return '%b %d'
-    case TimeInterval.MONTH:
+    case Interval.MONTH:
       return '%b %y'
-    case TimeInterval.YEAR:
+    case Interval.YEAR:
       return '%Y'
   }
 }
@@ -151,7 +151,7 @@ const getTickFormat = (
 export type MetricMarksResolver = (config: {
   data: ParsedMetricPeriod[]
   metric: Metric
-  interval: TimeInterval
+  interval: Interval
   onDataIndexHover?: (index: number | undefined) => void
   ticks: Date[]
 }) => Plot.Markish[]
@@ -165,7 +165,7 @@ export const defaultMetricMarks: MetricMarksResolver = ({
 }: {
   data: ParsedMetricPeriod[]
   metric: Metric
-  interval: TimeInterval
+  interval: Interval
   onDataIndexHover?: (index: number | undefined) => void
   ticks: Date[]
 }): Plot.Markish[] => [

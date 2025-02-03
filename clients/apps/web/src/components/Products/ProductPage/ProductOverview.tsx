@@ -1,212 +1,195 @@
-import { MiniMetricChartBox } from "@/components/Metrics/MiniMetricChartBox";
-import { OrderAmountWithRefund } from "@/components/Refunds/OrderAmountWithRefund";
-import { ParsedMetricPeriod, useDiscounts } from "@/hooks/queries";
-import { useOrders } from "@/hooks/queries/orders";
-import { getDiscountDisplay } from "@/utils/discount";
-import { Metrics, OrderCustomer, Organization, Product } from "@polar-sh/api";
-import Avatar from "@polar-sh/ui/components/atoms/Avatar";
-import Button from "@polar-sh/ui/components/atoms/Button";
+import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
+import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefund'
+import { ParsedMetricPeriod, useDiscounts } from '@/hooks/queries'
+import { useOrders } from '@/hooks/queries/orders'
+import { getDiscountDisplay } from '@/utils/discount'
+import { Metrics, OrderCustomer, Organization, Product } from '@polar-sh/api'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
-	DataTable,
-	DataTableColumnHeader,
-} from "@polar-sh/ui/components/atoms/DataTable";
-import FormattedDateTime from "@polar-sh/ui/components/atoms/FormattedDateTime";
-import Link from "next/link";
+  DataTable,
+  DataTableColumnHeader,
+} from '@polar-sh/ui/components/atoms/DataTable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Link from 'next/link'
 
 export interface ProductOverviewProps {
-	organization: Organization;
-	product: Product;
-	metrics?: Metrics;
-	periods?: ParsedMetricPeriod[];
+  organization: Organization
+  product: Product
+  metrics?: Metrics
+  periods?: ParsedMetricPeriod[]
 }
 
 export const ProductOverview = ({
-	organization,
-	product,
-	metrics,
-	periods,
+  organization,
+  product,
+  metrics,
+  periods,
 }: ProductOverviewProps) => {
-	const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
-		organization.id,
-		{
-			productId: product.id,
-			limit: 10,
-		},
-	);
+  const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
+    organization.id,
+    {
+      productId: product.id,
+      limit: 10,
+    },
+  )
 
-	const { data: discountsData, isLoading: discountsLoading } = useDiscounts(
-		organization.id,
-	);
+  const { data: discountsData, isLoading: discountsLoading } = useDiscounts(
+    organization.id,
+  )
 
-	const productDiscounts = discountsData?.items.filter((discount) =>
-		discount.products.some((p) => p.id === product.id),
-	);
+  const applicableDiscounts = discountsData?.items.filter(
+    (discount) =>
+      discount.products.length === 0 ||
+      discount.products.some((p) => p.id === product.id),
+  )
 
-	return (
-		<div className="flex flex-col gap-y-16">
-			<div className="grid md:grid-cols-2 gap-6 grid-cols-1 lg:grid-cols-3 ">
-				<MiniMetricChartBox
-					metric={metrics?.orders}
-					value={periods?.reduce((acc, current) => acc + current.orders, 0)}
-				/>
-				<MiniMetricChartBox
-					title="Today&apos;s Revenue"
-					metric={metrics?.revenue}
-				/>
-				<MiniMetricChartBox
-					metric={metrics?.cumulative_revenue}
-					value={periods?.[periods.length - 1].cumulative_revenue}
-				/>
-			</div>
-			<div className="flex flex-col gap-y-6">
-				<div className="flex flex-row items-center justify-between gap-x-6">
-					<div className="flex flex-col gap-y-1">
-						<h2 className="text-lg">Product Orders</h2>
-						<p className="dark:text-polar-500 text-sm text-gray-500">
-							Showing last 10 orders for {product.name}
-						</p>
-					</div>
-					<Link
-						href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}
-					>
-						<Button size="sm">View All</Button>
-					</Link>
-				</div>
-				<DataTable
-					data={productOrders?.items ?? []}
-					columns={[
-						{
-							accessorKey: "customer",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Customer" />
-							),
-							cell: (props) => {
-								const customer = props.getValue() as OrderCustomer;
-								return (
-									<div className="flex flex-row items-center gap-2">
-										<Avatar
-											className="h-8 w-8"
-											avatar_url={customer.avatar_url}
-											name={customer.name || customer.email}
-										/>
-										<div className="fw-medium">{customer.email}</div>
-									</div>
-								);
-							},
-						},
-						{
-							accessorKey: "amount",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Amount" />
-							),
-							cell: ({ row: { original: order } }) => (
-								<OrderAmountWithRefund order={order} />
-							),
-						},
-						{
-							accessorKey: "created_at",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Date" />
-							),
-							cell: (props) => (
-								<FormattedDateTime datetime={props.getValue() as string} />
-							),
-						},
-						{
-							accessorKey: "actions",
-							enableSorting: true,
-							header: () => null,
-							cell: (props) => (
-								<span className="flex flex-row justify-end">
-									<Link
-										href={`/dashboard/${organization.slug}/sales/${props.row.original.id}`}
-									>
-										<Button variant="secondary" size="sm">
-											View
-										</Button>
-									</Link>
-								</span>
-							),
-						},
-					]}
-					isLoading={productOrdersIsLoading}
-				/>
-			</div>
-			<div className="flex flex-col gap-y-6">
-				<div className="flex flex-row items-center justify-between gap-x-6">
-					<div className="flex flex-col gap-y-1">
-						<h2 className="text-lg">Active Discounts</h2>
-						<p className="dark:text-polar-500 text-sm text-gray-500">
-							All Discounts associated with {product.name}
-						</p>
-					</div>
-				</div>
-				<DataTable
-					data={productDiscounts ?? []}
-					columns={[
-						{
-							accessorKey: "name",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Name" />
-							),
-							cell: (props) => {
-								return props.getValue() as string;
-							},
-						},
-						{
-							accessorKey: "code",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Code" />
-							),
-							cell: ({ row: { original: discount } }) => (
-								<span>{discount.code}</span>
-							),
-						},
-						{
-							accessorKey: "amount",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Amount" />
-							),
-							cell: ({ row: { original: discount } }) => (
-								<span>{getDiscountDisplay(discount)}</span>
-							),
-						},
-						{
-							accessorKey: "created_at",
-							enableSorting: true,
-							header: ({ column }) => (
-								<DataTableColumnHeader column={column} title="Date" />
-							),
-							cell: (props) => (
-								<FormattedDateTime datetime={props.getValue() as string} />
-							),
-						},
-						{
-							accessorKey: "actions",
-							enableSorting: true,
-							header: () => null,
-							cell: (props) => (
-								<span className="flex flex-row justify-end">
-									<Link
-										href={`/dashboard/${organization.slug}/discounts/${props.row.original.id}`}
-									>
-										<Button variant="secondary" size="sm">
-											View
-										</Button>
-									</Link>
-								</span>
-							),
-						},
-					]}
-					isLoading={discountsLoading}
-				/>
-			</div>
-		</div>
-	);
-};
+  return (
+    <div className="flex flex-col gap-y-16">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <MiniMetricChartBox
+          metric={metrics?.orders}
+          value={periods?.reduce((acc, current) => acc + current.orders, 0)}
+        />
+        <MiniMetricChartBox title="Today's Revenue" metric={metrics?.revenue} />
+        <MiniMetricChartBox
+          metric={metrics?.cumulative_revenue}
+          value={periods?.[periods.length - 1].cumulative_revenue}
+        />
+      </div>
+      <div className="flex flex-col gap-y-6">
+        <div className="flex flex-row items-center justify-between gap-x-6">
+          <div className="flex flex-col gap-y-1">
+            <h2 className="text-lg">Product Orders</h2>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              Showing last 10 orders for {product.name}
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}
+          >
+            <Button size="sm">View All</Button>
+          </Link>
+        </div>
+        <DataTable
+          data={productOrders?.items ?? []}
+          columns={[
+            {
+              accessorKey: 'customer',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Customer" />
+              ),
+              cell: (props) => {
+                const customer = props.getValue() as OrderCustomer
+                return (
+                  <div className="flex flex-row items-center gap-2">
+                    <Avatar
+                      className="h-8 w-8"
+                      avatar_url={customer.avatar_url}
+                      name={customer.name || customer.email}
+                    />
+                    <div className="fw-medium">{customer.email}</div>
+                  </div>
+                )
+              },
+            },
+            {
+              accessorKey: 'amount',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Amount" />
+              ),
+              cell: ({ row: { original: order } }) => (
+                <OrderAmountWithRefund order={order} />
+              ),
+            },
+            {
+              accessorKey: 'created_at',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Date" />
+              ),
+              cell: (props) => (
+                <FormattedDateTime datetime={props.getValue() as string} />
+              ),
+            },
+            {
+              accessorKey: 'actions',
+              enableSorting: true,
+              header: () => null,
+              cell: (props) => (
+                <span className="flex flex-row justify-end">
+                  <Link
+                    href={`/dashboard/${organization.slug}/sales/${props.row.original.id}`}
+                  >
+                    <Button variant="secondary" size="sm">
+                      View
+                    </Button>
+                  </Link>
+                </span>
+              ),
+            },
+          ]}
+          isLoading={productOrdersIsLoading}
+        />
+      </div>
+      <div className="flex flex-col gap-y-6">
+        <div className="flex flex-row items-center justify-between gap-x-6">
+          <div className="flex flex-col gap-y-1">
+            <h2 className="text-lg">Applicable Discounts</h2>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              All Discounts valid for {product.name}
+            </p>
+          </div>
+        </div>
+        <DataTable
+          data={applicableDiscounts ?? []}
+          columns={[
+            {
+              accessorKey: 'name',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Name" />
+              ),
+              cell: (props) => {
+                return props.getValue() as string
+              },
+            },
+            {
+              accessorKey: 'code',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Code" />
+              ),
+              cell: ({ row: { original: discount } }) => (
+                <span>{discount.code}</span>
+              ),
+            },
+            {
+              accessorKey: 'amount',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Amount" />
+              ),
+              cell: ({ row: { original: discount } }) => (
+                <span>{getDiscountDisplay(discount)}</span>
+              ),
+            },
+            {
+              accessorKey: 'created_at',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Date" />
+              ),
+              cell: (props) => (
+                <FormattedDateTime datetime={props.getValue() as string} />
+              ),
+            },
+          ]}
+          isLoading={discountsLoading}
+        />
+      </div>
+    </div>
+  )
+}

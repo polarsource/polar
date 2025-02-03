@@ -2,6 +2,7 @@ from fastapi import Depends, Query
 from pydantic import AwareDatetime
 
 from polar.customer.schemas import CustomerID
+from polar.event.schemas import Event
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -82,6 +83,33 @@ async def get(
         raise ResourceNotFound()
 
     return meter
+
+
+@router.get(
+    "/{id}/events",
+    summary="Get Meter Events",
+    response_model=ListResource[Event],
+    responses={404: MeterNotFound},
+)
+async def events(
+    id: MeterID,
+    auth_subject: auth.MeterRead,
+    pagination: PaginationParamsQuery,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[Event]:
+    """Get events matching the filter of a meter."""
+    meter = await meter_service.get(session, auth_subject, id)
+
+    if meter is None:
+        raise ResourceNotFound()
+
+    results, count = await meter_service.events(session, meter, pagination=pagination)
+
+    return ListResource.from_paginated_results(
+        [Event.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.get(

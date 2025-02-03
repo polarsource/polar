@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.event.repository import EventRepository
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -105,6 +106,28 @@ class MeterService:
             update_dict=meter_update.model_dump(by_alias=True, exclude_unset=True),
         )
 
+    async def events(
+        self,
+        session: AsyncSession,
+        meter: Meter,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[Event], int]:
+        repository = EventRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(
+                Event.organization_id == meter.organization_id,
+                meter.filter.get_sql_clause(Event),
+                # Additional clauses to make sure we work on rows with the right type for aggregation
+                meter.aggregation.get_sql_clause(Event),
+            )
+            .order_by(Event.timestamp.desc())
+        )
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
     async def get_quantities(
         self,
         session: AsyncSession,
@@ -122,6 +145,7 @@ class MeterService:
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
         event_clauses: list[ColumnExpressionArgument[bool]] = [
+            Event.organization_id == meter.organization_id,
             interval.sql_date_trunc(Event.timestamp)
             == interval.sql_date_trunc(timestamp_column),
         ]

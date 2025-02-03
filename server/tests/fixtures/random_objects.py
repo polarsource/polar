@@ -1580,7 +1580,7 @@ async def create_event(
         name=name,
         customer=customer,
         external_customer_id=external_customer_id,
-        organization_id=organization.id,
+        organization=organization,
         user_metadata=metadata or {},
     )
     await save_fixture(event)

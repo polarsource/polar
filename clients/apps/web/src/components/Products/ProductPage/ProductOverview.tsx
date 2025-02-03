@@ -36,6 +36,9 @@ export const ProductOverview = ({
 
   const { data: discountsData, isLoading: discountsLoading } = useDiscounts(
     organization.id,
+    {
+      limit: 100,
+    },
   )
 
   const applicableDiscounts = discountsData?.items.filter(

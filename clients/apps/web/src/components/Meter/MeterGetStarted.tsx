@@ -1,4 +1,4 @@
-import { Meter } from '@/app/api/meters/data'
+import { Meter } from '@polar-sh/api'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -8,7 +8,7 @@ export interface MeterGetStartedProps {
   meter: Meter
 }
 
-export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
+export const MeterGetStarted = ({}: MeterGetStartedProps) => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-gray-100 p-6">
       <div className="flex flex-col gap-y-2">
@@ -20,17 +20,7 @@ export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
       </div>
       <pre className="dark:bg-polar-900 rounded-lg bg-white p-4 font-mono text-sm">
         <SyntaxHighlighterProvider>
-          <SyntaxHighlighterClient
-            lang="typescript"
-            code={`import { Usage } from "@polar-sh/nextjs";
-              
-export const POST = Usage()
-  .model(openai("gpt-4o-mini"))
-  .customer(async (req) => req.headers.get("X-Polar-Customer-Id") ?? "")
-  .increment("${meter.slug}", (ctx) => ctx.usage.promptTokens)
-  .handler(async (req, res, model) => /** Handle request and model as usual */);
-`}
-          />
+          <SyntaxHighlighterClient lang="typescript" code={`TBD`} />
         </SyntaxHighlighterProvider>
       </pre>
     </div>

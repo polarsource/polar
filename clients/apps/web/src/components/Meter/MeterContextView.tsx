@@ -1,6 +1,6 @@
-import { Meter } from '@/app/api/meters/data'
 import { MeterDetails } from '@/components/Meter/MeterDetails'
 import { AddOutlined } from '@mui/icons-material'
+import { Meter } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useTheme } from 'next-themes'
@@ -48,6 +48,7 @@ export interface MeterContextViewProps {
 
 export const MeterContextView = ({ meter }: MeterContextViewProps) => {
   const { resolvedTheme } = useTheme()
+  const value = 4342
 
   return (
     <div className="flex flex-col gap-y-8 overflow-y-auto px-8 py-12">
@@ -100,13 +101,13 @@ export const MeterContextView = ({ meter }: MeterContextViewProps) => {
                     className="absolute left-0 top-0 h-full w-full -rotate-90"
                     viewBox="0 0 36 36"
                   >
-                    {(meter.value / alert.threshold) * 100 >= 100 && (
+                    {(value / alert.threshold) * 100 >= 100 && (
                       <circle
                         cx="18"
                         cy="18"
                         r="1"
                         fill={
-                          (meter.value / alert.threshold) * 100 >= 100
+                          (value / alert.threshold) * 100 >= 100
                             ? 'rgb(52, 211, 153)'
                             : 'rgb(96, 165, 250)'
                         }
@@ -129,11 +130,11 @@ export const MeterContextView = ({ meter }: MeterContextViewProps) => {
                       cy="18"
                       r="8"
                       stroke={
-                        (meter.value / alert.threshold) * 100 >= 100
+                        (value / alert.threshold) * 100 >= 100
                           ? 'rgb(52, 211, 153)'
                           : 'rgb(96, 165, 250)'
                       }
-                      strokeDasharray={`${Math.round((meter.value / alert.threshold) * 100)}, 100`}
+                      strokeDasharray={`${Math.round((value / alert.threshold) * 100)}, 100`}
                       strokeWidth="3"
                       fill="none"
                     />

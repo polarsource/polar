@@ -4,6 +4,7 @@ import {
   MeterCreate,
   MetersApiListRequest,
   MetersApiQuantitiesRequest,
+  MeterUpdate,
   ResponseError,
   TimeInterval,
 } from '@polar-sh/api'
@@ -105,6 +106,26 @@ export const useCreateMeter = (organizationId: string) =>
     onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['meters', { organizationId }],
+      })
+    },
+  })
+
+export const useUpdateMeter = (id: string) =>
+  useMutation({
+    mutationFn: (body: MeterUpdate) =>
+      api.meters.update({
+        id,
+        body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['meters', { id }],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['meters', 'events', { id }],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['meters', { organizationId: result.organization_id }],
       })
     },
   })

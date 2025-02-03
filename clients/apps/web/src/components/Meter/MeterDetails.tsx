@@ -40,32 +40,13 @@ export const MeterDetails = ({ meter }: { meter: Meter }) => {
         }
       />
       <DetailRow
-        label="Slug"
-        value={meter.slug}
-        action={
-          <CopyToClipboardButton
-            text={meter.slug}
-            onCopy={() => {
-              toast({
-                title: 'Copied To Clipboard',
-                description: `Meter Slug was copied to clipboard`,
-              })
-            }}
-          />
-        }
-      />
-      <DetailRow
         label="Aggregation Type"
-        value={meter.aggregation_type}
+        value={meter.aggregation.func}
         valueClassName="capitalize"
       />
       <DetailRow
         label="Created At"
         value={<FormattedDateTime datetime={meter.created_at} />}
-      />
-      <DetailRow
-        label="Updated At"
-        value={<FormattedDateTime datetime={meter.updated_at} />}
       />
     </div>
   )

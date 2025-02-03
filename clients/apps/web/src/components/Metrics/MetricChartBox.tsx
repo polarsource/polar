@@ -27,7 +27,7 @@ interface MetricChartBoxProps {
   className?: string
   data: ParsedMetricPeriod[]
   interval: TimeInterval
-  metric: Metric
+  metric?: Metric
   height?: number
   maxTicks?: number
   marks?: MetricMarksResolver

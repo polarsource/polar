@@ -1,6 +1,6 @@
 'use client'
 
-import { Meter } from '@/app/api/meters/data'
+import { Meter } from '@polar-sh/api'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import CopyToClipboardButton from '../CopyToClipboardButton/CopyToClipboardButton'
 import { DetailRow } from '../Shared/DetailRow'

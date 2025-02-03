@@ -1,7 +1,6 @@
 import { Event } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
-import { useMemo } from 'react'
 
 export const MeterEvents = ({ events }: { events: Event[] }) => {
   return (
@@ -35,15 +34,15 @@ export const MeterEvents = ({ events }: { events: Event[] }) => {
           header: 'Created At',
           accessorKey: 'timestamp',
           cell: ({ row: { original: event } }) => {
-            const formattedTimestamp = useMemo(() => {
-              return new Date(event.timestamp).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-              })
-            }, [event.timestamp])
+            const formattedTimestamp = new Date(
+              event.timestamp,
+            ).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+            })
             return (
               <span className="font-mono text-xs capitalize">
                 {formattedTimestamp}

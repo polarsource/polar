@@ -48,11 +48,8 @@ class WebhookEndpoint(TimestampedSchema):
     id: UUID4 = Field(description="The webhook endpoint ID.")
     url: EndpointURL
     format: EndpointFormat
-    user_id: UUID4 | None = Field(
-        None, description=("The user ID associated with the webhook endpoint.")
-    )
-    organization_id: UUID4 | None = Field(
-        None, description="The organization ID associated with the webhook endpoint."
+    organization_id: UUID4 = Field(
+        description="The organization ID associated with the webhook endpoint."
     )
     events: EndpointEvents
 

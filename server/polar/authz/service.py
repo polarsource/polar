@@ -21,7 +21,6 @@ from polar.models.pledge import Pledge
 from polar.models.product import Product
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.user_organization.service import (
@@ -45,7 +44,6 @@ Object = (
     | Pledge
     | Product
     | Benefit
-    | WebhookEndpoint
     | LicenseKey
 )
 
@@ -244,16 +242,6 @@ class Authz:
                 return await self._can_user_write_organization(
                     subject, object.organization
                 )
-            if isinstance(subject, Organization):
-                return object.organization_id == subject.id
-
-        #
-        # WebhookEndpoint
-        #
-
-        if accessType == AccessType.write and isinstance(object, WebhookEndpoint):
-            if isinstance(subject, User):
-                return await self._can_user_write_webhook_endpoint(subject, object)
             if isinstance(subject, Organization):
                 return object.organization_id == subject.id
 
@@ -507,24 +495,6 @@ class Authz:
             and await self._can_user_write_external_organization_id(
                 subject, object.organization_id
             )
-        ):
-            return True
-
-        return False
-
-    #
-    # WebhookEndpoint
-    #
-    async def _can_user_write_webhook_endpoint(
-        self, subject: User, object: WebhookEndpoint
-    ) -> bool:
-        # if owned by user
-        if object.user_id and object.user_id == subject.id:
-            return True
-
-        # If member of org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
         ):
             return True
 

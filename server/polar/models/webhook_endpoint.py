@@ -1,11 +1,15 @@
 from enum import StrEnum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+
+if TYPE_CHECKING:
+    from .organization import Organization
 
 
 class WebhookEventType(StrEnum):
@@ -45,21 +49,17 @@ class WebhookEndpoint(RecordModel):
     url: Mapped[str] = mapped_column(String, nullable=False)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
     secret: Mapped[str] = mapped_column(String, nullable=False)
-
-    organization_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("organizations.id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
-    )
-
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
-    )
-
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
     )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")

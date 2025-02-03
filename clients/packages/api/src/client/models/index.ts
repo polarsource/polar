@@ -22195,17 +22195,11 @@ export interface WebhookEndpoint {
      */
     format: WebhookFormat;
     /**
-     * 
+     * The organization ID associated with the webhook endpoint.
      * @type {string}
      * @memberof WebhookEndpoint
      */
-    user_id?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookEndpoint
-     */
-    organization_id?: string | null;
+    organization_id: string;
     /**
      * The events that will trigger the webhook.
      * @type {Array<WebhookEventType>}

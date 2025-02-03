@@ -13,7 +13,7 @@ export async function generateMetadata({
   const meter = await api.meters.get({ id: params.id })
 
   return {
-    title: meter.name,
+    title: `Edit ${meter.name}`,
   }
 }
 

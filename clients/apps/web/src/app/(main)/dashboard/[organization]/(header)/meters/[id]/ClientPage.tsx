@@ -14,7 +14,7 @@ import {
 } from '@/hooks/queries/meters'
 import { UTCDate } from '@date-fns/utc'
 import { MoreVert } from '@mui/icons-material'
-import { Meter } from '@polar-sh/api'
+import { Meter, Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -29,9 +29,16 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
+import Link from 'next/link'
 import { useMemo } from 'react'
 
-export default function ClientPage({ meter: _meter }: { meter: Meter }) {
+export default function ClientPage({
+  meter: _meter,
+  organization,
+}: {
+  meter: Meter
+  organization: Organization
+}) {
   const { data: meter } = useMeter(_meter.id, _meter)
 
   const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
@@ -77,7 +84,11 @@ export default function ClientPage({ meter: _meter }: { meter: Meter }) {
       }
       header={
         <div className="flex flex-row gap-x-4">
-          <Button variant="secondary">Edit Meter</Button>
+          <Link
+            href={`/dashboard/${organization.slug}/meters/${meter.id}/edit`}
+          >
+            <Button variant="secondary">Edit Meter</Button>
+          </Link>
           <Button className="text-lg" size="icon" variant="secondary">
             <MoreVert
               className="dark:text-polar-500 text-gray-500"

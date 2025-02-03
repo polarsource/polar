@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.authz.service import Authz
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import WebhookEndpoint
 from polar.openapi import APITag
@@ -34,14 +34,12 @@ async def list_webhook_endpoints(
     organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
-    user_id: UUID4 | None = Query(None, description="Filter by user ID."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[WebhookEndpointSchema]:
     """List webhook endpoints."""
     results, count = await webhook_service.list_endpoints(
         session,
         auth_subject,
-        user_id=user_id,
         organization_id=organization_id,
         pagination=pagination,
     )
@@ -61,15 +59,11 @@ async def get_webhook_endpoint(
     id: WebhookEndpointID,
     auth_subject: WebhooksRead,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
     """Get a webhook endpoint by ID."""
     endpoint = await webhook_service.get_endpoint(session, auth_subject, id)
     if not endpoint:
         raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
-        raise Unauthorized()
 
     return endpoint
 
@@ -118,7 +112,7 @@ async def update_webhook_endpoint(
         raise ResourceNotFound()
 
     return await webhook_service.update_endpoint(
-        session, authz, auth_subject, endpoint=endpoint, update_schema=update
+        session, endpoint=endpoint, update_schema=update
     )
 
 
@@ -147,7 +141,7 @@ async def delete_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
-    await webhook_service.delete_endpoint(session, authz, auth_subject, endpoint)
+    await webhook_service.delete_endpoint(session, endpoint)
 
 
 @router.get(
@@ -198,4 +192,4 @@ async def redeliver_webhook_event(
     """
     Schedule the re-delivery of a webhook event.
     """
-    return await webhook_service.redeliver_event(session, authz, auth_subject, id)
+    return await webhook_service.redeliver_event(session, auth_subject, id)

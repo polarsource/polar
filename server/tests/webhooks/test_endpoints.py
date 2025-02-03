@@ -72,12 +72,18 @@ class TestCreateWebhookEndpoint:
         AuthSubjectFixture(scopes={Scope.web_default}),
         AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
-    async def test_user_valid(self, client: AsyncClient) -> None:
+    async def test_user_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
         params = {
             "url": "https://example.com/hook",
             "format": "raw",
             "secret": "foo",
             "events": [],
+            "organization_id": str(organization.id),
         }
         response = await client.post("/v1/webhooks/endpoints", json=params)
 

@@ -2,17 +2,12 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, and_, desc, or_, select, text
+from sqlalchemy import Select, desc, select, text
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
-from polar.exceptions import (
-    NotPermitted,
-    PolarError,
-    ResourceNotFound,
-)
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -68,14 +63,11 @@ class WebhookService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        user_id: UUID | None,
         organization_id: UUID | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         statement = self._get_readable_endpoints_statement(auth_subject)
 
-        if user_id is not None:
-            statement = statement.where(WebhookEndpoint.user_id == user_id)
         if organization_id is not None:
             statement = statement.where(
                 WebhookEndpoint.organization_id == organization_id
@@ -105,21 +97,12 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         create_schema: WebhookEndpointCreate,
     ) -> WebhookEndpoint:
-        endpoint = WebhookEndpoint(**create_schema.model_dump())
-
-        # Organization ID unset: guess from auth_subject
-        if create_schema.organization_id is None:
-            if is_user(auth_subject):
-                endpoint.user_id = auth_subject.subject.id
-            elif is_organization(auth_subject):
-                endpoint.organization_id = auth_subject.subject.id
-        # Organization ID set: check if it's a user, and that he can write to it
-        else:
-            organization = await get_payload_organization(
-                session, auth_subject, create_schema
-            )
-            endpoint.organization_id = organization.id
-
+        organization = await get_payload_organization(
+            session, auth_subject, create_schema
+        )
+        endpoint = WebhookEndpoint(
+            **create_schema.model_dump(by_alias=True), organization=organization
+        )
         session.add(endpoint)
         await session.flush()
         return endpoint
@@ -127,14 +110,10 @@ class WebhookService:
     async def update_endpoint(
         self,
         session: AsyncSession,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
         *,
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
-        await self._can_write_endpoint(authz, auth_subject, endpoint)
-
         for attr, value in update_schema.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
@@ -146,12 +125,8 @@ class WebhookService:
     async def delete_endpoint(
         self,
         session: AsyncSession,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
         endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
-        await self._can_write_endpoint(authz, auth_subject, endpoint)
-
         endpoint.deleted_at = utc_now()
         session.add(endpoint)
         await session.flush()
@@ -191,7 +166,6 @@ class WebhookService:
     async def redeliver_event(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         id: UUID,
     ) -> None:
@@ -215,9 +189,6 @@ class WebhookService:
         event = res.scalars().unique().one_or_none()
         if event is None:
             raise ResourceNotFound()
-
-        endpoint = event.webhook_endpoint
-        await self._can_write_endpoint(authz, auth_subject, endpoint)
 
         enqueue_job("webhook_event.send", webhook_event_id=event.id)
 
@@ -258,7 +229,7 @@ class WebhookService:
         return res.scalars().unique().one_or_none()
 
     async def send(
-        self, session: AsyncSession, target: Organization | User, we: WebhookTypeObject
+        self, session: AsyncSession, target: Organization, we: WebhookTypeObject
     ) -> list[WebhookEvent]:
         event, data = we
         payload = WebhookPayloadTypeAdapter.validate_python(
@@ -269,7 +240,7 @@ class WebhookService:
     async def send_payload(
         self,
         session: AsyncSession,
-        target: Organization | User,
+        target: Organization,
         payload: BaseWebhookPayload,
     ) -> list[WebhookEvent]:
         events: list[WebhookEvent] = []
@@ -300,18 +271,12 @@ class WebhookService:
 
         if is_user(auth_subject):
             user = auth_subject.subject
-            statement = statement.join(
-                UserOrganization,
-                onclause=UserOrganization.organization_id
-                == WebhookEndpoint.organization_id,
-                full=True,
-            ).where(
-                or_(
-                    WebhookEndpoint.user_id == user.id,
-                    and_(
-                        UserOrganization.deleted_at.is_(None),
+            statement = statement.where(
+                WebhookEndpoint.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                    ),
+                        UserOrganization.deleted_at.is_(None),
+                    )
                 )
             )
         elif is_organization(auth_subject):
@@ -326,28 +291,15 @@ class WebhookService:
         session: AsyncSession,
         *,
         event: WebhookEventType,
-        target: Organization | User,
+        target: Organization,
     ) -> Sequence[WebhookEndpoint]:
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.deleted_at.is_(None),
             WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
+            WebhookEndpoint.organization_id == target.id,
         )
-        if isinstance(target, Organization):
-            statement = statement.where(WebhookEndpoint.organization_id == target.id)
-        else:
-            statement = statement.where(WebhookEndpoint.user_id == target.id)
-
         res = await session.execute(statement)
         return res.scalars().unique().all()
-
-    async def _can_write_endpoint(
-        self,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
-        endpoint: WebhookEndpoint,
-    ) -> None:
-        if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
-            raise NotPermitted()
 
 
 webhook = WebhookService()

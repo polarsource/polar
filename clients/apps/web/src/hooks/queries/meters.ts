@@ -7,7 +7,12 @@ import {
   ResponseError,
   TimeInterval,
 } from '@polar-sh/api'
-import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  UseQueryResult,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useMeters = (
@@ -38,6 +43,21 @@ interface ParsedMeterQuantities {
     quantity: number
   }[]
 }
+
+export const useMeterEvents = (id: string) =>
+  useInfiniteQuery({
+    queryKey: ['meters', 'events', { id }],
+    queryFn: async ({ pageParam }) =>
+      api.meters.events({
+        id,
+        page: pageParam,
+        limit: 10,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
+    retry: defaultRetry,
+  })
 
 export const useMeterQuantities = (
   id: string,

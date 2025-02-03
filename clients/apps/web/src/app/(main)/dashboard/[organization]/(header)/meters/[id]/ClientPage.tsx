@@ -3,9 +3,15 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MeterChart } from '@/components/Meter/MeterChart'
 import { MeterContextView } from '@/components/Meter/MeterContextView'
+import { MeterEvents } from '@/components/Meter/MeterEvents'
+import MeterEventsTab from '@/components/Meter/MeterEventsTab'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import Spinner from '@/components/Shared/Spinner'
-import { useMeter, useMeterQuantities } from '@/hooks/queries/meters'
+import {
+  useMeter,
+  useMeterEvents,
+  useMeterQuantities,
+} from '@/hooks/queries/meters'
 import { UTCDate } from '@date-fns/utc'
 import { MoreVert } from '@mui/icons-material'
 import { Meter } from '@polar-sh/api'
@@ -53,6 +59,12 @@ export default function ClientPage({ meter: _meter }: { meter: Meter }) {
     currentMonthEnd,
     'month',
   )
+
+  const { data } = useMeterEvents(_meter.id)
+  const meterEvents = useMemo(() => {
+    if (!data) return []
+    return data.pages[0].items
+  }, [data])
 
   if (!meter) return null
 
@@ -169,11 +181,11 @@ export default function ClientPage({ meter: _meter }: { meter: Meter }) {
                 Recently received meter events
               </p>
             </div>
-            {/* <MeterEvents events={meterEvents?.items ?? []} /> */}
+            <MeterEvents events={meterEvents} />
           </div>
         </TabsContent>
         <TabsContent value="events">
-          {/* <MeterEvents events={meterEvents?.items ?? []} /> */}
+          <MeterEventsTab meter={meter} />
         </TabsContent>
       </Tabs>
     </DashboardBody>

@@ -13,10 +13,28 @@ from polar.meter.aggregation import (
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.service import meter as meter_service
-from polar.models import Customer, Meter
+from polar.models import Customer, Meter, Organization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
+
+
+async def create_meter(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    filter: Filter,
+    aggregation: Aggregation,
+    name: str = "My Meter",
+    customer: Customer | None = None,
+    external_customer_id: str | None = None,
+    metadata: dict[str, str | int | bool] | None = None,
+) -> Meter:
+    meter = Meter(
+        name=name, organization=organization, filter=filter, aggregation=aggregation
+    )
+    await save_fixture(meter)
+    return meter
 
 
 @pytest.mark.asyncio
@@ -78,7 +96,8 @@ class TestGetQuantities:
             ),
         ]
 
-        meter = Meter(
+        meter = await create_meter(
+            save_fixture,
             name="Lite Model Usage",
             filter=Filter(
                 conjunction=FilterConjunction.and_,
@@ -89,6 +108,7 @@ class TestGetQuantities:
                 ],
             ),
             aggregation=aggregation,
+            organization=customer.organization,
         )
 
         result = await meter_service.get_quantities(
@@ -136,7 +156,8 @@ class TestGetQuantities:
             for _ in range(10)
         ]
 
-        meter = Meter(
+        meter = await create_meter(
+            save_fixture,
             name="Lite Model Usage",
             filter=Filter(
                 conjunction=FilterConjunction.and_,
@@ -149,6 +170,7 @@ class TestGetQuantities:
             aggregation=PropertyAggregation(
                 func=AggregationFunction.sum, property="tokens"
             ),
+            organization=customer.organization,
         )
 
         result = await meter_service.get_quantities(
@@ -196,7 +218,8 @@ class TestGetQuantities:
             metadata={"tokens": 10, "model": "lite"},
         )
 
-        meter = Meter(
+        meter = await create_meter(
+            save_fixture,
             name="Lite Model Usage",
             filter=Filter(
                 conjunction=FilterConjunction.and_,
@@ -209,6 +232,7 @@ class TestGetQuantities:
             aggregation=PropertyAggregation(
                 func=AggregationFunction.sum, property=property
             ),
+            organization=customer.organization,
         )
 
         result = await meter_service.get_quantities(
@@ -259,7 +283,8 @@ class TestGetQuantities:
             metadata={"tokens": 10, "model": "lite"},
         )
 
-        meter = Meter(
+        meter = await create_meter(
+            save_fixture,
             name="Lite Model Usage",
             filter=Filter(
                 conjunction=FilterConjunction.and_,
@@ -268,6 +293,7 @@ class TestGetQuantities:
             aggregation=PropertyAggregation(
                 func=AggregationFunction.sum, property="tokens"
             ),
+            organization=customer.organization,
         )
 
         result = await meter_service.get_quantities(

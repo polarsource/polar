@@ -45,7 +45,6 @@ export interface WebhooksApiListWebhookDeliveriesRequest {
 
 export interface WebhooksApiListWebhookEndpointsRequest {
     organizationId?: string | null;
-    userId?: string | null;
     page?: number;
     limit?: number;
 }
@@ -252,10 +251,6 @@ export class WebhooksApi extends runtime.BaseAPI {
 
         if (requestParameters['organizationId'] != null) {
             queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
-
-        if (requestParameters['userId'] != null) {
-            queryParameters['user_id'] = requestParameters['userId'];
         }
 
         if (requestParameters['page'] != null) {

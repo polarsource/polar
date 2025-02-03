@@ -1,43 +1,62 @@
-import { MeterEvent } from '@/app/api/meters/data'
+import { Event } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
-import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
+import { useMemo } from 'react'
 
-export const MeterEvents = ({ events }: { events: MeterEvent[] }) => {
+export const MeterEvents = ({ events }: { events: Event[] }) => {
   return (
     <DataTable
       columns={[
         {
           header: 'Customer',
-          accessorKey: 'customer',
-          cell: () => (
+          cell: ({ row: { original: event } }) => (
             <div className="flex flex-row items-center gap-x-2">
               <Avatar
                 className="dark:bg-polar-900 text-xxs bg-white"
                 name={'Emil Widlund'}
                 avatar_url={null}
               />
-              <span>Emil Widlund</span>
+              <span>
+                {event.customer_id
+                  ? event.customer_id
+                  : event.external_customer_id}
+              </span>
             </div>
           ),
         },
         {
-          header: 'Value',
-          accessorKey: 'value',
-          cell: ({ row }) => (
-            <span className="font-mono text-sm">
-              {Intl.NumberFormat('en-US', {
-                notation: 'standard',
-              }).format(row.original.value)}
-            </span>
+          header: 'Event Name',
+          accessorKey: 'name',
+          cell: ({ row: { original: event } }) => (
+            <span className="font-mono text-sm">{event.name}</span>
           ),
         },
         {
           header: 'Created At',
-          accessorKey: 'created_at',
-          cell: ({ row }) => (
-            <span className="font-mono text-xs capitalize">
-              <PolarTimeAgo date={new Date(row.original.created_at)} />
+          accessorKey: 'timestamp',
+          cell: ({ row: { original: event } }) => {
+            const formattedTimestamp = useMemo(() => {
+              return new Date(event.timestamp).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+              })
+            }, [event.timestamp])
+            return (
+              <span className="font-mono text-xs capitalize">
+                {formattedTimestamp}
+              </span>
+            )
+          },
+        },
+        {
+          header: 'Metadata',
+          accessorKey: 'metadata',
+          cell: ({ row: { original: event } }) => (
+            <span className="overflow-hidden whitespace-nowrap font-mono text-xs">
+              {JSON.stringify(event.metadata)}
             </span>
           ),
         },

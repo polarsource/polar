@@ -8,7 +8,7 @@ import {
   metricDisplayNames,
   MetricMarksResolver,
 } from '@/utils/metrics'
-import { Interval, Metric, Metrics, MetricType } from '@polar-sh/api'
+import { Metric, Metrics, MetricType, TimeInterval } from '@polar-sh/api'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   Select,
@@ -26,7 +26,7 @@ import MetricChart from './MetricChart'
 interface MetricChartBoxProps {
   className?: string
   data: ParsedMetricPeriod[]
-  interval: Interval
+  interval: TimeInterval
   metric: Metric
   height?: number
   maxTicks?: number

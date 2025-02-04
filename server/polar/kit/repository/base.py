@@ -1,12 +1,12 @@
 from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, Generic, Protocol, Self, TypeVar
-from xmlrpc.client import boolean
 
 from sqlalchemy import Select, func, over, select
 from sqlalchemy.orm import Mapped
 
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 
 M = TypeVar("M")
 ID_TYPE = TypeVar("ID_TYPE")
@@ -38,6 +38,16 @@ class RepositoryProtocol(Protocol[M]):
     ) -> tuple[list[M], int]: ...
 
     def get_base_statement(self) -> Select[tuple[M]]: ...
+
+    async def create(self, object: M, *, flush: bool = False) -> M: ...
+
+    async def update(
+        self,
+        object: M,
+        *,
+        update_dict: dict[str, Any] | None = None,
+        flush: bool = False,
+    ) -> M: ...
 
 
 class RepositoryBase(Generic[M]):
@@ -74,7 +84,7 @@ class RepositoryBase(Generic[M]):
     def get_base_statement(self) -> Select[tuple[M]]:
         return select(self.model)
 
-    async def create(self, object: M, *, flush: boolean = False) -> M:
+    async def create(self, object: M, *, flush: bool = False) -> M:
         self.session.add(object)
 
         if flush:
@@ -87,7 +97,7 @@ class RepositoryBase(Generic[M]):
         object: M,
         *,
         update_dict: dict[str, Any] | None = None,
-        flush: boolean = False,
+        flush: bool = False,
     ) -> M:
         if update_dict is not None:
             for attr, value in update_dict.items():
@@ -118,3 +128,13 @@ class RepositorySoftDeletionMixin(Generic[MODEL_DELETED_AT]):
         self: RepositoryProtocol[MODEL_DELETED_AT],
     ) -> Select[tuple[MODEL_DELETED_AT]]:
         return super().get_base_statement().where(self.model.deleted_at.is_(None))  # type: ignore[safe-super]
+
+    async def soft_delete(
+        self: RepositoryProtocol[MODEL_DELETED_AT],
+        object: MODEL_DELETED_AT,
+        *,
+        flush: bool = False,
+    ) -> MODEL_DELETED_AT:
+        return await self.update(
+            object, update_dict={"deleted_at": utc_now()}, flush=flush
+        )

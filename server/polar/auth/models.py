@@ -17,6 +17,7 @@ class AuthMethod(Enum):
     NONE = auto()
     COOKIE = auto()
     PERSONAL_ACCESS_TOKEN = auto()
+    ORGANIZATION_ACCESS_TOKEN = auto()
     OAUTH2_ACCESS_TOKEN = auto()
     CUSTOMER_SESSION_TOKEN = auto()
 

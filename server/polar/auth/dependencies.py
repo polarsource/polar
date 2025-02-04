@@ -12,11 +12,15 @@ from polar.models import (
     Customer,
     CustomerSession,
     OAuth2Token,
+    OrganizationAccessToken,
     PersonalAccessToken,
     UserSession,
 )
 from polar.oauth2.dependencies import get_optional_token
 from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
+from polar.organization_access_token.dependencies import (
+    get_optional_organization_access_token,
+)
 from polar.personal_access_token.dependencies import get_optional_personal_access_token
 from polar.postgres import AsyncSession, get_db_session
 from polar.sentry import set_sentry_user
@@ -47,6 +51,9 @@ async def _get_auth_subject(
         None,
         False,
     ),
+    organization_access_token_credentials: tuple[
+        OrganizationAccessToken | None, bool
+    ] = (None, False),
 ) -> AuthSubject[Subject]:
     # Customer session is prioritized over web session
     customer_session, customer_session_authorization_set = customer_session_credentials
@@ -73,6 +80,9 @@ async def _get_auth_subject(
     personal_access_token, personal_access_token_authorization_set = (
         personal_access_token_credentials
     )
+    organization_access_token, organization_access_token_authorization_set = (
+        organization_access_token_credentials
+    )
 
     if oauth2_token:
         return AuthSubject(
@@ -86,11 +96,19 @@ async def _get_auth_subject(
             AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
 
+    if organization_access_token:
+        return AuthSubject(
+            organization_access_token.organization,
+            organization_access_token.scopes,
+            AuthMethod.ORGANIZATION_ACCESS_TOKEN,
+        )
+
     if any(
         (
+            customer_session_authorization_set,
             oauth2_authorization_set,
             personal_access_token_authorization_set,
-            customer_session_authorization_set,
+            organization_access_token_authorization_set,
         )
     ):
         raise InvalidTokenError()
@@ -124,6 +142,11 @@ def _get_auth_subject_factory(
             name="personal_access_token_credentials",
             kind=Parameter.KEYWORD_ONLY,
             default=Depends(get_optional_personal_access_token),
+        ),
+        Parameter(
+            name="organization_access_token_credentials",
+            kind=Parameter.KEYWORD_ONLY,
+            default=Depends(get_optional_organization_access_token),
         ),
     ]
     if Customer in allowed_subjects:

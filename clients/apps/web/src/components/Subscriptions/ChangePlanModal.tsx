@@ -13,7 +13,7 @@ import {
 } from '@polar-sh/api'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useCustomerUpdateSubscription, useStorefront } from '@/hooks/queries'
+import { useCustomerUpdateSubscription, useProducts } from '@/hooks/queries'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -62,10 +62,8 @@ const ChangePlanModal = ({
   onUserSubscriptionUpdate: (subscription: CustomerSubscription) => void
 }) => {
   const router = useRouter()
-  const { data: storefront } = useStorefront(organization.slug)
-  const products = storefront?.products.filter(
-    ({ is_recurring }) => is_recurring,
-  )
+  const { data: allProducts } = useProducts(organization.id, { limit: 100 })
+  const products = allProducts?.items.filter(({ is_recurring }) => is_recurring)
 
   const currentPrice = subscription.price as
     | ProductPriceRecurringFixed
@@ -207,6 +205,7 @@ const ChangePlanModal = ({
     onUserSubscriptionUpdate,
     hide,
     router,
+    api,
   ])
 
   return (

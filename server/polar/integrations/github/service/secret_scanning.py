@@ -19,6 +19,9 @@ from polar.oauth2.service.oauth2_authorization_code import (
 )
 from polar.oauth2.service.oauth2_client import oauth2_client as oauth2_client_service
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
+from polar.organization_access_token.service import (
+    organization_access_token as organization_access_token_service,
+)
 from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
@@ -78,6 +81,7 @@ TOKEN_TYPE_SERVICE_MAP: dict[TokenType, RevokedLeakedProtocol] = {
     TokenType.access_token: oauth2_token_service,
     TokenType.refresh_token: oauth2_token_service,
     TokenType.personal_access_token: personal_access_token_service,
+    TokenType.organization_access_token: organization_access_token_service,
     TokenType.customer_session_token: customer_session_service,
     TokenType.user_session_token: auth_service,
 }

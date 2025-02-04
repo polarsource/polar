@@ -32,6 +32,7 @@ from .oauth2_grant import OAuth2Grant
 from .oauth2_token import OAuth2Token
 from .order import Order
 from .organization import Organization
+from .organization_access_token import OrganizationAccessToken
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
@@ -93,6 +94,7 @@ __all__ = [
     "OAuthAccount",
     "Order",
     "Organization",
+    "OrganizationAccessToken",
     "PersonalAccessToken",
     "Pledge",
     "PledgeTransaction",

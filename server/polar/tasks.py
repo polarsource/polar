@@ -13,6 +13,7 @@ from polar.magic_link import tasks as magic_link
 from polar.notifications import tasks as notifications
 from polar.order import tasks as order
 from polar.organization import tasks as organization
+from polar.organization_access_token import tasks as organization_access_token
 from polar.personal_access_token import tasks as personal_access_token
 from polar.subscription import tasks as subscription
 from polar.transaction import tasks as transaction
@@ -35,6 +36,7 @@ __all__ = [
     "order",
     "notifications",
     "organization",
+    "organization_access_token",
     "personal_access_token",
     "subscription",
     "transaction",

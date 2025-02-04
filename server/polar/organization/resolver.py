@@ -9,8 +9,15 @@ from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 
 
-class OrganizationIDModel(Protocol):
+class _OrganizationIDModelNone(Protocol):
     organization_id: UUID4 | None
+
+
+class _OrganizationIDModel(Protocol):
+    organization_id: UUID4
+
+
+OrganizationIDModel = _OrganizationIDModelNone | _OrganizationIDModel
 
 
 async def get_payload_organization(

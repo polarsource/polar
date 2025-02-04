@@ -39,6 +39,7 @@ import {
   Oauth2Api,
   Oauth2ClientsApi,
   OrdersApi,
+  OrganizationAccessTokenApi,
   OrganizationsApi,
   PaymentMethodsApi,
   PersonalAccessTokenApi,
@@ -94,6 +95,7 @@ export class PolarAPI {
   public readonly oauth2Clients: Oauth2ClientsApi
   public readonly orders: OrdersApi
   public readonly organizations: OrganizationsApi
+  public readonly organizationAccessTokens: OrganizationAccessTokenApi
   public readonly paymentMethods: PaymentMethodsApi
   public readonly personalAccessToken: PersonalAccessTokenApi
   public readonly pledges: PledgesApi
@@ -161,6 +163,7 @@ export class PolarAPI {
     this.oauth2Clients = new Oauth2ClientsApi(config)
     this.orders = new OrdersApi(config)
     this.organizations = new OrganizationsApi(config)
+    this.organizationAccessTokens = new OrganizationAccessTokenApi(config)
     this.paymentMethods = new PaymentMethodsApi(config)
     this.personalAccessToken = new PersonalAccessTokenApi(config)
     this.pledges = new PledgesApi(config)

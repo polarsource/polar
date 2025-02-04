@@ -12977,6 +12977,25 @@ export interface ListResourceOrganization {
 /**
  * 
  * @export
+ * @interface ListResourceOrganizationAccessToken
+ */
+export interface ListResourceOrganizationAccessToken {
+    /**
+     * 
+     * @type {Array<OrganizationAccessToken>}
+     * @memberof ListResourceOrganizationAccessToken
+     */
+    items: Array<OrganizationAccessToken>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceOrganizationAccessToken
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceOrganizationMember
  */
 export interface ListResourceOrganizationMember {
@@ -15819,6 +15838,124 @@ export interface Organization {
     subscription_settings: OrganizationSubscriptionSettings;
 }
 /**
+ * 
+ * @export
+ * @interface OrganizationAccessToken
+ */
+export interface OrganizationAccessToken {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof OrganizationAccessToken
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessToken
+     */
+    modified_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessToken
+     */
+    id: string;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof OrganizationAccessToken
+     */
+    scopes: Array<Scope>;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessToken
+     */
+    expires_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessToken
+     */
+    comment: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessToken
+     */
+    last_used_at: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationAccessTokenCreate
+ */
+export interface OrganizationAccessTokenCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessTokenCreate
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessTokenCreate
+     */
+    comment: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessTokenCreate
+     */
+    expires_in?: string | null;
+    /**
+     * 
+     * @type {Array<AvailableScope>}
+     * @memberof OrganizationAccessTokenCreate
+     */
+    scopes: Array<AvailableScope>;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationAccessTokenCreateResponse
+ */
+export interface OrganizationAccessTokenCreateResponse {
+    /**
+     * 
+     * @type {OrganizationAccessToken}
+     * @memberof OrganizationAccessTokenCreateResponse
+     */
+    organization_access_token: OrganizationAccessToken;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessTokenCreateResponse
+     */
+    token: string;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationAccessTokenUpdate
+ */
+export interface OrganizationAccessTokenUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAccessTokenUpdate
+     */
+    comment?: string | null;
+    /**
+     * 
+     * @type {Array<AvailableScope>}
+     * @memberof OrganizationAccessTokenUpdate
+     */
+    scopes?: Array<AvailableScope> | null;
+}
+/**
  * Schema to create a file to be used as an organization avatar.
  * @export
  * @interface OrganizationAvatarFileCreate
@@ -16610,50 +16747,6 @@ export interface PersonalAccessToken {
      * @memberof PersonalAccessToken
      */
     last_used_at: string | null;
-}
-/**
- * 
- * @export
- * @interface PersonalAccessTokenCreate
- */
-export interface PersonalAccessTokenCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonalAccessTokenCreate
-     */
-    comment: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonalAccessTokenCreate
-     */
-    expires_in?: string | null;
-    /**
-     * 
-     * @type {Array<AvailableScope>}
-     * @memberof PersonalAccessTokenCreate
-     */
-    scopes: Array<AvailableScope>;
-}
-/**
- * 
- * @export
- * @interface PersonalAccessTokenCreateResponse
- */
-export interface PersonalAccessTokenCreateResponse {
-    /**
-     * 
-     * @type {PersonalAccessToken}
-     * @memberof PersonalAccessTokenCreateResponse
-     */
-    personal_access_token: PersonalAccessToken;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonalAccessTokenCreateResponse
-     */
-    token: string;
 }
 
 /**

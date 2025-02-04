@@ -41,6 +41,7 @@ export * from './NotificationsApi';
 export * from './Oauth2Api';
 export * from './Oauth2ClientsApi';
 export * from './OrdersApi';
+export * from './OrganizationAccessTokenApi';
 export * from './OrganizationsApi';
 export * from './PaymentMethodsApi';
 export * from './PersonalAccessTokenApi';

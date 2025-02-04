@@ -17,13 +17,7 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourcePersonalAccessToken,
-  PersonalAccessTokenCreate,
-  PersonalAccessTokenCreateResponse,
 } from '../models/index';
-
-export interface PersonalAccessTokenApiCreatePersonalAccessTokenRequest {
-    body: PersonalAccessTokenCreate;
-}
 
 export interface PersonalAccessTokenApiDeletePersonalAccessTokenRequest {
     id: string;
@@ -38,50 +32,6 @@ export interface PersonalAccessTokenApiListPersonalAccessTokensRequest {
  * 
  */
 export class PersonalAccessTokenApi extends runtime.BaseAPI {
-
-    /**
-     * Create Personal Access Token
-     */
-    async createPersonalAccessTokenRaw(requestParameters: PersonalAccessTokenApiCreatePersonalAccessTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PersonalAccessTokenCreateResponse>> {
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling createPersonalAccessToken().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("pat", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/personal_access_tokens/`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['body'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Create Personal Access Token
-     */
-    async createPersonalAccessToken(requestParameters: PersonalAccessTokenApiCreatePersonalAccessTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PersonalAccessTokenCreateResponse> {
-        const response = await this.createPersonalAccessTokenRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Delete Personal Access Token
@@ -101,6 +51,14 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
             const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("oat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -143,6 +101,14 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
             const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("oat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

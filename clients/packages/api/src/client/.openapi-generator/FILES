@@ -39,6 +39,7 @@ apis/NotificationsApi.ts
 apis/Oauth2Api.ts
 apis/Oauth2ClientsApi.ts
 apis/OrdersApi.ts
+apis/OrganizationAccessTokenApi.ts
 apis/OrganizationsApi.ts
 apis/PaymentMethodsApi.ts
 apis/PersonalAccessTokenApi.ts

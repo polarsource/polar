@@ -62,8 +62,10 @@ const ChangePlanModal = ({
   onUserSubscriptionUpdate: (subscription: CustomerSubscription) => void
 }) => {
   const router = useRouter()
-  const { data: allProducts } = useProducts(organization.id, { limit: 100 })
-  const products = allProducts?.items.filter(({ is_recurring }) => is_recurring)
+  const { data: products } = useProducts(organization.id, {
+    limit: 100,
+    isRecurring: true,
+  })
 
   const currentPrice = subscription.price as
     | ProductPriceRecurringFixed
@@ -226,7 +228,7 @@ const ChangePlanModal = ({
         </List>
         <h3 className="font-medium">Available Plans</h3>
         <List size="small">
-          {products?.map((product) => (
+          {products?.items.map((product) => (
             <>
               {product.prices
                 .filter((price) => price.id !== subscription.price_id)

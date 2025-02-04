@@ -80,6 +80,14 @@ export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
         }
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
+            const tokenString = await token("oat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
             const tokenString = await token("customer_session", []);
 
             if (tokenString) {
@@ -124,6 +132,14 @@ export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
             const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("oat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -203,6 +219,14 @@ export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
         }
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
+            const tokenString = await token("oat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
             const tokenString = await token("customer_session", []);
 
             if (tokenString) {
@@ -256,6 +280,14 @@ export class CustomerPortalSubscriptionsApi extends runtime.BaseAPI {
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
             const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("oat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;

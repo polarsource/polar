@@ -2,6 +2,7 @@ import revalidate from '@/app/actions'
 import { api, queryClient } from '@/utils/api'
 import {
   Organization,
+  OrganizationAccessTokenCreate,
   OrganizationBadgeSettingsUpdate,
   OrganizationCreate,
   OrganizationUpdate,
@@ -111,4 +112,44 @@ export const useOrganizationAccount = (id?: string) =>
     queryFn: () => api.organizations.getAccount({ id: id as string }),
     retry: defaultRetry,
     enabled: !!id,
+  })
+
+export const useOrganizationAccessTokens = () =>
+  useQuery({
+    queryKey: ['organization_access_tokens'],
+    queryFn: () => api.organizationAccessTokens.list(),
+    retry: defaultRetry,
+  })
+
+export const useCreateOrganizationAccessToken = (id: string) =>
+  useMutation({
+    mutationFn: (
+      body: Omit<OrganizationAccessTokenCreate, 'organization_id'>,
+    ) => {
+      return api.organizationAccessTokens.create({
+        body: {
+          ...body,
+          organization_id: id,
+        },
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organization_access_tokens'],
+      })
+    },
+  })
+
+export const useDeleteOrganizationAccessToken = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) => {
+      return api.organizationAccessTokens.delete({
+        id: variables.id,
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organization_access_tokens'],
+      })
+    },
   })

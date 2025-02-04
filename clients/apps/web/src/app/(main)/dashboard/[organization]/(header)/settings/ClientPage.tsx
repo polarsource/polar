@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
+import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationAppearanceSettings from '@/components/Settings/OrganizationAppearanceSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -28,6 +29,14 @@ export default function ClientPage() {
             description="Configure how subscriptions are managed"
           />
           <OrganizationSubscriptionSettings organization={org} />
+        </Section>
+
+        <Section>
+          <SectionDescription
+            title="Developer Settings"
+            description="Manage access tokens to authenticate with the Polar API"
+          />
+          <OrganizationAccessTokensSettings organization={org} />
         </Section>
 
         <Section>

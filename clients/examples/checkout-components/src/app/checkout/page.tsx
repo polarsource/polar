@@ -3,7 +3,7 @@ import {
   CheckoutFormProvider,
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
-import { checkoutsCustomCreate } from '@polar-sh/sdk/funcs/checkoutsCustomCreate'
+import { checkoutsCreate } from '@polar-sh/sdk/funcs/checkoutsCreate'
 
 import ClientPage from './ClientPage'
 
@@ -13,7 +13,7 @@ export default async function Page() {
     ok,
     value: checkout,
     error,
-  } = await checkoutsCustomCreate(client, {
+  } = await checkoutsCreate(client, {
     productId: process.env.POLAR_PRODUCT_ID as string,
   })
 

@@ -4,7 +4,7 @@ import {
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
 import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
+import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -26,7 +26,7 @@ export default async function Page({
     ok,
     value: checkout,
     error,
-  } = await checkoutsCustomClientGet(client, { clientSecret })
+  } = await checkoutsClientGet(client, { clientSecret })
 
   if (!ok) {
     if (error instanceof ResourceNotFound) {

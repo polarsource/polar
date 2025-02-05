@@ -1,7 +1,7 @@
-export const themesList = ['catppuccin-latte', 'catppuccin-mocha', 'poimandres']
+export const themesList = ['catppuccin-latte', 'poimandres']
 export const themeConfig = {
   light: 'catppuccin-latte',
-  dark: 'catppuccin-mocha',
+  dark: 'poimandres',
 }
 
 export const transformers = [

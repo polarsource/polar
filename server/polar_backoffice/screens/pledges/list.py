@@ -151,11 +151,13 @@ class PledgesListScreen(Screen[None]):
                 for clause in clauses:
                     if clause.startswith("org:"):
                         statement = statement.where(
-                            ExternalOrganization.name.ilike(f"%{clause[len("org:"):]}%")
+                            ExternalOrganization.name.ilike(
+                                f"%{clause[len('org:') :]}%"
+                            )
                         )
                     elif clause.startswith("repo:"):
                         statement = statement.where(
-                            Repository.name.ilike(f"%{clause[len("repo:"):]}%")
+                            Repository.name.ilike(f"%{clause[len('repo:') :]}%")
                         )
                     elif clause.startswith("#:"):
                         statement = statement.where(

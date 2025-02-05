@@ -46,18 +46,22 @@ class OrderBase(
     checkout_id: UUID4 | None
 
     def get_amount_display(self) -> str:
-        return f"{format_currency(
-            self.amount / 100,
-            self.currency.upper(),
-            locale="en_US",
-        )}"
+        return f"{
+            format_currency(
+                self.amount / 100,
+                self.currency.upper(),
+                locale='en_US',
+            )
+        }"
 
     def get_refunded_amount_display(self) -> str:
-        return f"{format_currency(
-            self.refunded_amount / 100,
-            self.currency.upper(),
-            locale="en_US",
-        )}"
+        return f"{
+            format_currency(
+                self.refunded_amount / 100,
+                self.currency.upper(),
+                locale='en_US',
+            )
+        }"
 
 
 class OrderCustomer(CustomerBase): ...

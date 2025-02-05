@@ -35,11 +35,13 @@ class Refund(MetadataOutputMixin, IDSchema, TimestampedSchema):
     revoke_benefits: bool
 
     def get_amount_display(self) -> str:
-        return f"{format_currency(
-            self.amount / 100,
-            self.currency.upper(),
-            locale="en_US",
-        )}"
+        return f"{
+            format_currency(
+                self.amount / 100,
+                self.currency.upper(),
+                locale='en_US',
+            )
+        }"
 
 
 class RefundCreate(MetadataInputMixin, Schema):

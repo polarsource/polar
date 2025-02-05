@@ -43,8 +43,7 @@ class EventCreateBase(Schema, MetadataInputMixin):
 class EventCreateCustomer(EventCreateBase):
     customer_id: UUID4 = Field(
         description=(
-            "ID of the customer in your Polar organization "
-            "associated with the event."
+            "ID of the customer in your Polar organization associated with the event."
         )
     )
 
@@ -82,8 +81,7 @@ class Event(IDSchema, MetadataOutputMixin):
     )
     customer_id: UUID4 | None = Field(
         description=(
-            "ID of the customer in your Polar organization "
-            "associated with the event."
+            "ID of the customer in your Polar organization associated with the event."
         )
     )
     external_customer_id: str | None = Field(

@@ -77,7 +77,7 @@ class PledgeReward(Widget):
                 (
                     (
                         f" ("
-                        f"{format_percent(self.reward.share_thousands / 1000, locale="en_US")}"
+                        f"{format_percent(self.reward.share_thousands / 1000, locale='en_US')}"
                         ")"
                     ),
                     "bold",
@@ -202,7 +202,7 @@ class PledgeContainer(Widget):
                 Text.assemble(
                     "Still in dispute window.",
                     (
-                        f" Ends at {format_datetime(self.pledge.scheduled_payout_at, locale="en_US", tzinfo=system_timezone())}.",
+                        f" Ends at {format_datetime(self.pledge.scheduled_payout_at, locale='en_US', tzinfo=system_timezone())}.",
                         "bold",
                     ),
                 ),

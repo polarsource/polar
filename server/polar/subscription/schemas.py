@@ -75,11 +75,13 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     def get_amount_display(self) -> str:
         if self.amount is None or self.currency is None:
             return "Free"
-        return f"{format_currency(
-            self.amount / 100,
-            self.currency.upper(),
-            locale="en_US",
-        )}/{self.recurring_interval}"
+        return f"{
+            format_currency(
+                self.amount / 100,
+                self.currency.upper(),
+                locale='en_US',
+            )
+        }/{self.recurring_interval}"
 
 
 SubscriptionDiscount = Annotated[

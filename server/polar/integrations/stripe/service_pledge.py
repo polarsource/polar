@@ -174,7 +174,7 @@ class PledgeStripeService:
         # Create an invoice, then add line items to it
         invoice = await stripe_lib.Invoice.create_async(
             customer=customer.id,
-            description=f"""You pledged to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
+            description=f"""You pledged to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime("%Y-%m-%d")}, which has now been fixed!
 
 Thank you for your support!
 """,  # noqa: E501

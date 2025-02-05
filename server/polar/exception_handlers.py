@@ -40,7 +40,7 @@ async def polar_redirection_exception_handler(
             "return_to": exc.return_to or settings.FRONTEND_DEFAULT_RETURN_PATH,
         }
     )
-    error_url = f"{settings.generate_frontend_url("/error")}?{error_url_params}"
+    error_url = f"{settings.generate_frontend_url('/error')}?{error_url_params}"
     return RedirectResponse(error_url, 303)
 
 

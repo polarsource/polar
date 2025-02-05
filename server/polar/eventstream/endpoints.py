@@ -39,7 +39,7 @@ def _uvicorn_should_exit() -> bool:
         for task in asyncio.all_tasks():
             coroutine = task.get_coro()
             if coroutine is not None:
-                frame = coroutine.cr_frame
+                frame = coroutine.cr_frame  # type: ignore
                 if frame is not None:
                     args = frame.f_locals
                     if self := args.get("self"):

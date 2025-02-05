@@ -37,8 +37,7 @@ class InvalidAccount(OrganizationError):
     def __init__(self, account_id: UUID) -> None:
         self.account_id = account_id
         message = (
-            f"The account {account_id} does not exist "
-            "or you don't have access to it."
+            f"The account {account_id} does not exist or you don't have access to it."
         )
         super().__init__(message)
 

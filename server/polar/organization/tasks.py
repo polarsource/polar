@@ -22,8 +22,7 @@ class OrganizationAccountNotSet(OrganizationTaskError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = (
-            f"The organization with id {organization_id} "
-            "does not have an account set."
+            f"The organization with id {organization_id} does not have an account set."
         )
         super().__init__(message)
 

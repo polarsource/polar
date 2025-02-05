@@ -430,7 +430,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     def body(self) -> str:
         return f"""Congratulations!<br><br>
 
-{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount) if self.tier_price_amount is not None else 'free'}/{self.tier_price_recurring_interval}.<br><br>
+{self.subscriber_name} is now subscribing to <strong>{self.tier_name}</strong> for ${get_cents_in_dollar_string(self.tier_price_amount) if self.tier_price_amount is not None else "free"}/{self.tier_price_recurring_interval}.<br><br>
 """  # noqa: E501
 
 

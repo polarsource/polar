@@ -85,8 +85,7 @@ class UnknownAccount(PayoutTransactionError):
     def __init__(self, stripe_account_id: str) -> None:
         self.stripe_account_id = stripe_account_id
         message = (
-            "Received a payout event for an "
-            f"unknown Stripe account {stripe_account_id}"
+            f"Received a payout event for an unknown Stripe account {stripe_account_id}"
         )
         super().__init__(message)
 

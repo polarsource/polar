@@ -222,13 +222,13 @@ class RepositoriesListScreen(Screen[None]):
             for clause in clauses:
                 if clause.startswith("org:"):
                     statement = statement.where(
-                        OrganizationJoin.slug.ilike(f"%{clause[len("org:"):]}%")
+                        OrganizationJoin.slug.ilike(f"%{clause[len('org:') :]}%")
                     )
                 else:
                     fuzzy_clauses.append(clause)
             if len(fuzzy_clauses):
                 statement = statement.where(
-                    Repository.name.ilike(f"%{" ".join(fuzzy_clauses)}%")
+                    Repository.name.ilike(f"%{' '.join(fuzzy_clauses)}%")
                 )
 
         return statement

@@ -168,8 +168,7 @@ async def get(
         200: {"description": "Subscription updated."},
         403: {
             "description": (
-                "Subscription is already canceled "
-                "or will be at the end of the period."
+                "Subscription is already canceled or will be at the end of the period."
             ),
             "model": AlreadyCanceledSubscription.schema(),
         },

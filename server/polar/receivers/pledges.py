@@ -83,7 +83,7 @@ async def pledge_created_backoffice_discord_alert(hook: PledgeHook) -> None:
                 get_branded_discord_embed(
                     {
                         "title": "New pledge",
-                        "description": f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".',
+                        "description": f'A ${pledge.amount / 100} pledge has been made towards "{issue.title}".',
                         "fields": [
                             {
                                 "name": "Backoffice",

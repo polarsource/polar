@@ -1,5 +1,4 @@
 import { api, queryClient } from '@/utils/api'
-import { PersonalAccessTokenCreate } from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -8,18 +7,6 @@ export const usePersonalAccessTokens = () =>
     queryKey: ['personalAccessTokens'],
     queryFn: () => api.personalAccessToken.listPersonalAccessTokens(),
     retry: defaultRetry,
-  })
-
-export const useCreatePersonalAccessToken = () =>
-  useMutation({
-    mutationFn: (body: PersonalAccessTokenCreate) => {
-      return api.personalAccessToken.createPersonalAccessToken({
-        body,
-      })
-    },
-    onSuccess: (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
-    },
   })
 
 export const useDeletePersonalAccessToken = () =>

@@ -3,6 +3,7 @@ import { api, queryClient } from '@/utils/api'
 import {
   Organization,
   OrganizationAccessTokenCreate,
+  OrganizationAccessTokenUpdate,
   OrganizationBadgeSettingsUpdate,
   OrganizationCreate,
   OrganizationUpdate,
@@ -131,6 +132,21 @@ export const useCreateOrganizationAccessToken = (id: string) =>
           ...body,
           organization_id: id,
         },
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organization_access_tokens'],
+      })
+    },
+  })
+
+export const useUpdateOrganizationAccessToken = (id: string) =>
+  useMutation({
+    mutationFn: (body: OrganizationAccessTokenUpdate) => {
+      return api.organizationAccessTokens.update({
+        id,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {

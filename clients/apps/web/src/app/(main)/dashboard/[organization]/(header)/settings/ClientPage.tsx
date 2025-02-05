@@ -15,7 +15,7 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-12">
-        <Section>
+        <Section id="organization">
           <SectionDescription
             title="Organization"
             description="Configure your organization settings"
@@ -23,7 +23,7 @@ export default function ClientPage() {
           <OrganizationAppearanceSettings organization={org} />
         </Section>
 
-        <Section>
+        <Section id="subscriptions">
           <SectionDescription
             title="Subscriptions"
             description="Configure how subscriptions are managed"
@@ -31,15 +31,15 @@ export default function ClientPage() {
           <OrganizationSubscriptionSettings organization={org} />
         </Section>
 
-        <Section>
+        <Section id="developers">
           <SectionDescription
-            title="Developer Settings"
+            title="Developers"
             description="Manage access tokens to authenticate with the Polar API"
           />
           <OrganizationAccessTokensSettings organization={org} />
         </Section>
 
-        <Section>
+        <Section id="features">
           <SectionDescription
             title="Additional Features"
             description={`Legacy, experimental or early-access features.`}

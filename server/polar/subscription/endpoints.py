@@ -13,6 +13,7 @@ from polar.kit.csv import (
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -180,6 +181,7 @@ async def update(
     subscription_update: SubscriptionUpdate,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Update a subscription."""
     subscription = await subscription_service.user_get(session, auth_subject, id)
@@ -193,7 +195,7 @@ async def update(
         updates=subscription_update,
     )
     return await subscription_service.update(
-        session, subscription, update=subscription_update
+        session, locker, subscription, update=subscription_update
     )
 
 
@@ -214,6 +216,7 @@ async def revoke(
     id: SubscriptionID,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Revoke a subscription, i.e cancel immediately."""
     subscription = await subscription_service.user_get(session, auth_subject, id)
@@ -225,5 +228,6 @@ async def revoke(
     )
     return await subscription_service.revoke(
         session,
+        locker=locker,
         subscription=subscription,
     )

@@ -113,7 +113,7 @@ const CancelSubscriptionModal = ({
         }
       }
     },
-    [cancelSubscription, subscription.id, setError, onCancellation],
+    [subscription, cancelSubscription, setError, onCancellation],
   )
 
   const reasons = Object.keys(CANCELLATION_REASONS)
@@ -207,7 +207,13 @@ const CancelSubscriptionModal = ({
                 )}
               />
             </div>
-            <Button type="submit" variant={'destructive'} size="lg">
+            <Button
+              type="submit"
+              variant="destructive"
+              size="lg"
+              loading={cancelSubscription.isPending}
+              disabled={cancelSubscription.isPending}
+            >
               Cancel Subscription
             </Button>
           </form>

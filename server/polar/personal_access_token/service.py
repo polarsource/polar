@@ -11,16 +11,13 @@ from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
-from polar.integrations.loops.service import loops as loops_service
-from polar.kit.crypto import generate_token_hash_pair, get_token_hash
+from polar.kit.crypto import get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import PersonalAccessToken, User
 from polar.postgres import AsyncSession
-
-from .schemas import PersonalAccessTokenCreate
 
 log: Logger = structlog.get_logger()
 
@@ -70,32 +67,6 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
 
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
-
-    async def create(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        create_schema: PersonalAccessTokenCreate,
-    ) -> tuple[PersonalAccessToken, str]:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=TOKEN_PREFIX
-        )
-        personal_access_token = PersonalAccessToken(
-            **create_schema.model_dump(exclude={"scopes", "expires_in"}),
-            token=token_hash,
-            user_id=auth_subject.subject.id,
-            expires_at=utc_now() + create_schema.expires_in
-            if create_schema.expires_in
-            else None,
-            scope=" ".join(create_schema.scopes),
-        )
-        session.add(personal_access_token)
-        await session.flush()
-
-        user = auth_subject.subject
-        await loops_service.user_created_personal_access_token(session, user)
-
-        return personal_access_token, token
 
     async def delete(
         self, session: AsyncSession, personal_access_token: PersonalAccessToken

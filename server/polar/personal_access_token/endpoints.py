@@ -10,8 +10,6 @@ from polar.routing import APIRouter
 
 from .schemas import (
     PersonalAccessToken,
-    PersonalAccessTokenCreate,
-    PersonalAccessTokenCreateResponse,
 )
 from .service import personal_access_token as personal_access_token_service
 
@@ -35,23 +33,6 @@ async def list_personal_access_tokens(
         [PersonalAccessToken.model_validate(result) for result in results],
         count,
         pagination,
-    )
-
-
-@router.post("/", response_model=PersonalAccessTokenCreateResponse, status_code=201)
-async def create_personal_access_token(
-    personal_access_token_create: PersonalAccessTokenCreate,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-) -> PersonalAccessTokenCreateResponse:
-    personal_access_token, token = await personal_access_token_service.create(
-        session, auth_subject, personal_access_token_create
-    )
-    return PersonalAccessTokenCreateResponse.model_validate(
-        {
-            "personal_access_token": personal_access_token,
-            "token": token,
-        }
     )
 
 

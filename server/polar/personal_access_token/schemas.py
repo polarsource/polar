@@ -1,20 +1,9 @@
-from datetime import datetime, timedelta
-from enum import StrEnum
+from datetime import datetime
 
 from pydantic import UUID4
 
-from polar.auth.scope import RESERVED_SCOPES, Scope
+from polar.auth.scope import Scope
 from polar.kit.schemas import Schema, TimestampedSchema
-
-AvailableScope = StrEnum(  # type: ignore
-    "AvailableScope", {s: s.value for s in Scope if s not in RESERVED_SCOPES}
-)
-
-
-class PersonalAccessTokenCreate(Schema):
-    comment: str
-    expires_in: timedelta | None = None
-    scopes: list[AvailableScope]  # pyright: ignore
 
 
 class PersonalAccessToken(TimestampedSchema):

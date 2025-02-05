@@ -154,6 +154,8 @@ class AccountsListScreen(Screen[None]):
     async def confirm_account_reviewed(self, account: Account) -> None:
         async with sessionmaker() as session:
             await account_service.confirm_account_reviewed(session, account)
+            await session.commit()
+
         await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
         self.app.notify(
             "The account has been marked as reviewed. Held transfers will resume.",

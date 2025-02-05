@@ -5,7 +5,6 @@ apis/BackofficeApi.ts
 apis/BenefitsApi.ts
 apis/CheckoutLinksApi.ts
 apis/CheckoutsApi.ts
-apis/CheckoutsCustomApi.ts
 apis/CustomFieldsApi.ts
 apis/CustomerPortalBenefitGrantsApi.ts
 apis/CustomerPortalCustomerSessionApi.ts

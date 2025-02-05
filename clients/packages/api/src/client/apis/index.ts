@@ -7,7 +7,6 @@ export * from './BackofficeApi';
 export * from './BenefitsApi';
 export * from './CheckoutLinksApi';
 export * from './CheckoutsApi';
-export * from './CheckoutsCustomApi';
 export * from './CustomFieldsApi';
 export * from './CustomerPortalBenefitGrantsApi';
 export * from './CustomerPortalCustomerSessionApi';

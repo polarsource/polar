@@ -6,7 +6,6 @@ import {
   BenefitsApi,
   CheckoutLinksApi,
   CheckoutsApi,
-  CheckoutsCustomApi,
   Configuration,
   CustomFieldsApi,
   CustomerPortalBenefitGrantsApi,
@@ -71,8 +70,7 @@ export class PolarAPI {
   public readonly customerPortalOrganizations: CustomerPortalOrganizationsApi
   public readonly customerPortalSubscriptions: CustomerPortalSubscriptionsApi
   public readonly customerSessions: CustomerSessionsApi
-  public readonly legacyCheckouts: CheckoutsApi
-  public readonly checkouts: CheckoutsCustomApi
+  public readonly checkouts: CheckoutsApi
   public readonly checkoutLinks: CheckoutLinksApi
   public readonly customFields: CustomFieldsApi
   public readonly discounts: DiscountsApi
@@ -138,8 +136,7 @@ export class PolarAPI {
       config,
     )
     this.customerSessions = new CustomerSessionsApi(config)
-    this.legacyCheckouts = new CheckoutsApi(config)
-    this.checkouts = new CheckoutsCustomApi(config)
+    this.checkouts = new CheckoutsApi(config)
     this.checkoutLinks = new CheckoutLinksApi(config)
     this.customFields = new CustomFieldsApi(config)
     this.benefits = new BenefitsApi(config)

@@ -59,21 +59,25 @@ const ClientPage = ({
   if (!meter) return null
 
   return (
-    <DashboardBody title={`Edit ${meter.name}`}>
+    <DashboardBody
+      title={`Edit ${meter.name}`}
+      header={
+        <Button
+          type="submit"
+          loading={updateMeter.isPending}
+          disabled={updateMeter.isPending}
+          onClick={handleSubmit(onSubmit)}
+        >
+          Update Meter
+        </Button>
+      }
+    >
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
           <MeterForm />
-          <Button
-            type="submit"
-            size="lg"
-            loading={updateMeter.isPending}
-            disabled={updateMeter.isPending}
-          >
-            Update Meter
-          </Button>
         </form>
       </Form>
     </DashboardBody>

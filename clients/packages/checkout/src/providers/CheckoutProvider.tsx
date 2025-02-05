@@ -1,13 +1,14 @@
 'use client'
 
 import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsCustomClientConfirm } from '@polar-sh/sdk/funcs/checkoutsCustomClientConfirm'
-import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
-import { checkoutsCustomClientUpdate } from '@polar-sh/sdk/funcs/checkoutsCustomClientUpdate'
+import { checkoutsClientConfirm } from '@polar-sh/sdk/funcs/checkoutsClientConfirm'
+import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
+import { checkoutsClientUpdate } from '@polar-sh/sdk/funcs/checkoutsClientUpdate'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import type { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror'
 import type {
   ConnectionError,
   InvalidRequestError,
@@ -54,6 +55,7 @@ export interface CheckoutContextProps {
   ) => Promise<
     Result<
       CheckoutPublic,
+      | AlreadyActiveSubscriptionError
       | ResourceNotFound
       | HTTPValidationError
       | SDKError
@@ -70,6 +72,7 @@ export interface CheckoutContextProps {
   ) => Promise<
     Result<
       CheckoutPublicConfirmed,
+      | AlreadyActiveSubscriptionError
       | ResourceNotFound
       | HTTPValidationError
       | SDKError
@@ -106,7 +109,7 @@ export const CheckoutProvider = ({
   const [checkout, setCheckout] = useState<CheckoutPublic | null>(null)
 
   useEffect(() => {
-    checkoutsCustomClientGet(client, { clientSecret }).then(
+    checkoutsClientGet(client, { clientSecret }).then(
       ({ ok, value, error }) => {
         if (ok) {
           setCheckout(value)
@@ -118,7 +121,7 @@ export const CheckoutProvider = ({
   }, [client, clientSecret])
 
   const refresh = useCallback(async () => {
-    const result = await checkoutsCustomClientGet(client, { clientSecret })
+    const result = await checkoutsClientGet(client, { clientSecret })
     if (result.ok) {
       setCheckout(result.value)
     }
@@ -127,7 +130,7 @@ export const CheckoutProvider = ({
 
   const update = useCallback(
     async (data: CheckoutUpdatePublic) => {
-      const result = await checkoutsCustomClientUpdate(client, {
+      const result = await checkoutsClientUpdate(client, {
         clientSecret: clientSecret,
         checkoutUpdatePublic: data,
       })
@@ -141,7 +144,7 @@ export const CheckoutProvider = ({
 
   const confirm = useCallback(
     async (data: CheckoutConfirmStripe) => {
-      const result = await checkoutsCustomClientConfirm(client, {
+      const result = await checkoutsClientConfirm(client, {
         clientSecret: clientSecret,
         checkoutConfirmStripe: data,
       })

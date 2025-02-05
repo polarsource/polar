@@ -300,7 +300,7 @@ const polar = new Polar({
   accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
 });
 
-const checkout = await polar.checkouts.custom.create({
+const checkout = await polar.checkouts.create({
   productId: "${selectedProduct ?? '<PRODUCT_ID>'}",
 });
 

@@ -3,7 +3,7 @@
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
-import { checkoutsCustomClientGet } from '@polar-sh/sdk/funcs/checkoutsCustomClientGet'
+import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 
@@ -93,7 +93,7 @@ export const CheckoutConfirmation = ({
   const { product, status, organization } = checkout
 
   const updateCheckout = useCallback(async () => {
-    const { ok, value } = await checkoutsCustomClientGet(client, {
+    const { ok, value } = await checkoutsClientGet(client, {
       clientSecret: checkout.clientSecret,
     })
     if (ok) {

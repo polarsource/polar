@@ -22,7 +22,7 @@ from polar.user_organization.service import (
 )
 
 from .repository import OrganizationAccessTokenRepository
-from .schemas import OrganizationAccessTokenCreate
+from .schemas import OrganizationAccessTokenCreate, OrganizationAccessTokenUpdate
 
 log: Logger = structlog.get_logger()
 
@@ -92,6 +92,22 @@ class OrganizationAccessTokenService:
         await loops_service.user_created_personal_access_token(session, user)
 
         return organization_access_token, token
+
+    async def update(
+        self,
+        session: AsyncSession,
+        organization_access_token: OrganizationAccessToken,
+        update_schema: OrganizationAccessTokenUpdate,
+    ) -> OrganizationAccessToken:
+        repository = OrganizationAccessTokenRepository.from_session(session)
+
+        update_dict = update_schema.model_dump(exclude={"scopes"}, exclude_unset=True)
+        if update_schema.scopes is not None:
+            update_dict["scope"] = " ".join(update_schema.scopes)
+
+        return await repository.update(
+            organization_access_token, update_dict=update_dict
+        )
 
     async def delete(
         self, session: AsyncSession, organization_access_token: OrganizationAccessToken

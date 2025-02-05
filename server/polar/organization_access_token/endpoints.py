@@ -4,14 +4,18 @@ from pydantic import UUID4
 from polar.auth.dependencies import WebUser
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.models import OrganizationAccessToken
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import (
-    OrganizationAccessToken,
+    OrganizationAccessToken as OrganizationAccessTokenSchema,
+)
+from .schemas import (
     OrganizationAccessTokenCreate,
     OrganizationAccessTokenCreateResponse,
+    OrganizationAccessTokenUpdate,
 )
 from .service import organization_access_token as organization_access_token_service
 
@@ -21,19 +25,19 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=ListResource[OrganizationAccessToken])
+@router.get("/", response_model=ListResource[OrganizationAccessTokenSchema])
 async def list(
     auth_subject: WebUser,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[OrganizationAccessToken]:
+) -> ListResource[OrganizationAccessTokenSchema]:
     """List organization access tokens."""
     results, count = await organization_access_token_service.list(
         session, auth_subject, pagination=pagination
     )
 
     return ListResource.from_paginated_results(
-        [OrganizationAccessToken.model_validate(result) for result in results],
+        [OrganizationAccessTokenSchema.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -53,6 +57,24 @@ async def create(
             "organization_access_token": organization_access_token,
             "token": token,
         }
+    )
+
+
+@router.patch("/{id}", response_model=OrganizationAccessTokenSchema)
+async def update(
+    id: UUID4,
+    organization_access_token_update: OrganizationAccessTokenUpdate,
+    auth_subject: WebUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationAccessToken:
+    organization_access_token = await organization_access_token_service.get(
+        session, auth_subject, id
+    )
+    if organization_access_token is None:
+        raise ResourceNotFound()
+
+    return await organization_access_token_service.update(
+        session, organization_access_token, organization_access_token_update
     )
 
 

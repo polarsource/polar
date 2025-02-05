@@ -2,7 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChart from '@/components/Metrics/MetricChart'
-import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
+import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import Spinner from '@/components/Shared/Spinner'
 import {
   SyntaxHighlighterClient,
@@ -255,7 +255,7 @@ const IntegrationView = () => {
             the Polar API
           </p>
         </div>
-        <AccessTokensSettings />
+        <OrganizationAccessTokensSettings organization={organization} />
       </div>
 
       <div className="flex flex-col gap-y-6">

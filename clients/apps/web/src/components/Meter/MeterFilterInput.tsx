@@ -56,25 +56,30 @@ const MeterFilterInput: React.FC<{
     <div className="flex flex-col gap-4">
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            className="p-2"
-            onClick={() => append({ property: '', operator: 'eq', value: '' })}
-          >
-            <Plus className="h-2 w-2" />
-          </Button>
-          {removeParent && (
+        <div className="flex justify-between gap-4">
+          <h3>Filter</h3>
+          <div className="flex flex-row items-center gap-x-4">
             <Button
               type="button"
               variant="secondary"
               className="p-2"
-              onClick={() => removeParent()}
+              onClick={() =>
+                append({ property: '', operator: 'eq', value: '' })
+              }
             >
-              <X className="h-2 w-2" />
+              <Plus className="h-2 w-2" />
             </Button>
-          )}
+            {removeParent && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="p-2"
+                onClick={() => removeParent()}
+              >
+                <X className="h-2 w-2" />
+              </Button>
+            )}
+          </div>
         </div>
       )}
       {clauses.map((clause, index) => {
@@ -180,7 +185,7 @@ const MeterFilterInput: React.FC<{
                     {conjunction}
                   </div>
                 )}
-                <ShadowBox className="flex flex-col gap-4 p-4">
+                <ShadowBox className="flex flex-col gap-4 p-6">
                   <MeterFilterInput
                     prefix={`${prefix}.clauses.${index}`}
                     removeParent={

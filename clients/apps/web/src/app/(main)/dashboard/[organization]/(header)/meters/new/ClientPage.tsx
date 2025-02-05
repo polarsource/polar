@@ -53,6 +53,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
           title: 'Meter Created',
           description: `Meter successfully created.`,
         })
+
         router.push(`/dashboard/${organization.slug}/meters/${meter.id}`)
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -68,23 +69,29 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   )
 
   return (
-    <DashboardBody title="Create Meter">
-      <Form {...form}>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
+    <DashboardBody
+      title="Create Meter"
+      header={
+        <Button
+          type="submit"
+          loading={createMeter.isPending}
+          disabled={createMeter.isPending}
+          onClick={handleSubmit(onSubmit)}
         >
-          <MeterForm />
-          <Button
-            type="submit"
-            size="lg"
-            loading={createMeter.isPending}
-            disabled={createMeter.isPending}
+          Create Meter
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-y-6">
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-y-6"
           >
-            Create Meter
-          </Button>
-        </form>
-      </Form>
+            <MeterForm />
+          </form>
+        </Form>
+      </div>
     </DashboardBody>
   )
 }

@@ -125,10 +125,6 @@ class Discount(MetadataMixin, RecordModel):
                 "organization_id": str(self.organization.id),
             },
         }
-        if self.max_redemptions is not None:
-            params["max_redemptions"] = self.max_redemptions
-        if self.ends_at is not None:
-            params["redeem_by"] = int(self.ends_at.timestamp())
         if self.duration_in_months is not None:
             params["duration_in_months"] = self.duration_in_months
         return params

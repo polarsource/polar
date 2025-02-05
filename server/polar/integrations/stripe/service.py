@@ -394,63 +394,6 @@ class StripeService:
     async def archive_price(self, id: str) -> stripe_lib.Price:
         return await stripe_lib.Price.modify_async(id, active=False)
 
-    async def create_checkout_session(
-        self,
-        price: str,
-        success_url: str,
-        *,
-        is_subscription: bool,
-        is_tax_applicable: bool,
-        customer: str | None = None,
-        customer_email: str | None = None,
-        metadata: dict[str, str] | None = None,
-        subscription_metadata: dict[str, str] | None = None,
-    ) -> stripe_lib.checkout.Session:
-        create_params: stripe_lib.checkout.Session.CreateParams = {
-            "success_url": success_url,
-            "line_items": [
-                {
-                    "price": price,
-                    "quantity": 1,
-                },
-            ],
-            "mode": "subscription" if is_subscription else "payment",
-            "automatic_tax": {"enabled": is_tax_applicable},
-            "tax_id_collection": {"enabled": is_tax_applicable},
-            "metadata": metadata or {},
-        }
-        if is_subscription:
-            create_params["payment_method_collection"] = "if_required"
-            if subscription_metadata is not None:
-                create_params["subscription_data"] = {"metadata": subscription_metadata}
-        else:
-            create_params["invoice_creation"] = {
-                "enabled": True,
-                "invoice_data": {
-                    "metadata": metadata or {},
-                },
-            }
-        if customer is not None:
-            create_params["customer"] = customer
-            create_params["customer_update"] = {"name": "auto", "address": "auto"}
-        if customer_email is not None:
-            create_params["customer_email"] = customer_email
-
-        return await stripe_lib.checkout.Session.create_async(**create_params)
-
-    async def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
-        return await stripe_lib.checkout.Session.retrieve_async(id)
-
-    async def get_checkout_session_by_payment_intent(
-        self, payment_intent: str
-    ) -> stripe_lib.checkout.Session | None:
-        sessions = await stripe_lib.checkout.Session.list_async(
-            payment_intent=payment_intent
-        )
-        for session in sessions:
-            return session
-        return None
-
     async def update_subscription_price(
         self,
         id: str,

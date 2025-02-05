@@ -24,7 +24,15 @@ from tests.fixtures.random_objects import (
     create_product,
 )
 
-API_PREFIX = "/v1/checkouts/custom"
+
+@pytest.fixture(
+    params=[
+        "/v1/checkouts",
+        "/v1/checkouts/custom",
+    ]
+)
+def api_prefix(request: pytest.FixtureRequest) -> str:
+    return request.param
 
 
 @pytest.fixture(autouse=True)
@@ -75,21 +83,22 @@ async def create_blocked_product(
 @pytest.mark.asyncio
 class TestGet:
     async def test_anonymous(
-        self, client: AsyncClient, checkout_open: Checkout
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:
-        response = await client.get(f"{API_PREFIX}/{checkout_open.id}")
+        response = await client.get(f"{api_prefix}/{checkout_open.id}")
 
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
-    async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(f"{API_PREFIX}/{uuid.uuid4()}")
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
+        response = await client.get(f"{api_prefix}/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
     async def test_blocked_organization(
         self,
+        api_prefix: str,
         session: AsyncSession,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -107,24 +116,25 @@ class TestGet:
             auth_subject,
         )
 
-        response = await client.get(f"{API_PREFIX}/{checkout.id}")
+        response = await client.get(f"{api_prefix}/{checkout.id}")
         assert response.status_code == 200
 
         session.expunge_all()
         product.organization.blocked_at = utc_now()
         await save_fixture(product)
 
-        response = await client.get(f"{API_PREFIX}/{checkout.id}")
+        response = await client.get(f"{api_prefix}/{checkout.id}")
         assert response.status_code == 403
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
     async def test_valid(
         self,
+        api_prefix: str,
         client: AsyncClient,
         checkout_open: Checkout,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.get(f"{API_PREFIX}/{checkout_open.id}")
+        response = await client.get(f"{api_prefix}/{checkout_open.id}")
 
         assert response.status_code == 200
 
@@ -137,9 +147,11 @@ class TestGet:
 
 @pytest.mark.asyncio
 class TestCreateCheckout:
-    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+    async def test_anonymous(
+        self, api_prefix: str, client: AsyncClient, product: Product
+    ) -> None:
         response = await client.post(
-            f"{API_PREFIX}/",
+            f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -149,9 +161,11 @@ class TestCreateCheckout:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
+    async def test_missing_scope(
+        self, api_prefix: str, client: AsyncClient, product: Product
+    ) -> None:
         response = await client.post(
-            f"{API_PREFIX}/",
+            f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -163,6 +177,7 @@ class TestCreateCheckout:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_blocked_organization(
         self,
+        api_prefix: str,
         client: AsyncClient,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
@@ -170,7 +185,7 @@ class TestCreateCheckout:
         product = await create_blocked_product(save_fixture, auth_subject)
 
         response = await client.post(
-            f"{API_PREFIX}/",
+            f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
                 "product_id": str(product.id),
@@ -179,7 +194,7 @@ class TestCreateCheckout:
         assert response.status_code == 403
 
         response = await client.post(
-            f"{API_PREFIX}/",
+            f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -191,7 +206,7 @@ class TestCreateCheckout:
         await save_fixture(product)
 
         response = await client.post(
-            f"{API_PREFIX}/",
+            f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
                 "product_id": str(product.id),
@@ -201,10 +216,14 @@ class TestCreateCheckout:
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_valid(
-        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"{API_PREFIX}/",
+            f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
                 "product_price_id": str(product.prices[0].id),
@@ -226,10 +245,10 @@ class TestCreateCheckout:
 @pytest.mark.asyncio
 class TestUpdateCheckout:
     async def test_anonymous(
-        self, client: AsyncClient, checkout_open: Checkout
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"{API_PREFIX}/{checkout_open.id}",
+            f"{api_prefix}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -239,10 +258,10 @@ class TestUpdateCheckout:
 
     @pytest.mark.auth
     async def test_missing_scope(
-        self, client: AsyncClient, checkout_open: Checkout
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"{API_PREFIX}/{checkout_open.id}",
+            f"{api_prefix}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -257,10 +276,10 @@ class TestUpdateCheckout:
         ),
     )
     async def test_not_writable(
-        self, client: AsyncClient, checkout_open: Checkout
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:
         response = await client.patch(
-            f"{API_PREFIX}/{checkout_open.id}",
+            f"{api_prefix}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -271,12 +290,13 @@ class TestUpdateCheckout:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_valid(
         self,
+        api_prefix: str,
         client: AsyncClient,
         checkout_open: Checkout,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"{API_PREFIX}/{checkout_open.id}",
+            f"{api_prefix}/{checkout_open.id}",
             json={
                 "metadata": {"test": "test"},
             },
@@ -290,14 +310,16 @@ class TestUpdateCheckout:
 
 @pytest.mark.asyncio
 class TestClientGet:
-    async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(f"{API_PREFIX}/client/123")
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
+        response = await client.get(f"{api_prefix}/client/123")
 
         assert response.status_code == 404
 
-    async def test_valid(self, client: AsyncClient, checkout_open: Checkout) -> None:
+    async def test_valid(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
         response = await client.get(
-            f"{API_PREFIX}/client/{checkout_open.client_secret}"
+            f"{api_prefix}/client/{checkout_open.client_secret}"
         )
 
         assert response.status_code == 200
@@ -310,9 +332,11 @@ class TestClientGet:
 @pytest.mark.asyncio
 class TestClientCreateCheckout:
     @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=set()))
-    async def test_missing_scope(self, client: AsyncClient, product: Product) -> None:
+    async def test_missing_scope(
+        self, api_prefix: str, client: AsyncClient, product: Product
+    ) -> None:
         response = await client.post(
-            f"{API_PREFIX}/client/",
+            f"{api_prefix}/client/",
             json={
                 "product_price_id": str(product.prices[0].id),
             },
@@ -320,9 +344,11 @@ class TestClientCreateCheckout:
 
         assert response.status_code == 403
 
-    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+    async def test_anonymous(
+        self, api_prefix: str, client: AsyncClient, product: Product
+    ) -> None:
         response = await client.post(
-            f"{API_PREFIX}/client/",
+            f"{api_prefix}/client/",
             json={
                 "product_price_id": str(product.prices[0].id),
             },
@@ -332,10 +358,14 @@ class TestClientCreateCheckout:
 
     @pytest.mark.auth
     async def test_user(
-        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"{API_PREFIX}/client/",
+            f"{api_prefix}/client/",
             json={
                 "product_price_id": str(product.prices[0].id),
             },
@@ -346,18 +376,22 @@ class TestClientCreateCheckout:
 
 @pytest.mark.asyncio
 class TestClientUpdate:
-    async def test_not_existing(self, client: AsyncClient) -> None:
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.patch(
-            f"{API_PREFIX}/client/123", json={"customer_name": "Customer Name"}
+            f"{api_prefix}/client/123", json={"customer_name": "Customer Name"}
         )
 
         assert response.status_code == 404
 
     async def test_valid(
-        self, session: AsyncSession, client: AsyncClient, checkout_open: Checkout
+        self,
+        api_prefix: str,
+        session: AsyncSession,
+        client: AsyncClient,
+        checkout_open: Checkout,
     ) -> None:
         response = await client.patch(
-            f"{API_PREFIX}/client/{checkout_open.client_secret}",
+            f"{api_prefix}/client/{checkout_open.client_secret}",
             json={
                 "customer_name": "Customer Name",
                 "metadata": {"test": "test"},
@@ -377,9 +411,9 @@ class TestClientUpdate:
 
 @pytest.mark.asyncio
 class TestClientConfirm:
-    async def test_not_existing(self, client: AsyncClient) -> None:
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.post(
-            f"{API_PREFIX}/client/123/confirm",
+            f"{api_prefix}/client/123/confirm",
             json={"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
         )
 
@@ -387,6 +421,7 @@ class TestClientConfirm:
 
     async def test_valid(
         self,
+        api_prefix: str,
         stripe_service_mock: MagicMock,
         client: AsyncClient,
         checkout_open: Checkout,
@@ -398,7 +433,7 @@ class TestClientConfirm:
             client_secret="CLIENT_SECRET", status="succeeded"
         )
         response = await client.post(
-            f"{API_PREFIX}/client/{checkout_open.client_secret}/confirm",
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
             json={
                 "customer_name": "Customer Name",
                 "customer_email": "customer@example.com",

@@ -6,7 +6,6 @@ from polar.auth.endpoints import router as auth_router
 from polar.backoffice.endpoints import router as backoffice_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.checkout.endpoints import router as checkout_router
-from polar.checkout.legacy.endpoints import router as checkout_legacy_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
@@ -117,10 +116,8 @@ router.include_router(product_router)
 router.include_router(order_router)
 # /refunds
 router.include_router(refund_router)
-# /checkouts/custom
-router.include_router(checkout_router)
 # /checkouts
-router.include_router(checkout_legacy_router)
+router.include_router(checkout_router)
 # /files
 router.include_router(files_router)
 # /metrics

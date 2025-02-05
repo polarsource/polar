@@ -252,7 +252,7 @@ class TestRedirect:
         )
         assert CHECKOUT_CLIENT_SECRET_PREFIX in client_secret
 
-        response = await client.get(f"/v1/checkouts/custom/client/{client_secret}")
+        response = await client.get(f"/v1/checkouts/client/{client_secret}")
         assert response.status_code == 200
         checkout = response.json()
         assert checkout.get("product_price_id") == str(price.id)

@@ -32,10 +32,7 @@ from .schemas import (
 from .service import AlreadyActiveSubscriptionError
 from .service import checkout as checkout_service
 
-router = APIRouter(
-    prefix="/checkouts/custom",
-    tags=["checkouts", "custom", APITag.documented, APITag.featured],
-)
+inner_router = APIRouter(tags=["checkouts", APITag.documented, APITag.featured])
 
 
 CheckoutID = Annotated[UUID4, Path(description="The checkout session ID.")]
@@ -52,7 +49,7 @@ AlreadyActiveSubscription = {
 }
 
 
-@router.get(
+@inner_router.get(
     "/", summary="List Checkout Sessions", response_model=ListResource[CheckoutSchema]
 )
 async def list(
@@ -84,7 +81,7 @@ async def list(
     )
 
 
-@router.get(
+@inner_router.get(
     "/{id}",
     summary="Get Checkout Session",
     response_model=CheckoutSchema,
@@ -104,7 +101,7 @@ async def get(
     return checkout
 
 
-@router.post(
+@inner_router.post(
     "/",
     response_model=CheckoutSchema,
     status_code=201,
@@ -123,7 +120,7 @@ async def create(
     )
 
 
-@router.patch(
+@inner_router.patch(
     "/{id}",
     response_model=CheckoutSchema,
     summary="Update Checkout Session",
@@ -152,7 +149,7 @@ async def update(
     )
 
 
-@router.get(
+@inner_router.get(
     "/client/{client_secret}",
     summary="Get Checkout Session from Client",
     response_model=CheckoutPublic,
@@ -171,7 +168,7 @@ async def client_get(
     return checkout
 
 
-@router.post(
+@inner_router.post(
     "/client/",
     summary="Create Checkout Session from Client",
     response_model=CheckoutPublic,
@@ -192,7 +189,7 @@ async def client_create(
     )
 
 
-@router.patch(
+@inner_router.patch(
     "/client/{client_secret}",
     response_model=CheckoutPublic,
     summary="Update Checkout Session from Client",
@@ -220,7 +217,7 @@ async def client_update(
     )
 
 
-@router.post(
+@inner_router.post(
     "/client/{client_secret}/confirm",
     response_model=CheckoutPublicConfirmed,
     summary="Confirm Checkout Session from Client",
@@ -252,7 +249,7 @@ async def client_confirm(
     )
 
 
-@router.get("/client/{client_secret}/stream", include_in_schema=False)
+@inner_router.get("/client/{client_secret}/stream", include_in_schema=False)
 async def client_stream(
     request: Request,
     client_secret: CheckoutClientSecret,
@@ -266,3 +263,8 @@ async def client_stream(
 
     receivers = Receivers(checkout_client_secret=checkout.client_secret)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
+
+
+router = APIRouter(prefix="/checkouts")
+router.include_router(inner_router, prefix="/custom", include_in_schema=False)
+router.include_router(inner_router)

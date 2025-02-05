@@ -18,7 +18,7 @@ export const useCheckoutFulfillmentListener = (
     return await new Promise<void>((resolve) => {
       // @ts-ignore
       const baseURL = client._baseURL
-      const url = `${baseURL}v1/checkouts/custom/client/${checkout.clientSecret}/stream`
+      const url = `${baseURL}v1/checkouts/client/${checkout.clientSecret}/stream`
       const [checkoutEvents, listen] = createSSEListener(url)
       const controller = listen()
 

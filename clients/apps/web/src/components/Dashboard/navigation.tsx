@@ -238,7 +238,7 @@ const generalRoutesList = (org: Organization, posthog: PolarHog): Route[] => [
     title: 'Storefront',
     icon: <Storefront fontSize="inherit" />,
     link: `/dashboard/${org.slug}/storefront`,
-    if: true,
+    if: org.profile_settings?.enabled ?? false,
   },
   {
     id: 'analytics',

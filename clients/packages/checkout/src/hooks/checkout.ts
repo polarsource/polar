@@ -12,7 +12,7 @@ export const useCheckoutListener = (
     // @ts-ignore
     const baseURL = client._baseURL
     return createSSEListener(
-      `${baseURL}v1/checkouts/custom/client/${checkout.clientSecret}/stream`,
+      `${baseURL}v1/checkouts/client/${checkout.clientSecret}/stream`,
     )
   }, [client, checkout])
 

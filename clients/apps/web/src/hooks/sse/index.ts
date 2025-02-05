@@ -49,7 +49,7 @@ export const useUserSSE = () => useSSE(getServerURL('/v1/stream/user'))
 export const useOrganizationSSE = (organizationId: string) =>
   useSSE(getServerURL(`/v1/stream/organizations/${organizationId}`))
 export const useCheckoutClientSSE = (clientSecret: string) =>
-  useSSE(getServerURL(`/v1/checkouts/custom/client/${clientSecret}/stream`))
+  useSSE(getServerURL(`/v1/checkouts/client/${clientSecret}/stream`))
 export const useCustomerSSE = (customerSessionToken?: string) =>
   useSSE(
     getServerURL('/v1/customer-portal/customers/stream'),

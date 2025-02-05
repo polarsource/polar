@@ -18,6 +18,11 @@ class OrganizationAccessTokenCreate(Schema):
     scopes: list[AvailableScope]  # pyright: ignore
 
 
+class OrganizationAccessTokenUpdate(Schema):
+    comment: str | None = None
+    scopes: list[AvailableScope] | None = None  # pyright: ignore
+
+
 class OrganizationAccessToken(TimestampedSchema):
     id: UUID4
     scopes: list[Scope]

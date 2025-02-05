@@ -37,6 +37,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
     Benefit,
@@ -602,58 +603,63 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def update(
         self,
         session: AsyncSession,
+        locker: Locker,
         subscription: Subscription,
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
-        if isinstance(update, SubscriptionUpdatePrice):
-            if subscription.revoked or subscription.cancel_at_period_end:
-                raise AlreadyCanceledSubscription()
-            return await self.update_product_price(
-                session,
-                subscription,
-                product_price_id=update.product_price_id,
-                proration_behavior=update.proration_behavior,
-            )
+        async with locker.lock(
+            f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
+        ):
+            if isinstance(update, SubscriptionUpdatePrice):
+                if subscription.revoked or subscription.cancel_at_period_end:
+                    raise AlreadyCanceledSubscription()
+                return await self.update_product_price(
+                    session,
+                    subscription,
+                    product_price_id=update.product_price_id,
+                    proration_behavior=update.proration_behavior,
+                )
 
-        cancel = update.cancel_at_period_end is True
-        uncancel = update.cancel_at_period_end is False
-        # Exit early unless we're asked to revoke, cancel or uncancel
-        if not any((update.revoke, cancel, uncancel)):
-            return subscription
+            cancel = update.cancel_at_period_end is True
+            uncancel = update.cancel_at_period_end is False
+            # Exit early unless we're asked to revoke, cancel or uncancel
+            if not any((update.revoke, cancel, uncancel)):
+                return subscription
 
-        if update.revoke and (cancel or uncancel):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "revoke"),
-                        "msg": (
-                            "Use either `revoke` for immediate cancellation "
-                            "and revokation or `cancel_at_period_end`."
-                        ),
-                        "input": update.revoke,
-                    }
-                ]
-            )
+            if update.revoke and (cancel or uncancel):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "revoke"),
+                            "msg": (
+                                "Use either `revoke` for immediate cancellation "
+                                "and revokation or `cancel_at_period_end`."
+                            ),
+                            "input": update.revoke,
+                        }
+                    ]
+                )
 
-        if uncancel:
-            return await self.uncancel(session, subscription)
+            if uncancel:
+                return await self.uncancel(session, subscription)
 
-        if update.revoke:
-            return await self.revoke(
+            if update.revoke:
+                return await self._perform_cancellation(
+                    session,
+                    subscription,
+                    customer_reason=update.customer_cancellation_reason,
+                    customer_comment=update.customer_cancellation_comment,
+                    immediately=True,
+                )
+
+            return await self.cancel(
                 session,
                 subscription,
                 customer_reason=update.customer_cancellation_reason,
                 customer_comment=update.customer_cancellation_comment,
             )
-
-        return await self.cancel(
-            session,
-            subscription,
-            customer_reason=update.customer_cancellation_reason,
-            customer_comment=update.customer_cancellation_comment,
-        )
 
     async def update_product_price(
         self,
@@ -807,18 +813,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def revoke(
         self,
         session: AsyncSession,
+        locker: Locker,
         subscription: Subscription,
         *,
         customer_reason: CustomerCancellationReason | None = None,
         customer_comment: str | None = None,
     ) -> Subscription:
-        return await self._perform_cancellation(
-            session,
-            subscription,
-            customer_reason=customer_reason,
-            customer_comment=customer_comment,
-            immediately=True,
-        )
+        async with locker.lock(
+            f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
+        ):
+            return await self._perform_cancellation(
+                session,
+                subscription,
+                customer_reason=customer_reason,
+                customer_comment=customer_comment,
+                immediately=True,
+            )
 
     async def cancel(
         self,

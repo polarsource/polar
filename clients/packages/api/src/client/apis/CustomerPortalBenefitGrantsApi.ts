@@ -17,7 +17,7 @@ import * as runtime from '../runtime';
 import type {
   BenefitIDFilter2,
   BenefitTypeFilter,
-  CheckoutIDFilter,
+  CheckoutIDFilter1,
   CustomerBenefitGrant,
   CustomerBenefitGrantSortProperty,
   CustomerBenefitGrantUpdate,
@@ -38,7 +38,7 @@ export interface CustomerPortalBenefitGrantsApiListRequest {
     type?: BenefitTypeFilter | null;
     benefitId?: BenefitIDFilter2 | null;
     organizationId?: OrganizationIDFilter1 | null;
-    checkoutId?: CheckoutIDFilter | null;
+    checkoutId?: CheckoutIDFilter1 | null;
     orderId?: OrderIDFilter | null;
     subscriptionId?: SubscriptionIDFilter | null;
     page?: number;

@@ -15,6 +15,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, sorting
+from .grant.service import benefit_grant as benefit_grant_service
 from .schemas import Benefit as BenefitSchema
 from .schemas import (
     BenefitCreate,
@@ -23,8 +24,7 @@ from .schemas import (
     BenefitUpdate,
     benefit_schema_map,
 )
-from .service.benefit import benefit as benefit_service
-from .service.benefit_grant import benefit_grant as benefit_grant_service
+from .service import benefit as benefit_service
 
 router = APIRouter(prefix="/benefits", tags=["benefits", APITag.documented])
 

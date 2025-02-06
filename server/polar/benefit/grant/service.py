@@ -26,7 +26,7 @@ from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
 from ..repository.benefit_grant import BenefitGrantRepository
-from .benefit_grant_scope import scope_to_args
+from .scope import scope_to_args
 
 log: Logger = structlog.get_logger()
 

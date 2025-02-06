@@ -31,8 +31,8 @@ from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from ..benefits import get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate
+from ..strategies import get_benefit_strategy
 from .benefit_grant import benefit_grant as benefit_grant_service
 
 B = TypeVar("B", bound=Benefit)
@@ -160,8 +160,8 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         except AttributeError:
             is_tax_applicable = create_schema.type.is_tax_applicable()
 
-        benefit_service = get_benefit_service(create_schema.type, session, redis)
-        properties = await benefit_service.validate_properties(
+        benefit_strategy = get_benefit_strategy(create_schema.type, session, redis)
+        properties = await benefit_strategy.validate_properties(
             auth_subject,
             create_schema.properties.model_dump(mode="json", by_alias=True),
         )
@@ -210,8 +210,8 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         properties_update: BaseModel | None = getattr(update_schema, "properties", None)
         if properties_update is not None:
-            benefit_service = get_benefit_service(benefit.type, session, redis)
-            update_dict["properties"] = await benefit_service.validate_properties(
+            benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
+            update_dict["properties"] = await benefit_strategy.validate_properties(
                 auth_subject,
                 properties_update.model_dump(mode="json", by_alias=True),
             )

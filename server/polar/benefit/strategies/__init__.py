@@ -22,7 +22,7 @@ from .downloadables import BenefitDownloadablesService
 from .github_repository import BenefitGitHubRepositoryService
 from .license_keys import BenefitLicenseKeysService
 
-_SERVICE_CLASS_MAP: dict[
+_STRATEGY_CLASS_MAP: dict[
     BenefitType,
     type[BenefitServiceProtocol[Any, Any, Any]],
 ] = {
@@ -34,10 +34,10 @@ _SERVICE_CLASS_MAP: dict[
 }
 
 
-def get_benefit_service(
+def get_benefit_strategy(
     type: BenefitType, session: AsyncSession, redis: Redis
 ) -> BenefitServiceProtocol[Benefit, BenefitProperties, BenefitGrantPropertiesBase]:
-    return _SERVICE_CLASS_MAP[type](session, redis)
+    return _STRATEGY_CLASS_MAP[type](session, redis)
 
 
 __all__ = [
@@ -46,5 +46,5 @@ __all__ = [
     "BenefitPropertiesValidationError",
     "BenefitRetriableError",
     "BenefitServiceError",
-    "get_benefit_service",
+    "get_benefit_strategy",
 ]

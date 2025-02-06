@@ -4,9 +4,9 @@ from unittest.mock import MagicMock, call
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.benefit.benefits import BenefitActionRequiredError, BenefitServiceProtocol
 from polar.benefit.repository.benefit_grant import BenefitGrantRepository
 from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
+from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
 from polar.models import Benefit, BenefitGrant, Customer, Product, Subscription
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -20,14 +20,14 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.fixture(autouse=True)
-def benefit_service_mock(mocker: MockerFixture) -> MagicMock:
-    service_mock = MagicMock(spec=BenefitServiceProtocol)
-    service_mock.should_revoke_individually = False
-    service_mock.grant.return_value = {}
-    service_mock.revoke.return_value = {}
-    mock = mocker.patch("polar.benefit.service.benefit_grant.get_benefit_service")
-    mock.return_value = service_mock
-    return service_mock
+def benefit_strategy_mock(mocker: MockerFixture) -> MagicMock:
+    strategy_mock = MagicMock(spec=BenefitServiceProtocol)
+    strategy_mock.should_revoke_individually = False
+    strategy_mock.grant.return_value = {}
+    strategy_mock.revoke.return_value = {}
+    mock = mocker.patch("polar.benefit.service.benefit_grant.get_benefit_strategy")
+    mock.return_value = strategy_mock
+    return strategy_mock
 
 
 @pytest.mark.asyncio
@@ -39,9 +39,9 @@ class TestGrantBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.grant.return_value = {"external_id": "abc"}
+        benefit_strategy_mock.grant.return_value = {"external_id": "abc"}
 
         grant = await benefit_grant_service.grant_benefit(
             session, redis, customer, benefit_organization, subscription=subscription
@@ -52,7 +52,7 @@ class TestGrantBenefit:
         assert grant.benefit_id == benefit_organization.id
         assert grant.is_granted
         assert grant.properties == {"external_id": "abc"}
-        benefit_service_mock.grant.assert_called_once()
+        benefit_strategy_mock.grant.assert_called_once()
 
     async def test_existing_grant_not_granted(
         self,
@@ -62,7 +62,7 @@ class TestGrantBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -75,7 +75,7 @@ class TestGrantBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
-        benefit_service_mock.grant.assert_called_once()
+        benefit_strategy_mock.grant.assert_called_once()
 
     async def test_existing_grant_already_granted(
         self,
@@ -85,7 +85,7 @@ class TestGrantBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -99,7 +99,7 @@ class TestGrantBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
-        benefit_service_mock.grant.assert_not_called()
+        benefit_strategy_mock.grant.assert_not_called()
 
     async def test_action_required_error(
         self,
@@ -108,9 +108,9 @@ class TestGrantBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.grant.side_effect = BenefitActionRequiredError("Error")
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError("Error")
 
         grant = await benefit_grant_service.grant_benefit(
             session, redis, customer, benefit_organization, subscription=subscription
@@ -125,9 +125,9 @@ class TestGrantBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.grant.side_effect = (
+        benefit_strategy_mock.grant.side_effect = (
             lambda customer, benefit, properties, **kwargs: properties
         )
 
@@ -147,7 +147,7 @@ class TestRevokeBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = await benefit_grant_service.revoke_benefit(
             session, redis, customer, benefit_organization, subscription=subscription
@@ -156,7 +156,7 @@ class TestRevokeBenefit:
         assert grant.subscription_id == subscription.id
         assert grant.benefit_id == benefit_organization.id
         assert grant.is_revoked
-        benefit_service_mock.revoke.assert_called_once()
+        benefit_strategy_mock.revoke.assert_called_once()
 
     async def test_existing_grant_not_revoked(
         self,
@@ -166,9 +166,9 @@ class TestRevokeBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.revoke.return_value = {"message": "ok"}
+        benefit_strategy_mock.revoke.return_value = {"message": "ok"}
 
         grant = BenefitGrant(
             subscription=subscription,
@@ -185,7 +185,7 @@ class TestRevokeBenefit:
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
         assert updated_grant.properties == {"message": "ok"}
-        benefit_service_mock.revoke.assert_called_once()
+        benefit_strategy_mock.revoke.assert_called_once()
 
     async def test_existing_grant_already_revoked(
         self,
@@ -195,7 +195,7 @@ class TestRevokeBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription,
@@ -211,7 +211,7 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
-        benefit_service_mock.revoke.assert_not_called()
+        benefit_strategy_mock.revoke.assert_not_called()
 
     async def test_several_benefit_grants(
         self,
@@ -221,7 +221,7 @@ class TestRevokeBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
         product: Product,
     ) -> None:
         first_grant = await create_benefit_grant(
@@ -248,7 +248,7 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == first_grant.id
         assert updated_grant.is_revoked
-        benefit_service_mock.revoke.assert_not_called()
+        benefit_strategy_mock.revoke.assert_not_called()
 
     async def test_several_benefit_grants_should_individual_revoke(
         self,
@@ -258,11 +258,11 @@ class TestRevokeBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
         product: Product,
     ) -> None:
-        benefit_service_mock.should_revoke_individually = True
-        benefit_service_mock.revoke.return_value = {"message": "ok"}
+        benefit_strategy_mock.should_revoke_individually = True
+        benefit_strategy_mock.revoke.return_value = {"message": "ok"}
 
         first_grant = await create_benefit_grant(
             save_fixture, customer, benefit_organization, subscription=subscription
@@ -289,7 +289,7 @@ class TestRevokeBenefit:
         assert updated_grant.id == first_grant.id
         assert updated_grant.is_revoked
         assert updated_grant.properties == {"message": "ok"}
-        benefit_service_mock.revoke.assert_called_once()
+        benefit_strategy_mock.revoke.assert_called_once()
 
     async def test_action_required_error(
         self,
@@ -299,9 +299,9 @@ class TestRevokeBenefit:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.revoke.side_effect = BenefitActionRequiredError("Error")
+        benefit_strategy_mock.revoke.side_effect = BenefitActionRequiredError("Error")
 
         grant = BenefitGrant(
             subscription=subscription,
@@ -317,7 +317,7 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
-        benefit_service_mock.revoke.assert_called_once()
+        benefit_strategy_mock.revoke.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -402,12 +402,12 @@ class TestEnqueueBenefitGrantUpdates:
         session: AsyncSession,
         redis: Redis,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         enqueue_job_mock = mocker.patch(
             "polar.benefit.service.benefit_grant.enqueue_job"
         )
-        benefit_service_mock.requires_update.return_value = False
+        benefit_strategy_mock.requires_update.return_value = False
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
             session, redis, benefit_organization, {}
@@ -425,7 +425,7 @@ class TestEnqueueBenefitGrantUpdates:
         customer: Customer,
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         granted_grant = BenefitGrant(
             subscription=subscription,
@@ -446,7 +446,7 @@ class TestEnqueueBenefitGrantUpdates:
         enqueue_job_mock = mocker.patch(
             "polar.benefit.service.benefit_grant.enqueue_job"
         )
-        benefit_service_mock.requires_update.return_value = True
+        benefit_strategy_mock.requires_update.return_value = True
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
             session, redis, benefit_organization, {}
@@ -467,7 +467,7 @@ class TestEnqueueBenefitGrantUpdates:
         customer: Customer,
         benefit_organization: Benefit,
         benefit_organization_second: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         revoked_grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -486,7 +486,7 @@ class TestEnqueueBenefitGrantUpdates:
         enqueue_job_mock = mocker.patch(
             "polar.benefit.service.benefit_grant.enqueue_job"
         )
-        benefit_service_mock.requires_update.return_value = True
+        benefit_strategy_mock.requires_update.return_value = True
 
         await benefit_grant_service.enqueue_benefit_grant_updates(
             session, redis, benefit_organization, {}
@@ -505,7 +505,7 @@ class TestUpdateBenefitGrant:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -518,7 +518,7 @@ class TestUpdateBenefitGrant:
         )
 
         assert updated_grant.id == grant.id
-        benefit_service_mock.grant.assert_not_called()
+        benefit_strategy_mock.grant.assert_not_called()
 
     async def test_granted_grant(
         self,
@@ -528,9 +528,9 @@ class TestUpdateBenefitGrant:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_service_mock.grant.return_value = {"external_id": "xyz"}
+        benefit_strategy_mock.grant.return_value = {"external_id": "xyz"}
 
         grant = BenefitGrant(
             subscription=subscription,
@@ -552,8 +552,8 @@ class TestUpdateBenefitGrant:
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
         assert updated_grant.properties == {"external_id": "xyz"}
-        benefit_service_mock.grant.assert_called_once()
-        assert benefit_service_mock.grant.call_args[1]["update"] is True
+        benefit_strategy_mock.grant.assert_called_once()
+        assert benefit_strategy_mock.grant.call_args[1]["update"] is True
 
     async def test_TODO_error(
         self,
@@ -563,7 +563,7 @@ class TestUpdateBenefitGrant:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -571,7 +571,7 @@ class TestUpdateBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        benefit_service_mock.grant.side_effect = BenefitActionRequiredError("Error")
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError("Error")
 
         # load
         grant_loaded = await benefit_grant_service.get(session, grant.id, loaded=True)
@@ -673,7 +673,7 @@ class TestDeleteBenefitGrant:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -686,7 +686,7 @@ class TestDeleteBenefitGrant:
         )
 
         assert updated_grant.id == grant.id
-        benefit_service_mock.revoke.assert_not_called()
+        benefit_strategy_mock.revoke.assert_not_called()
 
     async def test_granted_grant(
         self,
@@ -696,7 +696,7 @@ class TestDeleteBenefitGrant:
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
-        benefit_service_mock: MagicMock,
+        benefit_strategy_mock: MagicMock,
     ) -> None:
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
@@ -714,7 +714,7 @@ class TestDeleteBenefitGrant:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
-        benefit_service_mock.revoke.assert_called_once()
+        benefit_strategy_mock.revoke.assert_called_once()
 
 
 @pytest.mark.asyncio

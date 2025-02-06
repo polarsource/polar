@@ -134,6 +134,7 @@ class Settings(BaseSettings):
     # Stripe webhook secrets
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
+    STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
 
     # Open Collective
     OPEN_COLLECTIVE_PERSONAL_TOKEN: str | None = None
@@ -269,6 +270,10 @@ class Settings(BaseSettings):
 
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
+
+    @property
+    def stripe_descriptor_suffix_max_length(self) -> int:
+        return 22 - len("* ") - len(self.STRIPE_STATEMENT_DESCRIPTOR)
 
 
 settings = Settings()

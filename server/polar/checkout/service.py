@@ -850,6 +850,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                             "confirm": True,
                             "confirmation_token": checkout_confirm.confirmation_token_id,
                             "customer": stripe_customer_id,
+                            "statement_descriptor_suffix": checkout.organization.name[
+                                : settings.stripe_descriptor_suffix_max_length
+                            ],
                             "metadata": intent_metadata,
                             "return_url": settings.generate_frontend_url(
                                 f"/checkout/{checkout.client_secret}/confirmation"

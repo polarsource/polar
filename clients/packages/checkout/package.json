@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@stripe/react-stripe-js": "^3.0.0",
-    "@stripe/stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^5.6.0",
     "@types/react": "^18.3.12",
     "react": "^18.3.1",
     "terser": "^5.36.0",
@@ -44,12 +44,12 @@
     "@polar-sh/ui": "workspace:^",
     "event-source-plus": "^0.1.8",
     "eventemitter3": "^5.0.1",
-    "markdown-to-jsx": "^7.7.0",
+    "markdown-to-jsx": "^7.7.3",
     "react-hook-form": "^7.54.2"
   },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.0.0",
-    "@stripe/stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^5.6.0",
     "react": "^18"
   }
 }

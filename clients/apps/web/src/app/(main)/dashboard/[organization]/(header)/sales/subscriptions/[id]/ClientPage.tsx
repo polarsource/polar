@@ -118,7 +118,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
         <div className="flex flex-col gap-6 p-8">
           <h2 className="text-xl">Subscription Details</h2>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-6">
             <SubscriptionDetails
               organization={organization}
               subscription={subscription}
@@ -129,13 +129,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <Button type="button" onClick={showUpdateModal}>
             Update Subscription
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={showCancellationModal}
-          >
-            Cancel Subscription
-          </Button>
+          {subscription.status !== 'canceled' && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={showCancellationModal}
+            >
+              Cancel Subscription
+            </Button>
+          )}
 
           <InlineModal
             isShown={isShownCancellationModal}

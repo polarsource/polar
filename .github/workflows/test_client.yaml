@@ -74,7 +74,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: v18
+          node-version: v22
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 

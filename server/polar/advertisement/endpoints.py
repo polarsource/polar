@@ -4,7 +4,7 @@ from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitID
-from polar.benefit.service.benefit import benefit as benefit_service
+from polar.benefit.service import benefit as benefit_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter

@@ -1,4 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getSubscriptionById } from '@/utils/subscription'
 import { Metadata } from 'next'
@@ -15,11 +16,12 @@ export default async function Page({
 }: {
   params: { organization: string; id: string }
 }) {
-  const api = getServerSideAPI()
+  const newAPI = getNewServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
+    newAPI,
     params.organization,
   )
+  const api = getServerSideAPI()
   const subscription = await getSubscriptionById(api, params.id)
 
   return <ClientPage organization={organization} subscription={subscription} />

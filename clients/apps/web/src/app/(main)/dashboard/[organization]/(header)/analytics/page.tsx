@@ -1,4 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { TimeInterval } from '@polar-sh/api'
@@ -25,9 +26,9 @@ export default async function Page({
     product_id?: string | string[]
   }
 }) {
-  const api = getServerSideAPI()
+  const newAPI = getNewServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
+    newAPI,
     params.organization,
   )
 
@@ -64,6 +65,7 @@ export default async function Page({
     ? fromISODate(searchParams.end_date)
     : defaultEndDate
 
+  const api = getServerSideAPI()
   const limits = await api.metrics.limits()
   const minDate = fromISODate(limits.min_date)
   const maxDate = addDays(startDate, limits.intervals[interval].max_days - 1)

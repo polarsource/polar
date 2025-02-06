@@ -1,26 +1,26 @@
-import { Customer, PolarAPI, ResponseError } from '@polar-sh/api'
+import { Client, components } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getCustomerById = async (
-  api: PolarAPI,
+  api: Client,
   id: string,
-): Promise<Customer> => {
-  try {
-    return await api.customers.get(
-      {
-        id,
-      },
-      {
-        cache: 'no-store',
-      },
-    )
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
+): Promise<components['schemas']['Customer']> => {
+  const { data, error, response } = await api.GET('/v1/customers/{id}', {
+    params: {
+      path: { id },
+    },
+    cache: 'no-store',
+  })
+
+  if (error) {
+    if (response.status === 404) {
       notFound()
     }
-    throw err
+    throw error
   }
+
+  return data
 }
 
 // Tell React to memoize it for the duration of the request

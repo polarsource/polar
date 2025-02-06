@@ -33,6 +33,7 @@
     "@observablehq/plot": "^0.6.16",
     "@polar-sh/api": "workspace:*",
     "@polar-sh/checkout": "workspace:^",
+    "@polar-sh/client": "workspace:*",
     "@polar-sh/mdx": "workspace:*",
     "@polar-sh/sdk": "^0.25.0",
     "@polar-sh/ui": "workspace:*",

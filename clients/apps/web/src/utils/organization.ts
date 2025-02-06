@@ -1,21 +1,23 @@
-import { Organization, PolarAPI } from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getOrganizationBySlug = async (
-  api: PolarAPI,
+  api: Client,
   slug: string,
-): Promise<Organization | undefined> => {
-  const data = await api.organizations.list(
-    {
-      slug,
-    },
-    {
+): Promise<components['schemas']['Organization'] | undefined> => {
+  const data = await unwrap(
+    api.GET('/v1/organizations/', {
+      params: {
+        query: {
+          slug,
+        },
+      },
       next: {
         tags: [`organizations:${slug}`],
         revalidate: 600,
       },
-    },
+    }),
   )
   return data.items[0]
 }
@@ -24,9 +26,9 @@ const _getOrganizationBySlug = async (
 export const getOrganizationBySlug = cache(_getOrganizationBySlug)
 
 export const getOrganizationBySlugOrNotFound = async (
-  api: PolarAPI,
+  api: Client,
   slug: string,
-): Promise<Organization> => {
+): Promise<components['schemas']['Organization']> => {
   const organization = await getOrganizationBySlug(api, slug)
   if (!organization) {
     notFound()

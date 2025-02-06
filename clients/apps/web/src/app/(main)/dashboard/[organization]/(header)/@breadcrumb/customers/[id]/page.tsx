@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getCustomerById } from '@/utils/customer'
 import {
   BreadcrumbLink,

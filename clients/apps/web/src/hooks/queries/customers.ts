@@ -1,29 +1,36 @@
-import { api, queryClient } from '@/utils/api'
-import {
-  CustomerCreate,
-  CustomersApiListRequest,
-  CustomerUpdate,
-} from '@polar-sh/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { unwrap, type components, type operations } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useCustomers = (
   organizationId: string,
-  parameters?: Omit<CustomersApiListRequest, 'organization_id'>,
+  parameters?: Omit<
+    operations['customers:list']['parameters']['query'],
+    'organization_id'
+  >,
 ) =>
   useQuery({
     queryKey: ['customers', organizationId, parameters],
-    queryFn: () =>
-      api.customers.list({
-        organizationId: organizationId ?? '',
-        ...(parameters || {}),
-      }),
+    queryFn: async () =>
+      unwrap(
+        api.GET('/v1/customers/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...parameters,
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
   })
 
 export const useCreateCustomer = (organizationId: string) =>
   useMutation({
-    mutationFn: (data: CustomerCreate) => api.customers.create({ body: data }),
+    mutationFn: (body: components['schemas']['CustomerCreate']) =>
+      api.POST('/v1/customers/', { body }),
     onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['customers', organizationId],
@@ -33,8 +40,11 @@ export const useCreateCustomer = (organizationId: string) =>
 
 export const useUpdateCustomer = (customerId: string, organizationId: string) =>
   useMutation({
-    mutationFn: (data: CustomerUpdate) =>
-      api.customers.update({ id: customerId, body: data }),
+    mutationFn: (body: components['schemas']['CustomerUpdate']) =>
+      api.PATCH('/v1/customers/{id}', {
+        params: { path: { id: customerId } },
+        body,
+      }),
     onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['customers', organizationId],

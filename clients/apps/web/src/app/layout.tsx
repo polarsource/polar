@@ -2,7 +2,7 @@ import '../styles/globals.scss'
 
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { Organization, UserRead } from '@polar-sh/api'
 import { GeistSans } from 'geist/font/sans'

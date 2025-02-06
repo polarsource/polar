@@ -102,7 +102,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 ]
             )
 
-        organization = Organization(**create_schema.model_dump(exclude_unset=True))
+        organization = Organization(
+            **create_schema.model_dump(exclude_unset=True, exclude_none=True)
+        )
         session.add(organization)
         await self.add_user(session, organization, auth_subject.subject)
 
@@ -158,10 +160,13 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 ),
             }
 
+        if update_schema.subscription_settings is not None:
+            organization.subscription_settings = update_schema.subscription_settings
+
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
-            exclude={"profile_settings", "feature_settings"},
+            exclude={"profile_settings", "feature_settings", "subscription_settings"},
         )
         for key, value in update_dict.items():
             setattr(organization, key, value)

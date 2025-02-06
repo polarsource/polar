@@ -1,5 +1,5 @@
 import Current from '@/components/Finance/IssueFunding/Current'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 

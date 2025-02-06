@@ -3,7 +3,8 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { AddOutlined } from '@mui/icons-material'
-import { Customer, CustomerSession } from '@polar-sh/api'
+import { CustomerSession } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -30,7 +31,7 @@ const CustomerStatBox = ({
 }
 
 interface CustomerContextViewProps {
-  customer: Customer
+  customer: components['schemas']['Customer']
 }
 
 export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {

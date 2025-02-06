@@ -1,6 +1,7 @@
 import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
-import { Customer, CustomerUpdate } from '@polar-sh/api'
+import { setValidationErrors } from '@/utils/api/errors'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -9,12 +10,16 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerUpdateForm = Omit<CustomerUpdate, 'metadata'> & {
+export type CustomerUpdateForm = Omit<
+  components['schemas']['CustomerUpdate'],
+  'metadata'
+> & {
   metadata: { key: string; value: string | number | boolean }[]
 }
 
@@ -22,7 +27,7 @@ export const EditCustomerModal = ({
   customer,
   onClose,
 }: {
-  customer: Customer
+  customer: components['schemas']['Customer']
   onClose: () => void
 }) => {
   const form = useForm<CustomerUpdateForm>({
@@ -50,24 +55,27 @@ export const EditCustomerModal = ({
       ),
     }
 
-    updateCustomer
-      .mutateAsync(data)
-      .then(async (customer) => {
-        toast({
-          title: 'Customer Updated',
-          description: `Customer ${customer.email} updated successfully`,
-        })
+    updateCustomer.mutateAsync(data).then(async ({ error }) => {
+      if (error) {
+        if (error.detail)
+          if (isValidationError(error.detail)) {
+            setValidationErrors(error.detail, form.setError)
+          } else {
+            toast({
+              title: 'Customer Update Failed',
+              description: `Error updating customer ${customer.email}: ${error.detail}`,
+            })
+          }
+        return
+      }
 
-        revalidate(`customer:${customer.id}`)
-
-        onClose()
+      toast({
+        title: 'Customer Updated',
+        description: `Customer ${customer.email} updated successfully`,
       })
-      .catch((error) => {
-        toast({
-          title: 'Customer Update Failed',
-          description: `Error updating customer ${customer.email}: ${error.message}`,
-        })
-      })
+      revalidate(`customer:${customer.id}`)
+      onClose()
+    })
   }
 
   return (
@@ -109,6 +117,7 @@ export const EditCustomerModal = ({
                   <FormControl>
                     <Input {...field} value={field.value || ''} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

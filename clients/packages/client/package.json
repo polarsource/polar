@@ -1,0 +1,33 @@
+{
+  "name": "@polar-sh/client",
+  "description": "Polar Internal API Client",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "generate": "openapi-typescript http://127.0.0.1:8000/openapi.json -o ./src/v1.d.ts",
+    "test:ts": "tsc --noEmit",
+    "build": "rm -rf dist/ && tsup"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.1",
+    "tsconfig": "workspace:*",
+    "tsup": "^8.3.6",
+    "typescript": "latest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.4",
+    "openapi-typescript-helpers": "^0.0.15"
+  }
+}

@@ -20,7 +20,8 @@ import {
   defaultMetricMarks,
   metricDisplayNames,
 } from '@/utils/metrics'
-import { Customer, Metrics, MetricType, Organization } from '@polar-sh/api'
+import { Metrics, MetricType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -52,7 +53,10 @@ const rangeDisplayNames: Record<Range, string> = {
   '24h': '24h',
 }
 
-const getRangeStartDate = (range: Range, customer: Customer) => {
+const getRangeStartDate = (
+  range: Range,
+  customer: components['schemas']['Customer'],
+) => {
   switch (range) {
     case 'all_time':
       return new Date(customer.created_at)
@@ -68,8 +72,8 @@ const getRangeStartDate = (range: Range, customer: Customer) => {
 }
 
 interface ClientPageProps {
-  organization: Organization
-  customer: Customer
+  organization: components['schemas']['Organization']
+  customer: components['schemas']['Customer']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {

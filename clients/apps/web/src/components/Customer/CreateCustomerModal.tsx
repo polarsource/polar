@@ -1,12 +1,7 @@
 import revalidate from '@/app/actions'
 import { useCreateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  CustomerCreate,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -21,7 +16,10 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerCreateForm = Omit<CustomerCreate, 'metadata'> & {
+export type CustomerCreateForm = Omit<
+  components['schemas']['CustomerCreate'],
+  'metadata'
+> & {
   metadata: { key: string; value: string | number | boolean }[]
 }
 
@@ -29,7 +27,7 @@ export const CreateCustomerModal = ({
   organization,
   onClose,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
   onClose: () => void
 }) => {
   const form = useForm<CustomerCreateForm>({
@@ -49,37 +47,20 @@ export const CreateCustomerModal = ({
       ),
     }
 
-    createCustomer
-      .mutateAsync(data)
-      .then(async (customer) => {
-        toast({
-          title: 'Customer Created',
-          description: `Customer ${customer.email} created successfully`,
-        })
-
-        revalidate(`customer:${customer.id}`)
-
-        onClose()
-      })
-      .catch(async (error) => {
-        if (error instanceof ResponseError) {
-          const body = await error.response.json()
-          if (error.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, form.setError)
-
-            toast({
-              title: 'Customer Creation Failed',
-              description: `Error creating customer: ${validationErrors[0].msg}`,
-            })
-          } else {
-            toast({
-              title: 'Customer Creation Failed',
-              description: `Error creating customer: ${error.message}`,
-            })
-          }
+    createCustomer.mutateAsync(data).then(async ({ data: customer, error }) => {
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, form.setError)
         }
+        return
+      }
+      toast({
+        title: 'Customer Created',
+        description: `Customer ${customer.email} created successfully`,
       })
+      revalidate(`customer:${customer.id}`)
+      onClose()
+    })
   }
 
   return (

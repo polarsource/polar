@@ -11,6 +11,7 @@ import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscripti
 import { useProduct, useSubscription } from '@/hooks/queries'
 import { markdownOptionsJustText } from '@/utils/markdown'
 import { Organization, Product, Subscription } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -91,7 +92,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       }
       className="gap-y-8"
-      contextView={<CustomerContextView customer={subscription.customer} />}
+      contextView={
+        <CustomerContextView
+          customer={subscription.customer as components['schemas']['Customer']}
+        />
+      }
     >
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">
         <div className="flex flex-col gap-6 p-8">

@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
 import { cookies } from 'next/headers'

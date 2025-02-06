@@ -1,4 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
 import { getMeterById } from '@/utils/meter'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
@@ -22,11 +23,12 @@ export default async function Page({
 }: {
   params: { organization: string; id: string }
 }) {
-  const api = getServerSideAPI()
+  const newAPI = getNewServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
+    newAPI,
     params.organization,
   )
+  const api = getServerSideAPI()
   const meter = await getMeterById(api, params.id)
 
   return <ClientPage organization={organization} meter={meter} />

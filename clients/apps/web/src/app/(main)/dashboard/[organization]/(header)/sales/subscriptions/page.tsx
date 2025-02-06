@@ -1,7 +1,6 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { SubscriptionStatus } from '@polar-sh/api'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
@@ -18,7 +17,7 @@ export default async function Page({
   params: { organization: string }
   searchParams: DataTableSearchParams & {
     product_id?: string
-    status?: Extract<SubscriptionStatus, 'active' | 'canceled'> | 'any'
+    status?: 'active' | 'canceled' | 'any'
   }
 }) {
   const api = getServerSideAPI()

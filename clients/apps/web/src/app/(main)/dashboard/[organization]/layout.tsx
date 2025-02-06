@@ -1,5 +1,5 @@
 import { MaintainerOrganizationContextProvider } from '@/providers/maintainerOrganization'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getUserOrganizations } from '@/utils/user'
 import { Metadata } from 'next'

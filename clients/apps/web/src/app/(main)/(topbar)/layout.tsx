@@ -1,6 +1,6 @@
 import Topbar from '@/components/Layout/Public/Topbar'
 import PublicLayout from '@/components/Layout/PublicLayout'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 
 export default async function Layout({

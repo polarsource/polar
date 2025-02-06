@@ -17,6 +17,7 @@ import { useOrder } from '@/hooks/queries/orders'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { markdownOptionsJustText } from '@/utils/markdown'
 import { Order, Organization, Product, RefundReason } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -115,7 +116,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       }
       className="gap-y-8"
-      contextView={<CustomerContextView customer={order.customer} />}
+      contextView={
+        <CustomerContextView
+          customer={order.customer as components['schemas']['Customer']}
+        />
+      }
     >
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">
         <div className="flex flex-col gap-6 p-8">

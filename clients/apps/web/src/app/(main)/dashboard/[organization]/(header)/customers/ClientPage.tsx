@@ -14,7 +14,7 @@ import {
 } from '@/utils/datatable'
 
 import { AddOutlined, Search } from '@mui/icons-material'
-import { Customer, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -29,7 +29,7 @@ import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useState } from 'react'
 
 interface ClientPageProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   query: string | undefined
@@ -130,7 +130,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const customers = customersHook.data?.items || []
   const pageCount = customersHook.data?.pagination.max_page ?? 1
 
-  const columns: DataTableColumnDef<Customer>[] = [
+  const columns: DataTableColumnDef<components['schemas']['Customer']>[] = [
     {
       accessorKey: 'email',
       enableSorting: true,

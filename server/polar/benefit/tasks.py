@@ -17,10 +17,10 @@ from polar.worker import (
     task,
 )
 
-from .benefits import BenefitRetriableError
 from .service.benefit import benefit as benefit_service
 from .service.benefit_grant import benefit_grant as benefit_grant_service
 from .service.benefit_grant_scope import resolve_scope
+from .strategies import BenefitRetriableError
 
 log: Logger = structlog.get_logger()
 

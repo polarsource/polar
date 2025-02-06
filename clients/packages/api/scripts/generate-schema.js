@@ -49,6 +49,11 @@ const convert = (schema) => {
       )
       schema.operationId = newOperationId
       schema.tags = handleTags(schema)
+
+      // Remove security schemes that are not relevant for our web frontend to lighten the output
+      if (schema.security) {
+        schema.security = schema.security.filter((security) => !Object.keys(security).some((key) => key.match(/oidc|pat|oat/)))
+      }
     }
   }
 

@@ -101,3 +101,19 @@ class TestCreate:
         assert organization.name == "My New Organization"
 
         assert organization.feature_settings == {"issue_funding_enabled": False}
+
+    @pytest.mark.auth
+    async def test_valid_with_none_subscription_settings(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                subscription_settings=None,
+            ),
+            auth_subject,
+        )
+
+        assert organization.subscription_settings is not None

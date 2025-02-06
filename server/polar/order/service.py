@@ -179,6 +179,7 @@ class OrderService(ResourceServiceReader[Order]):
         product_price_type: Sequence[ProductPriceType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        checkout_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
             (OrderSortProperty.created_at, True)
@@ -215,6 +216,9 @@ class OrderService(ResourceServiceReader[Order]):
 
         if customer_id is not None:
             statement = statement.where(Order.customer_id.in_(customer_id))
+
+        if checkout_id is not None:
+            statement = statement.where(Order.checkout_id.in_(checkout_id))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

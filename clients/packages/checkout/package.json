@@ -27,13 +27,13 @@
     }
   },
   "devDependencies": {
-    "@stripe/react-stripe-js": "^3.0.0",
+    "@stripe/react-stripe-js": "^3.1.1",
     "@stripe/stripe-js": "^5.6.0",
-    "@types/react": "^18.3.12",
+    "@types/react": "^18.3.18",
     "react": "^18.3.1",
-    "terser": "^5.36.0",
+    "terser": "^5.38.0",
     "tsconfig": "workspace:*",
-    "tsup": "^8.3.5",
+    "tsup": "^8.3.6",
     "typescript": "latest"
   },
   "publishConfig": {
@@ -48,7 +48,7 @@
     "react-hook-form": "^7.54.2"
   },
   "peerDependencies": {
-    "@stripe/react-stripe-js": "^3.0.0",
+    "@stripe/react-stripe-js": "^3.1.1",
     "@stripe/stripe-js": "^5.6.0",
     "react": "^18"
   }

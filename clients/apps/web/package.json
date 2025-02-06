@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": ">= 18 <20"
+    "node": "=22"
   },
   "dependencies": {
     "@date-fns/utc": "^2.1.0",

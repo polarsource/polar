@@ -43,7 +43,7 @@ flowchart TD
 
 ## Prerequisites
 
-Polar needs a [Python 3.12](https://www.python.org/downloads/) and [Node.js 18](https://nodejs.org/en/download/package-manager) installations.
+Polar needs a [Python 3.12](https://www.python.org/downloads/) and [Node.js 22](https://nodejs.org/en/download/package-manager) installations.
 
 ## Setup environment
 

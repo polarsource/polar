@@ -122,7 +122,7 @@ function getScriptSize(scriptPath) {
   } else {
     const textContent = fs.readFileSync(p, encoding)
     rawSize = Buffer.byteLength(textContent, encoding)
-    gzipSize = gzSize.sync(textContent)
+    gzipSize = gzSize.gzipSizeSync(textContent)
     memoryCache[p] = [rawSize, gzipSize]
   }
 

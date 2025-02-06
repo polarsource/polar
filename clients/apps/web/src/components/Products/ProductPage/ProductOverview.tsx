@@ -54,7 +54,7 @@ export const ProductOverview = ({
           metric={metrics?.orders}
           value={periods?.reduce((acc, current) => acc + current.orders, 0)}
         />
-        <MiniMetricChartBox title="Today's Revenue" metric={metrics?.revenue} />
+        <MiniMetricChartBox title="Today's Revenue" metric={metrics?.revenue} value={periods?.[periods.length - 1].revenue} />
         <MiniMetricChartBox
           metric={metrics?.cumulative_revenue}
           value={periods?.[periods.length - 1].cumulative_revenue}

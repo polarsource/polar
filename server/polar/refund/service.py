@@ -8,7 +8,7 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.dialects import postgresql
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service

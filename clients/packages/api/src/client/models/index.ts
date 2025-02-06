@@ -4429,6 +4429,13 @@ export interface CheckoutDiscountPercentageRepeatDuration {
 export type CheckoutIDFilter = Array<string> | string;
 
 /**
+ * @type CheckoutIDFilter1
+ * Filter by checkout ID.
+ * @export
+ */
+export type CheckoutIDFilter1 = Array<string> | string;
+
+/**
  * Checkout link data.
  * @export
  * @interface CheckoutLink

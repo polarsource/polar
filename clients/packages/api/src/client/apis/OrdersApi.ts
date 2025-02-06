@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  CheckoutIDFilter,
   CustomerIDFilter,
   DiscountIDFilter1,
   HTTPValidationError,
@@ -42,6 +43,7 @@ export interface OrdersApiListRequest {
     productPriceType?: ProductPriceTypeFilter | null;
     discountId?: DiscountIDFilter1 | null;
     customerId?: CustomerIDFilter | null;
+    checkoutId?: CheckoutIDFilter | null;
     page?: number;
     limit?: number;
     sorting?: Array<OrderSortProperty> | null;
@@ -179,6 +181,10 @@ export class OrdersApi extends runtime.BaseAPI {
 
         if (requestParameters['customerId'] != null) {
             queryParameters['customer_id'] = requestParameters['customerId'];
+        }
+
+        if (requestParameters['checkoutId'] != null) {
+            queryParameters['checkout_id'] = requestParameters['checkoutId'];
         }
 
         if (requestParameters['page'] != null) {

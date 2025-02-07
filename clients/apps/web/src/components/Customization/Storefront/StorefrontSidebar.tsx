@@ -13,9 +13,8 @@ import {
   Organization,
   OrganizationAvatarFileRead,
   OrganizationUpdate,
-  ResponseError,
-  ValidationError,
 } from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -32,7 +31,7 @@ import {
 import { Label } from '@polar-sh/ui/components/ui/label'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import Link from 'next/link'
-import { PropsWithChildren, useCallback, useContext, useState } from 'react'
+import { PropsWithChildren, useCallback, useContext } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -278,78 +277,61 @@ const StorefrontForm = () => {
 
 export const StorefrontSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
-  const [isSaveLoading, setSaveLoading] = useState(false)
-  const [isProfilePageEnabledLoading, setProfilePageEnabledLoading] =
-    useState(false)
 
-  const { handleSubmit, setError, formState, reset } = useFormContext()
+  const { handleSubmit, setError, formState, reset } =
+    useFormContext<components['schemas']['OrganizationUpdate']>()
 
   const updateOrganization = useUpdateOrganization()
 
   const onSubmit = useCallback(
-    async (organizationUpdate: OrganizationUpdate) => {
-      try {
-        setSaveLoading(true)
-        const org = await updateOrganization.mutateAsync({
-          id: organization.id,
-          body: organizationUpdate,
-        })
-
-        toast({
-          title: 'Organization Updated',
-          description: `Organization ${organization.name} was successfully updated`,
-        })
-
-        reset(org)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
-
+    async (organizationUpdate: components['schemas']['OrganizationUpdate']) => {
+      const { data: org, error } = await updateOrganization.mutateAsync({
+        id: organization.id,
+        body: organizationUpdate,
+      })
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        } else {
           toast({
             title: 'Organization Update Failed',
-            description: `Error updating organization: ${e.message}`,
+            description: `Error updating organization: ${error.detail}`,
           })
         }
-      } finally {
-        setSaveLoading(false)
+        return
       }
+
+      toast({
+        title: 'Organization Updated',
+        description: `Organization ${organization.name} was successfully updated`,
+      })
+      reset(org)
     },
     [organization, setError, updateOrganization, reset],
   )
 
   const toggleProfilePage = useCallback(
     async (enabled: boolean) => {
-      try {
-        setProfilePageEnabledLoading(true)
-        const org = await updateOrganization.mutateAsync({
-          id: organization.id,
-          body: {
-            profile_settings: {
-              enabled,
-            },
-          },
-        })
-
+      const { data: org, error } = await updateOrganization.mutateAsync({
+        id: organization.id,
+        body: {
+          profile_settings: { enabled, subscribe: null },
+          pledge_badge_show_amount: organization.pledge_badge_show_amount,
+          pledge_minimum_amount: organization.pledge_minimum_amount,
+        },
+      })
+      if (error) {
         toast({
-          title: 'Storefront Updated',
-          description: `Storefront is now ${enabled ? 'enabled' : 'disabled'}`,
+          title: 'Storefront Update Failed',
+          description: `Error updating storefront: ${error.detail}`,
         })
-
-        reset(org)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          toast({
-            title: 'Storefront Update Failed',
-            description: `Error updating storefront: ${e.message}`,
-          })
-        }
-      } finally {
-        setProfilePageEnabledLoading(false)
+        return
       }
+      toast({
+        title: 'Storefront Updated',
+        description: `Storefront is now ${enabled ? 'enabled' : 'disabled'}`,
+      })
+      reset(org)
     },
     [organization, updateOrganization, reset],
   )
@@ -373,8 +355,8 @@ export const StorefrontSidebar = () => {
             <Button
               className="self-start"
               type="submit"
-              loading={isSaveLoading}
-              disabled={!formState.isDirty}
+              loading={updateOrganization.isPending}
+              disabled={!formState.isDirty || updateOrganization.isPending}
             >
               Save
             </Button>
@@ -429,7 +411,8 @@ export const StorefrontSidebar = () => {
           onClick={() => toggleProfilePage(!storefrontEnabled)}
           variant={storefrontEnabled ? 'destructive' : 'default'}
           size="sm"
-          loading={isProfilePageEnabledLoading}
+          loading={updateOrganization.isPending}
+          disabled={updateOrganization.isPending}
         >
           {storefrontEnabled ? 'Deactivate Storefront' : 'Activate Storefront'}
         </Button>

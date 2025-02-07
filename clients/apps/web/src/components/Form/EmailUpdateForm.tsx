@@ -3,10 +3,8 @@
 import { useSendEmailUpdate } from '@/hooks/emailUpdate'
 import { setValidationErrors } from '@/utils/api/errors'
 import { FormControl } from '@mui/material'
-import { ResponseError, ValidationError } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-
 import { Form, FormField, FormItem } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
@@ -24,7 +22,6 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
   onEmailUpdateRequest,
   onEmailUpdateExists,
   onEmailUpdateForm,
-  setErr,
 }) => {
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
@@ -33,27 +30,19 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setLoading(true)
-    try {
-      await sendEmailUpdate(email, returnTo)
-      onEmailUpdateRequest?.()
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          if (setErr) setErr(body['detail'][0].msg)
-          onEmailUpdateExists?.()
-          setTimeout(() => {
-            onEmailUpdateForm?.()
-          }, 6000)
-          setValidationErrors(validationErrors, setError)
-        } else if (body['detail']) {
-          setError('email', { message: body['detail'] })
-        }
+    const { error } = await sendEmailUpdate(email, returnTo)
+    setLoading(false)
+    if (error) {
+      if (error.detail) {
+        setValidationErrors(error.detail, setError)
       }
-    } finally {
-      setLoading(false)
+      onEmailUpdateExists?.()
+      setTimeout(() => {
+        onEmailUpdateForm?.()
+      }, 6000)
+      return
     }
+    onEmailUpdateRequest?.()
   }
 
   return (

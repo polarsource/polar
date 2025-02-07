@@ -4,12 +4,11 @@ import { useUpdateProduct } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   type Benefit,
-  Organization,
-  Product,
   ProductUpdate,
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -22,8 +21,8 @@ import ProductBenefitsForm from '../ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
 export interface ProductPageContextViewProps {
-  organization: Organization
-  product: Product
+  organization: components['schemas']['Organization']
+  product: components['schemas']['Product']
 }
 
 export const ProductPageContextView = ({

@@ -1,16 +1,18 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
-import { api } from '@/utils/api'
-import { Organization, UserRead } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
 import { useContext, useEffect } from 'react'
 
 export const useAuth = (): {
   authenticated: boolean
-  currentUser: UserRead | undefined
+  currentUser: components['schemas']['UserRead'] | undefined
   reloadUser: () => Promise<undefined>
-  userOrganizations: Organization[]
-  setUserOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>
+  userOrganizations: components['schemas']['Organization'][]
+  setUserOrganizations: React.Dispatch<
+    React.SetStateAction<components['schemas']['Organization'][]>
+  >
 } => {
   const posthog = usePostHog()
   const {
@@ -21,10 +23,8 @@ export const useAuth = (): {
   } = useContext(AuthContext)
 
   const reloadUser = async (): Promise<undefined> => {
-    try {
-      const user = await api.users.getAuthenticated()
-      setCurrentUser(user)
-    } catch {}
+    const user = await unwrap(api.GET('/v1/users/me'))
+    setCurrentUser(user)
   }
 
   useEffect(() => {

@@ -7,14 +7,8 @@ import {
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { ClearOutlined } from '@mui/icons-material'
-import {
-  CheckoutLink,
-  CheckoutLinkCreate,
-  CheckoutLinkProductCreate,
-  Product,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { CheckoutLink, Product } from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -42,7 +36,7 @@ import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
 
 type CheckoutLinksForm = Omit<
-  CheckoutLinkProductCreate,
+  components['schemas']['CheckoutLinkProductCreate'],
   'payment_processor' | 'metadata'
 > & {
   product_price_id?: string
@@ -120,21 +114,21 @@ export const CheckoutLinkForm = ({
 
   const onDelete = async () => {
     if (checkoutLink) {
-      await deleteCheckoutLink(checkoutLink)
-        .then(() => {
-          toast({
-            title: 'Checkout Link Deleted',
-            description: `${
-              checkoutLink?.label ? checkoutLink.label : 'Unlabeled'
-            } Checkout Link  was deleted successfully`,
-          })
-        })
-        .catch((e) => {
+      await deleteCheckoutLink(checkoutLink).then(({ error }) => {
+        if (error) {
           toast({
             title: 'Checkout Link Deletion Failed',
-            description: `Error deleting checkout link: ${e.message}`,
+            description: `Error deleting checkout link: ${error.detail}`,
           })
+          return
+        }
+        toast({
+          title: 'Checkout Link Deleted',
+          description: `${
+            checkoutLink?.label ? checkoutLink.label : 'Unlabeled'
+          } Checkout Link  was deleted successfully`,
         })
+      })
     }
   }
 
@@ -144,88 +138,95 @@ export const CheckoutLinkForm = ({
     hide: hideDeleteModal,
   } = useModal()
 
-  const onSubmit: SubmitHandler<CheckoutLinksForm> = useCallback(
-    async (data) => {
-      try {
-        const { product_price_id, product_id, ...params } = data
-        if (params.discount_id === '') {
-          params.discount_id = null
-        }
-        if (params.success_url === '') {
-          params.success_url = null
-        }
-        const body: CheckoutLinkCreate = {
-          payment_processor: 'stripe',
-          ...params,
-          ...(product_price_id
-            ? {
-                product_price_id,
-              }
-            : {
-                product_id,
-              }),
-          metadata: data.metadata.reduce(
-            (acc, { key, value }) => ({ ...acc, [key]: value }),
-            {},
-          ),
-        }
-
-        let newCheckoutLink: CheckoutLink
-
-        if (checkoutLink) {
-          newCheckoutLink = await updateCheckoutLink({
-            id: checkoutLink.id,
-            body,
-          })
-
-          toast({
-            title: 'Checkout Link Updated',
-            description: `${
-              newCheckoutLink.label ? newCheckoutLink.label : 'Unlabeled'
-            } Checkout Link was updated successfully`,
-          })
-        } else {
-          newCheckoutLink = await createCheckoutLink({ body })
-
-          toast({
-            title: 'Checkout Link Created',
-            description: `${
-              newCheckoutLink.label ? newCheckoutLink.label : 'Unlabeled'
-            } Checkout Link was created successfully`,
-          })
-        }
-
-        onClose(newCheckoutLink)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-            validationErrors.forEach((error) => {
-              if (error.loc[1] === 'metadata') {
-                const metadataKey = error.loc[2]
-                const metadataIndex = data.metadata.findIndex(
-                  ({ key }) => key === metadataKey,
-                )
-                if (metadataIndex > -1) {
-                  const field = error.loc[3] === '[key]' ? 'key' : 'value'
-                  setError(`metadata.${metadataIndex}.${field}`, {
-                    message: error.msg,
-                  })
-                }
-              }
-            })
-          } else {
-            setError('root', { message: e.message })
-          }
-
-          toast({
-            title: `Checkout Link Update Failed`,
-            description: `Error updating checkout link: ${e.message}`,
+  const handleValidationError = (
+    data: CheckoutLinksForm,
+    errors: components['schemas']['ValidationError'][],
+  ) => {
+    setValidationErrors(errors, setError)
+    errors.forEach((error) => {
+      if (error.loc[1] === 'metadata') {
+        const metadataKey = error.loc[2]
+        const metadataIndex = data.metadata.findIndex(
+          ({ key }) => key === metadataKey,
+        )
+        if (metadataIndex > -1) {
+          const field = error.loc[3] === '[key]' ? 'key' : 'value'
+          setError(`metadata.${metadataIndex}.${field}`, {
+            message: error.msg,
           })
         }
       }
+    })
+  }
+
+  const onSubmit: SubmitHandler<CheckoutLinksForm> = useCallback(
+    async (data) => {
+      const { product_price_id, product_id, ...params } = data
+      if (params.discount_id === '') {
+        params.discount_id = null
+      }
+      if (params.success_url === '') {
+        params.success_url = null
+      }
+      const body: components['schemas']['CheckoutLinkCreate'] = {
+        payment_processor: 'stripe',
+        ...params,
+        ...(product_price_id
+          ? {
+              product_price_id,
+            }
+          : {
+              product_id,
+            }),
+        metadata: data.metadata.reduce(
+          (acc, { key, value }) => ({ ...acc, [key]: value }),
+          {},
+        ),
+      }
+
+      let newCheckoutLink: components['schemas']['CheckoutLink']
+
+      if (checkoutLink) {
+        const { data: updatedCheckoutLink, error } = await updateCheckoutLink({
+          id: checkoutLink.id,
+          body,
+        })
+        if (error) {
+          if (isValidationError(error.detail)) {
+            handleValidationError(data, error.detail)
+          } else {
+            setError('root', { message: error.detail })
+          }
+          return
+        }
+        newCheckoutLink = updatedCheckoutLink
+        toast({
+          title: 'Checkout Link Updated',
+          description: `${
+            newCheckoutLink.label ? newCheckoutLink.label : 'Unlabeled'
+          } Checkout Link was updated successfully`,
+        })
+      } else {
+        const { data: createdCheckoutLink, error } =
+          await createCheckoutLink(body)
+        if (error) {
+          if (isValidationError(error.detail)) {
+            handleValidationError(data, error.detail)
+          } else {
+            setError('root', { message: error.detail })
+          }
+          return
+        }
+        newCheckoutLink = createdCheckoutLink
+        toast({
+          title: 'Checkout Link Created',
+          description: `${
+            newCheckoutLink.label ? newCheckoutLink.label : 'Unlabeled'
+          } Checkout Link was created successfully`,
+        })
+      }
+
+      onClose(newCheckoutLink)
     },
     [onClose, checkoutLink, createCheckoutLink, updateCheckoutLink, setError],
   )

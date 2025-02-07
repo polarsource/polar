@@ -207,20 +207,19 @@ export const FileListItem = ({
 
   const patchFile = useCallback(
     async (attrs: { name?: string; version?: string }) => {
-      await patchFileQuery
-        .mutateAsync(attrs)
-        .then(() => {
-          toast({
-            title: 'File Updated',
-            description: `File ${file.name} updated successfully`,
-          })
-        })
-        .catch((error) => {
+      await patchFileQuery.mutateAsync(attrs).then((result) => {
+        if (result.error) {
           toast({
             title: 'File Update Failed',
-            description: `Error updating file ${file.name}: ${error.message}`,
+            description: `Error updating file ${file.name}: ${result.error.detail}`,
           })
+          return
+        }
+        toast({
+          title: 'File Updated',
+          description: `File ${file.name} updated successfully`,
         })
+      })
     },
     [patchFileQuery],
   )
@@ -243,20 +242,19 @@ export const FileListItem = ({
   )
 
   const onDelete = useCallback(async () => {
-    deleteFile
-      .mutateAsync()
-      .then(() => {
-        toast({
-          title: 'File Deleted',
-          description: `File ${file.name} deleted successfully`,
-        })
-      })
-      .catch((error) => {
+    deleteFile.mutateAsync().then((response) => {
+      if (response.error) {
         toast({
           title: 'File Deletion Failed',
-          description: `Error deleting file ${file.name}: ${error.message}`,
+          description: `Error deleting file ${file.name}: ${response.error.detail}`,
         })
+        return
+      }
+      toast({
+        title: 'File Deleted',
+        description: `File ${file.name} deleted successfully`,
       })
+    })
   }, [deleteFile])
 
   const onCopySHA = useCallback(() => {

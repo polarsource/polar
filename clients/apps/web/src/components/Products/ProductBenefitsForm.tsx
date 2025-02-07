@@ -7,7 +7,7 @@ import {
   MoreVertOutlined,
   RemoveOutlined,
 } from '@mui/icons-material'
-import { type Benefit, BenefitType, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -33,8 +33,8 @@ import { useModal } from '../Modal/useModal'
 import { toast } from '../Toast/use-toast'
 
 interface BenefitRowProps {
-  organization: Organization
-  benefit: Benefit
+  organization: components['schemas']['Organization']
+  benefit: components['schemas']['Benefit']
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
@@ -59,20 +59,19 @@ const BenefitRow = ({
   const deleteBenefit = useDeleteBenefit(organization.id)
 
   const handleDeleteBenefit = useCallback(() => {
-    deleteBenefit
-      .mutateAsync({ id: benefit.id })
-      .then(() => {
-        toast({
-          title: 'Benefit Deleted',
-          description: `Benefit ${benefit.description} was deleted successfully`,
-        })
-      })
-      .catch((e) => {
+    deleteBenefit.mutateAsync({ id: benefit.id }).then(({ error }) => {
+      if (error) {
         toast({
           title: 'Benefit Deletion Failed',
-          description: `Error deleting benefit: ${e.message}`,
+          description: `Error deleting benefit: ${error.detail}`,
         })
+        return
+      }
+      toast({
+        title: 'Benefit Deleted',
+        description: `Benefit ${benefit.description} was deleted successfully`,
       })
+    })
   }, [deleteBenefit, benefit])
 
   return (
@@ -153,11 +152,11 @@ const BenefitRow = ({
 }
 
 interface ProductBenefitsFormProps {
-  organization: Organization
-  benefits: Benefit[]
-  organizationBenefits: Benefit[]
-  onSelectBenefit: (benefit: Benefit) => void
-  onRemoveBenefit: (benefit: Benefit) => void
+  organization: components['schemas']['Organization']
+  benefits: components['schemas']['Benefit'][]
+  organizationBenefits: components['schemas']['Benefit'][]
+  onSelectBenefit: (benefit: components['schemas']['Benefit']) => void
+  onRemoveBenefit: (benefit: components['schemas']['Benefit']) => void
   className?: string
   compact?: boolean
 }
@@ -178,7 +177,7 @@ const ProductBenefitsForm = ({
   )
 
   const handleCheckedChange = useCallback(
-    (benefit: Benefit) => (checked: boolean) => {
+    (benefit: components['schemas']['Benefit']) => (checked: boolean) => {
       if (checked) {
         onSelectBenefit(benefit)
       } else {
@@ -203,7 +202,7 @@ const ProductBenefitsForm = ({
             <BenefitsContainer
               key={type}
               title={title}
-              type={type as BenefitType}
+              type={type as components['schemas']['BenefitType']}
               handleCheckedChange={handleCheckedChange}
               enabledBenefits={benefits}
               benefits={organizationBenefits.filter(
@@ -237,10 +236,12 @@ const ProductBenefitsForm = ({
 
 interface BenefitsContainerProps {
   title: string
-  benefits: Benefit[]
-  enabledBenefits: Benefit[]
-  handleCheckedChange: (benefit: Benefit) => (checked: boolean) => void
-  type: BenefitType
+  benefits: components['schemas']['Benefit'][]
+  enabledBenefits: components['schemas']['Benefit'][]
+  handleCheckedChange: (
+    benefit: components['schemas']['Benefit'],
+  ) => (checked: boolean) => void
+  type: components['schemas']['BenefitType']
   onCreateNewBenefit?: () => void
 }
 

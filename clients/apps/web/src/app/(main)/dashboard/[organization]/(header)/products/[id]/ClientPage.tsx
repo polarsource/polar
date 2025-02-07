@@ -3,6 +3,7 @@
 import { ProductPage } from '@/components/Products/ProductPage/ProductPage'
 import { useProduct } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { components } from '@polar-sh/client'
 import { useParams } from 'next/navigation'
 import { useContext } from 'react'
 
@@ -12,5 +13,10 @@ export default function Page() {
 
   const { data: product } = useProduct(id as string)
 
-  return product ? <ProductPage product={product} organization={org} /> : null
+  return product ? (
+    <ProductPage
+      product={product as components['schemas']['Product']}
+      organization={org}
+    />
+  ) : null
 }

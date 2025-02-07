@@ -1,7 +1,6 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { useToast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import { useAuth } from '@/hooks'
 import { usePostHog } from '@/hooks/posthog'
@@ -9,7 +8,7 @@ import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
-import { ResponseError, ValidationError } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -32,7 +31,7 @@ export default function ClientPage({
   error,
 }: {
   slug?: string
-  validationErrors?: ValidationError[]
+  validationErrors?: components['schemas']['ValidationError'][]
   error?: string
 }) {
   const posthog = usePostHog()
@@ -82,41 +81,29 @@ export default function ClientPage({
     }
   }, [name, editedSlug, slug, setValue])
 
-  const { toast } = useToast()
-
   const onSubmit = async (data: { name: string; slug: string }) => {
-    try {
-      const params = {
-        ...data,
-        slug: slug as string,
-      }
-      posthog.capture('dashboard:organizations:create:submit', params)
-      const organization = await createOrganization.mutateAsync(params)
-      await revalidate(`users:${currentUser?.id}:organizations`)
-      setUserOrganizations((orgs) => [...orgs, organization])
-      router.push(
-        getStatusRedirect(
-          `/dashboard/${organization.slug}`,
-          'Organization Created',
-          `Organization ${organization.name} was created successfully`,
-        ),
-      )
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(validationErrors, setError)
-        } else {
-          setError('root', { message: e.message })
-        }
-
-        toast({
-          title: 'Organization Creation Failed',
-          description: e.message,
-        })
-      }
+    const params = {
+      ...data,
+      slug: slug as string,
     }
+    posthog.capture('dashboard:organizations:create:submit', params)
+    const { data: organization, error } =
+      await createOrganization.mutateAsync(params)
+    if (error) {
+      if (error.detail) {
+        setValidationErrors(error.detail, setError)
+      }
+      return
+    }
+    await revalidate(`users:${currentUser?.id}:organizations`)
+    setUserOrganizations((orgs) => [...orgs, organization])
+    router.push(
+      getStatusRedirect(
+        `/dashboard/${organization.slug}`,
+        'Organization Created',
+        `Organization ${organization.name} was created successfully`,
+      ),
+    )
   }
 
   return (

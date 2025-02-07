@@ -7,12 +7,12 @@ import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   type Benefit,
-  Organization,
   ProductCreate,
   ProductPriceType,
   ResponseError,
   ValidationError,
 } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -27,8 +27,8 @@ import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 import { productCreateToProduct } from './utils'
 
 export interface CreateProductPageProps {
-  organization: Organization
-  productPriceType?: ProductPriceType
+  organization: components['schemas']['Organization']
+  productPriceType?: components['schemas']['ProductPriceType']
 }
 
 export const CreateProductPage = ({ organization }: CreateProductPageProps) => {

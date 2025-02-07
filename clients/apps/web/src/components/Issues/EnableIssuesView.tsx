@@ -5,7 +5,6 @@ import { Bolt } from '@mui/icons-material'
 import { Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
 
 export interface EnableIssuesViewProps {
@@ -13,13 +12,10 @@ export interface EnableIssuesViewProps {
 }
 
 export const EnableIssuesView = ({ organization }: EnableIssuesViewProps) => {
-  const [enablingIssues, setEnablingIssues] = useState(false)
   const updateOrganization = useUpdateOrganization()
   const router = useRouter()
 
   const enableIssues = async () => {
-    setEnablingIssues(true)
-
     await updateOrganization
       .mutateAsync({
         id: organization.id,
@@ -27,13 +23,12 @@ export const EnableIssuesView = ({ organization }: EnableIssuesViewProps) => {
           feature_settings: {
             issue_funding_enabled: true,
           },
+          pledge_badge_show_amount: organization.pledge_badge_show_amount,
+          pledge_minimum_amount: organization.pledge_minimum_amount,
         },
       })
       .then(() => {
         router.refresh()
-      })
-      .catch(() => {
-        setEnablingIssues(false)
       })
   }
 
@@ -51,7 +46,7 @@ export const EnableIssuesView = ({ organization }: EnableIssuesViewProps) => {
             Enable crowdfunding for your GitHub issues
           </h2>
         </div>
-        <Button loading={enablingIssues} onClick={enableIssues}>
+        <Button loading={updateOrganization.isPending} onClick={enableIssues}>
           Enable Issues
         </Button>
       </div>

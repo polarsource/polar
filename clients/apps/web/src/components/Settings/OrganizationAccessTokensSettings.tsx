@@ -215,15 +215,17 @@ const CreateAccessTokenModal = ({
 
   const onCreate = useCallback(
     async (data: AccessTokenCreate) => {
-      const created = await createToken.mutateAsync({
+      const { data: created } = await createToken.mutateAsync({
         comment: data.comment ? data.comment : '',
         expires_in:
           data.expires_in === 'no-expiration' ? null : data.expires_in,
         scopes: data.scopes,
       })
-      onSuccess(created)
-      reset({ scopes: [] })
-      createToken.reset()
+      if (created) {
+        onSuccess(created)
+        reset({ scopes: [] })
+        createToken.reset()
+      }
     },
     [createToken, onSuccess, reset],
   )
@@ -273,15 +275,17 @@ const UpdateAccessTokenModal = ({
 
   const onUpdate = useCallback(
     async (data: AccessTokenUpdate) => {
-      const updated = await updateToken.mutateAsync({
+      const { data: updated } = await updateToken.mutateAsync({
         comment: data.comment ? data.comment : '',
         scopes: data.scopes,
       })
-      onSuccess(updated)
-      toast({
-        title: 'Access Token Updated',
-        description: `Access Token ${updated.comment} was updated successfully`,
-      })
+      if (updated) {
+        onSuccess(updated)
+        toast({
+          title: 'Access Token Updated',
+          description: `Access Token ${updated.comment} was updated successfully`,
+        })
+      }
     },
     [updateToken, onSuccess, toast],
   )
@@ -324,20 +328,19 @@ const AccessTokenItem = ({
   const deleteToken = useDeleteOrganizationAccessToken()
 
   const onDelete = useCallback(async () => {
-    deleteToken
-      .mutateAsync({ id: token.id })
-      .then(() => {
-        toast({
-          title: 'Access Token Deleted',
-          description: `Access Token ${token.comment} was deleted successfully`,
-        })
-      })
-      .catch((e) => {
+    deleteToken.mutateAsync({ id: token.id }).then(({ error }) => {
+      if (error) {
         toast({
           title: 'Access Token Deletion Failed',
-          description: `Error deleting access token: ${e.message}`,
+          description: `Error deleting access token: ${error.detail}`,
         })
+        return
+      }
+      toast({
+        title: 'Access Token Deleted',
+        description: `Access Token ${token.comment} was deleted successfully`,
       })
+    })
   }, [token, deleteToken])
 
   return (

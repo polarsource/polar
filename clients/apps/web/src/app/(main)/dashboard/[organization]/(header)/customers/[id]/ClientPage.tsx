@@ -20,7 +20,6 @@ import {
   defaultMetricMarks,
   metricDisplayNames,
 } from '@/utils/metrics'
-import { Metrics, MetricType } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -78,7 +77,7 @@ interface ClientPageProps {
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof Metrics>('revenue')
+    React.useState<keyof components['schemas']['Metrics']>('revenue')
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
 
@@ -125,7 +124,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
           metricsData.periods.map((period) => period[selectedMetric]),
         )
 
-    if (metric?.type === MetricType.CURRENCY) {
+    if (metric?.type === 'currency') {
       return `$${getCentsInDollarString(value ?? 0)}`
     } else {
       return value
@@ -160,7 +159,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 <Select
                   value={selectedMetric}
                   onValueChange={(value) =>
-                    setSelectedMetric(value as keyof Metrics)
+                    setSelectedMetric(
+                      value as keyof components['schemas']['Metrics'],
+                    )
                   }
                 >
                   <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">

@@ -1,23 +1,17 @@
 import { useUpdateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  Discount,
-  DiscountUpdate,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import DiscountForm from './DiscountForm'
 
 interface UpdateDiscountModalContentProps {
-  organization: Organization
-  discount: Discount
-  onDiscountUpdated: (discount: Discount) => void
+  organization: components['schemas']['Organization']
+  discount: components['schemas']['Discount']
+  onDiscountUpdated: (discount: components['schemas']['Discount']) => void
   hideModal: () => void
 }
 
@@ -27,10 +21,9 @@ const UpdateDiscountModalContent = ({
   onDiscountUpdated,
   hideModal,
 }: UpdateDiscountModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
   const updateDiscount = useUpdateDiscount(discount.id)
 
-  const form = useForm<DiscountUpdate>({
+  const form = useForm<components['schemas']['DiscountUpdate']>({
     defaultValues: {
       ...discount,
       products: discount.products.map((product) => product.id),
@@ -44,38 +37,25 @@ const UpdateDiscountModalContent = ({
   } = form
 
   const onSubmit = useCallback(
-    async (discountUpdate: DiscountUpdate) => {
-      try {
-        setIsLoading(true)
-        const discount = await updateDiscount.mutateAsync(discountUpdate)
-
-        toast({
-          title: 'Discount Updated',
-          description: `Discount ${discount.code} was updated successfully`,
-        })
-
-        onDiscountUpdated(discount)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError, 1, [
-              'fixed.once_forever',
-              'fixed.repeat',
-              'percentage.once_forever',
-              'percentage.repeat',
-            ])
-          }
-
-          toast({
-            title: 'Discount Update Failed',
-            description: `Error updating discount: ${e.message}`,
-          })
+    async (discountUpdate: components['schemas']['DiscountUpdate']) => {
+      const { data: discount, error } =
+        await updateDiscount.mutateAsync(discountUpdate)
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError, 1, [
+            'fixed.once_forever',
+            'fixed.repeat',
+            'percentage.once_forever',
+            'percentage.repeat',
+          ])
         }
-      } finally {
-        setIsLoading(false)
+        return
       }
+      toast({
+        title: 'Discount Updated',
+        description: `Discount ${discount.code} was updated successfully`,
+      })
+      onDiscountUpdated(discount)
     },
     [updateDiscount, onDiscountUpdated, setError],
   )
@@ -105,7 +85,12 @@ const UpdateDiscountModalContent = ({
               </p>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button className="self-start" type="submit" loading={isLoading}>
+              <Button
+                className="self-start"
+                type="submit"
+                loading={updateDiscount.isPending}
+                disabled={updateDiscount.isPending}
+              >
                 Update
               </Button>
               <Button

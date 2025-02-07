@@ -16,7 +16,7 @@ import {
 } from '@/utils/datatable'
 import { getDiscountDisplay } from '@/utils/discount'
 import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
-import { Discount, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -34,7 +34,7 @@ import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 
 interface ClientPageProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   query: string | undefined
@@ -124,7 +124,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   )
 
   const handleCopyDiscountId = useCallback(
-    (discount: Discount) => () => {
+    (discount: components['schemas']['Discount']) => () => {
       if (typeof navigator !== 'undefined') {
         navigator.clipboard.writeText(discount.id)
       }
@@ -133,9 +133,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
   )
 
   const handleDeleteDiscount = useCallback(
-    (discount: Discount) => () => {
-      deleteDiscount.mutateAsync(discount)
-
+    (discount: components['schemas']['Discount']) => async () => {
+      const { error } = await deleteDiscount.mutateAsync(discount)
+      if (error) {
+        return
+      }
       toast({
         title: 'Discount Deleted',
         description: `Discount ${discount.name} successfully deleted`,
@@ -152,7 +154,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const discounts = discountsHook.data?.items || []
   const pageCount = discountsHook.data?.pagination.max_page ?? 1
 
-  const columns: DataTableColumnDef<Discount>[] = [
+  const columns: DataTableColumnDef<components['schemas']['Discount']>[] = [
     {
       accessorKey: 'name',
       enableSorting: true,
@@ -256,11 +258,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const [showNewModal, setShowNewModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
-  const [selectedDiscount, setSelectedDiscount] = useState<Discount>()
-  const onDiscountSelected = useCallback((discount: Discount) => {
-    setSelectedDiscount(discount)
-    setShowUpdateModal(true)
-  }, [])
+  const [selectedDiscount, setSelectedDiscount] =
+    useState<components['schemas']['Discount']>()
+  const onDiscountSelected = useCallback(
+    (discount: components['schemas']['Discount']) => {
+      setSelectedDiscount(discount)
+      setShowUpdateModal(true)
+    },
+    [],
+  )
   const deleteDiscount = useDeleteDiscount()
 
   return (

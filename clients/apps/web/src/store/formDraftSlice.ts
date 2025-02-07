@@ -1,8 +1,10 @@
-import { ProductCreate, ProductMediaFileRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { StateCreator } from 'zustand'
 
 interface FormDrafts {
-  ProductCreate?: ProductCreate & { full_medias: ProductMediaFileRead[] }
+  ProductCreate?: components['schemas']['ProductCreate'] & {
+    full_medias: components['schemas']['ProductMediaFileRead'][]
+  }
 }
 
 export interface FormDraftSlice {

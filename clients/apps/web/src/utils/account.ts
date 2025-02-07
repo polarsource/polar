@@ -1,21 +1,33 @@
 import OpenCollective from '@/components/Icons/OpenCollective'
 import Stripe from '@/components/Icons/Stripe'
-import { AccountType, Status } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
-export const ALL_ACCOUNT_TYPES: AccountType[] = Object.values(AccountType)
+export const ALL_ACCOUNT_TYPES: components['schemas']['AccountType'][] = [
+  'stripe',
+  'open_collective',
+]
 
-export const ACCOUNT_TYPE_DISPLAY_NAMES: Record<AccountType, string> = {
-  [AccountType.STRIPE]: 'Stripe',
-  [AccountType.OPEN_COLLECTIVE]: 'Open Collective',
+export const ACCOUNT_TYPE_DISPLAY_NAMES: Record<
+  components['schemas']['AccountType'],
+  string
+> = {
+  stripe: 'Stripe',
+  open_collective: 'Open Collective',
 }
-export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<Status, string> = {
-  [Status.CREATED]: 'Onboarding incomplete',
-  [Status.ONBOARDING_STARTED]: 'Onboarding incomplete',
-  [Status.UNDER_REVIEW]: 'Under review',
-  [Status.ACTIVE]: 'Active',
+export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<
+  components['schemas']['Status'],
+  string
+> = {
+  created: 'Onboarding incomplete',
+  onboarding_started: 'Onboarding incomplete',
+  under_review: 'Under review',
+  active: 'Active',
 }
 
-export const ACCOUNT_TYPE_ICON: Record<AccountType, React.FC> = {
-  [AccountType.STRIPE]: Stripe,
-  [AccountType.OPEN_COLLECTIVE]: OpenCollective,
+export const ACCOUNT_TYPE_ICON: Record<
+  components['schemas']['AccountType'],
+  React.FC
+> = {
+  stripe: Stripe,
+  open_collective: OpenCollective,
 }

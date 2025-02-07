@@ -1,4 +1,5 @@
-import { api, queryClient } from '@/utils/api'
+import { api } from '@/utils/api'
+import { queryClient } from '@/utils/api/query'
 import {
   OAuth2Client,
   OAuth2ClientConfiguration,

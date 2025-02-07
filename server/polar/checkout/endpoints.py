@@ -8,7 +8,10 @@ from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.schemas import (
+    MultipleQueryFilter,
+    SetSchemaReference,
+)
 from polar.locker import Locker, get_locker
 from polar.models import Checkout
 from polar.openapi import APITag
@@ -29,7 +32,7 @@ from .schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
-from .service import AlreadyActiveSubscriptionError
+from .service import AlreadyActiveSubscriptionError, NotOpenCheckout, PaymentError
 from .service import checkout as checkout_service
 
 inner_router = APIRouter(tags=["checkouts", APITag.documented, APITag.featured])
@@ -43,9 +46,16 @@ CheckoutNotFound = {
     "description": "Checkout session not found.",
     "model": ResourceNotFound.schema(),
 }
-AlreadyActiveSubscription = {
-    "description": "The customer already has an active subscription.",
-    "model": AlreadyActiveSubscriptionError.schema(),
+CheckoutPaymentError = {
+    "description": "The payment failed.",
+    "model": PaymentError.schema(),
+}
+CheckoutForbiddenError = {
+    "description": "The checkout is expired or the customer already has an active subscription.",
+    "model": Annotated[
+        AlreadyActiveSubscriptionError.schema() | NotOpenCheckout.schema(),
+        SetSchemaReference("CheckoutForbiddenError"),
+    ],
 }
 
 
@@ -127,7 +137,7 @@ async def create(
     responses={
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
-        403: AlreadyActiveSubscription,
+        403: CheckoutForbiddenError,
     },
 )
 async def update(
@@ -196,7 +206,7 @@ async def client_create(
     responses={
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
-        403: AlreadyActiveSubscription,
+        403: CheckoutForbiddenError,
     },
 )
 async def client_update(
@@ -223,8 +233,9 @@ async def client_update(
     summary="Confirm Checkout Session from Client",
     responses={
         200: {"description": "Checkout session confirmed."},
+        400: CheckoutPaymentError,
         404: CheckoutNotFound,
-        403: AlreadyActiveSubscription,
+        403: CheckoutForbiddenError,
     },
 )
 async def client_confirm(

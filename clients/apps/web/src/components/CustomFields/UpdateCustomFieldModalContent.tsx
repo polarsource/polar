@@ -1,22 +1,18 @@
 import { useUpdateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  CustomField,
-  CustomFieldType,
-  CustomFieldUpdate,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
 interface UpdateCustomFieldModalContentProps {
-  customField: CustomField
-  onCustomFieldUpdated: (customField: CustomField) => void
+  customField: components['schemas']['CustomField']
+  onCustomFieldUpdated: (
+    customField: components['schemas']['CustomField'],
+  ) => void
   hideModal: () => void
 }
 
@@ -25,10 +21,9 @@ const UpdateCustomFieldModalContent = ({
   onCustomFieldUpdated,
   hideModal,
 }: UpdateCustomFieldModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
   const updateCustomField = useUpdateCustomField(customField.id)
 
-  const form = useForm<CustomFieldUpdate>({
+  const form = useForm<components['schemas']['CustomFieldUpdate']>({
     defaultValues: {
       ...customField,
     },
@@ -41,39 +36,27 @@ const UpdateCustomFieldModalContent = ({
   } = form
 
   const onSubmit = useCallback(
-    async (customFieldUpdate: CustomFieldUpdate) => {
-      try {
-        setIsLoading(true)
-        const customField =
-          await updateCustomField.mutateAsync(customFieldUpdate)
+    async (customFieldUpdate: components['schemas']['CustomFieldUpdate']) => {
+      const { data: customField, error } =
+        await updateCustomField.mutateAsync(customFieldUpdate)
 
-        toast({
-          title: 'Custom Field Updated',
-          description: `Custom field ${customField.name} was updated successfully`,
-        })
-
-        onCustomFieldUpdated(customField)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(
-              validationErrors,
-              setError,
-              1,
-              Object.values(CustomFieldType),
-            )
-          }
-
-          toast({
-            title: 'Custom Field Update Failed',
-            description: `Error updating custom field: ${e.message}`,
-          })
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError, 1, [
+            'text',
+            'number',
+            'date',
+            'checkbox',
+            'select',
+          ])
         }
-      } finally {
-        setIsLoading(false)
+        return
       }
+      toast({
+        title: 'Custom Field Updated',
+        description: `Custom field ${customField.name} was updated successfully`,
+      })
+      onCustomFieldUpdated(customField)
     },
     [updateCustomField, onCustomFieldUpdated, setError],
   )
@@ -99,7 +82,12 @@ const UpdateCustomFieldModalContent = ({
               </p>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button className="self-start" type="submit" loading={isLoading}>
+              <Button
+                className="self-start"
+                type="submit"
+                loading={updateCustomField.isPending}
+                disabled={updateCustomField.isPending}
+              >
                 Update
               </Button>
               <Button

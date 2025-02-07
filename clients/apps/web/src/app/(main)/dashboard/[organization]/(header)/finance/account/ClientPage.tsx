@@ -6,7 +6,6 @@ import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
-import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { Organization } from '@polar-sh/api'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -83,7 +82,6 @@ export default function ClientPage({
         hide={hideSetupModal}
         modalContent={
           <AccountCreateModal
-            accountTypes={ALL_ACCOUNT_TYPES}
             forOrganizationId={organization.id}
             returnPath={`/dashboard/${organization.slug}/finance/account`}
           />

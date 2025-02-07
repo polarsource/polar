@@ -7,7 +7,6 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks'
 import { useAccount, useListAccounts } from '@/hooks/queries'
-import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useEffect, useState } from 'react'
@@ -83,7 +82,6 @@ export default function ClientPage() {
         hide={hideSetupModal}
         modalContent={
           <AccountCreateModal
-            accountTypes={ALL_ACCOUNT_TYPES}
             forUserId={currentUser?.id}
             returnPath="/finance/account"
           />

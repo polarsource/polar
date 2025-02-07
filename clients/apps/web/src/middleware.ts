@@ -1,7 +1,7 @@
-import { ResponseError, UserRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { buildServerSideAPI } from './utils/api'
+import { createServerSideAPI } from './utils/client'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -39,16 +39,18 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 }
 
 export async function middleware(request: NextRequest) {
-  let user: UserRead | null = null
+  let user: components['schemas']['UserRead'] | undefined = undefined
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = buildServerSideAPI(request.headers, request.cookies)
-    try {
-      user = await api.users.getAuthenticated({ cache: 'no-cache' })
-    } catch (e) {
-      if (e instanceof ResponseError === false || e.response.status !== 401) {
-        throw e
-      }
+    const api = createServerSideAPI(request.headers, request.cookies)
+    const { data, response } = await api.GET('/v1/users/me', {
+      cache: 'no-cache',
+    })
+    if (!response.ok && response.status !== 401) {
+      throw new Error(
+        'Unexpected response status while fetching authenticated user',
+      )
     }
+    user = data
   }
 
   if (requiresAuthentication(request) && !user) {

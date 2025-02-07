@@ -4,7 +4,10 @@ import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/chec
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror.js'
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
+import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
+import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
 import type {
   ConfirmationToken,
   Stripe,
@@ -87,8 +90,12 @@ export const CheckoutFormProvider = ({
       } else {
         if (error instanceof HTTPValidationError) {
           setValidationErrors(error.detail || [], setError)
-        } else {
-          setError('root', { message: error.message })
+        } else if (
+          error instanceof AlreadyActiveSubscriptionError ||
+          error instanceof NotOpenCheckout ||
+          error instanceof PaymentError
+        ) {
+          setError('root', { message: error.detail })
         }
         throw error
       }
@@ -106,8 +113,12 @@ export const CheckoutFormProvider = ({
       }
       if (error instanceof HTTPValidationError) {
         setValidationErrors(error.detail || [], setError)
-      } else {
-        setError('root', { message: error.message })
+      } else if (
+        error instanceof AlreadyActiveSubscriptionError ||
+        error instanceof NotOpenCheckout ||
+        error instanceof PaymentError
+      ) {
+        setError('root', { message: error.detail })
       }
       throw error
     },

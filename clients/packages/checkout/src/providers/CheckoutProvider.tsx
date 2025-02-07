@@ -17,6 +17,8 @@ import type {
   UnexpectedClientError,
 } from '@polar-sh/sdk/models/errors/httpclienterrors'
 import type { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
+import type { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
+import type { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
 import type { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import type { SDKError } from '@polar-sh/sdk/models/errors/sdkerror'
 import type { SDKValidationError } from '@polar-sh/sdk/models/errors/sdkvalidationerror'
@@ -56,6 +58,7 @@ export interface CheckoutContextProps {
     Result<
       CheckoutPublic,
       | AlreadyActiveSubscriptionError
+      | NotOpenCheckout
       | ResourceNotFound
       | HTTPValidationError
       | SDKError
@@ -73,6 +76,8 @@ export interface CheckoutContextProps {
     Result<
       CheckoutPublicConfirmed,
       | AlreadyActiveSubscriptionError
+      | NotOpenCheckout
+      | PaymentError
       | ResourceNotFound
       | HTTPValidationError
       | SDKError

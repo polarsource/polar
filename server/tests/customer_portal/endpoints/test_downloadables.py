@@ -7,7 +7,9 @@ import pytest
 from freezegun import freeze_time
 from httpx import AsyncClient
 
-from polar.benefit.schemas import BenefitDownloadablesCreateProperties
+from polar.benefit.strategies.downloadables.schemas import (
+    BenefitDownloadablesCreateProperties,
+)
 from polar.customer_portal.schemas.downloadables import DownloadableRead
 from polar.models import Customer, File, Organization, Product
 from polar.postgres import AsyncSession, sql

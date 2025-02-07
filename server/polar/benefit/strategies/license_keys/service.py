@@ -12,9 +12,7 @@ from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitLicenseKeys, BenefitLicenseKeysProperties
 from polar.models.benefit_grant import BenefitGrantLicenseKeysProperties
 
-from .base import (
-    BenefitServiceProtocol,
-)
+from ..base.service import BenefitServiceProtocol
 
 log: Logger = structlog.get_logger()
 

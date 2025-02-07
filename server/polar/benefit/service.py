@@ -32,8 +32,8 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .grant.service import benefit_grant as benefit_grant_service
+from .registry import get_benefit_strategy
 from .schemas import BenefitCreate, BenefitUpdate
-from .strategies import get_benefit_strategy
 
 B = TypeVar("B", bound=Benefit)
 

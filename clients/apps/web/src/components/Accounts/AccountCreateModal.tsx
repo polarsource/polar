@@ -10,7 +10,6 @@ import {
 } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
@@ -25,12 +24,10 @@ const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 const AccountCreateModal = ({
   forOrganizationId,
   forUserId,
-  accountTypes,
   returnPath,
 }: {
   forOrganizationId?: string
   forUserId?: string
-  accountTypes: AccountType[]
   returnPath: string
 }) => {
   const [accountType, setAccountType] = useState<AccountType>(

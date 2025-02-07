@@ -37,7 +37,7 @@ export default function ClientPage() {
 
   const repositories = useListRepositories(
     {
-      organizationId: org.id,
+      organization_id: org.id,
       name: repoSlug ?? '',
       limit: 1,
     },
@@ -191,7 +191,7 @@ const OrganizationIssues = ({
 
   // Get all repositories
   const listRepositoriesQuery = useListRepositories({
-    organizationId: org.id,
+    organization_id: org.id,
     limit: 100,
     sorting: ['name'],
   })

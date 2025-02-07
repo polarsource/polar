@@ -1,15 +1,7 @@
-import { api, queryClient } from '@/utils/api'
-import {
-  ListResourceRepository,
-  RepositoriesApiListRequest,
-  ResponseError,
-} from '@polar-sh/api'
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { operations, unwrap } from '@polar-sh/client'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export * from './accounts'
@@ -42,16 +34,14 @@ export * from './transactions'
 export * from './user'
 export * from './webhooks'
 
-export const useListRepositories: (
-  params?: RepositoriesApiListRequest,
-  enabled?: boolean,
-) => UseQueryResult<ListResourceRepository, ResponseError> = (
-  params = {},
-  enabled = true,
+export const useListRepositories = (
+  params: operations['repositories:list']['parameters']['query'] = {},
+  enabled: boolean = true,
 ) =>
   useQuery({
     queryKey: ['repositories', { ...params }],
-    queryFn: () => api.repositories.list({ ...params }),
+    queryFn: () =>
+      unwrap(api.GET('/v1/repositories/', { params: { query: params } })),
     retry: defaultRetry,
     enabled,
   })
@@ -59,7 +49,10 @@ export const useListRepositories: (
 export const useAccount = (id?: string | null) =>
   useQuery({
     queryKey: ['accounts', id],
-    queryFn: () => api.accounts.get({ id: id as string }),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/accounts/{id}', { params: { path: { id: id ?? '' } } }),
+      ),
     enabled: !!id,
     retry: defaultRetry,
   })
@@ -67,27 +60,23 @@ export const useAccount = (id?: string | null) =>
 export const useNotifications = () =>
   useQuery({
     queryKey: ['notifications'],
-    queryFn: () => api.notifications.get(),
+    queryFn: () => unwrap(api.GET('/v1/notifications')),
     retry: defaultRetry,
   })
 
-export const useNotificationsMarkRead: () => UseMutationResult<
-  any,
-  Error,
-  {
-    notification_id: string
-  },
-  unknown
-> = () =>
+export const useNotificationsMarkRead = () =>
   useMutation({
     mutationFn: (variables: { notification_id: string }) => {
-      return api.notifications.markRead({
+      return api.POST('/v1/notifications/read', {
         body: {
           notification_id: variables.notification_id,
         },
       })
     },
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
   })

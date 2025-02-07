@@ -377,16 +377,25 @@ class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
     account_type: str
 
     def subject(self) -> str:
-        return "Your payout account is under review"
+        return "Your Polar account is being reviewed"
 
     def body(self) -> str:
-        return f"""Hi,<br><br>
+        return f"""Hi there,<br><br>
 
-We wanted to inform you that your {self.account_type} account has reached a transaction threshold, and as part of our security measures, we are now conducting a review.<br><br>
+Sorry, we don't mean to scare you. Account reviews are completely normal and
+part of our ongoing compliance efforts here at Polar.<br><br>
 
-During this brief evaluation period, payouts to your account won't be possible. We assure you that this is a routine procedure to ensure the safety and security of your account.<br><br>
+Currently, your {self.account_type} and organizations connected to it is being
+reviewed as part of this automated process.<br><br>
 
-Our team is working diligently to complete the review promptly. We appreciate your understanding and cooperation during this process. If there are any specific details or documents required for the review, our support team will reach out to you directly.<br><br>
+We perform them ahead of the first payout and then automatically after certain sales thresholds.<br><br>
+
+You can read more about our account reviews here:<br>
+https://dub.sh/polar-review
+
+So no cause to be concerned. Typically, our reviews are completed within 24-48h.<br><br>
+
+We'll reach out shortly in case we need any further information from you for our review.<br><br>
 """  # noqa: E501
 
 
@@ -399,14 +408,15 @@ class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
     account_type: str
 
     def subject(self) -> str:
-        return "Your payout account is now reviewed and active"
+        return "Your Polar account is now completed"
 
     def body(self) -> str:
-        return f"""Hi,<br><br>
+        return """Hi,<br><br>
 
-We are pleased to inform you that the review of your {self.account_type} account has been successfully completed, and we appreciate your patience throughout this process.<br><br>
+We are pleased to inform you that the review of your Polar account has been
+successfully completed.<br><br>
 
-Your payout account is now fully active, and money transfers are now possible without any restrictions. We apologize for any inconvenience caused during the brief review period and want to assure you that it was conducted to ensure the security of your account.<br><br>
+We appreciate your patience throughout this process.<br><br>
 """  # noqa: E501
 
 

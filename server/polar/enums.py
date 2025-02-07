@@ -17,7 +17,7 @@ class AccountType(StrEnum):
     @classmethod
     def get_display_name(cls, v: "AccountType") -> str:
         return {
-            AccountType.stripe: "Stripe",
+            AccountType.stripe: "Stripe Connect Express",
             AccountType.open_collective: "Open Collective",
         }[v]
 

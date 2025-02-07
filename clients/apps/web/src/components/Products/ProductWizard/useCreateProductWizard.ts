@@ -6,22 +6,15 @@ import {
   useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  type Benefit,
-  Organization,
-  Product,
-  ProductCreate,
-  ProductPriceType,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+
+import { components } from '@polar-sh/client'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
 export const useCreateProductWizard = (
-  organization: Organization,
-  onSuccess?: (product: Product) => void,
+  organization: components['schemas']['Organization'],
+  onSuccess?: (product: components['schemas']['Product']) => void,
 ) => {
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
@@ -29,18 +22,18 @@ export const useCreateProductWizard = (
     [benefits],
   )
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
-    [],
-  )
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    components['schemas']['Benefit']['id'][]
+  >([])
 
-  const [isLoading, setLoading] = useState(false)
-
-  const form = useForm<ProductCreate & ProductFullMediasMixin>({
+  const form = useForm<
+    components['schemas']['ProductCreate'] & ProductFullMediasMixin
+  >({
     defaultValues: {
       ...{
         prices: [
           {
-            type: ProductPriceType.ONE_TIME,
+            type: 'one_time',
             price_amount: undefined,
             price_currency: 'usd',
           },
@@ -59,46 +52,43 @@ export const useCreateProductWizard = (
   const updateBenefits = useUpdateProductBenefits(organization)
 
   const onSubmit = useCallback(
-    async (productCreate: ProductCreate & ProductFullMediasMixin) => {
-      try {
-        setLoading(true)
-        const { full_medias, ...productCreateRest } = productCreate
-        const product = await createProduct.mutateAsync({
-          ...productCreateRest,
-          medias: full_medias.map((media) => media.id),
-        })
-        await updateBenefits.mutateAsync({
-          id: product.id,
-          body: {
-            benefits: enabledBenefitIds,
-          },
-        })
-
-        onSuccess?.(product)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
+    async (
+      productCreate: components['schemas']['ProductCreate'] &
+        ProductFullMediasMixin,
+    ) => {
+      const { full_medias, ...productCreateRest } = productCreate
+      const { data: product, error } = await createProduct.mutateAsync({
+        ...productCreateRest,
+        medias: full_medias.map((media) => media.id),
+      })
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError)
         }
-      } finally {
-        setLoading(false)
+        return
       }
+
+      await updateBenefits.mutateAsync({
+        id: product.id,
+        body: {
+          benefits: enabledBenefitIds,
+        },
+      })
+
+      onSuccess?.(product)
     },
     [enabledBenefitIds, createProduct, updateBenefits, setError, onSuccess],
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: components['schemas']['Benefit']) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: components['schemas']['Benefit']) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )
@@ -118,7 +108,7 @@ export const useCreateProductWizard = (
     form,
     handleSubmit,
     control,
-    isLoading,
+    isLoading: createProduct.isPending || updateBenefits.isPending,
     onSubmit,
     onSelectBenefit,
     onRemoveBenefit,

@@ -1,11 +1,6 @@
-import { api } from '@/utils/api'
 import { queryClient } from '@/utils/api/query'
-import {
-  Discount,
-  DiscountCreate,
-  DiscountsApiListRequest,
-  DiscountUpdate,
-} from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -31,54 +26,77 @@ const invalidateDiscountsQueries = ({
 
 export const useDiscounts = (
   organizationId: string,
-  parameters?: Omit<DiscountsApiListRequest, 'organization_id'>,
+  parameters?: Omit<
+    operations['discounts:list']['parameters']['query'],
+    'organization_id'
+  >,
 ) =>
   useQuery({
     queryKey: ['discounts', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
-      api.discounts.list({
-        organizationId,
-        ...(parameters || {}),
-      }),
+      unwrap(
+        api.GET('/v1/discounts/', {
+          query: { organization_id: organizationId, ...(parameters || {}) },
+        }),
+      ),
     retry: defaultRetry,
   })
 
 export const useCreateDiscount = (organizationId: string) =>
   useMutation({
-    mutationFn: (body: DiscountCreate) => {
-      return api.discounts.create({
+    mutationFn: (body: components['schemas']['DiscountCreate']) => {
+      return api.POST('/v1/discounts/', {
         body,
       })
     },
     onSuccess: (result, _variables, _ctx) => {
-      invalidateDiscountsQueries({ organizationId, id: result.id })
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      invalidateDiscountsQueries({ organizationId, id: data.id })
     },
   })
 
 export const useUpdateDiscount = (id: string) =>
   useMutation({
-    mutationFn: (body: DiscountUpdate) => {
-      return api.discounts.update({
-        id,
+    mutationFn: (body: components['schemas']['DiscountUpdate']) => {
+      return api.PATCH('/v1/discounts/{id}', {
+        params: {
+          path: {
+            id,
+          },
+        },
         body,
       })
     },
     onSuccess: (result, _variables, _ctx) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
       invalidateDiscountsQueries({
         id,
-        organizationId: result.organization_id,
+        organizationId: data.organization_id,
       })
     },
   })
 
 export const useDeleteDiscount = () =>
   useMutation({
-    mutationFn: (discount: Discount) => {
-      return api.discounts.delete({
-        id: discount.id,
+    mutationFn: (discount: components['schemas']['Discount']) => {
+      return api.DELETE('/v1/discounts/{id}', {
+        params: {
+          path: {
+            id: discount.id,
+          },
+        },
       })
     },
-    onSuccess: (_result, variables, _ctx) => {
+    onSuccess: (result, variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       invalidateDiscountsQueries({
         organizationId: variables.organization_id,
       })

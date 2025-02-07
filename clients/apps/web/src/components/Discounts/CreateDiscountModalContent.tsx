@@ -1,24 +1,16 @@
 import { useCreateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  Discount,
-  DiscountCreate,
-  DiscountDuration,
-  DiscountType,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import DiscountForm from './DiscountForm'
 
 interface CreateDiscountModalContentProps {
-  organization: Organization
-  onDiscountCreated: (discount: Discount) => void
+  organization: components['schemas']['Organization']
+  onDiscountCreated: (discount: components['schemas']['Discount']) => void
   hideModal: () => void
 }
 
@@ -27,14 +19,13 @@ const CreateDiscountModalContent = ({
   onDiscountCreated,
   hideModal,
 }: CreateDiscountModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
   const createDiscount = useCreateDiscount(organization.id)
 
-  const form = useForm<DiscountCreate>({
+  const form = useForm<components['schemas']['DiscountCreate']>({
     defaultValues: {
       organization_id: organization.id,
-      type: DiscountType.PERCENTAGE,
-      duration: DiscountDuration.ONCE,
+      type: 'percentage',
+      duration: 'once',
     },
   })
 
@@ -44,42 +35,30 @@ const CreateDiscountModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit: SubmitHandler<DiscountCreate> = useCallback(
-    async (discountCreate) => {
-      try {
-        setIsLoading(true)
-        const discount = await createDiscount.mutateAsync(discountCreate)
-
-        toast({
-          title: 'Discount Created',
-          description: `Discount ${discount.code} was created successfully`,
-        })
-
-        onDiscountCreated(discount)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError, 1, [
+  const onSubmit: SubmitHandler<components['schemas']['DiscountCreate']> =
+    useCallback(
+      async (discountCreate) => {
+        const { data: discount, error } =
+          await createDiscount.mutateAsync(discountCreate)
+        if (error) {
+          if (error.detail) {
+            setValidationErrors(error.detail, setError, 1, [
               'fixed.once_forever',
               'fixed.repeat',
               'percentage.once_forever',
               'percentage.repeat',
             ])
           }
-
-          toast({
-            title: 'Discount Creation Failed',
-            description: `Error creating discount: ${e.message}`,
-          })
+          return
         }
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [createDiscount, onDiscountCreated, setError],
-  )
+        toast({
+          title: 'Discount Created',
+          description: `Discount ${discount.code} was created successfully`,
+        })
+        onDiscountCreated(discount)
+      },
+      [createDiscount, onDiscountCreated, setError],
+    )
 
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
@@ -99,7 +78,12 @@ const CreateDiscountModalContent = ({
               </p>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button className="self-start" type="submit" loading={isLoading}>
+              <Button
+                className="self-start"
+                type="submit"
+                loading={createDiscount.isPending}
+                disabled={createDiscount.isPending}
+              >
                 Create
               </Button>
               <Button

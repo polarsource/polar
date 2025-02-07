@@ -9,7 +9,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
@@ -19,7 +19,7 @@ export default function ClientPage({
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -55,7 +55,7 @@ export default function ClientPage({
   }
 
   const transactionsHook = useSearchTransactions({
-    paymentOrganizationId: organization.id,
+    payment_organization_id: organization.id,
     ...getAPIParams(pagination, sorting),
   })
   const transactions = transactionsHook.data?.items || []

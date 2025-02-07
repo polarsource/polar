@@ -12,7 +12,6 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { TransactionType } from '@polar-sh/api'
 import {
   Tabs,
   TabsContent,
@@ -76,17 +75,17 @@ export default function ClientPage({
   )
 
   const balancesHook = useSearchTransactions({
-    accountId: account?.id,
-    type: TransactionType.BALANCE,
-    excludePlatformFees: true,
+    account_id: account?.id,
+    type: 'balance',
+    exclude_platform_fees: true,
     ...getAPIParams(pagination, sorting),
   })
   const balances = balancesHook.data?.items || []
   const balancesCount = balancesHook.data?.pagination.max_page ?? 1
 
   const payoutsHooks = useSearchTransactions({
-    accountId: account?.id,
-    type: TransactionType.PAYOUT,
+    account_id: account?.id,
+    type: 'payout',
     ...getAPIParams(pagination, sorting),
   })
   const refetchPayouts = payoutsHooks.refetch

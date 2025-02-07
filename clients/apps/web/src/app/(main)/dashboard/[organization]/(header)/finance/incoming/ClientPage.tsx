@@ -11,7 +11,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Organization, TransactionType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import {
   Tabs,
   TabsContent,
@@ -28,7 +28,7 @@ export default function ClientPage({
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -77,17 +77,17 @@ export default function ClientPage({
     useOrganizationAccount(organization.id)
 
   const balancesHook = useSearchTransactions({
-    accountId: organizationAccount?.id,
-    type: TransactionType.BALANCE,
-    excludePlatformFees: true,
+    account_id: organizationAccount?.id,
+    type: 'balance',
+    exclude_platform_fees: true,
     ...getAPIParams(pagination, sorting),
   })
   const balances = balancesHook.data?.items || []
   const balancesCount = balancesHook.data?.pagination.max_page ?? 1
 
   const payoutsHooks = useSearchTransactions({
-    accountId: organizationAccount?.id,
-    type: TransactionType.PAYOUT,
+    account_id: organizationAccount?.id,
+    type: 'payout',
     ...getAPIParams(pagination, sorting),
   })
   const refetchPayouts = payoutsHooks.refetch

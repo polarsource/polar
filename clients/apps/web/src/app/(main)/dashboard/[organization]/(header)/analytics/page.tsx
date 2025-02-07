@@ -1,8 +1,7 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { TimeInterval } from '@polar-sh/api'
+import { components, unwrap } from '@polar-sh/client'
 import {
   addDays,
   endOfMonth,
@@ -22,17 +21,17 @@ export default async function Page({
   searchParams: {
     start_date?: string
     end_date?: string
-    interval?: TimeInterval
+    interval?: components['schemas']['TimeInterval']
     product_id?: string | string[]
   }
 }) {
-  const newAPI = getNewServerSideAPI()
+  const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    newAPI,
+    api,
     params.organization,
   )
 
-  const defaultInterval = TimeInterval.MONTH
+  const defaultInterval = 'month'
   const today = new Date()
   const defaultStartDate = subMonths(startOfMonth(today), 3)
   const defaultEndDate = endOfMonth(today)
@@ -46,7 +45,7 @@ export default async function Page({
       : [product_id]
     : undefined
 
-  if (!Object.values(TimeInterval).includes(interval)) {
+  if (!['year', 'month', 'week', 'day', 'hour'].includes(interval)) {
     const urlSearchParams = new URLSearchParams({
       ...restSearchParams,
       interval: defaultInterval,
@@ -65,8 +64,7 @@ export default async function Page({
     ? fromISODate(searchParams.end_date)
     : defaultEndDate
 
-  const api = getServerSideAPI()
-  const limits = await api.metrics.limits()
+  const limits = await unwrap(api.GET('/v1/metrics/limits'))
   const minDate = fromISODate(limits.min_date)
   const maxDate = addDays(startDate, limits.intervals[interval].max_days - 1)
 

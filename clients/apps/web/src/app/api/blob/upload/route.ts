@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getAuthenticatedUser } from '@/utils/user'
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 import { NextResponse } from 'next/server'
 
@@ -13,8 +13,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         _: string, // pathname
         /* clientPayload?: string, */
       ) => {
-        const user = await getServerSideAPI().users.getAuthenticated()
-        if (!user.id) {
+        const user = await getAuthenticatedUser()
+        if (!user) {
           throw new Error('Unauthenticated')
         }
 

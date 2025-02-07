@@ -1,4 +1,4 @@
-from .base import (
+from .service import (
     BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,

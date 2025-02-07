@@ -5,7 +5,7 @@ from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitAds, BenefitAdsProperties
 from polar.models.benefit_grant import BenefitGrantAdsProperties
 
-from .base import BenefitServiceProtocol
+from ..base.service import BenefitServiceProtocol
 
 
 class BenefitAdsService(

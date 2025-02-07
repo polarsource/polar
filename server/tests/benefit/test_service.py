@@ -7,11 +7,6 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.benefit.grant.service import BenefitGrantService
-from polar.benefit.schemas import (
-    BenefitCustomCreate,
-    BenefitCustomCreateProperties,
-    BenefitCustomUpdate,
-)
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.service import (  # type: ignore[attr-defined]
     benefit_grant_service,
@@ -19,6 +14,11 @@ from polar.benefit.service import (  # type: ignore[attr-defined]
 from polar.benefit.strategies import (
     BenefitPropertiesValidationError,
     BenefitServiceProtocol,
+)
+from polar.benefit.strategies.custom.schemas import (
+    BenefitCustomCreate,
+    BenefitCustomCreateProperties,
+    BenefitCustomUpdate,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams

@@ -2,7 +2,7 @@ from typing import cast
 
 import pytest
 
-from polar.benefit.strategies.ads import BenefitAdsService
+from polar.benefit.strategies.ads.service import BenefitAdsService
 from polar.models import BenefitGrant, Customer, Organization
 from polar.models.benefit import BenefitAds, BenefitType
 from polar.models.benefit_grant import BenefitGrantAdsProperties

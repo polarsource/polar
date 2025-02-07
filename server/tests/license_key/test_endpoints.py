@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
-from polar.benefit.schemas import (
+from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeyActivationProperties,
     BenefitLicenseKeysCreateProperties,
 )

@@ -1,8 +1,10 @@
 from collections.abc import Sequence
 from typing import cast
 
-from polar.benefit.schemas import BenefitLicenseKeysCreateProperties
-from polar.benefit.strategies.license_keys import BenefitLicenseKeysService
+from polar.benefit.strategies.license_keys.schemas import (
+    BenefitLicenseKeysCreateProperties,
+)
+from polar.benefit.strategies.license_keys.service import BenefitLicenseKeysService
 from polar.models import Benefit, Customer, LicenseKey, Organization, Product
 from polar.models.benefit import BenefitLicenseKeys, BenefitType
 from polar.models.benefit_grant import BenefitGrantLicenseKeysProperties

@@ -1,21 +1,27 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { api, queryClient } from '@/utils/api'
-import {
-  LicenseKeysApiListRequest,
-  LicenseKeysApiUpdateRequest,
-} from '@polar-sh/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { defaultRetry } from './retry'
 
 export const useLicenseKeyUpdate = (organizationId: string) =>
   useMutation({
-    mutationFn: (update: LicenseKeysApiUpdateRequest) =>
-      api.licenseKeys.update(update),
-    onSuccess: async (_result, _variables, _ctx) => {
+    mutationFn: (variables: {
+      id: string
+      body: components['schemas']['LicenseKeyUpdate']
+    }) =>
+      api.PATCH('/v1/license-keys/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['license_keys', 'organization', organizationId],
       })
-
       queryClient.invalidateQueries({
         queryKey: ['license_keys', _variables.id],
       })
@@ -25,31 +31,42 @@ export const useLicenseKeyUpdate = (organizationId: string) =>
 export const useLicenseKey = (id?: string) =>
   useQuery({
     queryKey: ['license_keys', id],
-    queryFn: () => api.licenseKeys.get({ id: id as string }),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/license-keys/{id}', {
+          params: { path: { id: id ?? '' } },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!id,
   })
 
 export const useOrganizationLicenseKeys = ({
-  organizationId,
-  benefitId,
+  organization_id,
+  benefit_id,
   page,
   limit,
-}: LicenseKeysApiListRequest) =>
+}: NonNullable<operations['license_keys:list']['parameters']['query']>) =>
   useQuery({
     queryKey: [
       'license_keys',
       'organization',
-      organizationId,
-      { page, limit, benefitId },
+      organization_id,
+      { page, limit, benefit_id },
     ],
     queryFn: () =>
-      api.licenseKeys.list({
-        organizationId,
-        benefitId,
-        page,
-        limit,
-      }),
+      unwrap(
+        api.GET('/v1/license-keys', {
+          params: {
+            query: {
+              organization_id,
+              benefit_id,
+              page,
+              limit,
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
-    enabled: !!organizationId,
+    enabled: !!organization_id,
   })

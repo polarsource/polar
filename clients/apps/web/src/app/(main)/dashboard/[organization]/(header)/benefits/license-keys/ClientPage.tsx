@@ -16,7 +16,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -40,7 +40,7 @@ export const ClientPage = ({
   sorting,
   pagination,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
   sorting: SortingState
   pagination: PaginationState
 }) => {
@@ -52,8 +52,8 @@ export const ClientPage = ({
     useState<RowSelectionState>({})
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
-    organizationId: organization.id,
-    benefitId: selectedBenefitId,
+    organization_id: organization.id,
+    benefit_id: selectedBenefitId,
     ...getAPIParams(pagination, sorting),
   })
 
@@ -126,6 +126,7 @@ export const ClientPage = ({
               id: selectedLicenseKey.id,
               body: {
                 status,
+                usage: selectedLicenseKey.usage,
               },
             },
             {
@@ -134,16 +135,17 @@ export const ClientPage = ({
               },
             },
           )
-          .then(() => {
+          .then(({ error }) => {
+            if (error) {
+              toast({
+                title: 'License Key Status Update Failed',
+                description: `Error updating license key status to ${status}: ${error.detail}`,
+              })
+              return
+            }
             toast({
               title: 'License Key Status Updated',
               description: `License key ending in ${selectedLicenseKey.display_key} updated to ${status}`,
-            })
-          })
-          .catch((error) => {
-            toast({
-              title: 'License Key Status Update Failed',
-              description: `Error updating license key status to ${status}: ${error.message}`,
             })
           })
       }

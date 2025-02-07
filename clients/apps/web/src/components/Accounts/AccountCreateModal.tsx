@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { ChangeEvent, useState } from 'react'
+import { useState } from 'react'
 
 const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 
@@ -32,9 +32,6 @@ const AccountCreateModal = ({
 }) => {
   const [accountType, setAccountType] = useState<AccountType>(
     AccountType.STRIPE,
-  )
-  const [openCollectiveSlug, setOpenCollectiveSlug] = useState<string | null>(
-    null,
   )
   const [country, setCountry] = useState<string>('US')
   const [validationErrors, setValidationErrors] = useState<
@@ -54,11 +51,6 @@ const AccountCreateModal = ({
     setAccountType(value as AccountType)
   }
 
-  const onChangeOpenCollectiveSlug = (e: ChangeEvent<HTMLInputElement>) => {
-    resetErrors()
-    setOpenCollectiveSlug(e.target.value)
-  }
-
   const onChangeCountry = (countryCode: string) => {
     resetErrors()
     setCountry(countryCode)
@@ -72,9 +64,6 @@ const AccountCreateModal = ({
         body: {
           account_type: accountType,
           country,
-          ...(openCollectiveSlug
-            ? { open_collective_slug: openCollectiveSlug }
-            : {}),
         },
       })
       if (forOrganizationId) {

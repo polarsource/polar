@@ -3,11 +3,10 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { useAuth } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { Organization, Platforms, UserRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
 import { BrandingMenu } from './BrandingMenu'
 import TopbarRight from './TopbarRight'
 
@@ -17,8 +16,8 @@ const Topbar = ({
   userOrganizations,
 }: {
   hideProfile?: boolean
-  authenticatedUser: UserRead | undefined
-  userOrganizations: Organization[]
+  authenticatedUser: components['schemas']['UserRead'] | undefined
+  userOrganizations: components['schemas']['Organization'][]
 }) => {
   // Fallback to client side user loading
   const { currentUser: clientCurrentUser } = useAuth()
@@ -29,7 +28,7 @@ const Topbar = ({
   const creatorPath = `/dashboard/${userOrganizations?.[0]?.slug}`
 
   const githubAccount = currentUser?.oauth_accounts.find(
-    (o) => o.platform === Platforms.GITHUB,
+    (o) => o.platform === 'github',
   )
   const shouldShowGitHubAuthUpsell = !githubAccount
 

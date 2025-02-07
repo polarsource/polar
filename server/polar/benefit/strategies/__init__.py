@@ -1,14 +1,4 @@
-from typing import Any
-
-from polar.models import Benefit
-from polar.models.benefit import (
-    BenefitProperties,
-    BenefitType,
-)
-from polar.models.benefit_grant import BenefitGrantPropertiesBase
-from polar.postgres import AsyncSession
-from polar.redis import Redis
-
+from .ads.properties import BenefitGrantAdsProperties
 from .base import (
     BenefitActionRequiredError,
     BenefitPropertiesValidationError,
@@ -16,29 +6,20 @@ from .base import (
     BenefitServiceError,
     BenefitServiceProtocol,
 )
-from .custom import BenefitCustomService
-from .discord import BenefitDiscordService
-from .downloadables import BenefitDownloadablesService
-from .github_repository import BenefitGitHubRepositoryService
-from .license_keys import BenefitLicenseKeysService
+from .custom.properties import BenefitGrantCustomProperties
+from .discord.properties import BenefitGrantDiscordProperties
+from .downloadables.properties import BenefitGrantDownloadablesProperties
+from .github_repository.properties import BenefitGrantGitHubRepositoryProperties
+from .license_keys.properties import BenefitGrantLicenseKeysProperties
 
-_STRATEGY_CLASS_MAP: dict[
-    BenefitType,
-    type[BenefitServiceProtocol[Any, Any, Any]],
-] = {
-    BenefitType.custom: BenefitCustomService,
-    BenefitType.discord: BenefitDiscordService,
-    BenefitType.github_repository: BenefitGitHubRepositoryService,
-    BenefitType.downloadables: BenefitDownloadablesService,
-    BenefitType.license_keys: BenefitLicenseKeysService,
-}
-
-
-def get_benefit_strategy(
-    type: BenefitType, session: AsyncSession, redis: Redis
-) -> BenefitServiceProtocol[Benefit, BenefitProperties, BenefitGrantPropertiesBase]:
-    return _STRATEGY_CLASS_MAP[type](session, redis)
-
+BenefitGrantProperties = (
+    BenefitGrantDiscordProperties
+    | BenefitGrantGitHubRepositoryProperties
+    | BenefitGrantDownloadablesProperties
+    | BenefitGrantLicenseKeysProperties
+    | BenefitGrantAdsProperties
+    | BenefitGrantCustomProperties
+)
 
 __all__ = [
     "BenefitActionRequiredError",
@@ -46,5 +27,5 @@ __all__ = [
     "BenefitPropertiesValidationError",
     "BenefitRetriableError",
     "BenefitServiceError",
-    "get_benefit_strategy",
+    "BenefitGrantProperties",
 ]

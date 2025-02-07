@@ -3,8 +3,10 @@ from typing import cast
 
 from sqlalchemy.orm import contains_eager
 
-from polar.benefit.schemas import BenefitDownloadablesCreateProperties
-from polar.benefit.strategies.downloadables import BenefitDownloadablesService
+from polar.benefit.strategies.downloadables.schemas import (
+    BenefitDownloadablesCreateProperties,
+)
+from polar.benefit.strategies.downloadables.service import BenefitDownloadablesService
 from polar.models import Benefit, Customer, Downloadable, File, Organization, Product
 from polar.models.benefit import BenefitDownloadables, BenefitType
 from polar.models.benefit_grant import BenefitGrantDownloadablesProperties

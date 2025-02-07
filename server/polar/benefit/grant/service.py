@@ -6,8 +6,8 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.registry import get_benefit_strategy
 from polar.benefit.schemas import BenefitGrantWebhook
-from polar.benefit.strategies import get_benefit_strategy
 from polar.benefit.strategies.base import BenefitActionRequiredError
 from polar.customer.repository import CustomerRepository
 from polar.eventstream.service import publish as eventstream_publish

@@ -6,7 +6,6 @@ from uuid import UUID
 import structlog
 
 from polar.auth.models import AuthSubject
-from polar.benefit import schemas as benefit_schemas
 from polar.customer_portal.service.downloadables import (
     downloadable as downloadable_service,
 )
@@ -15,16 +14,17 @@ from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
 from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
 
-from .base import (
+from ..base.service import (
     BenefitServiceProtocol,
 )
+from . import schemas
 
 log: Logger = structlog.get_logger()
 
 
 def get_active_file_ids(properties: BenefitDownloadablesProperties) -> list[UUID]:
-    schema = benefit_schemas.BenefitDownloadablesProperties(**properties)
-    return benefit_schemas.get_active_file_ids(schema)
+    schema = schemas.BenefitDownloadablesProperties(**properties)
+    return schemas.get_active_file_ids(schema)
 
 
 class BenefitDownloadablesService(

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text, Uuid
@@ -39,47 +39,6 @@ class BenefitType(StrEnum):
             return _is_tax_applicable_map[self]
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e
-
-
-class BenefitProperties(TypedDict):
-    """Configurable properties for this benefit."""
-
-
-class BenefitCustomProperties(BenefitProperties):
-    note: str | None
-
-
-class BenefitDiscordProperties(BenefitProperties):
-    guild_id: str
-    role_id: str
-
-
-class BenefitGitHubRepositoryProperties(BenefitProperties):
-    repository_owner: str
-    repository_name: str
-    permission: Literal["pull", "triage", "push", "maintain", "admin"]
-
-
-class BenefitDownloadablesProperties(BenefitProperties):
-    archived: dict[UUID, bool]
-    files: list[UUID]
-
-
-class BenefitLicenseKeyExpirationProperties(TypedDict):
-    ttl: int
-    timeframe: Literal["year", "month", "day"]
-
-
-class BenefitLicenseKeyActivationProperties(TypedDict):
-    limit: int
-    enable_customer_admin: bool
-
-
-class BenefitLicenseKeysProperties(BenefitProperties):
-    prefix: str | None
-    expires: BenefitLicenseKeyExpirationProperties | None
-    activations: BenefitLicenseKeyActivationProperties | None
-    limit_usage: int | None
 
 
 class Benefit(RecordModel):

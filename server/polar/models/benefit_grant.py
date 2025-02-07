@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -23,6 +23,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+from polar.benefit.strategies import BenefitGrantProperties
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
@@ -66,44 +67,6 @@ class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScope
         for key, value in other.items():
             clauses.append(composite_columns[f"{key}_id"] == value.id)
         return and_(*clauses)
-
-
-class BenefitGrantPropertiesBase(TypedDict):
-    """Benefit grant properties."""
-
-
-class BenefitGrantCustomProperties(BenefitGrantPropertiesBase): ...
-
-
-class BenefitGrantDiscordProperties(BenefitGrantPropertiesBase, total=False):
-    account_id: str
-    guild_id: str
-    role_id: str
-
-
-class BenefitGrantGitHubRepositoryProperties(BenefitGrantPropertiesBase, total=False):
-    account_id: str
-    repository_owner: str
-    repository_name: str
-    permission: Literal["pull", "triage", "push", "maintain", "admin"]
-
-
-class BenefitGrantDownloadablesProperties(BenefitGrantPropertiesBase, total=False):
-    files: list[str]
-
-
-class BenefitGrantLicenseKeysProperties(BenefitGrantPropertiesBase, total=False):
-    license_key_id: str
-    display_key: str
-
-
-BenefitGrantProperties = (
-    BenefitGrantDiscordProperties
-    | BenefitGrantGitHubRepositoryProperties
-    | BenefitGrantDownloadablesProperties
-    | BenefitGrantLicenseKeysProperties
-    | BenefitGrantCustomProperties
-)
 
 
 class BenefitGrant(RecordModel):

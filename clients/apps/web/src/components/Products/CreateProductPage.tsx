@@ -5,13 +5,6 @@ import {
 } from '@/hooks/queries'
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  type Benefit,
-  ProductCreate,
-  ProductPriceType,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -45,18 +38,18 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     clearDraft,
   } = useStore()
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
-    [],
-  )
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    components['schemas']['Benefit']['id'][]
+  >([])
 
-  const [isLoading, setLoading] = useState(false)
-
-  const form = useForm<ProductCreate & ProductFullMediasMixin>({
+  const form = useForm<
+    components['schemas']['ProductCreate'] & ProductFullMediasMixin
+  >({
     defaultValues: {
       ...{
         prices: [
           {
-            type: ProductPriceType.ONE_TIME,
+            type: 'one_time',
             price_amount: undefined,
             price_currency: 'usd',
           },
@@ -82,44 +75,41 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     createdProduct,
     enabledBenefitIds
       .map((id) => organizationBenefits.find((b) => b.id === id))
-      .filter(Boolean) as Benefit[],
+      .filter(Boolean) as components['schemas']['Benefit'][],
   )
 
   const onSubmit = useCallback(
-    async (productCreate: ProductCreate & ProductFullMediasMixin) => {
-      try {
-        setLoading(true)
-        const { full_medias, ...productCreateRest } = productCreate
-        const product = await createProduct.mutateAsync({
-          ...productCreateRest,
-          medias: full_medias.map((media) => media.id),
-        })
-        await updateBenefits.mutateAsync({
-          id: product.id,
-          body: {
-            benefits: enabledBenefitIds,
-          },
-        })
-
-        clearDraft('ProductCreate')
-
-        router.push(
-          getStatusRedirect(
-            `/dashboard/${organization.slug}/products`,
-            'Product Created',
-            `Product ${product.name} was created successfully`,
-          ),
-        )
-      } catch (e) {
-        setLoading(false)
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
+    async (
+      productCreate: components['schemas']['ProductCreate'] &
+        ProductFullMediasMixin,
+    ) => {
+      const { full_medias, ...productCreateRest } = productCreate
+      const { data: product, error } = await createProduct.mutateAsync({
+        ...productCreateRest,
+        medias: full_medias.map((media) => media.id),
+      })
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError)
         }
+        return
       }
+
+      await updateBenefits.mutateAsync({
+        id: product.id,
+        body: {
+          benefits: enabledBenefitIds,
+        },
+      })
+
+      clearDraft('ProductCreate')
+      router.push(
+        getStatusRedirect(
+          `/dashboard/${organization.slug}/products`,
+          'Product Created',
+          `Product ${product.name} was created successfully`,
+        ),
+      )
     },
     [
       organization,
@@ -133,14 +123,14 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: components['schemas']['Benefit']) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: components['schemas']['Benefit']) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )
@@ -206,7 +196,11 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         />
       </div>
       <div className="flex flex-row items-center gap-2 pb-12">
-        <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+        <Button
+          onClick={handleSubmit(onSubmit)}
+          loading={createProduct.isPending || updateBenefits.isPending}
+          disabled={createProduct.isPending || updateBenefits.isPending}
+        >
           Create Product
         </Button>
       </div>

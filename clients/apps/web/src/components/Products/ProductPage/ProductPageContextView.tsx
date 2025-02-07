@@ -1,14 +1,10 @@
-import { useBenefits, useUpdateProductBenefits } from '@/hooks/queries'
-
-import { useUpdateProduct } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
 import {
-  type Benefit,
-  ProductUpdate,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
-import { components } from '@polar-sh/client'
+  useBenefits,
+  useUpdateProduct,
+  useUpdateProductBenefits,
+} from '@/hooks/queries'
+import { setValidationErrors } from '@/utils/api/errors'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -36,11 +32,13 @@ export const ProductPageContextView = ({
     [benefits],
   )
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<Benefit['id'][]>(
-    product.benefits.map((benefit) => benefit.id) ?? [],
-  )
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    components['schemas']['Benefit']['id'][]
+  >(product.benefits.map((benefit) => benefit.id) ?? [])
 
-  const form = useForm<ProductUpdate & ProductFullMediasMixin>({
+  const form = useForm<
+    components['schemas']['ProductUpdate'] & ProductFullMediasMixin
+  >({
     defaultValues: {
       ...product,
       medias: product.medias.map((media) => media.id),
@@ -48,49 +46,46 @@ export const ProductPageContextView = ({
     },
   })
 
-  const [isLoading, setLoading] = useState(false)
-
   const { handleSubmit, setError } = form
 
   const updateProduct = useUpdateProduct(organization)
   const updateBenefits = useUpdateProductBenefits(organization)
 
   const onSubmit = useCallback(
-    async (productUpdate: ProductUpdate & ProductFullMediasMixin) => {
-      try {
-        setLoading(true)
-        const { full_medias, ...productUpdateRest } = productUpdate
-        await updateProduct.mutateAsync({
-          id: product.id,
-          body: {
-            ...productUpdateRest,
-            medias: full_medias.map((media) => media.id),
-          },
-        })
-        await updateBenefits.mutateAsync({
-          id: product.id,
-          body: {
-            benefits: enabledBenefitIds,
-          },
-        })
+    async (
+      productUpdate: components['schemas']['ProductUpdate'] &
+        ProductFullMediasMixin,
+    ) => {
+      const { full_medias, ...productUpdateRest } = productUpdate
+      const { error } = await updateProduct.mutateAsync({
+        id: product.id,
+        body: {
+          ...productUpdateRest,
+          medias: full_medias.map((media) => media.id),
+        },
+      })
 
-        router.push(
-          getStatusRedirect(
-            `/dashboard/${organization.slug}/products`,
-            'Product Updated',
-            `Product ${product.name} updated successfully`,
-          ),
-        )
-      } catch (e) {
-        setLoading(false)
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
         }
+        return
       }
+
+      await updateBenefits.mutateAsync({
+        id: product.id,
+        body: {
+          benefits: enabledBenefitIds,
+        },
+      })
+
+      router.push(
+        getStatusRedirect(
+          `/dashboard/${organization.slug}/products`,
+          'Product Updated',
+          `Product ${product.name} updated successfully`,
+        ),
+      )
     },
     [
       organization,
@@ -104,14 +99,14 @@ export const ProductPageContextView = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: components['schemas']['Benefit']) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: Benefit) => {
+    (benefit: components['schemas']['Benefit']) => {
       setEnabledBenefitIds((benefits) =>
         benefits.filter((b) => b !== benefit.id),
       )
@@ -206,7 +201,11 @@ export const ProductPageContextView = ({
           </div>
         )}
         <div className="flex flex-row items-center gap-4 p-8">
-          <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+          <Button
+            onClick={handleSubmit(onSubmit)}
+            loading={updateProduct.isPending || updateBenefits.isPending}
+            disabled={updateProduct.isPending || updateBenefits.isPending}
+          >
             Save Product
           </Button>
           {!product.is_archived && (

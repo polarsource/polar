@@ -23,7 +23,7 @@ const EmbedPage = ({ organization }: { organization: Organization }) => {
   const repoSlug = searchParams.get('repo')
   const repositories = useListRepositories(
     {
-      organizationId: organization.id,
+      organization_id: organization.id,
       name: repoSlug ?? '',
       limit: 1,
     },

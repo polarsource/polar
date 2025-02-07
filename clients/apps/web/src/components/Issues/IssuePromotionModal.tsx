@@ -9,7 +9,8 @@ import {
   useOrganizationBadgeSettings,
   useUpdateIssue,
 } from '@/hooks/queries'
-import { api, queryClient } from '@/utils/api'
+import { api } from '@/utils/api'
+import { queryClient } from '@/utils/api/query'
 import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'

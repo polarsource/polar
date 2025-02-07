@@ -7,7 +7,7 @@ import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
 import { HiveOutlined } from '@mui/icons-material'
-import { IssueFunding, Organization, ProductStorefront } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { useMemo } from 'react'
@@ -18,9 +18,9 @@ export const Storefront = ({
   products,
   issues,
 }: {
-  organization: Organization
-  products: ProductStorefront[]
-  issues: IssueFunding[]
+  organization: components['schemas']['Organization']
+  products: components['schemas']['ProductStorefront'][]
+  issues: components['schemas']['IssueFunding'][]
 }) => {
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(products)

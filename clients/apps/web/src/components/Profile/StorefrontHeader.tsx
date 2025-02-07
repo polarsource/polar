@@ -2,7 +2,7 @@
 
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
-import { Organization, Platforms } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
@@ -13,13 +13,13 @@ import { Gradient } from './GradientMesh'
 import { computeComplementaryColor } from './utils'
 
 interface StorefrontHeaderProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }
 
 export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
   const externalGitHubOrganizations = useExternalOrganizations({
     organizationId: organization.id,
-    platform: Platforms.GITHUB,
+    platform: 'github',
     limit: 1,
     sorting: ['created_at'],
   })

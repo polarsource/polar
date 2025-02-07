@@ -1,4 +1,5 @@
-import { api, queryClient } from '@/utils/api'
+import { api } from '@/utils/api'
+import { queryClient } from '@/utils/api/query'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

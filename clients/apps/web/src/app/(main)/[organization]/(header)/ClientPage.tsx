@@ -1,16 +1,16 @@
 'use client'
 
 import { Storefront } from '@/components/Profile/Storefront'
-import { IssueFunding, Organization, ProductStorefront } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 const ClientPage = ({
   organization,
   products,
   issues,
 }: {
-  organization: Organization
-  products: ProductStorefront[]
-  issues: IssueFunding[]
+  organization: components['schemas']['Organization']
+  products: components['schemas']['ProductStorefront'][]
+  issues: components['schemas']['IssueFunding'][]
 }) => {
   return (
     <Storefront

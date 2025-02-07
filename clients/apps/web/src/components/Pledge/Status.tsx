@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import { organizationPageLink } from '@/utils/nav'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
-import { Organization, Pledge } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import Link from 'next/link'
@@ -15,8 +15,8 @@ import { useCallback, useState } from 'react'
 import GrayCard from '../Cards/GrayCard'
 
 export const Status = (props: {
-  pledge: Pledge
-  organization: Organization
+  pledge: components['schemas']['Pledge']
+  organization: components['schemas']['Organization']
   email: string | undefined
 }) => {
   const pledge = props.pledge

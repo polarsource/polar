@@ -1,6 +1,5 @@
 import { useAuth } from '@/hooks/auth'
 import { api } from '@/utils/api'
-import { toDetailError } from '@/utils/api/errors'
 import { ClockIcon } from '@heroicons/react/24/outline'
 import { Issue, Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -71,13 +70,7 @@ const PledgeCheckoutFundByTeam = ({
 
       router.push(`/dashboard/${selectedOrg.slug}`)
     } catch (e) {
-      const detail = await toDetailError(e)
-      if (detail) {
-        setErrorMessage(detail.detail)
-      } else {
-        setErrorMessage('Something went wrong, please try again.')
-      }
-
+      setErrorMessage('Something went wrong, please try again.')
       setIsLoading(false)
     }
   }

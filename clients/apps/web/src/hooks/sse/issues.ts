@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api'
+import { queryClient } from '@/utils/api/query'
 
 export const onIssueUpdated = async (params: {
   organization_id: string

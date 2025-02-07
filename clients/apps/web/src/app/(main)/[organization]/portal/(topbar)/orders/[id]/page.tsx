@@ -1,6 +1,5 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
-import { CustomerOrder, ResponseError } from '@polar-sh/api'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -54,15 +53,25 @@ export default async function Page({
   const api = getServerSideAPI(searchParams.customer_session_token)
   const organization = await getOrganizationOrNotFound(api, params.organization)
 
-  let order: CustomerOrder | undefined
-  try {
-    order = await api.customerPortalOrders.get({ id: params.id })
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 401) {
-      redirect(`/${organization.slug}/portal/request`)
-    } else {
-      throw e
-    }
+  const {
+    data: order,
+    error,
+    response,
+  } = await api.GET('/v1/customer-portal/orders/{id}', {
+    params: {
+      path: {
+        id: params.id,
+      },
+    },
+    cache: 'no-cache',
+  })
+
+  if (response.status === 401) {
+    redirect(`/${organization.slug}/portal/request`)
+  }
+
+  if (error) {
+    throw error
   }
 
   return (

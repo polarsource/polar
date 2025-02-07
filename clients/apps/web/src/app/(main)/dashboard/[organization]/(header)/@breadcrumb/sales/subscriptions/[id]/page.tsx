@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getSubscriptionById } from '@/utils/subscription'
 import {
   BreadcrumbPageParams,

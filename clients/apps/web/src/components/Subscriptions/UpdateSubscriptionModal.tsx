@@ -3,12 +3,8 @@
 import { useOrganization, useProducts } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  ResponseError,
-  Subscription,
-  SubscriptionUpdatePrice,
-  ValidationError,
-} from '@polar-sh/api'
+import { SubscriptionUpdatePrice } from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -32,7 +28,7 @@ import ProrationBehaviorRadioGroup from '../Settings/ProrationBehaviorRadioGroup
 import { toast } from '../Toast/use-toast'
 
 interface UpdateSubscriptionModalProps {
-  subscription: Subscription
+  subscription: components['schemas']['Subscription']
   onUpdate?: () => void
 }
 
@@ -68,33 +64,26 @@ const UpdateSubscriptionModal = ({
 
   const onSubmit = useCallback(
     async (body: SubscriptionUpdatePrice) => {
-      try {
-        await updateSubscription
-          .mutateAsync(body)
-          .then(() => {
-            toast({
-              title: 'Subscription updated',
-              description: `Subscription ${subscription.product.name} successfully updated`,
-            })
-            onUpdate?.()
-          })
-          .catch((error) => {
-            toast({
-              title: 'Subscription update failed',
-              description: `Error while updating subscription ${subscription.product.name}: ${error.message}`,
-            })
-          })
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          } else {
-            setError('root', { message: e.message })
-          }
+      await updateSubscription.mutateAsync(body).then(({ error }) => {
+        if (error) {
+          if (error.detail)
+            if (isValidationError(error.detail)) {
+              setValidationErrors(error.detail, form.setError)
+            } else {
+              toast({
+                title: 'Subscription update failed',
+                description: `Error while updating subscription ${subscription.product.name}: ${error.detail}`,
+              })
+            }
+          return
         }
-      }
+
+        toast({
+          title: 'Subscription updated',
+          description: `Subscription ${subscription.product.name} successfully updated`,
+        })
+        onUpdate?.()
+      })
     },
     [updateSubscription, subscription, setError, onUpdate],
   )

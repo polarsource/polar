@@ -1,11 +1,7 @@
 'use client'
 
 import { CustomerPortal } from '@/components/CustomerPortal/CustomerPortal'
-import {
-  ListResourceCustomerOrder,
-  ListResourceCustomerSubscription,
-  Organization,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 const ClientPage = ({
@@ -14,9 +10,9 @@ const ClientPage = ({
   orders,
   customerSessionToken,
 }: {
-  organization: Organization
-  subscriptions: ListResourceCustomerSubscription
-  orders: ListResourceCustomerOrder
+  organization: components['schemas']['Organization']
+  subscriptions: components['schemas']['ListResource_CustomerSubscription_']
+  orders: components['schemas']['ListResource_CustomerOrder_']
   customerSessionToken?: string
 }) => {
   return (

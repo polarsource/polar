@@ -6,9 +6,9 @@ import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerSubscriptions } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { CustomerSubscription } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -97,13 +97,13 @@ export default function ClientPage() {
             </div>
           ) : (
             <>
-              {subscriptions?.items.map((order) => (
+              {subscriptions?.items.map((subscription) => (
                 <Link
-                  key={order.id}
+                  key={subscription.id}
                   className="flex w-full flex-row items-center justify-between"
-                  href={`/purchases/subscriptions/${order.id}`}
+                  href={`/purchases/subscriptions/${subscription.id}`}
                 >
-                  <SubscriptionItem subscription={order} />
+                  <SubscriptionItem subscription={subscription} />
                 </Link>
               ))}
               <Pagination
@@ -124,7 +124,7 @@ export default function ClientPage() {
 const SubscriptionItem = ({
   subscription,
 }: {
-  subscription: CustomerSubscription
+  subscription: components['schemas']['CustomerSubscription']
 }) => {
   const organization = subscription.product.organization
 

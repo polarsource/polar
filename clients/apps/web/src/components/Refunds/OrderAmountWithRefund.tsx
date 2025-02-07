@@ -1,8 +1,12 @@
-import { Order } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
-export const OrderAmountWithRefund = ({ order }: { order: Order }) => {
+export const OrderAmountWithRefund = ({
+  order,
+}: {
+  order: components['schemas']['Order']
+}) => {
   return (
     <div className="flex flex-row gap-x-2">
       <span>{formatCurrencyAndAmount(order.amount, order.currency)}</span>

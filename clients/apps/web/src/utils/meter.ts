@@ -1,23 +1,22 @@
-import { Meter, PolarAPI, ResponseError } from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
-const _getMeterById = async (api: PolarAPI, id: string): Promise<Meter> => {
-  try {
-    return await api.meters.get(
-      {
-        id,
+const _getMeterById = async (
+  api: Client,
+  id: string,
+): Promise<components['schemas']['Meter']> => {
+  return unwrap(
+    api.GET('/v1/meters/{id}', {
+      params: {
+        path: { id },
       },
-      {
-        cache: 'no-store',
-      },
-    )
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
-      notFound()
-    }
-    throw err
-  }
+      cache: 'no-store',
+    }),
+    {
+      404: notFound,
+    },
+  )
 }
 
 // Tell React to memoize it for the duration of the request

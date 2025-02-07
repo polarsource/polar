@@ -1,12 +1,12 @@
 import { getServerURL } from '@/utils/api'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { isCrawler } from '@/utils/crawlers'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { CheckoutPublic } from '@polar-sh/api'
 import {
   CheckoutFormProvider,
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
+import { unwrap } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -83,16 +83,14 @@ export default async function Page({
     return <></>
   }
 
-  let checkout: CheckoutPublic
-  try {
-    checkout = await api.checkouts.clientCreate({
+  const checkout = await unwrap(
+    api.POST('/v1/checkouts/client/', {
       body: {
         product_price_id: product.prices[0].id,
+        from_legacy_checkout_link: false,
       },
-    })
-  } catch (err) {
-    throw err
-  }
+    }),
+  )
 
   return (
     <CheckoutProvider

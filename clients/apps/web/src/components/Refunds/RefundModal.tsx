@@ -1,5 +1,6 @@
 import { useCreateRefund } from '@/hooks/queries'
-import { Order, RefundCreate, RefundReason } from '@polar-sh/api'
+import { RefundCreate, RefundReason } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -24,7 +25,7 @@ import { toast } from '../Toast/use-toast'
 import { RefundReasonDisplay } from './utils'
 
 interface RefundModalProps {
-  order: Order
+  order: components['schemas']['Order']
   hide: () => void
 }
 
@@ -82,7 +83,8 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="text-xl">Refund Order</h2>
       <p className="dark:text-polar-500 text-gray-500">
-        You can refund in part or full. Customer&apos;s see it on their bank statement in 5-10 days.
+        You can refund in part or full. Customer&apos;s see it on their bank
+        statement in 5-10 days.
       </p>
 
       <Form {...form}>
@@ -173,12 +175,19 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
               />
             )}
           </div>
-          <div className="rounded-2xl border border-gray-300 p-8 px-4 py-3 text-sm space-y-2">
+          <div className="space-y-2 rounded-2xl border border-gray-300 p-8 px-4 py-3 text-sm">
             <strong>Original payment fees are not returned</strong>
             <p>
-              Underlying payment processors still charge us for the original payment - even in case of a full refund.
-              However, no additional fees are applied of course.{' '}
-              <a href="https://docs.polar.sh/documentation/features/refunds" className="text-blue-500" target="_blank">Learn more &rarr;</a>
+              Underlying payment processors still charge us for the original
+              payment - even in case of a full refund. However, no additional
+              fees are applied of course.{' '}
+              <a
+                href="https://docs.polar.sh/documentation/features/refunds"
+                className="text-blue-500"
+                target="_blank"
+              >
+                Learn more &rarr;
+              </a>
             </p>
           </div>
           <Button type="submit" className="self-start" disabled={!canRefund}>

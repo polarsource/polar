@@ -1,41 +1,28 @@
-import { Organization, PolarAPI, ResponseError } from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
-const _getOrganization = async (
-  api: PolarAPI,
+const _getOrganizationOrNotFound = async (
+  api: Client,
   slug: string,
-): Promise<Organization | undefined> => {
-  try {
-    return await api.customerPortalOrganizations.get(
-      {
-        slug,
-      },
-      {
-        next: {
-          revalidate: 600,
-          tags: [`organizations:${slug}`],
+): Promise<components['schemas']['Organization']> => {
+  return unwrap(
+    api.GET('/v1/customer-portal/organizations/{slug}', {
+      params: {
+        path: {
+          slug,
         },
       },
-    )
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
-      return undefined
-    }
-    throw err
-  }
+      next: {
+        revalidate: 600,
+        tags: [`organizations:${slug}`],
+      },
+    }),
+    {
+      404: notFound,
+    },
+  )
 }
 
 // Tell React to memoize it for the duration of the request
-export const getOrganization = cache(_getOrganization)
-
-export const getOrganizationOrNotFound = async (
-  api: PolarAPI,
-  slug: string,
-): Promise<Organization> => {
-  const organization = await getOrganization(api, slug)
-  if (!organization) {
-    notFound()
-  }
-  return organization
-}
+export const getOrganizationOrNotFound = cache(_getOrganizationOrNotFound)

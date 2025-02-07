@@ -1,7 +1,7 @@
 'use client'
 
 import { useCustomFields } from '@/hooks/queries/customFields'
-import { Organization, Subscription } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import CustomFieldValue from '../CustomFields/CustomFieldValue'
@@ -29,8 +29,8 @@ const getHumanCancellationReason = (key: string | null) => {
 }
 
 interface SubscriptionDetailsProps {
-  organization: Organization
-  subscription: Subscription
+  organization: components['schemas']['Organization']
+  subscription: components['schemas']['Subscription']
 }
 
 const SubscriptionDetails = ({

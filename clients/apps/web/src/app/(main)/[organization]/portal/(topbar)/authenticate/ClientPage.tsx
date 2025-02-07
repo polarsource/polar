@@ -1,19 +1,16 @@
 'use client'
 
 import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
-import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { useRouter } from 'next/navigation'
-
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from '@polar-sh/ui/components/atoms/InputOTP'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-
 import {
   Form,
   FormControl,
@@ -21,6 +18,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
@@ -32,20 +30,16 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   const onSubmit = useCallback(
     async ({ code }: { code: string }) => {
-      try {
-        const { token } = await sessionRequest.mutateAsync({ code })
-        router.push(
-          `/${organization.slug}/portal/?customer_session_token=${token}`,
-        )
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
+      const { data, error } = await sessionRequest.mutateAsync({ code })
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError)
         }
+        return
       }
+      router.push(
+        `/${organization.slug}/portal/?customer_session_token=${data.token}`,
+      )
     },
     [sessionRequest, setError, router, organization],
   )

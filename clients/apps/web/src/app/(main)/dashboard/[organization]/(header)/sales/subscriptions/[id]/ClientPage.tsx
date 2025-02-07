@@ -10,7 +10,7 @@ import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { useProduct, useSubscription } from '@/hooks/queries'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { Organization, Product, Subscription } from '@polar-sh/api'
+import { Product } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
@@ -51,8 +51,8 @@ const ProductItem = ({ product }: ProductItemProps) => {
 }
 
 interface ClientPageProps {
-  organization: Organization
-  subscription: Subscription
+  organization: components['schemas']['Organization']
+  subscription: components['schemas']['Subscription']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({

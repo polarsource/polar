@@ -3,7 +3,7 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
-import { CustomerSubscription, PolarAPI } from '@polar-sh/api'
+import { Client, components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -19,10 +19,12 @@ const CustomerSubscriptionDetails = ({
   onUserSubscriptionUpdate,
   isCanceled,
 }: {
-  subscription: CustomerSubscription
-  api: PolarAPI
+  subscription: components['schemas']['CustomerSubscription']
+  api: Client
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
-  onUserSubscriptionUpdate: (subscription: CustomerSubscription) => void
+  onUserSubscriptionUpdate: (
+    subscription: components['schemas']['CustomerSubscription'],
+  ) => void
   isCanceled: boolean
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)

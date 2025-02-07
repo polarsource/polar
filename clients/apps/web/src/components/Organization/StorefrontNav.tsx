@@ -1,7 +1,7 @@
 'use client'
 
 import { useCustomerOrders } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/api'
 import {
@@ -30,7 +30,7 @@ export const StorefrontNav = ({
   const router = useRouter()
 
   const { data: orders } = useCustomerOrders(api, {
-    organizationId: organization.id,
+    organization_id: organization.id,
   })
 
   return (

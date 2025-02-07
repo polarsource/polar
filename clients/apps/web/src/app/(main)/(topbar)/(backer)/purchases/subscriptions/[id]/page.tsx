@@ -1,22 +1,23 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { CustomerSubscription, ResponseError } from '@polar-sh/api'
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export default async function Page({ params }: { params: { id: string } }) {
   const api = getServerSideAPI()
-
-  let subscription: CustomerSubscription
-
-  try {
-    subscription = await api.customerPortalSubscriptions.get({ id: params.id })
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    } else {
-      throw e
-    }
-  }
+  const subscription = await unwrap(
+    api.GET('/v1/customer-portal/subscriptions/{id}', {
+      params: {
+        path: {
+          id: params.id,
+        },
+      },
+      cache: 'no-store',
+    }),
+    {
+      404: notFound,
+    },
+  )
 
   return <ClientPage subscription={subscription} />
 }

@@ -1,5 +1,5 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { getStorefront } from '@/utils/storefront'
 import {
@@ -7,9 +7,9 @@ import {
   Organization,
   PledgePledgesSummary,
   Pledger,
-  PolarAPI,
   State,
 } from '@polar-sh/api'
+import { Client, unwrap } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -26,7 +26,7 @@ type Data = {
 }
 
 const getBadgeData = async (
-  api: PolarAPI,
+  api: Client,
   org: string,
   repo: string,
   number: string,
@@ -45,7 +45,16 @@ const getBadgeData = async (
 
   const [issue, organization] = resolvedIssueOrganization
   const storefront = await getStorefront(api, organization.slug)
-  const pledges = await api.pledges.summary({ issueId: issue.id }, cacheConfig)
+  const pledges = await unwrap(
+    api.GET('/v1/pledges/summary', {
+      params: {
+        query: {
+          issue_id: issue.id,
+        },
+      },
+      ...cacheConfig,
+    }),
+  )
   return {
     pledges,
     issue,

@@ -13,7 +13,8 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { dateToInterval } from '@/utils/metrics'
-import { Order, OrderCustomer, Organization, Product } from '@polar-sh/api'
+import { OrderCustomer, Organization, Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
@@ -113,7 +114,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const orders = ordersHook.data?.items || []
   const pageCount = ordersHook.data?.pagination.max_page ?? 1
 
-  const columns: DataTableColumnDef<Order>[] = [
+  const columns: DataTableColumnDef<components['schemas']['Order']>[] = [
     {
       accessorKey: 'customer',
       enableSorting: true,

@@ -29,10 +29,19 @@ export const unwrap = async <
   Media extends `${string}/${string}`,
 >(
   p: Promise<FetchResponse<T, Options, Media>>,
+  handlers?: {
+    [status: number]: (response: Response) => never
+  },
 ): Promise<
   ParseAsResponse<SuccessResponse<ResponseObjectMap<T>, Media>, Options>
 > => {
-  const { data, error } = await p
+  const { data, error, response } = await p
+  if (handlers) {
+    const handler = handlers[response.status]
+    if (handler) {
+      return handler(response)
+    }
+  }
   if (error) {
     throw new Error(error)
   }

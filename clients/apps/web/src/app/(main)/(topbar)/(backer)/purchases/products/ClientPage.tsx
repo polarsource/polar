@@ -6,9 +6,9 @@ import { PurchasesQueryParametersContext } from '@/components/Purchases/Purchase
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useCustomerOrders } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { CustomerOrder, ProductPriceType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -33,7 +33,7 @@ export default function ClientPage() {
   )
 
   const { data: orders } = useCustomerOrders(api, {
-    productPriceType: ProductPriceType.ONE_TIME,
+    product_price_type: 'one_time',
     query: purchaseParameters.query,
     limit: purchaseParameters.limit,
     page: purchaseParameters.page,
@@ -103,7 +103,11 @@ export default function ClientPage() {
   )
 }
 
-const OrderItem = ({ order }: { order: CustomerOrder }) => {
+const OrderItem = ({
+  order,
+}: {
+  order: components['schemas']['CustomerOrder']
+}) => {
   const organization = order.product.organization
 
   return (

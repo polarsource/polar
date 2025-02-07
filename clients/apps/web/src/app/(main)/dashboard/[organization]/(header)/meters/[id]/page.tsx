@@ -1,5 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getMeterById } from '@/utils/meter'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
@@ -11,7 +10,7 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const meter = await api.meters.get({ id: params.id })
+  const meter = await getMeterById(api, params.id)
 
   return {
     title: meter.name,
@@ -23,12 +22,11 @@ export default async function Page({
 }: {
   params: { organization: string; id: string }
 }) {
-  const newAPI = getNewServerSideAPI()
+  const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    newAPI,
+    api,
     params.organization,
   )
-  const api = getServerSideAPI()
   const meter = await getMeterById(api, params.id)
 
   return <ClientPage organization={organization} meter={meter} />

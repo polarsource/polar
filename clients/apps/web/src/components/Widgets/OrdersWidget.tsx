@@ -1,7 +1,7 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
-import { Order } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   Card,
@@ -16,7 +16,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface OrderCardProps {
   className?: string
-  order: Order
+  order: components['schemas']['Order']
 }
 
 const OrderCard = ({ className, order }: OrderCardProps) => {

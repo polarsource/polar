@@ -1,11 +1,6 @@
-import {
-  CustomerBenefitGrantDownloadables,
-  DownloadableRead,
-  PolarAPI,
-} from '@polar-sh/api'
-
 import { useCustomerDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
+import { Client, components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
@@ -26,7 +21,7 @@ export const DownloadableItem = ({
   fileIcon,
 }: {
   className?: string
-  downloadable: DownloadableRead
+  downloadable: components['schemas']['DownloadableRead']
   historic: boolean
   showActions?: boolean
   fileIcon?: boolean
@@ -106,8 +101,8 @@ const DownloadablesBenefitGrant = ({
   api,
   benefitGrant,
 }: {
-  api: PolarAPI
-  benefitGrant: CustomerBenefitGrantDownloadables
+  api: Client
+  benefitGrant: components['schemas']['CustomerBenefitGrantDownloadables']
 }) => {
   const {
     benefit: {
@@ -115,7 +110,7 @@ const DownloadablesBenefitGrant = ({
     },
   } = benefitGrant
   const { data: downloadables, isLoading } = useCustomerDownloadables(api, {
-    benefitId: benefitGrant.benefit.id,
+    benefit_id: benefitGrant.benefit.id,
   })
 
   const sortedDownloadables = useMemo(() => {

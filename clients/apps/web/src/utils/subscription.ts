@@ -1,26 +1,24 @@
-import { PolarAPI, ResponseError, Subscription } from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getSubscriptionById = async (
-  api: PolarAPI,
+  api: Client,
   id: string,
-): Promise<Subscription> => {
-  try {
-    return await api.subscriptions.get(
-      {
-        id,
+): Promise<components['schemas']['Subscription']> => {
+  return unwrap(
+    api.GET('/v1/subscriptions/{id}', {
+      params: {
+        path: {
+          id,
+        },
       },
-      {
-        cache: 'no-store',
-      },
-    )
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
-      notFound()
-    }
-    throw err
-  }
+      cache: 'no-store',
+    }),
+    {
+      404: notFound,
+    },
+  )
 }
 
 // Tell React to memoize it for the duration of the request

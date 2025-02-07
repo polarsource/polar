@@ -1,33 +1,35 @@
-import {
-  InitOverrideFunction,
-  Issue,
-  IssuesApiListRequest,
-  Organization,
-  PolarAPI,
-} from '@polar-sh/api'
+import { Issue, Organization } from '@polar-sh/api'
+import { Client, components, operations, unwrap } from '@polar-sh/client'
 import { getStorefront } from './storefront'
 
 const getIssueBy = async (
-  api: PolarAPI,
-  parameters: Omit<IssuesApiListRequest, 'page' | 'limit' | 'sorting'>,
-  initOverrides?: RequestInit | InitOverrideFunction,
-): Promise<Issue | undefined> => {
-  const data = await api.issues.list(
-    {
-      ...parameters,
-      limit: 1,
-    },
-    initOverrides,
+  api: Client,
+  parameters: Omit<
+    operations['issues:list']['parameters']['query'],
+    'page' | 'limit' | 'sorting'
+  >,
+  cacheOverrides?: any,
+): Promise<components['schemas']['Issue'] | undefined> => {
+  const data = await unwrap(
+    api.GET('/v1/issues/', {
+      params: {
+        query: {
+          limit: 1,
+          ...parameters,
+        },
+      },
+      ...cacheOverrides,
+    }),
   )
   return data.items[0]
 }
 
 export const resolveIssuePath = async (
-  api: PolarAPI,
+  api: Client,
   organizationSlug: string,
   repositoryName: string,
   issueNumber: string,
-  initOverrides?: RequestInit | InitOverrideFunction,
+  cacheOverrides?: any,
 ): Promise<[Issue, Organization] | undefined> => {
   const parsedIssueNumber = Number.parseInt(issueNumber, 10)
 
@@ -43,7 +45,7 @@ export const resolveIssuePath = async (
         repositoryName,
         number: parsedIssueNumber,
       },
-      initOverrides,
+      cacheOverrides,
     )
 
     if (issue) {
@@ -59,7 +61,7 @@ export const resolveIssuePath = async (
       repositoryName,
       number: parsedIssueNumber,
     },
-    initOverrides,
+    cacheOverrides,
   )
 
   // Issue does not exist or not linked to a Polar organization

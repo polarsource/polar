@@ -6,8 +6,7 @@ import {
   useCustomerSubscriptions,
   usePersonalDashboard,
 } from '@/hooks/queries'
-import { api } from '@/utils/api'
-import { BenefitType, ProductPriceType } from '@polar-sh/api'
+import { api } from '@/utils/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link, { LinkProps } from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -39,7 +38,7 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
 }) => {
   const { data: orders } = useCustomerOrders(api, {
     limit: 1,
-    productPriceType: ProductPriceType.ONE_TIME,
+    product_price_type: 'one_time',
   })
   const { data: subscriptions } = useCustomerSubscriptions(api, {
     limit: 1,
@@ -47,11 +46,11 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
   })
   const { data: licenseKeysGrants } = useCustomerBenefitGrants(api, {
     limit: 1,
-    type: BenefitType.LICENSE_KEYS,
+    type: 'license_keys',
   })
   const { data: fileDownloadsGrants } = useCustomerBenefitGrants(api, {
     limit: 1,
-    type: BenefitType.DOWNLOADABLES,
+    type: 'downloadables',
   })
 
   const { data: dashboard } = usePersonalDashboard({

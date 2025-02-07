@@ -1,14 +1,9 @@
 'use client'
 
 import { Modal, ModalProps } from '@/components/Modal'
+import { useCustomerCancelSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  CustomerCancellationReason,
-  CustomerSubscription,
-  CustomerSubscriptionCancel,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
@@ -23,8 +18,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
-import { UseMutationResult } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
@@ -32,7 +26,7 @@ const CancellationReasonRadio = ({
   value,
   label,
 }: {
-  value: CustomerCancellationReason
+  value: components['schemas']['CustomerCancellationReason']
   label: string
 }) => {
   return (
@@ -47,18 +41,9 @@ const CancellationReasonRadio = ({
 
 interface CustomerCancellationModalProps
   extends Omit<ModalProps, 'modalContent'> {
-  subscription: CustomerSubscription
-  cancelSubscription: UseMutationResult<
-    CustomerSubscription,
-    Error,
-    { id: string; body: CustomerSubscriptionCancel },
-    unknown
-  >
+  subscription: components['schemas']['CustomerSubscription']
+  cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onAbort?: () => void
-}
-
-interface CustomerSubscriptionCancelForm extends CustomerSubscriptionCancel {
-  cancellation_comment: string | undefined
 }
 
 const CustomerCancellationModal = ({
@@ -67,14 +52,12 @@ const CustomerCancellationModal = ({
   onAbort,
   ...props
 }: CustomerCancellationModalProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-
   const handleCancel = useCallback(() => {
     onAbort?.()
     props.hide()
   }, [onAbort, props])
 
-  const form = useForm<CustomerSubscriptionCancelForm>({
+  const form = useForm<components['schemas']['CustomerSubscriptionCancel']>({
     defaultValues: {
       cancel_at_period_end: true,
       cancellation_reason: undefined,
@@ -84,43 +67,33 @@ const CustomerCancellationModal = ({
   const { control, handleSubmit, setError, setValue } = form
 
   const handleCancellation = useCallback(
-    async (cancellation: CustomerSubscriptionCancel) => {
-      try {
-        setIsLoading(true)
-        await cancelSubscription.mutateAsync({
-          id: subscription.id,
-          body: cancellation,
-        })
-
-        toast({
-          title: 'Subscription Cancelled',
-          description: `Subscription was cancelled successfully`,
-        })
-
-        props.hide()
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          } else {
-            setError('root', { message: e.message })
-          }
-
-          toast({
-            title: 'Subscription Cancellation Failed',
-            description: `Error cancelling subscription: ${e.message}`,
-          })
+    async (
+      cancellation: components['schemas']['CustomerSubscriptionCancel'],
+    ) => {
+      const { error } = await cancelSubscription.mutateAsync({
+        id: subscription.id,
+        body: cancellation,
+      })
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        } else {
+          setError('root', { message: error.detail })
         }
-      } finally {
-        setIsLoading(false)
+        return
       }
+      toast({
+        title: 'Subscription Cancelled',
+        description: `Subscription was cancelled successfully`,
+      })
+      props.hide()
     },
     [subscription.id, cancelSubscription, setError, props],
   )
 
-  const onReasonSelect = (value: CustomerCancellationReason) => {
+  const onReasonSelect = (
+    value: components['schemas']['CustomerCancellationReason'],
+  ) => {
     setValue('cancellation_reason', value ?? '')
   }
 
@@ -195,6 +168,7 @@ const CustomerCancellationModal = ({
                     <FormControl>
                       <TextArea
                         {...field}
+                        value={field.value || ''}
                         placeholder="Anything else you want to share? (Optional)"
                       />
                     </FormControl>
@@ -203,7 +177,12 @@ const CustomerCancellationModal = ({
                 )}
               />
               <div className="flex flex-row gap-x-4 pt-6">
-                <Button type="submit" variant="destructive" loading={isLoading}>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  loading={cancelSubscription.isPending}
+                  disabled={cancelSubscription.isPending}
+                >
                   Cancel Subscription
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>

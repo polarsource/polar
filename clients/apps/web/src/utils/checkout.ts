@@ -1,26 +1,23 @@
-import { CheckoutPublic, PolarAPI, ResponseError } from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getCheckoutByClientSecret = async (
-  api: PolarAPI,
+  api: Client,
   clientSecret: string,
-): Promise<CheckoutPublic> => {
-  try {
-    return await api.checkouts.clientGet(
-      {
-        clientSecret,
+): Promise<components['schemas']['CheckoutPublic']> => {
+  return unwrap(
+    api.GET('/v1/checkouts/client/{client_secret}', {
+      params: {
+        path: {
+          client_secret: clientSecret,
+        },
       },
-      {
-        cache: 'no-store',
-      },
-    )
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
-      notFound()
-    }
-    throw err
-  }
+    }),
+    {
+      404: notFound,
+    },
+  )
 }
 
 // Tell React to memoize it for the duration of the request

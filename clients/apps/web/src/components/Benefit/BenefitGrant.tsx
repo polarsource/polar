@@ -1,13 +1,5 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
-import {
-  CustomerBenefitGrant,
-  CustomerBenefitGrantCustom,
-  CustomerBenefitGrantDiscord,
-  CustomerBenefitGrantDownloadables,
-  CustomerBenefitGrantGitHubRepository,
-  CustomerBenefitGrantLicenseKeys,
-  PolarAPI,
-} from '@polar-sh/api'
+import { Client, components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -25,14 +17,14 @@ import { LicenseKeyBenefitGrant } from './LicenseKeys/LicenseKeyBenefitGrant'
 import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
 
 interface BenefitGrantProps {
-  api: PolarAPI
-  benefitGrant: CustomerBenefitGrant
+  api: Client
+  benefitGrant: components['schemas']['CustomerBenefitGrant']
 }
 
 const BenefitGrantCustom = ({
   benefitGrant,
 }: {
-  benefitGrant: CustomerBenefitGrantCustom
+  benefitGrant: components['schemas']['CustomerBenefitGrantCustom']
 }) => {
   const {
     benefit: {
@@ -58,10 +50,10 @@ const BenefitGrantOAuth = ({
   openButtonText,
   selectPlaceholder,
 }: {
-  api: PolarAPI
+  api: Client
   benefitGrant:
-    | CustomerBenefitGrantGitHubRepository
-    | CustomerBenefitGrantDiscord
+    | components['schemas']['CustomerBenefitGrantGitHubRepository']
+    | components['schemas']['CustomerBenefitGrantDiscord']
   platform: 'github' | 'discord'
   openButtonText: string
   openButtonUrl: string
@@ -85,15 +77,21 @@ const BenefitGrantOAuth = ({
   )
 
   const authorize = useCallback(async () => {
-    const { url } =
-      await api.customerPortalOauthAccounts.customerPortalOauthAccountsAuthorize(
-        {
-          platform,
-          returnTo: pathname,
-          customerId: customer.id,
+    const { data } = await api.GET(
+      '/v1/customer-portal/oauth-accounts/authorize',
+      {
+        params: {
+          query: {
+            platform,
+            return_to: pathname,
+            customer_id: customer.id,
+          },
         },
-      )
-    window.location.href = url
+      },
+    )
+    if (data) {
+      window.location.href = data.url
+    }
   }, [customer, api, pathname, platform])
 
   const updateBenefitGrant = useCustomerBenefitGrantUpdate(api)
@@ -178,8 +176,8 @@ const BenefitGrantGitHubRepository = ({
   api,
   benefitGrant,
 }: {
-  api: PolarAPI
-  benefitGrant: CustomerBenefitGrantGitHubRepository
+  api: Client
+  benefitGrant: components['schemas']['CustomerBenefitGrantGitHubRepository']
 }) => {
   const {
     benefit: {
@@ -203,8 +201,8 @@ const BenefitGrantDiscord = ({
   api,
   benefitGrant,
 }: {
-  api: PolarAPI
-  benefitGrant: CustomerBenefitGrantDiscord
+  api: Client
+  benefitGrant: components['schemas']['CustomerBenefitGrantDiscord']
 }) => {
   const {
     benefit: {
@@ -246,31 +244,41 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
       </div>
       {benefit.type === 'custom' && (
         <BenefitGrantCustom
-          benefitGrant={benefitGrant as CustomerBenefitGrantCustom}
+          benefitGrant={
+            benefitGrant as components['schemas']['CustomerBenefitGrantCustom']
+          }
         />
       )}
       {benefit.type === 'downloadables' && (
         <DownloadablesBenefitGrant
           api={api}
-          benefitGrant={benefitGrant as CustomerBenefitGrantDownloadables}
+          benefitGrant={
+            benefitGrant as components['schemas']['CustomerBenefitGrantDownloadables']
+          }
         />
       )}
       {benefit.type === 'license_keys' && (
         <LicenseKeyBenefitGrant
           api={api}
-          benefitGrant={benefitGrant as CustomerBenefitGrantLicenseKeys}
+          benefitGrant={
+            benefitGrant as components['schemas']['CustomerBenefitGrantLicenseKeys']
+          }
         />
       )}
       {benefit.type === 'github_repository' && (
         <BenefitGrantGitHubRepository
           api={api}
-          benefitGrant={benefitGrant as CustomerBenefitGrantGitHubRepository}
+          benefitGrant={
+            benefitGrant as components['schemas']['CustomerBenefitGrantGitHubRepository']
+          }
         />
       )}
       {benefit.type === 'discord' && (
         <BenefitGrantDiscord
           api={api}
-          benefitGrant={benefitGrant as CustomerBenefitGrantDiscord}
+          benefitGrant={
+            benefitGrant as components['schemas']['CustomerBenefitGrantDiscord']
+          }
         />
       )}
     </div>

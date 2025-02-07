@@ -1,5 +1,5 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { ResponseError, WebhookEndpoint } from '@polar-sh/api'
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import {
   BreadcrumbPageParams,
@@ -13,16 +13,18 @@ export default async function BreadcrumbPage({
   params: BreadcrumbPageParams & { id: string }
 }) {
   const api = await getServerSideAPI()
-
-  let webhook: WebhookEndpoint
-  try {
-    webhook = await api.webhooks.getWebhookEndpoint({ id: params.id })
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
-      notFound()
-    }
-    throw err
-  }
+  const webhook = await unwrap(
+    api.GET('/v1/webhooks/endpoints/{id}', {
+      params: {
+        path: {
+          id: params.id,
+        },
+      },
+    }),
+    {
+      404: notFound,
+    },
+  )
 
   return (
     <>

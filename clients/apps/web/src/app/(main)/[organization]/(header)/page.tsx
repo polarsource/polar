@@ -1,11 +1,8 @@
-import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
-import { ListResourceIssueFunding } from '@polar-sh/api'
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import ClientPage from './ClientPage'
-
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
+import { unwrap } from '@polar-sh/client'
+import type { Metadata } from 'next'
+import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
@@ -18,7 +15,7 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  const api = getNewServerSideAPI()
+  const api = getServerSideAPI()
   const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
@@ -61,42 +58,30 @@ export default async function Page({
 }: {
   params: { organization: string }
 }) {
-  const newAPI = getNewServerSideAPI()
-
-  let listIssueFunding: ListResourceIssueFunding | undefined
-
+  const api = getServerSideAPI()
   const { organization, products } = await getStorefrontOrNotFound(
-    newAPI,
+    api,
     params.organization,
   )
-
-  try {
-    const api = getServerSideAPI()
-    const loadListIssueFunding = await api.funding.search(
-      {
-        organizationId: organization.id,
-        limit: 10,
-        page: 1,
-        closed: false,
-        sorting: [
-          'most_funded',
-          'most_recently_funded',
-          'most_engagement',
-          'newest',
-        ],
-      },
-      {
-        ...cacheConfig,
-        next: {
-          ...cacheConfig.next,
-          tags: [`funding:${organization.id}`],
+  const listIssueFunding = await unwrap(
+    api.GET('/v1/funding/search', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          limit: 10,
+          page: 1,
+          closed: false,
+          sorting: [
+            'most_funded',
+            'most_recently_funded',
+            'most_engagement',
+            'newest',
+          ],
         },
       },
-    )
-    listIssueFunding = loadListIssueFunding
-  } catch (e) {
-    notFound()
-  }
+      ...cacheConfig,
+    }),
+  )
 
   return (
     <ClientPage

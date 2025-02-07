@@ -3,9 +3,9 @@ import {
   buildFundingFilters,
   urlSearchFromObj,
 } from '@/components/Organization/filters'
-import { getServerSideAPI } from '@/utils/api/serverside'
-import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
+import { unwrap } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
@@ -20,7 +20,7 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  const api = getNewServerSideAPI()
+  const api = getServerSideAPI()
   const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
@@ -64,26 +64,29 @@ export default async function Page({
   params: { organization: string }
   searchParams: FilterSearchParams
 }) {
-  const newAPI = getNewServerSideAPI()
+  const api = getServerSideAPI()
   const { organization } = await getStorefrontOrNotFound(
-    newAPI,
+    api,
     params.organization,
   )
 
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const api = getServerSideAPI()
-  const issues = await api.funding.search(
-    {
-      organizationId: organization.id,
-      query: filters.q,
-      sorting: filters.sort,
-      badged: filters.badged,
-      limit: 20,
-      closed: filters.closed,
-      page: searchParams.page ? parseInt(searchParams.page) : 1,
-    },
-    cacheConfig,
+  const issues = await unwrap(
+    api.GET('/v1/funding/search', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          query: filters.q,
+          sorting: filters.sort,
+          badged: filters.badged,
+          limit: 20,
+          closed: filters.closed,
+          page: searchParams.page ? parseInt(searchParams.page) : 1,
+        },
+      },
+      cacheConfig,
+    }),
   )
 
   return <ClientPage organization={organization} issues={issues} />

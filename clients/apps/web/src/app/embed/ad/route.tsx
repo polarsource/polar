@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 
 export const runtime = 'edge'
@@ -17,8 +18,10 @@ export async function GET(req: NextRequest) {
   const api = getServerSideAPI()
 
   const [ad, _] = await Promise.all([
-    api.advertisements.get({ id: id }),
-    api.advertisements.trackView({ id: id }),
+    unwrap(api.GET('/v1/advertisements/{id}', { params: { path: { id } } })),
+    unwrap(
+      api.POST('/v1/advertisements/{id}/view', { params: { path: { id } } }),
+    ),
   ])
 
   const url = dark && ad.image_url_dark ? ad.image_url_dark : ad.image_url

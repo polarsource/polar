@@ -1,6 +1,5 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { isCrawler } from '@/utils/crawlers'
-import { ResponseError } from '@polar-sh/api'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
@@ -18,25 +17,23 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const priceId = searchParams.get('price') as string
 
-  try {
-    const { url } = await api.checkouts.clientCreate({
-      body: {
-        product_price_id: priceId,
-        from_legacy_checkout_link: true,
-      },
+  const {
+    data: checkout,
+    error,
+    response,
+  } = await api.POST('/v1/checkouts/client/', {
+    body: {
+      product_price_id: priceId,
+      from_legacy_checkout_link: true,
+    },
+  })
+  if (error) {
+    return new NextResponse(JSON.stringify(error), {
+      status: response.status,
     })
-    return new NextResponse(undefined, {
-      status: 303,
-      headers: { Location: url as string },
-    })
-  } catch (err) {
-    if (err instanceof ResponseError) {
-      const response = err.response
-      const data = await response.json()
-      return new NextResponse(JSON.stringify(data.detail), {
-        status: response.status,
-      })
-    }
-    throw err
   }
+  return new NextResponse(undefined, {
+    status: 303,
+    headers: { Location: checkout.url },
+  })
 }

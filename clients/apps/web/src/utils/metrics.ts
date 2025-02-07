@@ -1,6 +1,10 @@
-import { Metric, Metrics, MetricType, TimeInterval } from '@polar-sh/api'
+import { ParsedMetricPeriod } from '@/hooks/queries'
+import * as Plot from '@observablehq/plot'
+import { components } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { timeFormat, utcDay } from 'd3'
 import { format, parse } from 'date-fns'
+import { GeistMono } from 'geist/font/mono'
 
 const primaryColor = 'rgb(0 98 255)'
 
@@ -46,49 +50,44 @@ export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
 export const getValueFormatter = (
-  metric: Metric,
+  metric: components['schemas']['Metric'],
 ): ((value: number) => string) => {
   const numberFormat = new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 2,
     notation: 'compact',
   })
   switch (metric.type) {
-    case MetricType.CURRENCY:
+    case 'currency':
       return (value: number) =>
         formatCurrencyAndAmount(value, 'usd', 0, 'compact')
-    case MetricType.SCALAR:
+    case 'scalar':
       return (value: number) => numberFormat.format(value)
   }
 }
 
 export const getTimestampFormatter = (
-  interval: TimeInterval,
+  interval: components['schemas']['TimeInterval'],
   locale: string = 'en-US',
 ): ((value: Date) => string) => {
   switch (interval) {
-    case TimeInterval.HOUR:
+    case 'hour':
       return (value: Date) =>
         value.toLocaleString(locale, {
           dateStyle: 'medium',
           timeStyle: 'short',
         })
-    case TimeInterval.DAY:
-    case TimeInterval.WEEK:
+    case 'day':
+    case 'week':
       return (value: Date) =>
         value.toLocaleDateString(locale, {
           dateStyle: 'medium',
         })
-    case TimeInterval.MONTH:
+    case 'month':
       return (value: Date) => format(value, 'MMMM yyyy')
-    case TimeInterval.YEAR:
+    case 'year':
       return (value: Date) => format(value, 'yyyy')
   }
 }
-
-import { ParsedMetricPeriod } from '@/hooks/queries'
-import * as Plot from '@observablehq/plot'
-import { timeFormat, utcDay } from 'd3'
-import { GeistMono } from 'geist/font/mono'
 
 class Callback extends Plot.Dot {
   private callbackFunction: (index: number | undefined) => void
@@ -125,11 +124,11 @@ export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
 }
 
 const getTickFormat = (
-  interval: TimeInterval,
+  interval: components['schemas']['TimeInterval'],
   ticks: Date[],
 ): ((t: Date, i: number) => any) | string => {
   switch (interval) {
-    case TimeInterval.HOUR:
+    case 'hour':
       return (t: Date, i: number) => {
         const previousDate = ticks[i - 1]
         if (!previousDate || previousDate.getDate() < t.getDate()) {
@@ -137,21 +136,21 @@ const getTickFormat = (
         }
         return timeFormat('%H:%M')(t)
       }
-    case TimeInterval.DAY:
+    case 'day':
       return '%b %d'
-    case TimeInterval.WEEK:
+    case 'week':
       return '%b %d'
-    case TimeInterval.MONTH:
+    case 'month':
       return '%b %y'
-    case TimeInterval.YEAR:
+    case 'year':
       return '%Y'
   }
 }
 
 export type MetricMarksResolver = (config: {
   data: ParsedMetricPeriod[]
-  metric: Metric
-  interval: TimeInterval
+  metric: components['schemas']['Metric']
+  interval: components['schemas']['TimeInterval']
   onDataIndexHover?: (index: number | undefined) => void
   ticks: Date[]
 }) => Plot.Markish[]
@@ -164,8 +163,8 @@ export const defaultMetricMarks: MetricMarksResolver = ({
   ticks,
 }: {
   data: ParsedMetricPeriod[]
-  metric: Metric
-  interval: TimeInterval
+  metric: components['schemas']['Metric']
+  interval: components['schemas']['TimeInterval']
   onDataIndexHover?: (index: number | undefined) => void
   ticks: Date[]
 }): Plot.Markish[] => [
@@ -265,7 +264,10 @@ export const barMetricMarks: MetricMarksResolver = ({
     : []),
 ]
 
-export const metricDisplayNames: Record<keyof Metrics, string> = {
+export const metricDisplayNames: Record<
+  keyof components['schemas']['Metrics'],
+  string
+> = {
   revenue: 'Revenue',
   orders: 'Orders',
   cumulative_revenue: 'Cumulative Revenue',
@@ -281,7 +283,7 @@ export const metricDisplayNames: Record<keyof Metrics, string> = {
 }
 
 export const metricToCumulativeType: Record<
-  Metric['slug'],
+  components['schemas']['Metric']['slug'],
   MetricCumulativeType
 > = {
   revenue: 'sum',
@@ -301,7 +303,7 @@ export const metricToCumulativeType: Record<
 export type MetricCumulativeType = 'sum' | 'average' | 'lastValue'
 
 export const computeCumulativeValue = (
-  metric: Metric,
+  metric: components['schemas']['Metric'],
   values: number[],
 ): number => {
   if (values.length === 0) return 0
@@ -337,14 +339,14 @@ export const dateToInterval = (startDate: Date) => {
   )
 
   if (yearsAgo >= 3) {
-    return TimeInterval.YEAR
+    return 'year'
   } else if (monthsAgo >= 4) {
-    return TimeInterval.MONTH
+    return 'month'
   } else if (weeksAgo > 4) {
-    return TimeInterval.WEEK
+    return 'week'
   } else if (daysAgo > 1) {
-    return TimeInterval.DAY
+    return 'day'
   } else {
-    return TimeInterval.HOUR
+    return 'hour'
   }
 }

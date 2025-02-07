@@ -5,21 +5,20 @@ import MeterForm from '@/components/Meter/MeterForm'
 import { useToast } from '@/components/Toast/use-toast'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  MeterCreate,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
-const ClientPage = ({ organization }: { organization: Organization }) => {
+const ClientPage = ({
+  organization,
+}: {
+  organization: components['schemas']['Organization']
+}) => {
   const router = useRouter()
-  const form = useForm<MeterCreate>({
+  const form = useForm<components['schemas']['MeterCreate']>({
     defaultValues: {
       filter: {
         conjunction: 'and',
@@ -46,24 +45,20 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   const { toast } = useToast()
 
   const onSubmit = useCallback(
-    async (body: MeterCreate) => {
-      try {
-        const meter = await createMeter.mutateAsync(body)
-        toast({
-          title: 'Meter Created',
-          description: `Meter successfully created.`,
-        })
-
-        router.push(`/dashboard/${organization.slug}/meters/${meter.id}`)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
+    async (body: components['schemas']['MeterCreate']) => {
+      const { data: meter, error } = await createMeter.mutateAsync(body)
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError)
         }
+        return
       }
+      toast({
+        title: 'Meter Created',
+        description: `Meter successfully created.`,
+      })
+
+      router.push(`/dashboard/${organization.slug}/meters/${meter.id}`)
     },
     [createMeter, router, organization, toast, setError],
   )

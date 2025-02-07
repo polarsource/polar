@@ -1,13 +1,6 @@
-import { api, queryClient } from '@/utils/api'
-import {
-  Meter,
-  MeterCreate,
-  MetersApiListRequest,
-  MetersApiQuantitiesRequest,
-  MeterUpdate,
-  ResponseError,
-  TimeInterval,
-} from '@polar-sh/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import {
   useInfiniteQuery,
   useMutation,
@@ -18,22 +11,32 @@ import { defaultRetry } from './retry'
 
 export const useMeters = (
   organizationId: string,
-  parameters?: Omit<MetersApiListRequest, 'organizationId'>,
+  parameters?: Omit<
+    operations['meters:list']['parameters']['query'],
+    'organization_id'
+  >,
 ) =>
   useQuery({
     queryKey: ['meters', { organizationId, parameters }],
     queryFn: () =>
-      api.meters.list({
-        organizationId,
-        ...(parameters || {}),
-      }),
+      unwrap(
+        api.GET('/v1/meters/', {
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useMeter = (id: string, initialData?: Meter) =>
+export const useMeter = (
+  id: string,
+  initialData?: components['schemas']['Meter'],
+) =>
   useQuery({
     queryKey: ['meters', { id }],
-    queryFn: () => api.meters.get({ id }),
+    queryFn: () =>
+      unwrap(api.GET('/v1/meters/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
     initialData,
   })
@@ -49,11 +52,11 @@ export const useMeterEvents = (id: string) =>
   useInfiniteQuery({
     queryKey: ['meters', 'events', { id }],
     queryFn: async ({ pageParam }) =>
-      api.meters.events({
-        id,
-        page: pageParam,
-        limit: 10,
-      }),
+      unwrap(
+        api.GET('/v1/meters/{id}/events', {
+          params: { path: { id }, query: { page: pageParam, limit: 10 } },
+        }),
+      ),
     initialPageParam: 1,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
@@ -64,12 +67,12 @@ export const useMeterQuantities = (
   id: string,
   startTimestamp: Date,
   endTimestamp: Date,
-  interval: TimeInterval,
+  interval: components['schemas']['TimeInterval'],
   parameters?: Omit<
-    MetersApiQuantitiesRequest,
+    operations['meters:quantities']['parameters']['query'],
     'id' | 'startTimestamp' | 'endTimestamp' | 'interval'
   >,
-): UseQueryResult<ParsedMeterQuantities, ResponseError> =>
+): UseQueryResult<ParsedMeterQuantities, Error> =>
   useQuery({
     queryKey: [
       'meters',
@@ -77,13 +80,19 @@ export const useMeterQuantities = (
       { id, startTimestamp, endTimestamp, interval, ...(parameters || {}) },
     ],
     queryFn: async () => {
-      const result = await api.meters.quantities({
-        id,
-        startTimestamp: startTimestamp.toISOString(),
-        endTimestamp: endTimestamp.toISOString(),
-        interval,
-        ...(parameters || {}),
-      })
+      const result = await unwrap(
+        api.GET('/v1/meters/{id}/quantities', {
+          params: {
+            path: { id },
+            query: {
+              start_timestamp: startTimestamp.toISOString(),
+              end_timestamp: endTimestamp.toISOString(),
+              interval,
+              ...(parameters || {}),
+            },
+          },
+        }),
+      )
       return {
         quantities: result.quantities.map((quantity) => ({
           ...quantity,
@@ -96,14 +105,14 @@ export const useMeterQuantities = (
 
 export const useCreateMeter = (organizationId: string) =>
   useMutation({
-    mutationFn: (data: MeterCreate) =>
-      api.meters.create({
-        body: {
-          ...data,
-          organization_id: organizationId,
-        },
+    mutationFn: (data: components['schemas']['MeterCreate']) =>
+      api.POST('/v1/meters/', {
+        body: { ...data, organization_id: organizationId },
       }),
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['meters', { organizationId }],
       })
@@ -112,12 +121,16 @@ export const useCreateMeter = (organizationId: string) =>
 
 export const useUpdateMeter = (id: string) =>
   useMutation({
-    mutationFn: (body: MeterUpdate) =>
-      api.meters.update({
-        id,
+    mutationFn: (body: components['schemas']['MeterUpdate']) =>
+      api.PATCH('/v1/meters/{id}', {
+        params: { path: { id } },
         body,
       }),
     onSuccess: async (result, _variables, _ctx) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['meters', { id }],
       })
@@ -125,7 +138,7 @@ export const useUpdateMeter = (id: string) =>
         queryKey: ['meters', 'events', { id }],
       })
       queryClient.invalidateQueries({
-        queryKey: ['meters', { organizationId: result.organization_id }],
+        queryKey: ['meters', { organizationId: data.organization_id }],
       })
     },
   })

@@ -1,9 +1,18 @@
 'use client'
 
-import { api } from '@/utils/api'
-import { MagicLinkRequest, UserSignupAttribution } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
+
+export class MagicLinkError extends Error {
+  error: components['schemas']['ValidationError'][] | undefined
+
+  constructor(error: components['schemas']['ValidationError'][] | undefined) {
+    super('Magic Link Error')
+    this.error = error
+  }
+}
 
 export const useSendMagicLink = () => {
   const router = useRouter()
@@ -11,14 +20,16 @@ export const useSendMagicLink = () => {
     async (
       email: string,
       return_to?: string,
-      signup?: UserSignupAttribution,
+      signup?: components['schemas']['UserSignupAttribution'],
     ) => {
-      const body: MagicLinkRequest = {
-        email,
-        return_to,
-        attribution: signup,
+      const { error } = await api.POST('/v1/magic_link/request', {
+        body: { email, return_to, signup },
+      })
+
+      if (error) {
+        throw new MagicLinkError(error.detail)
       }
-      await api.magicLink.magicLinkRequest({ body })
+
       const searchParams = new URLSearchParams({ email: email })
       router.push(`/login/magic-link/request?${searchParams}`)
     },

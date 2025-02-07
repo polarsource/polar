@@ -1,21 +1,13 @@
 'use client'
 
-import { api } from '@/utils/api'
-import { EmailUpdateRequest } from '@polar-sh/api'
-import { useRouter } from 'next/navigation'
+import { api } from '@/utils/client'
 import { useCallback } from 'react'
 
 export const useSendEmailUpdate = () => {
-  const router = useRouter()
   const func = useCallback(
-    async (email: string, return_to?: string) => {
-      const body: EmailUpdateRequest = {
-        email,
-        return_to,
-      }
-      await api.emailUpdate.requestEmailUpdate({ body })
-    },
-    [router],
+    async (email: string, return_to?: string) =>
+      api.POST('/v1/email-update/request', { body: { email, return_to } }),
+    [],
   )
   return func
 }

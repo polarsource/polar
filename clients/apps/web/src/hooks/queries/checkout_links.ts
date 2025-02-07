@@ -1,44 +1,52 @@
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
-
-import { api, queryClient } from '@/utils/api'
-import {
-  CheckoutLink,
-  CheckoutLinksApiCreateRequest,
-  CheckoutLinksApiListRequest,
-  CheckoutLinksApiUpdateRequest,
-  ListResourceCheckoutLink,
-  OrganizationIDFilter1,
-} from '@polar-sh/api'
 import { defaultRetry } from './retry'
 
 export const useCheckoutLinks = (
-  organizationId: OrganizationIDFilter1,
-  parameters?: Omit<CheckoutLinksApiListRequest, 'organizationId'>,
+  organizationId: string,
+  parameters?: Omit<
+    operations['checkout-links:list']['parameters']['query'],
+    'organization_id'
+  >,
 ) =>
   useQuery({
     queryKey: ['checkout_links', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
-      api.checkoutLinks.list({
-        organizationId,
-        ...(parameters || {}),
-      }),
+      unwrap(
+        api.GET('/v1/checkout-links/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...(parameters || {}),
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
   })
 
 export const useCreateCheckoutLink = () =>
   useMutation({
-    mutationFn: (body: CheckoutLinksApiCreateRequest) => {
-      return api.checkoutLinks.create(body)
+    mutationFn: (body: components['schemas']['CheckoutLinkCreate']) => {
+      return api.POST('/v1/checkout-links/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {
-      queryClient.setQueriesData<ListResourceCheckoutLink>(
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      queryClient.setQueriesData<
+        components['schemas']['ListResource_CheckoutLink_']
+      >(
         {
-          queryKey: ['checkout_links', { productId: result.product.id }],
+          queryKey: ['checkout_links', { productId: data.product.id }],
         },
         (old) => {
           if (!old) {
             return {
-              items: [result],
+              items: [data],
               pagination: {
                 total_count: 1,
                 max_page: 1,
@@ -46,7 +54,7 @@ export const useCreateCheckoutLink = () =>
             }
           } else {
             return {
-              items: [...old.items, result],
+              items: [...old.items, data],
               pagination: {
                 total_count: old.pagination.total_count + 1,
                 max_page: old.pagination.max_page,
@@ -60,18 +68,34 @@ export const useCreateCheckoutLink = () =>
 
 export const useUpdateCheckoutLink = () =>
   useMutation({
-    mutationFn: (body: CheckoutLinksApiUpdateRequest) => {
-      return api.checkoutLinks.update(body)
+    mutationFn: (variables: {
+      id: string
+      body: components['schemas']['CheckoutLinkUpdate']
+    }) => {
+      return api.PATCH('/v1/checkout-links/{id}', {
+        params: {
+          path: {
+            id: variables.id,
+          },
+        },
+        body: variables.body,
+      })
     },
     onSuccess: (result, _variables, _ctx) => {
-      queryClient.setQueriesData<ListResourceCheckoutLink>(
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      queryClient.setQueriesData<
+        components['schemas']['ListResource_CheckoutLink_']
+      >(
         {
-          queryKey: ['checkout_links', { productId: result.product.id }],
+          queryKey: ['checkout_links', { productId: data.product.id }],
         },
         (old) => {
           if (!old) {
             return {
-              items: [result],
+              items: [data],
               pagination: {
                 total_count: 1,
                 max_page: 1,
@@ -80,7 +104,7 @@ export const useUpdateCheckoutLink = () =>
           } else {
             return {
               items: old.items.map((item) =>
-                item.id === result.id ? result : item,
+                item.id === data.id ? data : item,
               ),
               pagination: old.pagination,
             }
@@ -92,12 +116,19 @@ export const useUpdateCheckoutLink = () =>
 
 export const useDeleteCheckoutLink = () =>
   useMutation({
-    mutationFn: (checkoutLink: CheckoutLink) => {
-      return api.checkoutLinks.delete({
-        id: checkoutLink.id,
+    mutationFn: (checkoutLink: components['schemas']['CheckoutLink']) => {
+      return api.DELETE('/v1/checkout-links/{id}', {
+        params: {
+          path: {
+            id: checkoutLink.id,
+          },
+        },
       })
     },
-    onSuccess: (_result, variables, _ctx) => {
+    onSuccess: (result, variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: [
           'checkout_links',

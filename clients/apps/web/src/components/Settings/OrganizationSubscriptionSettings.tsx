@@ -1,11 +1,6 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  Organization,
-  OrganizationSubscriptionSettings as OrganizationSubscriptionSettingsSchema,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -23,13 +18,15 @@ import { toast } from '../Toast/use-toast'
 import ProrationBehaviorRadioGroup from './ProrationBehaviorRadioGroup'
 
 interface OrganizationSubscriptionSettingsProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }
 
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
 > = ({ organization }) => {
-  const form = useForm<OrganizationSubscriptionSettingsSchema>({
+  const form = useForm<
+    components['schemas']['OrganizationSubscriptionSettings']
+  >({
     defaultValues: organization.subscription_settings,
   })
   const { control, handleSubmit, setError, watch } = form
@@ -38,33 +35,28 @@ const OrganizationSubscriptionSettings: React.FC<
 
   const updateOrganization = useUpdateOrganization()
   const onSubmit = async (
-    subscription_settings: OrganizationSubscriptionSettingsSchema,
+    subscription_settings: components['schemas']['OrganizationSubscriptionSettings'],
   ) => {
-    try {
-      await updateOrganization.mutateAsync({
-        id: organization.id,
-        body: { subscription_settings },
-      })
-      toast({
-        title: 'Settings Updated',
-        description: `Settings were updated successfully`,
-      })
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(validationErrors, setError)
-        } else {
-          setError('root', { message: e.message })
-        }
-
-        toast({
-          title: 'Settings Update Failed',
-          description: `Error updating settings: ${e.message}`,
-        })
+    const { error } = await updateOrganization.mutateAsync({
+      id: organization.id,
+      body: {
+        subscription_settings,
+        pledge_badge_show_amount: organization.pledge_badge_show_amount,
+        pledge_minimum_amount: organization.pledge_minimum_amount,
+      },
+    })
+    if (error) {
+      if (isValidationError(error.detail)) {
+        setValidationErrors(error.detail, setError)
+      } else {
+        setError('root', { message: error.detail })
       }
+      return
     }
+    toast({
+      title: 'Settings Updated',
+      description: `Settings were updated successfully`,
+    })
   }
 
   return (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useProducts } from '@/hooks/queries'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import React, { useMemo } from 'react'
 
 const stub = (): never => {
@@ -11,8 +11,8 @@ const stub = (): never => {
 }
 
 interface MaintainerOrganizationContextType {
-  organization: Organization
-  organizations: Organization[]
+  organization: components['schemas']['Organization']
+  organizations: components['schemas']['Organization'][]
   onboarding: {
     loading: boolean
     completed: boolean
@@ -28,8 +28,8 @@ export const MaintainerOrganizationContextProvider = ({
   organizations,
   children,
 }: {
-  organization: Organization
-  organizations: Organization[]
+  organization: components['schemas']['Organization']
+  organizations: components['schemas']['Organization'][]
   children: React.ReactNode
 }) => {
   const onboarding = useOnboardingState(organization)
@@ -47,7 +47,9 @@ export const MaintainerOrganizationContextProvider = ({
   )
 }
 
-const useOnboardingState = (organization: Organization) => {
+const useOnboardingState = (
+  organization: components['schemas']['Organization'],
+) => {
   const { data: products, isLoading } = useProducts(organization.id, {
     limit: 1,
   })

@@ -1,37 +1,34 @@
 'use client'
 
 import { useBackofficeBadgeAction } from '@/hooks/queries'
-import {
-  BackofficeBadgeActionEnum,
-  BackofficeBadgeResponse,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { useState } from 'react'
 
 const Badge = () => {
   const [orgSlug, setOrgSlug] = useState('')
   const [repoSlug, setRepoSlug] = useState('')
   const [issueNumber, setIssueNumber] = useState(0)
-  const [action, setAction] = useState<BackofficeBadgeActionEnum>(
-    BackofficeBadgeActionEnum.EMBED,
-  )
+  const [action, setAction] = useState<'embed' | 'remove'>('embed')
   const [successURL, setSuccessURL] = useState('')
 
   const manageBadgeMutation = useBackofficeBadgeAction()
 
-  const generateGitHubURL = (badge: BackofficeBadgeResponse) => {
+  const generateGitHubURL = (
+    badge: components['schemas']['BackofficeBadgeResponse'],
+  ) => {
     return `https://github.com/${badge.org_slug}/${badge.repo_slug}/issues/${badge.issue_number}`
   }
 
   const onSubmit = async () => {
-    const res = await manageBadgeMutation.mutateAsync({
+    const { data } = await manageBadgeMutation.mutateAsync({
       org_slug: orgSlug,
       repo_slug: repoSlug,
       issue_number: issueNumber,
       action: action,
     })
 
-    if (res.success) {
-      setSuccessURL(generateGitHubURL(res))
+    if (data) {
+      setSuccessURL(generateGitHubURL(data))
     }
   }
 
@@ -91,16 +88,11 @@ const Badge = () => {
           </label>
           <select
             id="action"
-            onChange={(e) => {
-              if (e.target.value == BackofficeBadgeActionEnum.REMOVE) {
-                return setAction(BackofficeBadgeActionEnum.REMOVE)
-              }
-              setAction(BackofficeBadgeActionEnum.EMBED)
-            }}
+            onChange={(e) => setAction(e.target.value as 'embed' | 'remove')}
             value={action}
           >
-            <option value={BackofficeBadgeActionEnum.EMBED}>Embed</option>
-            <option value={BackofficeBadgeActionEnum.REMOVE}>Remove</option>
+            <option value={'embed'}>Embed</option>
+            <option value={'remove'}>Remove</option>
           </select>
         </div>
 

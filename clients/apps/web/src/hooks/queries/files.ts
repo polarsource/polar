@@ -1,37 +1,37 @@
-import { useQuery } from '@tanstack/react-query'
-
-import { api, queryClient } from '@/utils/api'
-import { FileRead } from '@polar-sh/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-import { useMutation } from '@tanstack/react-query'
+type FileRead =
+  | components['schemas']['DownloadableFileRead']
+  | components['schemas']['ProductMediaFileRead']
+  | components['schemas']['OrganizationAvatarFileRead']
 
 export const useFiles = (organizationId: string, fileIds: string[]) =>
   useQuery({
     queryKey: ['user', 'files', JSON.stringify(fileIds)],
     queryFn: () =>
-      api.files
-        .list({
-          organizationId,
-          ids: fileIds,
-        })
-        .then((response) => {
-          const files = response.items.reduce(
-            (lookup: Record<string, FileRead>, file) => {
-              lookup[file.id] = file
-              return lookup
-            },
-            {},
-          )
-          // Return in given ID order
-          const sorted = fileIds
-            .map((id) => files?.[id])
-            .filter((file) => !!file)
-          return {
-            items: sorted,
-            pagination: response.pagination,
-          }
+      unwrap(
+        api.GET('/v1/files/', {
+          params: { query: { organization_id: organizationId, ids: fileIds } },
         }),
+      ).then((response) => {
+        const files = response.items.reduce<Record<string, FileRead>>(
+          (lookup, file) => {
+            lookup[file.id] = file
+            return lookup
+          },
+          {},
+        )
+        // Return in given ID order
+        const sorted = fileIds.map((id) => files?.[id]).filter((file) => !!file)
+        return {
+          items: sorted,
+          pagination: response.pagination,
+        }
+      }),
     retry: defaultRetry,
   })
 
@@ -51,33 +51,41 @@ export const usePatchFile = (
       if (version) {
         patch['version'] = version
       }
-
-      return api.files.update({
-        id: id,
+      return api.PATCH('/v1/files/{id}', {
+        params: {
+          path: { id },
+        },
         body: patch,
       })
     },
-    onSuccess: (response: FileRead) => {
-      if (onSuccessCallback) {
-        onSuccessCallback(response)
+    onSuccess: (response) => {
+      if (response.error) {
+        return
       }
 
+      if (onSuccessCallback) {
+        onSuccessCallback(response.data)
+      }
       queryClient.invalidateQueries({ queryKey: ['user', 'files'] })
     },
   })
 
 export const useDeleteFile = (id: string, onSuccessCallback?: () => void) =>
   useMutation({
-    mutationFn: () => {
-      return api.files.delete({
-        id: id,
-      })
-    },
-    onSuccess: () => {
+    mutationFn: () =>
+      api.DELETE('/v1/files/{id}', {
+        params: {
+          path: { id },
+        },
+      }),
+    onSuccess: (response) => {
+      if (response.error) {
+        return
+      }
+
       if (onSuccessCallback) {
         onSuccessCallback()
       }
-
       queryClient.invalidateQueries({ queryKey: ['user', 'files'] })
     },
   })

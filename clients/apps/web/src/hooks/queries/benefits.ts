@@ -1,7 +1,8 @@
-import { BenefitCreate, BenefitTypeFilter, BenefitUpdate } from '@polar-sh/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { api, queryClient } from '@/utils/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { defaultRetry } from './retry'
 
 const _invalidateBenefitsQueries = ({
@@ -31,16 +32,22 @@ const _invalidateBenefitsQueries = ({
 export const useBenefits = (
   orgId?: string,
   limit = 30,
-  type?: BenefitTypeFilter,
+  type?: components['schemas']['BenefitType'],
 ) =>
   useQuery({
     queryKey: ['benefits', 'organization', orgId, { type }],
     queryFn: () =>
-      api.benefits.list({
-        organizationId: orgId ?? '',
-        limit,
-        type,
-      }),
+      unwrap(
+        api.GET('/v1/benefits/', {
+          params: {
+            query: {
+              organization_id: orgId,
+              limit,
+              type,
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!orgId,
   })
@@ -49,9 +56,15 @@ export const useBenefit = (id?: string) =>
   useQuery({
     queryKey: ['benefits', 'id', id],
     queryFn: () => {
-      return api.benefits.get({
-        id: id ?? '',
-      })
+      return unwrap(
+        api.GET('/v1/benefits/{id}', {
+          params: {
+            path: {
+              id: id ?? '',
+            },
+          },
+        }),
+      )
     },
     retry: defaultRetry,
     enabled: !!id,
@@ -59,37 +72,60 @@ export const useBenefit = (id?: string) =>
 
 export const useUpdateBenefit = (orgId?: string) =>
   useMutation({
-    mutationFn: ({ id, body }: { id: string; body: BenefitUpdate }) => {
-      return api.benefits.update({
-        id,
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string
+      body: operations['benefits:update']['requestBody']['content']['application/json']
+    }) => {
+      return api.PATCH('/v1/benefits/{id}', {
+        params: {
+          path: {
+            id,
+          },
+        },
         body,
       })
     },
     onSuccess: (result, _variables, _ctx) => {
-      _invalidateBenefitsQueries({ id: result.id, orgId })
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      _invalidateBenefitsQueries({ id: data.id, orgId })
     },
   })
 
 export const useCreateBenefit = (orgId?: string) =>
   useMutation({
-    mutationFn: (body: BenefitCreate) => {
-      return api.benefits.create({
-        body,
-      })
+    mutationFn: (body: components['schemas']['BenefitCreate']) => {
+      return api.POST('/v1/benefits/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {
-      _invalidateBenefitsQueries({ id: result.id, orgId })
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      _invalidateBenefitsQueries({ id: data.id, orgId })
     },
   })
 
 export const useDeleteBenefit = (orgId?: string) =>
   useMutation({
     mutationFn: ({ id }: { id: string }) => {
-      return api.benefits.delete({
-        id,
+      return api.DELETE('/v1/benefits/{id}', {
+        params: {
+          path: {
+            id,
+          },
+        },
       })
     },
-    onSuccess: (_result, variables, _ctx) => {
+    onSuccess: (result, variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       _invalidateBenefitsQueries({ id: variables.id, orgId })
     },
   })

@@ -5,9 +5,8 @@ import {
   FileServiceTypes,
   Organization,
   OrganizationAvatarFileRead,
-  ResponseError,
-  ValidationError,
 } from '@polar-sh/api'
+import { isValidationError } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -80,32 +79,27 @@ const OrganizationAppearanceSettings: React.FC<
     name: string
     avatar_url: string | null
   }) => {
-    try {
-      await updateOrganization.mutateAsync({
-        id: organization.id,
-        body,
-      })
-
-      toast({
-        title: 'Organization Updated',
-        description: `Organization was updated successfully`,
-      })
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(validationErrors, setError)
-        } else {
-          setError('root', { message: e.message })
-        }
-
-        toast({
-          title: 'Organization Update Failed',
-          description: `Error updating organization: ${e.message}`,
-        })
+    const { error } = await updateOrganization.mutateAsync({
+      id: organization.id,
+      body: {
+        ...body,
+        pledge_badge_show_amount: organization.pledge_badge_show_amount,
+        pledge_minimum_amount: organization.pledge_minimum_amount,
+      },
+    })
+    if (error) {
+      if (isValidationError(error.detail)) {
+        setValidationErrors(error.detail, setError)
+      } else {
+        setError('root', { message: error.detail })
       }
+      return
     }
+
+    toast({
+      title: 'Organization Updated',
+      description: `Organization was updated successfully`,
+    })
   }
 
   return (

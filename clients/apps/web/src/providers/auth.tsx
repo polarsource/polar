@@ -1,13 +1,17 @@
 'use client'
 
-import { Organization, UserRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import React from 'react'
 
 export type AuthContextValue = {
-  user?: UserRead
-  userOrganizations: Organization[]
-  setUser: React.Dispatch<React.SetStateAction<UserRead>>
-  setUserOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>
+  user?: components['schemas']['UserRead']
+  userOrganizations: components['schemas']['Organization'][]
+  setUser: React.Dispatch<
+    React.SetStateAction<components['schemas']['UserRead']>
+  >
+  setUserOrganizations: React.Dispatch<
+    React.SetStateAction<components['schemas']['Organization'][]>
+  >
 }
 
 const stub = (): never => {
@@ -24,19 +28,23 @@ export const UserContextProvider = ({
   userOrganizations: _userOrganizations,
   children,
 }: {
-  user: UserRead | undefined
-  userOrganizations: Organization[]
+  user: components['schemas']['UserRead'] | undefined
+  userOrganizations: components['schemas']['Organization'][]
   children: React.ReactNode
 }) => {
-  const [user, setUser] = React.useState<UserRead | undefined>(_user)
+  const [user, setUser] = React.useState<
+    components['schemas']['UserRead'] | undefined
+  >(_user)
   const [userOrganizations, setUserOrganizations] =
-    React.useState<Organization[]>(_userOrganizations)
+    React.useState<components['schemas']['Organization'][]>(_userOrganizations)
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        setUser: setUser as React.Dispatch<React.SetStateAction<UserRead>>,
+        setUser: setUser as React.Dispatch<
+          React.SetStateAction<components['schemas']['UserRead']>
+        >,
         userOrganizations,
         setUserOrganizations,
       }}

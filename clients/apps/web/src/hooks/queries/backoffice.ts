@@ -1,33 +1,28 @@
-import { api, queryClient } from '@/utils/api'
-import {
-  BackofficeBadge,
-  BackofficePledge,
-  BackofficeReward,
-} from '@polar-sh/api'
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useBackofficeAllPledges: () => UseQueryResult<
-  BackofficePledge[],
-  string
-> = () =>
+export const useBackofficeAllPledges = () =>
   useQuery({
     queryKey: ['backofficeAllPledges'],
-    queryFn: () => api.backoffice.pledges(),
+    queryFn: () => unwrap(api.GET('/v1/backoffice/pledges')),
   })
 
 export const useBackofficeRewards = (issueId?: string) =>
   useQuery({
     queryKey: ['useBackofficeRewards', issueId],
     queryFn: () =>
-      api.backoffice.rewards({
-        issueId,
-      }),
+      unwrap(
+        api.GET('/v1/backoffice/rewards/by_issue', {
+          params: {
+            query: {
+              issue_id: issueId,
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!issueId,
   })
@@ -35,7 +30,7 @@ export const useBackofficeRewards = (issueId?: string) =>
 export const useBackofficeRewardsPending = () =>
   useQuery({
     queryKey: ['useBackofficeRewardsPending'],
-    queryFn: () => api.backoffice.rewardsPending(),
+    queryFn: () => unwrap(api.GET('/v1/backoffice/rewards/pending')),
     retry: defaultRetry,
   })
 
@@ -43,22 +38,23 @@ export const useBackofficeIssue = (issueId?: string) =>
   useQuery({
     queryKey: ['useBackofficeIssue', issueId],
     queryFn: () =>
-      api.backoffice.issue({
-        id: issueId || '',
-      }),
+      unwrap(
+        api.GET('/v1/backoffice/issue/{id}', {
+          params: {
+            path: {
+              id: issueId || '',
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!issueId,
   })
 
-export const useBackofficePledgeRewardTransfer: () => UseMutationResult<
-  BackofficeReward,
-  Error,
-  { pledgeId: string; issueRewardId: string },
-  unknown
-> = () =>
+export const useBackofficePledgeRewardTransfer = () =>
   useMutation({
     mutationFn: (variables: { pledgeId: string; issueRewardId: string }) => {
-      return api.backoffice.pledgeRewardTransfer({
+      return api.POST('/v1/backoffice/pledges/approve', {
         body: {
           pledge_id: variables.pledgeId,
           issue_reward_id: variables.issueRewardId,
@@ -73,8 +69,12 @@ export const useBackofficePledgeRewardTransfer: () => UseMutationResult<
 export const useBackofficePledgeMarkDisputed = () =>
   useMutation({
     mutationFn: (variables: { pledgeId: string }) => {
-      return api.backoffice.pledgeMarkDisputed({
-        pledgeId: variables.pledgeId,
+      return api.POST('/v1/backoffice/pledges/mark_disputed/{pledge_id}', {
+        params: {
+          path: {
+            pledge_id: variables.pledgeId,
+          },
+        },
       })
     },
     onSuccess: async (_result, _variables, _ctx) => {
@@ -84,18 +84,20 @@ export const useBackofficePledgeMarkDisputed = () =>
 
 export const useBackofficeBadgeAction = () =>
   useMutation({
-    mutationFn: (badgeAction: BackofficeBadge) => {
-      return api.backoffice.manageBadge({
-        body: badgeAction,
-      })
+    mutationFn: (badgeAction: components['schemas']['BackofficeBadge']) => {
+      return api.POST('/v1/backoffice/badge', { body: badgeAction })
     },
   })
 
 export const useBackofficePledgeCreateInvoice = () =>
   useMutation({
     mutationFn: (variables: { pledgeId: string }) => {
-      return api.backoffice.pledgeCreateInvoice({
-        pledgeId: variables.pledgeId,
+      return api.POST('/v1/backoffice/pledges/create_invoice/{pledge_id}', {
+        params: {
+          path: {
+            pledge_id: variables.pledgeId,
+          },
+        },
       })
     },
     onSuccess: async (_result, _variables, _ctx) => {

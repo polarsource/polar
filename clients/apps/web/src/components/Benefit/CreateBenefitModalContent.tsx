@@ -1,17 +1,10 @@
 import { useCreateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  BenefitCreate,
-  BenefitType,
-  Organization,
-  ResponseError,
-  ValidationError,
-  type Benefit,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { NewBenefitForm } from '../Benefit/BenefitForm'
 import { CreatableBenefit } from '../Benefit/utils'
@@ -25,8 +18,8 @@ export type CreateBenefitModalParams = {
 }
 
 interface CreateBenefitModalContentProps {
-  organization: Organization
-  onSelectBenefit: (benefit: Benefit) => void
+  organization: components['schemas']['Organization']
+  onSelectBenefit: (benefit: components['schemas']['Benefit']) => void
   hideModal: () => void
   defaultValues?: CreateBenefitModalParams
 }
@@ -37,7 +30,6 @@ const CreateBenefitModalContent = ({
   hideModal,
   defaultValues,
 }: CreateBenefitModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
   const { type, description, error, ...properties } =
     useMemo<CreateBenefitModalParams>(() => {
@@ -53,7 +45,7 @@ const CreateBenefitModalContent = ({
 
   const createSubscriptionBenefit = useCreateBenefit(organization.id)
 
-  const form = useForm<BenefitCreate>({
+  const form = useForm<components['schemas']['BenefitCreate']>({
     defaultValues: {
       organization_id: organization.id,
       type: type ? type : 'custom',
@@ -73,44 +65,31 @@ const CreateBenefitModalContent = ({
   } = form
 
   const handleCreateNewBenefit = useCallback(
-    async (subscriptionBenefitCreate: BenefitCreate) => {
-      try {
-        setIsLoading(true)
-        const benefit = await createSubscriptionBenefit.mutateAsync(
-          subscriptionBenefitCreate,
-        )
-
-        if (benefit) {
-          onSelectBenefit(benefit)
-
-          toast({
-            title: 'Benefit Created',
-            description: `Benefit ${benefit.description} was created successfully`,
-          })
-
-          hideModal()
+    async (
+      subscriptionBenefitCreate: components['schemas']['BenefitCreate'],
+    ) => {
+      const { data: benefit, error } =
+        await createSubscriptionBenefit.mutateAsync(subscriptionBenefitCreate)
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError, 1, [
+            'custom',
+            'ads',
+            'discord',
+            'github_repository',
+            'downloadables',
+            'license_keys',
+          ])
         }
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(
-              validationErrors,
-              setError,
-              1,
-              Object.values(BenefitType),
-            )
-          }
-
-          toast({
-            title: 'Benefit Creation Failed',
-            description: `Error creating benefit: ${e.message}`,
-          })
-        }
-      } finally {
-        setIsLoading(false)
+        return
       }
+
+      onSelectBenefit(benefit)
+      toast({
+        title: 'Benefit Created',
+        description: `Benefit ${benefit.description} was created successfully`,
+      })
+      hideModal()
     },
     [hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
   )
@@ -143,7 +122,8 @@ const CreateBenefitModalContent = ({
               <Button
                 className="self-start"
                 type="button"
-                loading={isLoading}
+                loading={createSubscriptionBenefit.isPending}
+                disabled={createSubscriptionBenefit.isPending}
                 onClick={handleSubmit(handleCreateNewBenefit)}
               >
                 Create

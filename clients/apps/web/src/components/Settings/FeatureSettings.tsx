@@ -2,7 +2,7 @@
 
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
@@ -20,7 +20,11 @@ interface Features {
   issues: boolean
 }
 
-const FeatureSettings = ({ organization }: { organization: Organization }) => {
+const FeatureSettings = ({
+  organization,
+}: {
+  organization: components['schemas']['Organization']
+}) => {
   const form = useForm<Features>({
     defaultValues: {
       issues: organization.feature_settings?.issue_funding_enabled,
@@ -31,26 +35,24 @@ const FeatureSettings = ({ organization }: { organization: Organization }) => {
 
   const updateOrganization = useUpdateOrganization()
   const onSubmit = async (body: Features) => {
-    try {
-      await updateOrganization.mutateAsync({
-        id: organization.id,
-        body: {
-          feature_settings: {
-            ...organization.feature_settings,
-            issue_funding_enabled: body.issues,
-          },
+    const { error } = await updateOrganization.mutateAsync({
+      id: organization.id,
+      body: {
+        feature_settings: {
+          ...organization.feature_settings,
+          issue_funding_enabled: body.issues,
         },
-      })
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(validationErrors, setError)
-        } else {
-          setError('root', { message: e.message })
-        }
+        pledge_badge_show_amount: organization.pledge_badge_show_amount,
+        pledge_minimum_amount: organization.pledge_minimum_amount,
+      },
+    })
+    if (error) {
+      if (isValidationError(error.detail)) {
+        setValidationErrors(error.detail, setError)
+      } else {
+        setError('root', { message: error.detail })
       }
+      return
     }
   }
 

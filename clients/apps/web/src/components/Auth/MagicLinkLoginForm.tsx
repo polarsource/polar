@@ -1,13 +1,9 @@
 'use client'
 
-import { useSendMagicLink } from '@/hooks/magicLink'
+import { MagicLinkError, useSendMagicLink } from '@/hooks/magicLink'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  ResponseError,
-  UserSignupAttribution,
-  ValidationError,
-} from '@polar-sh/api'
+import { UserSignupAttribution } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -47,16 +43,10 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
     })
 
     try {
-      sendMagicLink(email, returnTo, signup)
+      await sendMagicLink(email, returnTo, signup)
     } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(validationErrors, setError)
-        } else if (body['detail']) {
-          setError('email', { message: body['detail'] })
-        }
+      if (e instanceof MagicLinkError && e.error) {
+        setValidationErrors(e.error, setError)
       }
     } finally {
       setLoading(false)

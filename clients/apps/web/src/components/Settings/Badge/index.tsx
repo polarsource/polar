@@ -252,6 +252,8 @@ const BadgeSetup = ({
       id: org.id,
       body: {
         default_upfront_split_to_contributors: value,
+        pledge_badge_show_amount: org.pledge_badge_show_amount,
+        pledge_minimum_amount: org.pledge_minimum_amount,
       },
     })
   }

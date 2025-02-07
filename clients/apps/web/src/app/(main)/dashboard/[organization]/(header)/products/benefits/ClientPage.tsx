@@ -18,7 +18,7 @@ import {
   useDeleteBenefit,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { type Benefit, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
@@ -34,8 +34,14 @@ import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const ClientPage = ({ organization }: { organization: Organization }) => {
-  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | undefined>()
+const ClientPage = ({
+  organization,
+}: {
+  organization: components['schemas']['Organization']
+}) => {
+  const [selectedBenefit, setSelectedBenefit] = useState<
+    components['schemas']['Benefit'] | undefined
+  >()
   const { data: benefits } = useBenefits(organization.id, 100)
   const { data: benefitProducts } = useBenefitProducts(
     organization.id,
@@ -148,8 +154,8 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 export default ClientPage
 
 interface BenefitRowProps {
-  benefit: Benefit
-  organization: Organization
+  benefit: components['schemas']['Benefit']
+  organization: components['schemas']['Organization']
 }
 
 const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
@@ -170,20 +176,19 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
   const { toast } = useToast()
 
   const handleDeleteBenefit = useCallback(() => {
-    deleteBenefit
-      .mutateAsync({ id: benefit.id })
-      .then(() => {
-        toast({
-          title: 'Benefit Deleted',
-          description: `Benefit ${benefit.description} successfully deleted`,
-        })
-      })
-      .catch((error) => {
+    deleteBenefit.mutateAsync({ id: benefit.id }).then(({ error }) => {
+      if (error) {
         toast({
           title: 'Benefit Deletion Failed',
-          description: `Error deleting benefit ${benefit.description}: ${error.message}`,
+          description: `Error deleting benefit ${benefit.description}: ${error.detail}`,
         })
+        return
+      }
+      toast({
+        title: 'Benefit Deleted',
+        description: `Benefit ${benefit.description} successfully deleted`,
       })
+    })
   }, [deleteBenefit, benefit, toast])
 
   return (
@@ -243,7 +248,11 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
   )
 }
 
-const AdsBenefitContent = ({ benefit }: { benefit: Benefit }) => {
+const AdsBenefitContent = ({
+  benefit,
+}: {
+  benefit: components['schemas']['BenefitAds']
+}) => {
   const shortID = benefit.id.substring(benefit.id.length - 6)
 
   const height =

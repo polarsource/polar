@@ -1,9 +1,8 @@
 import { useMetrics } from '@/hooks/queries/metrics'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { AddOutlined } from '@mui/icons-material'
-import { CustomerSession } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -43,22 +42,22 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
   const [customerSessionError, setCustomerSessionError] = useState<
     string | null
   >(null)
-  const [customerSession, setCustomerSession] =
-    useState<CustomerSession | null>(null)
+  const [customerSession, setCustomerSession] = useState<
+    components['schemas']['CustomerSession'] | null
+  >(null)
   const createCustomerSession = useCallback(async () => {
     setCustomerSessionLoading(true)
-    try {
-      const session = await api.customerSessions.create({
-        body: { customer_id: customer.id },
-      })
-      setCustomerSession(session)
-    } catch {
+    const { data: session, error } = await api.POST('/v1/customer-sessions/', {
+      body: { customer_id: customer.id },
+    })
+    setCustomerSessionLoading(false)
+    if (error) {
       setCustomerSessionError(
         'An error occurred while creating the customer portal link. Please try again later.',
       )
-    } finally {
-      setCustomerSessionLoading(false)
+      return
     }
+    setCustomerSession(session)
   }, [customer])
 
   const metrics = useMetrics({

@@ -1,6 +1,5 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Status } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -23,7 +22,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
 
   const canWithdraw =
-    account?.status === Status.ACTIVE &&
+    account?.status === 'active' &&
     summary?.balance?.amount &&
     summary.balance.amount > 0
 

@@ -127,7 +127,7 @@ const AccountCreateModal = ({
   return (
     <>
       <div className="flex flex-col gap-y-6 overflow-auto p-8">
-        <h2>Create payout account</h2>
+        <h2>Setup payout account</h2>
         <form className="flex flex-col gap-y-4">
           <div className="space-y-4">
             <div>
@@ -138,15 +138,13 @@ const AccountCreateModal = ({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {accountTypes.map((v: AccountType) => (
-                    <SelectItem
-                      key={v}
-                      onClick={() => setAccountType(v)}
-                      value={v}
-                    >
-                      {ACCOUNT_TYPE_DISPLAY_NAMES[v]}
-                    </SelectItem>
-                  ))}
+                  <SelectItem
+                    key={'stripe'}
+                    onClick={() => setAccountType('stripe')}
+                    value={'stripe'}
+                  >
+                    {ACCOUNT_TYPE_DISPLAY_NAMES['stripe']}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -156,29 +154,6 @@ const AccountCreateModal = ({
                 </p>
               ))}
             </div>
-
-            {accountType === AccountType.OPEN_COLLECTIVE && (
-              <div>
-                <div className="relative mt-2 flex flex-col gap-y-2">
-                  <label htmlFor="open_collective_slug" className="text-sm">
-                    Open Collective Slug
-                  </label>
-                  <Input
-                    type="text"
-                    id="open_collective_slug"
-                    name="open_collective_slug"
-                    value={openCollectiveSlug || ''}
-                    onChange={onChangeOpenCollectiveSlug}
-                    required
-                  />
-                </div>
-                {validationErrors.open_collective_slug?.map((error) => (
-                  <p key={error} className="mt-2 text-xs text-red-500">
-                    {error}
-                  </p>
-                ))}
-              </div>
-            )}
 
             <div>
               <CountryPicker

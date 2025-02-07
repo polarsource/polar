@@ -33,8 +33,7 @@ const GenericAccountBanner: React.FC<{
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            You need to set up <strong>Stripe</strong> or{' '}
-            <strong>Open Collective</strong> to receive transfers
+            You need to set up <strong>Stripe Connect Express</strong> to receive payouts
           </span>
         </Banner>
       </>

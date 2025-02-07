@@ -5,7 +5,7 @@ import {
   useListOrganizations,
   usePersonalAccessTokens,
 } from '@/hooks/queries'
-import { PersonalAccessToken } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
@@ -24,24 +24,23 @@ import Link from 'next/link'
 import { useCallback } from 'react'
 import { toast } from '../Toast/use-toast'
 
-const AccessToken = (props: PersonalAccessToken) => {
+const AccessToken = (props: components['schemas']['PersonalAccessToken']) => {
   const deleteToken = useDeletePersonalAccessToken()
 
   const onDelete = useCallback(async () => {
-    deleteToken
-      .mutateAsync({ id: props.id })
-      .then(() => {
-        toast({
-          title: 'Access Token Deleted',
-          description: `Access Token ${props.comment} was deleted successfully`,
-        })
-      })
-      .catch((e) => {
+    deleteToken.mutateAsync({ id: props.id }).then(({ error }) => {
+      if (error) {
         toast({
           title: 'Access Token Deletion Failed',
-          description: `Error deleting access token: ${e.message}`,
+          description: `Error deleting access token: ${error.detail}`,
         })
+        return
+      }
+      toast({
+        title: 'Access Token Deleted',
+        description: `Access Token ${props.comment} was deleted successfully`,
       })
+    })
   }, [deleteToken, props])
 
   return (

@@ -1,5 +1,5 @@
-import { api } from '@/utils/api'
-import { IssueListResponse, IssueSortBy } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
 import {
   InfiniteData,
   UseInfiniteQueryResult,
@@ -11,12 +11,14 @@ export const useDashboard = (vars: {
   organizationId: string
   repoName?: string
   q?: string
-  sort?: IssueSortBy
+  sort?: components['schemas']['IssueSortBy']
   onlyPledged?: boolean
   onlyBadged?: boolean
   hasAppInstalled?: boolean
   showClosed: boolean
-}): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>> =>
+}): UseInfiniteQueryResult<
+  InfiniteData<components['schemas']['IssueListResponse'], unknown>
+> =>
   useInfiniteQuery({
     queryKey: [
       'dashboard',
@@ -25,25 +27,25 @@ export const useDashboard = (vars: {
       vars.repoName,
       JSON.stringify(vars),
     ],
-    queryFn: ({ signal, pageParam = 1 }) => {
-      const promise = api.dashboard.getDashboard({
-        id: vars.organizationId,
-        repositoryName: vars.repoName,
-        q: vars.q,
-        sort: vars.sort,
-        onlyPledged: vars.onlyPledged,
-        onlyBadged: vars.onlyBadged,
-        showClosed: vars.showClosed,
-        page: pageParam,
-      })
-
-      signal?.addEventListener('abort', () => {
-        // TODO!
-        // promise.cancel()
-      })
-
-      return promise
-    },
+    queryFn: ({ pageParam = 1 }) =>
+      unwrap(
+        api.GET('/v1/dashboard/organization/{id}', {
+          params: {
+            path: {
+              id: vars.organizationId,
+            },
+            query: {
+              repository_name: vars.repoName,
+              q: vars.q,
+              sort: vars.sort,
+              only_pledged: vars.onlyPledged,
+              only_badged: vars.onlyBadged,
+              show_closed: vars.showClosed,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
     getNextPageParam: (lastPage, _pages): number | null => {
       return lastPage.pagination.next_page
     },
@@ -54,30 +56,28 @@ export const useDashboard = (vars: {
 
 export const usePersonalDashboard = (vars: {
   q?: string
-  sort?: IssueSortBy
+  sort?: components['schemas']['IssueSortBy']
   onlyPledged?: boolean
   onlyBadged?: boolean
   showClosed?: boolean
 }) =>
   useInfiniteQuery({
     queryKey: ['dashboard', 'personal', JSON.stringify(vars)],
-    queryFn: ({ signal, pageParam }) => {
-      const promise = api.dashboard.getPersonalDashboard({
-        q: vars.q,
-        sort: vars.sort,
-        onlyPledged: vars.onlyPledged,
-        onlyBadged: vars.onlyBadged,
-        page: pageParam,
-        showClosed: vars.showClosed,
-      })
-
-      signal?.addEventListener('abort', () => {
-        // TODO!
-        // promise.cancel()
-      })
-
-      return promise
-    },
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/dashboard/personal', {
+          params: {
+            query: {
+              q: vars.q,
+              sort: vars.sort,
+              only_pledged: vars.onlyPledged,
+              only_badged: vars.onlyBadged,
+              show_closed: vars.showClosed,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
     getNextPageParam: (lastPage, _pages): number | null => {
       return lastPage.pagination.next_page
     },

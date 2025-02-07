@@ -6,7 +6,6 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
-import { Repository } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
@@ -172,8 +171,8 @@ const MobileNav = () => {
 }
 
 export const RepoPickerHeader = (props: {
-  currentRepository?: Repository
-  repositories: Repository[]
+  currentRepository?: components['schemas']['Repository']
+  repositories: components['schemas']['Repository'][]
   children?: React.ReactNode
 }) => {
   const onSubmit = () => {}
@@ -218,6 +217,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
+import { components } from '@polar-sh/client'
 import React from 'react'
 
 export const DashboardBody = ({

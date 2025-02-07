@@ -1,10 +1,6 @@
-import { api, queryClient } from '@/utils/api'
-import {
-  CustomField,
-  CustomFieldCreate,
-  CustomFieldsApiListRequest,
-  CustomFieldUpdate,
-} from '@polar-sh/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -30,54 +26,72 @@ const invalidateCustomFieldsQueries = ({
 
 export const useCustomFields = (
   organizationId: string,
-  parameters?: Omit<CustomFieldsApiListRequest, 'organization_id'>,
+  parameters?: Omit<
+    operations['custom-fields:list']['parameters']['query'],
+    'organization_id'
+  >,
 ) =>
   useQuery({
     queryKey: ['custom_fields', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
-      api.customFields.list({
-        organizationId,
-        ...(parameters || {}),
-      }),
+      unwrap(
+        api.GET('/v1/custom-fields/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...(parameters || {}),
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
   })
 
 export const useCreateCustomField = (organizationId: string) =>
   useMutation({
-    mutationFn: (body: CustomFieldCreate) => {
-      return api.customFields.create({
-        body,
-      })
+    mutationFn: (body: components['schemas']['CustomFieldCreate']) => {
+      return api.POST('/v1/custom-fields/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {
-      invalidateCustomFieldsQueries({ organizationId, id: result.id })
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      invalidateCustomFieldsQueries({ organizationId, id: data.id })
     },
   })
 
 export const useUpdateCustomField = (id: string) =>
   useMutation({
-    mutationFn: (body: CustomFieldUpdate) => {
-      return api.customFields.update({
-        id,
+    mutationFn: (body: components['schemas']['CustomFieldUpdate']) => {
+      return api.PATCH('/v1/custom-fields/{id}', {
+        params: { path: { id } },
         body,
       })
     },
     onSuccess: (result, _variables, _ctx) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
       invalidateCustomFieldsQueries({
         id,
-        organizationId: result.organization_id,
+        organizationId: data.organization_id,
       })
     },
   })
 
 export const useDeleteCustomField = () =>
   useMutation({
-    mutationFn: (customField: CustomField) => {
-      return api.customFields.delete({
-        id: customField.id,
+    mutationFn: (customField: components['schemas']['CustomField']) => {
+      return api.DELETE('/v1/custom-fields/{id}', {
+        params: { path: { id: customField.id } },
       })
     },
-    onSuccess: (_result, variables, _ctx) => {
+    onSuccess: (result, variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       invalidateCustomFieldsQueries({
         organizationId: variables.organization_id,
       })

@@ -1,23 +1,18 @@
 import { useCreateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  CustomField,
-  CustomFieldCreate,
-  CustomFieldType,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
 interface CreateCustomFieldModalContentProps {
-  organization: Organization
-  onCustomFieldCreated: (customField: CustomField) => void
+  organization: components['schemas']['Organization']
+  onCustomFieldCreated: (
+    customField: components['schemas']['CustomField'],
+  ) => void
   hideModal: () => void
 }
 
@@ -26,13 +21,12 @@ const CreateCustomFieldModalContent = ({
   onCustomFieldCreated,
   hideModal,
 }: CreateCustomFieldModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
   const createCustomField = useCreateCustomField(organization.id)
 
-  const form = useForm<CustomFieldCreate>({
+  const form = useForm<components['schemas']['CustomFieldCreate']>({
     defaultValues: {
       organization_id: organization.id,
-      type: CustomFieldType.TEXT,
+      type: 'text',
       properties: {},
     },
   })
@@ -43,43 +37,31 @@ const CreateCustomFieldModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit: SubmitHandler<CustomFieldCreate> = useCallback(
-    async (customFieldCreate) => {
-      try {
-        setIsLoading(true)
-        const customField =
+  const onSubmit: SubmitHandler<components['schemas']['CustomFieldCreate']> =
+    useCallback(
+      async (customFieldCreate) => {
+        const { data: customField, error } =
           await createCustomField.mutateAsync(customFieldCreate)
-
+        if (error) {
+          if (error.detail) {
+            setValidationErrors(error.detail, setError, 1, [
+              'text',
+              'number',
+              'date',
+              'checkbox',
+              'select',
+            ])
+          }
+          return
+        }
         toast({
           title: 'Custom Field Created',
           description: `Custom field ${customField.name} was created successfully`,
         })
-
         onCustomFieldCreated(customField)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(
-              validationErrors,
-              setError,
-              1,
-              Object.values(CustomFieldType),
-            )
-          }
-
-          toast({
-            title: 'Custom Field Creation Failed',
-            description: `Error creating custom field: ${e.message}`,
-          })
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [createCustomField, onCustomFieldCreated, setError],
-  )
+      },
+      [createCustomField, onCustomFieldCreated, setError],
+    )
 
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
@@ -104,7 +86,12 @@ const CreateCustomFieldModalContent = ({
               </p>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button className="self-start" type="submit" loading={isLoading}>
+              <Button
+                className="self-start"
+                type="submit"
+                loading={createCustomField.isPending}
+                disabled={createCustomField.isPending}
+              >
                 Create
               </Button>
               <Button

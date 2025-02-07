@@ -14,7 +14,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { CustomField, CustomFieldType, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -31,10 +31,10 @@ import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 
 interface ClientPageProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  type?: CustomFieldType
+  type?: components['schemas']['CustomFieldType']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -48,7 +48,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
-    type?: CustomFieldType,
+    type?: components['schemas']['CustomFieldType'],
   ) => {
     const params = serializeSearchParams(pagination, sorting)
 
@@ -98,21 +98,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
   }
 
   const handleDeleteCustomField = useCallback(
-    (customField: CustomField) => () => {
-      deleteCustomField
-        .mutateAsync(customField)
-        .then(() => {
-          toast({
-            title: 'Custom Field Deleted',
-            description: `Custom field ${customField.name} successfully deleted`,
-          })
-        })
-        .catch((error) => {
+    (customField: components['schemas']['CustomField']) => () => {
+      deleteCustomField.mutateAsync(customField).then(({ error }) => {
+        if (error) {
           toast({
             title: 'Custom Field Deletion Failed',
-            description: `Error deleting custom field ${customField.name}: ${error.message}`,
+            description: `Error deleting custom field ${customField.name}: ${error.detail}`,
           })
+        }
+        toast({
+          title: 'Custom Field Deleted',
+          description: `Custom field ${customField.name} successfully deleted`,
         })
+      })
     },
     [toast],
   )
@@ -125,7 +123,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const customFields = customFieldsHook.data?.items || []
   const pageCount = customFieldsHook.data?.pagination.max_page ?? 1
 
-  const columns: DataTableColumnDef<CustomField>[] = [
+  const columns: DataTableColumnDef<components['schemas']['CustomField']>[] = [
     {
       accessorKey: 'slug',
       enableSorting: true,
@@ -148,7 +146,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Name" />
       ),
       cell: ({ getValue }) => {
-        return <>{getValue()}</>
+        return <>{getValue() as string}</>
       },
     },
     {
@@ -158,7 +156,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Type" />
       ),
       cell: ({ getValue }) => {
-        return <CustomFieldTypeLabel type={getValue() as CustomFieldType} />
+        return (
+          <CustomFieldTypeLabel
+            type={getValue() as components['schemas']['CustomFieldType']}
+          />
+        )
       },
     },
     {
@@ -199,11 +201,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const [showNewModal, setShowNewModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
-  const [selectedCustomField, setSelectedCustomField] = useState<CustomField>()
-  const onCustomFieldSelected = useCallback((customField: CustomField) => {
-    setSelectedCustomField(customField)
-    setShowUpdateModal(true)
-  }, [])
+  const [selectedCustomField, setSelectedCustomField] =
+    useState<components['schemas']['CustomField']>()
+  const onCustomFieldSelected = useCallback(
+    (customField: components['schemas']['CustomField']) => {
+      setSelectedCustomField(customField)
+      setShowUpdateModal(true)
+    },
+    [],
+  )
   const deleteCustomField = useDeleteCustomField()
 
   return (

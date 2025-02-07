@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'

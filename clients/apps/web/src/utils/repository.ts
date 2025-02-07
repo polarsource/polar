@@ -1,33 +1,37 @@
-import {
-  InitOverrideFunction,
-  Organization,
-  PolarAPI,
-  RepositoriesApiListRequest,
-  Repository,
-} from '@polar-sh/api'
+import { Client, components, operations, unwrap } from '@polar-sh/client'
 import { getStorefront } from './storefront'
 
 const getRepositoryBy = async (
-  api: PolarAPI,
-  parameters: Omit<RepositoriesApiListRequest, 'page' | 'limit' | 'sorting'>,
-  initOverrides?: RequestInit | InitOverrideFunction,
-): Promise<Repository | undefined> => {
-  const data = await api.repositories.list(
-    {
-      ...parameters,
-      limit: 1,
-    },
-    initOverrides,
+  api: Client,
+  parameters: Omit<
+    operations['repositories:list']['parameters']['query'],
+    'page' | 'limit' | 'sorting'
+  >,
+  cacheOverrides?: any,
+): Promise<components['schemas']['Repository'] | undefined> => {
+  const data = await unwrap(
+    api.GET('/v1/repositories/', {
+      params: {
+        query: {
+          ...parameters,
+          limit: 1,
+        },
+      },
+      ...cacheOverrides,
+    }),
   )
   return data.items[0]
 }
 
 export const resolveRepositoryPath = async (
-  api: PolarAPI,
+  api: Client,
   organizationSlug: string,
   repositoryName: string,
-  initOverrides?: RequestInit | InitOverrideFunction,
-): Promise<[Repository, Organization] | undefined> => {
+  cacheOverrides?: any,
+): Promise<
+  | [components['schemas']['Repository'], components['schemas']['Organization']]
+  | undefined
+> => {
   const storefront = await getStorefront(api, organizationSlug)
 
   // Existing Polar organization
@@ -36,10 +40,10 @@ export const resolveRepositoryPath = async (
     const repository = await getRepositoryBy(
       api,
       {
-        organizationId: organization.id,
+        organization_id: organization.id,
         name: repositoryName,
       },
-      initOverrides,
+      cacheOverrides,
     )
 
     if (repository) {
@@ -54,7 +58,7 @@ export const resolveRepositoryPath = async (
       externalOrganizationName: organizationSlug,
       name: repositoryName,
     },
-    initOverrides,
+    cacheOverrides,
   )
 
   // Repository does not exist or not linked to a Polar organization

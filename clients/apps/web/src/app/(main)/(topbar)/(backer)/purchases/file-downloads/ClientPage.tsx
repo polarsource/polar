@@ -9,9 +9,9 @@ import {
   useCustomerBenefitGrants,
   useCustomerDownloadables,
 } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { FileDownloadOutlined } from '@mui/icons-material'
-import { DownloadableRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -86,13 +86,13 @@ export default function ClientPage() {
 }
 
 interface DownloadableItemProps {
-  downloadable: DownloadableRead
+  downloadable: components['schemas']['DownloadableRead']
 }
 
 const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     limit: 1,
-    benefitId: downloadable.benefit_id,
+    benefit_id: downloadable.benefit_id,
   })
   const benefitGrant = benefitGrants?.items[0]
   const benefit = benefitGrant?.benefit

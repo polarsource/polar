@@ -1,5 +1,9 @@
 import { toast } from '@/components/Toast/use-toast'
-import { Client, createClient, Middleware } from '@polar-sh/client'
+import {
+  createClient as baseCreateClient,
+  Client,
+  Middleware,
+} from '@polar-sh/client'
 
 const errorMiddleware: Middleware = {
   onError: async () => {
@@ -10,10 +14,15 @@ const errorMiddleware: Middleware = {
   },
 }
 
-const api = createClient(process.env.NEXT_PUBLIC_API_URL as string)
-api.use(errorMiddleware)
+export const createClientSideAPI = (token?: string): Client => {
+  const api = baseCreateClient(process.env.NEXT_PUBLIC_API_URL as string, token)
+  api.use(errorMiddleware)
+  return api
+}
 
-const createServerSideAPI = (
+export const api = createClientSideAPI()
+
+export const createServerSideAPI = (
   headers: Headers,
   cookies: any,
   token?: string,
@@ -41,7 +50,7 @@ const createServerSideAPI = (
     }
   }
 
-  const client = createClient(
+  const client = baseCreateClient(
     process.env.NEXT_PUBLIC_API_URL as string,
     token,
     apiHeaders,
@@ -49,5 +58,3 @@ const createServerSideAPI = (
 
   return client
 }
-
-export { api, createServerSideAPI }

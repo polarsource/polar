@@ -1,12 +1,11 @@
 import {
-  CustomerSubscription,
   ProductPriceRecurring,
   ProductPriceType,
   ProductStorefront,
-  Subscription,
   SubscriptionRecurringInterval,
   SubscriptionStatus,
 } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -41,7 +40,9 @@ export const SubscriptionStatusLabel = ({
   subscription,
 }: {
   className?: string
-  subscription: Subscription | CustomerSubscription
+  subscription:
+    | components['schemas']['Subscription']
+    | components['schemas']['CustomerSubscription']
 }) => {
   const label = useMemo(() => {
     switch (subscription.status) {

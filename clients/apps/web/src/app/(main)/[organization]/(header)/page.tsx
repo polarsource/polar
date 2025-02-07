@@ -1,9 +1,10 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
 import { ListResourceIssueFunding } from '@polar-sh/api'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
 
 const cacheConfig = {
@@ -17,7 +18,7 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  const api = getServerSideAPI()
+  const api = getNewServerSideAPI()
   const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
@@ -60,16 +61,17 @@ export default async function Page({
 }: {
   params: { organization: string }
 }) {
-  const api = getServerSideAPI()
+  const newAPI = getNewServerSideAPI()
 
   let listIssueFunding: ListResourceIssueFunding | undefined
 
   const { organization, products } = await getStorefrontOrNotFound(
-    api,
+    newAPI,
     params.organization,
   )
 
   try {
+    const api = getServerSideAPI()
     const loadListIssueFunding = await api.funding.search(
       {
         organizationId: organization.id,

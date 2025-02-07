@@ -1,48 +1,42 @@
-import {
-  CheckoutProduct,
-  PolarAPI,
-  Product,
-  ProductStorefront,
-  ResponseError,
-  SubscriptionRecurringInterval,
-} from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 export const hasIntervals = (
-  product: ProductStorefront | CheckoutProduct,
+  product:
+    | components['schemas']['ProductStorefront']
+    | components['schemas']['CheckoutProduct'],
 ): [boolean, boolean, boolean] => {
   const hasMonthInterval = product.prices.some(
     (price) =>
-      price.type === 'recurring' &&
-      price.recurring_interval === SubscriptionRecurringInterval.MONTH,
+      price.type === 'recurring' && price.recurring_interval === 'month',
   )
   const hasYearInterval = product.prices.some(
     (price) =>
-      price.type === 'recurring' &&
-      price.recurring_interval === SubscriptionRecurringInterval.YEAR,
+      price.type === 'recurring' && price.recurring_interval === 'year',
   )
   const hasBothIntervals = hasMonthInterval && hasYearInterval
 
   return [hasMonthInterval, hasYearInterval, hasBothIntervals]
 }
 
-const _getProductById = async (api: PolarAPI, id: string): Promise<Product> => {
-  try {
-    return await api.products.get(
-      {
-        id,
+const _getProductById = async (
+  api: Client,
+  id: string,
+): Promise<components['schemas']['Product']> => {
+  return unwrap(
+    api.GET('/v1/products/{id}', {
+      params: {
+        path: {
+          id,
+        },
       },
-      {
-        cache: 'no-store',
-      },
-    )
-  } catch (err) {
-    if (err instanceof ResponseError && err.response.status === 404) {
-      notFound()
-    }
-    throw err
-  }
+      cache: 'no-store',
+    }),
+    {
+      404: notFound,
+    },
+  )
 }
 
 // Tell React to memoize it for the duration of the request

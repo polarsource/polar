@@ -1,18 +1,11 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
-import {
-  ListResourceCustomerOrder,
-  ListResourceCustomerSubscription,
-  ResponseError,
-} from '@polar-sh/api'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
+  cache: 'no-store' as RequestCache,
 }
 
 export async function generateMetadata({
@@ -64,23 +57,47 @@ export default async function Page({
   const api = getServerSideAPI(searchParams.customer_session_token)
   const organization = await getOrganizationOrNotFound(api, params.organization)
 
-  let subscriptions: ListResourceCustomerSubscription | undefined
-  let oneTimePurchases: ListResourceCustomerOrder | undefined
-  try {
-    subscriptions = await api.customerPortalSubscriptions.list(
-      { organizationId: organization.id, active: true, limit: 100 },
-      cacheConfig,
-    )
-    oneTimePurchases = await api.customerPortalOrders.list({
-      organizationId: organization.id,
-      limit: 100,
-    })
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 401) {
-      redirect(`/${organization.slug}/portal/request`)
-    } else {
-      throw e
-    }
+  const {
+    data: subscriptions,
+    error: subscriptionsError,
+    response: subscriptionsResponse,
+  } = await api.GET('/v1/customer-portal/subscriptions/', {
+    params: {
+      query: {
+        organization_id: organization.id,
+        active: true,
+        limit: 100,
+      },
+    },
+    ...cacheConfig,
+  })
+  const {
+    data: oneTimePurchases,
+    error: oneTimePurchasesError,
+    response: oneTimePurchasesResponse,
+  } = await api.GET('/v1/customer-portal/orders/', {
+    params: {
+      query: {
+        organization_id: organization.id,
+        limit: 100,
+      },
+    },
+    ...cacheConfig,
+  })
+
+  if (
+    subscriptionsResponse.status === 401 ||
+    oneTimePurchasesResponse.status === 401
+  ) {
+    redirect(`/${organization.slug}/portal/request`)
+  }
+
+  if (subscriptionsError) {
+    throw subscriptionsError
+  }
+
+  if (oneTimePurchasesError) {
+    throw oneTimePurchasesError
   }
 
   return (

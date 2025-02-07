@@ -10,7 +10,7 @@ import {
   useCustomerBenefitGrants,
   useCustomerLicenseKey,
 } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { Key } from '@mui/icons-material'
 import { BenefitType, CustomerBenefitGrantLicenseKeys } from '@polar-sh/api'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'

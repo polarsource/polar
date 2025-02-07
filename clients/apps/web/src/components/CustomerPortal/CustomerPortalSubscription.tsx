@@ -8,7 +8,7 @@ import {
   useCustomerOrders,
 } from '@/hooks/queries'
 import { ReceiptOutlined } from '@mui/icons-material'
-import { CustomerOrder, CustomerSubscription, PolarAPI } from '@polar-sh/api'
+import { Client, components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -20,25 +20,25 @@ const CustomerPortalSubscription = ({
   api,
   subscription: _subscription,
 }: {
-  api: PolarAPI
-  subscription: CustomerSubscription
+  api: Client
+  subscription: components['schemas']['CustomerSubscription']
 }) => {
   const [subscription, setSubscription] = useState(_subscription)
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
-    subscriptionId: subscription.id,
+    subscription_id: subscription.id,
     limit: 100,
     sorting: ['type'],
   })
 
   const { data: orders } = useCustomerOrders(api, {
-    subscriptionId: subscription.id,
+    subscription_id: subscription.id,
     limit: 100,
     sorting: ['-created_at'],
   })
 
   const orderInvoiceMutation = useCustomerOrderInvoice(api)
   const openInvoice = useCallback(
-    async (order: CustomerOrder) => {
+    async (order: components['schemas']['CustomerOrder']) => {
       const { url } = await orderInvoiceMutation.mutateAsync({ id: order.id })
       window.open(url, '_blank')
     },

@@ -55,7 +55,7 @@ export const EditCustomerModal = ({
       ),
     }
 
-    updateCustomer.mutateAsync(data).then(async ({ error }) => {
+    updateCustomer.mutateAsync(data).then(({ error }) => {
       if (error) {
         if (error.detail)
           if (isValidationError(error.detail)) {

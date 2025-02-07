@@ -3,9 +3,9 @@ import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import { StorefrontNav } from '@/components/Organization/StorefrontNav'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { UserRead } from '@polar-sh/api'
+import { getAuthenticatedUser } from '@/utils/user'
 import React from 'react'
 
 export default async function Layout({
@@ -22,11 +22,7 @@ export default async function Layout({
     params.organization,
   )
 
-  let authenticatedUser: UserRead | undefined
-
-  try {
-    authenticatedUser = await api.users.getAuthenticated()
-  } catch (e) {}
+  const authenticatedUser = await getAuthenticatedUser()
 
   return (
     <PublicLayout className="gap-y-0 py-6 md:py-12" wide>

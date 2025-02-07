@@ -4,6 +4,7 @@ import {
   urlSearchFromObj,
 } from '@/components/Organization/filters'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI as getNewServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
 import type { Metadata } from 'next'
 import ClientPage from './ClientPage'
@@ -19,7 +20,7 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  const api = getServerSideAPI()
+  const api = getNewServerSideAPI()
   const { organization } = await getStorefrontOrNotFound(
     api,
     params.organization,
@@ -63,14 +64,15 @@ export default async function Page({
   params: { organization: string }
   searchParams: FilterSearchParams
 }) {
-  const api = getServerSideAPI()
+  const newAPI = getNewServerSideAPI()
   const { organization } = await getStorefrontOrNotFound(
-    api,
+    newAPI,
     params.organization,
   )
 
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
+  const api = getServerSideAPI()
   const issues = await api.funding.search(
     {
       organizationId: organization.id,

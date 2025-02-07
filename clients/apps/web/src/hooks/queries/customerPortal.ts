@@ -1,61 +1,59 @@
 import { queryClient } from '@/utils/api'
-import {
-  CustomerBenefitGrantUpdate,
-  CustomerPortalBenefitGrantsApiListRequest,
-  CustomerPortalDownloadablesApiListRequest,
-  CustomerPortalLicenseKeysApiListRequest,
-  CustomerPortalOrdersApiListRequest,
-  CustomerPortalSubscriptionsApiListRequest,
-  CustomerSubscriptionCancel,
-  CustomerSubscriptionUpdate,
-  PolarAPI,
-} from '@polar-sh/api'
+import { Client, components, operations, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useCustomerPortalSessionRequest = (
-  api: PolarAPI,
+  api: Client,
   organizationId: string,
 ) =>
   useMutation({
-    mutationFn: ({ email }: { email: string }) =>
-      api.customerPortalCustomerSession.customerPortalCustomerSessionRequest({
-        body: { email, organization_id: organizationId },
+    mutationFn: async ({ email }: { email: string }) =>
+      api.POST('/v1/customer-portal/customer-session/request', {
+        body: {
+          email,
+          organization_id: organizationId,
+        },
       }),
   })
 
-export const useCustomerPortalSessionAuthenticate = (api: PolarAPI) =>
+export const useCustomerPortalSessionAuthenticate = (api: Client) =>
   useMutation({
     mutationFn: ({ code }: { code: string }) =>
-      api.customerPortalCustomerSession.customerPortalCustomerSessionAuthenticate(
-        {
-          body: { code },
-        },
-      ),
-  })
-
-export const useCustomerPortalCustomer = (api: PolarAPI, id: string) =>
-  useQuery({
-    queryKey: ['customer_portal_customer', { id }],
-    queryFn: () => api.customerPortalCustomers.get({ id }),
-    retry: defaultRetry,
+      api.POST('/v1/customer-portal/customer-session/authenticate', {
+        body: { code },
+      }),
   })
 
 export const useCustomerBenefitGrants = (
-  api: PolarAPI,
-  parameters?: CustomerPortalBenefitGrantsApiListRequest,
+  api: Client,
+  parameters?: operations['customer_portal:benefit-grants:list']['parameters']['query'],
 ) =>
   useQuery({
     queryKey: ['customer_benefit_grants', { ...(parameters || {}) }],
-    queryFn: () => api.customerPortalBenefitGrants.list(parameters),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/benefit-grants/', {
+          params: { query: parameters },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useCustomerBenefitGrantUpdate = (api: PolarAPI) =>
+export const useCustomerBenefitGrantUpdate = (api: Client) =>
   useMutation({
-    mutationFn: (variables: { id: string; body: CustomerBenefitGrantUpdate }) =>
-      api.customerPortalBenefitGrants.update(variables),
-    onSuccess: async (_result, _variables, _ctx) => {
+    mutationFn: (variables: {
+      id: string
+      body: components['schemas']['CustomerBenefitGrantUpdate']
+    }) =>
+      api.PATCH('/v1/customer-portal/benefit-grants/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['customer_benefit_grants'],
       })
@@ -63,37 +61,50 @@ export const useCustomerBenefitGrantUpdate = (api: PolarAPI) =>
   })
 
 export const useCustomerLicenseKeys = (
-  api: PolarAPI,
-  parameters: CustomerPortalLicenseKeysApiListRequest,
+  api: Client,
+  parameters: operations['customer_portal:license_keys:list']['parameters']['query'],
 ) =>
   useQuery({
     queryKey: ['customer_license_keys', { parameters }],
-    queryFn: () => api.customerPortalLicenseKeys.list(parameters),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/license-keys/', {
+          params: { query: parameters },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useCustomerLicenseKey = (api: PolarAPI, id: string) =>
+export const useCustomerLicenseKey = (api: Client, id: string) =>
   useQuery({
     queryKey: ['customer_license_keys', { id }],
-    queryFn: () => api.customerPortalLicenseKeys.get({ id }),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/license-keys/{id}', {
+          params: { path: { id } },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useCustomerLicenseKeyDeactivate = (api: PolarAPI, id: string) =>
+export const useCustomerLicenseKeyDeactivate = (api: Client, id: string) =>
   useMutation({
     mutationFn: (opts: {
       key: string
       organizationId: string
       activationId: string
     }) =>
-      api.customerPortalLicenseKeys.deactivate({
+      api.POST('/v1/customer-portal/license-keys/deactivate', {
         body: {
           key: opts.key,
           organization_id: opts.organizationId,
           activation_id: opts.activationId,
         },
       }),
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['customer_license_keys', { id }],
       })
@@ -101,68 +112,94 @@ export const useCustomerLicenseKeyDeactivate = (api: PolarAPI, id: string) =>
   })
 
 export const useCustomerDownloadables = (
-  api: PolarAPI,
-  parameters?: CustomerPortalDownloadablesApiListRequest,
+  api: Client,
+  parameters?: operations['customer_portal:downloadables:list']['parameters']['query'],
 ) =>
   useQuery({
     queryKey: ['customer_downloadables', { ...(parameters || {}) }],
-    queryFn: () => api.customerPortalDownloadables.list(parameters),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/downloadables/', {
+          params: { query: parameters },
+        }),
+      ),
     retry: defaultRetry,
   })
 
 export const useCustomerOrders = (
-  api: PolarAPI,
-  parameters?: CustomerPortalOrdersApiListRequest,
+  api: Client,
+  parameters?: operations['customer_portal:orders:list']['parameters']['query'],
 ) =>
   useQuery({
     queryKey: ['customer_orders', { ...(parameters || {}) }],
-    queryFn: () => api.customerPortalOrders.list(parameters),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/orders/', {
+          params: { query: parameters },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useCustomerOrderInvoice = (api: PolarAPI) =>
+export const useCustomerOrderInvoice = (api: Client) =>
   useMutation({
     mutationFn: (variables: { id: string }) =>
-      api.customerPortalOrders.invoice(variables),
+      unwrap(
+        api.GET('/v1/customer-portal/orders/{id}/invoice', {
+          params: { path: { id: variables.id } },
+        }),
+      ),
   })
 
 export const useCustomerSubscriptions = (
-  api: PolarAPI,
-  parameters?: CustomerPortalSubscriptionsApiListRequest,
+  api: Client,
+  parameters?: operations['customer_portal:subscriptions:list']['parameters']['query'],
 ) =>
   useQuery({
     queryKey: ['customer_subscriptions', { ...(parameters || {}) }],
-    queryFn: () => api.customerPortalSubscriptions.list(parameters),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/', {
+          params: { query: parameters },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useCustomerUpdateSubscription = (api: PolarAPI) =>
+export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: CustomerSubscriptionUpdate
-    }) => {
-      return api.customerPortalSubscriptions.update({
-        id: variables.id,
+      body: components['schemas']['CustomerSubscriptionUpdate']
+    }) =>
+      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
         body: variables.body,
-      })
-    },
-    onSuccess: (_result, _variables, _ctx) => {
+      }),
+    onSuccess: (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
     },
   })
 
-export const useCustomerCancelSubscription = (api: PolarAPI) =>
+export const useCustomerCancelSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: CustomerSubscriptionCancel
-    }) => {
-      return api.customerPortalSubscriptions.update(variables)
-    },
-    onSuccess: (_result, _variables, _ctx) => {
+      body: components['schemas']['CustomerSubscriptionCancel']
+    }) =>
+      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })

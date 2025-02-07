@@ -16,7 +16,7 @@ import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { Order, Organization, Product, RefundReason } from '@polar-sh/api'
+import { Product, RefundReason } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -74,8 +74,8 @@ const OrderStatusDisplayColor: Record<string, string> = {
 }
 
 interface ClientPageProps {
-  organization: Organization
-  order: Order
+  organization: components['schemas']['Organization']
+  order: components['schemas']['Order']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({

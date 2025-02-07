@@ -1,60 +1,77 @@
-import {
-  ListResourceSubscription,
-  Subscription,
-  SubscriptionsApiListRequest,
-  SubscriptionUpdate,
-} from '@polar-sh/api'
+import { queryClient } from '@/utils/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
-
-import { api, queryClient } from '@/utils/api'
 import { defaultRetry } from './retry'
 
 export const useListSubscriptions = (
   organizationId?: string,
-  parameters?: Omit<SubscriptionsApiListRequest, 'organization_id'>,
+  parameters?: Omit<
+    operations['subscriptions:list']['parameters']['query'],
+    'organization_id'
+  >,
 ) =>
   useQuery({
     queryKey: ['subscriptions', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
-      api.subscriptions.list({
-        organizationId: organizationId ?? '',
-        ...(parameters || {}),
-      }),
+      unwrap(
+        api.GET('/v1/subscriptions/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...parameters,
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!organizationId,
   })
 
-export const useSubscription = (id: string, initialData?: Subscription) =>
+export const useSubscription = (
+  id: string,
+  initialData?: components['schemas']['Subscription'],
+) =>
   useQuery({
     queryKey: ['subscriptions', { id }],
-    queryFn: () => api.subscriptions.get({ id }),
+    queryFn: () =>
+      unwrap(api.GET('/v1/subscriptions/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
     initialData,
   })
 
 export const useUpdateSubscription = (id: string) =>
   useMutation({
-    mutationFn: (body: SubscriptionUpdate) => {
-      return api.subscriptions.update({ id, body })
+    mutationFn: (body: components['schemas']['SubscriptionUpdate']) => {
+      return api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body,
+      })
     },
     onSuccess: (result, _variables, _ctx) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
       queryClient.setQueriesData(
         {
           queryKey: ['subscriptions', { id }],
         },
         result,
       )
-      queryClient.setQueriesData<ListResourceSubscription>(
+      queryClient.setQueriesData<
+        components['schemas']['ListResource_Subscription_']
+      >(
         {
           queryKey: [
             'subscriptions',
-            { organizationId: result.product.organization_id },
+            { organizationId: data.product.organization_id },
           ],
         },
         (old) => {
           if (!old) {
             return {
-              items: [result],
+              items: [data],
               pagination: {
                 total_count: 1,
                 max_page: 1,
@@ -63,7 +80,7 @@ export const useUpdateSubscription = (id: string) =>
           } else {
             return {
               items: old.items.map((item) =>
-                item.id === result.id ? result : item,
+                item.id === data.id ? data : item,
               ),
               pagination: old.pagination,
             }

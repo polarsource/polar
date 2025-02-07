@@ -6,7 +6,7 @@ import {
   useCustomerOrderInvoice,
 } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
-import { CustomerOrder, PolarAPI } from '@polar-sh/api'
+import { Client, components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -18,12 +18,12 @@ const CustomerPortalOrder = ({
   api,
   order,
 }: {
-  api: PolarAPI
-  order: CustomerOrder
+  api: Client
+  order: components['schemas']['CustomerOrder']
 }) => {
   const organization = order.product.organization
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
-    orderId: order.id,
+    order_id: order.id,
     limit: 100,
     sorting: ['type'],
   })

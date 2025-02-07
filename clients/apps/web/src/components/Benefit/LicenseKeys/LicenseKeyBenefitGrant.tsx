@@ -1,11 +1,6 @@
-import {
-  CustomerBenefitGrantLicenseKeys,
-  LicenseKeyWithActivations,
-  PolarAPI,
-} from '@polar-sh/api'
-
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKey } from '@/hooks/queries'
+import { Client, components } from '@polar-sh/client'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { LicenseKeyActivations } from './LicenseKeyActivations'
 import { LicenseKeyDetails } from './LicenseKeyDetails'
@@ -14,8 +9,8 @@ const LicenseKey = ({
   api,
   licenseKey,
 }: {
-  api: PolarAPI
-  licenseKey: LicenseKeyWithActivations
+  api: Client
+  licenseKey: components['schemas']['LicenseKeyWithActivations']
 }) => {
   if (!licenseKey) {
     return <></>
@@ -42,8 +37,8 @@ export const LicenseKeyBenefitGrant = ({
   api,
   benefitGrant,
 }: {
-  api: PolarAPI
-  benefitGrant: CustomerBenefitGrantLicenseKeys
+  api: Client
+  benefitGrant: components['schemas']['CustomerBenefitGrantLicenseKeys']
 }) => {
   const { data: licenseKey, isLoading } = useCustomerLicenseKey(
     api,

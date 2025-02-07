@@ -1,12 +1,7 @@
 'use client'
 
-import { buildAPI } from '@/utils/api'
-import {
-  CustomerOrder,
-  CustomerSubscription,
-  Organization,
-  PolarAPI,
-} from '@polar-sh/api'
+import { createClientSideAPI } from '@/utils/client'
+import { Client, components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { parseAsString, useQueryState } from 'nuqs'
@@ -38,9 +33,9 @@ const PortalSectionLayout = ({
 }
 
 export interface CustomerPortalProps {
-  organization: Organization
-  subscriptions: CustomerSubscription[]
-  orders: CustomerOrder[]
+  organization: components['schemas']['Organization']
+  subscriptions: components['schemas']['CustomerSubscription'][]
+  orders: components['schemas']['CustomerOrder'][]
   customerSessionToken?: string
 }
 
@@ -62,7 +57,7 @@ export const CustomerPortal = ({
     )
   }, [selectedItemId, subscriptions, orders])
 
-  const api = buildAPI({ token: customerSessionToken })
+  const api = createClientSideAPI(customerSessionToken)
 
   useEffect(() => {
     const firstItemId = subscriptions[0]?.id ?? orders[0]?.id
@@ -136,7 +131,9 @@ const OrderItem = ({
   selected,
   customerSessionToken,
 }: {
-  item: CustomerSubscription | CustomerOrder
+  item:
+    | components['schemas']['CustomerSubscription']
+    | components['schemas']['CustomerOrder']
   onClick: () => void
   selected: boolean
   customerSessionToken?: string
@@ -196,16 +193,15 @@ const SelectedItemDetails = ({
   item,
   api,
 }: {
-  item: CustomerSubscription | CustomerOrder
-  api: PolarAPI
+  item:
+    | components['schemas']['CustomerSubscription']
+    | components['schemas']['CustomerOrder']
+  api: Client
 }) => {
   // Render order details
   return 'recurring_interval' in item ? (
-    <CustomerPortalSubscription
-      api={api}
-      subscription={item as CustomerSubscription}
-    />
+    <CustomerPortalSubscription api={api} subscription={item} />
   ) : (
-    <CustomerPortalOrder api={api} order={item as CustomerOrder} />
+    <CustomerPortalOrder api={api} order={item} />
   )
 }

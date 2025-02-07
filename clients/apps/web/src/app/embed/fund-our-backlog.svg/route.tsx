@@ -1,26 +1,35 @@
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { Issue, ListResourceIssue, PolarAPI } from '@polar-sh/api'
+import { Client, components, unwrap } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
 const getData = async (
-  api: PolarAPI,
+  api: Client,
   organizationSlug: string,
   repositoryName: string | undefined,
-): Promise<ListResourceIssue> => {
+) => {
   const { organization } = await getStorefrontOrNotFound(api, organizationSlug)
 
-  return await api.issues.list({
-    organizationId: organization.id,
-    sorting: ['-funding_goal', '-positive_reactions'],
-    ...(repositoryName ? { repositoryName } : {}),
-  })
+  return await unwrap(
+    api.GET('/v1/issues/', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          sorting: ['-funding_goal', '-positive_reactions'],
+          ...(repositoryName ? { repository_name: repositoryName } : {}),
+        },
+      },
+    }),
+  )
 }
 
-const renderBadge = async (issues: Issue[], issueCount: number) => {
+const renderBadge = async (
+  issues: components['schemas']['Issue'][],
+  issueCount: number,
+) => {
   const inter500 = await fetch(
     new URL('../../../assets/fonts/Inter-Regular.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())

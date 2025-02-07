@@ -1,5 +1,5 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'

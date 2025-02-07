@@ -2,12 +2,8 @@
 
 import { useUpdateSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  ResponseError,
-  Subscription,
-  SubscriptionCancel,
-  ValidationError,
-} from '@polar-sh/api'
+import { SubscriptionCancel } from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -56,7 +52,7 @@ interface SubscriptionCancelForm extends SubscriptionCancel {
 }
 
 interface CancelSubscriptionModalProps {
-  subscription: Subscription
+  subscription: components['schemas']['Subscription']
   onCancellation?: () => void
 }
 
@@ -75,43 +71,35 @@ const CancelSubscriptionModal = ({
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
-      try {
-        let body: SubscriptionCancel = {
-          customer_cancellation_reason:
-            cancellation.customer_cancellation_reason,
-        }
-        if (cancellation.cancellation_action === 'revoke') {
-          body.revoke = true
-        } else {
-          body.cancel_at_period_end = true
+      let body: SubscriptionCancel = {
+        customer_cancellation_reason: cancellation.customer_cancellation_reason,
+      }
+      if (cancellation.cancellation_action === 'revoke') {
+        body.revoke = true
+      } else {
+        body.cancel_at_period_end = true
+      }
+
+      await cancelSubscription.mutateAsync(body).then(({ error }) => {
+        if (error) {
+          if (error.detail)
+            if (isValidationError(error.detail)) {
+              setValidationErrors(error.detail, form.setError)
+            } else {
+              toast({
+                title: 'Customer Update Failed',
+                description: `Error cancelling subscription ${subscription.product.name}: ${error.detail}`,
+              })
+            }
+          return
         }
 
-        await cancelSubscription
-          .mutateAsync(body)
-          .then(() => {
-            toast({
-              title: 'Subscription Cancelled',
-              description: `Subscription ${subscription.product.name} successfully cancelled`,
-            })
-            onCancellation?.()
-          })
-          .catch((error) => {
-            toast({
-              title: 'Subscription Cancellation Failed',
-              description: `Error cancelling subscription ${subscription.product.name}: ${error.message}`,
-            })
-          })
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          } else {
-            setError('root', { message: e.message })
-          }
-        }
-      }
+        toast({
+          title: 'Subscription Cancelled',
+          description: `Subscription ${subscription.product.name} successfully cancelled`,
+        })
+        onCancellation?.()
+      })
     },
     [subscription, cancelSubscription, setError, onCancellation],
   )

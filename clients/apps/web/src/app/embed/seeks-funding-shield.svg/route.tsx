@@ -1,27 +1,32 @@
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { PolarAPI } from '@polar-sh/api'
+import { Client, unwrap } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
 const getData = async (
-  api: PolarAPI,
+  api: Client,
   organizationSlug: string,
   repositoryName: string | undefined,
-): Promise<number> => {
+) => {
   const { organization } = await getStorefrontOrNotFound(api, organizationSlug)
 
   const {
     pagination: { total_count },
-  } = await api.issues.list({
-    organizationId: organization.id,
-    isBadged: true,
-    limit: 1,
-    ...(repositoryName ? { repositoryName } : {}),
-  })
-
+  } = await unwrap(
+    api.GET('/v1/issues/', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          sorting: ['-funding_goal', '-positive_reactions'],
+          is_badged: true,
+          ...(repositoryName ? { repository_name: repositoryName } : {}),
+        },
+      },
+    }),
+  )
   return total_count
 }
 

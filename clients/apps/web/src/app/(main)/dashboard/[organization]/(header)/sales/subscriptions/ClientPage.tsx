@@ -13,12 +13,8 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { FileDownloadOutlined } from '@mui/icons-material'
-import {
-  Organization,
-  Product,
-  Subscription,
-  SubscriptionStatus,
-} from '@polar-sh/api'
+import { Organization, Product, SubscriptionStatus } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -159,7 +155,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
   }, [selectedSubscription])
 
-  const columns: DataTableColumnDef<Subscription>[] = [
+  const columns: DataTableColumnDef<components['schemas']['Subscription']>[] = [
     {
       id: 'customer',
       accessorKey: 'customer',

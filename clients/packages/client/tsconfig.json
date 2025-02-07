@@ -4,7 +4,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "noUncheckedIndexedAccess": true,
-    "lib": ["esnext"],
+    "lib": ["esnext", "DOM"],
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

@@ -1,19 +1,16 @@
 'use client'
 
 import {
-  CustomerSubscription,
-  Organization,
-  PolarAPI,
   ProductPrice,
   ProductPriceRecurringFixed,
   ProductPriceRecurringFree,
   ProductStorefront,
-  ResponseError,
   SubscriptionRecurringInterval,
 } from '@polar-sh/api'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription, useProducts } from '@/hooks/queries'
+import { Client, components, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -55,11 +52,13 @@ const ChangePlanModal = ({
   hide,
   onUserSubscriptionUpdate,
 }: {
-  api: PolarAPI
-  organization: Organization
-  subscription: CustomerSubscription
+  api: Client
+  organization: components['schemas']['Organization']
+  subscription: components['schemas']['CustomerSubscription']
   hide: () => void
-  onUserSubscriptionUpdate: (subscription: CustomerSubscription) => void
+  onUserSubscriptionUpdate: (
+    subscription: components['schemas']['CustomerSubscription'],
+  ) => void
 }) => {
   const router = useRouter()
   const { data: products } = useProducts(organization.id, {
@@ -159,45 +158,41 @@ const ChangePlanModal = ({
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
     if (!selectedPrice) return
-    try {
-      const updatedUserSubscription = await updateSubscription.mutateAsync({
-        id: subscription.id,
-        body: {
-          product_price_id: selectedPrice.id,
-        },
-      })
-
+    const { data, response } = await updateSubscription.mutateAsync({
+      id: subscription.id,
+      body: {
+        product_price_id: selectedPrice.id,
+      },
+    })
+    if (response.status === 400) {
+      const body = await response.json()
+      if (body.error === 'SubscriptionNotActiveOnStripe') {
+        router.push(
+          getErrorRedirect(
+            `/${organization.slug}/products/${subscription.product_id}`,
+            'Subscription Update Failed',
+            'Subscription is not active on Stripe',
+          ),
+        )
+      } else if (body.error === 'MissingPaymentMethod') {
+        const { url } = await unwrap(
+          api.POST('/v1/checkouts/client/', {
+            body: {
+              product_price_id: selectedPrice.id,
+              subscription_id: subscription.id,
+              from_legacy_checkout_link: false,
+            },
+          }),
+        )
+        router.push(url)
+      }
+    } else if (data) {
       toast({
         title: 'Subscription Updated',
         description: `Subscription was updated successfully`,
       })
-
-      onUserSubscriptionUpdate(updatedUserSubscription)
+      onUserSubscriptionUpdate(data)
       hide()
-    } catch (err) {
-      if (err instanceof ResponseError) {
-        const status = err.response.status
-        if (status === 400) {
-          const body = await err.response.json()
-          if (body.error === 'SubscriptionNotActiveOnStripe') {
-            router.push(
-              getErrorRedirect(
-                `/${organization.slug}/products/${subscription.product_id}`,
-                'Subscription Update Failed',
-                'Subscription is not active on Stripe',
-              ),
-            )
-          } else if (body.error === 'MissingPaymentMethod') {
-            const { url } = await api.checkouts.clientCreate({
-              body: {
-                product_price_id: selectedPrice.id,
-                subscription_id: subscription.id,
-              },
-            })
-            router.push(url)
-          }
-        }
-      }
     }
   }, [
     updateSubscription,

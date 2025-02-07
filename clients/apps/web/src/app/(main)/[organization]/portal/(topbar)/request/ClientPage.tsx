@@ -1,14 +1,14 @@
 'use client'
 
 import { useCustomerPortalSessionRequest } from '@/hooks/queries'
-import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Organization, ResponseError, ValidationError } from '@polar-sh/api'
+import { Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useRouter } from 'next/navigation'
 
+import { api } from '@/utils/client'
 import {
   Form,
   FormControl,
@@ -27,18 +27,14 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   const onSubmit = useCallback(
     async ({ email }: { email: string }) => {
-      try {
-        await sessionRequest.mutateAsync({ email })
-        router.push(`/${organization.slug}/portal/authenticate`)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError)
-          }
+      const { error } = await sessionRequest.mutateAsync({ email })
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError)
         }
+        return
       }
+      router.push(`/${organization.slug}/portal/authenticate`)
     },
     [sessionRequest, setError, router, organization],
   )

@@ -54,7 +54,7 @@ export default function ClientPage({
   }
 
   const transactionsHook = useSearchTransactions({
-    paymentUserId: currentUser?.id,
+    payment_user_id: currentUser?.id,
     ...getAPIParams(pagination, sorting),
   })
   const transactions = transactionsHook.data?.items || []

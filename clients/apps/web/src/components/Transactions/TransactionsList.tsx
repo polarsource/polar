@@ -7,12 +7,7 @@ import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
-import {
-  PlatformFeeType,
-  Transaction,
-  TransactionEmbedded,
-  TransactionType,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
@@ -26,7 +21,9 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'
 
-const getTransactionMeta = (transaction: Transaction) => {
+const getTransactionMeta = (
+  transaction: components['schemas']['Transaction'],
+) => {
   if (transaction.order) {
     return {
       type: transaction.order.subscription_id ? 'Subscription' : 'Purchase',
@@ -48,7 +45,7 @@ const getTransactionMeta = (transaction: Transaction) => {
       externalOrganization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
-  } else if (transaction.type === TransactionType.PAYOUT) {
+  } else if (transaction.type === 'payout') {
     return {
       type: 'Payout',
       meta: undefined,
@@ -61,7 +58,7 @@ const getTransactionMeta = (transaction: Transaction) => {
 }
 
 interface TransactionMetaProps {
-  transaction: Transaction
+  transaction: components['schemas']['Transaction']
 }
 
 const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
@@ -132,33 +129,39 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
 }
 
 export const platformFeesDisplayNames: {
-  [key in PlatformFeeType]: string
+  [key in components['schemas']['PlatformFeeType']]: string
 } = {
-  [PlatformFeeType.PAYMENT]: 'Payment fee',
-  [PlatformFeeType.INTERNATIONAL_PAYMENT]: 'International payment fee',
-  [PlatformFeeType.SUBSCRIPTION]: 'Subscription fee',
-  [PlatformFeeType.INVOICE]: 'Invoice fee',
-  [PlatformFeeType.CROSS_BORDER_TRANSFER]: 'Cross-border transfer payout fee',
-  [PlatformFeeType.PAYOUT]: 'Payout fee',
-  [PlatformFeeType.ACCOUNT]: 'Active payout account fee',
-  [PlatformFeeType.DISPUTE]: 'Dispute fee',
-  [PlatformFeeType.PLATFORM]: 'Polar fee',
+  payment: 'Payment fee',
+  international_payment: 'International payment fee',
+  subscription: 'Subscription fee',
+  invoice: 'Invoice fee',
+  cross_border_transfer: 'Cross-border transfer payout fee',
+  payout: 'Payout fee',
+  account: 'Active payout account fee',
+  dispute: 'Dispute fee',
+  platform: 'Polar fee',
 }
 
 interface TransactionsListProps {
-  transactions: Transaction[]
+  transactions: components['schemas']['Transaction'][]
   pageCount: number
   pagination: DataTablePaginationState
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
   sorting: DataTableSortingState
   onSortingChange?: DataTableOnChangeFn<DataTableSortingState>
-  extraColumns?: DataTableColumnDef<Transaction | TransactionEmbedded>[]
+  extraColumns?: DataTableColumnDef<
+    | components['schemas']['Transaction']
+    | components['schemas']['TransactionEmbedded']
+  >[]
   isLoading: boolean | ReactQueryLoading
 }
 
 export const isTransaction = (
-  t: Transaction | TransactionEmbedded,
-): t is Transaction => t.hasOwnProperty('account_incurred_transactions')
+  t:
+    | components['schemas']['Transaction']
+    | components['schemas']['TransactionEmbedded'],
+): t is components['schemas']['Transaction'] =>
+  t.hasOwnProperty('account_incurred_transactions')
 
 const TransactionsList = ({
   transactions,
@@ -170,7 +173,10 @@ const TransactionsList = ({
   extraColumns,
   isLoading,
 }: TransactionsListProps) => {
-  const columns: DataTableColumnDef<Transaction | TransactionEmbedded>[] = [
+  const columns: DataTableColumnDef<
+    | components['schemas']['Transaction']
+    | components['schemas']['TransactionEmbedded']
+  >[] = [
     {
       id: 'expand',
       enableSorting: false,

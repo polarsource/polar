@@ -3,11 +3,11 @@ import {
   buildFundingFilters,
   urlSearchFromObj,
 } from '@/components/Organization/filters'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
 import { getUserOrganizations } from '@/utils/user'
-import { ListResourceIssueFunding, Organization } from '@polar-sh/api'
+import { components, unwrap } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import type { SuccessResult } from 'open-graph-scraper-lite'
@@ -113,27 +113,25 @@ export default async function Page({
 
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  let issuesFunding: ListResourceIssueFunding | undefined
-
-  try {
-    issuesFunding = await api.funding.search(
-      {
-        organizationId: organization.id,
-        repositoryName: params.repo,
-        query: filters.q,
-        sorting: filters.sort,
-        badged: filters.badged,
-        limit: 20,
-        closed: filters.closed,
-        page: searchParams.page ? parseInt(searchParams.page) : 1,
+  const issuesFunding = await unwrap(
+    api.GET('/v1/funding/search', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          repository_name: params.repo,
+          query: filters.q,
+          sorting: filters.sort,
+          badged: filters.badged,
+          limit: 20,
+          closed: filters.closed,
+          page: searchParams.page ? parseInt(searchParams.page) : 1,
+        },
       },
-      cacheConfig,
-    )
-  } catch (e) {
-    notFound()
-  }
+    }),
+    { 404: notFound },
+  )
 
-  let featuredOrganizations: Organization[] = []
+  let featuredOrganizations: components['schemas']['Organization'][] = []
   let links: { opengraph: OgObject; url: string }[] = []
 
   return (

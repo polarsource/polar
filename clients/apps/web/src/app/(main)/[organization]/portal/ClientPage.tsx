@@ -6,6 +6,7 @@ import {
   ListResourceCustomerSubscription,
   Organization,
 } from '@polar-sh/api'
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 const ClientPage = ({
   organization,
@@ -19,12 +20,14 @@ const ClientPage = ({
   customerSessionToken?: string
 }) => {
   return (
-    <CustomerPortal
-      organization={organization}
-      subscriptions={subscriptions.items ?? []}
-      orders={orders.items ?? []}
-      customerSessionToken={customerSessionToken}
-    />
+    <NuqsAdapter>
+      <CustomerPortal
+        organization={organization}
+        subscriptions={subscriptions.items ?? []}
+        orders={orders.items ?? []}
+        customerSessionToken={customerSessionToken}
+      />
+    </NuqsAdapter>
   )
 }
 

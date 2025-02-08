@@ -1,7 +1,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import PolarMenu from '@/components/Layout/PolarMenu'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'

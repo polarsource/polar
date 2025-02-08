@@ -3,7 +3,6 @@
 import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
-import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
 import { DescriptionEditor } from '@/components/Profile/DescriptionEditor/DescriptionEditor'
 import {
   Link as LinkItem,
@@ -14,12 +13,8 @@ import useDebouncedCallback from '@/hooks/utils'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import {
-  ListResourceIssueFunding,
-  Organization,
-  Repository,
-  RepositoryProfileSettingsUpdate,
-} from '@polar-sh/api'
+import { RepositoryProfileSettingsUpdate } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
@@ -32,15 +27,14 @@ const ClientPage = ({
   organization,
   repository,
   issuesFunding,
-  featuredOrganizations,
   userOrganizations,
   links,
 }: {
-  organization: Organization
-  repository: Repository
-  issuesFunding: ListResourceIssueFunding
-  featuredOrganizations: Organization[]
-  userOrganizations: Organization[]
+  organization: components['schemas']['Organization']
+  repository: components['schemas']['Repository']
+  issuesFunding: components['schemas']['ListResource_IssueFunding_']
+  featuredOrganizations: components['schemas']['Organization'][]
+  userOrganizations: components['schemas']['Organization'][]
   links: { opengraph: OgObject; url: string }[]
 }) => {
   const isOrgMember = useMemo(
@@ -61,12 +55,6 @@ const ClientPage = ({
       .then(() =>
         revalidate(`repository:${organization.slug}/${repository.name}`),
       )
-  }
-
-  const updateFeaturedCreators = (organizations: Organization[]) => {
-    updateProfile({
-      featured_organizations: organizations.map((c) => c.id),
-    })
   }
 
   const updateCoverImage = (coverImageUrl: string | undefined) => {
@@ -109,13 +97,6 @@ const ClientPage = ({
               coverImageUrl={
                 repository.profile_settings?.cover_image_url || undefined
               }
-              disabled={!isOrgMember}
-            />
-
-            <CreatorsEditor
-              organization={organization}
-              featuredOrganizations={featuredOrganizations}
-              onChange={updateFeaturedCreators}
               disabled={!isOrgMember}
             />
 

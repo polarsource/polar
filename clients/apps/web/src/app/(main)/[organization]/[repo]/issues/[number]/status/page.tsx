@@ -1,7 +1,7 @@
 import Status from '@/components/Pledge/Status'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { resolveRepositoryPath } from '@/utils/repository'
-import { Pledge, ResponseError } from '@polar-sh/api'
+import { unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 
 const cacheConfig = {
@@ -33,22 +33,16 @@ export default async function Page({
     notFound()
   }
 
-  let pledge: Pledge
-
-  try {
-    pledge = await api.pledges.create({
+  const pledge = await unwrap(
+    api.POST('/v1/pledges', {
       body: {
         payment_intent_id: paymentIntentId,
       },
-    })
-  } catch (e) {
-    if (e instanceof ResponseError) {
-      if (e.response.status === 404) {
-        notFound()
-      }
-    }
-    throw e
-  }
+    }),
+    {
+      404: notFound,
+    },
+  )
 
   const email = searchParams['email'] as string | undefined
 

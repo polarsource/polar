@@ -1,4 +1,3 @@
-import { Issue, Organization } from '@polar-sh/api'
 import { Client, components, operations, unwrap } from '@polar-sh/client'
 import { getStorefront } from './storefront'
 
@@ -30,7 +29,10 @@ export const resolveIssuePath = async (
   repositoryName: string,
   issueNumber: string,
   cacheOverrides?: any,
-): Promise<[Issue, Organization] | undefined> => {
+): Promise<
+  | [components['schemas']['Issue'], components['schemas']['Organization']]
+  | undefined
+> => {
   const parsedIssueNumber = Number.parseInt(issueNumber, 10)
 
   const storefront = await getStorefront(api, organizationSlug)

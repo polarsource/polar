@@ -1,7 +1,8 @@
-import { getServerSideAPI } from '@/utils/api/serverside'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
 import { Pledger, ResponseError, RewardsSummary } from '@polar-sh/api'
+import { unwrap } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -106,12 +107,27 @@ export default async function Page({
 
   try {
     const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
-      api.issues.getBody({ id: issue.id }, { next: { revalidate: 60 } }), // Cache for 60s
-      api.pledges.summary({ issueId: issue.id }, cacheConfig),
-      api.rewards.summary({ issueId: issue.id }, cacheConfig),
+      unwrap(
+        api.GET('/v1/issues/{id}/body', {
+          params: { path: { id: issue.id } },
+          next: { revalidate: 60 },
+        }),
+      ), // Cache for 60s
+      unwrap(
+        api.GET('/v1/pledges/summary', {
+          params: { query: { issue_id: issue.id } },
+          ...cacheConfig,
+        }),
+      ),
+      unwrap(
+        api.GET('/v1/rewards/summary', {
+          params: { query: { issue_id: issue.id } },
+          ...cacheConfig,
+        }),
+      ),
     ])
 
-    issueHTMLBody = bodyResponse
+    issueHTMLBody = bodyResponse as string
     pledgers = pledgeSummary.pledges
       .map(({ pledger }) => pledger)
       .filter((p): p is Pledger => !!p)

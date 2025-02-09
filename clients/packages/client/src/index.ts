@@ -61,6 +61,7 @@ export const isValidationError = (
   return detail && Array.isArray(detail) && detail[0].loc
 }
 
-export type Client = ReturnType<typeof createClient>
 export type { Middleware } from 'openapi-fetch'
+export * as enums from './enums'
 export type { components, operations } from './v1'
+export type Client = ReturnType<typeof createClient>

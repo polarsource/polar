@@ -7,7 +7,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "generate": "openapi-typescript http://127.0.0.1:8000/openapi.json -o ./src/v1.d.ts",
+    "generate": "openapi-typescript http://127.0.0.1:8000/openapi.json --enum-values -o ./src/v1.ts",
     "test:ts": "tsc --noEmit",
     "build": "rm -rf dist/ && tsup"
   },

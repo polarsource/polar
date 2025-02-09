@@ -6097,6 +6097,7 @@ export interface components {
             /** Code */
             code: string | null;
         };
+        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"];
         /**
          * CheckoutLink
          * @description Checkout link data.
@@ -11441,6 +11442,16 @@ export interface components {
             /** @description Information about the returned metrics. */
             metrics: components["schemas"]["Metrics"];
         };
+        /** NotOpenCheckout */
+        NotOpenCheckout: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "NotOpenCheckout";
+            /** Detail */
+            detail: string;
+        };
         /** NotPermitted */
         NotPermitted: {
             /**
@@ -12335,6 +12346,16 @@ export interface components {
             page: number;
             /** Next Page */
             next_page: number | null;
+        };
+        /** PaymentError */
+        PaymentError: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentError";
+            /** Detail */
+            detail: string;
         };
         /** PaymentMethod */
         PaymentMethod: {
@@ -15414,39 +15435,6 @@ export interface components {
         MetadataQuery: {
             [key: string]: string | number | boolean | string[] | number[] | boolean[];
         } | null;
-        /** AuthorizationCodeTokenRequest */
-        AuthorizationCodeTokenRequest: {
-            /**
-             * @description discriminator enum property added by openapi-typescript (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            grant_type: "authorization_code";
-            /** Client Id */
-            client_id: string;
-            /** Client Secret */
-            client_secret: string;
-            /** Code */
-            code: string;
-            /**
-             * Redirect Uri
-             * Format: uri
-             */
-            redirect_uri: string;
-        };
-        /** RefreshTokenRequest */
-        RefreshTokenRequest: {
-            /**
-             * @description discriminator enum property added by openapi-typescript (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            grant_type: "refresh_token";
-            /** Client Id */
-            client_id: string;
-            /** Client Secret */
-            client_secret: string;
-            /** Refresh Token */
-            refresh_token: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -18976,11 +18964,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": paths["/v1/oauth2/token"]["post"]["x-components"]["AuthorizationCodeTokenRequest"] | paths["/v1/oauth2/token"]["post"]["x-components"]["RefreshTokenRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -19000,20 +18984,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": {
-                    /** Token */
-                    token: string;
-                    /** Token Type Hint */
-                    token_type_hint?: ("access_token" | "refresh_token") | null;
-                    /** Client Id */
-                    client_id: string;
-                    /** Client Secret */
-                    client_secret: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -19033,20 +19004,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": {
-                    /** Token */
-                    token: string;
-                    /** Token Type Hint */
-                    token_type_hint?: ("access_token" | "refresh_token") | null;
-                    /** Client Id */
-                    client_id: string;
-                    /** Client Secret */
-                    client_secret: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -20230,13 +20188,13 @@ export interface operations {
                     "application/json": components["schemas"]["Checkout"];
                 };
             };
-            /** @description The customer already has an active subscription. */
+            /** @description The checkout is expired or the customer already has an active subscription. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlreadyActiveSubscriptionError"];
+                    "application/json": components["schemas"]["CheckoutForbiddenError"];
                 };
             };
             /** @description Checkout session not found. */
@@ -20325,13 +20283,13 @@ export interface operations {
                     "application/json": components["schemas"]["CheckoutPublic"];
                 };
             };
-            /** @description The customer already has an active subscription. */
+            /** @description The checkout is expired or the customer already has an active subscription. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlreadyActiveSubscriptionError"];
+                    "application/json": components["schemas"]["CheckoutForbiddenError"];
                 };
             };
             /** @description Checkout session not found. */
@@ -20412,13 +20370,22 @@ export interface operations {
                     "application/json": components["schemas"]["CheckoutPublicConfirmed"];
                 };
             };
-            /** @description The customer already has an active subscription. */
+            /** @description The payment failed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentError"];
+                };
+            };
+            /** @description The checkout is expired or the customer already has an active subscription. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlreadyActiveSubscriptionError"];
+                    "application/json": components["schemas"]["CheckoutForbiddenError"];
                 };
             };
             /** @description Checkout session not found. */
@@ -24217,3 +24184,184 @@ export interface operations {
         };
     };
 }
+type ReadonlyArray<T> = [
+    Exclude<T, undefined>
+] extends [
+    any[]
+] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
+export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
+export const advertisementSortPropertyValues: ReadonlyArray<components["schemas"]["AdvertisementSortProperty"]> = ["created_at", "-created_at", "granted_at", "-granted_at", "views", "-views", "clicks", "-clicks"];
+export const appPermissionsTypeActionsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["actions"]> = ["read", "write"];
+export const appPermissionsTypeAdministrationValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["administration"]> = ["read", "write"];
+export const appPermissionsTypeChecksValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["checks"]> = ["read", "write"];
+export const appPermissionsTypeCodespacesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["codespaces"]> = ["read", "write"];
+export const appPermissionsTypeContentsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["contents"]> = ["read", "write"];
+export const appPermissionsTypeDependabot_secretsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["dependabot_secrets"]> = ["read", "write"];
+export const appPermissionsTypeDeploymentsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["deployments"]> = ["read", "write"];
+export const appPermissionsTypeEnvironmentsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["environments"]> = ["read", "write"];
+export const appPermissionsTypeIssuesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["issues"]> = ["read", "write"];
+export const appPermissionsTypeMetadataValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["metadata"]> = ["read", "write"];
+export const appPermissionsTypePackagesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["packages"]> = ["read", "write"];
+export const appPermissionsTypePagesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["pages"]> = ["read", "write"];
+export const appPermissionsTypePull_requestsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["pull_requests"]> = ["read", "write"];
+export const appPermissionsTypeRepository_custom_propertiesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["repository_custom_properties"]> = ["read", "write"];
+export const appPermissionsTypeRepository_hooksValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["repository_hooks"]> = ["read", "write"];
+export const appPermissionsTypeRepository_projectsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["repository_projects"]> = ["read", "write", "admin"];
+export const appPermissionsTypeSecret_scanning_alertsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["secret_scanning_alerts"]> = ["read", "write"];
+export const appPermissionsTypeSecretsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["secrets"]> = ["read", "write"];
+export const appPermissionsTypeSecurity_eventsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["security_events"]> = ["read", "write"];
+export const appPermissionsTypeSingle_fileValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["single_file"]> = ["read", "write"];
+export const appPermissionsTypeStatusesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["statuses"]> = ["read", "write"];
+export const appPermissionsTypeVulnerability_alertsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["vulnerability_alerts"]> = ["read", "write"];
+export const appPermissionsTypeMembersValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["members"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_administrationValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_administration"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_custom_rolesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_custom_roles"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_custom_org_rolesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_custom_org_roles"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_custom_propertiesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_custom_properties"]> = ["read", "write", "admin"];
+export const appPermissionsTypeOrganization_announcement_bannersValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_announcement_banners"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_hooksValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_hooks"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_personal_access_tokensValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_personal_access_tokens"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_personal_access_token_requestsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_personal_access_token_requests"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_projectsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_projects"]> = ["read", "write", "admin"];
+export const appPermissionsTypeOrganization_packagesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_packages"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_secretsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_secrets"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_self_hosted_runnersValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_self_hosted_runners"]> = ["read", "write"];
+export const appPermissionsTypeOrganization_user_blockingValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["organization_user_blocking"]> = ["read", "write"];
+export const appPermissionsTypeTeam_discussionsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["team_discussions"]> = ["read", "write"];
+export const appPermissionsTypeEmail_addressesValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["email_addresses"]> = ["read", "write"];
+export const appPermissionsTypeFollowersValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["followers"]> = ["read", "write"];
+export const appPermissionsTypeGit_ssh_keysValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["git_ssh_keys"]> = ["read", "write"];
+export const appPermissionsTypeGpg_keysValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["gpg_keys"]> = ["read", "write"];
+export const appPermissionsTypeInteraction_limitsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["interaction_limits"]> = ["read", "write"];
+export const appPermissionsTypeStarringValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["starring"]> = ["read", "write"];
+export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
+export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
+export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write"];
+export const backofficeBadgeActionValues: ReadonlyArray<components["schemas"]["BackofficeBadge"]["action"]> = ["embed", "remove"];
+export const backofficeBadgeResponseActionValues: ReadonlyArray<components["schemas"]["BackofficeBadgeResponse"]["action"]> = ["embed", "remove"];
+export const benefitAdsCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitAdsCreate"]["type"]> = ["ads"];
+export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
+export const benefitDiscordCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDiscordCreate"]["type"]> = ["discord"];
+export const benefitDownloadablesCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDownloadablesCreate"]["type"]> = ["downloadables"];
+export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreate"]["type"]> = ["github_repository"];
+export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreateProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
+export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
+export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "ads", "discord", "github_repository", "downloadables", "license_keys"];
+export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
+export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at"];
+export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at"];
+export const checkoutStatusValues: ReadonlyArray<components["schemas"]["CheckoutStatus"]> = ["open", "expired", "confirmed", "succeeded", "failed"];
+export const countAggregationFuncValues: ReadonlyArray<components["schemas"]["CountAggregation"]["func"]> = ["count"];
+export const customFieldCheckboxTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCheckbox"]["type"]> = ["checkbox"];
+export const customFieldCreateCheckboxTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateCheckbox"]["type"]> = ["checkbox"];
+export const customFieldCreateDateTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateDate"]["type"]> = ["date"];
+export const customFieldCreateNumberTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateNumber"]["type"]> = ["number"];
+export const customFieldCreateSelectTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateSelect"]["type"]> = ["select"];
+export const customFieldCreateTextTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateText"]["type"]> = ["text"];
+export const customFieldDateTypeValues: ReadonlyArray<components["schemas"]["CustomFieldDate"]["type"]> = ["date"];
+export const customFieldNumberTypeValues: ReadonlyArray<components["schemas"]["CustomFieldNumber"]["type"]> = ["number"];
+export const customFieldSelectTypeValues: ReadonlyArray<components["schemas"]["CustomFieldSelect"]["type"]> = ["select"];
+export const customFieldSortPropertyValues: ReadonlyArray<components["schemas"]["CustomFieldSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name", "type", "-type"];
+export const customFieldTextTypeValues: ReadonlyArray<components["schemas"]["CustomFieldText"]["type"]> = ["text"];
+export const customFieldTypeValues: ReadonlyArray<components["schemas"]["CustomFieldType"]> = ["text", "number", "date", "checkbox", "select"];
+export const customFieldUpdateCheckboxTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateCheckbox"]["type"]> = ["checkbox"];
+export const customFieldUpdateDateTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateDate"]["type"]> = ["date"];
+export const customFieldUpdateNumberTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateNumber"]["type"]> = ["number"];
+export const customFieldUpdateSelectTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateSelect"]["type"]> = ["select"];
+export const customFieldUpdateTextTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateText"]["type"]> = ["text"];
+export const customerBenefitGrantAdsUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantAdsUpdate"]["benefit_type"]> = ["ads"];
+export const customerBenefitGrantCustomUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantCustomUpdate"]["benefit_type"]> = ["custom"];
+export const customerBenefitGrantDiscordUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantDiscordUpdate"]["benefit_type"]> = ["discord"];
+export const customerBenefitGrantDownloadablesUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"]["benefit_type"]> = ["downloadables"];
+export const customerBenefitGrantGitHubRepositoryUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantGitHubRepositoryUpdate"]["benefit_type"]> = ["github_repository"];
+export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantLicenseKeysUpdate"]["benefit_type"]> = ["license_keys"];
+export const customerBenefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantSortProperty"]> = ["granted_at", "-granted_at", "type", "-type", "organization", "-organization"];
+export const customerCancellationReasonValues: ReadonlyArray<components["schemas"]["CustomerCancellationReason"]> = ["customer_service", "low_quality", "missing_features", "switched_service", "too_complex", "too_expensive", "unused", "other"];
+export const customerOAuthPlatformValues: ReadonlyArray<components["schemas"]["CustomerOAuthPlatform"]> = ["github", "discord"];
+export const customerOrderSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerOrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "organization", "-organization", "product", "-product", "subscription", "-subscription"];
+export const customerSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSortProperty"]> = ["created_at", "-created_at", "email", "-email", "name", "-name"];
+export const customerSubscriptionSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSubscriptionSortProperty"]> = ["started_at", "-started_at", "amount", "-amount", "status", "-status", "organization", "-organization", "product", "-product"];
+export const discountDurationValues: ReadonlyArray<components["schemas"]["DiscountDuration"]> = ["once", "forever", "repeating"];
+export const discountSortPropertyValues: ReadonlyArray<components["schemas"]["DiscountSortProperty"]> = ["created_at", "-created_at", "name", "-name", "code", "-code", "redemptions_count", "-redemptions_count"];
+export const discountTypeValues: ReadonlyArray<components["schemas"]["DiscountType"]> = ["fixed", "percentage"];
+export const downloadableFileCreateServiceValues: ReadonlyArray<components["schemas"]["DownloadableFileCreate"]["service"]> = ["downloadable"];
+export const downloadableFileReadServiceValues: ReadonlyArray<components["schemas"]["DownloadableFileRead"]["service"]> = ["downloadable"];
+export const eventSortPropertyValues: ReadonlyArray<components["schemas"]["EventSortProperty"]> = ["timestamp", "-timestamp"];
+export const eventSourceValues: ReadonlyArray<components["schemas"]["EventSource"]> = ["system", "user"];
+export const externalOrganizationSortPropertyValues: ReadonlyArray<components["schemas"]["ExternalOrganizationSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
+export const fileServiceTypesValues: ReadonlyArray<components["schemas"]["FileServiceTypes"]> = ["downloadable", "product_media", "organization_avatar"];
+export const filterConjunctionValues: ReadonlyArray<components["schemas"]["FilterConjunction"]> = ["and", "or"];
+export const filterOperatorValues: ReadonlyArray<components["schemas"]["FilterOperator"]> = ["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"];
+export const introspectTokenResponseToken_typeValues: ReadonlyArray<components["schemas"]["IntrospectTokenResponse"]["token_type"]> = ["access_token", "refresh_token"];
+export const issueSortByValues: ReadonlyArray<components["schemas"]["IssueSortBy"]> = ["newest", "recently_updated", "least_recently_updated", "pledged_amount_desc", "relevance", "dependencies_default", "issues_default", "most_engagement", "most_positive_reactions", "funding_goal_desc_and_most_positive_reactions", "most_recently_funded"];
+export const issueSortPropertyValues: ReadonlyArray<components["schemas"]["IssueSortProperty"]> = ["created_at", "-created_at", "modified_at", "-modified_at", "engagement", "-engagement", "positive_reactions", "-positive_reactions", "funding_goal", "-funding_goal"];
+export const licenseKeyStatusValues: ReadonlyArray<components["schemas"]["LicenseKeyStatus"]> = ["granted", "revoked", "disabled"];
+export const listFundingSortByValues: ReadonlyArray<components["schemas"]["ListFundingSortBy"]> = ["oldest", "newest", "most_funded", "most_recently_funded", "most_engagement"];
+export const maintainerAccountReviewedNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAccountReviewedNotification"]["type"]> = ["MaintainerAccountReviewedNotification"];
+export const maintainerAccountUnderReviewNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAccountUnderReviewNotification"]["type"]> = ["MaintainerAccountUnderReviewNotification"];
+export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerCreateAccountNotification"]["type"]> = ["MaintainerCreateAccountNotification"];
+export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewPaidSubscriptionNotification"]["type"]> = ["MaintainerNewPaidSubscriptionNotification"];
+export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewProductSaleNotification"]["type"]> = ["MaintainerNewProductSaleNotification"];
+export const maintainerPledgeConfirmationPendingNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgeConfirmationPendingNotification"]["type"]> = ["MaintainerPledgeConfirmationPendingNotification"];
+export const maintainerPledgeCreatedNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgeCreatedNotification"]["type"]> = ["MaintainerPledgeCreatedNotification"];
+export const maintainerPledgePaidNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgePaidNotification"]["type"]> = ["MaintainerPledgePaidNotification"];
+export const maintainerPledgePendingNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgePendingNotification"]["type"]> = ["MaintainerPledgePendingNotification"];
+export const maintainerPledgedIssueConfirmationPendingNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgedIssueConfirmationPendingNotification"]["type"]> = ["MaintainerPledgedIssueConfirmationPendingNotification"];
+export const maintainerPledgedIssuePendingNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgedIssuePendingNotification"]["type"]> = ["MaintainerPledgedIssuePendingNotification"];
+export const meterSortPropertyValues: ReadonlyArray<components["schemas"]["MeterSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
+export const metricTypeValues: ReadonlyArray<components["schemas"]["MetricType"]> = ["scalar", "currency"];
+export const oAuth2ClientToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2Client"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
+export const oAuth2ClientGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2Client"]["grant_types"]> = ["authorization_code", "refresh_token"];
+export const oAuth2ClientConfigurationToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfiguration"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
+export const oAuth2ClientConfigurationGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfiguration"]["grant_types"]> = ["authorization_code", "refresh_token"];
+export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
+export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["grant_types"]> = ["authorization_code", "refresh_token"];
+export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
+export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
+export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
+export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
+export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
+export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
+export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
+export const platformsValues: ReadonlyArray<components["schemas"]["Platforms"]> = ["github"];
+export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];
+export const pledgeTypeValues: ReadonlyArray<components["schemas"]["PledgeType"]> = ["pay_upfront", "pay_on_completion", "pay_directly"];
+export const pledgerPledgePendingNotificationTypeValues: ReadonlyArray<components["schemas"]["PledgerPledgePendingNotification"]["type"]> = ["PledgerPledgePendingNotification"];
+export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "open_collective"];
+export const productMediaFileCreateServiceValues: ReadonlyArray<components["schemas"]["ProductMediaFileCreate"]["service"]> = ["product_media"];
+export const productMediaFileReadServiceValues: ReadonlyArray<components["schemas"]["ProductMediaFileRead"]["service"]> = ["product_media"];
+export const productPriceOneTimeCustomAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceOneTimeCustom"]["amount_type"]> = ["custom"];
+export const productPriceOneTimeFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceOneTimeFixed"]["amount_type"]> = ["fixed"];
+export const productPriceOneTimeFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceOneTimeFree"]["amount_type"]> = ["free"];
+export const productPriceRecurringCustomAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceRecurringCustom"]["amount_type"]> = ["custom"];
+export const productPriceRecurringFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceRecurringFixed"]["amount_type"]> = ["fixed"];
+export const productPriceRecurringFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceRecurringFree"]["amount_type"]> = ["free"];
+export const productPriceTypeValues: ReadonlyArray<components["schemas"]["ProductPriceType"]> = ["one_time", "recurring"];
+export const productSortPropertyValues: ReadonlyArray<components["schemas"]["ProductSortProperty"]> = ["created_at", "-created_at", "name", "-name", "price_type", "-price_type", "price_amount_type", "-price_amount_type", "price_amount", "-price_amount"];
+export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"]["PropertyAggregation"]["func"]> = ["avg", "max", "min", "sum"];
+export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
+export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
+export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
+export const repositorySortPropertyValues: ReadonlyArray<components["schemas"]["RepositorySortProperty"]> = ["created_at", "-created_at", "name", "-name", "stars", "-stars"];
+export const rewardPaidNotificationTypeValues: ReadonlyArray<components["schemas"]["RewardPaidNotification"]["type"]> = ["RewardPaidNotification"];
+export const rewardStateValues: ReadonlyArray<components["schemas"]["RewardState"]> = ["pending", "paid"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write"];
+export const stateValues: ReadonlyArray<components["schemas"]["State"]> = ["open", "closed"];
+export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "active"];
+export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
+export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];
+export const subscriptionRecurringIntervalValues: ReadonlyArray<components["schemas"]["SubscriptionRecurringInterval"]> = ["month", "year"];
+export const subscriptionSortPropertyValues: ReadonlyArray<components["schemas"]["SubscriptionSortProperty"]> = ["customer", "-customer", "status", "-status", "started_at", "-started_at", "current_period_end", "-current_period_end", "amount", "-amount", "product", "-product", "discount", "-discount"];
+export const subscriptionStatusValues: ReadonlyArray<components["schemas"]["SubscriptionStatus"]> = ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid"];
+export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat"]> = ["ad_nrt", "ae_trn", "ar_cuit", "au_abn", "au_arn", "bg_uic", "bh_vat", "bo_tin", "br_cnpj", "br_cpf", "ca_bn", "ca_gst_hst", "ca_pst_bc", "ca_pst_mb", "ca_pst_sk", "ca_qst", "ch_uid", "ch_vat", "cl_tin", "cn_tin", "co_nit", "cr_tin", "de_stn", "do_rcn", "ec_ruc", "eg_tin", "es_cif", "eu_oss_vat", "eu_vat", "gb_vat", "ge_vat", "hk_br", "hr_oib", "hu_tin", "id_npwp", "il_vat", "in_gst", "is_vat", "jp_cn", "jp_rn", "jp_trn", "ke_pin", "kr_brn", "kz_bin", "li_uid", "mx_rfc", "my_frp", "my_itn", "my_sst", "ng_tin", "no_vat", "no_voec", "nz_gst", "om_vat", "pe_ruc", "ph_tin", "ro_tin", "rs_pib", "ru_inn", "ru_kpp", "sa_vat", "sg_gst", "sg_uen", "si_tin", "sv_nit", "th_vat", "tr_tin", "tw_vat", "ua_vat", "us_ein", "uy_ruc", "ve_rif", "vn_tin", "za_vat"];
+export const teamAdminMemberPledgedNotificationTypeValues: ReadonlyArray<components["schemas"]["TeamAdminMemberPledgedNotification"]["type"]> = ["TeamAdminMemberPledgedNotification"];
+export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
+export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
+export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "dispute", "dispute_reversal", "balance", "payout"];
+export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
+export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "order.created", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
+export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];

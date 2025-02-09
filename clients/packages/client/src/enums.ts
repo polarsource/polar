@@ -1,1 +1,5 @@
-export { refundReasonValues, webhookEventTypeValues } from './v1'
+export {
+  benefitGitHubRepositoryPropertiesPermissionValues,
+  refundReasonValues,
+  webhookEventTypeValues,
+} from './v1'

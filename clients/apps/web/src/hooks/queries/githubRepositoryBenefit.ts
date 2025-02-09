@@ -1,15 +1,14 @@
-import { api } from '@/utils/api'
-import { GitHubInvitesBenefitRepositories, ResponseError } from '@polar-sh/api'
-import { UseQueryResult, useQuery } from '@tanstack/react-query'
+import { api } from '@/utils/client'
+import { unwrap } from '@polar-sh/client'
+import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useListIntegrationsGithubRepositoryBenefitUserRepositories: () => UseQueryResult<
-  GitHubInvitesBenefitRepositories,
-  ResponseError
-> = () =>
+export const useListIntegrationsGithubRepositoryBenefitUserRepositories = () =>
   useQuery({
     queryKey: ['integrationsGithubRepositoryBenefitUserRepositories'],
     queryFn: () =>
-      api.integrationsGitHubRepositoryBenefit.integrationsGithubRepositoryBenefitUserRepositories(),
+      unwrap(
+        api.GET('/v1/integrations/github_repository_benefit/user/repositories'),
+      ),
     retry: defaultRetry,
   })

@@ -5,14 +5,7 @@ import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
 import { RefreshOutlined } from '@mui/icons-material'
-import {
-  BenefitGitHubRepositoryCreate,
-  BenefitGitHubRepositoryPropertiesPermissionEnum,
-  BenefitType,
-  GitHubInvitesBenefitOrganization,
-  GitHubInvitesBenefitRepository,
-  OAuthPlatform,
-} from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -48,7 +41,7 @@ export const GitHubRepositoryBenefitForm = ({
     setValue,
     setError,
     clearErrors,
-  } = useFormContext<BenefitGitHubRepositoryCreate>()
+  } = useFormContext<components['schemas']['BenefitGitHubRepositoryCreate']>()
 
   const canConfigurePersonalOrg = posthog.isFeatureEnabled(
     'github-benefit-personal-org',
@@ -81,7 +74,7 @@ export const GitHubRepositoryBenefitForm = ({
   }, [repositoriesError, setError, clearErrors])
 
   const userGitHubBenefitOauth = currentUser?.oauth_accounts.find(
-    (o) => o.platform === OAuthPlatform.GITHUB_REPOSITORY_BENEFIT,
+    (o) => o.platform === 'github_repository_benefit',
   )
 
   const emitter = useUserSSE()
@@ -104,8 +97,8 @@ export const GitHubRepositoryBenefitForm = ({
   }, [emitter, refetchRepositories])
 
   type GitHubInvitesBenefitRepositoryWithKey =
-    GitHubInvitesBenefitRepository & {
-      org: GitHubInvitesBenefitOrganization | undefined
+    components['schemas']['GitHubInvitesBenefitRepository'] & {
+      org: components['schemas']['GitHubInvitesBenefitOrganization'] | undefined
       key: string
     }
 
@@ -192,7 +185,7 @@ export const GitHubRepositoryBenefitForm = ({
     const searchParams = new URLSearchParams()
     if (!update) {
       searchParams.set('create_benefit', 'true')
-      searchParams.set('type', BenefitType.GITHUB_REPOSITORY)
+      searchParams.set('type', 'github_repository_benefit')
       searchParams.set('description', description)
     }
     const returnTo = `${pathname}?${searchParams}`
@@ -373,21 +366,16 @@ export const GitHubRepositoryBenefitForm = ({
                   </SelectTrigger>
                   <SelectContent>
                     {Object.values(
-                      BenefitGitHubRepositoryPropertiesPermissionEnum,
+                      enums.benefitGitHubRepositoryPropertiesPermissionValues,
                     ).map((permission) => (
                       <SelectItem key={permission} value={permission}>
                         {
                           {
-                            [BenefitGitHubRepositoryPropertiesPermissionEnum.PULL]:
-                              'Read',
-                            [BenefitGitHubRepositoryPropertiesPermissionEnum.TRIAGE]:
-                              'Triage',
-                            [BenefitGitHubRepositoryPropertiesPermissionEnum.PUSH]:
-                              'Write',
-                            [BenefitGitHubRepositoryPropertiesPermissionEnum.MAINTAIN]:
-                              'Maintain',
-                            [BenefitGitHubRepositoryPropertiesPermissionEnum.ADMIN]:
-                              'Admin',
+                            pull: 'Read',
+                            triage: 'Triage',
+                            push: 'Write',
+                            maintain: 'Maintain',
+                            admin: 'Admin',
                           }[permission]
                         }
                       </SelectItem>

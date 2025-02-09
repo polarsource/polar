@@ -16,9 +16,7 @@ export const MeterEvents = ({ events }: { events: Event[] }) => {
                 avatar_url={null}
               />
               <span>
-                {event.customer_id
-                  ? event.customer_id
-                  : event.external_customer_id}
+                {event.name ? event.customer_id : event.external_customer_id}
               </span>
             </div>
           ),

@@ -15,12 +15,7 @@ import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
-import {
-  Organization,
-  ResponseError,
-  WebhookDelivery,
-  WebhookEndpoint,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -33,13 +28,13 @@ import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DeliveriesTableProps {
-  organization: Organization
-  endpoint: WebhookEndpoint
+  organization: components['schemas']['Organization']
+  endpoint: components['schemas']['WebhookEndpoint']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }
 
-type DeliveryRow = WebhookDelivery & {
+type DeliveryRow = components['schemas']['WebhookDelivery'] & {
   isSubRow?: boolean
 }
 
@@ -251,21 +246,22 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
       e.preventDefault()
       e.stopPropagation()
 
-      try {
-        await redeliver.mutateAsync({ id: delivery.webhook_event.id })
+      const { error } = await redeliver.mutateAsync({
+        id: delivery.webhook_event.id,
+      })
 
+      if (error) {
         toast({
-          title: 'Attempting Webhook Event Redelivery',
-          description: `A new attempt to deliver the webhook event has been made`,
+          title: 'Webhook Event Redelivery Failed',
+          description: `Error redelivering Webhook Event: ${error.detail}`,
         })
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          toast({
-            title: 'Webhook Event Redelivery Failed',
-            description: `Error redelivering Webhook Event: ${e.message}`,
-          })
-        }
+        return
       }
+
+      toast({
+        title: 'Attempting Webhook Event Redelivery',
+        description: `A new attempt to deliver the webhook event has been made`,
+      })
     },
     [redeliver, delivery.webhook_event.id],
   )

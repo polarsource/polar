@@ -2,7 +2,7 @@
 
 import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import { Organization, WebhookEndpoint } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
@@ -11,7 +11,9 @@ import { InlineModal } from '../../Modal/InlineModal'
 import { useModal } from '../../Modal/useModal'
 import NewWebhookModal from './NewWebhookModal'
 
-const WebhookSettings = (props: { org: Organization }) => {
+const WebhookSettings = (props: {
+  org: components['schemas']['Organization']
+}) => {
   const {
     isShown: isNewWebhookModalShown,
     show: showNewWebhookModal,
@@ -79,8 +81,8 @@ const Endpoint = ({
   organization,
   endpoint,
 }: {
-  organization: Organization
-  endpoint: WebhookEndpoint
+  organization: components['schemas']['Organization']
+  endpoint: components['schemas']['WebhookEndpoint']
 }) => {
   return (
     <div className="flex items-center justify-between overflow-hidden">

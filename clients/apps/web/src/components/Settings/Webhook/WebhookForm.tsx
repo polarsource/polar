@@ -1,9 +1,4 @@
-import {
-  WebhookEndpointCreate,
-  WebhookEndpointUpdate,
-  WebhookEventType,
-  WebhookFormat,
-} from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -21,12 +16,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 
-type CreateOrUpdate = WebhookEndpointCreate | WebhookEndpointUpdate
+type CreateOrUpdate =
+  | components['schemas']['WebhookEndpointCreate']
+  | components['schemas']['WebhookEndpointUpdate']
 
 export const FieldUrl = () => {
   const { control } = useFormContext<CreateOrUpdate>()
@@ -75,9 +71,9 @@ export const FieldFormat = () => {
       return
     }
     if (url.startsWith('https://discord.com/api/webhooks')) {
-      setValue('format', WebhookFormat.DISCORD)
+      setValue('format', 'discord')
     } else if (url.startsWith('https://hooks.slack.com/services/')) {
-      setValue('format', WebhookFormat.SLACK)
+      setValue('format', 'slack')
     }
   }, [url, setValue])
 
@@ -103,9 +99,9 @@ export const FieldFormat = () => {
                 <SelectValue placeholder="Select a payload format" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={WebhookFormat.RAW}>Raw</SelectItem>
-                <SelectItem value={WebhookFormat.DISCORD}>Discord</SelectItem>
-                <SelectItem value={WebhookFormat.SLACK}>Slack</SelectItem>
+                <SelectItem value="raw">Raw</SelectItem>
+                <SelectItem value="discord">Discord</SelectItem>
+                <SelectItem value="slack">Slack</SelectItem>
               </SelectContent>
             </Select>
           </FormControl>
@@ -189,7 +185,7 @@ export const FieldEvents = () => {
         Events
       </h2>
 
-      {Object.values(WebhookEventType).map((event) => (
+      {Object.values(enums.webhookEventTypeValues).map((event) => (
         <FormField
           key={event}
           control={form.control}

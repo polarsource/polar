@@ -1,31 +1,27 @@
 'use client'
 
-import {
-  Organization,
-  ResponseError,
-  WebhookEndpoint,
-  WebhookEndpointCreate,
-} from '@polar-sh/api'
-import { useCallback, useState } from 'react'
-import { useForm } from 'react-hook-form'
-
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateWebhookEndpoint } from '@/hooks/queries'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useCallback, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { FieldEvents, FieldFormat, FieldSecret, FieldUrl } from './WebhookForm'
 
 export default function NewWebhookModal({
   organization,
   hide,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
   hide: () => void
 }) {
-  const form = useForm<WebhookEndpointCreate>({
+  const router = useRouter()
+  const form = useForm<components['schemas']['WebhookEndpointCreate']>({
     defaultValues: {
       organization_id: organization.id,
     },
@@ -33,37 +29,30 @@ export default function NewWebhookModal({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] = useState<WebhookEndpoint>()
-  const [isCreating, setIsCreating] = useState(false)
+  const [created, setCreated] =
+    useState<components['schemas']['WebhookEndpoint']>()
 
   const createWebhookEndpoint = useCreateWebhookEndpoint()
 
   const onSubmit = useCallback(
-    async (form: WebhookEndpointCreate) => {
-      setIsCreating(true)
-
-      try {
-        const res = await createWebhookEndpoint.mutateAsync(form)
-
+    async (form: components['schemas']['WebhookEndpointCreate']) => {
+      const { data, error } = await createWebhookEndpoint.mutateAsync(form)
+      if (error) {
         toast({
-          title: 'Webhook Endpoint Created',
-          description: `Webhook Endpoint was created successfully`,
+          title: 'Webhook Endpoint Creation Failed',
+          description: `Error creating Webhook Endpoint: ${error.detail}`,
         })
-
-        setCreated(res)
-        hide()
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          toast({
-            title: 'Webhook Endpoint Creation Failed',
-            description: `Error creating Webhook Endpoint: ${e.message}`,
-          })
-        }
-      } finally {
-        setIsCreating(false)
+        return
       }
+      toast({
+        title: 'Webhook Endpoint Created',
+        description: `Webhook Endpoint was created successfully`,
+      })
+      router.push(
+        `/dashboard/${organization.slug}/settings/webhooks/endpoints/${data.id}`,
+      )
     },
-    [hide, createWebhookEndpoint, setCreated, setIsCreating],
+    [hide, createWebhookEndpoint, setCreated],
   )
 
   return (
@@ -100,8 +89,8 @@ export default function NewWebhookModal({
 
             <Button
               type="submit"
-              loading={isCreating}
-              disabled={Boolean(created)}
+              loading={createWebhookEndpoint.isPending}
+              disabled={createWebhookEndpoint.isPending}
             >
               Create
             </Button>

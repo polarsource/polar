@@ -4,7 +4,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
 import { ArrowForward } from '@mui/icons-material'
-import { OAuth2Client } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -28,15 +28,17 @@ const OAuthSettings = () => {
     show: showEditOAuthClientModal,
   } = useModal()
 
-  const [client, setClient] = useState<OAuth2Client | undefined>()
+  const [client, setClient] = useState<
+    components['schemas']['OAuth2Client'] | undefined
+  >()
 
-  const onCreate = (client: OAuth2Client) => {
+  const onCreate = (client: components['schemas']['OAuth2Client']) => {
     hideNewOAuthClientModal()
     setClient(client)
     showEditOAuthClientModal()
   }
 
-  const onOpen = (client: OAuth2Client) => {
+  const onOpen = (client: components['schemas']['OAuth2Client']) => {
     setClient(client)
     showEditOAuthClientModal()
   }
@@ -104,8 +106,8 @@ const OAuthSettings = () => {
 }
 
 interface OAuthClientDetailsProps {
-  client: OAuth2Client
-  onClick: (client: OAuth2Client) => void
+  client: components['schemas']['OAuth2Client']
+  onClick: (client: components['schemas']['OAuth2Client']) => void
 }
 
 const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {

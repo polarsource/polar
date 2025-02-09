@@ -1,11 +1,7 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
-import {
-  OAuth2Client,
-  OAuth2ClientConfiguration,
-  ResponseError,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
@@ -22,13 +18,16 @@ import {
 } from './OAuthForm'
 
 export interface EnhancedOAuth2ClientConfiguration
-  extends Omit<OAuth2ClientConfiguration, 'redirect_uris' | 'scope'> {
+  extends Omit<
+    components['schemas']['OAuth2ClientConfiguration'],
+    'redirect_uris' | 'scope'
+  > {
   redirect_uris: { uri: string }[]
   scope: string[]
 }
 
 interface NewOAuthClientModalProps {
-  onSuccess: (client: OAuth2Client) => void
+  onSuccess: (client: components['schemas']['OAuth2Client']) => void
   onHide: () => void
 }
 
@@ -46,41 +45,36 @@ export const NewOAuthClientModal = ({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] = useState<OAuth2Client>()
-  const [isCreating, setIsCreating] = useState(false)
+  const [created, setCreated] =
+    useState<components['schemas']['OAuth2Client']>()
 
   const createOAuth2Client = useCreateOAuth2Client()
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfiguration) => {
-      setIsCreating(true)
+      const { data, error } = await createOAuth2Client.mutateAsync({
+        ...form,
+        redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+        scope: form.scope.join(' '),
+      })
 
-      try {
-        const res = await createOAuth2Client.mutateAsync({
-          ...form,
-          redirect_uris: form.redirect_uris.map(({ uri }) => uri),
-          scope: form.scope.join(' '),
-        })
-
+      if (error) {
         toast({
-          title: 'OAuth App Created',
-          description: `OAuth App ${res.client_name} was created successfully`,
+          title: 'OAuth App Creation Failed',
+          description: `Error creating OAuth App: ${error.detail}`,
         })
-
-        setCreated(res)
-        onSuccess(res)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          toast({
-            title: 'OAuth App Creation Failed',
-            description: `Error creating OAuth App: ${e.message}`,
-          })
-        }
-      } finally {
-        setIsCreating(false)
+        return
       }
+
+      const res = data as components['schemas']['OAuth2Client']
+      toast({
+        title: 'OAuth App Created',
+        description: `OAuth App ${res.client_name} was created successfully`,
+      })
+      setCreated(res)
+      onSuccess(res)
     },
-    [createOAuth2Client, setCreated, setIsCreating, onSuccess],
+    [createOAuth2Client, setCreated, onSuccess],
   )
 
   return (
@@ -107,7 +101,7 @@ export const NewOAuthClientModal = ({
 
             <Button
               type="submit"
-              loading={isCreating}
+              loading={createOAuth2Client.isPending}
               disabled={Boolean(created)}
             >
               Create
